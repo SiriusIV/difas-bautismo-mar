@@ -165,7 +165,8 @@
         <select id="franja" name="franja" required>
           <option value="">Cargando franjas...</option>
         </select>
-      </div>
+      <div id="infoPlazas" style="margin-top:8px; font-size:14px; color:#444;"></div>
+    </div>
 
       <div class="campo">
         <label for="observaciones">Observaciones</label>
@@ -179,8 +180,31 @@
   </div>
 
   <script>
+  let franjasCache = [];
+
+  function actualizarInfoPlazas() {
+    const select = document.getElementById("franja");
+    const info = document.getElementById("infoPlazas");
+    const franjaId = parseInt(select.value, 10);
+
+    if (!franjaId) {
+      info.textContent = "";
+      return;
+    }
+
+    const franjaSeleccionada = franjasCache.find(f => f.id === franjaId);
+
+    if (!franjaSeleccionada) {
+      info.textContent = "";
+      return;
+    }
+
+    info.textContent = `Plazas disponibles en esta franja: ${franjaSeleccionada.disponibles}`;
+  }
+
   async function cargarFranjas() {
     const select = document.getElementById("franja");
+    const info = document.getElementById("infoPlazas");
 
     try {
       const response = await fetch("/api/franjas");
@@ -190,17 +214,28 @@
       }
 
       const franjas = await response.json();
+      franjasCache = franjas;
 
       select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+      if (franjas.length === 0) {
+        select.innerHTML = '<option value="">No hay franjas disponibles</option>';
+        info.textContent = "";
+        return;
+      }
 
       franjas.forEach(f => {
         const option = document.createElement("option");
         option.value = f.id;
-        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.capacidad} plazas)`;
+        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
         select.appendChild(option);
       });
+
+      info.textContent = "";
+
     } catch (error) {
       select.innerHTML = '<option value="">Error al cargar franjas</option>';
+      info.textContent = "";
       console.error(error);
     }
   }
@@ -239,6 +274,8 @@
         mensaje.className = "mensaje error";
         mensaje.style.display = "block";
         mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
+        await cargarFranjas();
+        actualizarInfoPlazas();
         return;
       }
 
@@ -252,6 +289,7 @@
       document.getElementById("menores10").value = 0;
 
       await cargarFranjas();
+      actualizarInfoPlazas();
 
     } catch (error) {
       mensaje.className = "mensaje error";
@@ -261,6 +299,7 @@
     }
   }
 
+  document.getElementById("franja").addEventListener("change", actualizarInfoPlazas);
   document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
 
   cargarFranjas();
