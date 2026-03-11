@@ -12,12 +12,20 @@ export async function onRequestPost(context) {
     const franjaId = parseInt(data.franja, 10);
     const mayores10 = parseInt(data.mayores10 || 0, 10);
     const menores10 = parseInt(data.menores10 || 0, 10);
+    const idempotencyKey = (data.idempotencyKey || "").trim();
 
     const personas = mayores10 + menores10;
 
     if (!centro || !contacto || !telefono || !email || !franjaId) {
       return Response.json(
         { ok: false, error: "Faltan campos obligatorios." },
+        { status: 400 }
+      );
+    }
+
+    if (!idempotencyKey) {
+      return Response.json(
+        { ok: false, error: "Falta la clave de idempotencia." },
         { status: 400 }
       );
     }
@@ -29,10 +37,51 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Sesión consistente para leer/escribir sobre el dato más reciente
     const session = env.DB.withSession("first-primary");
 
-    // 1) Verificar que la franja existe
+    // 1) Si ya existe una reserva con esta clave, devolvemos éxito sin duplicar
+    const existente = await session
+      .prepare(`
+        SELECT
+          r.id,
+          r.franja_id,
+          r.personas,
+          f.fecha,
+          f.hora_inicio,
+          f.hora_fin,
+          f.capacidad,
+          (
+            f.capacidad - (
+              SELECT COALESCE(SUM(r2.personas), 0)
+              FROM reservas r2
+              WHERE r2.franja_id = f.id
+            )
+          ) AS disponibles
+        FROM reservas r
+        JOIN franjas f ON f.id = r.franja_id
+        WHERE r.idempotency_key = ?
+      `)
+      .bind(idempotencyKey)
+      .first();
+
+    if (existente) {
+      return Response.json({
+        ok: true,
+        duplicate: true,
+        mensaje: "La solicitud ya había sido registrada anteriormente.",
+        franja: {
+          id: existente.franja_id,
+          fecha: existente.fecha,
+          hora_inicio: existente.hora_inicio,
+          hora_fin: existente.hora_fin
+        },
+        capacidad: existente.capacidad,
+        personas_reservadas: existente.personas,
+        disponibles_despues: existente.disponibles
+      });
+    }
+
+    // 2) Verificar que la franja existe
     const franja = await session
       .prepare(`
         SELECT id, fecha, hora_inicio, hora_fin, capacidad
@@ -49,8 +98,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 2) Intentar insertar SOLO si aún hay plazas suficientes
-    //    Esta es la parte crítica: comprobación + inserción en una sola sentencia SQL
+    // 3) Insertar solo si todavía hay plazas suficientes
     const insertResult = await session
       .prepare(`
         INSERT INTO reservas (
@@ -62,7 +110,8 @@ export async function onRequestPost(context) {
           mayores10,
           menores10,
           personas,
-          fecha_solicitud
+          fecha_solicitud,
+          idempotency_key
         )
         SELECT
           ?,
@@ -73,7 +122,8 @@ export async function onRequestPost(context) {
           ?,
           ?,
           ?,
-          datetime('now')
+          datetime('now'),
+          ?
         FROM franjas f
         LEFT JOIN (
           SELECT franja_id, COALESCE(SUM(personas), 0) AS ocupadas
@@ -93,13 +143,13 @@ export async function onRequestPost(context) {
         mayores10,
         menores10,
         personas,
+        idempotencyKey,
         franjaId,
         franjaId,
         personas
       )
       .run();
 
-    // 3) Leer ocupación real después del intento
     const estado = await session
       .prepare(`
         SELECT
@@ -121,7 +171,6 @@ export async function onRequestPost(context) {
 
     const cambios = insertResult?.meta?.changes || 0;
 
-    // 4) Si no insertó nada, es que ya no cabía
     if (cambios === 0) {
       return Response.json(
         {
@@ -141,7 +190,6 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 5) Si insertó, la reserva quedó registrada correctamente
     return Response.json({
       ok: true,
       mensaje: "Solicitud registrada correctamente.",
@@ -158,6 +206,17 @@ export async function onRequestPost(context) {
     });
 
   } catch (error) {
+    // Si hubo carrera exacta con la misma idempotency_key
+    if (String(error.message || "").includes("UNIQUE constraint failed")) {
+      return Response.json(
+        {
+          ok: true,
+          duplicate: true,
+          mensaje: "La solicitud ya había sido procesada."
+        }
+      );
+    }
+
     return Response.json(
       {
         ok: false,
