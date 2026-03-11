@@ -75,6 +75,11 @@
       background: #094db1;
     }
 
+    button:disabled {
+      background: #7aa7e8;
+      cursor: not-allowed;
+    }
+
     .cabecera {
       display: flex;
       align-items: center;
@@ -115,6 +120,12 @@
       color: #146c2e;
       border: 1px solid #b9e0c0;
     }
+
+    .info-plazas {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #444;
+    }
   </style>
 </head>
 <body>
@@ -130,9 +141,6 @@
     <p>Complete este formulario para solicitar la actividad.</p>
 
     <form id="formularioSolicitud">
-      
-      <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
-      
       <div class="campo">
         <label for="centro">Centro solicitante</label>
         <input type="text" id="centro" name="centro" required>
@@ -168,191 +176,199 @@
         <select id="franja" name="franja" required>
           <option value="">Cargando franjas...</option>
         </select>
-      <div id="infoPlazas" style="margin-top:8px; font-size:14px; color:#444;"></div>
-    </div>
+        <div id="infoPlazas" class="info-plazas"></div>
+      </div>
 
       <div class="campo">
         <label for="observaciones">Observaciones</label>
         <textarea id="observaciones" name="observaciones"></textarea>
       </div>
 
-     <button type="submit" id="btnEnviar">Enviar solicitud</button>
+      <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
+
+      <button type="submit" id="btnEnviar">Enviar solicitud</button>
 
       <div id="mensaje" class="mensaje"></div>
     </form>
   </div>
 
   <script>
-  let franjasCache = [];
-  let envioEnCurso = false;
+    let franjasCache = [];
+    let envioEnCurso = false;
 
-  function nuevaIdempotencyKey() {
-    if (window.crypto && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-  }
-
-  function prepararNuevaClave() {
-    document.getElementById("idempotencyKey").value = nuevaIdempotencyKey();
-  }
-
-  function actualizarInfoPlazas() {
-    const select = document.getElementById("franja");
-    const info = document.getElementById("infoPlazas");
-    const franjaId = parseInt(select.value, 10);
-
-    if (!franjaId) {
-      info.textContent = "";
-      return;
-    }
-
-    const franjaSeleccionada = franjasCache.find(f => Number(f.id) === franjaId);
-
-    if (!franjaSeleccionada) {
-      info.textContent = "";
-      return;
-    }
-
-    info.textContent = `Plazas disponibles en esta franja: ${franjaSeleccionada.disponibles}`;
-  }
-
-  async function cargarFranjas(franjaSeleccionadaId = "") {
-    const select = document.getElementById("franja");
-    const info = document.getElementById("infoPlazas");
-
-    try {
-      const response = await fetch("/api/franjas");
-
-      if (!response.ok) {
-        throw new Error("No se pudieron cargar las franjas");
+    function nuevaIdempotencyKey() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
       }
+      return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    }
 
-      const franjas = await response.json();
-      franjasCache = franjas;
+    function prepararNuevaClave() {
+      const campo = document.getElementById("idempotencyKey");
+      campo.value = nuevaIdempotencyKey();
+      console.log("Nueva idempotencyKey:", campo.value);
+    }
 
-      select.innerHTML = '<option value="">Seleccione una opción</option>';
+    function actualizarInfoPlazas() {
+      const select = document.getElementById("franja");
+      const info = document.getElementById("infoPlazas");
+      const franjaId = parseInt(select.value, 10);
 
-      if (franjas.length === 0) {
-        select.innerHTML = '<option value="">No hay franjas disponibles</option>';
+      if (!franjaId) {
         info.textContent = "";
         return;
       }
 
-      let sigueExistiendo = false;
+      const franjaSeleccionada = franjasCache.find(f => Number(f.id) === franjaId);
 
-      franjas.forEach(f => {
-        const option = document.createElement("option");
-        option.value = f.id;
-        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
-
-        if (String(f.id) === String(franjaSeleccionadaId)) {
-          option.selected = true;
-          sigueExistiendo = true;
-        }
-
-        select.appendChild(option);
-      });
-
-      if (!sigueExistiendo) {
-        select.value = "";
-      }
-
-      actualizarInfoPlazas();
-
-    } catch (error) {
-      select.innerHTML = '<option value="">Error al cargar franjas</option>';
-      info.textContent = "";
-      console.error(error);
-    }
-  }
-
-  async function enviarFormulario(event) {
-    event.preventDefault();
-
-    if (envioEnCurso) {
-      return;
-    }
-
-    const mensaje = document.getElementById("mensaje");
-    const boton = document.getElementById("btnEnviar");
-    const franjaActual = document.getElementById("franja").value;
-
-    mensaje.className = "mensaje";
-    mensaje.style.display = "none";
-    mensaje.textContent = "";
-
-    const datos = {
-      centro: document.getElementById("centro").value.trim(),
-      contacto: document.getElementById("contacto").value.trim(),
-      telefono: document.getElementById("telefono").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
-      menores10: parseInt(document.getElementById("menores10").value || "0", 10),
-      franja: document.getElementById("franja").value,
-      observaciones: document.getElementById("observaciones").value.trim(),
-      idempotencyKey: document.getElementById("idempotencyKey").value
-    };
-
-    try {
-      envioEnCurso = true;
-      boton.disabled = true;
-      boton.textContent = "Enviando...";
-
-      const response = await fetch("/api/reservar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(datos)
-      });
-
-      const resultado = await response.json();
-
-      if (!response.ok || !resultado.ok) {
-        mensaje.className = "mensaje error";
-        mensaje.style.display = "block";
-        mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
-        await cargarFranjas(franjaActual);
+      if (!franjaSeleccionada) {
+        info.textContent = "";
         return;
       }
 
-      mensaje.className = "mensaje ok";
-      mensaje.style.display = "block";
+      info.textContent = `Plazas disponibles en esta franja: ${franjaSeleccionada.disponibles}`;
+    }
 
-      if (resultado.duplicate) {
-        mensaje.textContent = "La solicitud ya había sido procesada previamente.";
-      } else {
-        mensaje.textContent =
-          `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+    async function cargarFranjas(franjaSeleccionadaId = "") {
+      const select = document.getElementById("franja");
+      const info = document.getElementById("infoPlazas");
+
+      try {
+        const response = await fetch("/api/franjas");
+
+        if (!response.ok) {
+          throw new Error("No se pudieron cargar las franjas");
+        }
+
+        const franjas = await response.json();
+        franjasCache = franjas;
+
+        select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+        if (franjas.length === 0) {
+          select.innerHTML = '<option value="">No hay franjas disponibles</option>';
+          info.textContent = "";
+          return;
+        }
+
+        let sigueExistiendo = false;
+
+        franjas.forEach(f => {
+          const option = document.createElement("option");
+          option.value = f.id;
+          option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+
+          if (String(f.id) === String(franjaSeleccionadaId)) {
+            option.selected = true;
+            sigueExistiendo = true;
+          }
+
+          select.appendChild(option);
+        });
+
+        if (!sigueExistiendo) {
+          select.value = "";
+        }
+
+        actualizarInfoPlazas();
+
+      } catch (error) {
+        select.innerHTML = '<option value="">Error al cargar franjas</option>';
+        info.textContent = "";
+        console.error(error);
+      }
+    }
+
+    async function enviarFormulario(event) {
+      event.preventDefault();
+
+      if (envioEnCurso) {
+        return;
       }
 
-      document.getElementById("formularioSolicitud").reset();
-      document.getElementById("mayores10").value = 0;
-      document.getElementById("menores10").value = 0;
+      const mensaje = document.getElementById("mensaje");
+      const boton = document.getElementById("btnEnviar");
+      const franjaActual = document.getElementById("franja").value;
+      const idem = document.getElementById("idempotencyKey").value;
+
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+
+      const datos = {
+        centro: document.getElementById("centro").value.trim(),
+        contacto: document.getElementById("contacto").value.trim(),
+        telefono: document.getElementById("telefono").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
+        menores10: parseInt(document.getElementById("menores10").value || "0", 10),
+        franja: document.getElementById("franja").value,
+        observaciones: document.getElementById("observaciones").value.trim(),
+        idempotencyKey: idem
+      };
+
+      console.log("Datos enviados:", datos);
+
+      try {
+        envioEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Enviando...";
+
+        const response = await fetch("/api/reservar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(datos)
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok || !resultado.ok) {
+          mensaje.className = "mensaje error";
+          mensaje.style.display = "block";
+          mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
+          await cargarFranjas(franjaActual);
+          return;
+        }
+
+        mensaje.className = "mensaje ok";
+        mensaje.style.display = "block";
+
+        if (resultado.duplicate) {
+          mensaje.textContent = "La solicitud ya había sido procesada previamente.";
+        } else {
+          mensaje.textContent =
+            `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+        }
+
+        document.getElementById("formularioSolicitud").reset();
+        document.getElementById("mayores10").value = 0;
+        document.getElementById("menores10").value = 0;
+
+        prepararNuevaClave();
+        await cargarFranjas();
+
+      } catch (error) {
+        mensaje.className = "mensaje error";
+        mensaje.style.display = "block";
+        mensaje.textContent = "Error de conexión con el servidor.";
+        console.error(error);
+        await cargarFranjas(franjaActual);
+      } finally {
+        envioEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Enviar solicitud";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      document.getElementById("franja").addEventListener("change", actualizarInfoPlazas);
+      document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
 
       prepararNuevaClave();
       await cargarFranjas();
-
-    } catch (error) {
-      mensaje.className = "mensaje error";
-      mensaje.style.display = "block";
-      mensaje.textContent = "Error de conexión con el servidor.";
-      console.error(error);
-      await cargarFranjas(franjaActual);
-    } finally {
-      envioEnCurso = false;
-      boton.disabled = false;
-      boton.textContent = "Enviar solicitud";
-    }
-  }
-
-  document.getElementById("franja").addEventListener("change", actualizarInfoPlazas);
-  document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
-
-  prepararNuevaClave();
-  cargarFranjas();
-</script>
-  
+    });
+  </script>
 </body>
 </html>
