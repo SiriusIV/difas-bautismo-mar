@@ -179,33 +179,92 @@
   </div>
 
   <script>
-    async function cargarFranjas() {
-      const select = document.getElementById("franja");
+  async function cargarFranjas() {
+    const select = document.getElementById("franja");
 
-      try {
-        const response = await fetch("/api/franjas");
+    try {
+      const response = await fetch("/api/franjas");
 
-        if (!response.ok) {
-          throw new Error("No se pudieron cargar las franjas");
-        }
-
-        const franjas = await response.json();
-
-        select.innerHTML = '<option value="">Seleccione una opción</option>';
-
-        franjas.forEach(f => {
-          const option = document.createElement("option");
-          option.value = f.id;
-          option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.capacidad} plazas)`;
-          select.appendChild(option);
-        });
-      } catch (error) {
-        select.innerHTML = '<option value="">Error al cargar franjas</option>';
-        console.error(error);
+      if (!response.ok) {
+        throw new Error("No se pudieron cargar las franjas");
       }
-    }
 
-    cargarFranjas();
-  </script>
+      const franjas = await response.json();
+
+      select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+      franjas.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.capacidad} plazas)`;
+        select.appendChild(option);
+      });
+    } catch (error) {
+      select.innerHTML = '<option value="">Error al cargar franjas</option>';
+      console.error(error);
+    }
+  }
+
+  async function enviarFormulario(event) {
+    event.preventDefault();
+
+    const mensaje = document.getElementById("mensaje");
+    mensaje.className = "mensaje";
+    mensaje.style.display = "none";
+    mensaje.textContent = "";
+
+    const datos = {
+      centro: document.getElementById("centro").value.trim(),
+      contacto: document.getElementById("contacto").value.trim(),
+      telefono: document.getElementById("telefono").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
+      menores10: parseInt(document.getElementById("menores10").value || "0", 10),
+      franja: document.getElementById("franja").value,
+      observaciones: document.getElementById("observaciones").value.trim()
+    };
+
+    try {
+      const response = await fetch("/api/reservar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(datos)
+      });
+
+      const resultado = await response.json();
+
+      if (!response.ok || !resultado.ok) {
+        mensaje.className = "mensaje error";
+        mensaje.style.display = "block";
+        mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
+        return;
+      }
+
+      mensaje.className = "mensaje ok";
+      mensaje.style.display = "block";
+      mensaje.textContent =
+        `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+
+      document.getElementById("formularioSolicitud").reset();
+      document.getElementById("mayores10").value = 0;
+      document.getElementById("menores10").value = 0;
+
+      await cargarFranjas();
+
+    } catch (error) {
+      mensaje.className = "mensaje error";
+      mensaje.style.display = "block";
+      mensaje.textContent = "Error de conexión con el servidor.";
+      console.error(error);
+    }
+  }
+
+  document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
+
+  cargarFranjas();
+</script>
+  
 </body>
 </html>
