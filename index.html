@@ -173,7 +173,7 @@
         <textarea id="observaciones" name="observaciones"></textarea>
       </div>
 
-      <button type="submit">Enviar solicitud</button>
+      <button type="submit" id="btnEnviar">Enviar solicitud</button>
 
       <div id="mensaje" class="mensaje"></div>
     </form>
@@ -181,6 +181,7 @@
 
   <script>
   let franjasCache = [];
+  let envioEnCurso = false;
 
   function actualizarInfoPlazas() {
     const select = document.getElementById("franja");
@@ -243,7 +244,13 @@
   async function enviarFormulario(event) {
     event.preventDefault();
 
+    if (envioEnCurso) {
+      return;
+    }
+
     const mensaje = document.getElementById("mensaje");
+    const boton = document.getElementById("btnEnviar");
+
     mensaje.className = "mensaje";
     mensaje.style.display = "none";
     mensaje.textContent = "";
@@ -256,10 +263,15 @@
       mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
       menores10: parseInt(document.getElementById("menores10").value || "0", 10),
       franja: document.getElementById("franja").value,
-      observaciones: document.getElementById("observaciones").value.trim()
+      observaciones: document.getElementById("observaciones").value.trim(),
+      idempotencyKey: crypto.randomUUID()
     };
 
     try {
+      envioEnCurso = true;
+      boton.disabled = true;
+      boton.textContent = "Enviando...";
+
       const response = await fetch("/api/reservar", {
         method: "POST",
         headers: {
@@ -281,8 +293,13 @@
 
       mensaje.className = "mensaje ok";
       mensaje.style.display = "block";
-      mensaje.textContent =
-        `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+
+      if (resultado.duplicate) {
+        mensaje.textContent = "La solicitud ya había sido procesada previamente.";
+      } else {
+        mensaje.textContent =
+          `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+      }
 
       document.getElementById("formularioSolicitud").reset();
       document.getElementById("mayores10").value = 0;
@@ -296,6 +313,10 @@
       mensaje.style.display = "block";
       mensaje.textContent = "Error de conexión con el servidor.";
       console.error(error);
+    } finally {
+      envioEnCurso = false;
+      boton.disabled = false;
+      boton.textContent = "Enviar solicitud";
     }
   }
 
