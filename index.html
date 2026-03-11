@@ -130,6 +130,9 @@
     <p>Complete este formulario para solicitar la actividad.</p>
 
     <form id="formularioSolicitud">
+      
+      <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
+      
       <div class="campo">
         <label for="centro">Centro solicitante</label>
         <input type="text" id="centro" name="centro" required>
@@ -173,7 +176,7 @@
         <textarea id="observaciones" name="observaciones"></textarea>
       </div>
 
-      <button type="submit" id="btnEnviar">Enviar solicitud</button>
+     <button type="submit" id="btnEnviar">Enviar solicitud</button>
 
       <div id="mensaje" class="mensaje"></div>
     </form>
@@ -182,6 +185,17 @@
   <script>
   let franjasCache = [];
   let envioEnCurso = false;
+
+  function nuevaIdempotencyKey() {
+    if (window.crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function prepararNuevaClave() {
+    document.getElementById("idempotencyKey").value = nuevaIdempotencyKey();
+  }
 
   function actualizarInfoPlazas() {
     const select = document.getElementById("franja");
@@ -193,7 +207,7 @@
       return;
     }
 
-    const franjaSeleccionada = franjasCache.find(f => f.id === franjaId);
+    const franjaSeleccionada = franjasCache.find(f => Number(f.id) === franjaId);
 
     if (!franjaSeleccionada) {
       info.textContent = "";
@@ -203,7 +217,7 @@
     info.textContent = `Plazas disponibles en esta franja: ${franjaSeleccionada.disponibles}`;
   }
 
-  async function cargarFranjas() {
+  async function cargarFranjas(franjaSeleccionadaId = "") {
     const select = document.getElementById("franja");
     const info = document.getElementById("infoPlazas");
 
@@ -225,14 +239,26 @@
         return;
       }
 
+      let sigueExistiendo = false;
+
       franjas.forEach(f => {
         const option = document.createElement("option");
         option.value = f.id;
         option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+
+        if (String(f.id) === String(franjaSeleccionadaId)) {
+          option.selected = true;
+          sigueExistiendo = true;
+        }
+
         select.appendChild(option);
       });
 
-      info.textContent = "";
+      if (!sigueExistiendo) {
+        select.value = "";
+      }
+
+      actualizarInfoPlazas();
 
     } catch (error) {
       select.innerHTML = '<option value="">Error al cargar franjas</option>';
@@ -250,6 +276,7 @@
 
     const mensaje = document.getElementById("mensaje");
     const boton = document.getElementById("btnEnviar");
+    const franjaActual = document.getElementById("franja").value;
 
     mensaje.className = "mensaje";
     mensaje.style.display = "none";
@@ -264,7 +291,7 @@
       menores10: parseInt(document.getElementById("menores10").value || "0", 10),
       franja: document.getElementById("franja").value,
       observaciones: document.getElementById("observaciones").value.trim(),
-      idempotencyKey: crypto.randomUUID()
+      idempotencyKey: document.getElementById("idempotencyKey").value
     };
 
     try {
@@ -286,8 +313,7 @@
         mensaje.className = "mensaje error";
         mensaje.style.display = "block";
         mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
-        await cargarFranjas();
-        actualizarInfoPlazas();
+        await cargarFranjas(franjaActual);
         return;
       }
 
@@ -305,14 +331,15 @@
       document.getElementById("mayores10").value = 0;
       document.getElementById("menores10").value = 0;
 
+      prepararNuevaClave();
       await cargarFranjas();
-      actualizarInfoPlazas();
 
     } catch (error) {
       mensaje.className = "mensaje error";
       mensaje.style.display = "block";
       mensaje.textContent = "Error de conexión con el servidor.";
       console.error(error);
+      await cargarFranjas(franjaActual);
     } finally {
       envioEnCurso = false;
       boton.disabled = false;
@@ -323,6 +350,7 @@
   document.getElementById("franja").addEventListener("change", actualizarInfoPlazas);
   document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
 
+  prepararNuevaClave();
   cargarFranjas();
 </script>
   
