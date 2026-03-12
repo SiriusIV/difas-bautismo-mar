@@ -234,6 +234,17 @@
       return mayores10 + menores10;
     }
 
+    function plazasEditablesEnFranja(franja) {
+      if (!franja) return 0;
+      const disponibles = Number(franja.disponibles || 0);
+      // Si es la misma franja de la reserva actual, hay que sumar
+      // las plazas que ya ocupa esta propia reserva
+      if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
+        return disponibles + Number(reservaActual.personas || 0);
+        }
+      return disponibles;
+    }
+    
     function actualizarInfoPlazas() {
       const info = document.getElementById("infoPlazas");
       const franja = obtenerFranjaSeleccionada();
