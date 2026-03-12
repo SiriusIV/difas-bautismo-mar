@@ -86,6 +86,10 @@ export async function onRequestGet(context) {
         r.menores10,
         r.personas,
         r.fecha_solicitud,
+        r.fecha_modificacion,
+        r.codigo_reserva,
+        r.token_edicion,
+        r.estado,
         r.idempotency_key
       FROM reservas r
       INNER JOIN franjas f
