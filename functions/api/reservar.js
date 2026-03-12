@@ -1,3 +1,9 @@
+function generarTokenEdicion() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -39,13 +45,16 @@ export async function onRequestPost(context) {
 
     const session = env.DB.withSession("first-primary");
 
-    // 1) Si ya existe una reserva con esta clave, devolvemos éxito sin duplicar
+    // 1) Si ya existe una reserva con esta clave, devolvemos la ya creada
     const existente = await session
       .prepare(`
         SELECT
           r.id,
           r.franja_id,
           r.personas,
+          r.codigo_reserva,
+          r.token_edicion,
+          r.estado,
           f.fecha,
           f.hora_inicio,
           f.hora_fin,
@@ -69,6 +78,9 @@ export async function onRequestPost(context) {
         ok: true,
         duplicate: true,
         mensaje: "La solicitud ya había sido registrada anteriormente.",
+        codigo_reserva: existente.codigo_reserva,
+        token_edicion: existente.token_edicion,
+        estado: existente.estado,
         franja: {
           id: existente.franja_id,
           fecha: existente.fecha,
@@ -98,7 +110,10 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 3) Insertar solo si todavía hay plazas suficientes
+    // 3) Preparar identificadores
+    const tokenEdicion = generarTokenEdicion();
+
+    // 4) Insertar solo si todavía hay plazas suficientes
     const insertResult = await session
       .prepare(`
         INSERT INTO reservas (
@@ -111,7 +126,10 @@ export async function onRequestPost(context) {
           menores10,
           personas,
           fecha_solicitud,
-          idempotency_key
+          idempotency_key,
+          token_edicion,
+          estado,
+          fecha_modificacion
         )
         SELECT
           ?,
@@ -123,7 +141,10 @@ export async function onRequestPost(context) {
           ?,
           ?,
           datetime('now'),
-          ?
+          ?,
+          ?,
+          'ACTIVA',
+          datetime('now')
         FROM franjas f
         LEFT JOIN (
           SELECT franja_id, COALESCE(SUM(personas), 0) AS ocupadas
@@ -144,11 +165,14 @@ export async function onRequestPost(context) {
         menores10,
         personas,
         idempotencyKey,
+        tokenEdicion,
         franjaId,
         franjaId,
         personas
       )
       .run();
+
+    const cambios = insertResult?.meta?.changes || 0;
 
     const estado = await session
       .prepare(`
@@ -169,8 +193,6 @@ export async function onRequestPost(context) {
       .bind(franjaId)
       .first();
 
-    const cambios = insertResult?.meta?.changes || 0;
-
     if (cambios === 0) {
       return Response.json(
         {
@@ -190,9 +212,34 @@ export async function onRequestPost(context) {
       );
     }
 
+    // 5) Obtener el id insertado y generar el codigo_reserva
+    const reservaInsertada = await session
+      .prepare(`
+        SELECT id
+        FROM reservas
+        WHERE idempotency_key = ?
+      `)
+      .bind(idempotencyKey)
+      .first();
+
+    const reservaId = reservaInsertada.id;
+    const codigoReserva = `DIFAS-${String(reservaId).padStart(6, "0")}`;
+
+    await session
+      .prepare(`
+        UPDATE reservas
+        SET codigo_reserva = ?
+        WHERE id = ?
+      `)
+      .bind(codigoReserva, reservaId)
+      .run();
+
     return Response.json({
       ok: true,
       mensaje: "Solicitud registrada correctamente.",
+      codigo_reserva: codigoReserva,
+      token_edicion: tokenEdicion,
+      estado: "ACTIVA",
       franja: {
         id: estado.id,
         fecha: estado.fecha,
@@ -206,7 +253,6 @@ export async function onRequestPost(context) {
     });
 
   } catch (error) {
-    // Si hubo carrera exacta con la misma idempotency_key
     if (String(error.message || "").includes("UNIQUE constraint failed")) {
       return Response.json(
         {
