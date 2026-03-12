@@ -115,63 +115,66 @@ export async function onRequestPost(context) {
 
     // 4) Insertar solo si todavía hay plazas suficientes
     const insertResult = await session
-      .prepare(`
-        INSERT INTO reservas (
-          franja_id,
-          centro,
-          contacto,
-          telefono,
-          email,
-          mayores10,
-          menores10,
-          personas,
-          fecha_solicitud,
-          idempotency_key,
-          token_edicion,
-          estado,
-          fecha_modificacion
-        )
-        SELECT
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          datetime('now'),
-          ?,
-          ?,
-          'ACTIVA',
-          datetime('now')
-        FROM franjas f
-        LEFT JOIN (
-          SELECT franja_id, COALESCE(SUM(personas), 0) AS ocupadas
-          FROM reservas
-          WHERE franja_id = ?
-          GROUP BY franja_id
-        ) r ON r.franja_id = f.id
-        WHERE f.id = ?
-          AND ? <= (f.capacidad - COALESCE(r.ocupadas, 0))
-      `)
-      .bind(
-        franjaId,
-        centro,
-        contacto,
-        telefono,
-        email,
-        mayores10,
-        menores10,
-        personas,
-        idempotencyKey,
-        tokenEdicion,
-        franjaId,
-        franjaId,
-        personas
-      )
-      .run();
-
+  .prepare(`
+    INSERT INTO reservas (
+      franja_id,
+      centro,
+      contacto,
+      telefono,
+      email,
+      mayores10,
+      menores10,
+      personas,
+      observaciones,
+      fecha_solicitud,
+      idempotency_key,
+      token_edicion,
+      estado,
+      fecha_modificacion
+    )
+    SELECT
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      datetime('now'),
+      ?,
+      ?,
+      'ACTIVA',
+      datetime('now')
+    FROM franjas f
+    LEFT JOIN (
+      SELECT franja_id, COALESCE(SUM(personas), 0) AS ocupadas
+      FROM reservas
+      WHERE franja_id = ?
+      GROUP BY franja_id
+    ) r ON r.franja_id = f.id
+    WHERE f.id = ?
+      AND ? <= (f.capacidad - COALESCE(r.ocupadas, 0))
+  `)
+  .bind(
+    franjaId,
+    centro,
+    contacto,
+    telefono,
+    email,
+    mayores10,
+    menores10,
+    personas,
+    observaciones,
+    idempotencyKey,
+    tokenEdicion,
+    franjaId,
+    franjaId,
+    personas
+  )
+  .run();
+    
     const cambios = insertResult?.meta?.changes || 0;
 
     const estado = await session
