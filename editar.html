@@ -248,13 +248,16 @@
     function actualizarInfoPlazas() {
       const info = document.getElementById("infoPlazas");
       const franja = obtenerFranjaSeleccionada();
-
       if (!franja) {
         info.textContent = "";
-        return;
+      return;
       }
-
-      info.textContent = `Plazas disponibles en esta franja: ${franja.disponibles}`;
+      const editables = plazasEditablesEnFranja(franja);
+      if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
+        info.textContent = `Plazas disponibles para modificar esta reserva en su franja actual: ${editables}`;
+        } else {
+        info.textContent = `Plazas disponibles en esta franja: ${editables}`;
+        }
     }
 
     function actualizarAvisoCapacidad() {
@@ -277,24 +280,35 @@
         return;
       }
 
-      const disponibles = Number(franja.disponibles);
+      const disponiblesEditables = plazasEditablesEnFranja(franja);
+      const esMismaFranja = reservaActual && Number(franja.id) === Number(reservaActual.franja_id);
 
-      if (total > disponibles) {
+      if (total > disponiblesEditables) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
-        aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponibles} disponibles en esta franja.`;
 
-        if (!envioEnCurso) boton.disabled = true;
-        return;
+        if (esMismaFranja) {
+          aviso.textContent = `Está solicitando ${total} plazas, pero para modificar esta reserva en su franja actual solo dispone de ${disponiblesEditables}.`;
+          } else {
+          aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponiblesEditables} disponibles en la franja seleccionada.`;
+        }
+
+      if (!envioEnCurso) boton.disabled = true;
+      return;
       }
 
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-      aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponibles} disponibles. La modificación puede tramitarse.`;
+
+      if (esMismaFranja) {
+        aviso.textContent = `Está solicitando ${total} plazas y la modificación es válida dentro de su franja actual.`;
+        } else {
+        aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponiblesEditables} disponibles. El cambio de franja puede tramitarse.`;
+      }
 
       if (!envioEnCurso) boton.disabled = false;
     }
-
+    
     async function cargarFranjas(franjaSeleccionadaId = "") {
       const select = document.getElementById("franja");
 
