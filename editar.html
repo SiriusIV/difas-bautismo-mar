@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar solicitud de bautismo de mar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .contenedor {
+      max-width: 720px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    h2 {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: normal;
+    }
+
+    .cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 20px;
+      min-height: 120px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      max-width: 120px;
+      height: auto;
+    }
+
+    .titulos {
+      text-align: center;
+    }
+
+    .campo {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      background: #0b5ed7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #094db1;
+    }
+
+    .mensaje {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .info {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      color: #1d4f91;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <img src="logo.png" alt="Logo" class="logo">
+      <div class="titulos">
+        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
+        <h2>Editar solicitud de bautismo de mar</h2>
+      </div>
+    </div>
+
+    <div id="infoReserva" class="info" style="display:none;"></div>
+    <div id="mensaje" class="mensaje"></div>
+
+    <form id="formularioEdicion" style="display:none;">
+      <div class="campo">
+        <label for="centro">Centro solicitante</label>
+        <input type="text" id="centro" name="centro" required>
+      </div>
+
+      <div class="campo">
+        <label for="contacto">Persona de contacto</label>
+        <input type="text" id="contacto" name="contacto" required>
+      </div>
+
+      <div class="campo">
+        <label for="telefono">Teléfono de contacto</label>
+        <input type="tel" id="telefono" name="telefono" required>
+      </div>
+
+      <div class="campo">
+        <label for="email">Correo electrónico de contacto</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+
+      <div class="campo">
+        <label for="mayores10">Número de visitantes mayores de 10 años</label>
+        <input type="number" id="mayores10" name="mayores10" min="0" required>
+      </div>
+
+      <div class="campo">
+        <label for="menores10">Número de visitantes menores de 10 años</label>
+        <input type="number" id="menores10" name="menores10" min="0" required>
+      </div>
+
+      <div class="campo">
+        <label for="franja">Franja horaria solicitada</label>
+        <select id="franja" name="franja" required>
+          <option value="">Cargando franjas...</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label for="observaciones">Observaciones</label>
+        <textarea id="observaciones" name="observaciones"></textarea>
+      </div>
+
+      <button type="button" disabled>Guardar cambios (siguiente paso)</button>
+    </form>
+  </div>
+
+  <script>
+    let tokenEdicion = "";
+    let reservaActual = null;
+    let franjasCache = [];
+
+    function mostrarError(texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje error";
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    async function cargarFranjas(franjaSeleccionadaId = "") {
+      const select = document.getElementById("franja");
+
+      const response = await fetch("/api/franjas");
+      if (!response.ok) {
+        throw new Error("No se pudieron cargar las franjas");
+      }
+
+      const franjas = await response.json();
+      franjasCache = franjas;
+
+      select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+      // Añadir franjas disponibles
+      franjas.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+        if (String(f.id) === String(franjaSeleccionadaId)) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+
+      // Si la franja actual de la reserva ya no está disponible, la añadimos para que pueda verse
+      const existe = franjas.some(f => String(f.id) === String(franjaSeleccionadaId));
+      if (!existe && franjaSeleccionadaId && reservaActual) {
+        const option = document.createElement("option");
+        option.value = reservaActual.franja_id;
+        option.textContent = `${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin} (franja actual de la reserva)`;
+        option.selected = true;
+        select.appendChild(option);
+      }
+    }
+
+    async function cargarReserva() {
+      const params = new URLSearchParams(window.location.search);
+      tokenEdicion = params.get("token") || "";
+
+      if (!tokenEdicion) {
+        mostrarError("Falta el token de edición en la URL.");
+        return;
+      }
+
+      const response = await fetch(`/api/reserva?token=${encodeURIComponent(tokenEdicion)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        mostrarError(data.error || "No se pudo recuperar la reserva.");
+        return;
+      }
+
+      reservaActual = data.reserva;
+
+      document.getElementById("infoReserva").style.display = "block";
+      document.getElementById("infoReserva").innerHTML = `
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado:</strong> ${reservaActual.estado}<br>
+        <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+      `;
+
+      document.getElementById("centro").value = reservaActual.centro || "";
+      document.getElementById("contacto").value = reservaActual.contacto || "";
+      document.getElementById("telefono").value = reservaActual.telefono || "";
+      document.getElementById("email").value = reservaActual.email || "";
+      document.getElementById("mayores10").value = reservaActual.mayores10 ?? 0;
+      document.getElementById("menores10").value = reservaActual.menores10 ?? 0;
+      document.getElementById("observaciones").value = reservaActual.observaciones || "";
+
+      await cargarFranjas(reservaActual.franja_id);
+
+      document.getElementById("formularioEdicion").style.display = "block";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      cargarReserva().catch(err => {
+        console.error(err);
+        mostrarError("Error al cargar la página de edición.");
+      });
+    });
+  </script>
+</body>
+</html>
