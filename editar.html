@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 720px;
+      max-width: 900px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -31,6 +31,11 @@
       margin-top: 6px;
       font-size: 22px;
       font-weight: normal;
+    }
+
+    h3 {
+      margin-top: 30px;
+      margin-bottom: 12px;
     }
 
     .cabecera {
@@ -77,6 +82,10 @@
       resize: vertical;
     }
 
+    input[readonly] {
+      background: #f3f5f7;
+    }
+
     button {
       background: #0b5ed7;
       color: white;
@@ -94,6 +103,23 @@
     button:disabled {
       background: #7aa7e8;
       cursor: not-allowed;
+    }
+
+    .btn-secundario {
+      background: #198754;
+    }
+
+    .btn-secundario:hover {
+      background: #13653f;
+    }
+
+    .btn-eliminar {
+      background: #dc3545;
+      padding: 10px 14px;
+    }
+
+    .btn-eliminar:hover {
+      background: #b52a37;
     }
 
     .mensaje {
@@ -145,6 +171,27 @@
       font-size: 14px;
       color: #444;
     }
+
+    .fila-visitante {
+      display: grid;
+      grid-template-columns: 1fr 220px 130px;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .seccion {
+      border-top: 1px solid #e3e7eb;
+      padding-top: 18px;
+      margin-top: 18px;
+    }
+
+    .acciones {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
@@ -183,12 +230,12 @@
 
       <div class="campo">
         <label for="mayores10">Número de visitantes mayores de 10 años</label>
-        <input type="number" id="mayores10" name="mayores10" min="0" required>
+        <input type="number" id="mayores10" name="mayores10" min="0" required readonly>
       </div>
 
       <div class="campo">
         <label for="menores10">Número de visitantes menores de 10 años</label>
-        <input type="number" id="menores10" name="menores10" min="0" required>
+        <input type="number" id="menores10" name="menores10" min="0" required readonly>
       </div>
 
       <div class="campo">
@@ -205,7 +252,27 @@
         <textarea id="observaciones" name="observaciones"></textarea>
       </div>
 
-      <button type="submit" id="btnGuardar">Guardar cambios</button>
+      <div class="acciones">
+        <button type="submit" id="btnGuardar">Guardar datos generales</button>
+      </div>
+
+      <div class="seccion">
+        <h3>Asistentes del grupo</h3>
+
+        <div class="campo">
+          <div id="listaVisitantes"></div>
+        </div>
+
+        <div class="acciones">
+          <button type="button" id="btnAgregarVisitante" class="btn-secundario">Añadir asistente</button>
+          <button type="button" id="btnGuardarVisitantes">Guardar asistentes</button>
+        </div>
+
+        <div class="campo" style="margin-top:18px;">
+          <label>Resumen automático del grupo</label>
+          <div id="resumenVisitantes" class="info-plazas"></div>
+        </div>
+      </div>
     </form>
   </div>
 
@@ -222,6 +289,20 @@
       mensaje.textContent = texto;
     }
 
+    function mostrarOk(texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje ok";
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    function limpiarMensajePrincipal() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+
     function obtenerFranjaSeleccionada() {
       const franjaId = parseInt(document.getElementById("franja").value, 10);
       if (!franjaId) return null;
@@ -236,40 +317,38 @@
 
     function plazasEditablesEnFranja(franja) {
       if (!franja) return 0;
+
       const disponibles = Number(franja.disponibles || 0);
-      // Si es la misma franja de la reserva actual, hay que sumar
-      // las plazas que ya ocupa esta propia reserva
+
       if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
         return disponibles + Number(reservaActual.personas || 0);
-        }
+      }
+
       return disponibles;
     }
-    
+
     function actualizarInfoPlazas() {
       const info = document.getElementById("infoPlazas");
       const franja = obtenerFranjaSeleccionada();
+
       if (!franja) {
         info.textContent = "";
-      return;
+        return;
       }
+
       const editables = plazasEditablesEnFranja(franja);
+
       if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
         info.textContent = `Plazas disponibles para modificar esta reserva en su franja actual: ${editables}`;
-        } else {
+      } else {
         info.textContent = `Plazas disponibles en esta franja: ${editables}`;
-        }
+      }
     }
 
-    function limpiarMensajePrincipal() {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje";
-      mensaje.style.display = "none";
-      mensaje.textContent = "";
-    }
-    
     function actualizarAvisoCapacidad() {
       const aviso = document.getElementById("avisoCapacidad");
       const boton = document.getElementById("btnGuardar");
+      const botonVisitantes = document.getElementById("btnGuardarVisitantes");
       const franja = obtenerFranjaSeleccionada();
       const total = totalSolicitado();
 
@@ -278,12 +357,18 @@
       aviso.textContent = "";
 
       if (!franja) {
-        if (!envioEnCurso) boton.disabled = false;
+        if (!envioEnCurso) {
+          boton.disabled = false;
+          botonVisitantes.disabled = false;
+        }
         return;
       }
 
       if (total <= 0) {
-        if (!envioEnCurso) boton.disabled = false;
+        if (!envioEnCurso) {
+          boton.disabled = false;
+          botonVisitantes.disabled = false;
+        }
         return;
       }
 
@@ -296,12 +381,15 @@
 
         if (esMismaFranja) {
           aviso.textContent = `Está solicitando ${total} plazas, pero para modificar esta reserva en su franja actual solo dispone de ${disponiblesEditables}.`;
-          } else {
+        } else {
           aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponiblesEditables} disponibles en la franja seleccionada.`;
         }
 
-      if (!envioEnCurso) boton.disabled = true;
-      return;
+        if (!envioEnCurso) {
+          boton.disabled = true;
+          botonVisitantes.disabled = true;
+        }
+        return;
       }
 
       aviso.className = "mensaje aviso";
@@ -309,13 +397,87 @@
 
       if (esMismaFranja) {
         aviso.textContent = `Está solicitando ${total} plazas y la modificación es válida dentro de su franja actual.`;
-        } else {
+      } else {
         aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponiblesEditables} disponibles. El cambio de franja puede tramitarse.`;
       }
 
-      if (!envioEnCurso) boton.disabled = false;
+      if (!envioEnCurso) {
+        boton.disabled = false;
+        botonVisitantes.disabled = false;
+      }
     }
-    
+
+    function crearFilaVisitante(nombre = "", categoria = "MAYOR_10") {
+      const fila = document.createElement("div");
+      fila.className = "fila-visitante";
+
+      fila.innerHTML = `
+        <input type="text" class="visitante-nombre" placeholder="Nombre y apellidos" value="${nombre.replace(/"/g, '&quot;')}" />
+        <select class="visitante-categoria">
+          <option value="MAYOR_10" ${categoria === "MAYOR_10" ? "selected" : ""}>Mayor de 10 años</option>
+          <option value="MENOR_10" ${categoria === "MENOR_10" ? "selected" : ""}>Menor de 10 años</option>
+        </select>
+        <button type="button" class="btn-eliminar">Eliminar</button>
+      `;
+
+      fila.querySelector(".btn-eliminar").addEventListener("click", function () {
+        fila.remove();
+        recalcularResumenVisitantes();
+        limpiarMensajePrincipal();
+      });
+
+      fila.querySelector(".visitante-nombre").addEventListener("input", function () {
+        recalcularResumenVisitantes();
+        limpiarMensajePrincipal();
+      });
+
+      fila.querySelector(".visitante-categoria").addEventListener("change", function () {
+        recalcularResumenVisitantes();
+        limpiarMensajePrincipal();
+      });
+
+      return fila;
+    }
+
+    function obtenerVisitantesDesdeFormulario() {
+      const filas = document.querySelectorAll(".fila-visitante");
+      const visitantes = [];
+
+      filas.forEach(fila => {
+        const nombre = fila.querySelector(".visitante-nombre").value.trim();
+        const categoria = fila.querySelector(".visitante-categoria").value;
+
+        if (nombre !== "") {
+          visitantes.push({
+            nombre_completo: nombre,
+            categoria_edad: categoria
+          });
+        }
+      });
+
+      return visitantes;
+    }
+
+    function recalcularResumenVisitantes() {
+      const visitantes = obtenerVisitantesDesdeFormulario();
+
+      const mayores = visitantes.filter(v => v.categoria_edad === "MAYOR_10").length;
+      const menores = visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
+      const total = visitantes.length;
+
+      const resumen = document.getElementById("resumenVisitantes");
+      resumen.innerHTML = `
+        Total asistentes: <strong>${total}</strong><br>
+        Mayores de 10 años: <strong>${mayores}</strong><br>
+        Menores de 10 años: <strong>${menores}</strong>
+      `;
+
+      document.getElementById("mayores10").value = mayores;
+      document.getElementById("menores10").value = menores;
+
+      actualizarAvisoCapacidad();
+    }
+
     async function cargarFranjas(franjaSeleccionadaId = "") {
       const select = document.getElementById("franja");
 
@@ -350,6 +512,28 @@
 
       actualizarInfoPlazas();
       actualizarAvisoCapacidad();
+    }
+
+    async function cargarVisitantes() {
+      const response = await fetch(`/api/visitantes?token=${encodeURIComponent(tokenEdicion)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar los visitantes.");
+      }
+
+      const lista = document.getElementById("listaVisitantes");
+      lista.innerHTML = "";
+
+      if (data.visitantes.length === 0) {
+        lista.appendChild(crearFilaVisitante());
+      } else {
+        data.visitantes.forEach(v => {
+          lista.appendChild(crearFilaVisitante(v.nombre_completo, v.categoria_edad));
+        });
+      }
+
+      recalcularResumenVisitantes();
     }
 
     async function cargarReserva() {
@@ -387,6 +571,7 @@
       document.getElementById("observaciones").value = reservaActual.observaciones || "";
 
       await cargarFranjas(reservaActual.franja_id);
+      await cargarVisitantes();
 
       document.getElementById("formularioEdicion").style.display = "block";
     }
@@ -396,12 +581,9 @@
 
       if (envioEnCurso) return;
 
-      const mensaje = document.getElementById("mensaje");
-      const boton = document.getElementById("btnGuardar");
+      limpiarMensajePrincipal();
 
-      mensaje.className = "mensaje";
-      mensaje.style.display = "none";
-      mensaje.textContent = "";
+      const boton = document.getElementById("btnGuardar");
 
       const datos = {
         token_edicion: tokenEdicion,
@@ -431,62 +613,97 @@
         const resultado = await response.json();
 
         if (!response.ok || !resultado.ok) {
-          mensaje.className = "mensaje error";
-          mensaje.style.display = "block";
-          mensaje.textContent = resultado.error || "No se pudo actualizar la reserva.";
+          mostrarError(resultado.error || "No se pudo actualizar la reserva.");
           await cargarReserva();
           return;
         }
 
-        mensaje.className = "mensaje ok";
-        mensaje.style.display = "block";
-        mensaje.textContent =
-          `Reserva actualizada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
-
+        mostrarOk(`Datos generales actualizados correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`);
         await cargarReserva();
 
       } catch (error) {
         console.error(error);
-        mensaje.className = "mensaje error";
-        mensaje.style.display = "block";
-        mensaje.textContent = "Error de conexión con el servidor.";
+        mostrarError("Error de conexión con el servidor.");
       } finally {
         envioEnCurso = false;
         boton.disabled = false;
-        boton.textContent = "Guardar cambios";
+        boton.textContent = "Guardar datos generales";
+      }
+    }
+
+    async function guardarVisitantes() {
+      if (envioEnCurso) return;
+
+      limpiarMensajePrincipal();
+
+      const boton = document.getElementById("btnGuardarVisitantes");
+      const visitantes = obtenerVisitantesDesdeFormulario();
+
+      try {
+        envioEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Guardando asistentes...";
+
+        const response = await fetch("/api/visitantes-guardar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token_edicion: tokenEdicion,
+            visitantes
+          })
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok || !resultado.ok) {
+          mostrarError(resultado.error || "No se pudieron guardar los asistentes.");
+          await cargarReserva();
+          return;
+        }
+
+        mostrarOk(`Lista de asistentes actualizada correctamente. Total asistentes: ${resultado.totales.personas}. Quedan ${resultado.disponibles_despues} plazas disponibles.`);
+        await cargarReserva();
+
+      } catch (error) {
+        console.error(error);
+        mostrarError("Error de conexión con el servidor.");
+      } finally {
+        envioEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Guardar asistentes";
       }
     }
 
     document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("franja").addEventListener("change", function () {
-      limpiarMensajePrincipal();
-      actualizarInfoPlazas();
-      actualizarAvisoCapacidad();
+        limpiarMensajePrincipal();
+        actualizarInfoPlazas();
+        actualizarAvisoCapacidad();
       });
 
-    document.getElementById("mayores10").addEventListener("input", function () {
-      limpiarMensajePrincipal();
-      actualizarAvisoCapacidad();
+      document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
+      document.getElementById("contacto").addEventListener("input", limpiarMensajePrincipal);
+      document.getElementById("telefono").addEventListener("input", limpiarMensajePrincipal);
+      document.getElementById("email").addEventListener("input", limpiarMensajePrincipal);
+      document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
+
+      document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
+
+      document.getElementById("btnAgregarVisitante").addEventListener("click", function () {
+        document.getElementById("listaVisitantes").appendChild(crearFilaVisitante());
+        recalcularResumenVisitantes();
+        limpiarMensajePrincipal();
+      });
+
+      document.getElementById("btnGuardarVisitantes").addEventListener("click", guardarVisitantes);
+
+      cargarReserva().catch(err => {
+        console.error(err);
+        mostrarError("Error al cargar la página de edición.");
+      });
     });
-
-    document.getElementById("menores10").addEventListener("input", function () {
-      limpiarMensajePrincipal();
-      actualizarAvisoCapacidad();
-    });
-
-    document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
-    document.getElementById("contacto").addEventListener("input", limpiarMensajePrincipal);
-    document.getElementById("telefono").addEventListener("input", limpiarMensajePrincipal);
-    document.getElementById("email").addEventListener("input", limpiarMensajePrincipal);
-    document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
-
-    document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
-
-    cargarReserva().catch(err => {
-      console.error(err);
-      mostrarError("Error al cargar la página de edición.");
-    });
-  });
   </script>
 </body>
 </html>
