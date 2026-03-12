@@ -260,6 +260,13 @@
         }
     }
 
+    function limpiarMensajePrincipal() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+    
     function actualizarAvisoCapacidad() {
       const aviso = document.getElementById("avisoCapacidad");
       const boton = document.getElementById("btnGuardar");
@@ -452,20 +459,34 @@
 
     document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("franja").addEventListener("change", function () {
-        actualizarInfoPlazas();
-        actualizarAvisoCapacidad();
+      limpiarMensajePrincipal();
+      actualizarInfoPlazas();
+      actualizarAvisoCapacidad();
       });
 
-      document.getElementById("mayores10").addEventListener("input", actualizarAvisoCapacidad);
-      document.getElementById("menores10").addEventListener("input", actualizarAvisoCapacidad);
-
-      document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
-
-      cargarReserva().catch(err => {
-        console.error(err);
-        mostrarError("Error al cargar la página de edición.");
-      });
+    document.getElementById("mayores10").addEventListener("input", function () {
+      limpiarMensajePrincipal();
+      actualizarAvisoCapacidad();
     });
+
+    document.getElementById("menores10").addEventListener("input", function () {
+      limpiarMensajePrincipal();
+      actualizarAvisoCapacidad();
+    });
+
+    document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
+    document.getElementById("contacto").addEventListener("input", limpiarMensajePrincipal);
+    document.getElementById("telefono").addEventListener("input", limpiarMensajePrincipal);
+    document.getElementById("email").addEventListener("input", limpiarMensajePrincipal);
+    document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
+
+    document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
+
+    cargarReserva().catch(err => {
+      console.error(err);
+      mostrarError("Error al cargar la página de edición.");
+    });
+  });
   </script>
 </body>
 </html>
