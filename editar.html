@@ -91,6 +91,11 @@
       background: #094db1;
     }
 
+    button:disabled {
+      background: #7aa7e8;
+      cursor: not-allowed;
+    }
+
     .mensaje {
       margin-top: 16px;
       padding: 12px;
@@ -112,6 +117,20 @@
       border: 1px solid #b9e0c0;
     }
 
+    .mensaje.aviso {
+      display: block;
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .mensaje.alerta {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
     .info {
       background: #eef4ff;
       border: 1px solid #c9dcff;
@@ -119,6 +138,12 @@
       padding: 12px;
       border-radius: 6px;
       margin-bottom: 20px;
+    }
+
+    .info-plazas {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #444;
     }
   </style>
 </head>
@@ -171,6 +196,8 @@
         <select id="franja" name="franja" required>
           <option value="">Cargando franjas...</option>
         </select>
+        <div id="infoPlazas" class="info-plazas"></div>
+        <div id="avisoCapacidad" class="mensaje" style="margin-top:10px;"></div>
       </div>
 
       <div class="campo">
@@ -178,7 +205,7 @@
         <textarea id="observaciones" name="observaciones"></textarea>
       </div>
 
-      <button type="button" disabled>Guardar cambios (siguiente paso)</button>
+      <button type="submit" id="btnGuardar">Guardar cambios</button>
     </form>
   </div>
 
@@ -186,12 +213,75 @@
     let tokenEdicion = "";
     let reservaActual = null;
     let franjasCache = [];
+    let envioEnCurso = false;
 
     function mostrarError(texto) {
       const mensaje = document.getElementById("mensaje");
       mensaje.className = "mensaje error";
       mensaje.style.display = "block";
       mensaje.textContent = texto;
+    }
+
+    function obtenerFranjaSeleccionada() {
+      const franjaId = parseInt(document.getElementById("franja").value, 10);
+      if (!franjaId) return null;
+      return franjasCache.find(f => Number(f.id) === franjaId) || null;
+    }
+
+    function totalSolicitado() {
+      const mayores10 = parseInt(document.getElementById("mayores10").value || "0", 10);
+      const menores10 = parseInt(document.getElementById("menores10").value || "0", 10);
+      return mayores10 + menores10;
+    }
+
+    function actualizarInfoPlazas() {
+      const info = document.getElementById("infoPlazas");
+      const franja = obtenerFranjaSeleccionada();
+
+      if (!franja) {
+        info.textContent = "";
+        return;
+      }
+
+      info.textContent = `Plazas disponibles en esta franja: ${franja.disponibles}`;
+    }
+
+    function actualizarAvisoCapacidad() {
+      const aviso = document.getElementById("avisoCapacidad");
+      const boton = document.getElementById("btnGuardar");
+      const franja = obtenerFranjaSeleccionada();
+      const total = totalSolicitado();
+
+      aviso.className = "mensaje";
+      aviso.style.display = "none";
+      aviso.textContent = "";
+
+      if (!franja) {
+        if (!envioEnCurso) boton.disabled = false;
+        return;
+      }
+
+      if (total <= 0) {
+        if (!envioEnCurso) boton.disabled = false;
+        return;
+      }
+
+      const disponibles = Number(franja.disponibles);
+
+      if (total > disponibles) {
+        aviso.className = "mensaje alerta";
+        aviso.style.display = "block";
+        aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponibles} disponibles en esta franja.`;
+
+        if (!envioEnCurso) boton.disabled = true;
+        return;
+      }
+
+      aviso.className = "mensaje aviso";
+      aviso.style.display = "block";
+      aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponibles} disponibles. La modificación puede tramitarse.`;
+
+      if (!envioEnCurso) boton.disabled = false;
     }
 
     async function cargarFranjas(franjaSeleccionadaId = "") {
@@ -207,7 +297,6 @@
 
       select.innerHTML = '<option value="">Seleccione una opción</option>';
 
-      // Añadir franjas disponibles
       franjas.forEach(f => {
         const option = document.createElement("option");
         option.value = f.id;
@@ -218,7 +307,6 @@
         select.appendChild(option);
       });
 
-      // Si la franja actual de la reserva ya no está disponible, la añadimos para que pueda verse
       const existe = franjas.some(f => String(f.id) === String(franjaSeleccionadaId));
       if (!existe && franjaSeleccionadaId && reservaActual) {
         const option = document.createElement("option");
@@ -227,6 +315,9 @@
         option.selected = true;
         select.appendChild(option);
       }
+
+      actualizarInfoPlazas();
+      actualizarAvisoCapacidad();
     }
 
     async function cargarReserva() {
@@ -268,7 +359,83 @@
       document.getElementById("formularioEdicion").style.display = "block";
     }
 
+    async function guardarCambios(event) {
+      event.preventDefault();
+
+      if (envioEnCurso) return;
+
+      const mensaje = document.getElementById("mensaje");
+      const boton = document.getElementById("btnGuardar");
+
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+
+      const datos = {
+        token_edicion: tokenEdicion,
+        centro: document.getElementById("centro").value.trim(),
+        contacto: document.getElementById("contacto").value.trim(),
+        telefono: document.getElementById("telefono").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
+        menores10: parseInt(document.getElementById("menores10").value || "0", 10),
+        franja: document.getElementById("franja").value,
+        observaciones: document.getElementById("observaciones").value.trim()
+      };
+
+      try {
+        envioEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Guardando...";
+
+        const response = await fetch("/api/reserva-actualizar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(datos)
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok || !resultado.ok) {
+          mensaje.className = "mensaje error";
+          mensaje.style.display = "block";
+          mensaje.textContent = resultado.error || "No se pudo actualizar la reserva.";
+          await cargarReserva();
+          return;
+        }
+
+        mensaje.className = "mensaje ok";
+        mensaje.style.display = "block";
+        mensaje.textContent =
+          `Reserva actualizada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
+
+        await cargarReserva();
+
+      } catch (error) {
+        console.error(error);
+        mensaje.className = "mensaje error";
+        mensaje.style.display = "block";
+        mensaje.textContent = "Error de conexión con el servidor.";
+      } finally {
+        envioEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Guardar cambios";
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("franja").addEventListener("change", function () {
+        actualizarInfoPlazas();
+        actualizarAvisoCapacidad();
+      });
+
+      document.getElementById("mayores10").addEventListener("input", actualizarAvisoCapacidad);
+      document.getElementById("menores10").addEventListener("input", actualizarAvisoCapacidad);
+
+      document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
+
       cargarReserva().catch(err => {
         console.error(err);
         mostrarError("Error al cargar la página de edición.");
