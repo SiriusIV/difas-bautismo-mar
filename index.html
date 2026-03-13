@@ -390,14 +390,35 @@
       }
 
       mensaje.className = "mensaje ok";
-      mensaje.style.display = "block";
+mensaje.style.display = "block";
 
-      if (resultado.duplicate) {
-        mensaje.textContent = "La solicitud ya había sido procesada previamente.";
-      } else {
-        mensaje.textContent =
-          `Solicitud registrada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`;
-      }
+if (resultado.duplicate) {
+  const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+  const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+
+  mensaje.innerHTML = `
+    <strong>La solicitud ya había sido procesada previamente.</strong><br><br>
+    <strong>Código de reserva:</strong> ${resultado.codigo_reserva}<br><br>
+    <strong>Editar solicitud:</strong><br>
+    <a href="${urlEditar}" target="_blank">${urlEditar}</a><br><br>
+    <strong>Gestionar asistentes:</strong><br>
+    <a href="${urlAsistentes}" target="_blank">${urlAsistentes}</a>
+  `;
+} else {
+  const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+  const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+
+  mensaje.innerHTML = `
+    <strong>Solicitud registrada correctamente.</strong><br>
+    Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.<br><br>
+    <strong>Código de reserva:</strong> ${resultado.codigo_reserva}<br><br>
+    <strong>Guarde estos enlaces para poder modificar su solicitud más adelante:</strong><br><br>
+    <strong>Editar solicitud:</strong><br>
+    <a href="${urlEditar}" target="_blank">${urlEditar}</a><br><br>
+    <strong>Gestionar asistentes:</strong><br>
+    <a href="${urlAsistentes}" target="_blank">${urlAsistentes}</a>
+  `;
+}
 
       document.getElementById("formularioSolicitud").reset();
       document.getElementById("mayores10").value = 0;
