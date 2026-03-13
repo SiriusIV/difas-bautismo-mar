@@ -102,6 +102,7 @@
 
     .mensaje {
       margin-top: 16px;
+      margin-bottom: 18px;
       padding: 12px;
       border-radius: 6px;
       display: none;
@@ -121,12 +122,6 @@
       border: 1px solid #b9e0c0;
     }
 
-    .info-plazas {
-      margin-top: 8px;
-      font-size: 14px;
-      color: #444;
-    }
-
     .mensaje.aviso {
       display: block;
       background: #eef4ff;
@@ -140,7 +135,81 @@
       color: #9b1c1c;
       border: 1px solid #f5c2c2;
     }
-    
+
+    .info-plazas {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    /* Modal */
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 680px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    .modal p {
+      margin-top: 0;
+      margin-bottom: 14px;
+    }
+
+    .modal .bloque {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .modal .bloque a {
+      color: #0b5ed7;
+      text-decoration: none;
+    }
+
+    .modal .bloque a:hover {
+      text-decoration: underline;
+    }
+
+    .modal .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
   </style>
 </head>
 <body>
@@ -154,6 +223,8 @@
     </div>
 
     <p>Complete este formulario para solicitar la actividad.</p>
+
+    <div id="mensaje" class="mensaje"></div>
 
     <form id="formularioSolicitud">
       <div class="campo">
@@ -203,257 +274,308 @@
       <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
 
       <button type="submit" id="btnEnviar">Enviar solicitud</button>
-
-      <div id="mensaje" class="mensaje"></div>
     </form>
   </div>
 
+  <!-- Modal -->
+  <div id="modalReserva" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Solicitud registrada correctamente</h3>
+      <p>Guarde esta información para poder modificar su solicitud más adelante.</p>
+
+      <div class="bloque">
+        <strong>Código de reserva:</strong><br>
+        <span id="modalCodigoReserva"></span>
+      </div>
+
+      <div class="bloque">
+        <strong>Editar solicitud:</strong><br>
+        <a id="modalLinkEditar" href="#" target="_blank"></a>
+      </div>
+
+      <div class="bloque">
+        <strong>Gestionar asistentes:</strong><br>
+        <a id="modalLinkAsistentes" href="#" target="_blank"></a>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnCerrarModal">Cerrar</button>
+        <button type="button" id="btnCopiarEnlaces" class="btn-secundario">Copiar enlaces</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-  let franjasCache = [];
-  let envioEnCurso = false;
+    let franjasCache = [];
+    let envioEnCurso = false;
 
-  function nuevaIdempotencyKey() {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-      return window.crypto.randomUUID();
-    }
-    return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-  }
-
-  function prepararNuevaClave() {
-    const campo = document.getElementById("idempotencyKey");
-    campo.value = nuevaIdempotencyKey();
-  }
-
-  function obtenerFranjaSeleccionada() {
-    const franjaId = parseInt(document.getElementById("franja").value, 10);
-    if (!franjaId) return null;
-    return franjasCache.find(f => Number(f.id) === franjaId) || null;
-  }
-
-  function totalSolicitado() {
-    const mayores10 = parseInt(document.getElementById("mayores10").value || "0", 10);
-    const menores10 = parseInt(document.getElementById("menores10").value || "0", 10);
-    return mayores10 + menores10;
-  }
-
-  function actualizarInfoPlazas() {
-    const info = document.getElementById("infoPlazas");
-    const franja = obtenerFranjaSeleccionada();
-
-    if (!franja) {
-      info.textContent = "";
-      return;
-    }
-
-    info.textContent = `Plazas disponibles en esta franja: ${franja.disponibles}`;
-  }
-
-  function actualizarAvisoCapacidad() {
-    const aviso = document.getElementById("avisoCapacidad");
-    const boton = document.getElementById("btnEnviar");
-    const franja = obtenerFranjaSeleccionada();
-    const total = totalSolicitado();
-
-    aviso.className = "mensaje";
-    aviso.style.display = "none";
-    aviso.textContent = "";
-
-    // Si no hay franja elegida, no mostramos nada
-    if (!franja) {
-      if (!envioEnCurso) boton.disabled = false;
-      return;
-    }
-
-    // Si no han escrito visitantes todavía, no mostramos alerta
-    if (total <= 0) {
-      if (!envioEnCurso) boton.disabled = false;
-      return;
-    }
-
-    const disponibles = Number(franja.disponibles);
-
-    if (total > disponibles) {
-      aviso.className = "mensaje alerta";
-      aviso.style.display = "block";
-      aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponibles} disponibles en esta franja.`;
-
-      if (!envioEnCurso) boton.disabled = true;
-      return;
-    }
-
-    aviso.className = "mensaje aviso";
-    aviso.style.display = "block";
-    aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponibles} disponibles. La solicitud puede tramitarse.`;
-
-    if (!envioEnCurso) boton.disabled = false;
-  }
-
-  async function cargarFranjas(franjaSeleccionadaId = "") {
-    const select = document.getElementById("franja");
-    const info = document.getElementById("infoPlazas");
-
-    try {
-      const response = await fetch("/api/franjas");
-
-      if (!response.ok) {
-        throw new Error("No se pudieron cargar las franjas");
+    function nuevaIdempotencyKey() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
       }
+      return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    }
 
-      const franjas = await response.json();
-      franjasCache = franjas;
+    function prepararNuevaClave() {
+      const campo = document.getElementById("idempotencyKey");
+      campo.value = nuevaIdempotencyKey();
+    }
 
-      select.innerHTML = '<option value="">Seleccione una opción</option>';
+    function obtenerFranjaSeleccionada() {
+      const franjaId = parseInt(document.getElementById("franja").value, 10);
+      if (!franjaId) return null;
+      return franjasCache.find(f => Number(f.id) === franjaId) || null;
+    }
 
-      if (franjas.length === 0) {
-        select.innerHTML = '<option value="">No hay franjas disponibles</option>';
+    function totalSolicitado() {
+      const mayores10 = parseInt(document.getElementById("mayores10").value || "0", 10);
+      const menores10 = parseInt(document.getElementById("menores10").value || "0", 10);
+      return mayores10 + menores10;
+    }
+
+    function actualizarInfoPlazas() {
+      const info = document.getElementById("infoPlazas");
+      const franja = obtenerFranjaSeleccionada();
+
+      if (!franja) {
         info.textContent = "";
-        actualizarAvisoCapacidad();
         return;
       }
 
-      let sigueExistiendo = false;
+      info.textContent = `Plazas disponibles en esta franja: ${franja.disponibles}`;
+    }
 
-      franjas.forEach(f => {
-        const option = document.createElement("option");
-        option.value = f.id;
-        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+    function actualizarAvisoCapacidad() {
+      const aviso = document.getElementById("avisoCapacidad");
+      const boton = document.getElementById("btnEnviar");
+      const franja = obtenerFranjaSeleccionada();
+      const total = totalSolicitado();
 
-        if (String(f.id) === String(franjaSeleccionadaId)) {
-          option.selected = true;
-          sigueExistiendo = true;
+      aviso.className = "mensaje";
+      aviso.style.display = "none";
+      aviso.textContent = "";
+
+      if (!franja) {
+        if (!envioEnCurso) boton.disabled = false;
+        return;
+      }
+
+      if (total <= 0) {
+        if (!envioEnCurso) boton.disabled = false;
+        return;
+      }
+
+      const disponibles = Number(franja.disponibles);
+
+      if (total > disponibles) {
+        aviso.className = "mensaje alerta";
+        aviso.style.display = "block";
+        aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponibles} disponibles en esta franja.`;
+
+        if (!envioEnCurso) boton.disabled = true;
+        return;
+      }
+
+      aviso.className = "mensaje aviso";
+      aviso.style.display = "block";
+      aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponibles} disponibles. La solicitud puede tramitarse.`;
+
+      if (!envioEnCurso) boton.disabled = false;
+    }
+
+    async function cargarFranjas(franjaSeleccionadaId = "") {
+      const select = document.getElementById("franja");
+      const info = document.getElementById("infoPlazas");
+
+      try {
+        const response = await fetch("/api/franjas");
+
+        if (!response.ok) {
+          throw new Error("No se pudieron cargar las franjas");
         }
 
-        select.appendChild(option);
-      });
+        const franjas = await response.json();
+        franjasCache = franjas;
 
-      if (!sigueExistiendo) {
-        select.value = "";
+        select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+        if (franjas.length === 0) {
+          select.innerHTML = '<option value="">No hay franjas disponibles</option>';
+          info.textContent = "";
+          actualizarAvisoCapacidad();
+          return;
+        }
+
+        let sigueExistiendo = false;
+
+        franjas.forEach(f => {
+          const option = document.createElement("option");
+          option.value = f.id;
+          option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+
+          if (String(f.id) === String(franjaSeleccionadaId)) {
+            option.selected = true;
+            sigueExistiendo = true;
+          }
+
+          select.appendChild(option);
+        });
+
+        if (!sigueExistiendo) {
+          select.value = "";
+        }
+
+        actualizarInfoPlazas();
+        actualizarAvisoCapacidad();
+
+      } catch (error) {
+        select.innerHTML = '<option value="">Error al cargar franjas</option>';
+        info.textContent = "";
+        console.error(error);
       }
-
-      actualizarInfoPlazas();
-      actualizarAvisoCapacidad();
-
-    } catch (error) {
-      select.innerHTML = '<option value="">Error al cargar franjas</option>';
-      info.textContent = "";
-      console.error(error);
     }
-  }
 
-  async function enviarFormulario(event) {
-    event.preventDefault();
+    function abrirModalReserva(codigoReserva, tokenEdicion) {
+      const modal = document.getElementById("modalReserva");
+      const codigo = document.getElementById("modalCodigoReserva");
+      const linkEditar = document.getElementById("modalLinkEditar");
+      const linkAsistentes = document.getElementById("modalLinkAsistentes");
 
-    if (envioEnCurso) return;
+      const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+      const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
 
-    const mensaje = document.getElementById("mensaje");
-    const boton = document.getElementById("btnEnviar");
-    const franjaActual = document.getElementById("franja").value;
-    const idem = document.getElementById("idempotencyKey").value;
+      codigo.textContent = codigoReserva;
+      linkEditar.href = urlEditar;
+      linkEditar.textContent = urlEditar;
+      linkAsistentes.href = urlAsistentes;
+      linkAsistentes.textContent = urlAsistentes;
 
-    const datos = {
-      centro: document.getElementById("centro").value.trim(),
-      contacto: document.getElementById("contacto").value.trim(),
-      telefono: document.getElementById("telefono").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
-      menores10: parseInt(document.getElementById("menores10").value || "0", 10),
-      franja: document.getElementById("franja").value,
-      observaciones: document.getElementById("observaciones").value.trim(),
-      idempotencyKey: idem
-    };
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
 
-    mensaje.className = "mensaje";
-    mensaje.style.display = "none";
-    mensaje.textContent = "";
+    function cerrarModalReserva() {
+      const modal = document.getElementById("modalReserva");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
 
-    try {
-      envioEnCurso = true;
-      boton.disabled = true;
-      boton.textContent = "Enviando...";
+    async function copiarEnlacesModal() {
+      const codigo = document.getElementById("modalCodigoReserva").textContent;
+      const editar = document.getElementById("modalLinkEditar").href;
+      const asistentes = document.getElementById("modalLinkAsistentes").href;
 
-      const response = await fetch("/api/reservar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(datos)
-      });
+      const texto = `Código de reserva: ${codigo}
 
-      const resultado = await response.json();
+Editar solicitud:
+${editar}
 
-      if (!response.ok || !resultado.ok) {
-        mensaje.className = "mensaje error";
-        mensaje.style.display = "block";
-        mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
-        await cargarFranjas(franjaActual);
+Gestionar asistentes:
+${asistentes}`;
+
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert("Información copiada al portapapeles.");
+      } catch (error) {
+        alert("No se pudo copiar automáticamente. Puede copiar los enlaces manualmente.");
+      }
+    }
+
+    async function enviarFormulario(event) {
+      event.preventDefault();
+
+      if (envioEnCurso) {
         return;
       }
 
-      mensaje.className = "mensaje ok";
-mensaje.style.display = "block";
+      const mensaje = document.getElementById("mensaje");
+      const boton = document.getElementById("btnEnviar");
+      const franjaActual = document.getElementById("franja").value;
 
-if (resultado.duplicate) {
-  const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(resultado.token_edicion)}`;
-  const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
 
-  mensaje.innerHTML = `
-    <strong>La solicitud ya había sido procesada previamente.</strong><br><br>
-    <strong>Código de reserva:</strong> ${resultado.codigo_reserva}<br><br>
-    <strong>Editar solicitud:</strong><br>
-    <a href="${urlEditar}" target="_blank">${urlEditar}</a><br><br>
-    <strong>Gestionar asistentes:</strong><br>
-    <a href="${urlAsistentes}" target="_blank">${urlAsistentes}</a>
-  `;
-} else {
-  const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(resultado.token_edicion)}`;
-  const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(resultado.token_edicion)}`;
+      const datos = {
+        centro: document.getElementById("centro").value.trim(),
+        contacto: document.getElementById("contacto").value.trim(),
+        telefono: document.getElementById("telefono").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
+        menores10: parseInt(document.getElementById("menores10").value || "0", 10),
+        franja: document.getElementById("franja").value,
+        observaciones: document.getElementById("observaciones").value.trim(),
+        idempotencyKey: document.getElementById("idempotencyKey").value
+      };
 
-  mensaje.innerHTML = `
-    <strong>Solicitud registrada correctamente.</strong><br>
-    Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.<br><br>
-    <strong>Código de reserva:</strong> ${resultado.codigo_reserva}<br><br>
-    <strong>Guarde estos enlaces para poder modificar su solicitud más adelante:</strong><br><br>
-    <strong>Editar solicitud:</strong><br>
-    <a href="${urlEditar}" target="_blank">${urlEditar}</a><br><br>
-    <strong>Gestionar asistentes:</strong><br>
-    <a href="${urlAsistentes}" target="_blank">${urlAsistentes}</a>
-  `;
-}
+      try {
+        envioEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Enviando...";
 
-      document.getElementById("formularioSolicitud").reset();
-      document.getElementById("mayores10").value = 0;
-      document.getElementById("menores10").value = 0;
+        const response = await fetch("/api/reservar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(datos)
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok || !resultado.ok) {
+          mensaje.className = "mensaje error";
+          mensaje.style.display = "block";
+          mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
+          await cargarFranjas(franjaActual);
+          return;
+        }
+
+        abrirModalReserva(resultado.codigo_reserva, resultado.token_edicion);
+
+        document.getElementById("formularioSolicitud").reset();
+        document.getElementById("mayores10").value = 0;
+        document.getElementById("menores10").value = 0;
+
+        prepararNuevaClave();
+        await cargarFranjas();
+
+      } catch (error) {
+        mensaje.className = "mensaje error";
+        mensaje.style.display = "block";
+        mensaje.textContent = "Error de conexión con el servidor.";
+        console.error(error);
+        await cargarFranjas(franjaActual);
+      } finally {
+        envioEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Enviar solicitud";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      document.getElementById("franja").addEventListener("change", function () {
+        actualizarInfoPlazas();
+        actualizarAvisoCapacidad();
+      });
+
+      document.getElementById("mayores10").addEventListener("input", actualizarAvisoCapacidad);
+      document.getElementById("menores10").addEventListener("input", actualizarAvisoCapacidad);
+
+      document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
+
+      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalReserva);
+      document.getElementById("btnCopiarEnlaces").addEventListener("click", copiarEnlacesModal);
+
+      document.getElementById("modalReserva").addEventListener("click", function (e) {
+        if (e.target.id === "modalReserva") {
+          cerrarModalReserva();
+        }
+      });
 
       prepararNuevaClave();
       await cargarFranjas();
-
-    } catch (error) {
-      mensaje.className = "mensaje error";
-      mensaje.style.display = "block";
-      mensaje.textContent = "Error de conexión con el servidor.";
-      console.error(error);
-      await cargarFranjas(franjaActual);
-    } finally {
-      envioEnCurso = false;
-      boton.textContent = "Enviar solicitud";
-      actualizarAvisoCapacidad();
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", async function () {
-    document.getElementById("franja").addEventListener("change", function () {
-      actualizarInfoPlazas();
-      actualizarAvisoCapacidad();
     });
-
-    document.getElementById("mayores10").addEventListener("input", actualizarAvisoCapacidad);
-    document.getElementById("menores10").addEventListener("input", actualizarAvisoCapacidad);
-
-    document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
-
-    prepararNuevaClave();
-    await cargarFranjas();
-  });
-</script>
+  </script>
 </body>
 </html>
