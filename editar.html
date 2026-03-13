@@ -232,15 +232,6 @@
       overflow-wrap: anywhere;
     }
 
-    .modal .bloque a {
-      color: #0b5ed7;
-      text-decoration: none;
-    }
-
-    .modal .bloque a:hover {
-      text-decoration: underline;
-    }
-
     .modal .acciones {
       display: flex;
       gap: 10px;
@@ -342,27 +333,33 @@
   <!-- Modal de enlaces -->
   <div id="modalEnlaces" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Enlaces de acceso de esta solicitud</h3>
-      <p>Guarde esta información para poder volver a entrar más adelante.</p>
+      <h3>Acceso a esta solicitud</h3>
+      <p>Guarde estos accesos para poder volver a entrar más adelante.</p>
 
       <div class="bloque">
-        <strong>Código de reserva:</strong><br>
+        <strong>Código de reserva</strong><br>
         <span id="modalCodigoReserva"></span>
       </div>
 
       <div class="bloque">
-        <strong>Editar datos generales:</strong><br>
-        <a id="modalLinkEditar" href="#" target="_blank"></a>
+        <strong>Datos generales de la solicitud</strong><br>
+        <div class="acciones">
+          <button type="button" id="btnAbrirEditar">Abrir</button>
+          <button type="button" id="btnCopiarEditar" class="btn-terciario">Copiar enlace</button>
+        </div>
       </div>
 
       <div class="bloque">
-        <strong>Gestionar asistentes:</strong><br>
-        <a id="modalLinkAsistentes" href="#" target="_blank"></a>
+        <strong>Gestión de asistentes</strong><br>
+        <div class="acciones">
+          <button type="button" id="btnAbrirAsistentes">Abrir</button>
+          <button type="button" id="btnCopiarAsistentes" class="btn-terciario">Copiar enlace</button>
+        </div>
       </div>
 
       <div class="acciones">
+        <button type="button" id="btnCopiarTodo" class="btn-terciario">Copiar toda la información</button>
         <button type="button" id="btnCerrarModal">Cerrar</button>
-        <button type="button" id="btnCopiarEnlaces" class="btn-terciario">Copiar enlaces</button>
       </div>
     </div>
   </div>
@@ -560,17 +557,8 @@
     function abrirModalEnlaces() {
       const modal = document.getElementById("modalEnlaces");
       const codigo = document.getElementById("modalCodigoReserva");
-      const linkEditar = document.getElementById("modalLinkEditar");
-      const linkAsistentes = document.getElementById("modalLinkAsistentes");
-
-      const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
-      const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
 
       codigo.textContent = reservaActual.codigo_reserva;
-      linkEditar.href = urlEditar;
-      linkEditar.textContent = urlEditar;
-      linkAsistentes.href = urlAsistentes;
-      linkAsistentes.textContent = urlAsistentes;
 
       modal.classList.add("activo");
       modal.setAttribute("aria-hidden", "false");
@@ -582,24 +570,54 @@
       modal.setAttribute("aria-hidden", "true");
     }
 
-    async function copiarEnlacesModal() {
-      const codigo = document.getElementById("modalCodigoReserva").textContent;
-      const editar = document.getElementById("modalLinkEditar").href;
-      const asistentes = document.getElementById("modalLinkAsistentes").href;
+    function urlEditar() {
+      return `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+    }
 
-      const texto = `Código de reserva: ${codigo}
+    function urlAsistentes() {
+      return `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
+    }
+
+    function abrirEditar() {
+      window.open(urlEditar(), "_blank");
+    }
+
+    function abrirAsistentes() {
+      window.open(urlAsistentes(), "_blank");
+    }
+
+    async function copiarEditar() {
+      try {
+        await navigator.clipboard.writeText(urlEditar());
+        alert("Enlace de edición copiado.");
+      } catch {
+        alert("No se pudo copiar el enlace.");
+      }
+    }
+
+    async function copiarAsistentes() {
+      try {
+        await navigator.clipboard.writeText(urlAsistentes());
+        alert("Enlace de asistentes copiado.");
+      } catch {
+        alert("No se pudo copiar el enlace.");
+      }
+    }
+
+    async function copiarTodo() {
+      const texto = `Código de reserva: ${reservaActual.codigo_reserva}
 
 Editar datos generales:
-${editar}
+${urlEditar()}
 
 Gestionar asistentes:
-${asistentes}`;
+${urlAsistentes()}`;
 
       try {
         await navigator.clipboard.writeText(texto);
         alert("Información copiada al portapapeles.");
-      } catch (error) {
-        alert("No se pudo copiar automáticamente. Puede copiar los enlaces manualmente.");
+      } catch {
+        alert("No se pudo copiar la información.");
       }
     }
 
@@ -717,8 +735,13 @@ ${asistentes}`;
 
       document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
       document.getElementById("btnRecuperarEnlaces").addEventListener("click", abrirModalEnlaces);
+
+      document.getElementById("btnAbrirEditar").addEventListener("click", abrirEditar);
+      document.getElementById("btnAbrirAsistentes").addEventListener("click", abrirAsistentes);
+      document.getElementById("btnCopiarEditar").addEventListener("click", copiarEditar);
+      document.getElementById("btnCopiarAsistentes").addEventListener("click", copiarAsistentes);
+      document.getElementById("btnCopiarTodo").addEventListener("click", copiarTodo);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEnlaces);
-      document.getElementById("btnCopiarEnlaces").addEventListener("click", copiarEnlacesModal);
 
       document.getElementById("modalEnlaces").addEventListener("click", function (e) {
         if (e.target.id === "modalEnlaces") {
