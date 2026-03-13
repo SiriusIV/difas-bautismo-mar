@@ -320,22 +320,37 @@
     }
 
     function actualizarInfoPlazas() {
-      const info = document.getElementById("infoPlazas");
-      const franja = obtenerFranjaSeleccionada();
+  const info = document.getElementById("infoPlazas");
+  const franja = obtenerFranjaSeleccionada();
 
-      if (!franja) {
-        info.textContent = "";
-        return;
-      }
+  if (!franja) {
+    info.textContent = "";
+    return;
+  }
 
-      const editables = plazasEditablesEnFranja(franja);
+  const capacidad = Number(franja.capacidad || 0);
+  const disponiblesGlobales = Number(franja.disponibles || 0);
+  const ocupadasGlobales = capacidad - disponiblesGlobales;
 
-      if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
-        info.textContent = `Plazas disponibles para modificar esta reserva en su franja actual: ${editables}`;
-      } else {
-        info.textContent = `Plazas disponibles en esta franja: ${editables}`;
-      }
-    }
+  const esMismaFranja = reservaActual && Number(franja.id) === Number(reservaActual.franja_id);
+
+  if (esMismaFranja) {
+    const editables = plazasEditablesEnFranja(franja);
+
+    info.innerHTML = `
+      <strong>Capacidad total de la franja:</strong> ${capacidad}<br>
+      <strong>Ocupadas globalmente (todas las reservas):</strong> ${ocupadasGlobales}<br>
+      <strong>Plazas libres globales:</strong> ${disponiblesGlobales}<br>
+      <strong>Capacidad editable para esta reserva:</strong> ${editables}
+    `;
+  } else {
+    info.innerHTML = `
+      <strong>Capacidad total de la franja:</strong> ${capacidad}<br>
+      <strong>Ocupadas globalmente (todas las reservas):</strong> ${ocupadasGlobales}<br>
+      <strong>Plazas libres globales:</strong> ${disponiblesGlobales}
+    `;
+  }
+}
 
     function actualizarAvisoCapacidad() {
       const aviso = document.getElementById("avisoCapacidad");
@@ -468,10 +483,11 @@
 
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> ${reservaActual.estado}<br>
-        <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
-      `;
+  <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+  <strong>Estado:</strong> ${reservaActual.estado}<br>
+  <strong>Franja actualmente asignada a esta reserva:</strong><br>
+  ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+`;
 
       document.getElementById("centro").value = reservaActual.centro || "";
       document.getElementById("contacto").value = reservaActual.contacto || "";
