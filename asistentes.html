@@ -318,8 +318,8 @@
       aviso.style.display = "block";
       aviso.textContent = `La lista contiene ${total} asistentes y puede guardarse con la franja actualmente asignada.`;
 
-        if (!envioEnCurso) boton.disabled = false;
-      }
+      if (!envioEnCurso) boton.disabled = false;
+    }
 
     function recalcularResumenVisitantes() {
       const visitantes = obtenerVisitantesDesdeFormulario();
@@ -356,12 +356,12 @@
 
       reservaActual = data.reserva;
 
-      ddocument.getElementById("infoReserva").style.display = "block";
+      document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-      <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-      <strong>Estado:</strong> ${reservaActual.estado}<br>
-      <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
-`    ;
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado:</strong> ${reservaActual.estado}<br>
+        <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+      `;
 
       document.getElementById("btnVolverEdicion").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
