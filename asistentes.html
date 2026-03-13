@@ -308,7 +308,7 @@
       if (total > capacidadEditable) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
-        aviso.textContent = `Está introduciendo ${total} asistentes, pero para esta reserva solo dispone de ${capacidadEditable} plazas editables en la franja actual.`;
+        aviso.textContent = `La lista contiene ${total} asistentes y no puede guardarse con la franja actualmente asignada. Reduzca asistentes o cambie la franja en la página de datos generales.`;
 
         if (!envioEnCurso) boton.disabled = true;
         return;
@@ -316,10 +316,10 @@
 
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-      aviso.textContent = `Está introduciendo ${total} asistentes y la capacidad disponible permite guardar esta lista.`;
+      aviso.textContent = `La lista contiene ${total} asistentes y puede guardarse con la franja actualmente asignada.`;
 
-      if (!envioEnCurso) boton.disabled = false;
-    }
+        if (!envioEnCurso) boton.disabled = false;
+      }
 
     function recalcularResumenVisitantes() {
       const visitantes = obtenerVisitantesDesdeFormulario();
@@ -356,16 +356,12 @@
 
       reservaActual = data.reserva;
 
-      document.getElementById("infoReserva").style.display = "block";
+      ddocument.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> ${reservaActual.estado}<br>
-        <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Capacidad total:</strong> ${reservaActual.capacidad}<br>
-        <strong>Ocupadas actualmente:</strong> ${reservaActual.ocupadas}<br>
-        <strong>Plazas públicas libres:</strong> ${reservaActual.disponibles}<br>
-        <strong>Plazas editables para esta reserva:</strong> ${capacidadEditableActual()}
-      `;
+      <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+      <strong>Estado:</strong> ${reservaActual.estado}<br>
+      <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+`    ;
 
       document.getElementById("btnVolverEdicion").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
