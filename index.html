@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 720px;
+      max-width: 760px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -35,6 +35,26 @@
 
     p {
       line-height: 1.5;
+    }
+
+    .cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 20px;
+      min-height: 120px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      max-width: 120px;
+      height: auto;
+    }
+
+    .titulos {
+      text-align: center;
     }
 
     .campo {
@@ -80,26 +100,6 @@
       cursor: not-allowed;
     }
 
-    .cabecera {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      margin-bottom: 20px;
-      min-height: 120px;
-    }
-
-    .logo {
-      position: absolute;
-      left: 0;
-      max-width: 120px;
-      height: auto;
-    }
-
-    .titulos {
-      text-align: center;
-    }
-
     .mensaje {
       margin-top: 16px;
       margin-bottom: 18px;
@@ -122,24 +122,29 @@
       border: 1px solid #b9e0c0;
     }
 
-    .mensaje.aviso {
+    .mensaje.info {
       display: block;
       background: #eef4ff;
       color: #1d4f91;
       border: 1px solid #c9dcff;
     }
 
-    .mensaje.alerta {
-      display: block;
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
+    .nota {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 20px;
+      line-height: 1.6;
     }
 
-    .info-plazas {
-      margin-top: 8px;
-      font-size: 14px;
-      color: #444;
+    .lista {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    .lista li {
+      margin-bottom: 4px;
     }
 
     /* Modal */
@@ -161,7 +166,7 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 680px;
+      max-width: 700px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
@@ -210,6 +215,19 @@
     .btn-secundario:hover {
       background: #565e64;
     }
+
+    @media (max-width: 800px) {
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 10px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
+    }
   </style>
 </head>
 <body>
@@ -222,11 +240,21 @@
       </div>
     </div>
 
-    <p>Complete este formulario para solicitar la actividad.</p>
+    <p>Complete este formulario para crear la solicitud.</p>
+
+    <div class="nota">
+      <strong>Importante:</strong> en este primer paso solo se crean los datos generales de la solicitud.
+      La lista de asistentes se cargará en el siguiente paso, una vez creada la reserva.
+      <ul class="lista">
+        <li>Primero cree la solicitud.</li>
+        <li>Después acceda al enlace de <strong>gestión de asistentes</strong>.</li>
+        <li>Ahí podrá introducir nombres y clasificar mayores y menores de 10 años.</li>
+      </ul>
+    </div>
 
     <div id="mensaje" class="mensaje"></div>
 
-    <form id="formularioSolicitud">
+    <form id="formularioSolicitud" novalidate>
       <div class="campo">
         <label for="centro">Centro solicitante</label>
         <input type="text" id="centro" name="centro" required>
@@ -248,22 +276,10 @@
       </div>
 
       <div class="campo">
-        <label for="mayores10">Número de visitantes mayores de 10 años</label>
-        <input type="number" id="mayores10" name="mayores10" min="0" value="0" required>
-      </div>
-
-      <div class="campo">
-        <label for="menores10">Número de visitantes menores de 10 años</label>
-        <input type="number" id="menores10" name="menores10" min="0" value="0" required>
-      </div>
-
-      <div class="campo">
         <label for="franja">Franja horaria solicitada</label>
         <select id="franja" name="franja" required>
           <option value="">Cargando franjas...</option>
         </select>
-        <div id="infoPlazas" class="info-plazas"></div>
-        <div id="avisoCapacidad" class="mensaje" style="margin-top:10px;"></div>
       </div>
 
       <div class="campo">
@@ -273,15 +289,15 @@
 
       <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
 
-      <button type="submit" id="btnEnviar">Enviar solicitud</button>
+      <button type="submit" id="btnEnviar" disabled>Crear solicitud</button>
     </form>
   </div>
 
   <!-- Modal -->
   <div id="modalReserva" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Solicitud registrada correctamente</h3>
-      <p>Guarde esta información para poder modificar su solicitud más adelante.</p>
+      <h3>Solicitud creada correctamente</h3>
+      <p>La solicitud ya existe. El siguiente paso es cargar la lista de asistentes.</p>
 
       <div class="bloque">
         <strong>Código de reserva:</strong><br>
@@ -289,7 +305,7 @@
       </div>
 
       <div class="bloque">
-        <strong>Editar solicitud:</strong><br>
+        <strong>Editar datos generales:</strong><br>
         <a id="modalLinkEditar" href="#" target="_blank"></a>
       </div>
 
@@ -299,7 +315,8 @@
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnCerrarModal">Cerrar</button>
+        <button type="button" id="btnIrAsistentes">Ir a asistentes</button>
+        <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
         <button type="button" id="btnCopiarEnlaces" class="btn-secundario">Copiar enlaces</button>
       </div>
     </div>
@@ -317,75 +334,42 @@
     }
 
     function prepararNuevaClave() {
-      const campo = document.getElementById("idempotencyKey");
-      campo.value = nuevaIdempotencyKey();
+      document.getElementById("idempotencyKey").value = nuevaIdempotencyKey();
     }
 
-    function obtenerFranjaSeleccionada() {
-      const franjaId = parseInt(document.getElementById("franja").value, 10);
-      if (!franjaId) return null;
-      return franjasCache.find(f => Number(f.id) === franjaId) || null;
+    function limpiarMensajePrincipal() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
     }
 
-    function totalSolicitado() {
-      const mayores10 = parseInt(document.getElementById("mayores10").value || "0", 10);
-      const menores10 = parseInt(document.getElementById("menores10").value || "0", 10);
-      return mayores10 + menores10;
-    }
+    function formularioValido() {
+      const centro = document.getElementById("centro").value.trim();
+      const contacto = document.getElementById("contacto").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const franja = document.getElementById("franja").value;
 
-    function actualizarInfoPlazas() {
-      const info = document.getElementById("infoPlazas");
-      const franja = obtenerFranjaSeleccionada();
-
-      if (!franja) {
-        info.textContent = "";
-        return;
+      if (!centro || !contacto || !telefono || !email || !franja) {
+        return false;
       }
 
-      info.textContent = `Plazas disponibles en esta franja: ${franja.disponibles}`;
+      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!emailValido) {
+        return false;
+      }
+
+      return true;
     }
 
-    function actualizarAvisoCapacidad() {
-      const aviso = document.getElementById("avisoCapacidad");
+    function actualizarEstadoBoton() {
       const boton = document.getElementById("btnEnviar");
-      const franja = obtenerFranjaSeleccionada();
-      const total = totalSolicitado();
-
-      aviso.className = "mensaje";
-      aviso.style.display = "none";
-      aviso.textContent = "";
-
-      if (!franja) {
-        if (!envioEnCurso) boton.disabled = false;
-        return;
-      }
-
-      if (total <= 0) {
-        if (!envioEnCurso) boton.disabled = false;
-        return;
-      }
-
-      const disponibles = Number(franja.disponibles);
-
-      if (total > disponibles) {
-        aviso.className = "mensaje alerta";
-        aviso.style.display = "block";
-        aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponibles} disponibles en esta franja.`;
-
-        if (!envioEnCurso) boton.disabled = true;
-        return;
-      }
-
-      aviso.className = "mensaje aviso";
-      aviso.style.display = "block";
-      aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponibles} disponibles. La solicitud puede tramitarse.`;
-
-      if (!envioEnCurso) boton.disabled = false;
+      boton.disabled = !formularioValido() || envioEnCurso;
     }
 
     async function cargarFranjas(franjaSeleccionadaId = "") {
       const select = document.getElementById("franja");
-      const info = document.getElementById("infoPlazas");
 
       try {
         const response = await fetch("/api/franjas");
@@ -401,12 +385,9 @@
 
         if (franjas.length === 0) {
           select.innerHTML = '<option value="">No hay franjas disponibles</option>';
-          info.textContent = "";
-          actualizarAvisoCapacidad();
+          actualizarEstadoBoton();
           return;
         }
-
-        let sigueExistiendo = false;
 
         franjas.forEach(f => {
           const option = document.createElement("option");
@@ -415,23 +396,17 @@
 
           if (String(f.id) === String(franjaSeleccionadaId)) {
             option.selected = true;
-            sigueExistiendo = true;
           }
 
           select.appendChild(option);
         });
 
-        if (!sigueExistiendo) {
-          select.value = "";
-        }
-
-        actualizarInfoPlazas();
-        actualizarAvisoCapacidad();
+        actualizarEstadoBoton();
 
       } catch (error) {
         select.innerHTML = '<option value="">Error al cargar franjas</option>';
-        info.textContent = "";
         console.error(error);
+        actualizarEstadoBoton();
       }
     }
 
@@ -440,6 +415,7 @@
       const codigo = document.getElementById("modalCodigoReserva");
       const linkEditar = document.getElementById("modalLinkEditar");
       const linkAsistentes = document.getElementById("modalLinkAsistentes");
+      const btnIrAsistentes = document.getElementById("btnIrAsistentes");
 
       const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
       const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
@@ -449,6 +425,9 @@
       linkEditar.textContent = urlEditar;
       linkAsistentes.href = urlAsistentes;
       linkAsistentes.textContent = urlAsistentes;
+      btnIrAsistentes.onclick = function () {
+        window.open(urlAsistentes, "_blank");
+      };
 
       modal.classList.add("activo");
       modal.setAttribute("aria-hidden", "false");
@@ -467,7 +446,7 @@
 
       const texto = `Código de reserva: ${codigo}
 
-Editar solicitud:
+Editar datos generales:
 ${editar}
 
 Gestionar asistentes:
@@ -484,25 +463,20 @@ ${asistentes}`;
     async function enviarFormulario(event) {
       event.preventDefault();
 
-      if (envioEnCurso) {
+      if (envioEnCurso || !formularioValido()) {
         return;
       }
 
+      limpiarMensajePrincipal();
+
       const mensaje = document.getElementById("mensaje");
       const boton = document.getElementById("btnEnviar");
-      const franjaActual = document.getElementById("franja").value;
-
-      mensaje.className = "mensaje";
-      mensaje.style.display = "none";
-      mensaje.textContent = "";
 
       const datos = {
         centro: document.getElementById("centro").value.trim(),
         contacto: document.getElementById("contacto").value.trim(),
         telefono: document.getElementById("telefono").value.trim(),
         email: document.getElementById("email").value.trim(),
-        mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
-        menores10: parseInt(document.getElementById("menores10").value || "0", 10),
         franja: document.getElementById("franja").value,
         observaciones: document.getElementById("observaciones").value.trim(),
         idempotencyKey: document.getElementById("idempotencyKey").value
@@ -510,8 +484,8 @@ ${asistentes}`;
 
       try {
         envioEnCurso = true;
-        boton.disabled = true;
-        boton.textContent = "Enviando...";
+        actualizarEstadoBoton();
+        boton.textContent = "Creando...";
 
         const response = await fetch("/api/reservar", {
           method: "POST",
@@ -526,44 +500,42 @@ ${asistentes}`;
         if (!response.ok || !resultado.ok) {
           mensaje.className = "mensaje error";
           mensaje.style.display = "block";
-          mensaje.textContent = resultado.error || "No se pudo registrar la solicitud.";
-          await cargarFranjas(franjaActual);
+          mensaje.textContent = resultado.error || "No se pudo crear la solicitud.";
           return;
         }
 
         abrirModalReserva(resultado.codigo_reserva, resultado.token_edicion);
 
         document.getElementById("formularioSolicitud").reset();
-        document.getElementById("mayores10").value = 0;
-        document.getElementById("menores10").value = 0;
-
         prepararNuevaClave();
         await cargarFranjas();
+        actualizarEstadoBoton();
 
       } catch (error) {
         mensaje.className = "mensaje error";
         mensaje.style.display = "block";
         mensaje.textContent = "Error de conexión con el servidor.";
         console.error(error);
-        await cargarFranjas(franjaActual);
       } finally {
         envioEnCurso = false;
-        boton.disabled = false;
-        boton.textContent = "Enviar solicitud";
+        boton.textContent = "Crear solicitud";
+        actualizarEstadoBoton();
       }
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      document.getElementById("franja").addEventListener("change", function () {
-        actualizarInfoPlazas();
-        actualizarAvisoCapacidad();
+      const ids = ["centro", "contacto", "telefono", "email", "franja", "observaciones"];
+
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        const evento = el.tagName === "SELECT" ? "change" : "input";
+        el.addEventListener(evento, function () {
+          limpiarMensajePrincipal();
+          actualizarEstadoBoton();
+        });
       });
 
-      document.getElementById("mayores10").addEventListener("input", actualizarAvisoCapacidad);
-      document.getElementById("menores10").addEventListener("input", actualizarAvisoCapacidad);
-
       document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
-
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalReserva);
       document.getElementById("btnCopiarEnlaces").addEventListener("click", copiarEnlacesModal);
 
@@ -575,6 +547,7 @@ ${asistentes}`;
 
       prepararNuevaClave();
       await cargarFranjas();
+      actualizarEstadoBoton();
     });
   </script>
 </body>
