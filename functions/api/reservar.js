@@ -16,11 +16,7 @@ export async function onRequestPost(context) {
     const email = (data.email || "").trim();
     const observaciones = (data.observaciones || "").trim();
     const franjaId = parseInt(data.franja, 10);
-    const mayores10 = parseInt(data.mayores10 || 0, 10);
-    const menores10 = parseInt(data.menores10 || 0, 10);
     const idempotencyKey = (data.idempotencyKey || "").trim();
-
-    const personas = mayores10 + menores10;
 
     if (!centro || !contacto || !telefono || !email || !franjaId) {
       return Response.json(
@@ -36,16 +32,9 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (personas <= 0) {
-      return Response.json(
-        { ok: false, error: "Debe indicar al menos 1 visitante." },
-        { status: 400 }
-      );
-    }
-
     const session = env.DB.withSession("first-primary");
 
-    // 1) Si ya existe una reserva con esta clave, devolvemos la ya creada
+    // 1) Si ya existe una solicitud con esta clave, devolverla
     const existente = await session
       .prepare(`
         SELECT
@@ -60,15 +49,17 @@ export async function onRequestPost(context) {
           f.hora_fin,
           f.capacidad,
           (
-            f.capacidad - (
-              SELECT COALESCE(SUM(r2.personas), 0)
+            f.capacidad - COALESCE((
+              SELECT SUM(r2.personas)
               FROM reservas r2
               WHERE r2.franja_id = f.id
-            )
+            ), 0)
           ) AS disponibles
         FROM reservas r
-        JOIN franjas f ON f.id = r.franja_id
+        JOIN franjas f
+          ON f.id = r.franja_id
         WHERE r.idempotency_key = ?
+        LIMIT 1
       `)
       .bind(idempotencyKey)
       .first();
@@ -99,6 +90,7 @@ export async function onRequestPost(context) {
         SELECT id, fecha, hora_inicio, hora_fin, capacidad
         FROM franjas
         WHERE id = ?
+        LIMIT 1
       `)
       .bind(franjaId)
       .first();
@@ -110,74 +102,99 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 3) Preparar identificadores
+    // 3) Generar token de edición
     const tokenEdicion = generarTokenEdicion();
 
-    // 4) Insertar solo si todavía hay plazas suficientes
+    // 4) Insertar solicitud inicial con 0 asistentes
     const insertResult = await session
-  .prepare(`
-    INSERT INTO reservas (
-      franja_id,
-      centro,
-      contacto,
-      telefono,
-      email,
-      mayores10,
-      menores10,
-      personas,
-      observaciones,
-      fecha_solicitud,
-      idempotency_key,
-      token_edicion,
-      estado,
-      fecha_modificacion
-    )
-    SELECT
-      ?,
-      ?,
-      ?,
-      ?,
-      ?,
-      ?,
-      ?,
-      ?,
-      ?,
-      datetime('now'),
-      ?,
-      ?,
-      'ACTIVA',
-      datetime('now')
-    FROM franjas f
-    LEFT JOIN (
-      SELECT franja_id, COALESCE(SUM(personas), 0) AS ocupadas
-      FROM reservas
-      WHERE franja_id = ?
-      GROUP BY franja_id
-    ) r ON r.franja_id = f.id
-    WHERE f.id = ?
-      AND ? <= (f.capacidad - COALESCE(r.ocupadas, 0))
-  `)
-  .bind(
-    franjaId,
-    centro,
-    contacto,
-    telefono,
-    email,
-    mayores10,
-    menores10,
-    personas,
-    observaciones,
-    idempotencyKey,
-    tokenEdicion,
-    franjaId,
-    franjaId,
-    personas
-  )
-  .run();
-    
+      .prepare(`
+        INSERT INTO reservas (
+          franja_id,
+          centro,
+          contacto,
+          telefono,
+          email,
+          mayores10,
+          menores10,
+          personas,
+          observaciones,
+          fecha_solicitud,
+          idempotency_key,
+          token_edicion,
+          estado,
+          fecha_modificacion
+        )
+        VALUES (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          0,
+          0,
+          0,
+          ?,
+          datetime('now'),
+          ?,
+          ?,
+          'ACTIVA',
+          datetime('now')
+        )
+      `)
+      .bind(
+        franjaId,
+        centro,
+        contacto,
+        telefono,
+        email,
+        observaciones,
+        idempotencyKey,
+        tokenEdicion
+      )
+      .run();
+
     const cambios = insertResult?.meta?.changes || 0;
 
-    const estado = await session
+    if (cambios === 0) {
+      return Response.json(
+        { ok: false, error: "No se pudo crear la solicitud." },
+        { status: 500 }
+      );
+    }
+
+    // 5) Obtener id insertado
+    const reservaInsertada = await session
+      .prepare(`
+        SELECT id
+        FROM reservas
+        WHERE idempotency_key = ?
+        LIMIT 1
+      `)
+      .bind(idempotencyKey)
+      .first();
+
+    if (!reservaInsertada) {
+      return Response.json(
+        { ok: false, error: "No se pudo recuperar la solicitud creada." },
+        { status: 500 }
+      );
+    }
+
+    const reservaId = reservaInsertada.id;
+    const codigoReserva = `DIFAS-${String(reservaId).padStart(6, "0")}`;
+
+    // 6) Guardar codigo_reserva
+    await session
+      .prepare(`
+        UPDATE reservas
+        SET codigo_reserva = ?
+        WHERE id = ?
+      `)
+      .bind(codigoReserva, reservaId)
+      .run();
+
+    // 7) Leer estado final de la franja
+    const estadoFranja = await session
       .prepare(`
         SELECT
           f.id,
@@ -196,63 +213,22 @@ export async function onRequestPost(context) {
       .bind(franjaId)
       .first();
 
-    if (cambios === 0) {
-      return Response.json(
-        {
-          ok: false,
-          error: `No hay plazas suficientes en esa franja. Disponibles: ${estado.disponibles}. Solicitadas: ${personas}.`,
-          franja: {
-            id: estado.id,
-            fecha: estado.fecha,
-            hora_inicio: estado.hora_inicio,
-            hora_fin: estado.hora_fin
-          },
-          capacidad: estado.capacidad,
-          ocupadas: estado.ocupadas,
-          disponibles: estado.disponibles
-        },
-        { status: 400 }
-      );
-    }
-
-    // 5) Obtener el id insertado y generar el codigo_reserva
-    const reservaInsertada = await session
-      .prepare(`
-        SELECT id
-        FROM reservas
-        WHERE idempotency_key = ?
-      `)
-      .bind(idempotencyKey)
-      .first();
-
-    const reservaId = reservaInsertada.id;
-    const codigoReserva = `DIFAS-${String(reservaId).padStart(6, "0")}`;
-
-    await session
-      .prepare(`
-        UPDATE reservas
-        SET codigo_reserva = ?
-        WHERE id = ?
-      `)
-      .bind(codigoReserva, reservaId)
-      .run();
-
     return Response.json({
       ok: true,
-      mensaje: "Solicitud registrada correctamente.",
+      mensaje: "Solicitud creada correctamente.",
       codigo_reserva: codigoReserva,
       token_edicion: tokenEdicion,
       estado: "ACTIVA",
       franja: {
-        id: estado.id,
-        fecha: estado.fecha,
-        hora_inicio: estado.hora_inicio,
-        hora_fin: estado.hora_fin
+        id: estadoFranja.id,
+        fecha: estadoFranja.fecha,
+        hora_inicio: estadoFranja.hora_inicio,
+        hora_fin: estadoFranja.hora_fin
       },
-      capacidad: estado.capacidad,
-      ocupadas: estado.ocupadas,
-      personas_reservadas: personas,
-      disponibles_despues: estado.disponibles
+      capacidad: estadoFranja.capacidad,
+      ocupadas: estadoFranja.ocupadas,
+      personas_reservadas: 0,
+      disponibles_despues: estadoFranja.disponibles
     });
 
   } catch (error) {
