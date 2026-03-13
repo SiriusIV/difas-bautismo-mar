@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 820px;
+      max-width: 980px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -51,6 +51,22 @@
 
     .titulos {
       text-align: center;
+    }
+
+    .resumen-superior {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      color: #1d4f91;
+      padding: 12px;
+      border-radius: 6px;
+      min-height: 110px;
     }
 
     .campo {
@@ -146,25 +162,10 @@
       border: 1px solid #f5c2c2;
     }
 
-    .info {
-      background: #eef4ff;
-      border: 1px solid #c9dcff;
-      color: #1d4f91;
-      padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 20px;
-    }
-
     .info-plazas {
       margin-top: 8px;
       font-size: 14px;
       color: #444;
-    }
-
-    .seccion {
-      border-top: 1px solid #e3e7eb;
-      padding-top: 18px;
-      margin-top: 18px;
     }
 
     .acciones {
@@ -175,11 +176,24 @@
     }
 
     .resumen-asistentes {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 14px;
       line-height: 1.7;
+    }
+
+    @media (max-width: 800px) {
+      .resumen-superior {
+        grid-template-columns: 1fr;
+      }
+
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 10px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
     }
   </style>
 </head>
@@ -193,8 +207,14 @@
       </div>
     </div>
 
-    <div id="infoReserva" class="info" style="display:none;"></div>
     <div id="mensaje" class="mensaje"></div>
+
+    <div class="resumen-superior">
+      <div id="infoReserva" class="info" style="display:none;"></div>
+      <div id="resumenAsistentes" class="info resumen-asistentes">
+        Cargando resumen de asistentes...
+      </div>
+    </div>
 
     <form id="formularioEdicion" style="display:none;">
       <div class="campo">
@@ -243,18 +263,7 @@
 
       <div class="acciones">
         <button type="submit" id="btnGuardar">Guardar datos generales</button>
-      </div>
-
-      <div class="seccion">
-        <h3>Asistentes del grupo</h3>
-
-        <div id="resumenAsistentes" class="resumen-asistentes">
-          Cargando resumen de asistentes...
-        </div>
-
-        <div class="acciones">
-          <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
-        </div>
+        <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
       </div>
     </form>
   </div>
