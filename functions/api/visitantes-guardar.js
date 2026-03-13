@@ -22,13 +22,6 @@ export async function onRequestPost(context) {
       }))
       .filter(v => v.nombre_completo !== "");
 
-    if (visitantesLimpios.length === 0) {
-      return Response.json(
-        { ok: false, error: "Debe indicar al menos un asistente." },
-        { status: 400 }
-      );
-    }
-
     for (const v of visitantesLimpios) {
       if (!["MAYOR_10", "MENOR_10"].includes(v.categoria_edad)) {
         return Response.json(
@@ -94,7 +87,9 @@ export async function onRequestPost(context) {
     const ocupadasSinEstaReserva = Number(ocupacion?.ocupadas || 0);
     const disponiblesEditables = Number(reservaActual.capacidad) - ocupadasSinEstaReserva;
 
-    if (personasNuevas > disponiblesEditables) {
+    // Si la lista no está vacía, comprobar capacidad.
+    // Si queda vacía, sí se permite guardar a 0.
+    if (personasNuevas > 0 && personasNuevas > disponiblesEditables) {
       return Response.json(
         {
           ok: false,
@@ -113,7 +108,7 @@ export async function onRequestPost(context) {
       .bind(reservaActual.id)
       .run();
 
-    // 4) Insertar nueva lista de visitantes
+    // 4) Insertar nueva lista de visitantes, si hay
     for (const v of visitantesLimpios) {
       await session
         .prepare(`
@@ -175,7 +170,9 @@ export async function onRequestPost(context) {
 
     return Response.json({
       ok: true,
-      mensaje: "Lista de asistentes actualizada correctamente.",
+      mensaje: personasNuevas === 0
+        ? "La lista de asistentes ha quedado vacía y se ha guardado correctamente."
+        : "Lista de asistentes actualizada correctamente.",
       codigo_reserva: reservaActual.codigo_reserva,
       token_edicion: reservaActual.token_edicion,
       franja: {
