@@ -101,10 +101,6 @@
       resize: vertical;
     }
 
-    input[readonly] {
-      background: #f3f5f7;
-    }
-
     button, .btn-enlace {
       background: #0b5ed7;
       color: white;
@@ -132,6 +128,14 @@
 
     .btn-secundario:hover {
       background: #13653f;
+    }
+
+    .btn-terciario {
+      background: #6c757d;
+    }
+
+    .btn-terciario:hover {
+      background: #565e64;
     }
 
     .mensaje {
@@ -181,6 +185,67 @@
       gap: 12px;
       flex-wrap: wrap;
       margin-top: 12px;
+    }
+
+    /* Modal */
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 700px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    .modal p {
+      margin-top: 0;
+      margin-bottom: 14px;
+    }
+
+    .modal .bloque {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .modal .bloque a {
+      color: #0b5ed7;
+      text-decoration: none;
+    }
+
+    .modal .bloque a:hover {
+      text-decoration: underline;
+    }
+
+    .modal .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
     }
 
     @media (max-width: 1000px) {
@@ -248,15 +313,9 @@
         <input type="email" id="email" name="email" required>
       </div>
 
-      <div class="campo">
-        <label for="mayores10">Número de visitantes mayores de 10 años</label>
-        <input type="number" id="mayores10" name="mayores10" min="0" required readonly>
-      </div>
-
-      <div class="campo">
-        <label for="menores10">Número de visitantes menores de 10 años</label>
-        <input type="number" id="menores10" name="menores10" min="0" required readonly>
-      </div>
+      <!-- Totales ocultos, calculados desde asistentes -->
+      <input type="hidden" id="mayores10" name="mayores10" value="0">
+      <input type="hidden" id="menores10" name="menores10" value="0">
 
       <div class="campo">
         <label for="franja">Franja horaria solicitada</label>
@@ -275,8 +334,37 @@
       <div class="acciones">
         <button type="submit" id="btnGuardar">Guardar datos generales</button>
         <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
+        <button type="button" id="btnRecuperarEnlaces" class="btn-terciario">Recuperar enlaces</button>
       </div>
     </form>
+  </div>
+
+  <!-- Modal de enlaces -->
+  <div id="modalEnlaces" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Enlaces de acceso de esta solicitud</h3>
+      <p>Guarde esta información para poder volver a entrar más adelante.</p>
+
+      <div class="bloque">
+        <strong>Código de reserva:</strong><br>
+        <span id="modalCodigoReserva"></span>
+      </div>
+
+      <div class="bloque">
+        <strong>Editar datos generales:</strong><br>
+        <a id="modalLinkEditar" href="#" target="_blank"></a>
+      </div>
+
+      <div class="bloque">
+        <strong>Gestionar asistentes:</strong><br>
+        <a id="modalLinkAsistentes" href="#" target="_blank"></a>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnCerrarModal">Cerrar</button>
+        <button type="button" id="btnCopiarEnlaces" class="btn-terciario">Copiar enlaces</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -469,6 +557,52 @@
       actualizarAvisoCapacidad();
     }
 
+    function abrirModalEnlaces() {
+      const modal = document.getElementById("modalEnlaces");
+      const codigo = document.getElementById("modalCodigoReserva");
+      const linkEditar = document.getElementById("modalLinkEditar");
+      const linkAsistentes = document.getElementById("modalLinkAsistentes");
+
+      const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+      const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
+
+      codigo.textContent = reservaActual.codigo_reserva;
+      linkEditar.href = urlEditar;
+      linkEditar.textContent = urlEditar;
+      linkAsistentes.href = urlAsistentes;
+      linkAsistentes.textContent = urlAsistentes;
+
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalEnlaces() {
+      const modal = document.getElementById("modalEnlaces");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    async function copiarEnlacesModal() {
+      const codigo = document.getElementById("modalCodigoReserva").textContent;
+      const editar = document.getElementById("modalLinkEditar").href;
+      const asistentes = document.getElementById("modalLinkAsistentes").href;
+
+      const texto = `Código de reserva: ${codigo}
+
+Editar datos generales:
+${editar}
+
+Gestionar asistentes:
+${asistentes}`;
+
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert("Información copiada al portapapeles.");
+      } catch (error) {
+        alert("No se pudo copiar automáticamente. Puede copiar los enlaces manualmente.");
+      }
+    }
+
     async function cargarReserva() {
       const params = new URLSearchParams(window.location.search);
       tokenEdicion = params.get("token") || "";
@@ -582,6 +716,15 @@
       document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
 
       document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
+      document.getElementById("btnRecuperarEnlaces").addEventListener("click", abrirModalEnlaces);
+      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEnlaces);
+      document.getElementById("btnCopiarEnlaces").addEventListener("click", copiarEnlacesModal);
+
+      document.getElementById("modalEnlaces").addEventListener("click", function (e) {
+        if (e.target.id === "modalEnlaces") {
+          cerrarModalEnlaces();
+        }
+      });
 
       cargarReserva().catch(err => {
         console.error(err);
