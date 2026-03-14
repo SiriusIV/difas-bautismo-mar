@@ -66,19 +66,26 @@
     }
 
     .nav-admin {
+      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      min-height: 42px;
       margin-bottom: 18px;
       padding-bottom: 14px;
       border-bottom: 1px solid #e2e8ef;
     }
 
-    .nav-admin a,
-    .nav-admin span,
-    .nav-admin button {
+    .nav-admin-centro {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nav-admin-centro a,
+    .nav-admin-centro span {
       border: 1px solid #cfd8e3;
       background: #fff;
       color: #334155;
@@ -90,22 +97,52 @@
       cursor: pointer;
     }
 
-    .nav-admin a:hover,
-    .nav-admin button:hover {
+    .nav-admin-centro a:hover {
       background: #f7f9fb;
       color: #0b5ed7;
       border-color: #b8c7d8;
     }
 
-    .nav-admin .activo {
+    .nav-admin-centro .activo {
       background: #0b5ed7;
       color: white;
       border-color: #0b5ed7;
       cursor: default;
     }
 
-    .nav-admin .cerrar {
-      background: #f8fafc;
+    .nav-admin-acciones {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icono-nav {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      border: 1px solid #cfd8e3;
+      background: #fff;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icono-nav:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #b8c7d8;
+    }
+
+    .btn-icono-nav svg {
+      width: 18px;
+      height: 18px;
     }
 
     .panel {
@@ -147,7 +184,7 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 320px 180px 180px 180px;
+      grid-template-columns: 320px 180px 180px;
       gap: 14px;
       align-items: end;
     }
@@ -378,6 +415,16 @@
         grid-template-columns: 1fr 1fr;
       }
 
+      .nav-admin {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .nav-admin-acciones {
+        position: static;
+        justify-content: center;
+      }
+
       .fc .fc-toolbar {
         flex-direction: column;
         align-items: stretch;
@@ -402,41 +449,41 @@
     </div>
 
     <div class="nav-admin">
-  <div class="nav-admin-centro">
-    <a href="admin-franjas.html">Franjas</a>
-    <a href="admin-reservas.html">Reservas</a>
-    <span class="activo">Calendario</span>
-  </div>
+      <div class="nav-admin-centro">
+        <a href="admin-franjas.html">Franjas</a>
+        <a href="admin-reservas.html">Reservas</a>
+        <span class="activo">Calendario</span>
+      </div>
 
-  <div class="nav-admin-acciones">
-    <button
-      type="button"
-      id="btnRecargarIcono"
-      class="btn-icono-nav"
-      title="Recargar calendario"
-      aria-label="Recargar calendario"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-        <polyline points="21 3 21 9 15 9"></polyline>
-      </svg>
-    </button>
+      <div class="nav-admin-acciones">
+        <button
+          type="button"
+          id="btnRecargarIcono"
+          class="btn-icono-nav"
+          title="Recargar calendario"
+          aria-label="Recargar calendario"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+            <polyline points="21 3 21 9 15 9"></polyline>
+          </svg>
+        </button>
 
-    <button
-      type="button"
-      id="btnCerrarSesion"
-      class="btn-icono-nav"
-      title="Cerrar sesión"
-      aria-label="Cerrar sesión"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-        <polyline points="16 17 21 12 16 7"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12"></line>
-      </svg>
-    </button>
-  </div>
-</div>
+        <button
+          type="button"
+          id="btnCerrarSesion"
+          class="btn-icono-nav"
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
 
     <div id="mensaje" class="mensaje"></div>
 
@@ -465,10 +512,6 @@
             <input type="checkbox" id="chkRechazadas">
             Incluir rechazadas
           </label>
-        </div>
-
-        <div>
-          <button type="button" id="btnRecargar">Recargar calendario</button>
         </div>
       </div>
     </div>
@@ -924,7 +967,7 @@
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
       document.getElementById("btnAplicarEstado").addEventListener("click", ejecutarAccionDesdeModal);
 
-      document.getElementById("btnRecargar").addEventListener("click", async function() {
+      document.getElementById("btnRecargarIcono").addEventListener("click", async function() {
         limpiarMensaje();
         calendar.refetchEvents();
         await actualizarContadores();
