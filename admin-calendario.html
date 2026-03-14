@@ -144,6 +144,11 @@
       background: #094db1;
     }
 
+    button:disabled {
+      background: #7aa7e8;
+      cursor: not-allowed;
+    }
+
     .btn-secundario {
       background: #6c757d;
       color: white;
@@ -151,6 +156,42 @@
 
     .btn-secundario:hover {
       background: #565e64;
+    }
+
+    .btn-confirmar {
+      background: #198754;
+      color: white;
+    }
+
+    .btn-confirmar:hover {
+      background: #13653f;
+    }
+
+    .btn-rechazar {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-rechazar:hover {
+      background: #b52a37;
+    }
+
+    .btn-cancelar {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-cancelar:hover {
+      background: #565e64;
+    }
+
+    .btn-reabrir {
+      background: #fd7e14;
+      color: white;
+    }
+
+    .btn-reabrir:hover {
+      background: #d96404;
     }
 
     .leyenda {
@@ -331,6 +372,8 @@
       <h3 id="modalTitulo">Detalle de solicitud</h3>
       <div id="modalDetalle" class="detalle"></div>
 
+      <div class="acciones-modal" id="accionesEstadoModal"></div>
+
       <div class="acciones-modal">
         <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
         <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
@@ -342,6 +385,8 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script>
     let calendar;
+    let eventoSeleccionado = null;
+    let accionEnCurso = false;
 
     function redirigirLogin() {
       const next = encodeURIComponent(window.location.pathname);
@@ -418,7 +463,40 @@
       }
     }
 
+    function construirBotonesEstado(p) {
+      const contenedor = document.getElementById("accionesEstadoModal");
+      contenedor.innerHTML = "";
+
+      const botones = [];
+
+      if (p.estado === "PENDIENTE") {
+        botones.push({ texto: "Confirmar", clase: "btn-confirmar", accion: "confirmar" });
+        botones.push({ texto: "Rechazar", clase: "btn-rechazar", accion: "rechazar" });
+        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
+      } else if (p.estado === "CONFIRMADA") {
+        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
+        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
+      } else if (p.estado === "RECHAZADA") {
+        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
+        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
+      } else if (p.estado === "CANCELADA") {
+        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
+      }
+
+      botones.forEach(b => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = b.clase;
+        btn.textContent = b.texto;
+        btn.addEventListener("click", async () => {
+          await ejecutarAccionDesdeModal(b.accion);
+        });
+        contenedor.appendChild(btn);
+      });
+    }
+
     function abrirModalEvento(info) {
+      eventoSeleccionado = info.event;
       const p = info.event.extendedProps;
       const estadoClass = String(p.estado || "").toLowerCase();
 
@@ -438,13 +516,68 @@
       document.getElementById("btnAbrirEditar").href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
       document.getElementById("btnAbrirAsistentes").href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
 
+      construirBotonesEstado(p);
+
       document.getElementById("modalEvento").classList.add("activo");
       document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
     }
 
     function cerrarModalEvento() {
+      eventoSeleccionado = null;
       document.getElementById("modalEvento").classList.remove("activo");
       document.getElementById("modalEvento").setAttribute("aria-hidden", "true");
+    }
+
+    async function ejecutarAccionDesdeModal(accion) {
+      if (!eventoSeleccionado || accionEnCurso) return;
+
+      const p = eventoSeleccionado.extendedProps;
+
+      let textoConfirmacion = "¿Desea ejecutar esta acción?";
+      if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
+      if (accion === "rechazar") textoConfirmacion = "¿Desea rechazar esta solicitud?";
+      if (accion === "cancelar") textoConfirmacion = "¿Desea cancelar esta solicitud o reserva?";
+      if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
+
+      const confirmar = window.confirm(textoConfirmacion);
+      if (!confirmar) return;
+
+      try {
+        accionEnCurso = true;
+
+        const response = await fetch("/api/admin/reservas", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            id: eventoSeleccionado.id,
+            accion
+          })
+        });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          mostrarMensaje("error", data.error || "No se pudo ejecutar la acción.");
+          return;
+        }
+
+        mostrarMensaje("ok", data.mensaje || "Acción realizada correctamente.");
+        cerrarModalEvento();
+        calendar.refetchEvents();
+
+      } catch (error) {
+        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+      } finally {
+        accionEnCurso = false;
+      }
     }
 
     function construirUrlEventos(fetchInfo) {
