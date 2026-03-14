@@ -37,20 +37,20 @@
     }
 
     .cabecera {
-      display: flex;
+      display: grid;
+      grid-template-columns: 90px 1fr 90px;
       align-items: center;
-      gap: 18px;
-      margin-bottom: 18px;
+      gap: 16px;
+      margin-bottom: 12px;
     }
 
     .logo {
       max-width: 90px;
       height: auto;
-      flex: 0 0 auto;
+      justify-self: start;
     }
 
     .titulos {
-      flex: 1;
       text-align: center;
     }
 
@@ -61,9 +61,14 @@
       text-align: center;
     }
 
+    .cabecera-espacio {
+      width: 90px;
+    }
+
     .nav-admin {
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 18px;
@@ -142,9 +147,18 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 240px 180px 180px 180px;
+      grid-template-columns: 320px 180px 180px 180px;
       gap: 14px;
       align-items: end;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      margin: 0;
+      min-height: 42px;
     }
 
     label {
@@ -198,6 +212,31 @@
       background: #13653f;
     }
 
+    .resumen-estados {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tarjeta-estado {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .tarjeta-estado .etiqueta {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .tarjeta-estado .valor {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
     .leyenda {
       display: flex;
       gap: 16px;
@@ -228,7 +267,13 @@
     .fc .fc-toolbar.fc-header-toolbar {
       margin-bottom: 1.1em;
       gap: 10px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+    }
+
+    .fc-toolbar-chunk {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .fc .fc-toolbar-title {
@@ -317,20 +362,29 @@
       }
 
       .cabecera {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
-      .titulos {
-        text-align: center;
+      .logo,
+      .cabecera-espacio {
+        justify-self: center;
       }
 
       .fila-estado {
         grid-template-columns: 1fr;
       }
 
+      .resumen-estados {
+        grid-template-columns: 1fr 1fr;
+      }
+
       .fc .fc-toolbar {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .fc .fc-toolbar.fc-header-toolbar {
+        flex-wrap: wrap;
       }
     }
   </style>
@@ -344,6 +398,7 @@
         <h2 id="subtituloEvento">Calendario administrativo</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
+      <div class="cabecera-espacio"></div>
     </div>
 
     <div class="nav-admin">
@@ -369,14 +424,14 @@
         </div>
 
         <div>
-          <label>
+          <label class="checkbox-label">
             <input type="checkbox" id="chkCanceladas">
             Incluir canceladas
           </label>
         </div>
 
         <div>
-          <label>
+          <label class="checkbox-label">
             <input type="checkbox" id="chkRechazadas">
             Incluir rechazadas
           </label>
@@ -389,6 +444,25 @@
     </div>
 
     <div class="panel">
+      <div class="resumen-estados">
+        <div class="tarjeta-estado">
+          <div class="etiqueta">Pendientes</div>
+          <div class="valor" id="contadorPendientes">0</div>
+        </div>
+        <div class="tarjeta-estado">
+          <div class="etiqueta">Confirmadas</div>
+          <div class="valor" id="contadorConfirmadas">0</div>
+        </div>
+        <div class="tarjeta-estado">
+          <div class="etiqueta">Rechazadas</div>
+          <div class="valor" id="contadorRechazadas">0</div>
+        </div>
+        <div class="tarjeta-estado">
+          <div class="etiqueta">Canceladas</div>
+          <div class="valor" id="contadorCanceladas">0</div>
+        </div>
+      </div>
+
       <div class="leyenda">
         <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
         <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
@@ -549,6 +623,37 @@
       }
     }
 
+    async function actualizarContadores() {
+      try {
+        const params = new URLSearchParams();
+        params.set("start", "2000-01-01");
+        params.set("end", "2100-12-31");
+        params.set("incluir_canceladas", "1");
+        params.set("incluir_rechazadas", "1");
+
+        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
+
+        const pendientes = eventos.filter(e => e.extendedProps?.estado === "PENDIENTE").length;
+        const confirmadas = eventos.filter(e => e.extendedProps?.estado === "CONFIRMADA").length;
+        const rechazadas = eventos.filter(e => e.extendedProps?.estado === "RECHAZADA").length;
+        const canceladas = eventos.filter(e => e.extendedProps?.estado === "CANCELADA").length;
+
+        document.getElementById("contadorPendientes").textContent = pendientes;
+        document.getElementById("contadorConfirmadas").textContent = confirmadas;
+        document.getElementById("contadorRechazadas").textContent = rechazadas;
+        document.getElementById("contadorCanceladas").textContent = canceladas;
+      } catch {
+        // sin acción
+      }
+    }
+
     function opcionesEstadoPara(estadoActual) {
       const opciones = [{ value: "", label: "Sin cambio" }];
 
@@ -663,6 +768,7 @@
         mostrarMensaje("ok", data.mensaje || "Acción realizada correctamente.");
         cerrarModalEvento();
         calendar.refetchEvents();
+        await actualizarContadores();
 
       } catch (error) {
         mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
@@ -703,7 +809,7 @@
         headerToolbar: {
           left: "prev,next",
           center: "title",
-          right: "today dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek"
         },
         buttonText: {
           today: "Hoy",
@@ -753,22 +859,29 @@
       });
 
       calendar.render();
+
+      if (fechaInicialCalendario) {
+        calendar.gotoDate(fechaInicialCalendario);
+      }
     }
 
     function activarRecargaAutomaticaFiltros() {
-      document.getElementById("filtroEstado").addEventListener("change", () => {
+      document.getElementById("filtroEstado").addEventListener("change", async () => {
         limpiarMensaje();
         calendar.refetchEvents();
+        await actualizarContadores();
       });
 
-      document.getElementById("chkCanceladas").addEventListener("change", () => {
+      document.getElementById("chkCanceladas").addEventListener("change", async () => {
         limpiarMensaje();
         calendar.refetchEvents();
+        await actualizarContadores();
       });
 
-      document.getElementById("chkRechazadas").addEventListener("change", () => {
+      document.getElementById("chkRechazadas").addEventListener("change", async () => {
         limpiarMensaje();
         calendar.refetchEvents();
+        await actualizarContadores();
       });
     }
 
@@ -781,9 +894,10 @@
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
       document.getElementById("btnAplicarEstado").addEventListener("click", ejecutarAccionDesdeModal);
 
-      document.getElementById("btnRecargar").addEventListener("click", function() {
+      document.getElementById("btnRecargar").addEventListener("click", async function() {
         limpiarMensaje();
         calendar.refetchEvents();
+        await actualizarContadores();
       });
 
       document.getElementById("modalEvento").addEventListener("click", function(e) {
@@ -797,6 +911,7 @@
         fechaInicialCalendario = await obtenerFechaInicialConEventos();
         crearCalendario();
         activarRecargaAutomaticaFiltros();
+        await actualizarContadores();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
       }
