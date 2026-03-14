@@ -8,14 +8,33 @@ export async function onRequestGet(context) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
-      COALESCE(SUM(r.personas), 0) AS ocupadas,
-      (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+      COALESCE(SUM(
+        CASE
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+          ELSE 0
+        END
+      ), 0) AS ocupadas,
+      (
+        f.capacidad - COALESCE(SUM(
+          CASE
+            WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+            ELSE 0
+          END
+        ), 0)
+      ) AS disponibles
     FROM franjas f
     LEFT JOIN reservas r
       ON f.id = r.franja_id
-    GROUP BY f.id, f.fecha, f.hora_inicio, f.hora_fin, f.capacidad
+    GROUP BY
+      f.id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.capacidad
     HAVING disponibles > 0
-    ORDER BY f.fecha, f.hora_inicio
+    ORDER BY
+      f.fecha,
+      f.hora_inicio
   `;
 
   const result = await env.DB.prepare(sql).all();
