@@ -57,6 +57,42 @@
       text-align: center;
     }
 
+    .acciones-cabecera {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icono {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid #d6dde5;
+      background: #ffffff;
+      color: #495057;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #b8c7d8;
+    }
+
+    .btn-icono svg {
+      width: 20px;
+      height: 20px;
+    }
+
     .campo {
       margin-bottom: 18px;
     }
@@ -154,7 +190,6 @@
       text-align: center;
     }
 
-    /* Modal */
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -223,8 +258,28 @@
       background: #565e64;
     }
 
+    .modal-login {
+      max-width: 420px;
+    }
+
+    .modal-login h3 {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .modal-login p {
+      text-align: center;
+      color: #555;
+      margin-bottom: 18px;
+    }
+
+    .modal-login .acciones {
+      justify-content: flex-end;
+    }
+
     @media (max-width: 800px) {
-      .logo {
+      .logo,
+      .acciones-cabecera {
         position: static;
         display: block;
         margin: 0 auto 10px auto;
@@ -233,6 +288,14 @@
       .cabecera {
         display: block;
         min-height: auto;
+      }
+
+      .acciones-cabecera {
+        text-align: center;
+      }
+
+      .btn-icono {
+        margin: 0 auto;
       }
     }
   </style>
@@ -245,6 +308,21 @@
         <h1 id="tituloEvento">Cargando evento...</h1>
         <h2 id="subtituloEvento">Cargando información...</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+      </div>
+
+      <div class="acciones-cabecera">
+        <button
+          type="button"
+          id="btnAccesoAdmin"
+          class="btn-icono"
+          title="Acceso administración"
+          aria-label="Acceso administración"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 0 1 .33H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1 .33 1.65 1.65 0 0 0-.51 1z"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -301,7 +379,7 @@
     </form>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal reserva creada -->
   <div id="modalReserva" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Solicitud creada correctamente</h3>
@@ -330,9 +408,37 @@
     </div>
   </div>
 
+  <!-- Modal login admin -->
+  <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-login">
+      <h3>Acceso administración</h3>
+      <p>Introduzca sus credenciales de administrador.</p>
+
+      <div id="mensajeAdmin" class="mensaje"></div>
+
+      <form id="formLoginAdmin" novalidate>
+        <div class="campo">
+          <label for="adminUsername">Usuario</label>
+          <input type="text" id="adminUsername" autocomplete="username" required>
+        </div>
+
+        <div class="campo">
+          <label for="adminPassword">Contraseña</label>
+          <input type="password" id="adminPassword" autocomplete="current-password" required>
+        </div>
+
+        <div class="acciones">
+          <button type="submit" id="btnEntrarAdmin">Entrar</button>
+          <button type="button" id="btnCerrarModalAdmin" class="btn-secundario">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     let franjasCache = [];
     let envioEnCurso = false;
+    let loginAdminEnCurso = false;
 
     function nuevaIdempotencyKey() {
       if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -347,6 +453,20 @@
 
     function limpiarMensajePrincipal() {
       const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+
+    function mostrarMensajeAdmin(tipo, texto) {
+      const mensaje = document.getElementById("mensajeAdmin");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    function limpiarMensajeAdmin() {
+      const mensaje = document.getElementById("mensajeAdmin");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
@@ -502,6 +622,89 @@ ${asistentes}`;
       }
     }
 
+    function abrirModalAdmin() {
+      limpiarMensajeAdmin();
+      document.getElementById("adminPassword").value = "";
+      document.getElementById("modalAdmin").classList.add("activo");
+      document.getElementById("modalAdmin").setAttribute("aria-hidden", "false");
+      setTimeout(() => {
+        document.getElementById("adminUsername").focus();
+      }, 50);
+    }
+
+    function cerrarModalAdmin() {
+      document.getElementById("modalAdmin").classList.remove("activo");
+      document.getElementById("modalAdmin").setAttribute("aria-hidden", "true");
+      limpiarMensajeAdmin();
+    }
+
+    async function irAdminSegunSesion() {
+      try {
+        const response = await fetch("/api/admin/session", {
+          method: "GET",
+          credentials: "same-origin"
+        });
+
+        if (response.ok) {
+          window.location.href = "/admin-franjas.html";
+          return;
+        }
+
+        abrirModalAdmin();
+      } catch (error) {
+        abrirModalAdmin();
+      }
+    }
+
+    async function iniciarSesionAdmin(event) {
+      event.preventDefault();
+      if (loginAdminEnCurso) return;
+
+      limpiarMensajeAdmin();
+
+      const username = document.getElementById("adminUsername").value.trim();
+      const password = document.getElementById("adminPassword").value.trim();
+
+      if (!username || !password) {
+        mostrarMensajeAdmin("error", "Debe introducir usuario y contraseña.");
+        return;
+      }
+
+      const boton = document.getElementById("btnEntrarAdmin");
+
+      try {
+        loginAdminEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Entrando...";
+
+        const response = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          mostrarMensajeAdmin("error", data.error || "No se pudo iniciar sesión.");
+          return;
+        }
+
+        cerrarModalAdmin();
+        window.location.href = "/admin-franjas.html";
+
+      } catch (error) {
+        mostrarMensajeAdmin("error", "Error de conexión con el servidor.");
+      } finally {
+        loginAdminEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Entrar";
+      }
+    }
+
     async function enviarFormulario(event) {
       event.preventDefault();
 
@@ -584,6 +787,16 @@ ${asistentes}`;
       document.getElementById("modalReserva").addEventListener("click", function (e) {
         if (e.target.id === "modalReserva") {
           cerrarModalReserva();
+        }
+      });
+
+      document.getElementById("btnAccesoAdmin").addEventListener("click", irAdminSegunSesion);
+      document.getElementById("btnCerrarModalAdmin").addEventListener("click", cerrarModalAdmin);
+      document.getElementById("formLoginAdmin").addEventListener("submit", iniciarSesionAdmin);
+
+      document.getElementById("modalAdmin").addEventListener("click", function (e) {
+        if (e.target.id === "modalAdmin") {
+          cerrarModalAdmin();
         }
       });
 
