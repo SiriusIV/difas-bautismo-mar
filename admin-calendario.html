@@ -39,30 +39,19 @@
     .cabecera {
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
-      margin-bottom: 20px;
-      min-height: 120px;
+      gap: 18px;
+      margin-bottom: 18px;
     }
 
     .logo {
-      position: absolute;
-      left: 0;
-      max-width: 120px;
+      max-width: 90px;
       height: auto;
+      flex: 0 0 auto;
     }
 
     .titulos {
+      flex: 1;
       text-align: center;
-    }
-
-    .acciones-cabecera {
-      position: absolute;
-      right: 0;
-      top: 0;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
     }
 
     .lugar-evento {
@@ -70,6 +59,48 @@
       font-size: 15px;
       color: #444;
       text-align: center;
+    }
+
+    .nav-admin {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e2e8ef;
+    }
+
+    .nav-admin a,
+    .nav-admin span,
+    .nav-admin button {
+      border: 1px solid #cfd8e3;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 14px;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .nav-admin a:hover,
+    .nav-admin button:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #b8c7d8;
+    }
+
+    .nav-admin .activo {
+      background: #0b5ed7;
+      color: white;
+      border-color: #0b5ed7;
+      cursor: default;
+    }
+
+    .nav-admin .cerrar {
+      background: #f8fafc;
     }
 
     .panel {
@@ -111,8 +142,8 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 220px 220px 220px auto auto;
-      gap: 12px;
+      grid-template-columns: 240px 180px 180px 180px;
+      gap: 14px;
       align-items: end;
     }
 
@@ -171,7 +202,7 @@
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
       font-size: 14px;
     }
 
@@ -192,6 +223,21 @@
       background: white;
       border-radius: 8px;
       padding: 10px;
+    }
+
+    .fc .fc-toolbar.fc-header-toolbar {
+      margin-bottom: 1.1em;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .fc .fc-toolbar-title {
+      font-size: 1.9rem;
+    }
+
+    .fc .fc-button {
+      padding: 0.5em 0.85em;
+      font-size: 0.95rem;
     }
 
     .modal-fondo {
@@ -270,24 +316,21 @@
         grid-template-columns: 1fr;
       }
 
-      .logo,
-      .acciones-cabecera {
-        position: static;
-        display: block;
-        margin: 0 auto 10px auto;
-      }
-
       .cabecera {
-        display: block;
-        min-height: auto;
+        flex-direction: column;
       }
 
-      .acciones-cabecera {
+      .titulos {
         text-align: center;
       }
 
       .fila-estado {
         grid-template-columns: 1fr;
+      }
+
+      .fc .fc-toolbar {
+        flex-direction: column;
+        align-items: stretch;
       }
     }
   </style>
@@ -301,12 +344,13 @@
         <h2 id="subtituloEvento">Calendario administrativo</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
-      <div class="acciones-cabecera">
-        <a class="btn-enlace btn-secundario" href="admin-franjas.html">Franjas</a>
-        <a class="btn-enlace btn-secundario" href="admin-reservas.html">Reservas</a>
-        <span class="btn-enlace btn-secundario" style="opacity:.7; pointer-events:none;">Calendario</span>
-        <button type="button" id="btnCerrarSesion">Cerrar sesión</button>
-      </div>
+    </div>
+
+    <div class="nav-admin">
+      <a href="admin-franjas.html">Franjas</a>
+      <a href="admin-reservas.html">Reservas</a>
+      <span class="activo">Calendario</span>
+      <button type="button" id="btnCerrarSesion" class="cerrar">Cerrar sesión</button>
     </div>
 
     <div id="mensaje" class="mensaje"></div>
@@ -340,10 +384,6 @@
 
         <div>
           <button type="button" id="btnRecargar">Recargar calendario</button>
-        </div>
-
-        <div>
-          <button type="button" id="btnHoy" class="btn-secundario">Ir a hoy</button>
         </div>
       </div>
     </div>
@@ -390,6 +430,7 @@
     let calendar;
     let eventoSeleccionado = null;
     let accionEnCurso = false;
+    let fechaInicialCalendario = null;
 
     function redirigirLogin() {
       const next = encodeURIComponent(window.location.pathname);
@@ -463,6 +504,48 @@
       } catch (error) {
         console.error(error);
         document.getElementById("tituloEvento").textContent = "Evento no disponible";
+      }
+    }
+
+    async function obtenerFechaInicialConEventos() {
+      try {
+        const params = new URLSearchParams();
+        params.set("start", "2000-01-01");
+        params.set("end", "2100-12-31");
+
+        const estado = document.getElementById("filtroEstado").value;
+        const incluirCanceladas = document.getElementById("chkCanceladas").checked;
+        const incluirRechazadas = document.getElementById("chkRechazadas").checked;
+
+        if (estado) {
+          params.set("estado", estado);
+        } else {
+          if (incluirCanceladas) params.set("incluir_canceladas", "1");
+          if (incluirRechazadas) params.set("incluir_rechazadas", "1");
+        }
+
+        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return null;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          return null;
+        }
+
+        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
+        if (!eventos.length) return null;
+
+        eventos.sort((a, b) => new Date(a.start) - new Date(b.start));
+        return eventos[0].start.slice(0, 10);
+      } catch {
+        return null;
       }
     }
 
@@ -613,13 +696,14 @@
 
       calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "timeGridWeek",
+        initialDate: fechaInicialCalendario || undefined,
         locale: "es",
         firstDay: 1,
         height: "auto",
         headerToolbar: {
-          left: "prev,next today",
+          left: "prev,next",
           center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+          right: "today dayGridMonth,timeGridWeek,timeGridDay,listWeek"
         },
         buttonText: {
           today: "Hoy",
@@ -702,10 +786,6 @@
         calendar.refetchEvents();
       });
 
-      document.getElementById("btnHoy").addEventListener("click", function() {
-        calendar.today();
-      });
-
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
           cerrarModalEvento();
@@ -714,6 +794,7 @@
 
       try {
         await cargarConfigEvento();
+        fechaInicialCalendario = await obtenerFechaInicialConEventos();
         crearCalendario();
         activarRecargaAutomaticaFiltros();
       } catch (error) {
