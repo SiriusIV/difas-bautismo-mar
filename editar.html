@@ -396,6 +396,21 @@
     </div>
   </div>
 
+  <div id="modalCancelada" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Solicitud cancelada</h3>
+      <p>La solicitud ha sido anulada correctamente y las plazas han quedado liberadas.</p>
+
+      <div class="bloque">
+        Ya no podrá modificar esta solicitud desde este enlace.
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnAceptarCancelacion">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let tokenEdicion = "";
     let reservaActual = null;
@@ -449,9 +464,11 @@
       const btnGuardar = document.getElementById("btnGuardar");
       const btnAsistentes = document.getElementById("btnGestionarAsistentes");
       const btnAnular = document.getElementById("btnAnularSolicitud");
+      const btnRecuperar = document.getElementById("btnRecuperarEnlaces");
 
       btnGuardar.disabled = !editable || envioEnCurso;
       btnAnular.disabled = !editable || anulacionEnCurso;
+      btnRecuperar.disabled = !editable;
 
       if (!editable) {
         btnAsistentes.classList.add("deshabilitado");
@@ -472,6 +489,22 @@
         document.getElementById("avisoCapacidad").style.display = "block";
         document.getElementById("avisoCapacidad").textContent = "Esta solicitud está rechazada y no puede modificarse.";
       }
+    }
+
+    function abrirModalCancelada() {
+      const modal = document.getElementById("modalCancelada");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalCancelada() {
+      const modal = document.getElementById("modalCancelada");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function volverAInicio() {
+      window.location.href = "index.html";
     }
 
     async function cargarConfigEvento() {
@@ -688,6 +721,8 @@
     }
 
     function abrirModalEnlaces() {
+      if (!solicitudEditable()) return;
+
       const modal = document.getElementById("modalEnlaces");
       const codigo = document.getElementById("modalCodigoReserva");
 
@@ -888,8 +923,8 @@ ${urlAsistentes()}`;
           return;
         }
 
-        mostrarOk(`Solicitud anulada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja.`);
-        await cargarReserva();
+        reservaActual = { ...reservaActual, estado: "CANCELADA" };
+        abrirModalCancelada();
 
       } catch (error) {
         console.error(error);
@@ -898,7 +933,6 @@ ${urlAsistentes()}`;
         anulacionEnCurso = false;
         boton.disabled = false;
         boton.textContent = "Anular solicitud";
-        actualizarModoEdicion();
       }
     }
 
@@ -926,9 +960,21 @@ ${urlAsistentes()}`;
       document.getElementById("btnCopiarTodo").addEventListener("click", copiarTodo);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEnlaces);
 
+      document.getElementById("btnAceptarCancelacion").addEventListener("click", function () {
+        cerrarModalCancelada();
+        volverAInicio();
+      });
+
       document.getElementById("modalEnlaces").addEventListener("click", function (e) {
         if (e.target.id === "modalEnlaces") {
           cerrarModalEnlaces();
+        }
+      });
+
+      document.getElementById("modalCancelada").addEventListener("click", function (e) {
+        if (e.target.id === "modalCancelada") {
+          cerrarModalCancelada();
+          volverAInicio();
         }
       });
 
