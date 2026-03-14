@@ -37,7 +37,7 @@ export async function onRequestPost(context) {
 
     const session = env.DB.withSession("first-primary");
 
-    // 1) Leer reserva actual
+    // 1) Leer solicitud actual
     const reservaActual = await session
       .prepare(`
         SELECT
@@ -61,31 +61,32 @@ export async function onRequestPost(context) {
 
     if (!reservaActual) {
       return Response.json(
-        { ok: false, error: "No existe ninguna reserva con ese token." },
+        { ok: false, error: "No existe ninguna solicitud con ese token." },
         { status: 404 }
       );
     }
 
-    if (reservaActual.estado !== "ACTIVA") {
+    if (!["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado)) {
       return Response.json(
-        { ok: false, error: "La reserva no está activa y no puede modificarse." },
+        { ok: false, error: "La solicitud no está en un estado editable." },
         { status: 400 }
       );
     }
 
-    // 2) Calcular ocupación de la franja actual excluyendo esta propia reserva
+    // 2) Calcular ocupación de la franja actual excluyendo esta propia solicitud
     const ocupacion = await session
       .prepare(`
         SELECT COALESCE(SUM(personas), 0) AS ocupadas
         FROM reservas
         WHERE franja_id = ?
           AND id <> ?
+          AND estado IN ('PENDIENTE', 'CONFIRMADA')
       `)
       .bind(reservaActual.franja_id, reservaActual.id)
       .first();
 
-    const ocupadasSinEstaReserva = Number(ocupacion?.ocupadas || 0);
-    const disponiblesEditables = Number(reservaActual.capacidad) - ocupadasSinEstaReserva;
+    const ocupadasSinEstaSolicitud = Number(ocupacion?.ocupadas || 0);
+    const disponiblesEditables = Number(reservaActual.capacidad) - ocupadasSinEstaSolicitud;
 
     // Si la lista no está vacía, comprobar capacidad.
     // Si queda vacía, sí se permite guardar a 0.
@@ -99,7 +100,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 3) Borrar visitantes actuales de la reserva
+    // 3) Borrar visitantes actuales de la solicitud
     await session
       .prepare(`
         DELETE FROM visitantes
@@ -129,7 +130,7 @@ export async function onRequestPost(context) {
         .run();
     }
 
-    // 5) Actualizar totales en la reserva
+    // 5) Actualizar totales en la solicitud
     await session
       .prepare(`
         UPDATE reservas
@@ -157,8 +158,20 @@ export async function onRequestPost(context) {
           f.hora_inicio,
           f.hora_fin,
           f.capacidad,
-          COALESCE(SUM(r.personas), 0) AS ocupadas,
-          (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+          COALESCE(SUM(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+              ELSE 0
+            END
+          ), 0) AS ocupadas,
+          (
+            f.capacidad - COALESCE(SUM(
+              CASE
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                ELSE 0
+              END
+            ), 0)
+          ) AS disponibles
         FROM franjas f
         LEFT JOIN reservas r
           ON f.id = r.franja_id
@@ -175,6 +188,7 @@ export async function onRequestPost(context) {
         : "Lista de asistentes actualizada correctamente.",
       codigo_reserva: reservaActual.codigo_reserva,
       token_edicion: reservaActual.token_edicion,
+      estado: reservaActual.estado,
       franja: {
         id: estadoFinal.id,
         fecha: estadoFinal.fecha,
