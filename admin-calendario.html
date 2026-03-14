@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario administrativo</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .contenedor {
+      max-width: 1400px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    h2 {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: normal;
+    }
+
+    .cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 20px;
+      min-height: 120px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      max-width: 120px;
+      height: auto;
+    }
+
+    .titulos {
+      text-align: center;
+    }
+
+    .acciones-cabecera {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .lugar-evento {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #444;
+      text-align: center;
+    }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .mensaje {
+      margin-top: 16px;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .mensaje.info {
+      display: block;
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .filtros {
+      display: grid;
+      grid-template-columns: 220px 220px 220px auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    select, input, button, .btn-enlace {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button, .btn-enlace {
+      background: #0b5ed7;
+      color: white;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    button:hover, .btn-enlace:hover {
+      background: #094db1;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .leyenda {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .leyenda-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .leyenda-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    #calendar {
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 720px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    .detalle {
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .acciones-modal {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .estado {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .estado.pendiente { background: #d39e00; }
+    .estado.confirmada { background: #198754; }
+    .estado.rechazada { background: #dc3545; }
+    .estado.cancelada { background: #6c757d; }
+
+    @media (max-width: 1100px) {
+      .filtros {
+        grid-template-columns: 1fr;
+      }
+
+      .logo,
+      .acciones-cabecera {
+        position: static;
+        display: block;
+        margin: 0 auto 10px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
+
+      .acciones-cabecera {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor" id="app" style="display:none;">
+    <div class="cabecera">
+      <img src="logo.png" alt="Logo" class="logo">
+      <div class="titulos">
+        <h1 id="tituloEvento">Cargando evento...</h1>
+        <h2 id="subtituloEvento">Calendario administrativo</h2>
+        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+      </div>
+      <div class="acciones-cabecera">
+        <a class="btn-enlace btn-secundario" href="admin-franjas.html">Franjas</a>
+        <a class="btn-enlace btn-secundario" href="admin-reservas.html">Reservas</a>
+        <button type="button" id="btnCerrarSesion">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div id="mensaje" class="mensaje"></div>
+
+    <div class="panel">
+      <div class="filtros">
+        <div>
+          <label for="filtroEstado">Estado</label>
+          <select id="filtroEstado">
+            <option value="">PENDIENTE + CONFIRMADA</option>
+            <option value="PENDIENTE">Solo PENDIENTE</option>
+            <option value="CONFIRMADA">Solo CONFIRMADA</option>
+            <option value="RECHAZADA">Solo RECHAZADA</option>
+            <option value="CANCELADA">Solo CANCELADA</option>
+          </select>
+        </div>
+
+        <div>
+          <label>
+            <input type="checkbox" id="chkCanceladas">
+            Incluir canceladas
+          </label>
+        </div>
+
+        <div>
+          <label>
+            <input type="checkbox" id="chkRechazadas">
+            Incluir rechazadas
+          </label>
+        </div>
+
+        <div>
+          <button type="button" id="btnRecargar">Recargar calendario</button>
+        </div>
+
+        <div>
+          <button type="button" id="btnHoy" class="btn-secundario">Ir a hoy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="leyenda">
+        <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
+        <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
+        <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
+        <span class="leyenda-item"><span class="leyenda-color" style="background:#6c757d;"></span>CANCELADA</span>
+      </div>
+
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+  <div id="modalEvento" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="modalTitulo">Detalle de solicitud</h3>
+      <div id="modalDetalle" class="detalle"></div>
+
+      <div class="acciones-modal">
+        <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
+        <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
+        <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script>
+    let calendar;
+
+    function redirigirLogin() {
+      const next = encodeURIComponent(window.location.pathname);
+      window.location.href = `admin-login.html?next=${next}`;
+    }
+
+    async function comprobarSesionAdmin() {
+      const response = await fetch("/api/admin/session", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) {
+        redirigirLogin();
+        return false;
+      }
+
+      return true;
+    }
+
+    async function cerrarSesion() {
+      try {
+        await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+      } catch {}
+
+      redirigirLogin();
+    }
+
+    function mostrarMensaje(tipo, texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    function limpiarMensaje() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+
+    async function cargarConfigEvento() {
+      try {
+        const response = await fetch("/api/config-evento", {
+          credentials: "same-origin"
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+        }
+
+        const config = data.config || {};
+
+        document.title = "Calendario administrativo";
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
+        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
+
+        const lugarEl = document.getElementById("lugarEvento");
+        if (config.lugar && String(config.lugar).trim() !== "") {
+          lugarEl.style.display = "block";
+          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
+        } else {
+          lugarEl.style.display = "none";
+          lugarEl.textContent = "";
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+      }
+    }
+
+    function abrirModalEvento(info) {
+      const p = info.event.extendedProps;
+      const estadoClass = String(p.estado || "").toLowerCase();
+
+      document.getElementById("modalTitulo").textContent = p.codigo_reserva || "Detalle de solicitud";
+      document.getElementById("modalDetalle").innerHTML = `
+        <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
+        <strong>Centro:</strong> ${p.centro || ""}<br>
+        <strong>Contacto:</strong> ${p.contacto || ""}<br>
+        <strong>Teléfono:</strong> ${p.telefono || ""}<br>
+        <strong>Email:</strong> ${p.email || ""}<br>
+        <strong>Personas:</strong> ${p.personas || 0}<br>
+        <strong>Franja:</strong> ${p.fecha} · ${p.hora_inicio} - ${p.hora_fin}<br>
+        <strong>Capacidad de franja:</strong> ${p.capacidad || 0}<br>
+        <strong>Observaciones:</strong> ${p.observaciones ? p.observaciones : "Sin observaciones"}
+      `;
+
+      document.getElementById("btnAbrirEditar").href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
+      document.getElementById("btnAbrirAsistentes").href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
+
+      document.getElementById("modalEvento").classList.add("activo");
+      document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalEvento() {
+      document.getElementById("modalEvento").classList.remove("activo");
+      document.getElementById("modalEvento").setAttribute("aria-hidden", "true");
+    }
+
+    function construirUrlEventos(fetchInfo) {
+      const params = new URLSearchParams();
+      params.set("start", fetchInfo.startStr);
+      params.set("end", fetchInfo.endStr);
+
+      const estado = document.getElementById("filtroEstado").value;
+      const incluirCanceladas = document.getElementById("chkCanceladas").checked;
+      const incluirRechazadas = document.getElementById("chkRechazadas").checked;
+
+      if (estado) {
+        params.set("estado", estado);
+      } else {
+        if (incluirCanceladas) params.set("incluir_canceladas", "1");
+        if (incluirRechazadas) params.set("incluir_rechazadas", "1");
+      }
+
+      return `/api/admin/calendario?${params.toString()}`;
+    }
+
+    function crearCalendario() {
+      const calendarEl = document.getElementById("calendar");
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "timeGridWeek",
+        locale: "es",
+        firstDay: 1,
+        height: "auto",
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+        },
+        buttonText: {
+          today: "Hoy",
+          month: "Mes",
+          week: "Semana",
+          day: "Día",
+          list: "Lista"
+        },
+        nowIndicator: true,
+        allDaySlot: false,
+        slotMinTime: "08:00:00",
+        slotMaxTime: "22:00:00",
+        eventTimeFormat: {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        },
+        events: async function(fetchInfo, successCallback, failureCallback) {
+          try {
+            const url = construirUrlEventos(fetchInfo);
+
+            const response = await fetch(url, {
+              credentials: "same-origin"
+            });
+
+            if (response.status === 401) {
+              redirigirLogin();
+              return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok || !data.ok) {
+              throw new Error(data.error || "No se pudieron cargar los eventos.");
+            }
+
+            successCallback(data.eventos || []);
+          } catch (error) {
+            console.error(error);
+            mostrarMensaje("error", error.message || "No se pudo cargar el calendario.");
+            failureCallback(error);
+          }
+        },
+        eventClick: function(info) {
+          abrirModalEvento(info);
+        }
+      });
+
+      calendar.render();
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await comprobarSesionAdmin();
+      if (!ok) return;
+
+      document.getElementById("app").style.display = "block";
+      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
+      document.getElementById("btnRecargar").addEventListener("click", function() {
+        limpiarMensaje();
+        calendar.refetchEvents();
+      });
+      document.getElementById("btnHoy").addEventListener("click", function() {
+        calendar.today();
+      });
+
+      document.getElementById("modalEvento").addEventListener("click", function(e) {
+        if (e.target.id === "modalEvento") {
+          cerrarModalEvento();
+        }
+      });
+
+      try {
+        await cargarConfigEvento();
+        crearCalendario();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
+      }
+    });
+  </script>
+</body>
+</html>
