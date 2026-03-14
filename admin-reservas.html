@@ -99,7 +99,7 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 180px 180px 180px 1fr auto auto;
+      grid-template-columns: 180px 220px 180px 1fr auto auto;
       gap: 12px;
       align-items: end;
     }
@@ -157,19 +157,35 @@
       background: #13653f;
     }
 
-    .btn-cancelar {
+    .btn-confirmar {
+      background: #198754;
+    }
+
+    .btn-confirmar:hover {
+      background: #13653f;
+    }
+
+    .btn-rechazar {
       background: #dc3545;
     }
 
-    .btn-cancelar:hover {
+    .btn-rechazar:hover {
       background: #b52a37;
     }
 
-    .btn-reactivar {
+    .btn-cancelar {
+      background: #6c757d;
+    }
+
+    .btn-cancelar:hover {
+      background: #565e64;
+    }
+
+    .btn-reabrir {
       background: #fd7e14;
     }
 
-    .btn-reactivar:hover {
+    .btn-reabrir:hover {
       background: #d96404;
     }
 
@@ -187,7 +203,7 @@
       width: 100%;
       border-collapse: collapse;
       background: #fff;
-      min-width: 1200px;
+      min-width: 1280px;
     }
 
     th, td {
@@ -215,18 +231,31 @@
       font-size: 12px;
       font-weight: bold;
       display: inline-block;
+      border: 1px solid transparent;
     }
 
-    .estado.activa {
+    .estado.pendiente {
+      background: #fff4db;
+      color: #8a5a00;
+      border-color: #f0d58a;
+    }
+
+    .estado.confirmada {
       background: #eaf7ea;
       color: #146c2e;
-      border: 1px solid #b9e0c0;
+      border-color: #b9e0c0;
+    }
+
+    .estado.rechazada {
+      background: #fdeaea;
+      color: #9b1c1c;
+      border-color: #f5c2c2;
     }
 
     .estado.cancelada {
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
+      background: #eef1f4;
+      color: #495057;
+      border-color: #d5d9de;
     }
 
     .texto-secundario {
@@ -286,7 +315,9 @@
           <label for="filtroEstado">Estado</label>
           <select id="filtroEstado">
             <option value="">Todos</option>
-            <option value="ACTIVA">ACTIVA</option>
+            <option value="PENDIENTE">PENDIENTE</option>
+            <option value="CONFIRMADA">CONFIRMADA</option>
+            <option value="RECHAZADA">RECHAZADA</option>
             <option value="CANCELADA">CANCELADA</option>
           </select>
         </div>
@@ -454,15 +485,61 @@
       }
 
       const total = reservasCache.length;
-      const activas = reservasCache.filter(r => r.estado === "ACTIVA").length;
+      const pendientes = reservasCache.filter(r => r.estado === "PENDIENTE").length;
+      const confirmadas = reservasCache.filter(r => r.estado === "CONFIRMADA").length;
+      const rechazadas = reservasCache.filter(r => r.estado === "RECHAZADA").length;
       const canceladas = reservasCache.filter(r => r.estado === "CANCELADA").length;
       const personas = reservasCache.reduce((acc, r) => acc + Number(r.personas || 0), 0);
 
       resumen.innerHTML = `
-        <strong>Total reservas:</strong> ${total} &nbsp; | &nbsp;
-        <strong>Activas:</strong> ${activas} &nbsp; | &nbsp;
+        <strong>Total solicitudes:</strong> ${total} &nbsp; | &nbsp;
+        <strong>Pendientes:</strong> ${pendientes} &nbsp; | &nbsp;
+        <strong>Confirmadas:</strong> ${confirmadas} &nbsp; | &nbsp;
+        <strong>Rechazadas:</strong> ${rechazadas} &nbsp; | &nbsp;
         <strong>Canceladas:</strong> ${canceladas} &nbsp; | &nbsp;
-        <strong>Personas reservadas:</strong> ${personas}
+        <strong>Personas:</strong> ${personas}
+      `;
+    }
+
+    function badgeEstado(estado) {
+      const e = String(estado || "").toLowerCase();
+      return `<span class="estado ${e}">${estado}</span>`;
+    }
+
+    function accionesPorEstado(reserva) {
+      const editarUrl = `editar.html?token=${encodeURIComponent(reserva.token_edicion)}`;
+      const asistentesUrl = `asistentes.html?token=${encodeURIComponent(reserva.token_edicion)}`;
+
+      let accionesExtra = "";
+
+      if (reserva.estado === "PENDIENTE") {
+        accionesExtra = `
+          <button type="button" class="btn-confirmar" data-id="${reserva.id}" data-accion="confirmar">Confirmar</button>
+          <button type="button" class="btn-rechazar" data-id="${reserva.id}" data-accion="rechazar">Rechazar</button>
+          <button type="button" class="btn-cancelar" data-id="${reserva.id}" data-accion="cancelar">Cancelar</button>
+        `;
+      } else if (reserva.estado === "CONFIRMADA") {
+        accionesExtra = `
+          <button type="button" class="btn-cancelar" data-id="${reserva.id}" data-accion="cancelar">Cancelar</button>
+          <button type="button" class="btn-reabrir" data-id="${reserva.id}" data-accion="reabrir">Reabrir</button>
+        `;
+      } else if (reserva.estado === "RECHAZADA") {
+        accionesExtra = `
+          <button type="button" class="btn-reabrir" data-id="${reserva.id}" data-accion="reabrir">Reabrir</button>
+          <button type="button" class="btn-cancelar" data-id="${reserva.id}" data-accion="cancelar">Cancelar</button>
+        `;
+      } else if (reserva.estado === "CANCELADA") {
+        accionesExtra = `
+          <button type="button" class="btn-reabrir" data-id="${reserva.id}" data-accion="reabrir">Reabrir</button>
+        `;
+      }
+
+      return `
+        <div class="acciones">
+          <a class="btn-enlace btn-ver" href="${editarUrl}" target="_blank">Editar</a>
+          <a class="btn-enlace btn-ver" href="${asistentesUrl}" target="_blank">Asistentes</a>
+          ${accionesExtra}
+        </div>
       `;
     }
 
@@ -478,10 +555,6 @@
 
       reservasCache.forEach(reserva => {
         const tr = document.createElement("tr");
-
-        const estadoClass = reserva.estado === "CANCELADA" ? "cancelada" : "activa";
-        const editarUrl = `editar.html?token=${encodeURIComponent(reserva.token_edicion)}`;
-        const asistentesUrl = `asistentes.html?token=${encodeURIComponent(reserva.token_edicion)}`;
 
         tr.innerHTML = `
           <td>
@@ -508,21 +581,9 @@
             </span>
           </td>
           <td>${reserva.numero_visitantes || 0}</td>
-          <td>
-            <span class="estado ${estadoClass}">${reserva.estado}</span>
-          </td>
+          <td>${badgeEstado(reserva.estado)}</td>
           <td>${reserva.observaciones ? reserva.observaciones : '<span class="texto-secundario">Sin observaciones</span>'}</td>
-          <td>
-            <div class="acciones">
-              <a class="btn-enlace btn-ver" href="${editarUrl}" target="_blank">Editar</a>
-              <a class="btn-enlace btn-ver" href="${asistentesUrl}" target="_blank">Asistentes</a>
-              ${
-                reserva.estado === "CANCELADA"
-                  ? `<button type="button" class="btn-reactivar" data-id="${reserva.id}" data-accion="reactivar">Reactivar</button>`
-                  : `<button type="button" class="btn-cancelar" data-id="${reserva.id}" data-accion="cancelar">Cancelar</button>`
-              }
-            </div>
-          </td>
+          <td>${accionesPorEstado(reserva)}</td>
         `;
 
         tbody.appendChild(tr);
@@ -534,11 +595,15 @@
           const accion = this.getAttribute("data-accion");
 
           let textoConfirmacion = "¿Desea ejecutar esta acción?";
-          if (accion === "cancelar") {
-            textoConfirmacion = "¿Desea cancelar esta reserva?";
-          }
-          if (accion === "reactivar") {
-            textoConfirmacion = "¿Desea reactivar esta reserva?";
+
+          if (accion === "confirmar") {
+            textoConfirmacion = "¿Desea confirmar esta solicitud?";
+          } else if (accion === "rechazar") {
+            textoConfirmacion = "¿Desea rechazar esta solicitud?";
+          } else if (accion === "cancelar") {
+            textoConfirmacion = "¿Desea cancelar esta solicitud o reserva?";
+          } else if (accion === "reabrir") {
+            textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
           }
 
           const confirmar = window.confirm(textoConfirmacion);
