@@ -124,9 +124,12 @@
       background: #094db1;
     }
 
-    button:disabled {
+    button:disabled,
+    .btn-enlace.deshabilitado {
       background: #7aa7e8;
       cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.75;
     }
 
     .btn-secundario {
@@ -143,6 +146,14 @@
 
     .btn-terciario:hover {
       background: #565e64;
+    }
+
+    .btn-peligro {
+      background: #dc3545;
+    }
+
+    .btn-peligro:hover {
+      background: #b52a37;
     }
 
     .mensaje {
@@ -193,6 +204,21 @@
       flex-wrap: wrap;
       margin-top: 12px;
     }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      vertical-align: middle;
+    }
+
+    .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.confirmada { background: #198754; }
+    .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.cancelada { background: #6c757d; }
 
     .modal-fondo {
       position: fixed;
@@ -332,6 +358,7 @@
         <button type="submit" id="btnGuardar">Guardar datos generales</button>
         <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
         <button type="button" id="btnRecuperarEnlaces" class="btn-terciario">Recuperar enlaces</button>
+        <button type="button" id="btnAnularSolicitud" class="btn-peligro">Anular solicitud</button>
       </div>
     </form>
   </div>
@@ -374,6 +401,16 @@
     let reservaActual = null;
     let franjasCache = [];
     let envioEnCurso = false;
+    let anulacionEnCurso = false;
+
+    function claseEstadoBadge(estado) {
+      const e = String(estado || "").toLowerCase();
+      if (e === "pendiente") return "pendiente";
+      if (e === "confirmada") return "confirmada";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
 
     function mostrarError(texto) {
       const mensaje = document.getElementById("mensaje");
@@ -394,6 +431,47 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    function solicitudEditable() {
+      return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+    }
+
+    function actualizarModoEdicion() {
+      const editable = solicitudEditable();
+      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "observaciones"];
+
+      idsCampos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !editable;
+      });
+
+      const btnGuardar = document.getElementById("btnGuardar");
+      const btnAsistentes = document.getElementById("btnGestionarAsistentes");
+      const btnAnular = document.getElementById("btnAnularSolicitud");
+
+      btnGuardar.disabled = !editable || envioEnCurso;
+      btnAnular.disabled = !editable || anulacionEnCurso;
+
+      if (!editable) {
+        btnAsistentes.classList.add("deshabilitado");
+        btnAnular.textContent = "Solicitud no anulable";
+      } else {
+        btnAsistentes.classList.remove("deshabilitado");
+        btnAnular.textContent = "Anular solicitud";
+      }
+
+      if (reservaActual && reservaActual.estado === "CANCELADA") {
+        document.getElementById("avisoCapacidad").className = "mensaje aviso";
+        document.getElementById("avisoCapacidad").style.display = "block";
+        document.getElementById("avisoCapacidad").textContent = "Esta solicitud está cancelada. Ya no bloquea plazas y no puede modificarse.";
+      }
+
+      if (reservaActual && reservaActual.estado === "RECHAZADA") {
+        document.getElementById("avisoCapacidad").className = "mensaje alerta";
+        document.getElementById("avisoCapacidad").style.display = "block";
+        document.getElementById("avisoCapacidad").textContent = "Esta solicitud está rechazada y no puede modificarse.";
+      }
     }
 
     async function cargarConfigEvento() {
@@ -419,7 +497,6 @@
           lugarEl.style.display = "none";
           lugarEl.textContent = "";
         }
-
       } catch (error) {
         console.error(error);
         document.title = "Editar solicitud";
@@ -442,7 +519,6 @@
 
     function plazasEditablesEnFranja(franja) {
       if (!franja) return 0;
-
       const disponibles = Number(franja.disponibles || 0);
 
       if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
@@ -485,6 +561,10 @@
       const boton = document.getElementById("btnGuardar");
       const franja = obtenerFranjaSeleccionada();
       const total = totalSolicitado();
+
+      if (!solicitudEditable()) {
+        return;
+      }
 
       aviso.className = "mensaje";
       aviso.style.display = "none";
@@ -566,29 +646,45 @@
     }
 
     async function cargarResumenAsistentes() {
-      const response = await fetch(`/api/visitantes?token=${encodeURIComponent(tokenEdicion)}`);
-      const data = await response.json();
+      try {
+        const response = await fetch(`/api/visitantes?token=${encodeURIComponent(tokenEdicion)}`);
+        const data = await response.json();
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || "No se pudo cargar el resumen de asistentes.");
+        if (!response.ok || !data.ok) {
+          if (reservaActual && ["CANCELADA", "RECHAZADA"].includes(reservaActual.estado)) {
+            const resumen = document.getElementById("resumenAsistentes");
+            resumen.innerHTML = `
+              <span class="info-titulo">Resumen de asistentes de esta reserva</span>
+              La solicitud no está en estado editable. No se permite gestionar asistentes.
+            `;
+            return;
+          }
+          throw new Error(data.error || "No se pudo cargar el resumen de asistentes.");
+        }
+
+        const mayores = data.visitantes.filter(v => v.categoria_edad === "MAYOR_10").length;
+        const menores = data.visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
+        const total = data.visitantes.length;
+
+        const resumen = document.getElementById("resumenAsistentes");
+        resumen.innerHTML = `
+          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
+          <strong>Total asistentes:</strong> ${total}<br>
+          <strong>Mayores de 10 años:</strong> ${mayores}<br>
+          <strong>Menores de 10 años:</strong> ${menores}
+        `;
+
+        document.getElementById("mayores10").value = mayores;
+        document.getElementById("menores10").value = menores;
+
+        actualizarAvisoCapacidad();
+      } catch (error) {
+        const resumen = document.getElementById("resumenAsistentes");
+        resumen.innerHTML = `
+          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
+          No se pudo cargar el resumen de asistentes.
+        `;
       }
-
-      const mayores = data.visitantes.filter(v => v.categoria_edad === "MAYOR_10").length;
-      const menores = data.visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
-      const total = data.visitantes.length;
-
-      const resumen = document.getElementById("resumenAsistentes");
-      resumen.innerHTML = `
-        <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-        <strong>Total asistentes:</strong> ${total}<br>
-        <strong>Mayores de 10 años:</strong> ${mayores}<br>
-        <strong>Menores de 10 años:</strong> ${menores}
-      `;
-
-      document.getElementById("mayores10").value = mayores;
-      document.getElementById("menores10").value = menores;
-
-      actualizarAvisoCapacidad();
     }
 
     function abrirModalEnlaces() {
@@ -596,7 +692,6 @@
       const codigo = document.getElementById("modalCodigoReserva");
 
       codigo.textContent = reservaActual.codigo_reserva;
-
       modal.classList.add("activo");
       modal.setAttribute("aria-hidden", "false");
     }
@@ -620,6 +715,7 @@
     }
 
     function abrirAsistentes() {
+      if (!solicitudEditable()) return;
       window.open(urlAsistentes(), "_blank");
     }
 
@@ -676,12 +772,13 @@ ${urlAsistentes()}`;
       }
 
       reservaActual = data.reserva;
+      const claseEstado = claseEstadoBadge(reservaActual.estado);
 
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
         <span class="info-titulo">Resumen de la reserva actual</span>
         <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> ${reservaActual.estado}<br>
+        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja asignada a esta reserva:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
       `;
@@ -700,12 +797,13 @@ ${urlAsistentes()}`;
       await cargarResumenAsistentes();
 
       document.getElementById("formularioEdicion").style.display = "block";
+      actualizarModoEdicion();
     }
 
     async function guardarCambios(event) {
       event.preventDefault();
 
-      if (envioEnCurso) return;
+      if (envioEnCurso || !solicitudEditable()) return;
 
       limpiarMensajePrincipal();
 
@@ -754,6 +852,53 @@ ${urlAsistentes()}`;
         envioEnCurso = false;
         boton.disabled = false;
         boton.textContent = "Guardar datos generales";
+        actualizarModoEdicion();
+      }
+    }
+
+    async function anularSolicitud() {
+      if (anulacionEnCurso || !solicitudEditable()) return;
+
+      const confirmar = window.confirm("¿Desea anular esta solicitud? La solicitud pasará a estado CANCELADA y liberará sus plazas.");
+      if (!confirmar) return;
+
+      limpiarMensajePrincipal();
+
+      const boton = document.getElementById("btnAnularSolicitud");
+
+      try {
+        anulacionEnCurso = true;
+        boton.disabled = true;
+        boton.textContent = "Anulando...";
+
+        const response = await fetch("/api/reserva-cancelar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token_edicion: tokenEdicion
+          })
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok || !resultado.ok) {
+          mostrarError(resultado.error || "No se pudo anular la solicitud.");
+          return;
+        }
+
+        mostrarOk(`Solicitud anulada correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja.`);
+        await cargarReserva();
+
+      } catch (error) {
+        console.error(error);
+        mostrarError("Error de conexión con el servidor.");
+      } finally {
+        anulacionEnCurso = false;
+        boton.disabled = false;
+        boton.textContent = "Anular solicitud";
+        actualizarModoEdicion();
       }
     }
 
@@ -772,6 +917,7 @@ ${urlAsistentes()}`;
 
       document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
       document.getElementById("btnRecuperarEnlaces").addEventListener("click", abrirModalEnlaces);
+      document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitud);
 
       document.getElementById("btnAbrirEditar").addEventListener("click", abrirEditar);
       document.getElementById("btnAbrirAsistentes").addEventListener("click", abrirAsistentes);
