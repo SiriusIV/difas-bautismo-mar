@@ -7,6 +7,7 @@ export async function onRequestGet(context) {
     const franjaId = url.searchParams.get("franja_id");
     const resumen = url.searchParams.get("resumen");
     const soloDisponibles = url.searchParams.get("solo_disponibles");
+    const estado = (url.searchParams.get("estado") || "").trim();
 
     // MODO RESUMEN POR FRANJAS
     if (resumen === "1") {
@@ -17,9 +18,25 @@ export async function onRequestGet(context) {
           f.hora_inicio,
           f.hora_fin,
           f.capacidad,
-          COUNT(r.id) AS numero_reservas,
-          COALESCE(SUM(r.personas), 0) AS ocupadas,
-          (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+          COUNT(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id
+            END
+          ) AS numero_reservas,
+          COALESCE(SUM(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+              ELSE 0
+            END
+          ), 0) AS ocupadas,
+          (
+            f.capacidad - COALESCE(SUM(
+              CASE
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                ELSE 0
+              END
+            ), 0)
+          ) AS disponibles
         FROM franjas f
         LEFT JOIN reservas r
           ON f.id = r.franja_id
@@ -43,7 +60,14 @@ export async function onRequestGet(context) {
 
       if (soloDisponibles === "1") {
         sql += `
-          HAVING (f.capacidad - COALESCE(SUM(r.personas), 0)) > 0
+          HAVING (
+            f.capacidad - COALESCE(SUM(
+              CASE
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                ELSE 0
+              END
+            ), 0)
+          ) > 0
         `;
       }
 
@@ -70,7 +94,7 @@ export async function onRequestGet(context) {
       });
     }
 
-    // MODO DETALLE DE RESERVAS
+    // MODO DETALLE DE SOLICITUDES / RESERVAS
     let sql = `
       SELECT
         r.id,
@@ -109,6 +133,11 @@ export async function onRequestGet(context) {
       valores.push(parseInt(franjaId, 10));
     }
 
+    if (estado) {
+      condiciones.push("r.estado = ?");
+      valores.push(estado);
+    }
+
     if (condiciones.length > 0) {
       sql += " WHERE " + condiciones.join(" AND ");
     }
@@ -128,7 +157,8 @@ export async function onRequestGet(context) {
       total: result.results.length,
       filtros: {
         fecha: fecha || null,
-        franja_id: franjaId || null
+        franja_id: franjaId || null,
+        estado: estado || null
       },
       reservas: result.results
     });
