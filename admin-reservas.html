@@ -53,6 +53,15 @@
       text-align: center;
     }
 
+    .acciones-cabecera {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .lugar-evento {
       margin-top: 8px;
       font-size: 15px;
@@ -269,7 +278,8 @@
         grid-template-columns: 1fr;
       }
 
-      .logo {
+      .logo,
+      .acciones-cabecera {
         position: static;
         display: block;
         margin: 0 auto 10px auto;
@@ -279,17 +289,25 @@
         display: block;
         min-height: auto;
       }
+
+      .acciones-cabecera {
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor">
+  <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
         <h1 id="tituloEvento">Cargando evento...</h1>
         <h2 id="subtituloEvento">Panel de administración de reservas</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+      </div>
+      <div class="acciones-cabecera">
+        <a class="btn-enlace btn-secundario" href="admin-franjas.html">Ir a franjas</a>
+        <button type="button" id="btnCerrarSesion">Cerrar sesión</button>
       </div>
     </div>
 
@@ -370,6 +388,38 @@
     let franjasCache = [];
     let accionEnCurso = false;
 
+    function redirigirLogin() {
+      const next = encodeURIComponent(window.location.pathname);
+      window.location.href = `admin-login.html?next=${next}`;
+    }
+
+    async function comprobarSesionAdmin() {
+      const response = await fetch("/api/admin/session", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) {
+        redirigirLogin();
+        return false;
+      }
+
+      return true;
+    }
+
+    async function cerrarSesion() {
+      try {
+        await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+      } catch {
+        // sin acción
+      }
+
+      redirigirLogin();
+    }
+
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
       mensaje.className = "mensaje " + tipo;
@@ -386,7 +436,9 @@
 
     async function cargarConfigEvento() {
       try {
-        const response = await fetch("/api/config-evento");
+        const response = await fetch("/api/config-evento", {
+          credentials: "same-origin"
+        });
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
@@ -418,7 +470,15 @@
       const select = document.getElementById("filtroFranja");
 
       try {
-        const response = await fetch("/api/admin/franjas");
+        const response = await fetch("/api/admin/franjas", {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
+
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
@@ -465,7 +525,15 @@
       const query = construirQuery();
       const url = query ? `/api/admin/reservas?${query}` : "/api/admin/reservas";
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        credentials: "same-origin"
+      });
+
+      if (response.status === 401) {
+        redirigirLogin();
+        return;
+      }
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -629,11 +697,17 @@
           headers: {
             "Content-Type": "application/json"
           },
+          credentials: "same-origin",
           body: JSON.stringify({
             id,
             accion
           })
         });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
 
         const data = await response.json();
 
@@ -660,6 +734,12 @@
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await comprobarSesionAdmin();
+      if (!ok) return;
+
+      document.getElementById("app").style.display = "block";
+      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+
       document.getElementById("btnAplicarFiltros").addEventListener("click", async function () {
         limpiarMensaje();
         try {
