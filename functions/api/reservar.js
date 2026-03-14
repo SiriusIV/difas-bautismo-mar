@@ -53,6 +53,7 @@ export async function onRequestPost(context) {
               SELECT SUM(r2.personas)
               FROM reservas r2
               WHERE r2.franja_id = f.id
+                AND r2.estado IN ('PENDIENTE', 'CONFIRMADA')
             ), 0)
           ) AS disponibles
         FROM reservas r
@@ -105,7 +106,7 @@ export async function onRequestPost(context) {
     // 3) Generar token de edición
     const tokenEdicion = generarTokenEdicion();
 
-    // 4) Insertar solicitud inicial con 0 asistentes
+    // 4) Insertar solicitud inicial con 0 asistentes y estado PENDIENTE
     const insertResult = await session
       .prepare(`
         INSERT INTO reservas (
@@ -137,7 +138,7 @@ export async function onRequestPost(context) {
           datetime('now'),
           ?,
           ?,
-          'ACTIVA',
+          'PENDIENTE',
           datetime('now')
         )
       `)
@@ -193,7 +194,7 @@ export async function onRequestPost(context) {
       .bind(codigoReserva, reservaId)
       .run();
 
-    // 7) Leer estado final de la franja
+    // 7) Leer estado final de la franja contando solo PENDIENTE y CONFIRMADA
     const estadoFranja = await session
       .prepare(`
         SELECT
@@ -202,8 +203,20 @@ export async function onRequestPost(context) {
           f.hora_inicio,
           f.hora_fin,
           f.capacidad,
-          COALESCE(SUM(r.personas), 0) AS ocupadas,
-          (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+          COALESCE(SUM(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+              ELSE 0
+            END
+          ), 0) AS ocupadas,
+          (
+            f.capacidad - COALESCE(SUM(
+              CASE
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                ELSE 0
+              END
+            ), 0)
+          ) AS disponibles
         FROM franjas f
         LEFT JOIN reservas r
           ON f.id = r.franja_id
@@ -215,10 +228,10 @@ export async function onRequestPost(context) {
 
     return Response.json({
       ok: true,
-      mensaje: "Solicitud creada correctamente.",
+      mensaje: "Solicitud creada correctamente y pendiente de validación.",
       codigo_reserva: codigoReserva,
       token_edicion: tokenEdicion,
-      estado: "ACTIVA",
+      estado: "PENDIENTE",
       franja: {
         id: estadoFranja.id,
         fecha: estadoFranja.fecha,
