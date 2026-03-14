@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 980px;
+      max-width: 1100px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -31,11 +31,6 @@
       margin-top: 6px;
       font-size: 22px;
       font-weight: normal;
-    }
-
-    h3 {
-      margin-top: 24px;
-      margin-bottom: 12px;
     }
 
     .cabecera {
@@ -65,13 +60,28 @@
       text-align: center;
     }
 
+    .resumen-superior {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
     .info {
       background: #eef4ff;
       border: 1px solid #c9dcff;
       color: #1d4f91;
       padding: 12px;
       border-radius: 6px;
-      margin-bottom: 20px;
+      min-height: 130px;
+      line-height: 1.7;
+    }
+
+    .info-titulo {
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 16px;
+      display: block;
     }
 
     .mensaje {
@@ -103,28 +113,34 @@
       border: 1px solid #c9dcff;
     }
 
-    .mensaje.alerta {
-      display: block;
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      vertical-align: middle;
     }
 
-    .fila-visitante {
-      display: grid;
-      grid-template-columns: 1fr 240px 130px;
-      gap: 10px;
-      margin-bottom: 10px;
-      align-items: center;
+    .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.confirmada { background: #198754; }
+    .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.cancelada { background: #6c757d; }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 24px;
     }
 
-    input, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #c9cfd6;
-      border-radius: 6px;
-      font-size: 15px;
-      box-sizing: border-box;
+    .acciones-superiores {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
     }
 
     button, .btn-enlace {
@@ -143,43 +159,76 @@
       background: #094db1;
     }
 
-    button:disabled {
+    button:disabled,
+    .btn-enlace.deshabilitado {
       background: #7aa7e8;
       cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.75;
     }
 
     .btn-secundario {
-      background: #198754;
+      background: #6c757d;
     }
 
     .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .btn-anadir {
+      background: #198754;
+    }
+
+    .btn-anadir:hover {
       background: #13653f;
     }
 
     .btn-eliminar {
       background: #dc3545;
-      padding: 10px 14px;
     }
 
     .btn-eliminar:hover {
       background: #b52a37;
     }
 
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border-bottom: 1px solid #dde4ea;
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #eef4ff;
+      color: #1d4f91;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
     .acciones {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .resumen {
       margin-top: 18px;
-      font-size: 15px;
-      line-height: 1.6;
     }
 
-    @media (max-width: 900px) {
-      .fila-visitante {
+    @media (max-width: 1000px) {
+      .resumen-superior {
         grid-template-columns: 1fr;
       }
 
@@ -192,6 +241,27 @@
       .cabecera {
         display: block;
         min-height: auto;
+      }
+
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 14px;
+        background: #fff;
+        border: 1px solid #dde4ea;
+        border-radius: 8px;
+        padding: 10px;
+      }
+
+      td {
+        border: none;
+        padding: 8px 0;
       }
     }
   </style>
@@ -207,44 +277,73 @@
       </div>
     </div>
 
-    <div id="infoReserva" class="info" style="display:none;"></div>
     <div id="mensaje" class="mensaje"></div>
-    <div id="avisoCapacidad" class="mensaje"></div>
 
-    <div id="bloqueAsistentes" style="display:none;">
-      <h3>Lista de asistentes</h3>
-      <div id="listaVisitantes"></div>
+    <div class="resumen-superior">
+      <div id="infoReserva" class="info" style="display:none;"></div>
+      <div id="resumenAsistentes" class="info">
+        <span class="info-titulo">Resumen de asistentes</span>
+        Cargando datos...
+      </div>
+      <div id="resumenFranja" class="info">
+        <span class="info-titulo">Resumen global de la franja horaria</span>
+        Cargando datos...
+      </div>
+    </div>
 
-      <div class="acciones">
-        <button type="button" id="btnAgregarVisitante" class="btn-secundario">Añadir asistente</button>
-        <button type="button" id="btnGuardarVisitantes">Guardar asistentes</button>
-        <a href="#" id="btnVolverEdicion" class="btn-enlace">Volver a datos generales</a>
+    <div class="panel">
+      <div class="acciones-superiores">
+        <a href="#" id="btnVolverEditar" class="btn-enlace btn-secundario">Volver a datos generales</a>
+        <button type="button" id="btnAnadirFila" class="btn-anadir">Añadir asistente</button>
       </div>
 
-      <div id="resumenVisitantes" class="resumen"></div>
+      <div style="overflow-x:auto;">
+        <table id="tablaAsistentes">
+          <thead>
+            <tr>
+              <th style="width:65%;">Nombre completo</th>
+              <th style="width:25%;">Categoría</th>
+              <th style="width:10%;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoAsistentes">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnGuardarAsistentes">Guardar asistentes</button>
+      </div>
     </div>
   </div>
 
   <script>
     let tokenEdicion = "";
     let reservaActual = null;
+    let visitantesActuales = [];
     let envioEnCurso = false;
 
-    function mostrarError(texto) {
+    function claseEstadoBadge(estado) {
+      const e = String(estado || "").toLowerCase();
+      if (e === "pendiente") return "pendiente";
+      if (e === "confirmada") return "confirmada";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
+
+    function solicitudEditable() {
+      return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+    }
+
+    function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje error";
+      mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
       mensaje.textContent = texto;
     }
 
-    function mostrarOk(texto) {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje ok";
-      mensaje.style.display = "block";
-      mensaje.textContent = texto;
-    }
-
-    function limpiarMensajePrincipal() {
+    function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
@@ -274,124 +373,11 @@
           lugarEl.style.display = "none";
           lugarEl.textContent = "";
         }
-
       } catch (error) {
         console.error(error);
-        document.title = "Gestión de asistentes";
         document.getElementById("tituloEvento").textContent = "Evento no disponible";
         document.getElementById("subtituloEvento").textContent = "Gestión de asistentes";
       }
-    }
-
-    function crearFilaVisitante(nombre = "", categoria = "MAYOR_10") {
-      const fila = document.createElement("div");
-      fila.className = "fila-visitante";
-
-      const nombreSeguro = String(nombre).replace(/"/g, "&quot;");
-
-      fila.innerHTML = `
-        <input type="text" class="visitante-nombre" placeholder="Nombre y apellidos" value="${nombreSeguro}">
-        <select class="visitante-categoria">
-          <option value="MAYOR_10" ${categoria === "MAYOR_10" ? "selected" : ""}>Mayor de 10 años</option>
-          <option value="MENOR_10" ${categoria === "MENOR_10" ? "selected" : ""}>Menor de 10 años</option>
-        </select>
-        <button type="button" class="btn-eliminar">Eliminar</button>
-      `;
-
-      fila.querySelector(".btn-eliminar").addEventListener("click", function () {
-        fila.remove();
-        recalcularResumenVisitantes();
-        limpiarMensajePrincipal();
-      });
-
-      fila.querySelector(".visitante-nombre").addEventListener("input", function () {
-        recalcularResumenVisitantes();
-        limpiarMensajePrincipal();
-      });
-
-      fila.querySelector(".visitante-categoria").addEventListener("change", function () {
-        recalcularResumenVisitantes();
-        limpiarMensajePrincipal();
-      });
-
-      return fila;
-    }
-
-    function obtenerVisitantesDesdeFormulario() {
-      const filas = document.querySelectorAll(".fila-visitante");
-      const visitantes = [];
-
-      filas.forEach(fila => {
-        const nombre = fila.querySelector(".visitante-nombre").value.trim();
-        const categoria = fila.querySelector(".visitante-categoria").value;
-
-        if (nombre !== "") {
-          visitantes.push({
-            nombre_completo: nombre,
-            categoria_edad: categoria
-          });
-        }
-      });
-
-      return visitantes;
-    }
-
-    function capacidadEditableActual() {
-      if (!reservaActual) return 0;
-      return Number(reservaActual.disponibles || 0) + Number(reservaActual.personas || 0);
-    }
-
-    function actualizarAvisoCapacidad() {
-      const aviso = document.getElementById("avisoCapacidad");
-      const boton = document.getElementById("btnGuardarVisitantes");
-      const visitantes = obtenerVisitantesDesdeFormulario();
-      const total = visitantes.length;
-      const capacidadEditable = capacidadEditableActual();
-
-      aviso.className = "mensaje";
-      aviso.style.display = "none";
-      aviso.textContent = "";
-
-      if (!reservaActual) {
-        if (!envioEnCurso) boton.disabled = false;
-        return;
-      }
-
-      if (total <= 0) {
-        if (!envioEnCurso) boton.disabled = false;
-        return;
-      }
-
-      if (total > capacidadEditable) {
-        aviso.className = "mensaje alerta";
-        aviso.style.display = "block";
-        aviso.textContent = `La lista contiene ${total} asistentes y no puede guardarse con la franja actualmente asignada. Reduzca asistentes o cambie la franja en la página de datos generales.`;
-
-        if (!envioEnCurso) boton.disabled = true;
-        return;
-      }
-
-      aviso.className = "mensaje aviso";
-      aviso.style.display = "block";
-      aviso.textContent = `La lista contiene ${total} asistentes y puede guardarse con la franja actualmente asignada.`;
-
-      if (!envioEnCurso) boton.disabled = false;
-    }
-
-    function recalcularResumenVisitantes() {
-      const visitantes = obtenerVisitantesDesdeFormulario();
-      const mayores = visitantes.filter(v => v.categoria_edad === "MAYOR_10").length;
-      const menores = visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
-      const total = visitantes.length;
-
-      const resumen = document.getElementById("resumenVisitantes");
-      resumen.innerHTML = `
-        <strong>Total asistentes:</strong> ${total}<br>
-        <strong>Mayores de 10 años:</strong> ${mayores}<br>
-        <strong>Menores de 10 años:</strong> ${menores}
-      `;
-
-      actualizarAvisoCapacidad();
     }
 
     async function cargarReserva() {
@@ -399,7 +385,7 @@
       tokenEdicion = params.get("token") || "";
 
       if (!tokenEdicion) {
-        mostrarError("Falta el token de edición en la URL.");
+        mostrarMensaje("error", "Falta el token de edición en la URL.");
         return false;
       }
 
@@ -407,22 +393,83 @@
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
-        mostrarError(data.error || "No se pudo recuperar la reserva.");
+        mostrarMensaje("error", data.error || "No se pudo recuperar la solicitud.");
         return false;
       }
 
       reservaActual = data.reserva;
+      document.getElementById("btnVolverEditar").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
+      const claseEstado = claseEstadoBadge(reservaActual.estado);
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
+        <span class="info-titulo">Resumen de la solicitud actual</span>
         <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> ${reservaActual.estado}<br>
-        <strong>Franja actual:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja asignada:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
       `;
 
-      document.getElementById("btnVolverEdicion").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+      document.getElementById("resumenFranja").innerHTML = `
+        <span class="info-titulo">Resumen global de la franja horaria</span>
+        <strong>Plazas totales:</strong> ${Number(reservaActual.capacidad || 0)}<br>
+        <strong>Plazas reservadas:</strong> ${Number(reservaActual.ocupadas || 0)}<br>
+        <strong>Plazas disponibles:</strong> ${Number(reservaActual.disponibles || 0)}
+      `;
 
       return true;
+    }
+
+    function crearFila(asistente = { nombre_completo: "", categoria_edad: "MAYOR_10" }) {
+      const tbody = document.getElementById("cuerpoAsistentes");
+      const tr = document.createElement("tr");
+
+      const editable = solicitudEditable();
+
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"} />
+        </td>
+        <td>
+          <select class="categoria-asistente" ${editable ? "" : "disabled"}>
+            <option value="MAYOR_10" ${asistente.categoria_edad === "MAYOR_10" ? "selected" : ""}>Mayor de 10 años</option>
+            <option value="MENOR_10" ${asistente.categoria_edad === "MENOR_10" ? "selected" : ""}>Menor de 10 años</option>
+          </select>
+        </td>
+        <td>
+          <button type="button" class="btn-eliminar" ${editable ? "" : "disabled"}>Eliminar</button>
+        </td>
+      `;
+
+      tr.querySelector(".btn-eliminar").addEventListener("click", function () {
+        if (!solicitudEditable()) return;
+        tr.remove();
+        actualizarResumenAsistentesDesdeTabla();
+      });
+
+      tr.querySelector(".nombre-asistente").addEventListener("input", actualizarResumenAsistentesDesdeTabla);
+      tr.querySelector(".categoria-asistente").addEventListener("change", actualizarResumenAsistentesDesdeTabla);
+
+      tbody.appendChild(tr);
+    }
+
+    function actualizarResumenAsistentesDesdeTabla() {
+      const filas = Array.from(document.querySelectorAll("#cuerpoAsistentes tr"));
+      const datos = filas.map(tr => ({
+        nombre: tr.querySelector(".nombre-asistente")?.value.trim() || "",
+        categoria: tr.querySelector(".categoria-asistente")?.value || ""
+      })).filter(v => v.nombre !== "");
+
+      const total = datos.length;
+      const mayores = datos.filter(v => v.categoria === "MAYOR_10").length;
+      const menores = datos.filter(v => v.categoria === "MENOR_10").length;
+
+      document.getElementById("resumenAsistentes").innerHTML = `
+        <span class="info-titulo">Resumen de asistentes</span>
+        <strong>Total asistentes:</strong> ${total}<br>
+        <strong>Mayores de 10 años:</strong> ${mayores}<br>
+        <strong>Menores de 10 años:</strong> ${menores}
+      `;
     }
 
     async function cargarVisitantes() {
@@ -430,35 +477,76 @@
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || "No se pudieron cargar los asistentes.");
+        if (reservaActual && reservaActual.estado === "CANCELADA") {
+          mostrarMensaje("aviso", "La solicitud está cancelada. No se permite gestionar asistentes.");
+        } else if (reservaActual && reservaActual.estado === "RECHAZADA") {
+          mostrarMensaje("error", "La solicitud está rechazada. No se permite gestionar asistentes.");
+        } else {
+          mostrarMensaje("error", data.error || "No se pudieron cargar los asistentes.");
+        }
+        visitantesActuales = [];
+        renderizarVisitantes();
+        actualizarModoPantalla();
+        return;
       }
 
-      const lista = document.getElementById("listaVisitantes");
-      lista.innerHTML = "";
-
-      if (data.visitantes.length === 0) {
-        lista.appendChild(crearFilaVisitante());
-      } else {
-        data.visitantes.forEach(v => {
-          lista.appendChild(crearFilaVisitante(v.nombre_completo, v.categoria_edad));
-        });
-      }
-
-      recalcularResumenVisitantes();
+      visitantesActuales = Array.isArray(data.visitantes) ? data.visitantes : [];
+      renderizarVisitantes();
+      actualizarModoPantalla();
     }
 
-    async function guardarVisitantes() {
-      if (envioEnCurso) return;
+    function renderizarVisitantes() {
+      const tbody = document.getElementById("cuerpoAsistentes");
+      tbody.innerHTML = "";
 
-      limpiarMensajePrincipal();
+      if (visitantesActuales.length === 0) {
+        crearFila();
+      } else {
+        visitantesActuales.forEach(v => crearFila(v));
+      }
 
-      const boton = document.getElementById("btnGuardarVisitantes");
-      const visitantes = obtenerVisitantesDesdeFormulario();
+      actualizarResumenAsistentesDesdeTabla();
+    }
+
+    function actualizarModoPantalla() {
+      const editable = solicitudEditable();
+
+      document.getElementById("btnAnadirFila").disabled = !editable;
+      document.getElementById("btnGuardarAsistentes").disabled = !editable || envioEnCurso;
+
+      if (!editable) {
+        const filas = document.querySelectorAll("#cuerpoAsistentes tr");
+        filas.forEach(tr => {
+          const nombre = tr.querySelector(".nombre-asistente");
+          const categoria = tr.querySelector(".categoria-asistente");
+          const eliminar = tr.querySelector(".btn-eliminar");
+          if (nombre) nombre.disabled = true;
+          if (categoria) categoria.disabled = true;
+          if (eliminar) eliminar.disabled = true;
+        });
+      }
+    }
+
+    function obtenerVisitantesDeTabla() {
+      return Array.from(document.querySelectorAll("#cuerpoAsistentes tr"))
+        .map(tr => ({
+          nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
+          categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
+        }))
+        .filter(v => v.nombre_completo !== "");
+    }
+
+    async function guardarAsistentes() {
+      if (!solicitudEditable() || envioEnCurso) return;
+
+      limpiarMensaje();
+
+      const visitantes = obtenerVisitantesDeTabla();
 
       try {
         envioEnCurso = true;
-        boton.disabled = true;
-        boton.textContent = "Guardando asistentes...";
+        document.getElementById("btnGuardarAsistentes").disabled = true;
+        document.getElementById("btnGuardarAsistentes").textContent = "Guardando...";
 
         const response = await fetch("/api/visitantes-guardar", {
           method: "POST",
@@ -471,51 +559,43 @@
           })
         });
 
-        const resultado = await response.json();
+        const data = await response.json();
 
-        if (!response.ok || !resultado.ok) {
-          mostrarError(resultado.error || "No se pudieron guardar los asistentes.");
-          await inicializarPagina();
+        if (!response.ok || !data.ok) {
+          mostrarMensaje("error", data.error || "No se pudieron guardar los asistentes.");
           return;
         }
 
-        mostrarOk(`Lista de asistentes actualizada correctamente. Total asistentes: ${resultado.totales.personas}. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja.`);
-        await inicializarPagina();
+        mostrarMensaje("ok", data.mensaje || "Asistentes guardados correctamente.");
+        await cargarReserva();
+        await cargarVisitantes();
 
       } catch (error) {
         console.error(error);
-        mostrarError("Error de conexión con el servidor.");
+        mostrarMensaje("error", "Error de conexión con el servidor.");
       } finally {
         envioEnCurso = false;
-        boton.disabled = false;
-        boton.textContent = "Guardar asistentes";
+        document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
+        document.getElementById("btnGuardarAsistentes").textContent = "Guardar asistentes";
       }
     }
 
-    async function inicializarPagina() {
-      const ok = await cargarReserva();
-      if (!ok) return;
-
-      await cargarVisitantes();
-
-      document.getElementById("bloqueAsistentes").style.display = "block";
-    }
-
     document.addEventListener("DOMContentLoaded", async function () {
-      document.getElementById("btnAgregarVisitante").addEventListener("click", function () {
-        document.getElementById("listaVisitantes").appendChild(crearFilaVisitante());
-        recalcularResumenVisitantes();
-        limpiarMensajePrincipal();
+      document.getElementById("btnAnadirFila").addEventListener("click", function () {
+        if (!solicitudEditable()) return;
+        crearFila();
       });
 
-      document.getElementById("btnGuardarVisitantes").addEventListener("click", guardarVisitantes);
+      document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
 
       try {
         await cargarConfigEvento();
-        await inicializarPagina();
-      } catch (err) {
-        console.error(err);
-        mostrarError("Error al cargar la página de asistentes.");
+        const ok = await cargarReserva();
+        if (!ok) return;
+        await cargarVisitantes();
+      } catch (error) {
+        console.error(error);
+        mostrarMensaje("error", "Error al cargar la página de asistentes.");
       }
     });
   </script>
