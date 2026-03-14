@@ -50,9 +50,21 @@ async function obtenerResumenFranjas(env) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
-      COUNT(r.id) AS numero_reservas,
-      COALESCE(SUM(r.personas), 0) AS ocupadas,
-      (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id END) AS numero_reservas,
+      COALESCE(SUM(
+        CASE
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+          ELSE 0
+        END
+      ), 0) AS ocupadas,
+      (
+        f.capacidad - COALESCE(SUM(
+          CASE
+            WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+            ELSE 0
+          END
+        ), 0)
+      ) AS disponibles
     FROM franjas f
     LEFT JOIN reservas r
       ON f.id = r.franja_id
@@ -245,6 +257,7 @@ export async function onRequestPut(context) {
       SELECT COALESCE(SUM(personas), 0) AS ocupadas
       FROM reservas
       WHERE franja_id = ?
+        AND estado IN ('PENDIENTE', 'CONFIRMADA')
     `)
       .bind(id)
       .first();
@@ -255,7 +268,7 @@ export async function onRequestPut(context) {
       return json(
         {
           ok: false,
-          error: `La capacidad no puede ser inferior a las plazas ya reservadas (${ocupadas}).`
+          error: `La capacidad no puede ser inferior a las plazas ya bloqueadas (${ocupadas}).`
         },
         { status: 400 }
       );
@@ -330,6 +343,7 @@ export async function onRequestDelete(context) {
       SELECT COUNT(*) AS total
       FROM reservas
       WHERE franja_id = ?
+        AND estado IN ('PENDIENTE', 'CONFIRMADA')
     `)
       .bind(id)
       .first();
@@ -340,7 +354,7 @@ export async function onRequestDelete(context) {
       return json(
         {
           ok: false,
-          error: "No se puede eliminar la franja porque tiene reservas asociadas."
+          error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
         },
         { status: 400 }
       );
