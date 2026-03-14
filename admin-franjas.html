@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administración de franjas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .contenedor {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    h2 {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: normal;
+    }
+
+    .cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 20px;
+      min-height: 120px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      max-width: 120px;
+      height: auto;
+    }
+
+    .titulos {
+      text-align: center;
+    }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .fila-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 160px;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #0b5ed7;
+      color: white;
+      border: none;
+      padding: 11px 16px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #094db1;
+    }
+
+    button:disabled {
+      background: #7aa7e8;
+      cursor: not-allowed;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .btn-editar {
+      background: #198754;
+    }
+
+    .btn-editar:hover {
+      background: #13653f;
+    }
+
+    .btn-eliminar {
+      background: #dc3545;
+    }
+
+    .btn-eliminar:hover {
+      background: #b52a37;
+    }
+
+    .acciones-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mensaje {
+      margin-top: 16px;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .mensaje.info {
+      display: block;
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .tabla-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #dde4ea;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: #eef4ff;
+      color: #1d4f91;
+    }
+
+    .acciones-tabla {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .resumen {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 1000px) {
+      .fila-form {
+        grid-template-columns: 1fr;
+      }
+
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 10px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <img src="logo.png" alt="Logo" class="logo">
+      <div class="titulos">
+        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
+        <h2>Panel de administración de franjas horarias</h2>
+      </div>
+    </div>
+
+    <div id="mensaje" class="mensaje"></div>
+
+    <div class="panel">
+      <h3 id="tituloFormulario">Crear nueva franja</h3>
+
+      <form id="formFranja" novalidate>
+        <input type="hidden" id="franjaId" value="" />
+
+        <div class="fila-form">
+          <div>
+            <label for="fecha">Fecha</label>
+            <input type="date" id="fecha" required />
+          </div>
+
+          <div>
+            <label for="horaInicio">Hora de inicio</label>
+            <input type="time" id="horaInicio" required />
+          </div>
+
+          <div>
+            <label for="horaFin">Hora de fin</label>
+            <input type="time" id="horaFin" required />
+          </div>
+
+          <div>
+            <label for="capacidad">Capacidad</label>
+            <input type="number" id="capacidad" min="1" step="1" required />
+          </div>
+        </div>
+
+        <div class="acciones-form">
+          <button type="submit" id="btnGuardar">Guardar franja</button>
+          <button type="button" id="btnCancelarEdicion" class="btn-secundario" style="display:none;">Cancelar edición</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div id="resumen" class="resumen">Cargando franjas...</div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Hora inicio</th>
+              <th>Hora fin</th>
+              <th>Capacidad</th>
+              <th>Ocupadas</th>
+              <th>Disponibles</th>
+              <th>Nº reservas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaFranjas">
+            <tr>
+              <td colspan="9">Cargando datos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let franjasCache = [];
+    let envioEnCurso = false;
+
+    function mostrarMensaje(tipo, texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    function limpiarMensaje() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+
+    function limpiarFormulario() {
+      document.getElementById("franjaId").value = "";
+      document.getElementById("fecha").value = "";
+      document.getElementById("horaInicio").value = "";
+      document.getElementById("horaFin").value = "";
+      document.getElementById("capacidad").value = "";
+      document.getElementById("tituloFormulario").textContent = "Crear nueva franja";
+      document.getElementById("btnGuardar").textContent = "Guardar franja";
+      document.getElementById("btnCancelarEdicion").style.display = "none";
+    }
+
+    function cargarFormularioDesdeFranja(franja) {
+      document.getElementById("franjaId").value = franja.id;
+      document.getElementById("fecha").value = franja.fecha;
+      document.getElementById("horaInicio").value = franja.hora_inicio;
+      document.getElementById("horaFin").value = franja.hora_fin;
+      document.getElementById("capacidad").value = franja.capacidad;
+      document.getElementById("tituloFormulario").textContent = `Editar franja #${franja.id}`;
+      document.getElementById("btnGuardar").textContent = "Guardar cambios";
+      document.getElementById("btnCancelarEdicion").style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function actualizarResumen() {
+      const resumen = document.getElementById("resumen");
+
+      if (!franjasCache.length) {
+        resumen.textContent = "No hay franjas registradas.";
+        return;
+      }
+
+      const totalFranjas = franjasCache.length;
+      const totalCapacidad = franjasCache.reduce((acc, f) => acc + Number(f.capacidad || 0), 0);
+      const totalOcupadas = franjasCache.reduce((acc, f) => acc + Number(f.ocupadas || 0), 0);
+      const totalDisponibles = franjasCache.reduce((acc, f) => acc + Number(f.disponibles || 0), 0);
+
+      resumen.innerHTML = `
+        <strong>Total de franjas:</strong> ${totalFranjas} &nbsp; | &nbsp;
+        <strong>Capacidad total:</strong> ${totalCapacidad} &nbsp; | &nbsp;
+        <strong>Plazas ocupadas:</strong> ${totalOcupadas} &nbsp; | &nbsp;
+        <strong>Plazas disponibles:</strong> ${totalDisponibles}
+      `;
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById("tablaFranjas");
+      tbody.innerHTML = "";
+
+      if (!franjasCache.length) {
+        tbody.innerHTML = `<tr><td colspan="9">No hay franjas registradas.</td></tr>`;
+        actualizarResumen();
+        return;
+      }
+
+      franjasCache.forEach(franja => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${franja.id}</td>
+          <td>${franja.fecha}</td>
+          <td>${franja.hora_inicio}</td>
+          <td>${franja.hora_fin}</td>
+          <td>${franja.capacidad}</td>
+          <td>${franja.ocupadas}</td>
+          <td>${franja.disponibles}</td>
+          <td>${franja.numero_reservas}</td>
+          <td>
+            <div class="acciones-tabla">
+              <button type="button" class="btn-editar">Editar</button>
+              <button type="button" class="btn-eliminar">Eliminar</button>
+            </div>
+          </td>
+        `;
+
+        tr.querySelector(".btn-editar").addEventListener("click", () => {
+          limpiarMensaje();
+          cargarFormularioDesdeFranja(franja);
+        });
+
+        tr.querySelector(".btn-eliminar").addEventListener("click", async () => {
+          const confirmar = window.confirm(
+            `¿Desea eliminar la franja ${franja.fecha} ${franja.hora_inicio}-${franja.hora_fin}?`
+          );
+
+          if (!confirmar) return;
+
+          await eliminarFranja(franja.id);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      actualizarResumen();
+    }
+
+    async function cargarFranjas() {
+      const tbody = document.getElementById("tablaFranjas");
+      tbody.innerHTML = `<tr><td colspan="9">Cargando datos...</td></tr>`;
+
+      const response = await fetch("/api/admin/franjas");
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las franjas.");
+      }
+
+      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+      renderizarTabla();
+    }
+
+    async function guardarFranja(event) {
+      event.preventDefault();
+      if (envioEnCurso) return;
+
+      limpiarMensaje();
+
+      const id = document.getElementById("franjaId").value.trim();
+      const fecha = document.getElementById("fecha").value;
+      const hora_inicio = document.getElementById("horaInicio").value;
+      const hora_fin = document.getElementById("horaFin").value;
+      const capacidad = document.getElementById("capacidad").value;
+
+      const payload = {
+        fecha,
+        hora_inicio,
+        hora_fin,
+        capacidad
+      };
+
+      const esEdicion = id !== "";
+      if (esEdicion) {
+        payload.id = id;
+      }
+
+      try {
+        envioEnCurso = true;
+        document.getElementById("btnGuardar").disabled = true;
+
+        const response = await fetch("/api/admin/franjas", {
+          method: esEdicion ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
+          return;
+        }
+
+        mostrarMensaje("ok", data.mensaje || "Operación realizada correctamente.");
+        franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+        renderizarTabla();
+        limpiarFormulario();
+
+      } catch (error) {
+        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+      } finally {
+        envioEnCurso = false;
+        document.getElementById("btnGuardar").disabled = false;
+      }
+    }
+
+    async function eliminarFranja(id) {
+      if (envioEnCurso) return;
+
+      limpiarMensaje();
+
+      try {
+        envioEnCurso = true;
+
+        const response = await fetch("/api/admin/franjas", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          mostrarMensaje("error", data.error || "No se pudo eliminar la franja.");
+          return;
+        }
+
+        mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
+        franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+        renderizarTabla();
+
+        const idActual = document.getElementById("franjaId").value.trim();
+        if (String(idActual) === String(id)) {
+          limpiarFormulario();
+        }
+      } catch (error) {
+        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+      } finally {
+        envioEnCurso = false;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      document.getElementById("formFranja").addEventListener("submit", guardarFranja);
+
+      document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
+        limpiarFormulario();
+        limpiarMensaje();
+      });
+
+      try {
+        await cargarFranjas();
+        limpiarFormulario();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
+      }
+    });
+  </script>
+</body>
+</html>
