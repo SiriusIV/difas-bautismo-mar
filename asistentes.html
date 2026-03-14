@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asistentes de la solicitud</title>
+  <title>Gestión de asistentes</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -55,6 +55,13 @@
     }
 
     .titulos {
+      text-align: center;
+    }
+
+    .lugar-evento {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #444;
       text-align: center;
     }
 
@@ -170,6 +177,23 @@
       font-size: 15px;
       line-height: 1.6;
     }
+
+    @media (max-width: 900px) {
+      .fila-visitante {
+        grid-template-columns: 1fr;
+      }
+
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 10px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
+    }
   </style>
 </head>
 <body>
@@ -177,8 +201,9 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
-        <h2>Gestión de asistentes</h2>
+        <h1 id="tituloEvento">Cargando evento...</h1>
+        <h2 id="subtituloEvento">Gestión de asistentes</h2>
+        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
     </div>
 
@@ -224,6 +249,38 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    async function cargarConfigEvento() {
+      try {
+        const response = await fetch("/api/config-evento");
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+        }
+
+        const config = data.config || {};
+
+        document.title = config.subtitulo_evento || "Gestión de asistentes";
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
+        document.getElementById("subtituloEvento").textContent = "Gestión de asistentes";
+
+        const lugarEl = document.getElementById("lugarEvento");
+        if (config.lugar && String(config.lugar).trim() !== "") {
+          lugarEl.style.display = "block";
+          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
+        } else {
+          lugarEl.style.display = "none";
+          lugarEl.textContent = "";
+        }
+
+      } catch (error) {
+        console.error(error);
+        document.title = "Gestión de asistentes";
+        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+        document.getElementById("subtituloEvento").textContent = "Gestión de asistentes";
+      }
     }
 
     function crearFilaVisitante(nombre = "", categoria = "MAYOR_10") {
@@ -444,7 +501,7 @@
       document.getElementById("bloqueAsistentes").style.display = "block";
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("btnAgregarVisitante").addEventListener("click", function () {
         document.getElementById("listaVisitantes").appendChild(crearFilaVisitante());
         recalcularResumenVisitantes();
@@ -453,10 +510,13 @@
 
       document.getElementById("btnGuardarVisitantes").addEventListener("click", guardarVisitantes);
 
-      inicializarPagina().catch(err => {
+      try {
+        await cargarConfigEvento();
+        await inicializarPagina();
+      } catch (err) {
         console.error(err);
         mostrarError("Error al cargar la página de asistentes.");
-      });
+      }
     });
   </script>
 </body>
