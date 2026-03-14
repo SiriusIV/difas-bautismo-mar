@@ -9,6 +9,9 @@ function normalizarTexto(valor) {
   return String(valor || "").trim();
 }
 
+const ESTADOS_VALIDOS = ["PENDIENTE", "CONFIRMADA", "RECHAZADA", "CANCELADA"];
+const ESTADOS_QUE_BLOQUEAN = ["PENDIENTE", "CONFIRMADA"];
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -64,6 +67,12 @@ export async function onRequestGet(context) {
     }
 
     if (estado) {
+      if (!ESTADOS_VALIDOS.includes(estado)) {
+        return json(
+          { ok: false, error: "Estado no válido." },
+          { status: 400 }
+        );
+      }
       condiciones.push("r.estado = ?");
       valores.push(estado);
     }
@@ -148,9 +157,20 @@ export async function onRequestPatch(context) {
     }
 
     const reserva = await env.DB.prepare(`
-      SELECT id, estado, codigo_reserva
-      FROM reservas
-      WHERE id = ?
+      SELECT
+        r.id,
+        r.franja_id,
+        r.personas,
+        r.estado,
+        r.codigo_reserva,
+        f.capacidad,
+        f.fecha,
+        f.hora_inicio,
+        f.hora_fin
+      FROM reservas r
+      INNER JOIN franjas f
+        ON r.franja_id = f.id
+      WHERE r.id = ?
       LIMIT 1
     `)
       .bind(id)
@@ -163,6 +183,125 @@ export async function onRequestPatch(context) {
       );
     }
 
+    // CONFIRMAR
+    if (accion === "confirmar") {
+      if (reserva.estado === "CONFIRMADA") {
+        return json({
+          ok: true,
+          mensaje: "La reserva ya estaba confirmada."
+        });
+      }
+
+      if (reserva.estado === "CANCELADA") {
+        return json(
+          {
+            ok: false,
+            error: "No se puede confirmar una reserva cancelada. Reábrela primero como pendiente."
+          },
+          { status: 400 }
+        );
+      }
+
+      if (reserva.estado === "RECHAZADA") {
+        return json(
+          {
+            ok: false,
+            error: "No se puede confirmar una reserva rechazada directamente. Reábrela primero como pendiente."
+          },
+          { status: 400 }
+        );
+      }
+
+      // Comprobar capacidad real en la franja excluyendo esta propia reserva
+      const ocupacion = await env.DB.prepare(`
+        SELECT COALESCE(SUM(personas), 0) AS ocupadas
+        FROM reservas
+        WHERE franja_id = ?
+          AND id <> ?
+          AND estado IN ('PENDIENTE', 'CONFIRMADA')
+      `)
+        .bind(reserva.franja_id, reserva.id)
+        .first();
+
+      const ocupadasOtras = Number(ocupacion?.ocupadas || 0);
+      const disponiblesParaEsta = Number(reserva.capacidad) - ocupadasOtras;
+
+      if (Number(reserva.personas || 0) > disponiblesParaEsta) {
+        return json(
+          {
+            ok: false,
+            error: `No hay capacidad suficiente para confirmar esta solicitud. Disponibles: ${disponiblesParaEsta}. Solicitadas: ${reserva.personas || 0}.`
+          },
+          { status: 400 }
+        );
+      }
+
+      const updateResult = await env.DB.prepare(`
+        UPDATE reservas
+        SET
+          estado = 'CONFIRMADA',
+          fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `)
+        .bind(id)
+        .run();
+
+      if ((updateResult?.meta?.changes || 0) === 0) {
+        return json(
+          { ok: false, error: "No se pudo confirmar la reserva." },
+          { status: 500 }
+        );
+      }
+
+      return json({
+        ok: true,
+        mensaje: `Solicitud ${reserva.codigo_reserva || id} confirmada correctamente.`
+      });
+    }
+
+    // RECHAZAR
+    if (accion === "rechazar") {
+      if (reserva.estado === "RECHAZADA") {
+        return json({
+          ok: true,
+          mensaje: "La reserva ya estaba rechazada."
+        });
+      }
+
+      if (reserva.estado === "CANCELADA") {
+        return json(
+          {
+            ok: false,
+            error: "No se puede rechazar una reserva cancelada."
+          },
+          { status: 400 }
+        );
+      }
+
+      const updateResult = await env.DB.prepare(`
+        UPDATE reservas
+        SET
+          estado = 'RECHAZADA',
+          fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `)
+        .bind(id)
+        .run();
+
+      if ((updateResult?.meta?.changes || 0) === 0) {
+        return json(
+          { ok: false, error: "No se pudo rechazar la reserva." },
+          { status: 500 }
+        );
+      }
+
+      return json({
+        ok: true,
+        mensaje: `Solicitud ${reserva.codigo_reserva || id} rechazada correctamente.`
+      });
+    }
+
+    // CANCELAR
     if (accion === "cancelar") {
       if (reserva.estado === "CANCELADA") {
         return json({
@@ -194,18 +333,43 @@ export async function onRequestPatch(context) {
       });
     }
 
-    if (accion === "reactivar") {
-      if (reserva.estado === "ACTIVA") {
+    // REABRIR A PENDIENTE
+    if (accion === "reabrir") {
+      if (reserva.estado === "PENDIENTE") {
         return json({
           ok: true,
-          mensaje: "La reserva ya estaba activa."
+          mensaje: "La reserva ya estaba pendiente."
         });
+      }
+
+      // Al reabrir a pendiente también debe seguir existiendo capacidad
+      const ocupacion = await env.DB.prepare(`
+        SELECT COALESCE(SUM(personas), 0) AS ocupadas
+        FROM reservas
+        WHERE franja_id = ?
+          AND id <> ?
+          AND estado IN ('PENDIENTE', 'CONFIRMADA')
+      `)
+        .bind(reserva.franja_id, reserva.id)
+        .first();
+
+      const ocupadasOtras = Number(ocupacion?.ocupadas || 0);
+      const disponiblesParaEsta = Number(reserva.capacidad) - ocupadasOtras;
+
+      if (Number(reserva.personas || 0) > disponiblesParaEsta) {
+        return json(
+          {
+            ok: false,
+            error: `No hay capacidad suficiente para reabrir esta solicitud como pendiente. Disponibles: ${disponiblesParaEsta}. Solicitadas: ${reserva.personas || 0}.`
+          },
+          { status: 400 }
+        );
       }
 
       const updateResult = await env.DB.prepare(`
         UPDATE reservas
         SET
-          estado = 'ACTIVA',
+          estado = 'PENDIENTE',
           fecha_modificacion = datetime('now')
         WHERE id = ?
       `)
@@ -214,14 +378,14 @@ export async function onRequestPatch(context) {
 
       if ((updateResult?.meta?.changes || 0) === 0) {
         return json(
-          { ok: false, error: "No se pudo reactivar la reserva." },
+          { ok: false, error: "No se pudo reabrir la reserva." },
           { status: 500 }
         );
       }
 
       return json({
         ok: true,
-        mensaje: `Reserva ${reserva.codigo_reserva || id} reactivada correctamente.`
+        mensaje: `Solicitud ${reserva.codigo_reserva || id} reabierta como pendiente.`
       });
     }
 
