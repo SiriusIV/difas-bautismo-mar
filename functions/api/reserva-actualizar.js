@@ -63,9 +63,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (reservaActual.estado !== "ACTIVA") {
+    if (!["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado)) {
       return Response.json(
-        { ok: false, error: "La reserva no está activa y no puede modificarse." },
+        {
+          ok: false,
+          error: "La solicitud no está en un estado editable."
+        },
         { status: 400 }
       );
     }
@@ -97,12 +100,13 @@ export async function onRequestPost(context) {
         FROM reservas
         WHERE franja_id = ?
           AND id <> ?
+          AND estado IN ('PENDIENTE', 'CONFIRMADA')
       `)
       .bind(franjaNuevaId, reservaActual.id)
       .first();
 
-    const ocupadasDestino = ocupacionDestino?.ocupadas || 0;
-    const disponiblesDestino = franjaNueva.capacidad - ocupadasDestino;
+    const ocupadasDestino = Number(ocupacionDestino?.ocupadas || 0);
+    const disponiblesDestino = Number(franjaNueva.capacidad) - ocupadasDestino;
 
     if (personasNuevas > disponiblesDestino) {
       return Response.json(
@@ -154,8 +158,20 @@ export async function onRequestPost(context) {
           f.hora_inicio,
           f.hora_fin,
           f.capacidad,
-          COALESCE(SUM(r.personas), 0) AS ocupadas,
-          (f.capacidad - COALESCE(SUM(r.personas), 0)) AS disponibles
+          COALESCE(SUM(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+              ELSE 0
+            END
+          ), 0) AS ocupadas,
+          (
+            f.capacidad - COALESCE(SUM(
+              CASE
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                ELSE 0
+              END
+            ), 0)
+          ) AS disponibles
         FROM franjas f
         LEFT JOIN reservas r
           ON f.id = r.franja_id
@@ -167,9 +183,10 @@ export async function onRequestPost(context) {
 
     return Response.json({
       ok: true,
-      mensaje: "Reserva actualizada correctamente.",
+      mensaje: "Solicitud actualizada correctamente.",
       codigo_reserva: reservaActual.codigo_reserva,
       token_edicion: reservaActual.token_edicion,
+      estado: reservaActual.estado,
       franja: {
         id: estadoFinalFranja.id,
         fecha: estadoFinalFranja.fecha,
@@ -187,7 +204,7 @@ export async function onRequestPost(context) {
     return Response.json(
       {
         ok: false,
-        error: "Error interno al actualizar la reserva.",
+        error: "Error interno al actualizar la solicitud.",
         detalle: error.message
       },
       { status: 500 }
