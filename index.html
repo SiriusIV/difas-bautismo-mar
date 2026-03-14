@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Solicitud de bautismo de mar</title>
+  <title>Solicitud de reserva</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -147,6 +147,13 @@
       margin-bottom: 4px;
     }
 
+    .lugar-evento {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #444;
+      text-align: center;
+    }
+
     /* Modal */
     .modal-fondo {
       position: fixed;
@@ -235,12 +242,13 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
-        <h2>Solicitud de bautismo de mar</h2>
+        <h1 id="tituloEvento">Cargando evento...</h1>
+        <h2 id="subtituloEvento">Cargando información...</h2>
+        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
     </div>
 
-    <p>Complete este formulario para crear la solicitud.</p>
+    <p id="descripcionEvento">Complete este formulario para crear la solicitud.</p>
 
     <div class="nota">
       <strong>Importante:</strong> en este primer paso solo se crean los datos generales de la solicitud.
@@ -342,6 +350,40 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    async function cargarConfigEvento() {
+      try {
+        const response = await fetch("/api/config-evento");
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+        }
+
+        const config = data.config || {};
+
+        document.title = config.subtitulo_evento || "Solicitud de reserva";
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
+        document.getElementById("subtituloEvento").textContent = config.subtitulo_evento || "Sin subtítulo";
+        document.getElementById("descripcionEvento").textContent =
+          config.descripcion_publica || "Complete este formulario para crear la solicitud.";
+
+        const lugarEl = document.getElementById("lugarEvento");
+        if (config.lugar && String(config.lugar).trim() !== "") {
+          lugarEl.style.display = "block";
+          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
+        } else {
+          lugarEl.style.display = "none";
+          lugarEl.textContent = "";
+        }
+
+      } catch (error) {
+        console.error(error);
+        document.title = "Solicitud de reserva";
+        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+        document.getElementById("subtituloEvento").textContent = "No se pudo cargar la configuración";
+      }
     }
 
     function formularioValido() {
@@ -546,6 +588,7 @@ ${asistentes}`;
       });
 
       prepararNuevaClave();
+      await cargarConfigEvento();
       await cargarFranjas();
       actualizarEstadoBoton();
     });
