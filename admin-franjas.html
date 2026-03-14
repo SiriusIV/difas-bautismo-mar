@@ -33,6 +33,10 @@
       font-weight: normal;
     }
 
+    h3 {
+      margin-top: 0;
+    }
+
     .cabecera {
       display: flex;
       align-items: center;
@@ -68,19 +72,38 @@
       margin-bottom: 14px;
     }
 
+    .fila-config {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .fila-config-una {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
     label {
       display: block;
       font-weight: bold;
       margin-bottom: 6px;
     }
 
-    input {
+    input, textarea {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
       border-radius: 6px;
       font-size: 15px;
       box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
     }
 
     button {
@@ -196,8 +219,29 @@
       margin-bottom: 12px;
     }
 
+    .vista-previa {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .vista-previa h4 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+    }
+
+    .vista-previa .sub {
+      font-size: 17px;
+      color: #444;
+      margin-bottom: 10px;
+    }
+
     @media (max-width: 1000px) {
-      .fila-form {
+      .fila-form,
+      .fila-config {
         grid-template-columns: 1fr;
       }
 
@@ -219,12 +263,58 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
-        <h2>Panel de administración de franjas horarias</h2>
+        <h1 id="cabeceraNombreEvento">Cargando evento...</h1>
+        <h2 id="cabeceraSubtituloEvento">Panel de administración</h2>
       </div>
     </div>
 
-    <div id="mensaje" class="mensaje"></div>
+    <div id="mensajeEvento" class="mensaje"></div>
+    <div id="mensajeFranjas" class="mensaje"></div>
+
+    <div class="panel">
+      <h3>Configuración del evento activo</h3>
+
+      <form id="formEvento" novalidate>
+        <div class="fila-config">
+          <div>
+            <label for="nombreEvento">Nombre del evento</label>
+            <input type="text" id="nombreEvento" required />
+          </div>
+
+          <div>
+            <label for="subtituloEvento">Subtítulo del evento</label>
+            <input type="text" id="subtituloEvento" required />
+          </div>
+        </div>
+
+        <div class="fila-config">
+          <div>
+            <label for="lugarEvento">Lugar</label>
+            <input type="text" id="lugarEvento" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="fila-config-una">
+          <div>
+            <label for="descripcionEvento">Descripción pública</label>
+            <textarea id="descripcionEvento"></textarea>
+          </div>
+        </div>
+
+        <div class="acciones-form">
+          <button type="submit" id="btnGuardarEvento">Guardar configuración del evento</button>
+        </div>
+      </form>
+
+      <div class="vista-previa">
+        <strong>Vista previa pública</strong>
+        <h4 id="previewNombreEvento">-</h4>
+        <div class="sub" id="previewSubtituloEvento">-</div>
+        <div><strong>Lugar:</strong> <span id="previewLugarEvento">-</span></div>
+        <div style="margin-top:8px;" id="previewDescripcionEvento"></div>
+      </div>
+    </div>
 
     <div class="panel">
       <h3 id="tituloFormulario">Crear nueva franja</h3>
@@ -291,20 +381,97 @@
 
   <script>
     let franjasCache = [];
-    let envioEnCurso = false;
+    let envioFranjasEnCurso = false;
+    let envioEventoEnCurso = false;
 
-    function mostrarMensaje(tipo, texto) {
-      const mensaje = document.getElementById("mensaje");
+    function mostrarMensaje(id, tipo, texto) {
+      const mensaje = document.getElementById(id);
       mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
       mensaje.textContent = texto;
     }
 
-    function limpiarMensaje() {
-      const mensaje = document.getElementById("mensaje");
+    function limpiarMensaje(id) {
+      const mensaje = document.getElementById(id);
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    function actualizarVistaPreviaEvento() {
+      const nombre = document.getElementById("nombreEvento").value.trim() || "-";
+      const subtitulo = document.getElementById("subtituloEvento").value.trim() || "-";
+      const lugar = document.getElementById("lugarEvento").value.trim() || "-";
+      const descripcion = document.getElementById("descripcionEvento").value.trim() || "";
+
+      document.getElementById("previewNombreEvento").textContent = nombre;
+      document.getElementById("previewSubtituloEvento").textContent = subtitulo;
+      document.getElementById("previewLugarEvento").textContent = lugar;
+      document.getElementById("previewDescripcionEvento").textContent = descripcion || "-";
+
+      document.getElementById("cabeceraNombreEvento").textContent = nombre;
+      document.getElementById("cabeceraSubtituloEvento").textContent = subtitulo;
+    }
+
+    async function cargarConfigEvento() {
+      const response = await fetch("/api/admin/config-evento");
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+      }
+
+      const config = data.config || {};
+
+      document.getElementById("nombreEvento").value = config.nombre_evento || "";
+      document.getElementById("subtituloEvento").value = config.subtitulo_evento || "";
+      document.getElementById("descripcionEvento").value = config.descripcion_publica || "";
+      document.getElementById("lugarEvento").value = config.lugar || "";
+
+      actualizarVistaPreviaEvento();
+    }
+
+    async function guardarConfigEvento(event) {
+      event.preventDefault();
+      if (envioEventoEnCurso) return;
+
+      limpiarMensaje("mensajeEvento");
+
+      const payload = {
+        nombre_evento: document.getElementById("nombreEvento").value.trim(),
+        subtitulo_evento: document.getElementById("subtituloEvento").value.trim(),
+        descripcion_publica: document.getElementById("descripcionEvento").value.trim(),
+        lugar: document.getElementById("lugarEvento").value.trim()
+      };
+
+      try {
+        envioEventoEnCurso = true;
+        document.getElementById("btnGuardarEvento").disabled = true;
+
+        const response = await fetch("/api/admin/config-evento", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          mostrarMensaje("mensajeEvento", "error", data.error || "No se pudo guardar la configuración del evento.");
+          return;
+        }
+
+        mostrarMensaje("mensajeEvento", "ok", data.mensaje || "Configuración guardada correctamente.");
+        await cargarConfigEvento();
+
+      } catch (error) {
+        mostrarMensaje("mensajeEvento", "error", error.message || "Error de conexión con el servidor.");
+      } finally {
+        envioEventoEnCurso = false;
+        document.getElementById("btnGuardarEvento").disabled = false;
+      }
     }
 
     function limpiarFormulario() {
@@ -327,7 +494,7 @@
       document.getElementById("tituloFormulario").textContent = `Editar franja #${franja.id}`;
       document.getElementById("btnGuardar").textContent = "Guardar cambios";
       document.getElementById("btnCancelarEdicion").style.display = "inline-block";
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: document.body.scrollHeight > 0 ? 300 : 0, behavior: "smooth" });
     }
 
     function actualizarResumen() {
@@ -382,7 +549,7 @@
         `;
 
         tr.querySelector(".btn-editar").addEventListener("click", () => {
-          limpiarMensaje();
+          limpiarMensaje("mensajeFranjas");
           cargarFormularioDesdeFranja(franja);
         });
 
@@ -419,9 +586,9 @@
 
     async function guardarFranja(event) {
       event.preventDefault();
-      if (envioEnCurso) return;
+      if (envioFranjasEnCurso) return;
 
-      limpiarMensaje();
+      limpiarMensaje("mensajeFranjas");
 
       const id = document.getElementById("franjaId").value.trim();
       const fecha = document.getElementById("fecha").value;
@@ -442,7 +609,7 @@
       }
 
       try {
-        envioEnCurso = true;
+        envioFranjasEnCurso = true;
         document.getElementById("btnGuardar").disabled = true;
 
         const response = await fetch("/api/admin/franjas", {
@@ -456,30 +623,30 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
+          mostrarMensaje("mensajeFranjas", "error", data.error || "No se pudo guardar la franja.");
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "Operación realizada correctamente.");
+        mostrarMensaje("mensajeFranjas", "ok", data.mensaje || "Operación realizada correctamente.");
         franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
         renderizarTabla();
         limpiarFormulario();
 
       } catch (error) {
-        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+        mostrarMensaje("mensajeFranjas", "error", error.message || "Error de conexión con el servidor.");
       } finally {
-        envioEnCurso = false;
+        envioFranjasEnCurso = false;
         document.getElementById("btnGuardar").disabled = false;
       }
     }
 
     async function eliminarFranja(id) {
-      if (envioEnCurso) return;
+      if (envioFranjasEnCurso) return;
 
-      limpiarMensaje();
+      limpiarMensaje("mensajeFranjas");
 
       try {
-        envioEnCurso = true;
+        envioFranjasEnCurso = true;
 
         const response = await fetch("/api/admin/franjas", {
           method: "DELETE",
@@ -492,11 +659,11 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo eliminar la franja.");
+          mostrarMensaje("mensajeFranjas", "error", data.error || "No se pudo eliminar la franja.");
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
+        mostrarMensaje("mensajeFranjas", "ok", data.mensaje || "Franja eliminada correctamente.");
         franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
         renderizarTabla();
 
@@ -505,25 +672,31 @@
           limpiarFormulario();
         }
       } catch (error) {
-        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+        mostrarMensaje("mensajeFranjas", "error", error.message || "Error de conexión con el servidor.");
       } finally {
-        envioEnCurso = false;
+        envioFranjasEnCurso = false;
       }
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
+      document.getElementById("formEvento").addEventListener("submit", guardarConfigEvento);
       document.getElementById("formFranja").addEventListener("submit", guardarFranja);
 
       document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
         limpiarFormulario();
-        limpiarMensaje();
+        limpiarMensaje("mensajeFranjas");
+      });
+
+      ["nombreEvento", "subtituloEvento", "descripcionEvento", "lugarEvento"].forEach(id => {
+        document.getElementById(id).addEventListener("input", actualizarVistaPreviaEvento);
       });
 
       try {
+        await cargarConfigEvento();
         await cargarFranjas();
         limpiarFormulario();
       } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
+        mostrarMensaje("mensajeEvento", "error", error.message || "No se pudo inicializar el panel.");
       }
     });
   </script>
