@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editar solicitud de bautismo de mar</title>
+  <title>Editar solicitud</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -50,6 +50,13 @@
     }
 
     .titulos {
+      text-align: center;
+    }
+
+    .lugar-evento {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #444;
       text-align: center;
     }
 
@@ -187,7 +194,6 @@
       margin-top: 12px;
     }
 
-    /* Modal */
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -262,8 +268,9 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1>DIFAS 2026 – Arsenal de Ferrol</h1>
-        <h2>Editar solicitud de bautismo de mar</h2>
+        <h1 id="tituloEvento">Cargando evento...</h1>
+        <h2 id="subtituloEvento">Editar solicitud</h2>
+        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
     </div>
 
@@ -304,7 +311,6 @@
         <input type="email" id="email" name="email" required>
       </div>
 
-      <!-- Totales ocultos, calculados desde asistentes -->
       <input type="hidden" id="mayores10" name="mayores10" value="0">
       <input type="hidden" id="menores10" name="menores10" value="0">
 
@@ -330,7 +336,6 @@
     </form>
   </div>
 
-  <!-- Modal de enlaces -->
   <div id="modalEnlaces" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Acceso a esta solicitud</h3>
@@ -389,6 +394,38 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    async function cargarConfigEvento() {
+      try {
+        const response = await fetch("/api/config-evento");
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+        }
+
+        const config = data.config || {};
+
+        document.title = config.subtitulo_evento || "Editar solicitud";
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
+        document.getElementById("subtituloEvento").textContent = "Editar solicitud";
+
+        const lugarEl = document.getElementById("lugarEvento");
+        if (config.lugar && String(config.lugar).trim() !== "") {
+          lugarEl.style.display = "block";
+          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
+        } else {
+          lugarEl.style.display = "none";
+          lugarEl.textContent = "";
+        }
+
+      } catch (error) {
+        console.error(error);
+        document.title = "Editar solicitud";
+        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+        document.getElementById("subtituloEvento").textContent = "Editar solicitud";
+      }
     }
 
     function obtenerFranjaSeleccionada() {
@@ -720,7 +757,7 @@ ${urlAsistentes()}`;
       }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("franja").addEventListener("change", function () {
         limpiarMensajePrincipal();
         actualizarInfoPlazas();
@@ -749,10 +786,13 @@ ${urlAsistentes()}`;
         }
       });
 
-      cargarReserva().catch(err => {
+      try {
+        await cargarConfigEvento();
+        await cargarReserva();
+      } catch (err) {
         console.error(err);
         mostrarError("Error al cargar la página de edición.");
-      });
+      }
     });
   </script>
 </body>
