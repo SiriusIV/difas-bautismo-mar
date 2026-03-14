@@ -1,3 +1,5 @@
+import { requireAdminSession } from "./_auth.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -10,9 +12,11 @@ function normalizarTexto(valor) {
 }
 
 const ESTADOS_VALIDOS = ["PENDIENTE", "CONFIRMADA", "RECHAZADA", "CANCELADA"];
-const ESTADOS_QUE_BLOQUEAN = ["PENDIENTE", "CONFIRMADA"];
 
 export async function onRequestGet(context) {
+  const authError = await requireAdminSession(context);
+  if (authError) return authError;
+
   const { request, env } = context;
 
   try {
@@ -68,10 +72,7 @@ export async function onRequestGet(context) {
 
     if (estado) {
       if (!ESTADOS_VALIDOS.includes(estado)) {
-        return json(
-          { ok: false, error: "Estado no válido." },
-          { status: 400 }
-        );
+        return json({ ok: false, error: "Estado no válido." }, { status: 400 });
       }
       condiciones.push("r.estado = ?");
       valores.push(estado);
@@ -134,6 +135,9 @@ export async function onRequestGet(context) {
 }
 
 export async function onRequestPatch(context) {
+  const authError = await requireAdminSession(context);
+  if (authError) return authError;
+
   const { request, env } = context;
 
   try {
@@ -183,36 +187,25 @@ export async function onRequestPatch(context) {
       );
     }
 
-    // CONFIRMAR
     if (accion === "confirmar") {
       if (reserva.estado === "CONFIRMADA") {
-        return json({
-          ok: true,
-          mensaje: "La reserva ya estaba confirmada."
-        });
+        return json({ ok: true, mensaje: "La reserva ya estaba confirmada." });
       }
 
       if (reserva.estado === "CANCELADA") {
         return json(
-          {
-            ok: false,
-            error: "No se puede confirmar una reserva cancelada. Reábrela primero como pendiente."
-          },
+          { ok: false, error: "No se puede confirmar una reserva cancelada. Reábrela primero como pendiente." },
           { status: 400 }
         );
       }
 
       if (reserva.estado === "RECHAZADA") {
         return json(
-          {
-            ok: false,
-            error: "No se puede confirmar una reserva rechazada directamente. Reábrela primero como pendiente."
-          },
+          { ok: false, error: "No se puede confirmar una reserva rechazada directamente. Reábrela primero como pendiente." },
           { status: 400 }
         );
       }
 
-      // Comprobar capacidad real en la franja excluyendo esta propia reserva
       const ocupacion = await env.DB.prepare(`
         SELECT COALESCE(SUM(personas), 0) AS ocupadas
         FROM reservas
@@ -247,10 +240,7 @@ export async function onRequestPatch(context) {
         .run();
 
       if ((updateResult?.meta?.changes || 0) === 0) {
-        return json(
-          { ok: false, error: "No se pudo confirmar la reserva." },
-          { status: 500 }
-        );
+        return json({ ok: false, error: "No se pudo confirmar la reserva." }, { status: 500 });
       }
 
       return json({
@@ -259,21 +249,14 @@ export async function onRequestPatch(context) {
       });
     }
 
-    // RECHAZAR
     if (accion === "rechazar") {
       if (reserva.estado === "RECHAZADA") {
-        return json({
-          ok: true,
-          mensaje: "La reserva ya estaba rechazada."
-        });
+        return json({ ok: true, mensaje: "La reserva ya estaba rechazada." });
       }
 
       if (reserva.estado === "CANCELADA") {
         return json(
-          {
-            ok: false,
-            error: "No se puede rechazar una reserva cancelada."
-          },
+          { ok: false, error: "No se puede rechazar una reserva cancelada." },
           { status: 400 }
         );
       }
@@ -289,10 +272,7 @@ export async function onRequestPatch(context) {
         .run();
 
       if ((updateResult?.meta?.changes || 0) === 0) {
-        return json(
-          { ok: false, error: "No se pudo rechazar la reserva." },
-          { status: 500 }
-        );
+        return json({ ok: false, error: "No se pudo rechazar la reserva." }, { status: 500 });
       }
 
       return json({
@@ -301,13 +281,9 @@ export async function onRequestPatch(context) {
       });
     }
 
-    // CANCELAR
     if (accion === "cancelar") {
       if (reserva.estado === "CANCELADA") {
-        return json({
-          ok: true,
-          mensaje: "La reserva ya estaba cancelada."
-        });
+        return json({ ok: true, mensaje: "La reserva ya estaba cancelada." });
       }
 
       const updateResult = await env.DB.prepare(`
@@ -321,10 +297,7 @@ export async function onRequestPatch(context) {
         .run();
 
       if ((updateResult?.meta?.changes || 0) === 0) {
-        return json(
-          { ok: false, error: "No se pudo cancelar la reserva." },
-          { status: 500 }
-        );
+        return json({ ok: false, error: "No se pudo cancelar la reserva." }, { status: 500 });
       }
 
       return json({
@@ -333,16 +306,11 @@ export async function onRequestPatch(context) {
       });
     }
 
-    // REABRIR A PENDIENTE
     if (accion === "reabrir") {
       if (reserva.estado === "PENDIENTE") {
-        return json({
-          ok: true,
-          mensaje: "La reserva ya estaba pendiente."
-        });
+        return json({ ok: true, mensaje: "La reserva ya estaba pendiente." });
       }
 
-      // Al reabrir a pendiente también debe seguir existiendo capacidad
       const ocupacion = await env.DB.prepare(`
         SELECT COALESCE(SUM(personas), 0) AS ocupadas
         FROM reservas
@@ -377,10 +345,7 @@ export async function onRequestPatch(context) {
         .run();
 
       if ((updateResult?.meta?.changes || 0) === 0) {
-        return json(
-          { ok: false, error: "No se pudo reabrir la reserva." },
-          { status: 500 }
-        );
+        return json({ ok: false, error: "No se pudo reabrir la reserva." }, { status: 500 });
       }
 
       return json({
