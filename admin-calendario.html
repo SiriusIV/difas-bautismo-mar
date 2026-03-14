@@ -167,33 +167,6 @@
       background: #13653f;
     }
 
-    .btn-rechazar {
-      background: #dc3545;
-      color: white;
-    }
-
-    .btn-rechazar:hover {
-      background: #b52a37;
-    }
-
-    .btn-cancelar {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-cancelar:hover {
-      background: #565e64;
-    }
-
-    .btn-reabrir {
-      background: #fd7e14;
-      color: white;
-    }
-
-    .btn-reabrir:hover {
-      background: #d96404;
-    }
-
     .leyenda {
       display: flex;
       gap: 16px;
@@ -239,7 +212,7 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 720px;
+      max-width: 640px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
@@ -261,6 +234,21 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
+    }
+
+    .bloque-estado {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .fila-estado {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: 12px;
+      align-items: end;
     }
 
     .estado {
@@ -296,6 +284,10 @@
 
       .acciones-cabecera {
         text-align: center;
+      }
+
+      .fila-estado {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -372,7 +364,17 @@
       <h3 id="modalTitulo">Detalle de solicitud</h3>
       <div id="modalDetalle" class="detalle"></div>
 
-      <div class="acciones-modal" id="accionesEstadoModal"></div>
+      <div class="bloque-estado">
+        <div class="fila-estado">
+          <div>
+            <label for="selectEstadoDestino">Cambiar estado</label>
+            <select id="selectEstadoDestino"></select>
+          </div>
+          <div>
+            <button type="button" id="btnAplicarEstado" class="btn-confirmar">Aplicar cambio</button>
+          </div>
+        </div>
+      </div>
 
       <div class="acciones-modal">
         <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
@@ -463,35 +465,35 @@
       }
     }
 
-    function construirBotonesEstado(p) {
-      const contenedor = document.getElementById("accionesEstadoModal");
-      contenedor.innerHTML = "";
+    function opcionesEstadoPara(estadoActual) {
+      const opciones = [{ value: "", label: "Sin cambio" }];
 
-      const botones = [];
-
-      if (p.estado === "PENDIENTE") {
-        botones.push({ texto: "Confirmar", clase: "btn-confirmar", accion: "confirmar" });
-        botones.push({ texto: "Rechazar", clase: "btn-rechazar", accion: "rechazar" });
-        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
-      } else if (p.estado === "CONFIRMADA") {
-        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
-        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
-      } else if (p.estado === "RECHAZADA") {
-        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
-        botones.push({ texto: "Cancelar", clase: "btn-cancelar", accion: "cancelar" });
-      } else if (p.estado === "CANCELADA") {
-        botones.push({ texto: "Reabrir", clase: "btn-reabrir", accion: "reabrir" });
+      if (estadoActual === "PENDIENTE") {
+        opciones.push({ value: "confirmar", label: "Pasar a CONFIRMADA" });
+        opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
+        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
+      } else if (estadoActual === "CONFIRMADA") {
+        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
+        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
+      } else if (estadoActual === "RECHAZADA") {
+        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
+        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
+      } else if (estadoActual === "CANCELADA") {
+        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
       }
 
-      botones.forEach(b => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = b.clase;
-        btn.textContent = b.texto;
-        btn.addEventListener("click", async () => {
-          await ejecutarAccionDesdeModal(b.accion);
-        });
-        contenedor.appendChild(btn);
+      return opciones;
+    }
+
+    function cargarSelectorEstado(estadoActual) {
+      const select = document.getElementById("selectEstadoDestino");
+      select.innerHTML = "";
+
+      opcionesEstadoPara(estadoActual).forEach(op => {
+        const option = document.createElement("option");
+        option.value = op.value;
+        option.textContent = op.label;
+        select.appendChild(option);
       });
     }
 
@@ -516,7 +518,7 @@
       document.getElementById("btnAbrirEditar").href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
       document.getElementById("btnAbrirAsistentes").href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
 
-      construirBotonesEstado(p);
+      cargarSelectorEstado(p.estado);
 
       document.getElementById("modalEvento").classList.add("activo");
       document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
@@ -528,10 +530,14 @@
       document.getElementById("modalEvento").setAttribute("aria-hidden", "true");
     }
 
-    async function ejecutarAccionDesdeModal(accion) {
+    async function ejecutarAccionDesdeModal() {
       if (!eventoSeleccionado || accionEnCurso) return;
 
-      const p = eventoSeleccionado.extendedProps;
+      const accion = document.getElementById("selectEstadoDestino").value;
+      if (!accion) {
+        cerrarModalEvento();
+        return;
+      }
 
       let textoConfirmacion = "¿Desea ejecutar esta acción?";
       if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
@@ -544,6 +550,7 @@
 
       try {
         accionEnCurso = true;
+        document.getElementById("btnAplicarEstado").disabled = true;
 
         const response = await fetch("/api/admin/reservas", {
           method: "PATCH",
@@ -577,6 +584,7 @@
         mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
       } finally {
         accionEnCurso = false;
+        document.getElementById("btnAplicarEstado").disabled = false;
       }
     }
 
@@ -662,6 +670,23 @@
       calendar.render();
     }
 
+    function activarRecargaAutomaticaFiltros() {
+      document.getElementById("filtroEstado").addEventListener("change", () => {
+        limpiarMensaje();
+        calendar.refetchEvents();
+      });
+
+      document.getElementById("chkCanceladas").addEventListener("change", () => {
+        limpiarMensaje();
+        calendar.refetchEvents();
+      });
+
+      document.getElementById("chkRechazadas").addEventListener("change", () => {
+        limpiarMensaje();
+        calendar.refetchEvents();
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
@@ -669,10 +694,13 @@
       document.getElementById("app").style.display = "block";
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
+      document.getElementById("btnAplicarEstado").addEventListener("click", ejecutarAccionDesdeModal);
+
       document.getElementById("btnRecargar").addEventListener("click", function() {
         limpiarMensaje();
         calendar.refetchEvents();
       });
+
       document.getElementById("btnHoy").addEventListener("click", function() {
         calendar.today();
       });
@@ -686,6 +714,7 @@
       try {
         await cargarConfigEvento();
         crearCalendario();
+        activarRecargaAutomaticaFiltros();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
       }
