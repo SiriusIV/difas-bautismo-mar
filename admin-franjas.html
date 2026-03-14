@@ -57,6 +57,15 @@
       text-align: center;
     }
 
+    .acciones-cabecera {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .panel {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
@@ -106,7 +115,7 @@
       resize: vertical;
     }
 
-    button {
+    button, .btn-enlace {
       background: #0b5ed7;
       color: white;
       border: none;
@@ -114,9 +123,11 @@
       border-radius: 6px;
       font-size: 15px;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
 
-    button:hover {
+    button:hover, .btn-enlace:hover {
       background: #094db1;
     }
 
@@ -245,7 +256,8 @@
         grid-template-columns: 1fr;
       }
 
-      .logo {
+      .logo,
+      .acciones-cabecera {
         position: static;
         display: block;
         margin: 0 auto 10px auto;
@@ -255,16 +267,24 @@
         display: block;
         min-height: auto;
       }
+
+      .acciones-cabecera {
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor">
+  <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
         <h1 id="cabeceraNombreEvento">Cargando evento...</h1>
         <h2 id="cabeceraSubtituloEvento">Panel de administración</h2>
+      </div>
+      <div class="acciones-cabecera">
+        <a class="btn-enlace btn-secundario" href="admin-reservas.html">Ir a reservas</a>
+        <button type="button" id="btnCerrarSesion">Cerrar sesión</button>
       </div>
     </div>
 
@@ -384,6 +404,38 @@
     let envioFranjasEnCurso = false;
     let envioEventoEnCurso = false;
 
+    function redirigirLogin() {
+      const next = encodeURIComponent(window.location.pathname);
+      window.location.href = `admin-login.html?next=${next}`;
+    }
+
+    async function comprobarSesionAdmin() {
+      const response = await fetch("/api/admin/session", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) {
+        redirigirLogin();
+        return false;
+      }
+
+      return true;
+    }
+
+    async function cerrarSesion() {
+      try {
+        await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+      } catch {
+        // sin acción
+      }
+
+      redirigirLogin();
+    }
+
     function mostrarMensaje(id, tipo, texto) {
       const mensaje = document.getElementById(id);
       mensaje.className = "mensaje " + tipo;
@@ -414,7 +466,15 @@
     }
 
     async function cargarConfigEvento() {
-      const response = await fetch("/api/admin/config-evento");
+      const response = await fetch("/api/admin/config-evento", {
+        credentials: "same-origin"
+      });
+
+      if (response.status === 401) {
+        redirigirLogin();
+        return;
+      }
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -453,8 +513,14 @@
           headers: {
             "Content-Type": "application/json"
           },
+          credentials: "same-origin",
           body: JSON.stringify(payload)
         });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
 
         const data = await response.json();
 
@@ -494,7 +560,7 @@
       document.getElementById("tituloFormulario").textContent = `Editar franja #${franja.id}`;
       document.getElementById("btnGuardar").textContent = "Guardar cambios";
       document.getElementById("btnCancelarEdicion").style.display = "inline-block";
-      window.scrollTo({ top: document.body.scrollHeight > 0 ? 300 : 0, behavior: "smooth" });
+      window.scrollTo({ top: 300, behavior: "smooth" });
     }
 
     function actualizarResumen() {
@@ -573,7 +639,15 @@
       const tbody = document.getElementById("tablaFranjas");
       tbody.innerHTML = `<tr><td colspan="9">Cargando datos...</td></tr>`;
 
-      const response = await fetch("/api/admin/franjas");
+      const response = await fetch("/api/admin/franjas", {
+        credentials: "same-origin"
+      });
+
+      if (response.status === 401) {
+        redirigirLogin();
+        return;
+      }
+
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
@@ -617,8 +691,14 @@
           headers: {
             "Content-Type": "application/json"
           },
+          credentials: "same-origin",
           body: JSON.stringify(payload)
         });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
 
         const data = await response.json();
 
@@ -653,8 +733,14 @@
           headers: {
             "Content-Type": "application/json"
           },
+          credentials: "same-origin",
           body: JSON.stringify({ id })
         });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return;
+        }
 
         const data = await response.json();
 
@@ -679,8 +765,14 @@
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await comprobarSesionAdmin();
+      if (!ok) return;
+
+      document.getElementById("app").style.display = "block";
+
       document.getElementById("formEvento").addEventListener("submit", guardarConfigEvento);
       document.getElementById("formFranja").addEventListener("submit", guardarFranja);
+      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
 
       document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
         limpiarFormulario();
