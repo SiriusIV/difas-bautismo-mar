@@ -37,12 +37,14 @@ export async function onRequestGet(context) {
           SELECT SUM(r2.personas)
           FROM reservas r2
           WHERE r2.franja_id = r.franja_id
+            AND r2.estado IN ('PENDIENTE', 'CONFIRMADA')
         ), 0) AS ocupadas,
         (
           f.capacidad - COALESCE((
             SELECT SUM(r2.personas)
             FROM reservas r2
             WHERE r2.franja_id = r.franja_id
+              AND r2.estado IN ('PENDIENTE', 'CONFIRMADA')
           ), 0)
         ) AS disponibles
       FROM reservas r
