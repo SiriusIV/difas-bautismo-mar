@@ -73,7 +73,7 @@
       color: #1d4f91;
       padding: 12px;
       border-radius: 6px;
-      min-height: 130px;
+      min-height: 150px;
       line-height: 1.7;
     }
 
@@ -220,6 +220,16 @@
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
 
+    .nota-destacada {
+      background: #fff8e6;
+      border: 1px solid #f0d58a;
+      color: #7a5a00;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -340,6 +350,9 @@
       </div>
     </div>
 
+    <div class="nota-destacada" id="notaPrereserva" style="display:none;">
+    </div>
+
     <div id="mensaje" class="mensaje"></div>
 
     <div class="resumen-superior">
@@ -377,9 +390,6 @@
         <input type="email" id="email" name="email" required>
       </div>
 
-      <input type="hidden" id="mayores10" name="mayores10" value="0">
-      <input type="hidden" id="menores10" name="menores10" value="0">
-
       <div class="campo">
         <label for="franja">Franja horaria solicitada</label>
         <select id="franja" name="franja" required>
@@ -387,6 +397,11 @@
         </select>
         <div id="infoPlazas" class="info-plazas"></div>
         <div id="avisoCapacidad" class="mensaje" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="campo">
+        <label for="plazasSolicitadas">Plazas pre-reservadas</label>
+        <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
       </div>
 
       <div class="campo">
@@ -459,6 +474,7 @@
     let envioEnCurso = false;
     let anulacionEnCurso = false;
     let enlaceSolicitudActual = "";
+    let asistentesCargados = 0;
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
@@ -502,9 +518,14 @@
       return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
     }
 
+    function formatearFechaHora(valor) {
+      if (!valor) return "No disponible";
+      return String(valor).replace("T", " ");
+    }
+
     function actualizarModoEdicion() {
       const editable = solicitudEditable();
-      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "observaciones"];
+      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "plazasSolicitadas", "observaciones"];
 
       idsCampos.forEach(id => {
         const el = document.getElementById(id);
@@ -594,10 +615,9 @@
       return franjasCache.find(f => Number(f.id) === franjaId) || null;
     }
 
-    function totalSolicitado() {
-      const mayores10 = parseInt(document.getElementById("mayores10").value || "0", 10);
-      const menores10 = parseInt(document.getElementById("menores10").value || "0", 10);
-      return mayores10 + menores10;
+    function plazasSolicitadasActuales() {
+      const n = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+      return Number.isInteger(n) ? n : 0;
     }
 
     function plazasEditablesEnFranja(franja) {
@@ -605,7 +625,7 @@
       const disponibles = Number(franja.disponibles || 0);
 
       if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
-        return disponibles + Number(reservaActual.personas || 0);
+        return disponibles + Number(reservaActual.plazas_prereservadas || 0);
       }
 
       return disponibles;
@@ -643,7 +663,7 @@
       const aviso = document.getElementById("avisoCapacidad");
       const boton = document.getElementById("btnGuardar");
       const franja = obtenerFranjaSeleccionada();
-      const total = totalSolicitado();
+      const plazas = plazasSolicitadasActuales();
 
       if (!solicitudEditable()) {
         return;
@@ -658,38 +678,67 @@
         return;
       }
 
-      if (total <= 0) {
-        if (!envioEnCurso) boton.disabled = false;
+      if (!Number.isInteger(plazas) || plazas <= 0) {
+        aviso.className = "mensaje alerta";
+        aviso.style.display = "block";
+        aviso.textContent = "Debe indicar un número de plazas pre-reservadas válido.";
+        if (!envioEnCurso) boton.disabled = true;
+        return;
+      }
+
+      if (plazas < asistentesCargados) {
+        aviso.className = "mensaje alerta";
+        aviso.style.display = "block";
+        aviso.textContent = `No puede fijar menos plazas pre-reservadas (${plazas}) que asistentes ya cargados (${asistentesCargados}).`;
+        if (!envioEnCurso) boton.disabled = true;
         return;
       }
 
       const disponiblesEditables = plazasEditablesEnFranja(franja);
       const esMismaFranja = reservaActual && Number(franja.id) === Number(reservaActual.franja_id);
 
-      if (total > disponiblesEditables) {
+      if (plazas > disponiblesEditables) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
 
         if (esMismaFranja) {
-          aviso.textContent = `Está solicitando ${total} plazas, pero para modificar esta reserva en su franja actual solo dispone de ${disponiblesEditables}.`;
+          aviso.textContent = `Está solicitando ${plazas} plazas, pero para modificar esta reserva en su franja actual solo dispone de ${disponiblesEditables}.`;
         } else {
-          aviso.textContent = `Está solicitando ${total} plazas, pero solo quedan ${disponiblesEditables} disponibles en la franja seleccionada.`;
+          aviso.textContent = `Está solicitando ${plazas} plazas, pero solo quedan ${disponiblesEditables} disponibles en la franja seleccionada.`;
         }
 
         if (!envioEnCurso) boton.disabled = true;
         return;
       }
 
+      const pendientesNominalizar = Math.max(plazas - asistentesCargados, 0);
+
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-
-      if (esMismaFranja) {
-        aviso.textContent = `Está solicitando ${total} plazas y la modificación es válida dentro de su franja actual.`;
-      } else {
-        aviso.textContent = `Está solicitando ${total} plazas y quedan ${disponiblesEditables} disponibles. El cambio de franja puede tramitarse.`;
-      }
+      aviso.textContent = `Plazas pre-reservadas: ${plazas}. Asistentes cargados: ${asistentesCargados}. Plazas aún no consolidadas: ${pendientesNominalizar}.`;
 
       if (!envioEnCurso) boton.disabled = false;
+    }
+
+    function actualizarNotaPrereserva() {
+      const nota = document.getElementById("notaPrereserva");
+
+      if (!reservaActual) {
+        nota.style.display = "none";
+        return;
+      }
+
+      const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
+      const plazas = Number(reservaActual.plazas_prereservadas || 0);
+      const pendientesNominalizar = Math.max(plazas - asistentesCargados, 0);
+
+      nota.innerHTML = `
+        <strong>Pre-reserva temporal:</strong> esta solicitud mantiene actualmente <strong>${plazas}</strong> plazas pre-reservadas.
+        <br>Asistentes cargados nominalmente: <strong>${asistentesCargados}</strong>.
+        <br>Plazas aún no consolidadas: <strong>${pendientesNominalizar}</strong>.
+        <br>Hora límite de consolidación: <strong>${expira}</strong>.
+      `;
+      nota.style.display = "block";
     }
 
     async function cargarFranjas(franjaSeleccionadaId = "") {
@@ -735,11 +784,13 @@
 
         if (!response.ok || !data.ok) {
           if (reservaActual && ["CANCELADA", "RECHAZADA"].includes(reservaActual.estado)) {
+            asistentesCargados = 0;
             const resumen = document.getElementById("resumenAsistentes");
             resumen.innerHTML = `
               <span class="info-titulo">Resumen de asistentes de esta reserva</span>
               La solicitud no está en estado editable. No se permite gestionar asistentes.
             `;
+            actualizarNotaPrereserva();
             return;
           }
           throw new Error(data.error || "No se pudo cargar el resumen de asistentes.");
@@ -749,19 +800,24 @@
         const menores = data.visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
         const total = data.visitantes.length;
 
+        asistentesCargados = total;
+
+        const plazas = Number(reservaActual?.plazas_prereservadas || 0);
+        const pendientesNominalizar = Math.max(plazas - total, 0);
+
         const resumen = document.getElementById("resumenAsistentes");
         resumen.innerHTML = `
           <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-          <strong>Total asistentes:</strong> ${total}<br>
+          <strong>Total asistentes cargados:</strong> ${total}<br>
           <strong>Mayores de 10 años:</strong> ${mayores}<br>
-          <strong>Menores de 10 años:</strong> ${menores}
+          <strong>Menores de 10 años:</strong> ${menores}<br>
+          <strong>Plazas aún no consolidadas:</strong> ${pendientesNominalizar}
         `;
 
-        document.getElementById("mayores10").value = mayores;
-        document.getElementById("menores10").value = menores;
-
+        actualizarNotaPrereserva();
         actualizarAvisoCapacidad();
       } catch (error) {
+        asistentesCargados = 0;
         const resumen = document.getElementById("resumenAsistentes");
         resumen.innerHTML = `
           <span class="info-titulo">Resumen de asistentes de esta reserva</span>
@@ -838,15 +894,16 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
         <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja asignada a esta reserva:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Plazas pre-reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
+        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
       `;
 
       document.getElementById("centro").value = reservaActual.centro || "";
       document.getElementById("contacto").value = reservaActual.contacto || "";
       document.getElementById("telefono").value = reservaActual.telefono || "";
       document.getElementById("email").value = reservaActual.email || "";
-      document.getElementById("mayores10").value = reservaActual.mayores10 ?? 0;
-      document.getElementById("menores10").value = reservaActual.menores10 ?? 0;
+      document.getElementById("plazasSolicitadas").value = Number(reservaActual.plazas_prereservadas || 0);
       document.getElementById("observaciones").value = reservaActual.observaciones || "";
 
       document.getElementById("btnGestionarAsistentes").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
@@ -866,6 +923,17 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
       limpiarMensajePrincipal();
 
       const boton = document.getElementById("btnGuardar");
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+
+      if (!Number.isInteger(plazas) || plazas <= 0) {
+        mostrarError("Debe indicar un número de plazas pre-reservadas válido.");
+        return;
+      }
+
+      if (plazas < asistentesCargados) {
+        mostrarError(`No puede fijar menos plazas pre-reservadas (${plazas}) que asistentes ya cargados (${asistentesCargados}).`);
+        return;
+      }
 
       const datos = {
         token_edicion: tokenEdicion,
@@ -873,8 +941,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         contacto: document.getElementById("contacto").value.trim(),
         telefono: document.getElementById("telefono").value.trim(),
         email: document.getElementById("email").value.trim(),
-        mayores10: parseInt(document.getElementById("mayores10").value || "0", 10),
-        menores10: parseInt(document.getElementById("menores10").value || "0", 10),
+        plazas_solicitadas: plazas,
         franja: document.getElementById("franja").value,
         observaciones: document.getElementById("observaciones").value.trim()
       };
@@ -964,6 +1031,12 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         limpiarMensajePrincipal();
         actualizarInfoPlazas();
         actualizarAvisoCapacidad();
+      });
+
+      document.getElementById("plazasSolicitadas").addEventListener("input", function () {
+        limpiarMensajePrincipal();
+        actualizarAvisoCapacidad();
+        actualizarNotaPrereserva();
       });
 
       document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
