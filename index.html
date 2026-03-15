@@ -234,6 +234,34 @@
       overflow-wrap: anywhere;
     }
 
+    .modal-reserva-datos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.modal-reserva-codigo {
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.estado-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.estado-badge.pendiente {
+  background: #d39e00;
+}
+
     .modal .acciones {
       display: flex;
       gap: 10px;
@@ -379,9 +407,19 @@
       </p>
 
       <div class="bloque">
-        <strong>Código de reserva:</strong><br>
-        <span id="modalCodigoReserva"></span>
-      </div>
+  <div class="modal-reserva-datos">
+    <div>
+      <strong>Código de reserva</strong><br>
+      <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
+    </div>
+
+    <div>
+      <strong>Estado actual</strong><br>
+      <span class="estado-badge pendiente">PENDIENTE DE AUTORIZACIÓN</span>
+    </div>
+  </div>
+</div>
+
 
       <div class="acciones">
         <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
