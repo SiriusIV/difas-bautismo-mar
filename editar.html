@@ -350,8 +350,7 @@
       </div>
     </div>
 
-    <div class="nota-destacada" id="notaPrereserva" style="display:none;">
-    </div>
+    <div class="nota-destacada" id="notaPrereserva" style="display:none;"></div>
 
     <div id="mensaje" class="mensaje"></div>
 
@@ -400,7 +399,7 @@
       </div>
 
       <div class="campo">
-        <label for="plazasSolicitadas">Plazas pre-reservadas</label>
+        <label for="plazasSolicitadas">Plazas reservadas</label>
         <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
       </div>
 
@@ -422,9 +421,7 @@
     <div class="modal">
       <h3>Acceso a su solicitud</h3>
 
-      <p>
-        Guarde este acceso para poder volver a entrar más adelante.
-      </p>
+      <p>Guarde este acceso para poder volver a entrar más adelante.</p>
 
       <div class="bloque">
         <div class="modal-reserva-grid">
@@ -647,14 +644,14 @@
 
       const capacidad = Number(franja.capacidad || 0);
       const disponibles = Number(franja.disponibles || 0);
-      const reservadas = capacidad - disponibles;
+      const ocupadas = capacidad - disponibles;
 
       info.textContent = "";
 
       resumenFranja.innerHTML = `
         <span class="info-titulo">Resumen global de la franja horaria</span>
         <strong>Plazas totales:</strong> ${capacidad}<br>
-        <strong>Plazas reservadas:</strong> ${reservadas}<br>
+        <strong>Plazas ocupadas en esta franja:</strong> ${ocupadas}<br>
         <strong>Plazas disponibles:</strong> ${disponibles}
       `;
     }
@@ -681,7 +678,7 @@
       if (!Number.isInteger(plazas) || plazas <= 0) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
-        aviso.textContent = "Debe indicar un número de plazas pre-reservadas válido.";
+        aviso.textContent = "Debe indicar un número de plazas reservadas válido.";
         if (!envioEnCurso) boton.disabled = true;
         return;
       }
@@ -689,7 +686,7 @@
       if (plazas < asistentesCargados) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
-        aviso.textContent = `No puede fijar menos plazas pre-reservadas (${plazas}) que asistentes ya cargados (${asistentesCargados}).`;
+        aviso.textContent = `No puede fijar menos plazas reservadas (${plazas}) que plazas ya asignadas (${asistentesCargados}).`;
         if (!envioEnCurso) boton.disabled = true;
         return;
       }
@@ -711,11 +708,9 @@
         return;
       }
 
-      const pendientesNominalizar = Math.max(plazas - asistentesCargados, 0);
-
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-      aviso.textContent = `Plazas pre-reservadas: ${plazas}. Asistentes cargados: ${asistentesCargados}. Plazas aún no consolidadas: ${pendientesNominalizar}.`;
+      aviso.textContent = `Plazas reservadas: ${plazas}. Plazas asignadas: ${asistentesCargados}.`;
 
       if (!envioEnCurso) boton.disabled = false;
     }
@@ -730,13 +725,12 @@
 
       const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
       const plazas = Number(reservaActual.plazas_prereservadas || 0);
-      const pendientesNominalizar = Math.max(plazas - asistentesCargados, 0);
 
       nota.innerHTML = `
-        <strong>Pre-reserva temporal:</strong> esta solicitud mantiene actualmente <strong>${plazas}</strong> plazas pre-reservadas.
-        <br>Asistentes cargados nominalmente: <strong>${asistentesCargados}</strong>.
-        <br>Plazas aún no consolidadas: <strong>${pendientesNominalizar}</strong>.
-        <br>Hora límite de consolidación: <strong>${expira}</strong>.
+        <strong>Reserva actual</strong>
+        <br>Plazas reservadas: <strong>${plazas}</strong>
+        <br>Plazas asignadas: <strong>${asistentesCargados}</strong>
+        <br>Hora límite de consolidación: <strong>${expira}</strong>
       `;
       nota.style.display = "block";
     }
@@ -803,15 +797,14 @@
         asistentesCargados = total;
 
         const plazas = Number(reservaActual?.plazas_prereservadas || 0);
-        const pendientesNominalizar = Math.max(plazas - total, 0);
 
         const resumen = document.getElementById("resumenAsistentes");
         resumen.innerHTML = `
           <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-          <strong>Total asistentes cargados:</strong> ${total}<br>
+          <strong>Plazas reservadas:</strong> ${plazas}<br>
+          <strong>Plazas asignadas:</strong> ${total}<br>
           <strong>Mayores de 10 años:</strong> ${mayores}<br>
-          <strong>Menores de 10 años:</strong> ${menores}<br>
-          <strong>Plazas aún no consolidadas:</strong> ${pendientesNominalizar}
+          <strong>Menores de 10 años:</strong> ${menores}
         `;
 
         actualizarNotaPrereserva();
@@ -895,7 +888,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja asignada a esta reserva:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Plazas pre-reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
+        <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
         <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
       `;
 
@@ -926,12 +919,12 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
 
       if (!Number.isInteger(plazas) || plazas <= 0) {
-        mostrarError("Debe indicar un número de plazas pre-reservadas válido.");
+        mostrarError("Debe indicar un número de plazas reservadas válido.");
         return;
       }
 
       if (plazas < asistentesCargados) {
-        mostrarError(`No puede fijar menos plazas pre-reservadas (${plazas}) que asistentes ya cargados (${asistentesCargados}).`);
+        mostrarError(`No puede fijar menos plazas reservadas (${plazas}) que plazas ya asignadas (${asistentesCargados}).`);
         return;
       }
 
