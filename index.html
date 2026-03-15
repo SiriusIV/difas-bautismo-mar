@@ -234,15 +234,6 @@
       overflow-wrap: anywhere;
     }
 
-    .modal .bloque a {
-      color: #0b5ed7;
-      text-decoration: none;
-    }
-
-    .modal .bloque a:hover {
-      text-decoration: underline;
-    }
-
     .modal .acciones {
       display: flex;
       gap: 10px;
@@ -379,31 +370,27 @@
     </form>
   </div>
 
-  <!-- Modal solicitud creada -->
   <div id="modalReserva" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Solicitud creada correctamente</h3>
-      <p>La solicitud se ha registrado y queda pendiente de validación. Guarde este acceso para poder volver a entrar más adelante.</p>
+      <p>
+        La solicitud se ha registrado y queda pendiente de validación.
+        Guarde el acceso a su solicitud para poder volver a entrar más adelante.
+      </p>
 
       <div class="bloque">
         <strong>Código de reserva:</strong><br>
         <span id="modalCodigoReserva"></span>
       </div>
 
-      <div class="bloque">
-        <strong>Acceder a su solicitud:</strong><br>
-        <a id="modalLinkSolicitud" href="#" target="_blank"></a>
-      </div>
-
       <div class="acciones">
         <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
+        <button type="button" id="btnCopiarEnlaceSolicitud" class="btn-secundario">Copiar enlace de acceso</button>
         <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
-        <button type="button" id="btnCopiarEnlaceSolicitud" class="btn-secundario">Copiar enlace</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal login admin -->
   <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-login">
       <h3>Acceso administración</h3>
@@ -434,6 +421,7 @@
     let franjasCache = [];
     let envioEnCurso = false;
     let loginAdminEnCurso = false;
+    let enlaceSolicitudActual = "";
 
     function nuevaIdempotencyKey() {
       if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -570,16 +558,14 @@
     function abrirModalReserva(codigoReserva, tokenEdicion) {
       const modal = document.getElementById("modalReserva");
       const codigo = document.getElementById("modalCodigoReserva");
-      const linkSolicitud = document.getElementById("modalLinkSolicitud");
       const btnIrSolicitud = document.getElementById("btnIrSolicitud");
 
-      const urlSolicitud = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+      enlaceSolicitudActual = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
       codigo.textContent = codigoReserva;
-      linkSolicitud.href = urlSolicitud;
-      linkSolicitud.textContent = urlSolicitud;
+
       btnIrSolicitud.onclick = function () {
-        window.open(urlSolicitud, "_blank");
+        window.open(enlaceSolicitudActual, "_blank");
       };
 
       modal.classList.add("activo");
@@ -594,18 +580,19 @@
 
     async function copiarEnlaceSolicitud() {
       const codigo = document.getElementById("modalCodigoReserva").textContent;
-      const solicitud = document.getElementById("modalLinkSolicitud").href;
 
       const texto = `Código de reserva: ${codigo}
 
-Acceder a su solicitud:
-${solicitud}`;
+Acceso a su solicitud:
+${enlaceSolicitudActual}
+
+Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
       try {
         await navigator.clipboard.writeText(texto);
-        alert("Información copiada al portapapeles.");
+        alert("Enlace de acceso copiado al portapapeles.");
       } catch (error) {
-        alert("No se pudo copiar automáticamente. Puede copiar el enlace manualmente.");
+        alert("No se pudo copiar automáticamente. Puede copiarlo manualmente.");
       }
     }
 
