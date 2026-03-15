@@ -330,11 +330,11 @@
 
     <div class="nota">
       <strong>Importante:</strong> en este primer paso solo se crean los datos generales de la solicitud.
-      La lista de asistentes se cargará en el siguiente paso, una vez creada la reserva.
+      La lista de asistentes se gestionará desde la pantalla principal de la solicitud, una vez creada.
       <ul class="lista">
         <li>Primero cree la solicitud.</li>
-        <li>Después acceda al enlace de <strong>gestión de asistentes</strong>.</li>
-        <li>Ahí podrá introducir nombres y clasificar mayores y menores de 10 años.</li>
+        <li>Después acceda al enlace de <strong>su solicitud</strong>.</li>
+        <li>Desde ahí podrá editar datos generales, gestionar asistentes y anular la solicitud si fuese necesario.</li>
       </ul>
     </div>
 
@@ -379,11 +379,11 @@
     </form>
   </div>
 
-  <!-- Modal reserva creada -->
+  <!-- Modal solicitud creada -->
   <div id="modalReserva" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Solicitud creada correctamente</h3>
-      <p>La solicitud ya existe. El siguiente paso es cargar la lista de asistentes.</p>
+      <p>La solicitud se ha registrado y queda pendiente de validación. Guarde este acceso para poder volver a entrar más adelante.</p>
 
       <div class="bloque">
         <strong>Código de reserva:</strong><br>
@@ -391,19 +391,14 @@
       </div>
 
       <div class="bloque">
-        <strong>Editar datos generales:</strong><br>
-        <a id="modalLinkEditar" href="#" target="_blank"></a>
-      </div>
-
-      <div class="bloque">
-        <strong>Gestionar asistentes:</strong><br>
-        <a id="modalLinkAsistentes" href="#" target="_blank"></a>
+        <strong>Acceder a su solicitud:</strong><br>
+        <a id="modalLinkSolicitud" href="#" target="_blank"></a>
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnIrAsistentes">Ir a asistentes</button>
+        <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
         <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
-        <button type="button" id="btnCopiarEnlaces" class="btn-secundario">Copiar enlaces</button>
+        <button type="button" id="btnCopiarEnlaceSolicitud" class="btn-secundario">Copiar enlace</button>
       </div>
     </div>
   </div>
@@ -575,20 +570,16 @@
     function abrirModalReserva(codigoReserva, tokenEdicion) {
       const modal = document.getElementById("modalReserva");
       const codigo = document.getElementById("modalCodigoReserva");
-      const linkEditar = document.getElementById("modalLinkEditar");
-      const linkAsistentes = document.getElementById("modalLinkAsistentes");
-      const btnIrAsistentes = document.getElementById("btnIrAsistentes");
+      const linkSolicitud = document.getElementById("modalLinkSolicitud");
+      const btnIrSolicitud = document.getElementById("btnIrSolicitud");
 
-      const urlEditar = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
-      const urlAsistentes = `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
+      const urlSolicitud = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
       codigo.textContent = codigoReserva;
-      linkEditar.href = urlEditar;
-      linkEditar.textContent = urlEditar;
-      linkAsistentes.href = urlAsistentes;
-      linkAsistentes.textContent = urlAsistentes;
-      btnIrAsistentes.onclick = function () {
-        window.open(urlAsistentes, "_blank");
+      linkSolicitud.href = urlSolicitud;
+      linkSolicitud.textContent = urlSolicitud;
+      btnIrSolicitud.onclick = function () {
+        window.open(urlSolicitud, "_blank");
       };
 
       modal.classList.add("activo");
@@ -601,24 +592,20 @@
       modal.setAttribute("aria-hidden", "true");
     }
 
-    async function copiarEnlacesModal() {
+    async function copiarEnlaceSolicitud() {
       const codigo = document.getElementById("modalCodigoReserva").textContent;
-      const editar = document.getElementById("modalLinkEditar").href;
-      const asistentes = document.getElementById("modalLinkAsistentes").href;
+      const solicitud = document.getElementById("modalLinkSolicitud").href;
 
       const texto = `Código de reserva: ${codigo}
 
-Editar datos generales:
-${editar}
-
-Gestionar asistentes:
-${asistentes}`;
+Acceder a su solicitud:
+${solicitud}`;
 
       try {
         await navigator.clipboard.writeText(texto);
         alert("Información copiada al portapapeles.");
       } catch (error) {
-        alert("No se pudo copiar automáticamente. Puede copiar los enlaces manualmente.");
+        alert("No se pudo copiar automáticamente. Puede copiar el enlace manualmente.");
       }
     }
 
@@ -782,7 +769,7 @@ ${asistentes}`;
 
       document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalReserva);
-      document.getElementById("btnCopiarEnlaces").addEventListener("click", copiarEnlacesModal);
+      document.getElementById("btnCopiarEnlaceSolicitud").addEventListener("click", copiarEnlaceSolicitud);
 
       document.getElementById("modalReserva").addEventListener("click", function (e) {
         if (e.target.id === "modalReserva") {
