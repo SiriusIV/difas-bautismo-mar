@@ -271,6 +271,39 @@
       margin-top: 16px;
     }
 
+    .modal-reserva-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .modal-reserva-col {
+      text-align: center;
+    }
+
+    .modal-reserva-etiqueta {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .modal-reserva-codigo {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+
+    .modal-reserva-ayuda {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+    }
+
     @media (max-width: 1000px) {
       .resumen-superior {
         grid-template-columns: 1fr;
@@ -285,6 +318,13 @@
       .cabecera {
         display: block;
         min-height: auto;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .modal-reserva-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
       }
     }
   </style>
@@ -357,41 +397,42 @@
       <div class="acciones">
         <button type="submit" id="btnGuardar">Guardar datos generales</button>
         <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
-        <button type="button" id="btnRecuperarEnlaces" class="btn-terciario">Recuperar enlaces</button>
+        <button type="button" id="btnRecuperarAcceso" class="btn-terciario">Recuperar acceso</button>
         <button type="button" id="btnAnularSolicitud" class="btn-peligro">Anular solicitud</button>
       </div>
     </form>
   </div>
 
-  <div id="modalEnlaces" class="modal-fondo" aria-hidden="true">
+  <div id="modalAcceso" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Acceso a esta solicitud</h3>
-      <p>Guarde estos accesos para poder volver a entrar más adelante.</p>
+      <h3>Acceso a su solicitud</h3>
+
+      <p>
+        Guarde este acceso para poder volver a entrar más adelante.
+      </p>
 
       <div class="bloque">
-        <strong>Código de reserva</strong><br>
-        <span id="modalCodigoReserva"></span>
-      </div>
+        <div class="modal-reserva-grid">
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Código de reserva</span>
+            <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
+          </div>
 
-      <div class="bloque">
-        <strong>Datos generales de la solicitud</strong><br>
-        <div class="acciones">
-          <button type="button" id="btnAbrirEditar">Abrir</button>
-          <button type="button" id="btnCopiarEditar" class="btn-terciario">Copiar enlace</button>
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Estado</span>
+            <span id="modalEstadoReserva" class="estado-badge pendiente">PENDIENTE</span>
+          </div>
         </div>
-      </div>
 
-      <div class="bloque">
-        <strong>Gestión de asistentes</strong><br>
-        <div class="acciones">
-          <button type="button" id="btnAbrirAsistentes">Abrir</button>
-          <button type="button" id="btnCopiarAsistentes" class="btn-terciario">Copiar enlace</button>
+        <div class="modal-reserva-ayuda">
+          Desde esta pantalla podrá editar datos generales, gestionar asistentes o anular la solicitud si fuese necesario.
         </div>
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnCopiarTodo" class="btn-terciario">Copiar toda la información</button>
-        <button type="button" id="btnCerrarModal">Cerrar</button>
+        <button type="button" id="btnAbrirSolicitud">Abrir solicitud</button>
+        <button type="button" id="btnCopiarAcceso" class="btn-terciario">Copiar enlace de acceso</button>
+        <button type="button" id="btnCerrarModalAcceso" class="btn-secundario">Cerrar</button>
       </div>
     </div>
   </div>
@@ -417,6 +458,7 @@
     let franjasCache = [];
     let envioEnCurso = false;
     let anulacionEnCurso = false;
+    let enlaceSolicitudActual = "";
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
@@ -425,6 +467,14 @@
       if (e === "rechazada") return "rechazada";
       if (e === "cancelada") return "cancelada";
       return "";
+    }
+
+    function textoEstadoModal(estado) {
+      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
+      if (estado === "CONFIRMADA") return "CONFIRMADA";
+      if (estado === "RECHAZADA") return "RECHAZADA";
+      if (estado === "CANCELADA") return "CANCELADA";
+      return estado || "";
     }
 
     function mostrarError(texto) {
@@ -464,7 +514,7 @@
       const btnGuardar = document.getElementById("btnGuardar");
       const btnAsistentes = document.getElementById("btnGestionarAsistentes");
       const btnAnular = document.getElementById("btnAnularSolicitud");
-      const btnRecuperar = document.getElementById("btnRecuperarEnlaces");
+      const btnRecuperar = document.getElementById("btnRecuperarAcceso");
 
       btnGuardar.disabled = !editable || envioEnCurso;
       btnAnular.disabled = !editable || anulacionEnCurso;
@@ -720,72 +770,45 @@
       }
     }
 
-    function abrirModalEnlaces() {
+    function abrirModalAcceso() {
       if (!solicitudEditable()) return;
 
-      const modal = document.getElementById("modalEnlaces");
-      const codigo = document.getElementById("modalCodigoReserva");
+      enlaceSolicitudActual = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
-      codigo.textContent = reservaActual.codigo_reserva;
+      document.getElementById("modalCodigoReserva").textContent = reservaActual.codigo_reserva;
+
+      const badge = document.getElementById("modalEstadoReserva");
+      badge.className = `estado-badge ${claseEstadoBadge(reservaActual.estado)}`;
+      badge.textContent = textoEstadoModal(reservaActual.estado);
+
+      const modal = document.getElementById("modalAcceso");
       modal.classList.add("activo");
       modal.setAttribute("aria-hidden", "false");
     }
 
-    function cerrarModalEnlaces() {
-      const modal = document.getElementById("modalEnlaces");
+    function cerrarModalAcceso() {
+      const modal = document.getElementById("modalAcceso");
       modal.classList.remove("activo");
       modal.setAttribute("aria-hidden", "true");
     }
 
-    function urlEditar() {
-      return `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+    function abrirSolicitud() {
+      window.open(enlaceSolicitudActual, "_blank");
     }
 
-    function urlAsistentes() {
-      return `${window.location.origin}/asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
-    }
-
-    function abrirEditar() {
-      window.open(urlEditar(), "_blank");
-    }
-
-    function abrirAsistentes() {
-      if (!solicitudEditable()) return;
-      window.open(urlAsistentes(), "_blank");
-    }
-
-    async function copiarEditar() {
-      try {
-        await navigator.clipboard.writeText(urlEditar());
-        alert("Enlace de edición copiado.");
-      } catch {
-        alert("No se pudo copiar el enlace.");
-      }
-    }
-
-    async function copiarAsistentes() {
-      try {
-        await navigator.clipboard.writeText(urlAsistentes());
-        alert("Enlace de asistentes copiado.");
-      } catch {
-        alert("No se pudo copiar el enlace.");
-      }
-    }
-
-    async function copiarTodo() {
+    async function copiarAcceso() {
       const texto = `Código de reserva: ${reservaActual.codigo_reserva}
 
-Editar datos generales:
-${urlEditar()}
+Acceso a su solicitud:
+${enlaceSolicitudActual}
 
-Gestionar asistentes:
-${urlAsistentes()}`;
+Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
       try {
         await navigator.clipboard.writeText(texto);
-        alert("Información copiada al portapapeles.");
+        alert("Enlace de acceso copiado.");
       } catch {
-        alert("No se pudo copiar la información.");
+        alert("No se pudo copiar el enlace.");
       }
     }
 
@@ -950,24 +973,21 @@ ${urlAsistentes()}`;
       document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
 
       document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
-      document.getElementById("btnRecuperarEnlaces").addEventListener("click", abrirModalEnlaces);
+      document.getElementById("btnRecuperarAcceso").addEventListener("click", abrirModalAcceso);
       document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitud);
 
-      document.getElementById("btnAbrirEditar").addEventListener("click", abrirEditar);
-      document.getElementById("btnAbrirAsistentes").addEventListener("click", abrirAsistentes);
-      document.getElementById("btnCopiarEditar").addEventListener("click", copiarEditar);
-      document.getElementById("btnCopiarAsistentes").addEventListener("click", copiarAsistentes);
-      document.getElementById("btnCopiarTodo").addEventListener("click", copiarTodo);
-      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEnlaces);
+      document.getElementById("btnAbrirSolicitud").addEventListener("click", abrirSolicitud);
+      document.getElementById("btnCopiarAcceso").addEventListener("click", copiarAcceso);
+      document.getElementById("btnCerrarModalAcceso").addEventListener("click", cerrarModalAcceso);
 
       document.getElementById("btnAceptarCancelacion").addEventListener("click", function () {
         cerrarModalCancelada();
         volverAInicio();
       });
 
-      document.getElementById("modalEnlaces").addEventListener("click", function (e) {
-        if (e.target.id === "modalEnlaces") {
-          cerrarModalEnlaces();
+      document.getElementById("modalAcceso").addEventListener("click", function (e) {
+        if (e.target.id === "modalAcceso") {
+          cerrarModalAcceso();
         }
       });
 
