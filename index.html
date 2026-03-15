@@ -191,6 +191,16 @@
       margin-bottom: 4px;
     }
 
+    .nota-destacada {
+      background: #fff8e6;
+      border: 1px solid #f0d58a;
+      color: #7a5a00;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+
     .lugar-evento {
       margin-top: 8px;
       font-size: 15px;
@@ -374,13 +384,17 @@
     <p id="descripcionEvento">Complete este formulario para crear la solicitud.</p>
 
     <div class="nota">
-      <strong>Importante:</strong> en este primer paso solo se crean los datos generales de la solicitud.
-      La lista de asistentes se gestionará desde la pantalla principal de la solicitud, una vez creada.
+      <strong>Importante:</strong> en este primer paso se crean los datos generales de la solicitud y se realiza una pre-reserva inicial de plazas.
       <ul class="lista">
-        <li>Primero cree la solicitud.</li>
+        <li>Primero cree la solicitud indicando el número total de plazas solicitadas.</li>
         <li>Después acceda al enlace de <strong>su solicitud</strong>.</li>
         <li>Desde ahí podrá editar datos generales, gestionar asistentes y anular la solicitud si fuese necesario.</li>
       </ul>
+    </div>
+
+    <div class="nota-destacada">
+      <strong>Plazo de consolidación:</strong> dispone de <strong>2 horas</strong> desde la creación de la solicitud para cargar nominalmente los asistentes.
+      Pasado ese plazo, solo seguirán bloqueadas las plazas correspondientes a los asistentes realmente cargados y el resto volverá a estar disponible.
     </div>
 
     <div id="mensaje" class="mensaje"></div>
@@ -411,6 +425,11 @@
         <select id="franja" name="franja" required>
           <option value="">Cargando franjas...</option>
         </select>
+      </div>
+
+      <div class="campo">
+        <label for="plazasSolicitadas">Número total de plazas solicitadas</label>
+        <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
       </div>
 
       <div class="campo">
@@ -562,6 +581,7 @@
       const telefono = document.getElementById("telefono").value.trim();
       const email = document.getElementById("email").value.trim();
       const franja = document.getElementById("franja").value;
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value, 10);
 
       if (!centro || !contacto || !telefono || !email || !franja) {
         return false;
@@ -569,6 +589,10 @@
 
       const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       if (!emailValido) {
+        return false;
+      }
+
+      if (!Number.isInteger(plazas) || plazas <= 0) {
         return false;
       }
 
@@ -763,6 +787,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         telefono: document.getElementById("telefono").value.trim(),
         email: document.getElementById("email").value.trim(),
         franja: document.getElementById("franja").value,
+        plazas_solicitadas: parseInt(document.getElementById("plazasSolicitadas").value, 10),
         observaciones: document.getElementById("observaciones").value.trim(),
         idempotencyKey: document.getElementById("idempotencyKey").value
       };
@@ -809,7 +834,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ids = ["centro", "contacto", "telefono", "email", "franja", "observaciones"];
+      const ids = ["centro", "contacto", "telefono", "email", "franja", "plazasSolicitadas", "observaciones"];
 
       ids.forEach(id => {
         const el = document.getElementById(id);
