@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 1100px;
+      max-width: 1150px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -60,6 +60,17 @@
       text-align: center;
     }
 
+    .nota-destacada {
+      background: #fff8e6;
+      border: 1px solid #f0d58a;
+      color: #7a5a00;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      line-height: 1.55;
+      display: none;
+    }
+
     .resumen-superior {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -73,7 +84,7 @@
       color: #1d4f91;
       padding: 12px;
       border-radius: 6px;
-      min-height: 130px;
+      min-height: 150px;
       line-height: 1.7;
     }
 
@@ -277,6 +288,7 @@
       </div>
     </div>
 
+    <div id="notaReserva" class="nota-destacada"></div>
     <div id="mensaje" class="mensaje"></div>
 
     <div class="resumen-superior">
@@ -301,13 +313,13 @@
         <table id="tablaAsistentes">
           <thead>
             <tr>
-              <th style="width:65%;">Nombre completo</th>
-              <th style="width:25%;">Categoría</th>
-              <th style="width:10%;">Acción</th>
+              <th style="width:45%;">Nombre completo</th>
+              <th style="width:20%;">Tipo</th>
+              <th style="width:20%;">Edad</th>
+              <th style="width:15%;">Acción</th>
             </tr>
           </thead>
-          <tbody id="cuerpoAsistentes">
-          </tbody>
+          <tbody id="cuerpoAsistentes"></tbody>
         </table>
       </div>
 
@@ -334,6 +346,11 @@
 
     function solicitudEditable() {
       return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+    }
+
+    function formatearFechaHora(valor) {
+      if (!valor) return "No disponible";
+      return String(valor).replace("T", " ");
     }
 
     function mostrarMensaje(tipo, texto) {
@@ -407,20 +424,35 @@
         <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
         <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja asignada:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
+        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
       `;
 
       document.getElementById("resumenFranja").innerHTML = `
         <span class="info-titulo">Resumen global de la franja horaria</span>
         <strong>Plazas totales:</strong> ${Number(reservaActual.capacidad || 0)}<br>
-        <strong>Plazas reservadas:</strong> ${Number(reservaActual.ocupadas || 0)}<br>
+        <strong>Plazas ocupadas en esta franja:</strong> ${Number(reservaActual.ocupadas || 0)}<br>
         <strong>Plazas disponibles:</strong> ${Number(reservaActual.disponibles || 0)}
       `;
 
       return true;
     }
 
-    function crearFila(asistente = { nombre_completo: "", categoria_edad: "MAYOR_10" }) {
+    function actualizarNotaReserva(totalAsignadas) {
+      const nota = document.getElementById("notaReserva");
+      const reservadas = Number(reservaActual?.plazas_prereservadas || 0);
+
+      nota.innerHTML = `
+        <strong>Reserva actual</strong>
+        <br>Plazas reservadas: <strong>${reservadas}</strong>
+        <br>Plazas asignadas: <strong>${totalAsignadas}</strong>
+        <br>Hora límite de consolidación: <strong>${formatearFechaHora(reservaActual?.prereserva_expira_en)}</strong>
+      `;
+      nota.style.display = "block";
+    }
+
+    function crearFila(asistente = { nombre_completo: "", tipo_asistente: "ALUMNO", categoria_edad: "MAYOR_10" }) {
       const tbody = document.getElementById("cuerpoAsistentes");
       const tr = document.createElement("tr");
 
@@ -429,6 +461,12 @@
       tr.innerHTML = `
         <td>
           <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"} />
+        </td>
+        <td>
+          <select class="tipo-asistente" ${editable ? "" : "disabled"}>
+            <option value="ALUMNO" ${asistente.tipo_asistente === "ALUMNO" ? "selected" : ""}>Alumno</option>
+            <option value="PROFESOR" ${asistente.tipo_asistente === "PROFESOR" ? "selected" : ""}>Profesor</option>
+          </select>
         </td>
         <td>
           <select class="categoria-asistente" ${editable ? "" : "disabled"}>
@@ -448,6 +486,7 @@
       });
 
       tr.querySelector(".nombre-asistente").addEventListener("input", actualizarResumenAsistentesDesdeTabla);
+      tr.querySelector(".tipo-asistente").addEventListener("change", actualizarResumenAsistentesDesdeTabla);
       tr.querySelector(".categoria-asistente").addEventListener("change", actualizarResumenAsistentesDesdeTabla);
 
       tbody.appendChild(tr);
@@ -457,19 +496,36 @@
       const filas = Array.from(document.querySelectorAll("#cuerpoAsistentes tr"));
       const datos = filas.map(tr => ({
         nombre: tr.querySelector(".nombre-asistente")?.value.trim() || "",
+        tipo: tr.querySelector(".tipo-asistente")?.value || "",
         categoria: tr.querySelector(".categoria-asistente")?.value || ""
       })).filter(v => v.nombre !== "");
 
       const total = datos.length;
+      const alumnos = datos.filter(v => v.tipo === "ALUMNO").length;
+      const profesores = datos.filter(v => v.tipo === "PROFESOR").length;
       const mayores = datos.filter(v => v.categoria === "MAYOR_10").length;
       const menores = datos.filter(v => v.categoria === "MENOR_10").length;
 
       document.getElementById("resumenAsistentes").innerHTML = `
         <span class="info-titulo">Resumen de asistentes</span>
-        <strong>Total asistentes:</strong> ${total}<br>
+        <strong>Plazas reservadas:</strong> ${Number(reservaActual?.plazas_prereservadas || 0)}<br>
+        <strong>Plazas asignadas:</strong> ${total}<br>
+        <strong>Alumnos:</strong> ${alumnos}<br>
+        <strong>Profesores:</strong> ${profesores}<br>
         <strong>Mayores de 10 años:</strong> ${mayores}<br>
         <strong>Menores de 10 años:</strong> ${menores}
       `;
+
+      actualizarNotaReserva(total);
+
+      const botonGuardar = document.getElementById("btnGuardarAsistentes");
+      if (total > Number(reservaActual?.plazas_prereservadas || 0)) {
+        mostrarMensaje("error", `No puede asignar más asistentes (${total}) que plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+        botonGuardar.disabled = true;
+      } else {
+        limpiarMensaje();
+        botonGuardar.disabled = !solicitudEditable() || envioEnCurso;
+      }
     }
 
     async function cargarVisitantes() {
@@ -518,9 +574,11 @@
         const filas = document.querySelectorAll("#cuerpoAsistentes tr");
         filas.forEach(tr => {
           const nombre = tr.querySelector(".nombre-asistente");
+          const tipo = tr.querySelector(".tipo-asistente");
           const categoria = tr.querySelector(".categoria-asistente");
           const eliminar = tr.querySelector(".btn-eliminar");
           if (nombre) nombre.disabled = true;
+          if (tipo) tipo.disabled = true;
           if (categoria) categoria.disabled = true;
           if (eliminar) eliminar.disabled = true;
         });
@@ -531,7 +589,8 @@
       return Array.from(document.querySelectorAll("#cuerpoAsistentes tr"))
         .map(tr => ({
           nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
-          categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
+          tipo_asistente: tr.querySelector(".tipo-asistente")?.value || "ALUMNO",
+          categoria_edad: tr.querySelector(".categoria-asistente")?.value || "MAYOR_10"
         }))
         .filter(v => v.nombre_completo !== "");
     }
@@ -542,6 +601,11 @@
       limpiarMensaje();
 
       const visitantes = obtenerVisitantesDeTabla();
+
+      if (visitantes.length > Number(reservaActual?.plazas_prereservadas || 0)) {
+        mostrarMensaje("error", `No puede asignar más asistentes (${visitantes.length}) que plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+        return;
+      }
 
       try {
         envioEnCurso = true;
@@ -583,6 +647,10 @@
     document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("btnAnadirFila").addEventListener("click", function () {
         if (!solicitudEditable()) return;
+        if (obtenerVisitantesDeTabla().length >= Number(reservaActual?.plazas_prereservadas || 0)) {
+          mostrarMensaje("error", `Ya ha alcanzado el número de plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+          return;
+        }
         crearFila();
       });
 
