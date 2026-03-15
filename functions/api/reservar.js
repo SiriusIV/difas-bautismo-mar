@@ -1,7 +1,130 @@
+function json(data, init = {}) {
+  return new Response(JSON.stringify(data), {
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    ...init
+  });
+}
+
+function limpiarTexto(valor) {
+  return String(valor || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizarCentroComparacion(valor) {
+  return limpiarTexto(valor).toUpperCase();
+}
+
+function generarCodigoReserva() {
+  const ahora = new Date();
+  const y = ahora.getFullYear();
+  const m = String(ahora.getMonth() + 1).padStart(2, "0");
+  const d = String(ahora.getDate()).padStart(2, "0");
+  const aleatorio = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `RES-${y}${m}${d}-${aleatorio}`;
+}
+
 function generarTokenEdicion() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+}
+
+function esEmailValido(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function obtenerDisponibilidadFranja(env, franjaId) {
+  const sql = `
+    SELECT
+      f.id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.capacidad,
+
+      COALESCE(SUM(
+        CASE
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+            CASE
+              WHEN r.prereserva_expira_en IS NOT NULL
+                   AND datetime('now') <= datetime(r.prereserva_expira_en)
+                THEN COALESCE(r.plazas_prereservadas, 0)
+              ELSE (
+                SELECT COUNT(*)
+                FROM visitantes v
+                WHERE v.reserva_id = r.id
+              )
+            END
+          ELSE 0
+        END
+      ), 0) AS ocupadas,
+
+      (
+        f.capacidad - COALESCE(SUM(
+          CASE
+            WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+              CASE
+                WHEN r.prereserva_expira_en IS NOT NULL
+                     AND datetime('now') <= datetime(r.prereserva_expira_en)
+                  THEN COALESCE(r.plazas_prereservadas, 0)
+                ELSE (
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                )
+              END
+            ELSE 0
+          END
+        ), 0)
+      ) AS disponibles
+
+    FROM franjas f
+    LEFT JOIN reservas r
+      ON r.franja_id = f.id
+    WHERE f.id = ?
+    GROUP BY
+      f.id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.capacidad
+    LIMIT 1
+  `;
+
+  return await env.DB.prepare(sql).bind(franjaId).first();
+}
+
+async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion) {
+  const sql = `
+    SELECT
+      r.id,
+      r.codigo_reserva,
+      r.estado
+    FROM reservas r
+    WHERE r.franja_id = ?
+      AND UPPER(TRIM(r.centro)) = ?
+      AND (
+        r.estado = 'CONFIRMADA'
+        OR (
+          r.estado = 'PENDIENTE'
+          AND (
+            (
+              r.prereserva_expira_en IS NOT NULL
+              AND datetime('now') <= datetime(r.prereserva_expira_en)
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM visitantes v
+              WHERE v.reserva_id = r.id
+              LIMIT 1
+            )
+          )
+        )
+      )
+    LIMIT 1
+  `;
+
+  return await env.DB.prepare(sql).bind(franjaId, centroComparacion).first();
 }
 
 export async function onRequestPost(context) {
@@ -10,255 +133,157 @@ export async function onRequestPost(context) {
   try {
     const data = await request.json();
 
-    const centro = (data.centro || "").trim();
-    const contacto = (data.contacto || "").trim();
-    const telefono = (data.telefono || "").trim();
-    const email = (data.email || "").trim();
-    const observaciones = (data.observaciones || "").trim();
+    const centro = limpiarTexto(data.centro);
+    const contacto = limpiarTexto(data.contacto);
+    const telefono = limpiarTexto(data.telefono);
+    const email = limpiarTexto(data.email);
+    const observaciones = limpiarTexto(data.observaciones);
     const franjaId = parseInt(data.franja, 10);
-    const idempotencyKey = (data.idempotencyKey || "").trim();
+    const plazasSolicitadas = parseInt(data.plazas_solicitadas, 10);
 
-    if (!centro || !contacto || !telefono || !email || !franjaId) {
-      return Response.json(
-        { ok: false, error: "Faltan campos obligatorios." },
+    if (!centro || !contacto || !telefono || !email) {
+      return json(
+        { ok: false, error: "Faltan datos obligatorios del solicitante." },
         { status: 400 }
       );
     }
 
-    if (!idempotencyKey) {
-      return Response.json(
-        { ok: false, error: "Falta la clave de idempotencia." },
+    if (!esEmailValido(email)) {
+      return json(
+        { ok: false, error: "El correo electrónico no tiene un formato válido." },
         { status: 400 }
       );
     }
 
-    const session = env.DB.withSession("first-primary");
+    if (!Number.isInteger(franjaId) || franjaId <= 0) {
+      return json(
+        { ok: false, error: "La franja horaria indicada no es válida." },
+        { status: 400 }
+      );
+    }
 
-    // 1) Si ya existe una solicitud con esta clave, devolverla
-    const existente = await session
-      .prepare(`
-        SELECT
-          r.id,
-          r.franja_id,
-          r.personas,
-          r.codigo_reserva,
-          r.token_edicion,
-          r.estado,
-          f.fecha,
-          f.hora_inicio,
-          f.hora_fin,
-          f.capacidad,
-          (
-            f.capacidad - COALESCE((
-              SELECT SUM(r2.personas)
-              FROM reservas r2
-              WHERE r2.franja_id = f.id
-                AND r2.estado IN ('PENDIENTE', 'CONFIRMADA')
-            ), 0)
-          ) AS disponibles
-        FROM reservas r
-        JOIN franjas f
-          ON f.id = r.franja_id
-        WHERE r.idempotency_key = ?
-        LIMIT 1
-      `)
-      .bind(idempotencyKey)
-      .first();
+    if (!Number.isInteger(plazasSolicitadas) || plazasSolicitadas <= 0) {
+      return json(
+        { ok: false, error: "Debe indicar un número de plazas solicitadas válido." },
+        { status: 400 }
+      );
+    }
 
-    if (existente) {
-      return Response.json({
-        ok: true,
-        duplicate: true,
-        mensaje: "La solicitud ya había sido registrada anteriormente.",
-        codigo_reserva: existente.codigo_reserva,
-        token_edicion: existente.token_edicion,
-        estado: existente.estado,
-        franja: {
-          id: existente.franja_id,
-          fecha: existente.fecha,
-          hora_inicio: existente.hora_inicio,
-          hora_fin: existente.hora_fin
+    const centroComparacion = normalizarCentroComparacion(centro);
+
+    const duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
+
+    if (duplicada) {
+      return json(
+        {
+          ok: false,
+          error: "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe recuperar esa solicitud y ampliarla o modificarla, pero no crear una segunda."
         },
-        capacidad: existente.capacidad,
-        personas_reservadas: existente.personas,
-        disponibles_despues: existente.disponibles
-      });
+        { status: 409 }
+      );
     }
 
-    // 2) Verificar que la franja existe
-    const franja = await session
-      .prepare(`
-        SELECT id, fecha, hora_inicio, hora_fin, capacidad
-        FROM franjas
-        WHERE id = ?
-        LIMIT 1
-      `)
-      .bind(franjaId)
-      .first();
+    const franja = await obtenerDisponibilidadFranja(env, franjaId);
 
     if (!franja) {
-      return Response.json(
+      return json(
         { ok: false, error: "La franja seleccionada no existe." },
         { status: 404 }
       );
     }
 
-    // 3) Generar token de edición
+    const disponibles = Number(franja.disponibles || 0);
+
+    if (plazasSolicitadas > disponibles) {
+      return json(
+        {
+          ok: false,
+          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${disponibles}. Solicitadas: ${plazasSolicitadas}.`
+        },
+        { status: 400 }
+      );
+    }
+
+    const codigoReserva = generarCodigoReserva();
     const tokenEdicion = generarTokenEdicion();
 
-    // 4) Insertar solicitud inicial con 0 asistentes y estado PENDIENTE
-    const insertResult = await session
-      .prepare(`
-        INSERT INTO reservas (
-          franja_id,
-          centro,
-          contacto,
-          telefono,
-          email,
-          mayores10,
-          menores10,
-          personas,
-          observaciones,
-          fecha_solicitud,
-          idempotency_key,
-          token_edicion,
-          estado,
-          fecha_modificacion
-        )
-        VALUES (
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          0,
-          0,
-          0,
-          ?,
-          datetime('now'),
-          ?,
-          ?,
-          'PENDIENTE',
-          datetime('now')
-        )
-      `)
+    const insertSql = `
+      INSERT INTO reservas (
+        franja_id,
+        centro,
+        contacto,
+        telefono,
+        email,
+        mayores10,
+        menores10,
+        personas,
+        plazas_prereservadas,
+        prereserva_expira_en,
+        observaciones,
+        fecha_solicitud,
+        fecha_modificacion,
+        codigo_reserva,
+        token_edicion,
+        estado
+      )
+      VALUES (
+        ?, ?, ?, ?, ?,
+        0, 0,
+        ?, ?,
+        datetime('now', '+2 hours'),
+        ?,
+        datetime('now'),
+        datetime('now'),
+        ?, ?,
+        'PENDIENTE'
+      )
+    `;
+
+    const insertResult = await env.DB.prepare(insertSql)
       .bind(
         franjaId,
         centro,
         contacto,
         telefono,
         email,
+        plazasSolicitadas,
+        plazasSolicitadas,
         observaciones,
-        idempotencyKey,
+        codigoReserva,
         tokenEdicion
       )
       .run();
 
-    const cambios = insertResult?.meta?.changes || 0;
-
-    if (cambios === 0) {
-      return Response.json(
+    if ((insertResult?.meta?.changes || 0) === 0) {
+      return json(
         { ok: false, error: "No se pudo crear la solicitud." },
         { status: 500 }
       );
     }
 
-    // 5) Obtener id insertado
-    const reservaInsertada = await session
-      .prepare(`
-        SELECT id
-        FROM reservas
-        WHERE idempotency_key = ?
-        LIMIT 1
-      `)
-      .bind(idempotencyKey)
-      .first();
+    const franjaFinal = await obtenerDisponibilidadFranja(env, franjaId);
 
-    if (!reservaInsertada) {
-      return Response.json(
-        { ok: false, error: "No se pudo recuperar la solicitud creada." },
-        { status: 500 }
-      );
-    }
-
-    const reservaId = reservaInsertada.id;
-    const codigoReserva = `DIFAS-${String(reservaId).padStart(6, "0")}`;
-
-    // 6) Guardar codigo_reserva
-    await session
-      .prepare(`
-        UPDATE reservas
-        SET codigo_reserva = ?
-        WHERE id = ?
-      `)
-      .bind(codigoReserva, reservaId)
-      .run();
-
-    // 7) Leer estado final de la franja contando solo PENDIENTE y CONFIRMADA
-    const estadoFranja = await session
-      .prepare(`
-        SELECT
-          f.id,
-          f.fecha,
-          f.hora_inicio,
-          f.hora_fin,
-          f.capacidad,
-          COALESCE(SUM(
-            CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
-              ELSE 0
-            END
-          ), 0) AS ocupadas,
-          (
-            f.capacidad - COALESCE(SUM(
-              CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
-                ELSE 0
-              END
-            ), 0)
-          ) AS disponibles
-        FROM franjas f
-        LEFT JOIN reservas r
-          ON f.id = r.franja_id
-        WHERE f.id = ?
-        GROUP BY f.id, f.fecha, f.hora_inicio, f.hora_fin, f.capacidad
-      `)
-      .bind(franjaId)
-      .first();
-
-    return Response.json({
-      ok: true,
-      mensaje: "Solicitud creada correctamente y pendiente de validación.",
-      codigo_reserva: codigoReserva,
-      token_edicion: tokenEdicion,
-      estado: "PENDIENTE",
-      franja: {
-        id: estadoFranja.id,
-        fecha: estadoFranja.fecha,
-        hora_inicio: estadoFranja.hora_inicio,
-        hora_fin: estadoFranja.hora_fin
-      },
-      capacidad: estadoFranja.capacidad,
-      ocupadas: estadoFranja.ocupadas,
-      personas_reservadas: 0,
-      disponibles_despues: estadoFranja.disponibles
-    });
+return json({
+  ok: true,
+  mensaje: "Solicitud creada correctamente.",
+  codigo_reserva: codigoReserva,
+  token_edicion: tokenEdicion,
+  estado: "PENDIENTE",
+  plazas_prereservadas: plazasSolicitadas,
+  franja: franjaFinal ? {
+    id: franjaFinal.id,
+    fecha: franjaFinal.fecha,
+    hora_inicio: franjaFinal.hora_inicio,
+    hora_fin: franjaFinal.hora_fin
+  } : null,
+  disponibles_despues: franjaFinal ? Number(franjaFinal.disponibles || 0) : null
+});
 
   } catch (error) {
-    if (String(error.message || "").includes("UNIQUE constraint failed")) {
-      return Response.json(
-        {
-          ok: true,
-          duplicate: true,
-          mensaje: "La solicitud ya había sido procesada."
-        }
-      );
-    }
-
-    return Response.json(
+    return json(
       {
         ok: false,
-        error: "Error interno del servidor.",
+        error: "Error interno al crear la solicitud.",
         detalle: error.message
       },
       { status: 500 }
