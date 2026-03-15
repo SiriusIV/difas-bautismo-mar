@@ -136,6 +136,14 @@
       cursor: not-allowed;
     }
 
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
     .mensaje {
       margin-top: 16px;
       margin-bottom: 18px;
@@ -234,88 +242,11 @@
       overflow-wrap: anywhere;
     }
 
-    .modal-reserva-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: center;
-}
-
-.modal-reserva-col {
-  text-align: center;
-}
-
-.modal-reserva-etiqueta {
-  display: block;
-  font-size: 13px;
-  font-weight: bold;
-  color: #555;
-  margin-bottom: 6px;
-}
-
-.modal-reserva-codigo {
-  font-size: 28px;
-  font-weight: bold;
-  letter-spacing: 0.3px;
-  line-height: 1.1;
-}
-
-.modal-reserva-ayuda {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #444;
-  text-align: center;
-}
-
-.estado-badge {
-  display: inline-block;
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #fff;
-  vertical-align: middle;
-}
-
-.estado-badge.pendiente {
-  background: #d39e00;
-}
-
-@media (max-width: 700px) {
-  .modal-reserva-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-}
-
-
-.estado-badge {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #fff;
-  vertical-align: middle;
-}
-
-.estado-badge.pendiente {
-  background: #d39e00;
-}
-
     .modal .acciones {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
-    }
-
-    .btn-secundario {
-      background: #6c757d;
-    }
-
-    .btn-secundario:hover {
-      background: #565e64;
     }
 
     .modal-login {
@@ -337,6 +268,53 @@
       justify-content: flex-end;
     }
 
+    .modal-reserva-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .modal-reserva-col {
+      text-align: center;
+    }
+
+    .modal-reserva-etiqueta {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .modal-reserva-codigo {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+
+    .modal-reserva-ayuda {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+    }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      vertical-align: middle;
+    }
+
+    .estado-badge.pendiente {
+      background: #d39e00;
+    }
+
     @media (max-width: 800px) {
       .logo,
       .acciones-cabecera {
@@ -356,6 +334,13 @@
 
       .btn-icono {
         margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .modal-reserva-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
       }
     }
   </style>
@@ -439,41 +424,31 @@
     </form>
   </div>
 
-<div id="modalReserva" class="modal-fondo" aria-hidden="true">
-  <div class="modal">
-    <h3>Solicitud creada correctamente</h3>
+  <div id="modalReserva" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Solicitud creada correctamente</h3>
 
-    <p>
-      La solicitud se ha registrado y queda pendiente de validación.<br>
-    </p>
+      <p>
+        La solicitud se ha registrado y queda pendiente de validación.
+      </p>
 
-    <div class="bloque">
-      <div class="modal-reserva-grid">
-        <div class="modal-reserva-col">
-          <span class="modal-reserva-etiqueta">Código de reserva</span>
-          <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
+      <div class="bloque">
+        <div class="modal-reserva-grid">
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Código de reserva</span>
+            <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
+          </div>
+
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Estado</span>
+            <span class="estado-badge pendiente">PENDIENTE DE AUTORIZACIÓN</span>
+          </div>
         </div>
 
-        <div class="modal-reserva-col">
-          <span class="modal-reserva-etiqueta">Estado</span>
-          <span class="estado-badge pendiente">PENDIENTE DE AUTORIZACIÓN</span>
+        <div class="modal-reserva-ayuda">
+          Guarde el acceso a su solicitud para poder volver a entrar más adelante.
         </div>
       </div>
-
-      <div class="modal-reserva-ayuda">
-        Guarde el acceso a su solicitud para poder volver a entrar más adelante.
-      </div>
-    </div>
-
-    <div class="acciones">
-      <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
-      <button type="button" id="btnCopiarEnlaceSolicitud" class="btn-secundario">Copiar enlace de acceso</button>
-      <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-
 
       <div class="acciones">
         <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
@@ -653,7 +628,6 @@
       const btnIrSolicitud = document.getElementById("btnIrSolicitud");
 
       enlaceSolicitudActual = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
-
       codigo.textContent = codigoReserva;
 
       btnIrSolicitud.onclick = function () {
