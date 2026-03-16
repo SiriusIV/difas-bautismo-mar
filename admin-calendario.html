@@ -18,129 +18,120 @@
 
     .contenedor {
       max-width: 1400px;
-      margin: 40px auto;
+      margin: 20px auto;
       background: #ffffff;
       padding: 28px;
-      border-radius: 10px;
+      border-radius: 12px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0;
       font-size: 28px;
     }
 
     h2 {
-      margin-top: 6px;
-      font-size: 22px;
+      margin: 8px 0 0;
+      font-size: 18px;
       font-weight: normal;
     }
 
     .cabecera {
-      display: grid;
-      grid-template-columns: 90px 1fr 90px;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 12px;
+      position: relative;
+      min-height: 150px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #d9e0e7;
+      padding-bottom: 16px;
     }
 
     .logo {
-      max-width: 90px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      max-width: 110px;
       height: auto;
-      justify-self: start;
     }
 
-    .titulos {
+    .cabecera-centro {
       text-align: center;
+      padding: 0 220px 0 220px;
     }
 
     .lugar-evento {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 15px;
-      color: #444;
+      color: #333;
       text-align: center;
     }
 
-    .cabecera-espacio {
-      width: 90px;
-    }
-
     .nav-admin {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 42px;
-      margin-bottom: 18px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid #e2e8ef;
-    }
-
-    .nav-admin-centro {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin-top: 22px;
+      display: inline-flex;
       gap: 10px;
       flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
     }
 
-    .nav-admin-centro a,
-    .nav-admin-centro span {
-      border: 1px solid #cfd8e3;
-      background: #fff;
-      color: #334155;
+    .nav-admin a,
+    .nav-admin span {
+      display: inline-block;
+      padding: 8px 16px;
       border-radius: 999px;
-      padding: 8px 14px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
       font-size: 14px;
       line-height: 1;
-      text-decoration: none;
+      transition: all 0.15s ease;
       cursor: pointer;
     }
 
-    .nav-admin-centro a:hover {
+    .nav-admin a:hover {
       background: #f7f9fb;
       color: #0b5ed7;
-      border-color: #b8c7d8;
+      border-color: #9fb2c7;
     }
 
-    .nav-admin-centro .activo {
+    .nav-admin .activo {
       background: #0b5ed7;
-      color: white;
+      color: #fff;
       border-color: #0b5ed7;
       cursor: default;
     }
 
-    .nav-admin-acciones {
+    .cabecera-acciones {
       position: absolute;
       right: 0;
       top: 0;
       display: flex;
-      align-items: center;
       gap: 10px;
+      align-items: center;
     }
 
-    .btn-icono-nav {
-      width: 38px;
-      height: 38px;
+    .btn-icono {
+      width: 36px;
+      height: 36px;
       border-radius: 999px;
-      border: 1px solid #cfd8e3;
+      border: 1px solid #bfc9d4;
       background: #fff;
-      color: #334155;
+      color: #4a5a6a;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      padding: 0;
       transition: all 0.15s ease;
+      padding: 0;
     }
 
-    .btn-icono-nav:hover {
+    .btn-icono:hover {
       background: #f7f9fb;
       color: #0b5ed7;
-      border-color: #b8c7d8;
+      border-color: #9fb2c7;
     }
 
-    .btn-icono-nav svg {
+    .btn-icono svg {
       width: 18px;
       height: 18px;
     }
@@ -204,7 +195,10 @@
       margin-bottom: 6px;
     }
 
-    select, input, button, .btn-enlace {
+    select,
+    input,
+    button,
+    .btn-enlace {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
@@ -213,7 +207,8 @@
       box-sizing: border-box;
     }
 
-    button, .btn-enlace {
+    button,
+    .btn-enlace {
       background: #0b5ed7;
       color: white;
       cursor: pointer;
@@ -222,7 +217,8 @@
       text-align: center;
     }
 
-    button:hover, .btn-enlace:hover {
+    button:hover,
+    .btn-enlace:hover {
       background: #094db1;
     }
 
@@ -393,18 +389,31 @@
     .estado.rechazada { background: #dc3545; }
     .estado.cancelada { background: #6c757d; }
 
-    @media (max-width: 1100px) {
-      .filtros {
-        grid-template-columns: 1fr;
+    @media (max-width: 1200px) {
+      .cabecera-centro {
+        padding: 120px 0 0 0;
+      }
+
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 12px auto;
+      }
+
+      .cabecera-acciones {
+        position: static;
+        justify-content: center;
+        margin-top: 14px;
       }
 
       .cabecera {
-        grid-template-columns: 1fr;
+        min-height: auto;
       }
+    }
 
-      .logo,
-      .cabecera-espacio {
-        justify-self: center;
+    @media (max-width: 1100px) {
+      .filtros {
+        grid-template-columns: 1fr;
       }
 
       .fila-estado {
@@ -413,16 +422,6 @@
 
       .resumen-estados {
         grid-template-columns: 1fr 1fr;
-      }
-
-      .nav-admin {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .nav-admin-acciones {
-        position: static;
-        justify-content: center;
       }
 
       .fc .fc-toolbar {
@@ -440,26 +439,24 @@
   <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
-      <div class="titulos">
+
+      <div class="cabecera-centro">
         <h1 id="tituloEvento">Cargando evento...</h1>
         <h2 id="subtituloEvento">Calendario administrativo</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
-      </div>
-      <div class="cabecera-espacio"></div>
-    </div>
 
-    <div class="nav-admin">
-      <div class="nav-admin-centro">
-        <a href="admin-franjas.html">Franjas</a>
-        <a href="admin-reservas.html">Reservas</a>
-        <span class="activo">Calendario</span>
+        <div class="nav-admin">
+          <a href="admin-franjas.html">Franjas</a>
+          <a href="admin-reservas.html">Reservas</a>
+          <span class="activo">Calendario</span>
+        </div>
       </div>
 
-      <div class="nav-admin-acciones">
+      <div class="cabecera-acciones">
         <button
           type="button"
           id="btnRecargarIcono"
-          class="btn-icono-nav"
+          class="btn-icono"
           title="Recargar calendario"
           aria-label="Recargar calendario"
         >
@@ -472,7 +469,7 @@
         <button
           type="button"
           id="btnCerrarSesion"
-          class="btn-icono-nav"
+          class="btn-icono"
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
         >
@@ -723,7 +720,6 @@
         document.getElementById("contadorRechazadas").textContent = rechazadas;
         document.getElementById("contadorCanceladas").textContent = canceladas;
       } catch {
-        // sin acción
       }
     }
 
