@@ -164,70 +164,42 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(data.email);
     const observaciones = limpiarTexto(data.observaciones);
     const franjaIdNueva = parseInt(data.franja, 10);
-    const plazasSolicitadas = parseInt(data.plazas_solicitadas, 10);
+
+    // ESTE CAMPO AHORA SIGNIFICA: plazas reservadas pendientes de asignar
+    const plazasReservadasPendientes = parseInt(data.plazas_reservadas, 10);
 
     if (!tokenEdicion) {
-      return json(
-        { ok: false, error: "Falta el token de edición." },
-        { status: 400 }
-      );
+      return json({ ok: false, error: "Falta el token de edición." }, { status: 400 });
     }
 
     if (!centro || !contacto || !telefono || !email) {
-      return json(
-        { ok: false, error: "Faltan datos obligatorios del solicitante." },
-        { status: 400 }
-      );
+      return json({ ok: false, error: "Faltan datos obligatorios del solicitante." }, { status: 400 });
     }
 
     if (!esEmailValido(email)) {
-      return json(
-        { ok: false, error: "El correo electrónico no tiene un formato válido." },
-        { status: 400 }
-      );
+      return json({ ok: false, error: "El correo electrónico no tiene un formato válido." }, { status: 400 });
     }
 
     if (!Number.isInteger(franjaIdNueva) || franjaIdNueva <= 0) {
-      return json(
-        { ok: false, error: "La franja horaria indicada no es válida." },
-        { status: 400 }
-      );
+      return json({ ok: false, error: "La franja horaria indicada no es válida." }, { status: 400 });
     }
 
-    if (!Number.isInteger(plazasSolicitadas) || plazasSolicitadas <= 0) {
-      return json(
-        { ok: false, error: "Debe indicar un número de plazas reservadas válido." },
-        { status: 400 }
-      );
+    if (!Number.isInteger(plazasReservadasPendientes) || plazasReservadasPendientes < 0) {
+      return json({ ok: false, error: "Debe indicar un número de plazas reservadas válido." }, { status: 400 });
     }
 
     const reservaActual = await obtenerReservaPorToken(env, tokenEdicion);
 
     if (!reservaActual) {
-      return json(
-        { ok: false, error: "No existe ninguna reserva con ese token." },
-        { status: 404 }
-      );
+      return json({ ok: false, error: "No existe ninguna reserva con ese token." }, { status: 404 });
     }
 
     if (!["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado)) {
-      return json(
-        { ok: false, error: "La solicitud no puede modificarse en su estado actual." },
-        { status: 400 }
-      );
+      return json({ ok: false, error: "La solicitud no puede modificarse en su estado actual." }, { status: 400 });
     }
 
     const asistentesCargados = await contarAsistentes(env, reservaActual.id);
-
-    if (plazasSolicitadas < asistentesCargados) {
-      return json(
-        {
-          ok: false,
-          error: `No puede fijar menos plazas reservadas (${plazasSolicitadas}) que plazas ya asignadas (${asistentesCargados}).`
-        },
-        { status: 400 }
-      );
-    }
+    const totalBloqueadoNuevo = asistentesCargados + plazasReservadasPendientes;
 
     const centroComparacion = normalizarCentroComparacion(centro);
 
@@ -251,62 +223,102 @@ export async function onRequestPost(context) {
     const franjaNueva = await obtenerDisponibilidadFranja(env, franjaIdNueva);
 
     if (!franjaNueva) {
-      return json(
-        { ok: false, error: "La franja seleccionada no existe." },
-        { status: 404 }
-      );
+      return json({ ok: false, error: "La franja seleccionada no existe." }, { status: 404 });
     }
 
     let disponiblesEditables = Number(franjaNueva.disponibles || 0);
 
+    // Lo actualmente bloqueado por esta reserva es:
+    // si la prereserva sigue vigente, plazas_prereservadas
+    // si ya venció, asistentes_cargados
+    const prereservaVigente =
+      !!reservaActual.prereserva_expira_en &&
+      new Date(reservaActual.prereserva_expira_en.replace(" ", "T")) >= new Date();
+
+    const bloqueoActualReserva = prereservaVigente
+      ? Number(reservaActual.plazas_prereservadas || 0)
+      : asistentesCargados;
+
     if (Number(franjaIdNueva) === Number(reservaActual.franja_id)) {
-      disponiblesEditables += Number(reservaActual.plazas_prereservadas || 0);
+      disponiblesEditables += bloqueoActualReserva;
     }
 
-    if (plazasSolicitadas > disponiblesEditables) {
+    if (totalBloqueadoNuevo > disponiblesEditables) {
       return json(
         {
           ok: false,
-          error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta modificación: ${disponiblesEditables}. Solicitadas: ${plazasSolicitadas}.`
+          error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta modificación: ${disponiblesEditables}. Solicitadas: ${totalBloqueadoNuevo}.`
         },
         { status: 400 }
       );
     }
 
-    const sqlUpdate = `
-      UPDATE reservas
-      SET
-        franja_id = ?,
-        centro = ?,
-        contacto = ?,
-        telefono = ?,
-        email = ?,
-        personas = ?,
-        plazas_prereservadas = ?,
-        observaciones = ?,
-        fecha_modificacion = datetime('now')
-      WHERE id = ?
-    `;
+    let sqlUpdate;
+    let bindValues;
 
-    const updateResult = await env.DB.prepare(sqlUpdate)
-      .bind(
+    if (plazasReservadasPendientes > 0) {
+      // Si el usuario abre nuevas plazas reservadas pendientes, reiniciamos ventana de 2 horas
+      sqlUpdate = `
+        UPDATE reservas
+        SET
+          franja_id = ?,
+          centro = ?,
+          contacto = ?,
+          telefono = ?,
+          email = ?,
+          personas = ?,
+          plazas_prereservadas = ?,
+          prereserva_expira_en = datetime('now', '+2 hours'),
+          observaciones = ?,
+          fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `;
+
+      bindValues = [
         franjaIdNueva,
         centro,
         contacto,
         telefono,
         email,
-        plazasSolicitadas,
-        plazasSolicitadas,
+        totalBloqueadoNuevo,
+        totalBloqueadoNuevo,
         observaciones,
         reservaActual.id
-      )
-      .run();
+      ];
+    } else {
+      // Si no hay plazas reservadas pendientes, queda solo lo asignado
+      sqlUpdate = `
+        UPDATE reservas
+        SET
+          franja_id = ?,
+          centro = ?,
+          contacto = ?,
+          telefono = ?,
+          email = ?,
+          personas = ?,
+          plazas_prereservadas = ?,
+          observaciones = ?,
+          fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `;
+
+      bindValues = [
+        franjaIdNueva,
+        centro,
+        contacto,
+        telefono,
+        email,
+        totalBloqueadoNuevo,
+        totalBloqueadoNuevo,
+        observaciones,
+        reservaActual.id
+      ];
+    }
+
+    const updateResult = await env.DB.prepare(sqlUpdate).bind(...bindValues).run();
 
     if ((updateResult?.meta?.changes || 0) === 0) {
-      return json(
-        { ok: false, error: "No se pudo actualizar la solicitud." },
-        { status: 500 }
-      );
+      return json({ ok: false, error: "No se pudo actualizar la solicitud." }, { status: 500 });
     }
 
     const franjaFinal = await obtenerDisponibilidadFranja(env, franjaIdNueva);
@@ -314,8 +326,9 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       mensaje: "Solicitud actualizada correctamente.",
-      asistentes_cargados: asistentesCargados,
-      plazas_reservadas: plazasSolicitadas,
+      plazas_asignadas: asistentesCargados,
+      plazas_reservadas: plazasReservadasPendientes,
+      plazas_bloqueadas_total: totalBloqueadoNuevo,
       franja: franjaFinal ? {
         id: franjaFinal.id,
         fecha: franjaFinal.fecha,
