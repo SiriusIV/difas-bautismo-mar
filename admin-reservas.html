@@ -134,6 +134,17 @@
       background: #f8fafc;
     }
 
+    .btn-icono.aviso {
+      color: #c62828;
+      border-color: #e0b4b4;
+    }
+
+    .btn-icono.aviso:hover {
+      color: #a61f1f;
+      border-color: #d69292;
+      background: #fff5f5;
+    }
+
     .bloque {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
@@ -245,45 +256,54 @@
     }
 
     th.codigo-col, td.codigo-col {
+      width: 150px;
+    }
+
+    th.obs-col, td.obs-col {
+      width: 54px;
+      text-align: center;
+    }
+
+    th.estado-col, td.estado-col {
       width: 120px;
     }
 
     th.fecha-col, td.fecha-col {
-      width: 140px;
-    }
-
-    th.centro-col, td.centro-col {
-      width: 170px;
-    }
-
-    th.contacto-col, td.contacto-col {
       width: 150px;
     }
 
+    th.centro-col, td.centro-col {
+      width: 150px;
+    }
+
+    th.contacto-col, td.contacto-col {
+      width: 120px;
+    }
+
     th.telmail-col, td.telmail-col {
-      width: 160px;
+      width: 170px;
     }
 
     th.res-col, td.res-col {
-      width: 90px;
+      width: 95px;
       text-align: center;
     }
 
     th.asig-col, td.asig-col {
-      width: 90px;
+      width: 95px;
       text-align: center;
     }
 
     th.tipo-col, td.tipo-col {
-      width: 120px;
-    }
-
-    th.estado-col, td.estado-col {
-      width: 110px;
+      width: 130px;
     }
 
     .codigo {
       font-weight: bold;
+    }
+
+    .codigo.con-observaciones {
+      color: #c62828;
     }
 
     .estado-badge {
@@ -328,6 +348,53 @@
       background: #eaf7ea;
       color: #146c2e;
       border: 1px solid #b9e0c0;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 720px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 24px;
+    }
+
+    .modal-contenido {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     @media (max-width: 1200px) {
@@ -376,7 +443,8 @@
         border-bottom: 1px solid #eef2f6;
       }
 
-      td.sel-col {
+      td.sel-col,
+      td.obs-col {
         text-align: left;
       }
     }
@@ -507,6 +575,8 @@
             <tr>
               <th class="sel-col"></th>
               <th class="codigo-col">Código</th>
+              <th class="obs-col"></th>
+              <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha / franja</th>
               <th class="centro-col">Centro</th>
               <th class="contacto-col">Contacto</th>
@@ -514,8 +584,6 @@
               <th class="res-col">Plazas reservadas</th>
               <th class="asig-col">Plazas asignadas</th>
               <th class="tipo-col">Alumnos / profesores</th>
-              <th class="estado-col">Estado</th>
-              <th>Observaciones</th>
             </tr>
           </thead>
           <tbody id="tbodyReservas"></tbody>
@@ -524,9 +592,21 @@
     </div>
   </div>
 
+  <div id="modalObservaciones" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="modalObservacionesTitulo">Observaciones</h3>
+      <div id="modalObservacionesContenido" class="modal-contenido"></div>
+
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-secundario" id="btnCerrarModalObservaciones">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let reservaSeleccionada = null;
     let reservasActuales = [];
+    let reservaObservacionesActiva = null;
 
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensaje");
@@ -621,6 +701,23 @@
       actualizarBotonesAccion();
     }
 
+    function abrirModalObservaciones(id) {
+      const reserva = reservasActuales.find(r => Number(r.id) === Number(id));
+      if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
+
+      reservaObservacionesActiva = reserva;
+      document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.codigo_reserva}`;
+      document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
+      document.getElementById("modalObservaciones").classList.add("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalObservaciones() {
+      reservaObservacionesActiva = null;
+      document.getElementById("modalObservaciones").classList.remove("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
+    }
+
     function pintarReservas(reservas) {
       reservasActuales = reservas.slice();
       const tbody = document.getElementById("tbodyReservas");
@@ -640,41 +737,57 @@
         return;
       }
 
-      tbody.innerHTML = reservas.map(r => `
-        <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
-          <td class="sel-col">
-            <input
-              type="radio"
-              name="seleccionReserva"
-              ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
-              onchange="seleccionarReserva(${r.id})"
-            >
-          </td>
-          <td class="codigo-col">
-            <div class="codigo">${r.codigo_reserva}</div>
-          </td>
-          <td class="fecha-col">
-            ${r.fecha}<br>
-            ${r.hora_inicio} - ${r.hora_fin}
-          </td>
-          <td class="centro-col">${r.centro}</td>
-          <td class="contacto-col">${r.contacto || '<span class="muted">Sin contacto</span>'}</td>
-          <td class="telmail-col">
-            ${r.telefono || ""}<br>
-            <span class="muted">${r.email || ""}</span>
-          </td>
-          <td class="res-col">${r.plazas_reservadas}</td>
-          <td class="asig-col">${r.plazas_asignadas}</td>
-          <td class="tipo-col">
-            Alumnos: ${r.alumnos}<br>
-            Profesores: ${r.profesores}
-          </td>
-          <td class="estado-col">
-            <span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span>
-          </td>
-          <td>${r.observaciones || '<span class="muted">Sin observaciones</span>'}</td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = reservas.map(r => {
+        const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
+        return `
+          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
+            <td class="sel-col">
+              <input
+                type="radio"
+                name="seleccionReserva"
+                ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
+                onchange="seleccionarReserva(${r.id})"
+              >
+            </td>
+            <td class="codigo-col">
+              <div class="codigo ${tieneObservaciones ? 'con-observaciones' : ''}">${r.codigo_reserva}</div>
+            </td>
+            <td class="obs-col">
+              ${tieneObservaciones ? `
+                <button
+                  type="button"
+                  class="btn-icono aviso"
+                  title="Ver observaciones"
+                  onclick="abrirModalObservaciones(${r.id})"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="12" r="6"></circle>
+                  </svg>
+                </button>
+              ` : ''}
+            </td>
+            <td class="estado-col">
+              <span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span>
+            </td>
+            <td class="fecha-col">
+              ${r.fecha}<br>
+              ${r.hora_inicio} - ${r.hora_fin}
+            </td>
+            <td class="centro-col">${r.centro}</td>
+            <td class="contacto-col">${r.contacto || '<span class="muted">Sin contacto</span>'}</td>
+            <td class="telmail-col">
+              ${r.telefono || ""}<br>
+              <span class="muted">${r.email || ""}</span>
+            </td>
+            <td class="res-col">${r.plazas_reservadas}</td>
+            <td class="asig-col">${r.plazas_asignadas}</td>
+            <td class="tipo-col">
+              Alumnos: ${r.alumnos}<br>
+              Profesores: ${r.profesores}
+            </td>
+          </tr>
+        `;
+      }).join("");
 
       actualizarBotonesAccion();
     }
@@ -718,31 +831,29 @@
       } catch (_) {
       }
       window.location.href = "index.html";
-     }
+    }
 
     async function abrirEditarSeleccion() {
-  if (!reservaSeleccionada) return;
+      if (!reservaSeleccionada) return;
 
-  if (!reservaSeleccionada.token_edicion) {
-    mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
-    return;
-  }
+      if (!reservaSeleccionada.token_edicion) {
+        mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
+        return;
+      }
 
-  window.location.href = `editar.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
-}
-
+      window.location.href = `editar.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
+    }
 
     async function abrirAsistentesSeleccion() {
-  if (!reservaSeleccionada) return;
+      if (!reservaSeleccionada) return;
 
-  if (!reservaSeleccionada.token_edicion) {
-    mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
-    return;
-  }
+      if (!reservaSeleccionada.token_edicion) {
+        mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
+        return;
+      }
 
-  window.location.href = `asistentes.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
-}
-
+      window.location.href = `asistentes.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
+    }
 
     async function cambiarEstadoSeleccion(estado) {
       if (!reservaSeleccionada) return;
@@ -757,13 +868,17 @@
       limpiarMensaje();
 
       try {
-        const res = await fetch("/api/admin/reserva-estado", {
-          method: "POST",
+        const res = await fetch("/api/admin/reservas", {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify({
-            reserva_id: reservaSeleccionada.id,
-            estado
+            id: reservaSeleccionada.id,
+            accion: estado === "CONFIRMADA"
+              ? "confirmar"
+              : estado === "RECHAZADA"
+              ? "rechazar"
+              : "cancelar"
           })
         });
 
@@ -806,9 +921,18 @@
       cambiarEstadoSeleccion("CANCELADA");
     });
 
+    document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
+
+    document.getElementById("modalObservaciones").addEventListener("click", function (e) {
+      if (e.target.id === "modalObservaciones") {
+        cerrarModalObservaciones();
+      }
+    });
+
     cargarPanel();
 
     window.seleccionarReserva = seleccionarReserva;
+    window.abrirModalObservaciones = abrirModalObservaciones;
   </script>
 </body>
 </html>
