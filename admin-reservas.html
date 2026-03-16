@@ -395,7 +395,7 @@
         <div class="nav-admin">
           <a class="nav-btn" href="admin-franjas.html">Franjas</a>
           <a class="nav-btn activo" href="admin-reservas.html">Reservas</a>
-          <a class="nav-btn" href="admin-calendar.html">Calendario</a>
+          <a class="nav-btn" href="admin-calendario.html">Calendario</a>
         </div>
       </div>
 
@@ -718,40 +718,31 @@
       } catch (_) {
       }
       window.location.href = "index.html";
-    }
-
-    async function resolverTokenDesdeCodigo(codigoReserva) {
-      const res = await fetch(`/api/admin/reserva-token?codigo=${encodeURIComponent(codigoReserva)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.ok || !data.token_edicion) {
-        throw new Error(data.error || "No se pudo resolver el acceso a la solicitud.");
-      }
-
-      return data.token_edicion;
-    }
+     }
 
     async function abrirEditarSeleccion() {
-      if (!reservaSeleccionada) return;
-      try {
-        const token = await resolverTokenDesdeCodigo(reservaSeleccionada.codigo_reserva);
-        window.location.href = `editar.html?token=${encodeURIComponent(token)}`;
-      } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo abrir la solicitud.");
-      }
-    }
+  if (!reservaSeleccionada) return;
+
+  if (!reservaSeleccionada.token_edicion) {
+    mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
+    return;
+  }
+
+  window.location.href = `editar.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
+}
+
 
     async function abrirAsistentesSeleccion() {
-      if (!reservaSeleccionada) return;
-      try {
-        const token = await resolverTokenDesdeCodigo(reservaSeleccionada.codigo_reserva);
-        window.location.href = `asistentes.html?token=${encodeURIComponent(token)}`;
-      } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo abrir la gestión de asistentes.");
-      }
-    }
+  if (!reservaSeleccionada) return;
+
+  if (!reservaSeleccionada.token_edicion) {
+    mostrarMensaje("error", "La reserva seleccionada no incluye token de edición.");
+    return;
+  }
+
+  window.location.href = `asistentes.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`;
+}
+
 
     async function cambiarEstadoSeleccion(estado) {
       if (!reservaSeleccionada) return;
