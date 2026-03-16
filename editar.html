@@ -710,30 +710,30 @@
 
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-      aviso.textContent = `Plazas reservadas: ${plazas}. Plazas asignadas: ${asistentesCargados}.`;
+      aviso.textContent = `Plazas reservadas: ${Number(reservaActual?.prereserva_vigente ? Math.max(plazas - asistentesCargados, 0) : 0)}. Plazas asignadas: ${asistentesCargados}.`;
 
       if (!envioEnCurso) boton.disabled = false;
     }
 
     function actualizarNotaPrereserva() {
-      const nota = document.getElementById("notaPrereserva");
+  const nota = document.getElementById("notaPrereserva");
 
-      if (!reservaActual) {
-        nota.style.display = "none";
-        return;
-      }
+  if (!reservaActual) {
+    nota.style.display = "none";
+    return;
+  }
 
-      const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
-      const plazas = Number(reservaActual.plazas_prereservadas || 0);
+  const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
 
-      nota.innerHTML = `
-        <strong>Reserva actual</strong>
-        <br>Plazas reservadas: <strong>${plazas}</strong>
-        <br>Plazas asignadas: <strong>${asistentesCargados}</strong>
-        <br>Hora límite de consolidación: <strong>${expira}</strong>
-      `;
-      nota.style.display = "block";
-    }
+  nota.innerHTML = `
+    <strong>Reserva actual</strong>
+    <br>Plazas reservadas: <strong>${Number(reservaActual.plazas_reservadas || 0)}</strong>
+    <br>Plazas asignadas: <strong>${Number(reservaActual.plazas_asignadas || 0)}</strong>
+    <br>Hora límite de consolidación: <strong>${expira}</strong>
+  `;
+  nota.style.display = "block";
+}
+
 
     async function cargarFranjas(franjaSeleccionadaId = "") {
       const select = document.getElementById("franja");
@@ -796,16 +796,15 @@
 
         asistentesCargados = total;
 
-        const plazas = Number(reservaActual?.plazas_prereservadas || 0);
-
         const resumen = document.getElementById("resumenAsistentes");
-        resumen.innerHTML = `
-          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-          <strong>Plazas reservadas:</strong> ${plazas}<br>
-          <strong>Plazas asignadas:</strong> ${total}<br>
-          <strong>Mayores de 10 años:</strong> ${mayores}<br>
-          <strong>Menores de 10 años:</strong> ${menores}
-        `;
+resumen.innerHTML = `
+  <span class="info-titulo">Resumen de asistentes de esta reserva</span>
+  <strong>Plazas reservadas:</strong> ${Number(reservaActual?.plazas_reservadas || 0)}<br>
+  <strong>Plazas asignadas:</strong> ${total}<br>
+  <strong>Mayores de 10 años:</strong> ${mayores}<br>
+  <strong>Menores de 10 años:</strong> ${menores}
+`;
+
 
         actualizarNotaPrereserva();
         actualizarAvisoCapacidad();
@@ -883,20 +882,22 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-        <span class="info-titulo">Resumen de la reserva actual</span>
-        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-        <strong>Franja asignada a esta reserva:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
-        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
-      `;
+  <span class="info-titulo">Resumen de la reserva actual</span>
+  <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+  <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+  <strong>Franja asignada a esta reserva:</strong><br>
+  ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+  <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
+  <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
+  <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+`;
+
 
       document.getElementById("centro").value = reservaActual.centro || "";
       document.getElementById("contacto").value = reservaActual.contacto || "";
       document.getElementById("telefono").value = reservaActual.telefono || "";
       document.getElementById("email").value = reservaActual.email || "";
-      document.getElementById("plazasSolicitadas").value = Number(reservaActual.plazas_prereservadas || 0);
+      document.getElementById("plazasSolicitadas").value = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
       document.getElementById("observaciones").value = reservaActual.observaciones || "";
 
       document.getElementById("btnGestionarAsistentes").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
