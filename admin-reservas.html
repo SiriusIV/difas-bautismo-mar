@@ -134,16 +134,28 @@
       background: #f8fafc;
     }
 
-    .btn-icono.aviso {
-      color: #c62828;
-      border-color: #e0b4b4;
-    }
+    .icono-observacion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
 
-    .btn-icono.aviso:hover {
-      color: #a61f1f;
-      border-color: #d69292;
-      background: #fff5f5;
-    }
+.icono-observacion svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.icono-observacion:hover {
+  transform: scale(1.08);
+}
+
 
     .bloque {
       background: #f7f9fb;
@@ -255,14 +267,15 @@
       text-align: center;
     }
 
-    th.codigo-col, td.codigo-col {
-      width: 150px;
-    }
-
     th.obs-col, td.obs-col {
-      width: 54px;
-      text-align: center;
-    }
+  width: 34px;
+  text-align: center;
+}
+
+th.codigo-col, td.codigo-col {
+  width: 170px;
+}
+
 
     th.estado-col, td.estado-col {
       width: 120px;
@@ -573,9 +586,10 @@
         <table>
           <thead>
             <tr>
+              <tr>
               <th class="sel-col"></th>
-              <th class="codigo-col">Código</th>
               <th class="obs-col"></th>
+              <th class="codigo-col">Código</th>
               <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha / franja</th>
               <th class="centro-col">Centro</th>
@@ -741,41 +755,41 @@
         const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
         return `
           <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
-            <td class="sel-col">
-              <input
-                type="radio"
-                name="seleccionReserva"
-                ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
-                onchange="seleccionarReserva(${r.id})"
-              >
-            </td>
-            <td class="codigo-col">
-              <div class="codigo ${tieneObservaciones ? 'con-observaciones' : ''}">${r.codigo_reserva}</div>
-            </td>
-            <td class="obs-col">
-              ${tieneObservaciones ? `
-                <button
-  type="button"
-  class="btn-icono aviso"
-  title="Ver observaciones"
-  onclick="abrirModalObservaciones(${r.id})"
->
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M12 3L22 20H2L12 3Z"
-      fill="#FFC107"
-      stroke="#CC9A06"
-      stroke-width="1"
-      stroke-linejoin="round"
-    />
-    <rect x="11" y="9" width="2" height="6" fill="#222"/>
-    <rect x="11" y="16.5" width="2" height="2" fill="#222"/>
-  </svg>
-</button>
+<td class="sel-col">
+  <input
+    type="radio"
+    name="seleccionReserva"
+    ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
+    onchange="seleccionarReserva(${r.id})"
+  >
+</td>
+<td class="obs-col">
+  ${tieneObservaciones ? `
+    <button
+      type="button"
+      class="icono-observacion"
+      title="Esta reserva tiene observaciones"
+      onclick="abrirModalObservaciones(${r.id})"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 3L22 20H2L12 3Z"
+          fill="#FFC107"
+          stroke="#CC9A06"
+          stroke-width="1"
+          stroke-linejoin="round"
+        />
+        <rect x="11" y="9" width="2" height="6" fill="#222"/>
+        <rect x="11" y="16.5" width="2" height="2" fill="#222"/>
+      </svg>
+    </button>
+  ` : ''}
+</td>
+<td class="codigo-col">
+  <div class="codigo ${tieneObservaciones ? 'con-observaciones' : ''}">${r.codigo_reserva}</div>
+</td>
+<td class="estado-col">
 
-              ` : ''}
-            </td>
-            <td class="estado-col">
               <span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span>
             </td>
             <td class="fecha-col">
