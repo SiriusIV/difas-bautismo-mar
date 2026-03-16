@@ -95,6 +95,21 @@ export async function onRequestGet(context) {
     const ocupadas = Number(row.ocupadas || 0);
     const disponibles = capacidad - ocupadas;
 
+    const asistentesCargados = Number(row.asistentes_cargados || 0);
+    const plazasPrereservadasHistoricas = Number(row.plazas_prereservadas || 0);
+
+    const prereservaVigente =
+      !!row.prereserva_expira_en &&
+      new Date(row.prereserva_expira_en.replace(" ", "T")) >= new Date();
+
+    const plazasReservadasActivas = prereservaVigente
+      ? Math.max(plazasPrereservadasHistoricas - asistentesCargados, 0)
+      : 0;
+
+    const plazasBloqueadasActualmente = prereservaVigente
+      ? plazasPrereservadasHistoricas
+      : asistentesCargados;
+
     return json({
       ok: true,
       reserva: {
@@ -107,9 +122,13 @@ export async function onRequestGet(context) {
         mayores10: Number(row.mayores10 || 0),
         menores10: Number(row.menores10 || 0),
         personas: Number(row.personas || 0),
-        plazas_prereservadas: Number(row.plazas_prereservadas || 0),
+        plazas_prereservadas: plazasPrereservadasHistoricas,
         prereserva_expira_en: row.prereserva_expira_en,
-        asistentes_cargados: Number(row.asistentes_cargados || 0),
+        prereserva_vigente: prereservaVigente,
+        plazas_reservadas: plazasReservadasActivas,
+        plazas_asignadas: asistentesCargados,
+        plazas_bloqueadas_actualmente: plazasBloqueadasActualmente,
+        asistentes_cargados: asistentesCargados,
         observaciones: row.observaciones || "",
         fecha_solicitud: row.fecha_solicitud,
         fecha_modificacion: row.fecha_modificacion,
