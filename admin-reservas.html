@@ -54,10 +54,11 @@
       padding: 0 220px 0 220px;
     }
 
-    .lugar {
+    .subactividad {
       margin-top: 10px;
       font-size: 15px;
       color: #333;
+      text-align: center;
     }
 
     .nav-admin {
@@ -216,6 +217,48 @@
       gap: 10px;
       flex-wrap: wrap;
       align-items: center;
+    }
+
+    .filtro-acciones {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+      justify-content: flex-start;
+    }
+
+    .btn-icono-filtro {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #0b5ed7;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono-filtro:hover {
+      background: #094db1;
+      border-color: #094db1;
+    }
+
+    .btn-icono-filtro.secundario {
+      background: #6c757d;
+      border-color: #6c757d;
+    }
+
+    .btn-icono-filtro.secundario:hover {
+      background: #565e64;
+      border-color: #565e64;
+    }
+
+    .btn-icono-filtro svg {
+      width: 18px;
+      height: 18px;
     }
 
     .tabla-wrap {
@@ -504,6 +547,10 @@
       table {
         min-width: 100%;
       }
+
+      .filtro-acciones {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
@@ -515,10 +562,10 @@
       <div class="cabecera-centro">
         <h1 id="tituloEvento">DIFAS 2026</h1>
         <h2>Panel de administración de reservas</h2>
-        <div class="lugar" id="lugarEvento"><strong>Lugar:</strong> ARFER</div>
+        <div class="subactividad">Bautismos de mar</div>
 
         <div class="nav-admin">
-          <a class="nav-btn" href="admin-franjas.html">Franjas</a>
+          <a class="nav-btn" href="admin-franjas.html">Franjas horarias</a>
           <a class="nav-btn activo" href="admin-reservas.html">Reservas</a>
           <a class="nav-btn" href="admin-calendario.html">Calendario</a>
         </div>
@@ -575,8 +622,23 @@
           <input type="text" id="filtroBuscar" placeholder="Código, centro, contacto, email o teléfono">
         </div>
 
-        <button type="button" class="btn" id="btnAplicarFiltros">Aplicar filtros</button>
-        <button type="button" class="btn btn-secundario" id="btnLimpiarFiltros">Limpiar</button>
+        <div class="filtro-acciones">
+          <button type="button" class="btn-icono-filtro" id="btnAplicarFiltros" title="Aplicar filtros" aria-label="Aplicar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="3 4 21 4 14 12 14 19 10 17 10 12 3 4"></polygon>
+            </svg>
+          </button>
+
+          <button type="button" class="btn-icono-filtro secundario" id="btnLimpiarFiltros" title="Limpiar filtros" aria-label="Limpiar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+              <path d="M9 6V4h6v2"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -846,9 +908,7 @@
             </td>
             <td class="res-col">${r.plazas_reservadas}</td>
             <td class="asig-col">${r.plazas_asignadas}</td>
-            <td class="tipo-col">
-              Alumnos: ${r.alumnos}<br>Profesores: ${r.profesores}
-            </td>
+            <td class="tipo-col">Alumnos: ${r.alumnos}<br>Profesores: ${r.profesores}</td>
           </tr>
         `;
       }).join("");
