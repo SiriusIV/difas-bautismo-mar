@@ -1,215 +1,205 @@
+function json(data, init = {}) {
+  return new Response(JSON.stringify(data), {
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    ...init
+  });
+}
+
+function limpiarTexto(valor) {
+  return String(valor || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizarTipoAsistente(valor) {
+  const v = String(valor || "").trim().toUpperCase();
+  return v === "PROFESOR" ? "PROFESOR" : "ALUMNO";
+}
+
+function normalizarCategoriaEdad(valor) {
+  const v = String(valor || "").trim().toUpperCase();
+  return v === "MENOR_10" ? "MENOR_10" : "MAYOR_10";
+}
+
+async function obtenerReservaPorToken(env, tokenEdicion) {
+  const sql = `
+    SELECT
+      r.id,
+      r.codigo_reserva,
+      r.estado,
+      r.plazas_prereservadas,
+      r.prereserva_expira_en,
+      r.franja_id
+    FROM reservas r
+    WHERE r.token_edicion = ?
+    LIMIT 1
+  `;
+
+  return await env.DB.prepare(sql).bind(tokenEdicion).first();
+}
+
+async function listarColumnasVisitantes(env) {
+  const result = await env.DB.prepare(`PRAGMA table_info(visitantes)`).all();
+  return (result.results || []).map(c => String(c.name || ""));
+}
+
+async function borrarVisitantesDeReserva(env, reservaId) {
+  return await env.DB.prepare(`
+    DELETE FROM visitantes
+    WHERE reserva_id = ?
+  `).bind(reservaId).run();
+}
+
+async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) {
+  const tieneTipoAsistente = columnasVisitantes.includes("tipo_asistente");
+
+  if (tieneTipoAsistente) {
+    const sql = `
+      INSERT INTO visitantes (
+        reserva_id,
+        nombre_completo,
+        tipo_asistente,
+        categoria_edad
+      )
+      VALUES (?, ?, ?, ?)
+    `;
+
+    return await env.DB.prepare(sql)
+      .bind(
+        reservaId,
+        visitante.nombre_completo,
+        visitante.tipo_asistente,
+        visitante.categoria_edad
+      )
+      .run();
+  }
+
+  const sql = `
+    INSERT INTO visitantes (
+      reserva_id,
+      nombre_completo,
+      categoria_edad
+    )
+    VALUES (?, ?, ?)
+  `;
+
+  return await env.DB.prepare(sql)
+    .bind(
+      reservaId,
+      visitante.nombre_completo,
+      visitante.categoria_edad
+    )
+    .run();
+}
+
+async function actualizarContadoresReserva(env, reservaId, visitantesNormalizados) {
+  const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
+  const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
+  const personas = visitantesNormalizados.length;
+
+  const sql = `
+    UPDATE reservas
+    SET
+      mayores10 = ?,
+      menores10 = ?,
+      personas = ?,
+      fecha_modificacion = datetime('now')
+    WHERE id = ?
+  `;
+
+  return await env.DB.prepare(sql)
+    .bind(mayores10, menores10, personas, reservaId)
+    .run();
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
     const data = await request.json();
 
-    const tokenEdicion = (data.token_edicion || "").trim();
-    const visitantes = Array.isArray(data.visitantes) ? data.visitantes : [];
+    const tokenEdicion = limpiarTexto(data.token_edicion);
+    const visitantesEntrada = Array.isArray(data.visitantes) ? data.visitantes : [];
 
     if (!tokenEdicion) {
-      return Response.json(
+      return json(
         { ok: false, error: "Falta el token de edición." },
         { status: 400 }
       );
     }
 
-    // Limpieza y validación básica
-    const visitantesLimpios = visitantes
-      .map(v => ({
-        nombre_completo: (v.nombre_completo || "").trim(),
-        categoria_edad: (v.categoria_edad || "").trim()
-      }))
-      .filter(v => v.nombre_completo !== "");
+    const reserva = await obtenerReservaPorToken(env, tokenEdicion);
 
-    for (const v of visitantesLimpios) {
-      if (!["MAYOR_10", "MENOR_10"].includes(v.categoria_edad)) {
-        return Response.json(
-          { ok: false, error: "Categoría de edad no válida en uno de los asistentes." },
-          { status: 400 }
-        );
-      }
-    }
-
-    const mayores10 = visitantesLimpios.filter(v => v.categoria_edad === "MAYOR_10").length;
-    const menores10 = visitantesLimpios.filter(v => v.categoria_edad === "MENOR_10").length;
-    const personasNuevas = visitantesLimpios.length;
-
-    const session = env.DB.withSession("first-primary");
-
-    // 1) Leer solicitud actual
-    const reservaActual = await session
-      .prepare(`
-        SELECT
-          r.id,
-          r.franja_id,
-          r.codigo_reserva,
-          r.token_edicion,
-          r.estado,
-          f.fecha,
-          f.hora_inicio,
-          f.hora_fin,
-          f.capacidad
-        FROM reservas r
-        INNER JOIN franjas f
-          ON r.franja_id = f.id
-        WHERE r.token_edicion = ?
-        LIMIT 1
-      `)
-      .bind(tokenEdicion)
-      .first();
-
-    if (!reservaActual) {
-      return Response.json(
+    if (!reserva) {
+      return json(
         { ok: false, error: "No existe ninguna solicitud con ese token." },
         { status: 404 }
       );
     }
 
-    if (!["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado)) {
-      return Response.json(
-        { ok: false, error: "La solicitud no está en un estado editable." },
+    if (!["PENDIENTE", "CONFIRMADA"].includes(reserva.estado)) {
+      return json(
+        { ok: false, error: "La solicitud no permite gestionar asistentes en su estado actual." },
         { status: 400 }
       );
     }
 
-    // 2) Calcular ocupación de la franja actual excluyendo esta propia solicitud
-    const ocupacion = await session
-      .prepare(`
-        SELECT COALESCE(SUM(personas), 0) AS ocupadas
-        FROM reservas
-        WHERE franja_id = ?
-          AND id <> ?
-          AND estado IN ('PENDIENTE', 'CONFIRMADA')
-      `)
-      .bind(reservaActual.franja_id, reservaActual.id)
-      .first();
+    const visitantesNormalizados = visitantesEntrada
+      .map(v => ({
+        nombre_completo: limpiarTexto(v.nombre_completo),
+        tipo_asistente: normalizarTipoAsistente(v.tipo_asistente),
+        categoria_edad: normalizarCategoriaEdad(v.categoria_edad)
+      }))
+      .filter(v => v.nombre_completo !== "");
 
-    const ocupadasSinEstaSolicitud = Number(ocupacion?.ocupadas || 0);
-    const disponiblesEditables = Number(reservaActual.capacidad) - ocupadasSinEstaSolicitud;
+    if (visitantesNormalizados.length === 0) {
+      return json(
+        { ok: false, error: "Debe indicar al menos 1 visitante." },
+        { status: 400 }
+      );
+    }
 
-    // Si la lista no está vacía, comprobar capacidad.
-    // Si queda vacía, sí se permite guardar a 0.
-    if (personasNuevas > 0 && personasNuevas > disponiblesEditables) {
-      return Response.json(
+    const plazasReservadas = Number(reserva.plazas_prereservadas || 0);
+
+    if (visitantesNormalizados.length > plazasReservadas) {
+      return json(
         {
           ok: false,
-          error: `No hay plazas suficientes en la franja actual. Disponibles para esta modificación: ${disponiblesEditables}. Solicitadas: ${personasNuevas}.`
+          error: `No puede asignar más asistentes (${visitantesNormalizados.length}) que plazas reservadas (${plazasReservadas}).`
         },
         { status: 400 }
       );
     }
 
-    // 3) Borrar visitantes actuales de la solicitud
-    await session
-      .prepare(`
-        DELETE FROM visitantes
-        WHERE reserva_id = ?
-      `)
-      .bind(reservaActual.id)
-      .run();
+    const columnasVisitantes = await listarColumnasVisitantes(env);
 
-    // 4) Insertar nueva lista de visitantes, si hay
-    for (const v of visitantesLimpios) {
-      await session
-        .prepare(`
-          INSERT INTO visitantes (
-            reserva_id,
-            nombre_completo,
-            categoria_edad,
-            fecha_creacion,
-            fecha_modificacion
-          )
-          VALUES (?, ?, ?, datetime('now'), datetime('now'))
-        `)
-        .bind(
-          reservaActual.id,
-          v.nombre_completo,
-          v.categoria_edad
-        )
-        .run();
+    await borrarVisitantesDeReserva(env, reserva.id);
+
+    for (const visitante of visitantesNormalizados) {
+      await insertarVisitante(env, reserva.id, visitante, columnasVisitantes);
     }
 
-    // 5) Actualizar totales en la solicitud
-    await session
-      .prepare(`
-        UPDATE reservas
-        SET
-          mayores10 = ?,
-          menores10 = ?,
-          personas = ?,
-          fecha_modificacion = datetime('now')
-        WHERE id = ?
-      `)
-      .bind(
-        mayores10,
-        menores10,
-        personasNuevas,
-        reservaActual.id
-      )
-      .run();
+    await actualizarContadoresReserva(env, reserva.id, visitantesNormalizados);
 
-    // 6) Leer estado final de ocupación
-    const estadoFinal = await session
-      .prepare(`
-        SELECT
-          f.id,
-          f.fecha,
-          f.hora_inicio,
-          f.hora_fin,
-          f.capacidad,
-          COALESCE(SUM(
-            CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
-              ELSE 0
-            END
-          ), 0) AS ocupadas,
-          (
-            f.capacidad - COALESCE(SUM(
-              CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
-                ELSE 0
-              END
-            ), 0)
-          ) AS disponibles
-        FROM franjas f
-        LEFT JOIN reservas r
-          ON f.id = r.franja_id
-        WHERE f.id = ?
-        GROUP BY f.id, f.fecha, f.hora_inicio, f.hora_fin, f.capacidad
-      `)
-      .bind(reservaActual.franja_id)
-      .first();
+    const alumnos = visitantesNormalizados.filter(v => v.tipo_asistente === "ALUMNO").length;
+    const profesores = visitantesNormalizados.filter(v => v.tipo_asistente === "PROFESOR").length;
+    const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
+    const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
 
-    return Response.json({
+    return json({
       ok: true,
-      mensaje: personasNuevas === 0
-        ? "La lista de asistentes ha quedado vacía y se ha guardado correctamente."
-        : "Lista de asistentes actualizada correctamente.",
-      codigo_reserva: reservaActual.codigo_reserva,
-      token_edicion: reservaActual.token_edicion,
-      estado: reservaActual.estado,
-      franja: {
-        id: estadoFinal.id,
-        fecha: estadoFinal.fecha,
-        hora_inicio: estadoFinal.hora_inicio,
-        hora_fin: estadoFinal.hora_fin
-      },
-      totales: {
-        personas: personasNuevas,
-        mayores10,
-        menores10
-      },
-      capacidad: estadoFinal.capacidad,
-      ocupadas: estadoFinal.ocupadas,
-      disponibles_despues: estadoFinal.disponibles
+      mensaje: "Asistentes guardados correctamente.",
+      codigo_reserva: reserva.codigo_reserva,
+      plazas_reservadas: plazasReservadas,
+      plazas_asignadas: visitantesNormalizados.length,
+      alumnos,
+      profesores,
+      mayores10,
+      menores10
     });
-
   } catch (error) {
-    return Response.json(
+    return json(
       {
         ok: false,
-        error: "Error interno al guardar la lista de asistentes.",
+        error: "Error interno al guardar los asistentes.",
         detalle: error.message
       },
       { status: 500 }
