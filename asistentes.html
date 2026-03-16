@@ -420,14 +420,16 @@
       const claseEstado = claseEstadoBadge(reservaActual.estado);
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-        <span class="info-titulo">Resumen de la solicitud actual</span>
-        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-        <strong>Franja asignada:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_prereservadas || 0)}<br>
-        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
-      `;
+  <span class="info-titulo">Resumen de la solicitud actual</span>
+  <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+  <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+  <strong>Franja asignada:</strong><br>
+  ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+  <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
+  <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
+  <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+`;
+
 
       document.getElementById("resumenFranja").innerHTML = `
         <span class="info-titulo">Resumen global de la franja horaria</span>
@@ -440,17 +442,17 @@
     }
 
     function actualizarNotaReserva(totalAsignadas) {
-      const nota = document.getElementById("notaReserva");
-      const reservadas = Number(reservaActual?.plazas_prereservadas || 0);
+  const nota = document.getElementById("notaReserva");
 
-      nota.innerHTML = `
-        <strong>Reserva actual</strong>
-        <br>Plazas reservadas: <strong>${reservadas}</strong>
-        <br>Plazas asignadas: <strong>${totalAsignadas}</strong>
-        <br>Hora límite de consolidación: <strong>${formatearFechaHora(reservaActual?.prereserva_expira_en)}</strong>
-      `;
-      nota.style.display = "block";
-    }
+  nota.innerHTML = `
+    <strong>Reserva actual</strong>
+    <br>Plazas reservadas: <strong>${Number(reservaActual?.prereserva_vigente ? Math.max(Number(reservaActual?.plazas_prereservadas || 0) - totalAsignadas, 0) : 0)}</strong>
+    <br>Plazas asignadas: <strong>${totalAsignadas}</strong>
+    <br>Hora límite de consolidación: <strong>${formatearFechaHora(reservaActual?.prereserva_expira_en)}</strong>
+  `;
+  nota.style.display = "block";
+}
+
 
     function crearFila(asistente = { nombre_completo: "", tipo_asistente: "ALUMNO", categoria_edad: "MAYOR_10" }) {
       const tbody = document.getElementById("cuerpoAsistentes");
@@ -507,14 +509,15 @@
       const menores = datos.filter(v => v.categoria === "MENOR_10").length;
 
       document.getElementById("resumenAsistentes").innerHTML = `
-        <span class="info-titulo">Resumen de asistentes</span>
-        <strong>Plazas reservadas:</strong> ${Number(reservaActual?.plazas_prereservadas || 0)}<br>
-        <strong>Plazas asignadas:</strong> ${total}<br>
-        <strong>Alumnos:</strong> ${alumnos}<br>
-        <strong>Profesores:</strong> ${profesores}<br>
-        <strong>Mayores de 10 años:</strong> ${mayores}<br>
-        <strong>Menores de 10 años:</strong> ${menores}
-      `;
+  <span class="info-titulo">Resumen de asistentes</span>
+  <strong>Plazas reservadas:</strong> ${Number(reservaActual?.prereserva_vigente ? Math.max(Number(reservaActual?.plazas_prereservadas || 0) - total, 0) : 0)}<br>
+  <strong>Plazas asignadas:</strong> ${total}<br>
+  <strong>Alumnos:</strong> ${alumnos}<br>
+  <strong>Profesores:</strong> ${profesores}<br>
+  <strong>Mayores de 10 años:</strong> ${mayores}<br>
+  <strong>Menores de 10 años:</strong> ${menores}
+`;
+
 
       actualizarNotaReserva(total);
 
