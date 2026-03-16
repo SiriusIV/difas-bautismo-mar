@@ -23,13 +23,7 @@ function fechaComparableISO(fechaDdMmAaaa) {
   const [dd, mm, yyyy] = partes.map(p => p.trim());
   if (!dd || !mm || !yyyy) return null;
 
-  if (dd.length < 1 || mm.length < 1 || yyyy.length !== 4) return null;
-
   return `${yyyy.padStart(4, "0")}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
-}
-
-function placeholders(n) {
-  return Array.from({ length: n }, () => "?").join(", ");
 }
 
 function estadoBloqueaPlazas(estado) {
@@ -105,6 +99,7 @@ async function obtenerReservas(env, filtros) {
       r.id,
       r.franja_id,
       r.codigo_reserva,
+      r.token_edicion,
       r.estado,
       r.centro,
       r.contacto,
@@ -225,6 +220,7 @@ export async function onRequestGet(context) {
         id: row.id,
         franja_id: row.franja_id,
         codigo_reserva: row.codigo_reserva,
+        token_edicion: row.token_edicion || "",
         estado: row.estado,
         centro: row.centro || "",
         contacto: row.contacto || "",
@@ -270,6 +266,63 @@ export async function onRequestGet(context) {
       {
         ok: false,
         error: "No se pudo cargar el panel de reservas.",
+        detalle: error.message
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function onRequestPatch(context) {
+  const { request, env } = context;
+
+  try {
+    const body = await request.json();
+    const id = Number(body.id || 0);
+    const accion = limpiarTexto(body.accion || "").toLowerCase();
+
+    if (!id || !accion) {
+      return json(
+        { ok: false, error: "Faltan datos para ejecutar la acción." },
+        { status: 400 }
+      );
+    }
+
+    let nuevoEstado = null;
+    if (accion === "confirmar") nuevoEstado = "CONFIRMADA";
+    if (accion === "rechazar") nuevoEstado = "RECHAZADA";
+    if (accion === "cancelar") nuevoEstado = "CANCELADA";
+    if (accion === "reabrir") nuevoEstado = "PENDIENTE";
+
+    if (!nuevoEstado) {
+      return json(
+        { ok: false, error: "Acción no válida." },
+        { status: 400 }
+      );
+    }
+
+    const result = await env.DB.prepare(`
+      UPDATE reservas
+      SET estado = ?, fecha_modificacion = datetime('now')
+      WHERE id = ?
+    `).bind(nuevoEstado, id).run();
+
+    if ((result?.meta?.changes || 0) === 0) {
+      return json(
+        { ok: false, error: "No se pudo actualizar el estado de la reserva." },
+        { status: 404 }
+      );
+    }
+
+    return json({
+      ok: true,
+      mensaje: `Estado actualizado a ${nuevoEstado}.`
+    });
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: "No se pudo ejecutar la acción sobre la reserva.",
         detalle: error.message
       },
       { status: 500 }
