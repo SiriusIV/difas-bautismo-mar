@@ -22,16 +22,8 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
-    h1 {
-      margin-top: 0;
-      font-size: 28px;
-    }
-
-    h2 {
-      margin-top: 6px;
-      font-size: 22px;
-      font-weight: normal;
-    }
+    h1 { margin-top: 0; font-size: 28px; }
+    h2 { margin-top: 6px; font-size: 22px; font-weight: normal; }
 
     .cabecera {
       display: flex;
@@ -49,9 +41,7 @@
       height: auto;
     }
 
-    .titulos {
-      text-align: center;
-    }
+    .titulos { text-align: center; }
 
     .lugar-evento {
       margin-top: 8px;
@@ -84,8 +74,25 @@
       display: block;
     }
 
-    .campo {
-      margin-bottom: 18px;
+    .campo { margin-bottom: 18px; }
+
+    .fila-doble {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .campo-info {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 6px;
+      padding: 10px 12px;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      font-size: 15px;
+      color: #333;
     }
 
     label {
@@ -120,41 +127,23 @@
       display: inline-block;
     }
 
-    button:hover, .btn-enlace:hover {
-      background: #094db1;
-    }
+    button:hover, .btn-enlace:hover { background: #094db1; }
 
-    button:disabled,
-    .btn-enlace.deshabilitado {
+    button:disabled, .btn-enlace.deshabilitado {
       background: #7aa7e8;
       cursor: not-allowed;
       pointer-events: none;
       opacity: 0.75;
     }
 
-    .btn-secundario {
-      background: #198754;
-    }
+    .btn-secundario { background: #198754; }
+    .btn-secundario:hover { background: #13653f; }
 
-    .btn-secundario:hover {
-      background: #13653f;
-    }
+    .btn-terciario { background: #6c757d; }
+    .btn-terciario:hover { background: #565e64; }
 
-    .btn-terciario {
-      background: #6c757d;
-    }
-
-    .btn-terciario:hover {
-      background: #565e64;
-    }
-
-    .btn-peligro {
-      background: #dc3545;
-    }
-
-    .btn-peligro:hover {
-      background: #b52a37;
-    }
+    .btn-peligro { background: #dc3545; }
+    .btn-peligro:hover { background: #b52a37; }
 
     .mensaje {
       margin-top: 16px;
@@ -241,9 +230,7 @@
       z-index: 9999;
     }
 
-    .modal-fondo.activo {
-      display: flex;
-    }
+    .modal-fondo.activo { display: flex; }
 
     .modal {
       background: #fff;
@@ -254,16 +241,8 @@
       padding: 24px;
     }
 
-    .modal h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 24px;
-    }
-
-    .modal p {
-      margin-top: 0;
-      margin-bottom: 14px;
-    }
+    .modal h3 { margin-top: 0; margin-bottom: 12px; font-size: 24px; }
+    .modal p { margin-top: 0; margin-bottom: 14px; }
 
     .modal .bloque {
       background: #f7f9fb;
@@ -288,9 +267,7 @@
       align-items: center;
     }
 
-    .modal-reserva-col {
-      text-align: center;
-    }
+    .modal-reserva-col { text-align: center; }
 
     .modal-reserva-etiqueta {
       display: block;
@@ -315,19 +292,18 @@
     }
 
     @media (max-width: 1000px) {
-      .resumen-superior {
-        grid-template-columns: 1fr;
-      }
-
+      .resumen-superior { grid-template-columns: 1fr; }
       .logo {
         position: static;
         display: block;
         margin: 0 auto 10px auto;
       }
-
       .cabecera {
         display: block;
         min-height: auto;
+      }
+      .fila-doble {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -399,8 +375,16 @@
       </div>
 
       <div class="campo">
-        <label for="plazasSolicitadas">Plazas reservadas</label>
-        <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+        <div class="fila-doble">
+          <div>
+            <label for="plazasReservadas">Plazas reservadas</label>
+            <input type="number" id="plazasReservadas" name="plazasReservadas" min="0" step="1" required>
+          </div>
+          <div>
+            <label>Plazas asignadas</label>
+            <div class="campo-info" id="campoPlazasAsignadas">0</div>
+          </div>
+        </div>
       </div>
 
       <div class="campo">
@@ -420,7 +404,6 @@
   <div id="modalAcceso" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Acceso a su solicitud</h3>
-
       <p>Guarde este acceso para poder volver a entrar más adelante.</p>
 
       <div class="bloque">
@@ -522,7 +505,7 @@
 
     function actualizarModoEdicion() {
       const editable = solicitudEditable();
-      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "plazasSolicitadas", "observaciones"];
+      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "plazasReservadas", "observaciones"];
 
       idsCampos.forEach(id => {
         const el = document.getElementById(id);
@@ -612,9 +595,13 @@
       return franjasCache.find(f => Number(f.id) === franjaId) || null;
     }
 
-    function plazasSolicitadasActuales() {
-      const n = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+    function plazasReservadasPendientesActuales() {
+      const n = parseInt(document.getElementById("plazasReservadas").value || "0", 10);
       return Number.isInteger(n) ? n : 0;
+    }
+
+    function bloqueoActualReserva() {
+      return Number(reservaActual?.plazas_bloqueadas_actualmente || 0);
     }
 
     function plazasEditablesEnFranja(franja) {
@@ -622,7 +609,7 @@
       const disponibles = Number(franja.disponibles || 0);
 
       if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
-        return disponibles + Number(reservaActual.plazas_prereservadas || 0);
+        return disponibles + bloqueoActualReserva();
       }
 
       return disponibles;
@@ -660,11 +647,9 @@
       const aviso = document.getElementById("avisoCapacidad");
       const boton = document.getElementById("btnGuardar");
       const franja = obtenerFranjaSeleccionada();
-      const plazas = plazasSolicitadasActuales();
+      const plazasReservadasPendientes = plazasReservadasPendientesActuales();
 
-      if (!solicitudEditable()) {
-        return;
-      }
+      if (!solicitudEditable()) return;
 
       aviso.className = "mensaje";
       aviso.style.display = "none";
@@ -675,7 +660,7 @@
         return;
       }
 
-      if (!Number.isInteger(plazas) || plazas <= 0) {
+      if (!Number.isInteger(plazasReservadasPendientes) || plazasReservadasPendientes < 0) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
         aviso.textContent = "Debe indicar un número de plazas reservadas válido.";
@@ -683,65 +668,47 @@
         return;
       }
 
-      if (plazas < asistentesCargados) {
-        aviso.className = "mensaje alerta";
-        aviso.style.display = "block";
-        aviso.textContent = `No puede fijar menos plazas reservadas (${plazas}) que plazas ya asignadas (${asistentesCargados}).`;
-        if (!envioEnCurso) boton.disabled = true;
-        return;
-      }
-
+      const totalBloqueadoNuevo = asistentesCargados + plazasReservadasPendientes;
       const disponiblesEditables = plazasEditablesEnFranja(franja);
-      const esMismaFranja = reservaActual && Number(franja.id) === Number(reservaActual.franja_id);
 
-      if (plazas > disponiblesEditables) {
+      if (totalBloqueadoNuevo > disponiblesEditables) {
         aviso.className = "mensaje alerta";
         aviso.style.display = "block";
-
-        if (esMismaFranja) {
-          aviso.textContent = `Está solicitando ${plazas} plazas, pero para modificar esta reserva en su franja actual solo dispone de ${disponiblesEditables}.`;
-        } else {
-          aviso.textContent = `Está solicitando ${plazas} plazas, pero solo quedan ${disponiblesEditables} disponibles en la franja seleccionada.`;
-        }
-
+        aviso.textContent = `No hay plazas suficientes. Total solicitado tras la modificación: ${totalBloqueadoNuevo}. Disponibles para esta modificación: ${disponiblesEditables}.`;
         if (!envioEnCurso) boton.disabled = true;
         return;
       }
 
       aviso.className = "mensaje aviso";
       aviso.style.display = "block";
-      aviso.textContent = `Plazas reservadas: ${Number(reservaActual?.prereserva_vigente ? Math.max(plazas - asistentesCargados, 0) : 0)}. Plazas asignadas: ${asistentesCargados}.`;
+      aviso.textContent = `Plazas reservadas: ${plazasReservadasPendientes}. Plazas asignadas: ${asistentesCargados}. Total bloqueado: ${totalBloqueadoNuevo}.`;
 
       if (!envioEnCurso) boton.disabled = false;
     }
 
     function actualizarNotaPrereserva() {
-  const nota = document.getElementById("notaPrereserva");
+      const nota = document.getElementById("notaPrereserva");
+      if (!reservaActual) {
+        nota.style.display = "none";
+        return;
+      }
 
-  if (!reservaActual) {
-    nota.style.display = "none";
-    return;
-  }
+      const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
 
-  const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
-
-  nota.innerHTML = `
-    <strong>Reserva actual</strong>
-    <br>Plazas reservadas: <strong>${Number(reservaActual.plazas_reservadas || 0)}</strong>
-    <br>Plazas asignadas: <strong>${Number(reservaActual.plazas_asignadas || 0)}</strong>
-    <br>Hora límite de consolidación: <strong>${expira}</strong>
-  `;
-  nota.style.display = "block";
-}
-
+      nota.innerHTML = `
+        <strong>Reserva actual</strong>
+        <br>Plazas reservadas: <strong>${Number(reservaActual.plazas_reservadas || 0)}</strong>
+        <br>Plazas asignadas: <strong>${Number(reservaActual.plazas_asignadas || 0)}</strong>
+        <br>Hora límite de consolidación: <strong>${expira}</strong>
+      `;
+      nota.style.display = "block";
+    }
 
     async function cargarFranjas(franjaSeleccionadaId = "") {
       const select = document.getElementById("franja");
 
       const response = await fetch("/api/franjas");
-      if (!response.ok) {
-        throw new Error("No se pudieron cargar las franjas");
-      }
+      if (!response.ok) throw new Error("No se pudieron cargar las franjas");
 
       const franjas = await response.json();
       franjasCache = franjas;
@@ -752,9 +719,7 @@
         const option = document.createElement("option");
         option.value = f.id;
         option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
-        if (String(f.id) === String(franjaSeleccionadaId)) {
-          option.selected = true;
-        }
+        if (String(f.id) === String(franjaSeleccionadaId)) option.selected = true;
         select.appendChild(option);
       });
 
@@ -797,19 +762,21 @@
         asistentesCargados = total;
 
         const resumen = document.getElementById("resumenAsistentes");
-resumen.innerHTML = `
-  <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-  <strong>Plazas reservadas:</strong> ${Number(reservaActual?.plazas_reservadas || 0)}<br>
-  <strong>Plazas asignadas:</strong> ${total}<br>
-  <strong>Mayores de 10 años:</strong> ${mayores}<br>
-  <strong>Menores de 10 años:</strong> ${menores}
-`;
+        resumen.innerHTML = `
+          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
+          <strong>Plazas reservadas:</strong> ${Number(reservaActual?.plazas_reservadas || 0)}<br>
+          <strong>Plazas asignadas:</strong> ${total}<br>
+          <strong>Mayores de 10 años:</strong> ${mayores}<br>
+          <strong>Menores de 10 años:</strong> ${menores}
+        `;
 
+        document.getElementById("campoPlazasAsignadas").textContent = total;
 
         actualizarNotaPrereserva();
         actualizarAvisoCapacidad();
       } catch (error) {
         asistentesCargados = 0;
+        document.getElementById("campoPlazasAsignadas").textContent = "0";
         const resumen = document.getElementById("resumenAsistentes");
         resumen.innerHTML = `
           <span class="info-titulo">Resumen de asistentes de esta reserva</span>
@@ -822,7 +789,6 @@ resumen.innerHTML = `
       if (!solicitudEditable()) return;
 
       enlaceSolicitudActual = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
-
       document.getElementById("modalCodigoReserva").textContent = reservaActual.codigo_reserva;
 
       const badge = document.getElementById("modalEstadoReserva");
@@ -882,22 +848,22 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-  <span class="info-titulo">Resumen de la reserva actual</span>
-  <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-  <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-  <strong>Franja asignada a esta reserva:</strong><br>
-  ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-  <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
-  <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
-  <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
-`;
-
+        <span class="info-titulo">Resumen de la reserva actual</span>
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja asignada a esta reserva:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
+        <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
+        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+      `;
 
       document.getElementById("centro").value = reservaActual.centro || "";
       document.getElementById("contacto").value = reservaActual.contacto || "";
       document.getElementById("telefono").value = reservaActual.telefono || "";
       document.getElementById("email").value = reservaActual.email || "";
-      document.getElementById("plazasSolicitadas").value = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
+      document.getElementById("plazasReservadas").value = Number(reservaActual.plazas_reservadas || 0);
+      document.getElementById("campoPlazasAsignadas").textContent = Number(reservaActual.plazas_asignadas || 0);
       document.getElementById("observaciones").value = reservaActual.observaciones || "";
 
       document.getElementById("btnGestionarAsistentes").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
@@ -917,15 +883,10 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
       limpiarMensajePrincipal();
 
       const boton = document.getElementById("btnGuardar");
-      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+      const plazasReservadasPendientes = parseInt(document.getElementById("plazasReservadas").value || "0", 10);
 
-      if (!Number.isInteger(plazas) || plazas <= 0) {
+      if (!Number.isInteger(plazasReservadasPendientes) || plazasReservadasPendientes < 0) {
         mostrarError("Debe indicar un número de plazas reservadas válido.");
-        return;
-      }
-
-      if (plazas < asistentesCargados) {
-        mostrarError(`No puede fijar menos plazas reservadas (${plazas}) que plazas ya asignadas (${asistentesCargados}).`);
         return;
       }
 
@@ -935,7 +896,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         contacto: document.getElementById("contacto").value.trim(),
         telefono: document.getElementById("telefono").value.trim(),
         email: document.getElementById("email").value.trim(),
-        plazas_solicitadas: plazas,
+        plazas_reservadas: plazasReservadasPendientes,
         franja: document.getElementById("franja").value,
         observaciones: document.getElementById("observaciones").value.trim()
       };
@@ -947,9 +908,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
         const response = await fetch("/api/reserva-actualizar", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(datos)
         });
 
@@ -992,12 +951,8 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
         const response = await fetch("/api/reserva-cancelar", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            token_edicion: tokenEdicion
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token_edicion: tokenEdicion })
         });
 
         const resultado = await response.json();
@@ -1027,10 +982,9 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         actualizarAvisoCapacidad();
       });
 
-      document.getElementById("plazasSolicitadas").addEventListener("input", function () {
+      document.getElementById("plazasReservadas").addEventListener("input", function () {
         limpiarMensajePrincipal();
         actualizarAvisoCapacidad();
-        actualizarNotaPrereserva();
       });
 
       document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
@@ -1053,9 +1007,7 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
       });
 
       document.getElementById("modalAcceso").addEventListener("click", function (e) {
-        if (e.target.id === "modalAcceso") {
-          cerrarModalAcceso();
-        }
+        if (e.target.id === "modalAcceso") cerrarModalAcceso();
       });
 
       document.getElementById("modalCancelada").addEventListener("click", function (e) {
