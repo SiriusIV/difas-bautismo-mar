@@ -25,15 +25,26 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.id,
       r.codigo_reserva,
       r.estado,
+      r.franja_id,
       r.plazas_prereservadas,
-      r.prereserva_expira_en,
-      r.franja_id
+      r.prereserva_expira_en
     FROM reservas r
     WHERE r.token_edicion = ?
     LIMIT 1
   `;
 
   return await env.DB.prepare(sql).bind(tokenEdicion).first();
+}
+
+async function obtenerCapacidadFranja(env, franjaId) {
+  const row = await env.DB.prepare(`
+    SELECT id, capacidad
+    FROM franjas
+    WHERE id = ?
+    LIMIT 1
+  `).bind(franjaId).first();
+
+  return row || null;
 }
 
 async function listarColumnasVisitantes(env) {
@@ -90,10 +101,15 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
     .run();
 }
 
-async function actualizarContadoresReserva(env, reservaId, visitantesNormalizados) {
+async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizados, plazasPrereservadasPrevias) {
   const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
   const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
   const personas = visitantesNormalizados.length;
+
+  const nuevasPlazasPrereservadas = Math.max(
+    Number(plazasPrereservadasPrevias || 0),
+    personas
+  );
 
   const sql = `
     UPDATE reservas
@@ -101,13 +117,55 @@ async function actualizarContadoresReserva(env, reservaId, visitantesNormalizado
       mayores10 = ?,
       menores10 = ?,
       personas = ?,
+      plazas_prereservadas = ?,
       fecha_modificacion = datetime('now')
     WHERE id = ?
   `;
 
   return await env.DB.prepare(sql)
-    .bind(mayores10, menores10, personas, reservaId)
+    .bind(
+      mayores10,
+      menores10,
+      personas,
+      nuevasPlazasPrereservadas,
+      reservaId
+    )
     .run();
+}
+
+async function obtenerBloqueoDeOtrasReservas(env, franjaId, reservaIdActual) {
+  const sql = `
+    SELECT
+      COALESCE(SUM(
+        CASE
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+            CASE
+              WHEN r.prereserva_expira_en IS NOT NULL
+                   AND datetime('now') <= datetime(r.prereserva_expira_en)
+                THEN MAX(
+                  COALESCE(r.plazas_prereservadas, 0),
+                  COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                )
+              ELSE COALESCE((
+                SELECT COUNT(*)
+                FROM visitantes v
+                WHERE v.reserva_id = r.id
+              ), 0)
+            END
+          ELSE 0
+        END
+      ), 0) AS ocupadas_otros
+    FROM reservas r
+    WHERE r.franja_id = ?
+      AND r.id <> ?
+  `;
+
+  const row = await env.DB.prepare(sql).bind(franjaId, reservaIdActual).first();
+  return Number(row?.ocupadas_otros || 0);
 }
 
 export async function onRequestPost(context) {
@@ -150,20 +208,26 @@ export async function onRequestPost(context) {
       }))
       .filter(v => v.nombre_completo !== "");
 
-    if (visitantesNormalizados.length === 0) {
+    const franja = await obtenerCapacidadFranja(env, reserva.franja_id);
+
+    if (!franja) {
       return json(
-        { ok: false, error: "Debe indicar al menos 1 visitante." },
-        { status: 400 }
+        { ok: false, error: "La franja asociada a la solicitud no existe." },
+        { status: 404 }
       );
     }
 
-    const plazasReservadas = Number(reserva.plazas_prereservadas || 0);
+    const capacidadFranja = Number(franja.capacidad || 0);
+    const ocupadasPorOtros = await obtenerBloqueoDeOtrasReservas(env, reserva.franja_id, reserva.id);
 
-    if (visitantesNormalizados.length > plazasReservadas) {
+    const maximoPermitidoParaEstaReserva = Math.max(capacidadFranja - ocupadasPorOtros, 0);
+    const totalDeseado = visitantesNormalizados.length;
+
+    if (totalDeseado > maximoPermitidoParaEstaReserva) {
       return json(
         {
           ok: false,
-          error: `No puede asignar más asistentes (${visitantesNormalizados.length}) que plazas reservadas (${plazasReservadas}).`
+          error: `No hay plazas suficientes en la franja. Máximo asignable ahora para esta solicitud: ${maximoPermitidoParaEstaReserva}. Se intentan guardar ${totalDeseado}.`
         },
         { status: 400 }
       );
@@ -177,19 +241,34 @@ export async function onRequestPost(context) {
       await insertarVisitante(env, reserva.id, visitante, columnasVisitantes);
     }
 
-    await actualizarContadoresReserva(env, reserva.id, visitantesNormalizados);
+    await actualizarReservaTrasGuardar(
+      env,
+      reserva.id,
+      visitantesNormalizados,
+      reserva.plazas_prereservadas
+    );
 
     const alumnos = visitantesNormalizados.filter(v => v.tipo_asistente === "ALUMNO").length;
     const profesores = visitantesNormalizados.filter(v => v.tipo_asistente === "PROFESOR").length;
     const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
     const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
 
+    const plazasPrereservadasFinales = Math.max(
+      Number(reserva.plazas_prereservadas || 0),
+      totalDeseado
+    );
+
     return json({
       ok: true,
-      mensaje: "Asistentes guardados correctamente.",
+      mensaje: totalDeseado === 0
+        ? "Asistentes eliminados correctamente."
+        : "Asistentes guardados correctamente.",
       codigo_reserva: reserva.codigo_reserva,
-      plazas_reservadas: plazasReservadas,
-      plazas_asignadas: visitantesNormalizados.length,
+      capacidad_franja: capacidadFranja,
+      ocupadas_por_otros: ocupadasPorOtros,
+      maximo_permitido_para_esta_reserva: maximoPermitidoParaEstaReserva,
+      plazas_prereservadas_historicas: plazasPrereservadasFinales,
+      plazas_asignadas: totalDeseado,
       alumnos,
       profesores,
       mayores10,
