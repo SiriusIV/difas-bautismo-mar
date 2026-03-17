@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 760px;
+      max-width: 1000px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -31,10 +31,6 @@
       margin-top: 6px;
       font-size: 22px;
       font-weight: normal;
-    }
-
-    p {
-      line-height: 1.5;
     }
 
     .cabecera {
@@ -57,91 +53,48 @@
       text-align: center;
     }
 
-    .acciones-cabecera {
+    .lugar-evento {
+      margin-top: 8px;
+      font-size: 15px;
+      color: #444;
+      text-align: center;
+    }
+
+    .btn-admin {
       position: absolute;
       right: 0;
       top: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-icono {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 999px;
-      border: 1px solid #d6dde5;
-      background: #ffffff;
-      color: #495057;
+      border: 1px solid #cfd8e3;
+      background: #fff;
+      color: #334155;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      transition: all 0.15s ease;
       padding: 0;
+      transition: all 0.15s ease;
     }
 
-    .btn-icono:hover {
+    .btn-admin:hover {
       background: #f7f9fb;
       color: #0b5ed7;
       border-color: #b8c7d8;
     }
 
-    .btn-icono svg {
-      width: 20px;
-      height: 20px;
+    .btn-admin svg {
+      width: 18px;
+      height: 18px;
     }
 
-    .campo {
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #c9cfd6;
-      border-radius: 6px;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    button {
-      background: #0b5ed7;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #094db1;
-    }
-
-    button:disabled {
-      background: #7aa7e8;
-      cursor: not-allowed;
-    }
-
-    .btn-secundario {
-      background: #6c757d;
-    }
-
-    .btn-secundario:hover {
-      background: #565e64;
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 22px;
     }
 
     .mensaje {
@@ -166,46 +119,109 @@
       border: 1px solid #b9e0c0;
     }
 
-    .mensaje.info {
+    .mensaje.aviso {
       display: block;
       background: #eef4ff;
       color: #1d4f91;
       border: 1px solid #c9dcff;
     }
 
-    .nota {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
+    .fila {
+      margin-bottom: 18px;
+    }
+
+    .fila-doble {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .info-franja {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .acciones {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button, .btn-enlace {
+      background: #0b5ed7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    button:hover, .btn-enlace:hover {
+      background: #094db1;
+    }
+
+    button:disabled, .btn-enlace.deshabilitado {
+      background: #7aa7e8;
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .panel-resumen {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .tarjeta-resumen {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      color: #1d4f91;
       border-radius: 8px;
       padding: 14px;
-      margin-bottom: 20px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
-    .lista {
-      margin: 8px 0 0 18px;
-      padding: 0;
-    }
-
-    .lista li {
-      margin-bottom: 4px;
-    }
-
-    .nota-destacada {
-      background: #fff8e6;
-      border: 1px solid #f0d58a;
-      color: #7a5a00;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-      line-height: 1.55;
-    }
-
-    .lugar-evento {
-      margin-top: 8px;
-      font-size: 15px;
-      color: #444;
-      text-align: center;
+    .tarjeta-titulo {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 16px;
     }
 
     .modal-fondo {
@@ -226,7 +242,7 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 700px;
+      max-width: 760px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
@@ -241,6 +257,7 @@
     .modal p {
       margin-top: 0;
       margin-bottom: 14px;
+      line-height: 1.6;
     }
 
     .modal .bloque {
@@ -257,25 +274,6 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
-    }
-
-    .modal-login {
-      max-width: 420px;
-    }
-
-    .modal-login h3 {
-      text-align: center;
-      margin-bottom: 8px;
-    }
-
-    .modal-login p {
-      text-align: center;
-      color: #555;
-      margin-bottom: 18px;
-    }
-
-    .modal-login .acciones {
-      justify-content: flex-end;
     }
 
     .modal-reserva-grid {
@@ -304,16 +302,9 @@
       line-height: 1.1;
     }
 
-    .modal-reserva-ayuda {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #444;
-      text-align: center;
-    }
-
     .estado-badge {
       display: inline-block;
-      padding: 7px 12px;
+      padding: 4px 8px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: bold;
@@ -321,36 +312,44 @@
       vertical-align: middle;
     }
 
-    .estado-badge.pendiente {
-      background: #d39e00;
+    .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.confirmada { background: #198754; }
+    .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.cancelada { background: #6c757d; }
+
+    .modal-reserva-ayuda {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
     }
 
-    @media (max-width: 800px) {
-      .logo,
-      .acciones-cabecera {
+    .resaltado {
+      font-weight: bold;
+    }
+
+    @media (max-width: 900px) {
+      .fila-doble,
+      .panel-resumen,
+      .modal-reserva-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .logo {
         position: static;
         display: block;
         margin: 0 auto 10px auto;
       }
 
+      .btn-admin {
+        position: static;
+        display: flex;
+        margin: 0 auto 12px auto;
+      }
+
       .cabecera {
         display: block;
         min-height: auto;
-      }
-
-      .acciones-cabecera {
-        text-align: center;
-      }
-
-      .btn-icono {
-        margin: 0 auto;
-      }
-    }
-
-    @media (max-width: 700px) {
-      .modal-reserva-grid {
-        grid-template-columns: 1fr;
-        gap: 14px;
       }
     }
   </style>
@@ -359,97 +358,135 @@
   <div class="contenedor">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
+
       <div class="titulos">
         <h1 id="tituloEvento">Cargando evento...</h1>
-        <h2 id="subtituloEvento">Cargando información...</h2>
+        <h2 id="subtituloEvento">Solicitud de reserva</h2>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
       </div>
 
-      <div class="acciones-cabecera">
-        <button
-          type="button"
-          id="btnAccesoAdmin"
-          class="btn-icono"
-          title="Acceso administración"
-          aria-label="Acceso administración"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 0 1 .33H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1 .33 1.65 1.65 0 0 0-.51 1z"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <p id="descripcionEvento">Complete este formulario para crear la solicitud.</p>
-
-    <div class="nota">
-      <strong>Importante:</strong> en este primer paso se crean los datos generales de la solicitud y se realiza una pre-reserva inicial de plazas.
-      <ul class="lista">
-        <li>Primero cree la solicitud indicando el número total de plazas solicitadas.</li>
-        <li>Después acceda al enlace de <strong>su solicitud</strong>.</li>
-        <li>Desde ahí podrá editar datos generales, gestionar asistentes y anular la solicitud si fuese necesario.</li>
-      </ul>
-    </div>
-
-    <div class="nota-destacada">
-      <strong>Plazo de consolidación:</strong> dispone de <strong>2 horas</strong> desde la creación de la solicitud para cargar nominalmente los asistentes.
-      Pasado ese plazo, solo seguirán bloqueadas las plazas correspondientes a los asistentes realmente cargados y el resto volverá a estar disponible.
+      <button type="button" id="btnAbrirAdmin" class="btn-admin" title="Acceso administración" aria-label="Acceso administración">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82L4.3 6.46a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.37.37.8.37 1.24 0 .44-.13.87-.37 1.24"></path>
+        </svg>
+      </button>
     </div>
 
     <div id="mensaje" class="mensaje"></div>
 
-    <form id="formularioSolicitud" novalidate>
-      <div class="campo">
-        <label for="centro">Centro solicitante</label>
-        <input type="text" id="centro" name="centro" required>
+    <div class="panel">
+      <form id="formularioSolicitud">
+        <div class="fila-doble">
+          <div class="fila">
+            <label for="centro">Centro solicitante</label>
+            <input type="text" id="centro" name="centro" required>
+          </div>
+
+          <div class="fila">
+            <label for="contacto">Persona de contacto</label>
+            <input type="text" id="contacto" name="contacto" required>
+          </div>
+        </div>
+
+        <div class="fila-doble">
+          <div class="fila">
+            <label for="telefono">Teléfono de contacto</label>
+            <input type="tel" id="telefono" name="telefono" required>
+          </div>
+
+          <div class="fila">
+            <label for="email">Correo electrónico de contacto</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+
+        <div class="fila-doble">
+          <div class="fila">
+            <label for="franja">Franja horaria</label>
+            <select id="franja" name="franja" required>
+              <option value="">Cargando franjas...</option>
+            </select>
+            <div id="infoFranja" class="info-franja"></div>
+          </div>
+
+          <div class="fila">
+            <label for="plazasSolicitadas">Plazas reservadas</label>
+            <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+          </div>
+        </div>
+
+        <div class="fila">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" name="observaciones"></textarea>
+        </div>
+
+        <div class="acciones">
+          <button type="submit" id="btnPrepararEnvio">Enviar solicitud</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="panel-resumen">
+        <div class="tarjeta-resumen">
+          <span class="tarjeta-titulo">Resumen de reserva</span>
+          <div id="resumenReserva">
+            Seleccione una franja e indique el número de plazas reservadas.
+          </div>
+        </div>
+
+        <div class="tarjeta-resumen">
+          <span class="tarjeta-titulo">Disponibilidad actual</span>
+          <div id="resumenDisponibilidad">
+            Cargando disponibilidad...
+          </div>
+        </div>
       </div>
-
-      <div class="campo">
-        <label for="contacto">Persona de contacto</label>
-        <input type="text" id="contacto" name="contacto" required>
-      </div>
-
-      <div class="campo">
-        <label for="telefono">Teléfono de contacto</label>
-        <input type="tel" id="telefono" name="telefono" required>
-      </div>
-
-      <div class="campo">
-        <label for="email">Correo electrónico de contacto</label>
-        <input type="email" id="email" name="email" required>
-      </div>
-
-      <div class="campo">
-        <label for="franja">Franja horaria solicitada</label>
-        <select id="franja" name="franja" required>
-          <option value="">Cargando franjas...</option>
-        </select>
-      </div>
-
-      <div class="campo">
-        <label for="plazasSolicitadas">Número total de plazas solicitadas</label>
-        <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
-      </div>
-
-      <div class="campo">
-        <label for="observaciones">Observaciones</label>
-        <textarea id="observaciones" name="observaciones"></textarea>
-      </div>
-
-      <input type="hidden" id="idempotencyKey" name="idempotencyKey" value="">
-
-      <button type="submit" id="btnEnviar" disabled>Crear solicitud</button>
-    </form>
+    </div>
   </div>
 
-  <div id="modalReserva" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
-      <h3>Solicitud creada correctamente</h3>
+  <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 460px;">
+      <h3>Acceso administración</h3>
 
-      <p>
-        La solicitud se ha registrado y queda pendiente de validación.
-      </p>
+      <div class="fila">
+        <label for="adminUsuario">Usuario</label>
+        <input type="text" id="adminUsuario" autocomplete="username">
+      </div>
+
+      <div class="fila">
+        <label for="adminPassword">Contraseña</label>
+        <input type="password" id="adminPassword" autocomplete="current-password">
+      </div>
+
+      <div id="mensajeAdmin" class="mensaje" style="margin-top:0;"></div>
+
+      <div class="acciones">
+        <button type="button" id="btnLoginAdmin">Entrar</button>
+        <button type="button" id="btnCerrarAdmin" class="btn-secundario">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Confirmación de envío</h3>
+
+      <div class="bloque">
+        <p id="textoConfirmacionEnvio"></p>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
+        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envío</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAsistentes" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Asistentes</h3>
 
       <div class="bloque">
         <div class="modal-reserva-grid">
@@ -460,67 +497,37 @@
 
           <div class="modal-reserva-col">
             <span class="modal-reserva-etiqueta">Estado</span>
-            <span class="estado-badge pendiente">PENDIENTE DE AUTORIZACIÓN</span>
+            <span id="modalEstadoReserva" class="estado-badge pendiente">PENDIENTE</span>
           </div>
         </div>
 
         <div class="modal-reserva-ayuda">
-          Guarde el acceso a su solicitud para poder volver a entrar más adelante.
+          Puede importar una lista de asistentes o abrir el formulario de gestión manual.
         </div>
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnIrSolicitud">Abrir solicitud</button>
-        <button type="button" id="btnCopiarEnlaceSolicitud" class="btn-secundario">Copiar enlace de acceso</button>
-        <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
+        <button type="button" id="btnImportarLista">Importar lista de asistentes</button>
+        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestión de asistentes</button>
+        <button type="button" id="btnCerrarModalAsistentes" class="btn-secundario">Cerrar</button>
       </div>
-    </div>
-  </div>
-
-  <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
-    <div class="modal modal-login">
-      <h3>Acceso administración</h3>
-      <p>Introduzca sus credenciales de administrador.</p>
-
-      <div id="mensajeAdmin" class="mensaje"></div>
-
-      <form id="formLoginAdmin" novalidate>
-        <div class="campo">
-          <label for="adminUsername">Usuario</label>
-          <input type="text" id="adminUsername" autocomplete="username" required>
-        </div>
-
-        <div class="campo">
-          <label for="adminPassword">Contraseña</label>
-          <input type="password" id="adminPassword" autocomplete="current-password" required>
-        </div>
-
-        <div class="acciones">
-          <button type="submit" id="btnEntrarAdmin">Entrar</button>
-          <button type="button" id="btnCerrarModalAdmin" class="btn-secundario">Cancelar</button>
-        </div>
-      </form>
     </div>
   </div>
 
   <script>
     let franjasCache = [];
     let envioEnCurso = false;
-    let loginAdminEnCurso = false;
-    let enlaceSolicitudActual = "";
+    let reservaCreada = null;
+    let datosPendientesEnvio = null;
 
-    function nuevaIdempotencyKey() {
-      if (window.crypto && typeof window.crypto.randomUUID === "function") {
-        return window.crypto.randomUUID();
-      }
-      return "idem-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    function mostrarMensaje(tipo, texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
     }
 
-    function prepararNuevaClave() {
-      document.getElementById("idempotencyKey").value = nuevaIdempotencyKey();
-    }
-
-    function limpiarMensajePrincipal() {
+    function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
@@ -541,6 +548,29 @@
       mensaje.textContent = "";
     }
 
+    function calcularMinutosConsolidacion(plazas) {
+      const n = Number(plazas || 0);
+      if (!Number.isFinite(n) || n <= 0) return 20;
+      return 20 + (n * 3);
+    }
+
+    function claseEstadoBadge(estado) {
+      const e = String(estado || "").toLowerCase();
+      if (e === "pendiente") return "pendiente";
+      if (e === "confirmada") return "confirmada";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
+
+    function textoEstadoModal(estado) {
+      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
+      if (estado === "CONFIRMADA") return "CONFIRMADA";
+      if (estado === "RECHAZADA") return "RECHAZADA";
+      if (estado === "CANCELADA") return "CANCELADA";
+      return estado || "";
+    }
+
     async function cargarConfigEvento() {
       try {
         const response = await fetch("/api/config-evento");
@@ -554,9 +584,7 @@
 
         document.title = config.subtitulo_evento || "Solicitud de reserva";
         document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
-        document.getElementById("subtituloEvento").textContent = config.subtitulo_evento || "Sin subtítulo";
-        document.getElementById("descripcionEvento").textContent =
-          config.descripcion_publica || "Complete este formulario para crear la solicitud.";
+        document.getElementById("subtituloEvento").textContent = "Solicitud de reserva";
 
         const lugarEl = document.getElementById("lugarEvento");
         if (config.lugar && String(config.lugar).trim() !== "") {
@@ -566,186 +594,231 @@
           lugarEl.style.display = "none";
           lugarEl.textContent = "";
         }
-
       } catch (error) {
         console.error(error);
-        document.title = "Solicitud de reserva";
         document.getElementById("tituloEvento").textContent = "Evento no disponible";
-        document.getElementById("subtituloEvento").textContent = "No se pudo cargar la configuración";
       }
     }
 
-    function formularioValido() {
+    async function cargarFranjas() {
+      const response = await fetch("/api/franjas");
+      if (!response.ok) throw new Error("No se pudieron cargar las franjas.");
+
+      const data = await response.json();
+      franjasCache = Array.isArray(data) ? data : [];
+
+      const select = document.getElementById("franja");
+      select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+      franjasCache.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+        select.appendChild(option);
+      });
+
+      actualizarResumenPantalla();
+    }
+
+    function obtenerFranjaSeleccionada() {
+      const id = parseInt(document.getElementById("franja").value || "", 10);
+      if (!id) return null;
+      return franjasCache.find(f => Number(f.id) === id) || null;
+    }
+
+    function actualizarResumenPantalla() {
+      const franja = obtenerFranjaSeleccionada();
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+
+      const infoFranja = document.getElementById("infoFranja");
+      const resumenReserva = document.getElementById("resumenReserva");
+      const resumenDisponibilidad = document.getElementById("resumenDisponibilidad");
+
+      if (!franja) {
+        infoFranja.textContent = "";
+        resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
+        resumenDisponibilidad.textContent = "Seleccione una franja para ver la disponibilidad.";
+        return;
+      }
+
+      const disponibles = Number(franja.disponibles || 0);
+      const capacidad = Number(franja.capacidad || 0);
+      const ocupadas = capacidad - disponibles;
+      const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
+
+      infoFranja.textContent = `Capacidad total: ${capacidad}. Ocupadas: ${ocupadas}. Disponibles: ${disponibles}.`;
+
+      resumenReserva.innerHTML = `
+        <strong>Franja seleccionada:</strong> ${franja.fecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+        <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+      `;
+
+      resumenDisponibilidad.innerHTML = `
+        <strong>Plazas disponibles actualmente:</strong> ${disponibles}<br>
+        <strong>Capacidad de la franja:</strong> ${capacidad}
+      `;
+    }
+
+    function validarDatosFormulario() {
       const centro = document.getElementById("centro").value.trim();
       const contacto = document.getElementById("contacto").value.trim();
       const telefono = document.getElementById("telefono").value.trim();
       const email = document.getElementById("email").value.trim();
       const franja = document.getElementById("franja").value;
-      const plazas = parseInt(document.getElementById("plazasSolicitadas").value, 10);
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+      const observaciones = document.getElementById("observaciones").value.trim();
 
       if (!centro || !contacto || !telefono || !email || !franja) {
-        return false;
-      }
-
-      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!emailValido) {
-        return false;
+        return { ok: false, error: "Debe completar todos los datos obligatorios." };
       }
 
       if (!Number.isInteger(plazas) || plazas <= 0) {
-        return false;
+        return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
       }
 
-      return true;
-    }
-
-    function actualizarEstadoBoton() {
-      const boton = document.getElementById("btnEnviar");
-      boton.disabled = !formularioValido() || envioEnCurso;
-    }
-
-    async function cargarFranjas(franjaSeleccionadaId = "") {
-      const select = document.getElementById("franja");
-
-      try {
-        const response = await fetch("/api/franjas");
-
-        if (!response.ok) {
-          throw new Error("No se pudieron cargar las franjas");
-        }
-
-        const franjas = await response.json();
-        franjasCache = franjas;
-
-        select.innerHTML = '<option value="">Seleccione una opción</option>';
-
-        if (franjas.length === 0) {
-          select.innerHTML = '<option value="">No hay franjas disponibles</option>';
-          actualizarEstadoBoton();
-          return;
-        }
-
-        franjas.forEach(f => {
-          const option = document.createElement("option");
-          option.value = f.id;
-          option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
-
-          if (String(f.id) === String(franjaSeleccionadaId)) {
-            option.selected = true;
-          }
-
-          select.appendChild(option);
-        });
-
-        actualizarEstadoBoton();
-
-      } catch (error) {
-        select.innerHTML = '<option value="">Error al cargar franjas</option>';
-        console.error(error);
-        actualizarEstadoBoton();
+      const franjaSel = obtenerFranjaSeleccionada();
+      if (!franjaSel) {
+        return { ok: false, error: "La franja seleccionada no es válida." };
       }
-    }
 
-    function abrirModalReserva(codigoReserva, tokenEdicion) {
-      const modal = document.getElementById("modalReserva");
-      const codigo = document.getElementById("modalCodigoReserva");
-      const btnIrSolicitud = document.getElementById("btnIrSolicitud");
+      if (plazas > Number(franjaSel.disponibles || 0)) {
+        return {
+          ok: false,
+          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${franjaSel.disponibles}. Solicitadas: ${plazas}.`
+        };
+      }
 
-      enlaceSolicitudActual = `${window.location.origin}/editar.html?token=${encodeURIComponent(tokenEdicion)}`;
-      codigo.textContent = codigoReserva;
-
-      btnIrSolicitud.onclick = function () {
-        window.open(enlaceSolicitudActual, "_blank");
+      return {
+        ok: true,
+        datos: {
+          centro,
+          contacto,
+          telefono,
+          email,
+          franja,
+          plazas_solicitadas: plazas,
+          observaciones
+        }
       };
-
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
-    }
-
-    function cerrarModalReserva() {
-      const modal = document.getElementById("modalReserva");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
-    }
-
-    async function copiarEnlaceSolicitud() {
-      const codigo = document.getElementById("modalCodigoReserva").textContent;
-
-      const texto = `Código de reserva: ${codigo}
-
-Acceso a su solicitud:
-${enlaceSolicitudActual}
-
-Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
-
-      try {
-        await navigator.clipboard.writeText(texto);
-        alert("Enlace de acceso copiado al portapapeles.");
-      } catch (error) {
-        alert("No se pudo copiar automáticamente. Puede copiarlo manualmente.");
-      }
     }
 
     function abrirModalAdmin() {
       limpiarMensajeAdmin();
-      document.getElementById("adminPassword").value = "";
       document.getElementById("modalAdmin").classList.add("activo");
       document.getElementById("modalAdmin").setAttribute("aria-hidden", "false");
-      setTimeout(() => {
-        document.getElementById("adminUsername").focus();
-      }, 50);
     }
 
     function cerrarModalAdmin() {
       document.getElementById("modalAdmin").classList.remove("activo");
       document.getElementById("modalAdmin").setAttribute("aria-hidden", "true");
-      limpiarMensajeAdmin();
     }
 
-    async function irAdminSegunSesion() {
+    function abrirModalConfirmacion(datos) {
+      const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
+
+      document.getElementById("textoConfirmacionEnvio").innerHTML = `
+        Va a enviar una solicitud con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
+        El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
+        Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
+        Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
+      `;
+
+      document.getElementById("modalConfirmacionEnvio").classList.add("activo");
+      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalConfirmacion() {
+      document.getElementById("modalConfirmacionEnvio").classList.remove("activo");
+      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "true");
+    }
+
+    function abrirModalAsistentes() {
+      if (!reservaCreada) return;
+
+      document.getElementById("modalCodigoReserva").textContent = reservaCreada.codigo_reserva || "";
+      const badge = document.getElementById("modalEstadoReserva");
+      badge.className = `estado-badge ${claseEstadoBadge(reservaCreada.estado)}`;
+      badge.textContent = textoEstadoModal(reservaCreada.estado);
+
+      document.getElementById("modalAsistentes").classList.add("activo");
+      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalAsistentes() {
+      document.getElementById("modalAsistentes").classList.remove("activo");
+      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "true");
+    }
+
+    async function confirmarEnvioSolicitud() {
+      if (!datosPendientesEnvio || envioEnCurso) return;
+
       try {
-        const response = await fetch("/api/admin/session", {
-          method: "GET",
-          credentials: "same-origin"
+        envioEnCurso = true;
+        document.getElementById("btnConfirmarEnvio").disabled = true;
+        document.getElementById("btnCancelarEnvio").disabled = true;
+        document.getElementById("btnPrepararEnvio").disabled = true;
+
+        const response = await fetch("/api/reservar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(datosPendientesEnvio)
         });
 
-        if (response.ok) {
-          window.location.href = "/admin-franjas.html";
-          return;
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo crear la solicitud.");
         }
 
-        abrirModalAdmin();
+        reservaCreada = data;
+        cerrarModalConfirmacion();
+        mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        await cargarFranjas();
+        abrirModalAsistentes();
+
       } catch (error) {
-        abrirModalAdmin();
+        mostrarMensaje("error", error.message || "No se pudo crear la solicitud.");
+        cerrarModalConfirmacion();
+      } finally {
+        envioEnCurso = false;
+        document.getElementById("btnConfirmarEnvio").disabled = false;
+        document.getElementById("btnCancelarEnvio").disabled = false;
+        document.getElementById("btnPrepararEnvio").disabled = false;
       }
     }
 
-    async function iniciarSesionAdmin(event) {
-      event.preventDefault();
-      if (loginAdminEnCurso) return;
+    function cancelarEnvioSolicitud() {
+      datosPendientesEnvio = null;
+      cerrarModalConfirmacion();
+      mostrarMensaje("aviso", "El envío de la solicitud ha sido cancelado.");
+    }
 
+    function abrirGestionAsistentes() {
+      if (!reservaCreada?.token_edicion) return;
+      window.location.href = `asistentes.html?token=${encodeURIComponent(reservaCreada.token_edicion)}`;
+    }
+
+    function importarListaAsistentes() {
+      if (!reservaCreada?.token_edicion) return;
+      alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
+    }
+
+    async function loginAdmin() {
       limpiarMensajeAdmin();
 
-      const username = document.getElementById("adminUsername").value.trim();
-      const password = document.getElementById("adminPassword").value.trim();
+      const username = document.getElementById("adminUsuario").value.trim();
+      const password = document.getElementById("adminPassword").value;
 
       if (!username || !password) {
         mostrarMensajeAdmin("error", "Debe introducir usuario y contraseña.");
         return;
       }
 
-      const boton = document.getElementById("btnEntrarAdmin");
-
       try {
-        loginAdminEnCurso = true;
-        boton.disabled = true;
-        boton.textContent = "Entrando...";
-
         const response = await fetch("/api/admin/login", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify({ username, password })
         });
@@ -753,122 +826,59 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          mostrarMensajeAdmin("error", data.error || "No se pudo iniciar sesión.");
-          return;
+          throw new Error(data.error || "No se pudo iniciar sesión.");
         }
 
-        cerrarModalAdmin();
-        window.location.href = "/admin-franjas.html";
-
+        window.location.href = "admin-reservas.html";
       } catch (error) {
-        mostrarMensajeAdmin("error", "Error de conexión con el servidor.");
-      } finally {
-        loginAdminEnCurso = false;
-        boton.disabled = false;
-        boton.textContent = "Entrar";
-      }
-    }
-
-    async function enviarFormulario(event) {
-      event.preventDefault();
-
-      if (envioEnCurso || !formularioValido()) {
-        return;
-      }
-
-      limpiarMensajePrincipal();
-
-      const mensaje = document.getElementById("mensaje");
-      const boton = document.getElementById("btnEnviar");
-
-      const datos = {
-        centro: document.getElementById("centro").value.trim(),
-        contacto: document.getElementById("contacto").value.trim(),
-        telefono: document.getElementById("telefono").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        franja: document.getElementById("franja").value,
-        plazas_solicitadas: parseInt(document.getElementById("plazasSolicitadas").value, 10),
-        observaciones: document.getElementById("observaciones").value.trim(),
-        idempotencyKey: document.getElementById("idempotencyKey").value
-      };
-
-      try {
-        envioEnCurso = true;
-        actualizarEstadoBoton();
-        boton.textContent = "Creando...";
-
-        const response = await fetch("/api/reservar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(datos)
-        });
-
-        const resultado = await response.json();
-
-        if (!response.ok || !resultado.ok) {
-          mensaje.className = "mensaje error";
-          mensaje.style.display = "block";
-          mensaje.textContent = resultado.error || "No se pudo crear la solicitud.";
-          return;
-        }
-
-        abrirModalReserva(resultado.codigo_reserva, resultado.token_edicion);
-
-        document.getElementById("formularioSolicitud").reset();
-        prepararNuevaClave();
-        await cargarFranjas();
-        actualizarEstadoBoton();
-
-      } catch (error) {
-        mensaje.className = "mensaje error";
-        mensaje.style.display = "block";
-        mensaje.textContent = "Error de conexión con el servidor.";
-        console.error(error);
-      } finally {
-        envioEnCurso = false;
-        boton.textContent = "Crear solicitud";
-        actualizarEstadoBoton();
+        mostrarMensajeAdmin("error", error.message || "No se pudo iniciar sesión.");
       }
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ids = ["centro", "contacto", "telefono", "email", "franja", "plazasSolicitadas", "observaciones"];
+      document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
+      document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
 
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        const evento = el.tagName === "SELECT" ? "change" : "input";
-        el.addEventListener(evento, function () {
-          limpiarMensajePrincipal();
-          actualizarEstadoBoton();
-        });
-      });
+      document.getElementById("formularioSolicitud").addEventListener("submit", function (e) {
+        e.preventDefault();
+        limpiarMensaje();
 
-      document.getElementById("formularioSolicitud").addEventListener("submit", enviarFormulario);
-      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalReserva);
-      document.getElementById("btnCopiarEnlaceSolicitud").addEventListener("click", copiarEnlaceSolicitud);
-
-      document.getElementById("modalReserva").addEventListener("click", function (e) {
-        if (e.target.id === "modalReserva") {
-          cerrarModalReserva();
+        const validacion = validarDatosFormulario();
+        if (!validacion.ok) {
+          mostrarMensaje("error", validacion.error);
+          return;
         }
+
+        datosPendientesEnvio = validacion.datos;
+        abrirModalConfirmacion(validacion.datos);
       });
 
-      document.getElementById("btnAccesoAdmin").addEventListener("click", irAdminSegunSesion);
-      document.getElementById("btnCerrarModalAdmin").addEventListener("click", cerrarModalAdmin);
-      document.getElementById("formLoginAdmin").addEventListener("submit", iniciarSesionAdmin);
+      document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
+      document.getElementById("btnCancelarEnvio").addEventListener("click", cancelarEnvioSolicitud);
+
+      document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
+      document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
+      document.getElementById("btnCerrarModalAsistentes").addEventListener("click", cerrarModalAsistentes);
+
+      document.getElementById("btnAbrirAdmin").addEventListener("click", abrirModalAdmin);
+      document.getElementById("btnCerrarAdmin").addEventListener("click", cerrarModalAdmin);
+      document.getElementById("btnLoginAdmin").addEventListener("click", loginAdmin);
 
       document.getElementById("modalAdmin").addEventListener("click", function (e) {
-        if (e.target.id === "modalAdmin") {
-          cerrarModalAdmin();
-        }
+        if (e.target.id === "modalAdmin") cerrarModalAdmin();
       });
 
-      prepararNuevaClave();
-      await cargarConfigEvento();
-      await cargarFranjas();
-      actualizarEstadoBoton();
+      document.getElementById("modalAsistentes").addEventListener("click", function (e) {
+        if (e.target.id === "modalAsistentes") cerrarModalAsistentes();
+      });
+
+      try {
+        await cargarConfigEvento();
+        await cargarFranjas();
+      } catch (error) {
+        console.error(error);
+        mostrarMensaje("error", "No se pudo inicializar la página.");
+      }
     });
   </script>
 </body>
