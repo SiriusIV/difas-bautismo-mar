@@ -335,6 +335,11 @@
     let visitantesActuales = [];
     let envioEnCurso = false;
 
+    let plazasAsignadasActuales = 0;
+    let plazasReservadasPendientes = 0;
+    let plazasLibresFranja = 0;
+    let maximoAsignable = 0;
+
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
@@ -397,6 +402,43 @@
       }
     }
 
+    function calcularEstadoReservaActual() {
+      const prereservaVigente = !!reservaActual?.prereserva_vigente;
+      const plazasHistoricas = Number(reservaActual?.plazas_prereservadas || 0);
+      const asignadas = Number(reservaActual?.plazas_asignadas || 0);
+
+      plazasAsignadasActuales = asignadas;
+      plazasReservadasPendientes = prereservaVigente
+        ? Math.max(plazasHistoricas - asignadas, 0)
+        : 0;
+
+      plazasLibresFranja = Number(reservaActual?.disponibles || 0);
+      maximoAsignable = asignadas + plazasReservadasPendientes + plazasLibresFranja;
+    }
+
+    function actualizarNotaReserva(totalAsignadasTabla) {
+      const nota = document.getElementById("notaReserva");
+
+      const reservadasPendientesVisual = Math.max(
+        plazasReservadasPendientes - Math.max(totalAsignadasTabla - plazasAsignadasActuales, 0),
+        0
+      );
+
+      const libresVisual = Math.max(
+        plazasLibresFranja - Math.max(totalAsignadasTabla - plazasAsignadasActuales - plazasReservadasPendientes, 0),
+        0
+      );
+
+      nota.innerHTML = `
+        <strong>Reserva actual</strong>
+        <br>Plazas reservadas pendientes: <strong>${reservadasPendientesVisual}</strong>
+        <br>Plazas asignadas: <strong>${totalAsignadasTabla}</strong>
+        <br>Plazas libres en la franja: <strong>${libresVisual}</strong>
+        <br>Hora límite de consolidación: <strong>${formatearFechaHora(reservaActual?.prereserva_expira_en)}</strong>
+      `;
+      nota.style.display = "block";
+    }
+
     async function cargarReserva() {
       const params = new URLSearchParams(window.location.search);
       tokenEdicion = params.get("token") || "";
@@ -415,21 +457,23 @@
       }
 
       reservaActual = data.reserva;
+      calcularEstadoReservaActual();
+
       document.getElementById("btnVolverEditar").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
 
       const claseEstado = claseEstadoBadge(reservaActual.estado);
       document.getElementById("infoReserva").style.display = "block";
       document.getElementById("infoReserva").innerHTML = `
-  <span class="info-titulo">Resumen de la solicitud actual</span>
-  <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-  <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-  <strong>Franja asignada:</strong><br>
-  ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-  <strong>Plazas reservadas:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
-  <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
-  <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
-`;
-
+        <span class="info-titulo">Resumen de la solicitud actual</span>
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja asignada:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Plazas reservadas pendientes:</strong> ${plazasReservadasPendientes}<br>
+        <strong>Plazas asignadas:</strong> ${plazasAsignadasActuales}<br>
+        <strong>Plazas libres en la franja:</strong> ${plazasLibresFranja}<br>
+        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+      `;
 
       document.getElementById("resumenFranja").innerHTML = `
         <span class="info-titulo">Resumen global de la franja horaria</span>
@@ -440,19 +484,6 @@
 
       return true;
     }
-
-    function actualizarNotaReserva(totalAsignadas) {
-  const nota = document.getElementById("notaReserva");
-
-  nota.innerHTML = `
-    <strong>Reserva actual</strong>
-    <br>Plazas reservadas: <strong>${Number(reservaActual?.prereserva_vigente ? Math.max(Number(reservaActual?.plazas_prereservadas || 0) - totalAsignadas, 0) : 0)}</strong>
-    <br>Plazas asignadas: <strong>${totalAsignadas}</strong>
-    <br>Hora límite de consolidación: <strong>${formatearFechaHora(reservaActual?.prereserva_expira_en)}</strong>
-  `;
-  nota.style.display = "block";
-}
-
 
     function crearFila(asistente = { nombre_completo: "", tipo_asistente: "ALUMNO", categoria_edad: "MAYOR_10" }) {
       const tbody = document.getElementById("cuerpoAsistentes");
@@ -508,26 +539,37 @@
       const mayores = datos.filter(v => v.categoria === "MAYOR_10").length;
       const menores = datos.filter(v => v.categoria === "MENOR_10").length;
 
-      document.getElementById("resumenAsistentes").innerHTML = `
-  <span class="info-titulo">Resumen de asistentes</span>
-  <strong>Plazas reservadas:</strong> ${Number(reservaActual?.prereserva_vigente ? Math.max(Number(reservaActual?.plazas_prereservadas || 0) - total, 0) : 0)}<br>
-  <strong>Plazas asignadas:</strong> ${total}<br>
-  <strong>Alumnos:</strong> ${alumnos}<br>
-  <strong>Profesores:</strong> ${profesores}<br>
-  <strong>Mayores de 10 años:</strong> ${mayores}<br>
-  <strong>Menores de 10 años:</strong> ${menores}
-`;
+      const adicionales = Math.max(total - plazasAsignadasActuales, 0);
+      const consumidasDeReserva = Math.min(adicionales, plazasReservadasPendientes);
+      const consumidasDirectas = Math.max(adicionales - plazasReservadasPendientes, 0);
 
+      const reservadasPendientesVisual = Math.max(plazasReservadasPendientes - consumidasDeReserva, 0);
+      const libresVisual = Math.max(plazasLibresFranja - consumidasDirectas, 0);
+
+      document.getElementById("resumenAsistentes").innerHTML = `
+        <span class="info-titulo">Resumen de asistentes</span>
+        <strong>Plazas reservadas pendientes:</strong> ${reservadasPendientesVisual}<br>
+        <strong>Plazas asignadas:</strong> ${total}<br>
+        <strong>Plazas libres en la franja:</strong> ${libresVisual}<br>
+        <strong>Alumnos:</strong> ${alumnos}<br>
+        <strong>Profesores:</strong> ${profesores}<br>
+        <strong>Mayores de 10 años:</strong> ${mayores}<br>
+        <strong>Menores de 10 años:</strong> ${menores}
+      `;
 
       actualizarNotaReserva(total);
 
       const botonGuardar = document.getElementById("btnGuardarAsistentes");
-      if (total > Number(reservaActual?.plazas_prereservadas || 0)) {
-        mostrarMensaje("error", `No puede asignar más asistentes (${total}) que plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+      const botonAnadir = document.getElementById("btnAnadirFila");
+
+      if (total > maximoAsignable) {
+        mostrarMensaje("error", `No puede asignar más asistentes (${total}) que el máximo actualmente disponible para esta solicitud (${maximoAsignable}).`);
         botonGuardar.disabled = true;
+        botonAnadir.disabled = true;
       } else {
         limpiarMensaje();
         botonGuardar.disabled = !solicitudEditable() || envioEnCurso;
+        botonAnadir.disabled = !solicitudEditable() || total >= maximoAsignable;
       }
     }
 
@@ -569,9 +611,10 @@
 
     function actualizarModoPantalla() {
       const editable = solicitudEditable();
+      const totalActualTabla = obtenerVisitantesDeTabla().length;
 
-      document.getElementById("btnAnadirFila").disabled = !editable;
-      document.getElementById("btnGuardarAsistentes").disabled = !editable || envioEnCurso;
+      document.getElementById("btnGuardarAsistentes").disabled = !editable || envioEnCurso || totalActualTabla > maximoAsignable;
+      document.getElementById("btnAnadirFila").disabled = !editable || totalActualTabla >= maximoAsignable;
 
       if (!editable) {
         const filas = document.querySelectorAll("#cuerpoAsistentes tr");
@@ -605,8 +648,8 @@
 
       const visitantes = obtenerVisitantesDeTabla();
 
-      if (visitantes.length > Number(reservaActual?.plazas_prereservadas || 0)) {
-        mostrarMensaje("error", `No puede asignar más asistentes (${visitantes.length}) que plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+      if (visitantes.length > maximoAsignable) {
+        mostrarMensaje("error", `No puede asignar más asistentes (${visitantes.length}) que el máximo actualmente disponible para esta solicitud (${maximoAsignable}).`);
         return;
       }
 
@@ -644,17 +687,22 @@
         envioEnCurso = false;
         document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
         document.getElementById("btnGuardarAsistentes").textContent = "Guardar asistentes";
+        actualizarModoPantalla();
       }
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("btnAnadirFila").addEventListener("click", function () {
         if (!solicitudEditable()) return;
-        if (obtenerVisitantesDeTabla().length >= Number(reservaActual?.plazas_prereservadas || 0)) {
-          mostrarMensaje("error", `Ya ha alcanzado el número de plazas reservadas (${Number(reservaActual?.plazas_prereservadas || 0)}).`);
+
+        const totalActual = obtenerVisitantesDeTabla().length;
+        if (totalActual >= maximoAsignable) {
+          mostrarMensaje("error", `Ya ha alcanzado el máximo asignable actualmente para esta solicitud (${maximoAsignable}).`);
           return;
         }
+
         crearFila();
+        actualizarResumenAsistentesDesdeTabla();
       });
 
       document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
