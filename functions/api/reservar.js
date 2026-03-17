@@ -13,85 +13,77 @@ function normalizarCentroComparacion(valor) {
   return limpiarTexto(valor).toUpperCase();
 }
 
-function generarCodigoReserva() {
-  const ahora = new Date();
-  const y = ahora.getFullYear();
-  const m = String(ahora.getMonth() + 1).padStart(2, "0");
-  const d = String(ahora.getDate()).padStart(2, "0");
-  const aleatorio = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `RES-${y}${m}${d}-${aleatorio}`;
-}
-
-function generarTokenEdicion() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-}
-
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-async function obtenerDisponibilidadFranja(env, franjaId) {
+function generarCodigoReserva() {
+  const ahora = new Date();
+  const yyyy = ahora.getFullYear();
+  const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+  const dd = String(ahora.getDate()).padStart(2, "0");
+  const hh = String(ahora.getHours()).padStart(2, "0");
+  const mi = String(ahora.getMinutes()).padStart(2, "0");
+  const ss = String(ahora.getSeconds()).padStart(2, "0");
+  const aleatorio = Math.floor(Math.random() * 9000) + 1000;
+  return `R-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${aleatorio}`;
+}
+
+function generarToken() {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
+function calcularMinutosConsolidacion(plazasReservadas) {
+  const plazas = Number(plazasReservadas || 0);
+  return 20 + (plazas * 3);
+}
+
+async function obtenerFranja(env, franjaId) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad
+    FROM franjas
+    WHERE id = ?
+    LIMIT 1
+  `).bind(franjaId).first();
+}
+
+async function obtenerBloqueoActualFranja(env, franjaId) {
   const sql = `
     SELECT
-      f.id,
-      f.fecha,
-      f.hora_inicio,
-      f.hora_fin,
-      f.capacidad,
-
       COALESCE(SUM(
         CASE
           WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
-                THEN COALESCE(r.plazas_prereservadas, 0)
-              ELSE (
+                THEN MAX(
+                  COALESCE(r.plazas_prereservadas, 0),
+                  COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                )
+              ELSE COALESCE((
                 SELECT COUNT(*)
                 FROM visitantes v
                 WHERE v.reserva_id = r.id
-              )
+              ), 0)
             END
           ELSE 0
         END
-      ), 0) AS ocupadas,
-
-      (
-        f.capacidad - COALESCE(SUM(
-          CASE
-            WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
-              CASE
-                WHEN r.prereserva_expira_en IS NOT NULL
-                     AND datetime('now') <= datetime(r.prereserva_expira_en)
-                  THEN COALESCE(r.plazas_prereservadas, 0)
-                ELSE (
-                  SELECT COUNT(*)
-                  FROM visitantes v
-                  WHERE v.reserva_id = r.id
-                )
-              END
-            ELSE 0
-          END
-        ), 0)
-      ) AS disponibles
-
-    FROM franjas f
-    LEFT JOIN reservas r
-      ON r.franja_id = f.id
-    WHERE f.id = ?
-    GROUP BY
-      f.id,
-      f.fecha,
-      f.hora_inicio,
-      f.hora_fin,
-      f.capacidad
-    LIMIT 1
+      ), 0) AS ocupadas
+    FROM reservas r
+    WHERE r.franja_id = ?
   `;
 
-  return await env.DB.prepare(sql).bind(franjaId).first();
+  const row = await env.DB.prepare(sql).bind(franjaId).first();
+  return Number(row?.ocupadas || 0);
 }
 
 async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion) {
@@ -124,7 +116,9 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     LIMIT 1
   `;
 
-  return await env.DB.prepare(sql).bind(franjaId, centroComparacion).first();
+  return await env.DB.prepare(sql)
+    .bind(franjaId, centroComparacion)
+    .first();
 }
 
 export async function onRequestPost(context) {
@@ -139,7 +133,7 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(data.email);
     const observaciones = limpiarTexto(data.observaciones);
     const franjaId = parseInt(data.franja, 10);
-    const plazasSolicitadas = parseInt(data.plazas_solicitadas, 10);
+    const plazasReservadas = parseInt(data.plazas_solicitadas, 10);
 
     if (!centro || !contacto || !telefono || !email) {
       return json(
@@ -162,28 +156,14 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (!Number.isInteger(plazasSolicitadas) || plazasSolicitadas <= 0) {
+    if (!Number.isInteger(plazasReservadas) || plazasReservadas <= 0) {
       return json(
-        { ok: false, error: "Debe indicar un número de plazas solicitadas válido." },
+        { ok: false, error: "Debe indicar un número válido de plazas a reservar." },
         { status: 400 }
       );
     }
 
-    const centroComparacion = normalizarCentroComparacion(centro);
-
-    const duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
-
-    if (duplicada) {
-      return json(
-        {
-          ok: false,
-          error: "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe recuperar esa solicitud y ampliarla o modificarla, pero no crear una segunda."
-        },
-        { status: 409 }
-      );
-    }
-
-    const franja = await obtenerDisponibilidadFranja(env, franjaId);
+    const franja = await obtenerFranja(env, franjaId);
 
     if (!franja) {
       return json(
@@ -192,93 +172,114 @@ export async function onRequestPost(context) {
       );
     }
 
-    const disponibles = Number(franja.disponibles || 0);
+    const centroComparacion = normalizarCentroComparacion(centro);
+    const duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
 
-    if (plazasSolicitadas > disponibles) {
+    if (duplicada) {
       return json(
         {
           ok: false,
-          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${disponibles}. Solicitadas: ${plazasSolicitadas}.`
+          error: "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe modificar la existente, no crear una segunda."
+        },
+        { status: 409 }
+      );
+    }
+
+    const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
+    const capacidad = Number(franja.capacidad || 0);
+    const disponibles = Math.max(capacidad - ocupadas, 0);
+
+    if (plazasReservadas > disponibles) {
+      return json(
+        {
+          ok: false,
+          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${disponibles}. Solicitadas: ${plazasReservadas}.`
         },
         { status: 400 }
       );
     }
 
     const codigoReserva = generarCodigoReserva();
-    const tokenEdicion = generarTokenEdicion();
+    const tokenEdicion = generarToken();
+    const minutosConsolidacion = calcularMinutosConsolidacion(plazasReservadas);
 
-    const insertSql = `
+    const sqlInsert = `
       INSERT INTO reservas (
         franja_id,
-        centro,
-        contacto,
-        telefono,
-        email,
-        mayores10,
-        menores10,
-        personas,
-        plazas_prereservadas,
-        prereserva_expira_en,
-        observaciones,
-        fecha_solicitud,
-        fecha_modificacion,
         codigo_reserva,
         token_edicion,
-        estado
-      )
-      VALUES (
-        ?, ?, ?, ?, ?,
-        0, 0,
-        ?, ?,
-        datetime('now', '+2 hours'),
-        ?,
-        datetime('now'),
-        datetime('now'),
-        ?, ?,
-        'PENDIENTE'
-      )
-    `;
-
-    const insertResult = await env.DB.prepare(insertSql)
-      .bind(
-        franjaId,
+        estado,
         centro,
         contacto,
         telefono,
         email,
-        plazasSolicitadas,
-        plazasSolicitadas,
         observaciones,
+        personas,
+        mayores10,
+        menores10,
+        plazas_prereservadas,
+        prereserva_expira_en,
+        fecha_solicitud,
+        fecha_modificacion
+      )
+      VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, 0, 0, ?, datetime('now', '+' || ? || ' minutes'), datetime('now'), datetime('now'))
+    `;
+
+    const result = await env.DB.prepare(sqlInsert)
+      .bind(
+        franjaId,
         codigoReserva,
-        tokenEdicion
+        tokenEdicion,
+        centro,
+        contacto,
+        telefono,
+        email,
+        observaciones,
+        plazasReservadas,
+        plazasReservadas,
+        minutosConsolidacion
       )
       .run();
 
-    if ((insertResult?.meta?.changes || 0) === 0) {
+    if ((result?.meta?.changes || 0) === 0) {
       return json(
         { ok: false, error: "No se pudo crear la solicitud." },
         { status: 500 }
       );
     }
 
-    const franjaFinal = await obtenerDisponibilidadFranja(env, franjaId);
+    const reservaCreada = await env.DB.prepare(`
+      SELECT
+        id,
+        codigo_reserva,
+        token_edicion,
+        estado,
+        franja_id,
+        plazas_prereservadas,
+        prereserva_expira_en
+      FROM reservas
+      WHERE token_edicion = ?
+      LIMIT 1
+    `).bind(tokenEdicion).first();
 
-return json({
-  ok: true,
-  mensaje: "Solicitud creada correctamente.",
-  codigo_reserva: codigoReserva,
-  token_edicion: tokenEdicion,
-  estado: "PENDIENTE",
-  plazas_prereservadas: plazasSolicitadas,
-  franja: franjaFinal ? {
-    id: franjaFinal.id,
-    fecha: franjaFinal.fecha,
-    hora_inicio: franjaFinal.hora_inicio,
-    hora_fin: franjaFinal.hora_fin
-  } : null,
-  disponibles_despues: franjaFinal ? Number(franjaFinal.disponibles || 0) : null
-});
-
+    return json({
+      ok: true,
+      mensaje: "Solicitud creada correctamente.",
+      codigo_reserva: reservaCreada.codigo_reserva,
+      token_edicion: reservaCreada.token_edicion,
+      estado: reservaCreada.estado,
+      franja: {
+        id: franja.id,
+        fecha: franja.fecha,
+        hora_inicio: franja.hora_inicio,
+        hora_fin: franja.hora_fin,
+        capacidad
+      },
+      plazas_reservadas: plazasReservadas,
+      plazas_disponibles_restantes: Math.max(disponibles - plazasReservadas, 0),
+      minutos_consolidacion: minutosConsolidacion,
+      prereserva_expira_en: reservaCreada.prereserva_expira_en
+    });
   } catch (error) {
     return json(
       {
