@@ -57,7 +57,7 @@
       padding: 0 220px 0 220px;
     }
 
-    .lugar-evento {
+    .subactividad {
       margin-top: 10px;
       font-size: 15px;
       color: #333;
@@ -195,10 +195,7 @@
       margin-bottom: 6px;
     }
 
-    select,
-    input,
-    button,
-    .btn-enlace {
+    select, input, button, .btn-enlace {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
@@ -207,8 +204,7 @@
       box-sizing: border-box;
     }
 
-    button,
-    .btn-enlace {
+    button, .btn-enlace {
       background: #0b5ed7;
       color: white;
       cursor: pointer;
@@ -217,8 +213,7 @@
       text-align: center;
     }
 
-    button:hover,
-    .btn-enlace:hover {
+    button:hover, .btn-enlace:hover {
       background: #094db1;
     }
 
@@ -336,7 +331,7 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
@@ -351,6 +346,14 @@
     .detalle {
       line-height: 1.7;
       margin-bottom: 16px;
+    }
+
+    .detalle-bloque {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
     }
 
     .acciones-modal {
@@ -443,10 +446,10 @@
       <div class="cabecera-centro">
         <h1 id="tituloEvento">Cargando evento...</h1>
         <h2 id="subtituloEvento">Calendario administrativo</h2>
-        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+        <div class="subactividad">Bautismos de mar</div>
 
         <div class="nav-admin">
-          <a href="admin-franjas.html">Franjas</a>
+          <a href="admin-franjas.html">Franjas horarias</a>
           <a href="admin-reservas.html">Reservas</a>
           <span class="activo">Calendario</span>
         </div>
@@ -547,6 +550,7 @@
   <div id="modalEvento" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3 id="modalTitulo">Detalle de solicitud</h3>
+
       <div id="modalDetalle" class="detalle"></div>
 
       <div class="bloque-estado">
@@ -620,6 +624,11 @@
       mensaje.textContent = "";
     }
 
+    function formatearFechaHora(valor) {
+      if (!valor) return "No disponible";
+      return String(valor).replace("T", " ");
+    }
+
     async function cargarConfigEvento() {
       try {
         const response = await fetch("/api/config-evento", {
@@ -636,15 +645,6 @@
         document.title = "Calendario administrativo";
         document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
         document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
-
-        const lugarEl = document.getElementById("lugarEvento");
-        if (config.lugar && String(config.lugar).trim() !== "") {
-          lugarEl.style.display = "block";
-          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
-        } else {
-          lugarEl.style.display = "none";
-          lugarEl.textContent = "";
-        }
       } catch (error) {
         console.error(error);
         document.getElementById("tituloEvento").textContent = "Evento no disponible";
@@ -760,17 +760,35 @@
       const p = info.event.extendedProps;
       const estadoClass = String(p.estado || "").toLowerCase();
 
+      const plazasReservadasPendientes = Number(p.plazas_reservadas || 0);
+      const plazasAsignadas = Number(p.plazas_asignadas || 0);
+      const plazasLibresFranja = Number(p.disponibles || 0);
+      const observaciones = p.observaciones && String(p.observaciones).trim()
+        ? p.observaciones
+        : "Sin observaciones";
+
       document.getElementById("modalTitulo").textContent = p.codigo_reserva || "Detalle de solicitud";
       document.getElementById("modalDetalle").innerHTML = `
-        <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
-        <strong>Centro:</strong> ${p.centro || ""}<br>
-        <strong>Contacto:</strong> ${p.contacto || ""}<br>
-        <strong>Teléfono:</strong> ${p.telefono || ""}<br>
-        <strong>Email:</strong> ${p.email || ""}<br>
-        <strong>Personas:</strong> ${p.personas || 0}<br>
-        <strong>Franja:</strong> ${p.fecha} · ${p.hora_inicio} - ${p.hora_fin}<br>
-        <strong>Capacidad de franja:</strong> ${p.capacidad || 0}<br>
-        <strong>Observaciones:</strong> ${p.observaciones ? p.observaciones : "Sin observaciones"}
+        <div class="detalle-bloque">
+          <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
+          <strong>Centro:</strong> ${p.centro || ""}<br>
+          <strong>Contacto:</strong> ${p.contacto || ""}<br>
+          <strong>Teléfono:</strong> ${p.telefono || ""}<br>
+          <strong>Email:</strong> ${p.email || ""}<br>
+          <strong>Franja:</strong> ${p.fecha} · ${p.hora_inicio} - ${p.hora_fin}<br>
+          <strong>Capacidad de franja:</strong> ${p.capacidad || 0}
+        </div>
+
+        <div class="detalle-bloque">
+          <strong>Plazas reservadas pendientes:</strong> ${plazasReservadasPendientes}<br>
+          <strong>Plazas asignadas:</strong> ${plazasAsignadas}<br>
+          <strong>Plazas libres en la franja:</strong> ${plazasLibresFranja}<br>
+          <strong>Expira:</strong> ${formatearFechaHora(p.prereserva_expira_en)}
+        </div>
+
+        <div class="detalle-bloque">
+          <strong>Observaciones:</strong><br>${observaciones}
+        </div>
       `;
 
       document.getElementById("btnAbrirEditar").href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
