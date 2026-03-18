@@ -5,26 +5,68 @@ function json(data, init = {}) {
   });
 }
 
+function limpiarTexto(valor) {
+  return String(valor || "").trim();
+}
+
+function estadoBloqueaPlazas(estado) {
+  return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
+}
+
+function esPrereservaVigente(expira) {
+  if (!expira) return false;
+  const d = new Date(String(expira).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return false;
+  return d >= new Date();
+}
+
+function calcularPlazasAsignadas(row) {
+  if (!estadoBloqueaPlazas(row.estado)) return 0;
+  return Number(row.asistentes_cargados || 0);
+}
+
+function calcularPlazasReservadasPendientes(row) {
+  if (!estadoBloqueaPlazas(row.estado)) return 0;
+  if (!esPrereservaVigente(row.prereserva_expira_en)) return 0;
+
+  const prereservadas = Number(row.plazas_prereservadas || 0);
+  const asignadas = Number(row.asistentes_cargados || 0);
+  return Math.max(prereservadas - asignadas, 0);
+}
+
+function calcularBloqueoReserva(row) {
+  if (!estadoBloqueaPlazas(row.estado)) return 0;
+
+  const prereservadas = Number(row.plazas_prereservadas || 0);
+  const asignadas = Number(row.asistentes_cargados || 0);
+
+  if (esPrereservaVigente(row.prereserva_expira_en)) {
+    return Math.max(prereservadas, asignadas);
+  }
+
+  return asignadas;
+}
+
 async function obtenerReservaPorToken(env, tokenEdicion) {
   const sql = `
     SELECT
       r.id,
       r.franja_id,
+      r.codigo_reserva,
+      r.token_edicion,
+      r.estado,
       r.centro,
       r.contacto,
       r.telefono,
       r.email,
+      r.observaciones,
+      r.personas,
       r.mayores10,
       r.menores10,
-      r.personas,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
-      r.observaciones,
       r.fecha_solicitud,
       r.fecha_modificacion,
-      r.codigo_reserva,
-      r.token_edicion,
-      r.estado,
 
       f.fecha,
       f.hora_inicio,
@@ -35,28 +77,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
         SELECT COUNT(*)
         FROM visitantes v
         WHERE v.reserva_id = r.id
-      ), 0) AS asistentes_cargados,
-
-      COALESCE((
-        SELECT SUM(
-          CASE
-            WHEN r2.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
-              CASE
-                WHEN r2.prereserva_expira_en IS NOT NULL
-                     AND datetime('now') <= datetime(r2.prereserva_expira_en)
-                  THEN COALESCE(r2.plazas_prereservadas, 0)
-                ELSE (
-                  SELECT COUNT(*)
-                  FROM visitantes v2
-                  WHERE v2.reserva_id = r2.id
-                )
-              END
-            ELSE 0
-          END
-        )
-        FROM reservas r2
-        WHERE r2.franja_id = r.franja_id
-      ), 0) AS ocupadas
+      ), 0) AS asistentes_cargados
 
     FROM reservas r
     INNER JOIN franjas f
@@ -68,12 +89,34 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
   return await env.DB.prepare(sql).bind(tokenEdicion).first();
 }
 
+async function obtenerBloqueoTotalFranja(env, franjaId) {
+  const sql = `
+    SELECT
+      r.id,
+      r.estado,
+      r.plazas_prereservadas,
+      r.prereserva_expira_en,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM visitantes v
+        WHERE v.reserva_id = r.id
+      ), 0) AS asistentes_cargados
+    FROM reservas r
+    WHERE r.franja_id = ?
+  `;
+
+  const result = await env.DB.prepare(sql).bind(franjaId).all();
+  const rows = result.results || [];
+
+  return rows.reduce((acc, row) => acc + calcularBloqueoReserva(row), 0);
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
     const url = new URL(request.url);
-    const tokenEdicion = String(url.searchParams.get("token") || "").trim();
+    const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
 
     if (!tokenEdicion) {
       return json(
@@ -82,63 +125,56 @@ export async function onRequestGet(context) {
       );
     }
 
-    const row = await obtenerReservaPorToken(env, tokenEdicion);
+    const reserva = await obtenerReservaPorToken(env, tokenEdicion);
 
-    if (!row) {
+    if (!reserva) {
       return json(
-        { ok: false, error: "No existe ninguna reserva con ese token." },
+        { ok: false, error: "No existe ninguna solicitud con ese token." },
         { status: 404 }
       );
     }
 
-    const capacidad = Number(row.capacidad || 0);
-    const ocupadas = Number(row.ocupadas || 0);
-    const disponibles = capacidad - ocupadas;
+    const capacidad = Number(reserva.capacidad || 0);
+    const ocupadas = await obtenerBloqueoTotalFranja(env, reserva.franja_id);
+    const disponibles = Math.max(capacidad - ocupadas, 0);
 
-    const asistentesCargados = Number(row.asistentes_cargados || 0);
-    const plazasPrereservadasHistoricas = Number(row.plazas_prereservadas || 0);
-
-    const prereservaVigente =
-      !!row.prereserva_expira_en &&
-      new Date(row.prereserva_expira_en.replace(" ", "T")) >= new Date();
-
-    const plazasReservadasActivas = prereservaVigente
-      ? Math.max(plazasPrereservadasHistoricas - asistentesCargados, 0)
-      : 0;
-
-    const plazasBloqueadasActualmente = prereservaVigente
-      ? plazasPrereservadasHistoricas
-      : asistentesCargados;
+    const plazasAsignadas = calcularPlazasAsignadas(reserva);
+    const plazasReservadasPendientes = calcularPlazasReservadasPendientes(reserva);
+    const plazasBloqueadasActualmente = calcularBloqueoReserva(reserva);
 
     return json({
       ok: true,
       reserva: {
-        id: row.id,
-        franja_id: row.franja_id,
-        centro: row.centro,
-        contacto: row.contacto,
-        telefono: row.telefono,
-        email: row.email,
-        mayores10: Number(row.mayores10 || 0),
-        menores10: Number(row.menores10 || 0),
-        personas: Number(row.personas || 0),
-        plazas_prereservadas: plazasPrereservadasHistoricas,
-        prereserva_expira_en: row.prereserva_expira_en,
-        prereserva_vigente: prereservaVigente,
-        plazas_reservadas: plazasReservadasActivas,
-        plazas_asignadas: asistentesCargados,
-        plazas_bloqueadas_actualmente: plazasBloqueadasActualmente,
-        asistentes_cargados: asistentesCargados,
-        observaciones: row.observaciones || "",
-        fecha_solicitud: row.fecha_solicitud,
-        fecha_modificacion: row.fecha_modificacion,
-        codigo_reserva: row.codigo_reserva,
-        token_edicion: row.token_edicion,
-        estado: row.estado,
-        fecha: row.fecha,
-        hora_inicio: row.hora_inicio,
-        hora_fin: row.hora_fin,
+        id: reserva.id,
+        franja_id: reserva.franja_id,
+        codigo_reserva: reserva.codigo_reserva,
+        token_edicion: reserva.token_edicion,
+        estado: reserva.estado,
+        centro: reserva.centro || "",
+        contacto: reserva.contacto || "",
+        telefono: reserva.telefono || "",
+        email: reserva.email || "",
+        observaciones: reserva.observaciones || "",
+        personas: Number(reserva.personas || 0),
+        mayores10: Number(reserva.mayores10 || 0),
+        menores10: Number(reserva.menores10 || 0),
+        plazas_prereservadas: Number(reserva.plazas_prereservadas || 0),
+        prereserva_expira_en: reserva.prereserva_expira_en,
+        prereserva_vigente: esPrereservaVigente(reserva.prereserva_expira_en),
+
+        fecha_solicitud: reserva.fecha_solicitud,
+        fecha_modificacion: reserva.fecha_modificacion,
+
+        fecha: reserva.fecha,
+        hora_inicio: reserva.hora_inicio,
+        hora_fin: reserva.hora_fin,
         capacidad,
+
+        asistentes_cargados: Number(reserva.asistentes_cargados || 0),
+        plazas_asignadas: plazasAsignadas,
+        plazas_reservadas: plazasReservadasPendientes,
+        plazas_bloqueadas_actualmente: plazasBloqueadasActualmente,
+
         ocupadas,
         disponibles
       }
@@ -147,7 +183,7 @@ export async function onRequestGet(context) {
     return json(
       {
         ok: false,
-        error: "Error interno al recuperar la reserva.",
+        error: "No se pudo cargar la reserva.",
         detalle: error.message
       },
       { status: 500 }
