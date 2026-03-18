@@ -23,13 +23,13 @@
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0;
       font-size: 28px;
     }
 
     h2 {
-      margin-top: 6px;
-      font-size: 22px;
+      margin: 8px 0 0;
+      font-size: 18px;
       font-weight: normal;
     }
 
@@ -38,7 +38,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      margin-bottom: 20px;
+      margin-bottom: 26px;
       min-height: 120px;
     }
 
@@ -53,8 +53,8 @@
       text-align: center;
     }
 
-    .lugar-evento {
-      margin-top: 8px;
+    .sublinea {
+      margin-top: 10px;
       font-size: 15px;
       color: #444;
       text-align: center;
@@ -96,6 +96,19 @@
       margin-bottom: 20px;
     }
 
+    .bloque-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bloque-titulo-externo {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1d4f91;
+      padding-left: 2px;
+    }
+
     .bloque-info {
       background: #eef4ff;
       border: 1px solid #c9dcff;
@@ -104,13 +117,6 @@
       border-radius: 8px;
       line-height: 1.75;
       min-height: 170px;
-    }
-
-    .bloque-titulo {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
-      font-size: 16px;
     }
 
     .estado-badge {
@@ -127,6 +133,18 @@
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
+
+    .resumen-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .resumen-col strong {
+      display: inline-block;
+      min-width: 0;
+    }
 
     .panel {
       background: #f7f9fb;
@@ -153,11 +171,11 @@
       align-items: center;
     }
 
-    button, .btn-enlace {
-      background: #0b5ed7;
+    .btn-enlace {
+      background: #6c757d;
       color: white;
       border: none;
-      padding: 12px 20px;
+      padding: 12px 18px;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
@@ -165,11 +183,10 @@
       display: inline-block;
     }
 
-    button:hover, .btn-enlace:hover {
-      background: #094db1;
+    .btn-enlace:hover {
+      background: #565e64;
     }
 
-    button:disabled,
     .btn-enlace.deshabilitado {
       background: #7aa7e8;
       cursor: not-allowed;
@@ -177,25 +194,9 @@
       opacity: 0.75;
     }
 
-    .btn-secundario {
-      background: #6c757d;
-    }
-
-    .btn-secundario:hover {
-      background: #565e64;
-    }
-
-    .btn-anadir {
-      background: #198754;
-    }
-
-    .btn-anadir:hover {
-      background: #13653f;
-    }
-
     .btn-icono {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
@@ -230,6 +231,28 @@
       background: #fff5f5;
       color: #b52a37;
       border-color: #e2a7af;
+    }
+
+    .btn-icono.anadir {
+      color: #198754;
+      border-color: #b8ddc4;
+    }
+
+    .btn-icono.anadir:hover {
+      background: #f1fbf4;
+      color: #13653f;
+      border-color: #9fd1b0;
+    }
+
+    .btn-icono.guardar {
+      color: #0b5ed7;
+      border-color: #b8cbea;
+    }
+
+    .btn-icono.guardar:hover {
+      background: #f3f8ff;
+      color: #094db1;
+      border-color: #9bb7e0;
     }
 
     .btn-icono svg {
@@ -294,13 +317,6 @@
       background: #f2f7ff;
     }
 
-    .acciones-finales {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
     @media (max-width: 1000px) {
       .bloques-superiores {
         grid-template-columns: 1fr;
@@ -321,6 +337,11 @@
         flex-direction: column;
         align-items: stretch;
       }
+
+      .resumen-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
     }
   </style>
 </head>
@@ -329,31 +350,34 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1 id="tituloEvento">Cargando evento...</h1>
-        <h2 id="subtituloEvento">Gestión de asistentes</h2>
-        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+        <h1 id="tituloEvento">DIFAS 2026</h1>
+        <h2>Bautismos de mar</h2>
+        <div class="sublinea">Panel de gestión de asistentes</div>
       </div>
     </div>
 
     <div id="mensaje" class="mensaje"></div>
 
     <div class="bloques-superiores">
-      <div id="bloqueReserva" class="bloque-info">
-        <span class="bloque-titulo">Reserva actual</span>
-        Cargando datos...
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Reserva actual</div>
+        <div id="bloqueReserva" class="bloque-info">
+          Cargando datos...
+        </div>
       </div>
 
-      <div id="bloqueResumen" class="bloque-info">
-        <span class="bloque-titulo">Resumen de plazas y asistentes</span>
-        Cargando datos...
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Resumen de la reserva</div>
+        <div id="bloqueResumen" class="bloque-info">
+          Cargando datos...
+        </div>
       </div>
     </div>
 
     <div class="panel">
       <div class="barra-acciones">
         <div class="acciones-izquierda">
-          <a href="#" id="btnVolverEditar" class="btn-enlace btn-secundario">Volver a datos generales</a>
-          <button type="button" id="btnAnadirFila" class="btn-anadir">Añadir asistente</button>
+          <a href="admin-reservas.html" id="btnVolverReservas" class="btn-enlace">Volver a panel de reservas</a>
         </div>
 
         <div class="acciones-derecha">
@@ -364,6 +388,21 @@
               <path d="M19 6l-1 14H6L5 6"></path>
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+
+          <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+
+          <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
           </button>
         </div>
@@ -381,10 +420,6 @@
           </thead>
           <tbody id="cuerpoAsistentes"></tbody>
         </table>
-      </div>
-
-      <div class="acciones-finales">
-        <button type="button" id="btnGuardarAsistentes">Guardar asistentes</button>
       </div>
     </div>
   </div>
@@ -439,23 +474,10 @@
         }
 
         const config = data.config || {};
-
         document.title = config.subtitulo_evento || "Gestión de asistentes";
-        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
-        document.getElementById("subtituloEvento").textContent = "Gestión de asistentes";
-
-        const lugarEl = document.getElementById("lugarEvento");
-        if (config.lugar && String(config.lugar).trim() !== "") {
-          lugarEl.style.display = "block";
-          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
-        } else {
-          lugarEl.style.display = "none";
-          lugarEl.textContent = "";
-        }
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "DIFAS 2026";
       } catch (error) {
         console.error(error);
-        document.getElementById("tituloEvento").textContent = "Evento no disponible";
-        document.getElementById("subtituloEvento").textContent = "Gestión de asistentes";
       }
     }
 
@@ -477,7 +499,6 @@
       }
 
       reservaActual = data.reserva;
-      document.getElementById("btnVolverEditar").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
       return true;
     }
 
@@ -630,7 +651,7 @@
       const prereservaVigente = !!reservaActual.prereserva_vigente;
       const capacidadFranja = Number(reservaActual.capacidad || 0);
 
-      const plazasReservadasPendientes = prereservaVigente
+      const reservadasPendientes = prereservaVigente
         ? Math.max(reservaOriginal - totalAsignadas, 0)
         : 0;
 
@@ -638,8 +659,7 @@
         ? Math.max(reservaOriginal, totalAsignadas)
         : totalAsignadas;
 
-      const plazasOcupadasFranja = plazasBloqueadasActualmente;
-      const plazasDisponiblesFranja = Math.max(capacidadFranja - plazasOcupadasFranja, 0);
+      const disponiblesFranja = Math.max(capacidadFranja - plazasBloqueadasActualmente, 0);
 
       const alumnos = visitantesValidos.filter(v => v.tipo_asistente === "ALUMNO").length;
       const profesores = visitantesValidos.filter(v => v.tipo_asistente === "PROFESOR").length;
@@ -649,23 +669,29 @@
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
       document.getElementById("bloqueReserva").innerHTML = `
-        <span class="bloque-titulo">Reserva actual</span>
         <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-        <strong>Franja asignada:</strong><br>
+        <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja horaria asignada:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Hora límite de consolidación:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+        <strong>Hora límite de asignación de plazas reservadas:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
-        <span class="bloque-titulo">Resumen de plazas y asistentes</span>
-        <strong>Plazas reservadas pendientes:</strong> ${plazasReservadasPendientes}<br>
-        <strong>Plazas asignadas:</strong> ${totalAsignadas}<br>
-        <strong>Plazas disponibles en la franja:</strong> ${plazasDisponiblesFranja}<br>
-        <strong>Alumnos:</strong> ${alumnos}<br>
-        <strong>Profesores:</strong> ${profesores}<br>
-        <strong>Mayores de 10 años:</strong> ${mayores}<br>
-        <strong>Menores de 10 años:</strong> ${menores}
+        <div class="resumen-grid">
+          <div class="resumen-col">
+            <strong>Plazas</strong><br>
+            Reservadas pendientes: ${reservadasPendientes}<br>
+            Asignadas: ${totalAsignadas}<br>
+            Disponibles en la franja: ${disponiblesFranja}
+          </div>
+          <div class="resumen-col">
+            <strong>Desglose</strong><br>
+            Alumnos: ${alumnos}<br>
+            Profesores: ${profesores}<br>
+            Mayores de 10 años: ${mayores}<br>
+            Menores de 10 años: ${menores}
+          </div>
+        </div>
       `;
 
       const btnGuardar = document.getElementById("btnGuardarAsistentes");
@@ -731,7 +757,6 @@
         envioEnCurso = true;
         const btnGuardar = document.getElementById("btnGuardarAsistentes");
         btnGuardar.disabled = true;
-        btnGuardar.textContent = "Guardando...";
 
         const response = await fetch("/api/visitantes-guardar", {
           method: "POST",
@@ -761,7 +786,6 @@
       } finally {
         envioEnCurso = false;
         document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
-        document.getElementById("btnGuardarAsistentes").textContent = "Guardar asistentes";
         actualizarModoPantalla();
       }
     }
