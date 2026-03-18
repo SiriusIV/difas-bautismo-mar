@@ -314,6 +314,71 @@
       background: #f2f7ff;
     }
 
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    .modal p {
+      margin: 0 0 14px 0;
+      line-height: 1.6;
+    }
+
+    .modal .acciones {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .btn-modal {
+      background: #0b5ed7;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-modal:hover {
+      background: #094db1;
+    }
+
+    .btn-modal.secundario {
+      background: #6c757d;
+    }
+
+    .btn-modal.secundario:hover {
+      background: #565e64;
+    }
+
     @media (max-width: 1000px) {
       .bloques-superiores {
         grid-template-columns: 1fr;
@@ -359,10 +424,10 @@
         <div class="sublinea">Panel de gestión de asistentes</div>
 
         <div class="nav-admin">
-          <a href="admin-franjas.html" class="nav-btn">Franjas horarias</a>
-          <a href="admin-reservas.html" class="nav-btn activo">Reservas</a>
-          <a href="admin-calendario.html" class="nav-btn">Calendario</a>
-          <a href="#" id="btnEditarReservaNav" class="nav-btn">Editar</a>
+          <a href="admin-franjas.html" class="nav-btn" data-nav-target="admin-franjas.html">Franjas horarias</a>
+          <a href="admin-reservas.html" class="nav-btn activo" data-nav-target="admin-reservas.html">Reservas</a>
+          <a href="admin-calendario.html" class="nav-btn" data-nav-target="admin-calendario.html">Calendario</a>
+          <a href="#" id="btnEditarReservaNav" class="nav-btn" data-nav-dynamic="editar">Editar</a>
         </div>
       </div>
     </div>
@@ -429,6 +494,18 @@
     </div>
   </div>
 
+  <div id="modalConfirmarSalida" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Cambios sin guardar</h3>
+      <p>Ha realizado cambios en la lista de asistentes y aún no los ha guardado.</p>
+      <p>Si continúa, perderá esos cambios.</p>
+      <div class="acciones">
+        <button type="button" id="btnConfirmarSalida" class="btn-modal">Aceptar</button>
+        <button type="button" id="btnCancelarSalida" class="btn-modal secundario">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let tokenEdicion = "";
     let reservaActual = null;
@@ -436,6 +513,8 @@
     let envioEnCurso = false;
     let filaSeleccionadaId = null;
     let contadorFilas = 0;
+    let hayCambiosSinGuardar = false;
+    let destinoPendienteNavegacion = null;
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
@@ -455,6 +534,14 @@
       return String(valor).replace("T", " ");
     }
 
+    function textoLimiteAsignacion(valor) {
+      if (!valor) return "Finalizado";
+      const fecha = new Date(String(valor).replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return "Finalizado";
+      if (fecha < new Date()) return "Finalizado";
+      return String(valor).replace("T", " ");
+    }
+
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
       mensaje.className = "mensaje " + tipo;
@@ -467,6 +554,46 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    function marcarCambiosPendientes() {
+      if (!solicitudEditable()) return;
+      hayCambiosSinGuardar = true;
+    }
+
+    function limpiarCambiosPendientes() {
+      hayCambiosSinGuardar = false;
+    }
+
+    function abrirModalSalida(destino) {
+      destinoPendienteNavegacion = destino;
+      const modal = document.getElementById("modalConfirmarSalida");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalSalida() {
+      destinoPendienteNavegacion = null;
+      const modal = document.getElementById("modalConfirmarSalida");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function continuarNavegacion() {
+      const destino = destinoPendienteNavegacion;
+      cerrarModalSalida();
+      limpiarCambiosPendientes();
+      if (destino) {
+        window.location.href = destino;
+      }
+    }
+
+    function navegarConProteccion(destino) {
+      if (hayCambiosSinGuardar) {
+        abrirModalSalida(destino);
+      } else {
+        window.location.href = destino;
+      }
     }
 
     async function cargarConfigEvento() {
@@ -529,6 +656,7 @@
       visitantesActuales = Array.isArray(data.visitantes) ? data.visitantes : [];
       renderizarVisitantes();
       actualizarModoPantalla();
+      limpiarCambiosPendientes();
     }
 
     function crearIdFila() {
@@ -580,8 +708,24 @@
         crearFila();
       }
 
+      marcarCambiosPendientes();
       recalcularResumenEnPantalla();
       actualizarBotonEliminar();
+    }
+
+    function ajustarEdadSegunTipo(tr) {
+      const tipo = tr.querySelector(".tipo-asistente");
+      const edad = tr.querySelector(".categoria-asistente");
+      if (!tipo || !edad) return;
+
+      if (tipo.value === "PROFESOR") {
+        edad.value = "MAYOR_10";
+        edad.disabled = true;
+      } else {
+        if (solicitudEditable()) {
+          edad.disabled = false;
+        }
+      }
     }
 
     function crearFila(asistente = { nombre_completo: "", tipo_asistente: "ALUMNO", categoria_edad: "MAYOR_10" }) {
@@ -618,17 +762,22 @@
       });
 
       tr.querySelector(".nombre-asistente").addEventListener("input", function () {
+        marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       tr.querySelector(".tipo-asistente").addEventListener("change", function () {
+        ajustarEdadSegunTipo(tr);
+        marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       tr.querySelector(".categoria-asistente").addEventListener("change", function () {
+        marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
+      ajustarEdadSegunTipo(tr);
       tbody.appendChild(tr);
     }
 
@@ -679,7 +828,7 @@
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja horaria asignada:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Hora límite de asignación de plazas reservadas:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
+        <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en)}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
@@ -741,8 +890,13 @@
 
         if (nombre) nombre.disabled = !editable;
         if (tipo) tipo.disabled = !editable;
-        if (categoria) categoria.disabled = !editable;
         if (selector) selector.disabled = !editable;
+
+        ajustarEdadSegunTipo(tr);
+
+        if (!editable && categoria) {
+          categoria.disabled = true;
+        }
       });
 
       recalcularResumenEnPantalla();
@@ -756,7 +910,7 @@
       const visitantes = obtenerVisitantesValidosDeTabla().map(v => ({
         nombre_completo: v.nombre_completo,
         tipo_asistente: v.tipo_asistente,
-        categoria_edad: v.categoria_edad
+        categoria_edad: v.tipo_asistente === "PROFESOR" ? "MAYOR_10" : v.categoria_edad
       }));
 
       try {
@@ -785,6 +939,7 @@
         mostrarMensaje("ok", data.mensaje || "Asistentes guardados correctamente.");
         await cargarReserva();
         await cargarVisitantes();
+        limpiarCambiosPendientes();
 
       } catch (error) {
         console.error(error);
@@ -800,11 +955,39 @@
       document.getElementById("btnAnadirFila").addEventListener("click", function () {
         if (!solicitudEditable()) return;
         crearFila();
+        marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       document.getElementById("btnEliminarSeleccionado").addEventListener("click", eliminarFilaSeleccionada);
       document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
+
+      document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
+      document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);
+
+      document.getElementById("modalConfirmarSalida").addEventListener("click", function (e) {
+        if (e.target.id === "modalConfirmarSalida") {
+          cerrarModalSalida();
+        }
+      });
+
+      document.querySelectorAll("[data-nav-target]").forEach(el => {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          navegarConProteccion(el.getAttribute("data-nav-target"));
+        });
+      });
+
+      document.getElementById("btnEditarReservaNav").addEventListener("click", function (e) {
+        e.preventDefault();
+        navegarConProteccion(`editar.html?token=${encodeURIComponent(tokenEdicion)}`);
+      });
+
+      window.addEventListener("beforeunload", function (e) {
+        if (!hayCambiosSinGuardar) return;
+        e.preventDefault();
+        e.returnValue = "";
+      });
 
       try {
         await cargarConfigEvento();
