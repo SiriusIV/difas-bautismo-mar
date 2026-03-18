@@ -101,15 +101,10 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
     .run();
 }
 
-async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizados, plazasPrereservadasPrevias) {
+async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizados) {
   const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
   const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
   const personas = visitantesNormalizados.length;
-
-  const nuevasPlazasPrereservadas = Math.max(
-    Number(plazasPrereservadasPrevias || 0),
-    personas
-  );
 
   const sql = `
     UPDATE reservas
@@ -117,7 +112,6 @@ async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizad
       mayores10 = ?,
       menores10 = ?,
       personas = ?,
-      plazas_prereservadas = ?,
       fecha_modificacion = datetime('now')
     WHERE id = ?
   `;
@@ -127,45 +121,51 @@ async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizad
       mayores10,
       menores10,
       personas,
-      nuevasPlazasPrereservadas,
       reservaId
     )
     .run();
 }
 
+function calcularBloqueoReserva(row) {
+  const asistentes = Number(row.asistentes_cargados || 0);
+  const prereservadas = Number(row.plazas_prereservadas || 0);
+  const estado = String(row.estado || "").toUpperCase();
+
+  if (!["PENDIENTE", "CONFIRMADA"].includes(estado)) {
+    return 0;
+  }
+
+  if (row.prereserva_expira_en) {
+    const exp = new Date(String(row.prereserva_expira_en).replace(" ", "T"));
+    if (!Number.isNaN(exp.getTime()) && exp >= new Date()) {
+      return Math.max(prereservadas, asistentes);
+    }
+  }
+
+  return asistentes;
+}
+
 async function obtenerBloqueoDeOtrasReservas(env, franjaId, reservaIdActual) {
   const sql = `
     SELECT
-      COALESCE(SUM(
-        CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
-            CASE
-              WHEN r.prereserva_expira_en IS NOT NULL
-                   AND datetime('now') <= datetime(r.prereserva_expira_en)
-                THEN MAX(
-                  COALESCE(r.plazas_prereservadas, 0),
-                  COALESCE((
-                    SELECT COUNT(*)
-                    FROM visitantes v
-                    WHERE v.reserva_id = r.id
-                  ), 0)
-                )
-              ELSE COALESCE((
-                SELECT COUNT(*)
-                FROM visitantes v
-                WHERE v.reserva_id = r.id
-              ), 0)
-            END
-          ELSE 0
-        END
-      ), 0) AS ocupadas_otros
+      r.id,
+      r.estado,
+      r.plazas_prereservadas,
+      r.prereserva_expira_en,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM visitantes v
+        WHERE v.reserva_id = r.id
+      ), 0) AS asistentes_cargados
     FROM reservas r
     WHERE r.franja_id = ?
       AND r.id <> ?
   `;
 
-  const row = await env.DB.prepare(sql).bind(franjaId, reservaIdActual).first();
-  return Number(row?.ocupadas_otros || 0);
+  const result = await env.DB.prepare(sql).bind(franjaId, reservaIdActual).all();
+  const rows = result.results || [];
+
+  return rows.reduce((acc, row) => acc + calcularBloqueoReserva(row), 0);
 }
 
 export async function onRequestPost(context) {
@@ -244,19 +244,13 @@ export async function onRequestPost(context) {
     await actualizarReservaTrasGuardar(
       env,
       reserva.id,
-      visitantesNormalizados,
-      reserva.plazas_prereservadas
+      visitantesNormalizados
     );
 
     const alumnos = visitantesNormalizados.filter(v => v.tipo_asistente === "ALUMNO").length;
     const profesores = visitantesNormalizados.filter(v => v.tipo_asistente === "PROFESOR").length;
     const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
     const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
-
-    const plazasPrereservadasFinales = Math.max(
-      Number(reserva.plazas_prereservadas || 0),
-      totalDeseado
-    );
 
     return json({
       ok: true,
@@ -267,7 +261,7 @@ export async function onRequestPost(context) {
       capacidad_franja: capacidadFranja,
       ocupadas_por_otros: ocupadasPorOtros,
       maximo_permitido_para_esta_reserva: maximoPermitidoParaEstaReserva,
-      plazas_prereservadas_historicas: plazasPrereservadasFinales,
+      plazas_prereservadas_historicas: Number(reserva.plazas_prereservadas || 0),
       plazas_asignadas: totalDeseado,
       alumnos,
       profesores,
