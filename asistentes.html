@@ -34,23 +34,24 @@
     }
 
     .cabecera {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
-      margin-bottom: 26px;
-      min-height: 120px;
+      min-height: 150px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #d9e0e7;
+      padding-bottom: 18px;
     }
 
     .logo {
       position: absolute;
       left: 0;
-      max-width: 120px;
+      top: 0;
+      max-width: 110px;
       height: auto;
     }
 
-    .titulos {
+    .cabecera-centro {
       text-align: center;
+      padding: 0 180px;
     }
 
     .sublinea {
@@ -58,6 +59,38 @@
       font-size: 15px;
       color: #444;
       text-align: center;
+    }
+
+    .nav-admin {
+      margin-top: 22px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      background: #f7f9fb;
+    }
+
+    .nav-btn.activo {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
     }
 
     .mensaje {
@@ -141,11 +174,6 @@
       align-items: start;
     }
 
-    .resumen-col strong {
-      display: inline-block;
-      min-width: 0;
-    }
-
     .panel {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
@@ -156,42 +184,11 @@
 
     .barra-acciones {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 18px;
-    }
-
-    .acciones-izquierda,
-    .acciones-derecha {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .btn-enlace {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-enlace:hover {
-      background: #565e64;
-    }
-
-    .btn-enlace.deshabilitado {
-      background: #7aa7e8;
-      cursor: not-allowed;
-      pointer-events: none;
-      opacity: 0.75;
     }
 
     .btn-icono {
@@ -322,25 +319,31 @@
         grid-template-columns: 1fr;
       }
 
+      .cabecera-centro {
+        padding: 120px 0 0 0;
+      }
+
       .logo {
         position: static;
         display: block;
-        margin: 0 auto 10px auto;
+        margin: 0 auto 12px auto;
       }
 
       .cabecera {
-        display: block;
         min-height: auto;
       }
 
       .barra-acciones {
-        flex-direction: column;
-        align-items: stretch;
+        justify-content: center;
       }
 
       .resumen-grid {
         grid-template-columns: 1fr;
         gap: 12px;
+      }
+
+      .nav-admin {
+        display: flex;
       }
     }
   </style>
@@ -349,10 +352,18 @@
   <div class="contenedor">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
-      <div class="titulos">
+
+      <div class="cabecera-centro">
         <h1 id="tituloEvento">DIFAS 2026</h1>
         <h2>Bautismos de mar</h2>
         <div class="sublinea">Panel de gestión de asistentes</div>
+
+        <div class="nav-admin">
+          <a href="admin-franjas.html" class="nav-btn">Franjas horarias</a>
+          <a href="admin-reservas.html" class="nav-btn activo">Reservas</a>
+          <a href="admin-calendario.html" class="nav-btn">Calendario</a>
+          <a href="#" id="btnEditarReservaNav" class="nav-btn">Editar</a>
+        </div>
       </div>
     </div>
 
@@ -376,36 +387,30 @@
 
     <div class="panel">
       <div class="barra-acciones">
-        <div class="acciones-izquierda">
-          <a href="admin-reservas.html" id="btnVolverReservas" class="btn-enlace">Volver a panel de reservas</a>
-        </div>
+        <button type="button" id="btnEliminarSeleccionado" class="btn-icono eliminar" title="Eliminar asistente seleccionado" aria-label="Eliminar asistente seleccionado" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14H6L5 6"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </button>
 
-        <div class="acciones-derecha">
-          <button type="button" id="btnEliminarSeleccionado" class="btn-icono eliminar" title="Eliminar asistente seleccionado" aria-label="Eliminar asistente seleccionado" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 6h18"></path>
-              <path d="M8 6V4h8v2"></path>
-              <path d="M19 6l-1 14H6L5 6"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
+        <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
 
-          <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-
-          <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-              <polyline points="17 21 17 13 7 13 7 21"></polyline>
-              <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-          </button>
-        </div>
+        <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </button>
       </div>
 
       <div class="tabla-wrap">
@@ -499,6 +504,7 @@
       }
 
       reservaActual = data.reserva;
+      document.getElementById("btnEditarReservaNav").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
       return true;
     }
 
