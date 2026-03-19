@@ -21,40 +21,62 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   const db = env.DB;
 
-  const body = await request.json();
-  const { email, password } = body;
+  try {
+    const body = await request.json();
+    const email = String(body.email || "").trim();
+    const password = String(body.password || "").trim();
 
-  if (!email || !password) {
-    return json({ ok: false, error: "Faltan credenciales" }, 400);
+    if (!email || !password) {
+      return json({ ok: false, error: "Faltan credenciales" }, 400);
+    }
+
+    const user = await db.prepare(`
+      SELECT id, nombre, centro, email, password_hash, rol, activo
+      FROM usuarios
+      WHERE email = ?
+      LIMIT 1
+    `).bind(email).first();
+
+    if (!user) {
+      return json({ ok: false, error: "Usuario no encontrado" }, 401);
+    }
+
+    if (Number(user.activo || 0) !== 1) {
+      return json({ ok: false, error: "Usuario inactivo" }, 401);
+    }
+
+    const password_hash = await hashPassword(password);
+
+    if (String(user.password_hash || "") !== password_hash) {
+      return json({ ok: false, error: "Contraseña incorrecta" }, 401);
+    }
+
+    await db.prepare(`
+      UPDATE usuarios
+      SET ultimo_acceso = datetime('now')
+      WHERE id = ?
+    `).bind(user.id).run();
+
+    const sessionUser = {
+      id: user.id,
+      nombre: user.nombre,
+      centro: user.centro,
+      email: user.email,
+      rol: user.rol
+    };
+
+    const cookie = await createSessionCookie(sessionUser, env.SECRET_KEY);
+
+    return json(
+      { ok: true, user: sessionUser },
+      200,
+      { "Set-Cookie": cookie }
+    );
+
+  } catch (error) {
+    return json(
+      { ok: false, error: "Error interno en login", detalle: error.message },
+      500
+    );
   }
-
-  const user = await db
-    .prepare("SELECT * FROM usuarios WHERE email = ? AND activo = 1")
-    .bind(email)
-    .first();
-
-  if (!user) {
-    return json({ ok: false, error: "Usuario no encontrado" }, 401);
-  }
-
-  const password_hash = await hashPassword(password);
-
-  if (user.password_hash !== password_hash) {
-    return json({ ok: false, error: "Contraseña incorrecta" }, 401);
-  }
-
-  const sessionUser = {
-    id: user.id,
-    nombre: user.nombre,
-    email: user.email,
-    rol: user.rol
-  };
-
-  const cookie = await createSessionCookie(sessionUser, env.SECRET_KEY);
-
-  return json(
-    { ok: true, user: sessionUser },
-    200,
-    { "Set-Cookie": cookie }
-  );
 }
