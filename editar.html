@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editar solicitud</title>
+  <title>Edición de solicitud</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
     }
 
     .contenedor {
-      max-width: 1100px;
+      max-width: 1150px;
       margin: 40px auto;
       background: #ffffff;
       padding: 28px;
@@ -23,156 +23,88 @@
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0;
       font-size: 28px;
     }
 
     h2 {
-      margin-top: 6px;
-      font-size: 22px;
+      margin: 8px 0 0;
+      font-size: 18px;
       font-weight: normal;
     }
 
     .cabecera {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
-      margin-bottom: 20px;
-      min-height: 120px;
+      min-height: 150px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #d9e0e7;
+      padding-bottom: 18px;
     }
 
     .logo {
       position: absolute;
       left: 0;
-      max-width: 120px;
+      top: 0;
+      max-width: 110px;
       height: auto;
     }
 
-    .titulos {
+    .cabecera-centro {
       text-align: center;
+      padding: 0 180px;
     }
 
-    .lugar-evento {
-      margin-top: 8px;
+    .sublinea {
+      margin-top: 10px;
       font-size: 15px;
       color: #444;
       text-align: center;
     }
 
-    .resumen-superior {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .info {
-      background: #eef4ff;
-      border: 1px solid #c9dcff;
-      color: #1d4f91;
-      padding: 12px;
-      border-radius: 6px;
-      min-height: 150px;
-      line-height: 1.7;
-    }
-
-    .info-titulo {
-      font-weight: bold;
-      margin-bottom: 8px;
-      font-size: 16px;
-      display: block;
-    }
-
-    .campo {
-      margin-bottom: 18px;
-    }
-
-    .fila-doble {
-      display: grid;
-      grid-template-columns: 1fr 220px 220px;
-      gap: 14px;
-      align-items: end;
-    }
-
-    .campo-info {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 6px;
-      padding: 10px 12px;
-      min-height: 42px;
-      display: flex;
+    .nav-admin {
+      margin-top: 22px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
       align-items: center;
-      font-size: 15px;
-      color: #333;
     }
 
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #c9cfd6;
-      border-radius: 6px;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    button, .btn-enlace {
-      background: #0b5ed7;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      text-decoration: none;
+    .nav-btn,
+    .nav-btn-danger {
       display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1;
+      transition: all 0.15s ease;
+      cursor: pointer;
     }
 
-    button:hover, .btn-enlace:hover {
-      background: #094db1;
+    .nav-btn:hover {
+      background: #f7f9fb;
     }
 
-    button:disabled,
-    .btn-enlace.deshabilitado {
-      background: #7aa7e8;
-      cursor: not-allowed;
-      pointer-events: none;
-      opacity: 0.75;
+    .nav-btn.activo {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
+      cursor: default;
     }
 
-    .btn-secundario {
-      background: #198754;
+    .nav-btn-danger {
+      border-color: #efc2c7;
+      color: #dc3545;
     }
 
-    .btn-secundario:hover {
-      background: #13653f;
-    }
-
-    .btn-terciario {
-      background: #6c757d;
-    }
-
-    .btn-terciario:hover {
-      background: #565e64;
-    }
-
-    .btn-peligro {
-      background: #dc3545;
-    }
-
-    .btn-peligro:hover {
-      background: #b52a37;
+    .nav-btn-danger:hover {
+      background: #fff5f5;
+      color: #b52a37;
+      border-color: #e2a7af;
     }
 
     .mensaje {
@@ -204,24 +136,34 @@
       border: 1px solid #c9dcff;
     }
 
-    .mensaje.alerta {
-      display: block;
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
+    .bloques-superiores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
     }
 
-    .info-plazas {
-      margin-top: 8px;
-      font-size: 14px;
-      color: #444;
-    }
-
-    .acciones {
+    .bloque-wrap {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 12px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bloque-titulo-externo {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1d4f91;
+      padding-left: 2px;
+    }
+
+    .bloque-info {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      color: #1d4f91;
+      padding: 14px;
+      border-radius: 8px;
+      line-height: 1.75;
+      min-height: 170px;
     }
 
     .estado-badge {
@@ -239,14 +181,77 @@
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
 
-    .nota-destacada {
-      background: #fff8e6;
-      border: 1px solid #f0d58a;
-      color: #7a5a00;
+    .resumen-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .fila {
       margin-bottom: 18px;
-      line-height: 1.55;
+    }
+
+    .fila-doble {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .fila-triple {
+      display: grid;
+      grid-template-columns: 1fr 180px 180px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .campo-info {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 6px;
+      padding: 10px 12px;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .ayuda {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
     }
 
     .modal-fondo {
@@ -282,6 +287,7 @@
     .modal p {
       margin-top: 0;
       margin-bottom: 14px;
+      line-height: 1.6;
     }
 
     .modal .bloque {
@@ -298,6 +304,7 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
+      justify-content: flex-end;
     }
 
     .modal-reserva-grid {
@@ -333,31 +340,53 @@
       text-align: center;
     }
 
+    .btn-modal {
+      background: #0b5ed7;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-modal:hover {
+      background: #094db1;
+    }
+
+    .btn-modal.secundario {
+      background: #6c757d;
+    }
+
+    .btn-modal.secundario:hover {
+      background: #565e64;
+    }
+
     @media (max-width: 1000px) {
-      .resumen-superior {
+      .bloques-superiores,
+      .fila-doble,
+      .fila-triple {
         grid-template-columns: 1fr;
+      }
+
+      .cabecera-centro {
+        padding: 120px 0 0 0;
       }
 
       .logo {
         position: static;
         display: block;
-        margin: 0 auto 10px auto;
+        margin: 0 auto 12px auto;
       }
 
       .cabecera {
-        display: block;
         min-height: auto;
       }
 
-      .fila-doble {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 700px) {
+      .resumen-grid,
       .modal-reserva-grid {
         grid-template-columns: 1fr;
-        gap: 14px;
+        gap: 12px;
       }
     }
   </style>
@@ -366,90 +395,95 @@
   <div class="contenedor">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
-      <div class="titulos">
-        <h1 id="tituloEvento">Cargando evento...</h1>
-        <h2 id="subtituloEvento">Editar solicitud</h2>
-        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+
+      <div class="cabecera-centro">
+        <h1 id="tituloEvento">DIFAS 2026</h1>
+        <h2>Bautismos de mar</h2>
+        <div class="sublinea">Edición de solicitud</div>
+
+        <div class="nav-admin">
+          <button type="button" id="btnGuardarNav" class="nav-btn activo">Guardar</button>
+          <a href="#" id="btnGestionarAsistentesNav" class="nav-btn">Gestionar asistentes</a>
+          <button type="button" id="btnRecuperarAccesoNav" class="nav-btn">Recuperar acceso</button>
+          <a href="index.html" id="btnNuevaSolicitudNav" class="nav-btn">Nueva solicitud</a>
+          <button type="button" id="btnAnularSolicitudNav" class="nav-btn-danger">Anular</button>
+        </div>
       </div>
     </div>
-
-    <div class="nota-destacada" id="notaPrereserva" style="display:none;"></div>
 
     <div id="mensaje" class="mensaje"></div>
 
-    <div class="resumen-superior">
-      <div id="infoReserva" class="info" style="display:none;"></div>
-
-      <div id="resumenAsistentes" class="info">
-        <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-        Cargando resumen de asistentes...
-      </div>
-
-      <div id="resumenFranja" class="info">
-        <span class="info-titulo">Resumen global de la franja horaria</span>
-        Cargando resumen de franja...
-      </div>
-    </div>
-
-    <form id="formularioEdicion" style="display:none;">
-      <div class="campo">
-        <label for="centro">Centro solicitante</label>
-        <input type="text" id="centro" name="centro" required>
-      </div>
-
-      <div class="campo">
-        <label for="contacto">Persona de contacto</label>
-        <input type="text" id="contacto" name="contacto" required>
-      </div>
-
-      <div class="campo">
-        <label for="telefono">Teléfono de contacto</label>
-        <input type="tel" id="telefono" name="telefono" required>
-      </div>
-
-      <div class="campo">
-        <label for="email">Correo electrónico de contacto</label>
-        <input type="email" id="email" name="email" required>
-      </div>
-
-      <div class="campo">
-        <label for="franja">Franja horaria solicitada</label>
-        <select id="franja" name="franja" required>
-          <option value="">Cargando franjas...</option>
-        </select>
-        <div id="infoPlazas" class="info-plazas"></div>
-        <div id="avisoCapacidad" class="mensaje" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="campo">
-        <div class="fila-doble">
-          <div>
-            <label for="plazasReservadas">Reservar plazas adicionales</label>
-            <input type="number" id="plazasReservadas" name="plazasReservadas" min="0" step="1" required>
-          </div>
-          <div>
-            <label>Plazas asignadas</label>
-            <div class="campo-info" id="campoPlazasAsignadas">0</div>
-          </div>
-          <div>
-            <label>Plazas libres en la franja</label>
-            <div class="campo-info" id="campoPlazasLibresFranja">0</div>
-          </div>
+    <div class="bloques-superiores">
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Reserva actual</div>
+        <div id="bloqueReserva" class="bloque-info">
+          Cargando datos...
         </div>
       </div>
 
-      <div class="campo">
-        <label for="observaciones">Observaciones</label>
-        <textarea id="observaciones" name="observaciones"></textarea>
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Resumen de la reserva</div>
+        <div id="bloqueResumen" class="bloque-info">
+          Cargando datos...
+        </div>
       </div>
+    </div>
 
-      <div class="acciones">
-        <button type="submit" id="btnGuardar">Guardar datos generales</button>
-        <a href="#" id="btnGestionarAsistentes" class="btn-enlace btn-secundario">Gestionar asistentes</a>
-        <button type="button" id="btnRecuperarAcceso" class="btn-terciario">Recuperar acceso</button>
-        <button type="button" id="btnAnularSolicitud" class="btn-peligro">Anular solicitud</button>
-      </div>
-    </form>
+    <div class="panel">
+      <form id="formularioEdicion" style="display:none;">
+        <div class="fila">
+          <label for="centro">Centro solicitante</label>
+          <input type="text" id="centro" name="centro" required>
+        </div>
+
+        <div class="fila">
+          <label for="contacto">Persona de contacto</label>
+          <input type="text" id="contacto" name="contacto" required>
+        </div>
+
+        <div class="fila-doble">
+          <div class="fila">
+            <label for="telefono">Teléfono de contacto</label>
+            <input type="tel" id="telefono" name="telefono" required>
+          </div>
+
+          <div class="fila">
+            <label for="email">Correo electrónico de contacto</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+
+        <div class="fila">
+          <label>Franja horaria asignada</label>
+          <div id="campoFranjaAsignada" class="campo-info"></div>
+        </div>
+
+        <div class="fila-triple">
+          <div class="fila">
+            <label for="plazasReservadasPendientes">Plazas reservadas pendientes</label>
+            <input type="number" id="plazasReservadasPendientes" min="0" step="1">
+            <div class="ayuda">
+              Solo puede reducir las plazas reservadas pendientes no asignadas. No es posible aumentarlas desde este formulario.
+            </div>
+          </div>
+
+          <div class="fila">
+            <label>Plazas asignadas</label>
+            <div id="campoPlazasAsignadas" class="campo-info">0</div>
+          </div>
+
+          <div class="fila">
+            <label>Plazas disponibles en la franja</label>
+            <div id="campoPlazasDisponibles" class="campo-info">0</div>
+          </div>
+        </div>
+
+        <div class="fila">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" name="observaciones"></textarea>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="modalAcceso" class="modal-fondo" aria-hidden="true">
@@ -476,9 +510,9 @@
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnAbrirSolicitud">Abrir solicitud</button>
-        <button type="button" id="btnCopiarAcceso" class="btn-terciario">Copiar enlace de acceso</button>
-        <button type="button" id="btnCerrarModalAcceso" class="btn-secundario">Cerrar</button>
+        <button type="button" id="btnAbrirSolicitud" class="btn-modal">Abrir solicitud</button>
+        <button type="button" id="btnCopiarAcceso" class="btn-modal secundario">Copiar enlace de acceso</button>
+        <button type="button" id="btnCerrarModalAcceso" class="btn-modal secundario">Cerrar</button>
       </div>
     </div>
   </div>
@@ -493,7 +527,7 @@
       </div>
 
       <div class="acciones">
-        <button type="button" id="btnAceptarCancelacion">Aceptar</button>
+        <button type="button" id="btnAceptarCancelacion" class="btn-modal">Aceptar</button>
       </div>
     </div>
   </div>
@@ -501,11 +535,12 @@
   <script>
     let tokenEdicion = "";
     let reservaActual = null;
-    let franjasCache = [];
+    let visitantesActuales = [];
     let envioEnCurso = false;
     let anulacionEnCurso = false;
     let enlaceSolicitudActual = "";
-    let asistentesCargados = 0;
+    let hayCambiosPendientes = false;
+    let reservadasPendientesOriginales = 0;
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
@@ -516,126 +551,44 @@
       return "";
     }
 
-    function textoEstadoModal(estado) {
-      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
-      if (estado === "CONFIRMADA") return "CONFIRMADA";
-      if (estado === "RECHAZADA") return "RECHAZADA";
-      if (estado === "CANCELADA") return "CANCELADA";
-      return estado || "";
+    function formatearFechaHora(valor) {
+      if (!valor) return "No disponible";
+      return String(valor).replace("T", " ");
     }
 
-    function mostrarError(texto) {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje error";
-      mensaje.style.display = "block";
-      mensaje.textContent = texto;
-    }
-
-    function mostrarOk(texto) {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje ok";
-      mensaje.style.display = "block";
-      mensaje.textContent = texto;
-    }
-
-    function limpiarMensajePrincipal() {
-      const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje";
-      mensaje.style.display = "none";
-      mensaje.textContent = "";
+    function textoLimiteAsignacion(valor) {
+      if (!valor) return "Finalizado";
+      const fecha = new Date(String(valor).replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return "Finalizado";
+      if (fecha < new Date()) return "Finalizado";
+      return String(valor).replace("T", " ");
     }
 
     function solicitudEditable() {
       return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
     }
 
-    function formatearFechaHora(valor) {
-      if (!valor) return "No disponible";
-      return String(valor).replace("T", " ");
+    function mostrarMensaje(tipo, texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
     }
 
-    function plazasReservadasPendientesActuales() {
-      const n = parseInt(document.getElementById("plazasReservadas").value || "0", 10);
-      return Number.isInteger(n) ? n : 0;
+    function limpiarMensaje() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
     }
 
-    function plazasReservadasPendientesReserva() {
-      return Number(reservaActual?.plazas_reservadas || 0);
+    function marcarCambiosPendientes() {
+      if (!solicitudEditable()) return;
+      hayCambiosPendientes = true;
     }
 
-    function plazasAsignadasReserva() {
-      return Number(reservaActual?.plazas_asignadas || 0);
-    }
-
-    function plazasLibresFranja() {
-      return Number(reservaActual?.disponibles || 0);
-    }
-
-    function bloqueoActualReserva() {
-      return Number(reservaActual?.plazas_bloqueadas_actualmente || 0);
-    }
-
-    function calcularEstadoVisualActual() {
-      return {
-        reservadasPendientes: plazasReservadasPendientesReserva(),
-        asignadas: plazasAsignadasReserva(),
-        libresFranja: plazasLibresFranja()
-      };
-    }
-
-    function actualizarModoEdicion() {
-      const editable = solicitudEditable();
-      const idsCampos = ["centro", "contacto", "telefono", "email", "franja", "plazasReservadas", "observaciones"];
-
-      idsCampos.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = !editable;
-      });
-
-      const btnGuardar = document.getElementById("btnGuardar");
-      const btnAsistentes = document.getElementById("btnGestionarAsistentes");
-      const btnAnular = document.getElementById("btnAnularSolicitud");
-      const btnRecuperar = document.getElementById("btnRecuperarAcceso");
-
-      btnGuardar.disabled = !editable || envioEnCurso;
-      btnAnular.disabled = !editable || anulacionEnCurso;
-      btnRecuperar.disabled = !editable;
-
-      if (!editable) {
-        btnAsistentes.classList.add("deshabilitado");
-        btnAnular.textContent = "Solicitud no anulable";
-      } else {
-        btnAsistentes.classList.remove("deshabilitado");
-        btnAnular.textContent = "Anular solicitud";
-      }
-
-      if (reservaActual && reservaActual.estado === "CANCELADA") {
-        document.getElementById("avisoCapacidad").className = "mensaje aviso";
-        document.getElementById("avisoCapacidad").style.display = "block";
-        document.getElementById("avisoCapacidad").textContent = "Esta solicitud está cancelada. Ya no bloquea plazas y no puede modificarse.";
-      }
-
-      if (reservaActual && reservaActual.estado === "RECHAZADA") {
-        document.getElementById("avisoCapacidad").className = "mensaje alerta";
-        document.getElementById("avisoCapacidad").style.display = "block";
-        document.getElementById("avisoCapacidad").textContent = "Esta solicitud está rechazada y no puede modificarse.";
-      }
-    }
-
-    function abrirModalCancelada() {
-      const modal = document.getElementById("modalCancelada");
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
-    }
-
-    function cerrarModalCancelada() {
-      const modal = document.getElementById("modalCancelada");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
-    }
-
-    function volverAInicio() {
-      window.location.href = "index.html";
+    function limpiarCambiosPendientes() {
+      hayCambiosPendientes = false;
     }
 
     async function cargarConfigEvento() {
@@ -648,219 +601,154 @@
         }
 
         const config = data.config || {};
-
-        document.title = config.subtitulo_evento || "Editar solicitud";
-        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
-        document.getElementById("subtituloEvento").textContent = "Editar solicitud";
-
-        const lugarEl = document.getElementById("lugarEvento");
-        if (config.lugar && String(config.lugar).trim() !== "") {
-          lugarEl.style.display = "block";
-          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
-        } else {
-          lugarEl.style.display = "none";
-          lugarEl.textContent = "";
-        }
+        document.title = config.subtitulo_evento || "Edición de solicitud";
+        document.getElementById("tituloEvento").textContent = config.nombre_evento || "DIFAS 2026";
       } catch (error) {
         console.error(error);
-        document.title = "Editar solicitud";
-        document.getElementById("tituloEvento").textContent = "Evento no disponible";
-        document.getElementById("subtituloEvento").textContent = "Editar solicitud";
       }
     }
 
-    function obtenerFranjaSeleccionada() {
-      const franjaId = parseInt(document.getElementById("franja").value, 10);
-      if (!franjaId) return null;
-      return franjasCache.find(f => Number(f.id) === franjaId) || null;
+    async function cargarReserva() {
+      const params = new URLSearchParams(window.location.search);
+      tokenEdicion = params.get("token") || "";
+
+      if (!tokenEdicion) {
+        mostrarMensaje("error", "Falta el token de edición en la URL.");
+        return false;
+      }
+
+      const response = await fetch(`/api/reserva?token=${encodeURIComponent(tokenEdicion)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        mostrarMensaje("error", data.error || "No se pudo recuperar la reserva.");
+        return false;
+      }
+
+      reservaActual = data.reserva;
+      reservadasPendientesOriginales = Number(reservaActual.plazas_reservadas || 0);
+
+      document.getElementById("btnGestionarAsistentesNav").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
+      return true;
     }
 
-    function plazasEditablesEnFranja(franja) {
-      if (!franja) return 0;
-      const disponibles = Number(franja.disponibles || 0);
-
-      if (reservaActual && Number(franja.id) === Number(reservaActual.franja_id)) {
-        return disponibles + bloqueoActualReserva();
-      }
-
-      return disponibles;
-    }
-
-    function actualizarInfoPlazas() {
-      const info = document.getElementById("infoPlazas");
-      const resumenFranja = document.getElementById("resumenFranja");
-      const franja = obtenerFranjaSeleccionada();
-
-      if (!franja) {
-        info.textContent = "";
-        resumenFranja.innerHTML = `
-          <span class="info-titulo">Resumen global de la franja horaria</span>
-          Sin franja seleccionada.
-        `;
-        return;
-      }
-
-      const capacidad = Number(franja.capacidad || 0);
-      const disponibles = Number(franja.disponibles || 0);
-      const ocupadas = capacidad - disponibles;
-
-      info.textContent = "";
-
-      resumenFranja.innerHTML = `
-        <span class="info-titulo">Resumen global de la franja horaria</span>
-        <strong>Plazas totales:</strong> ${capacidad}<br>
-        <strong>Plazas ocupadas en esta franja:</strong> ${ocupadas}<br>
-        <strong>Plazas disponibles:</strong> ${disponibles}
-      `;
-    }
-
-    function actualizarAvisoCapacidad() {
-      const aviso = document.getElementById("avisoCapacidad");
-      const boton = document.getElementById("btnGuardar");
-      const franja = obtenerFranjaSeleccionada();
-      const nuevasReservasPendientes = plazasReservadasPendientesActuales();
-
-      if (!solicitudEditable()) return;
-
-      aviso.className = "mensaje";
-      aviso.style.display = "none";
-      aviso.textContent = "";
-
-      if (!franja) {
-        if (!envioEnCurso) boton.disabled = false;
-        return;
-      }
-
-      if (!Number.isInteger(nuevasReservasPendientes) || nuevasReservasPendientes < 0) {
-        aviso.className = "mensaje alerta";
-        aviso.style.display = "block";
-        aviso.textContent = "Debe indicar un número válido de plazas adicionales a reservar.";
-        if (!envioEnCurso) boton.disabled = true;
-        return;
-      }
-
-      const totalBloqueadoNuevo = asistentesCargados + nuevasReservasPendientes;
-      const disponiblesEditables = plazasEditablesEnFranja(franja);
-
-      if (totalBloqueadoNuevo > disponiblesEditables) {
-        aviso.className = "mensaje alerta";
-        aviso.style.display = "block";
-        aviso.textContent = `No hay plazas suficientes. Total bloqueado resultante: ${totalBloqueadoNuevo}. Disponibles para esta modificación: ${disponiblesEditables}.`;
-        if (!envioEnCurso) boton.disabled = true;
-        return;
-      }
-
-      aviso.className = "mensaje aviso";
-      aviso.style.display = "block";
-      aviso.textContent = `Plazas reservadas pendientes actuales: ${plazasReservadasPendientesReserva()}. Plazas asignadas: ${asistentesCargados}. Plazas libres en la franja: ${plazasLibresFranja()}. Nuevas plazas temporales a reservar: ${nuevasReservasPendientes}.`;
-
-      if (!envioEnCurso) boton.disabled = false;
-    }
-
-    function actualizarNotaPrereserva() {
-      const nota = document.getElementById("notaPrereserva");
-      if (!reservaActual) {
-        nota.style.display = "none";
-        return;
-      }
-
-      const expira = formatearFechaHora(reservaActual.prereserva_expira_en);
-      const estado = calcularEstadoVisualActual();
-
-      nota.innerHTML = `
-        <strong>Reserva actual</strong>
-        <br>Plazas reservadas pendientes: <strong>${estado.reservadasPendientes}</strong>
-        <br>Plazas asignadas: <strong>${estado.asignadas}</strong>
-        <br>Plazas libres en la franja: <strong>${estado.libresFranja}</strong>
-        <br>Hora límite de consolidación: <strong>${expira}</strong>
-      `;
-      nota.style.display = "block";
-    }
-
-    async function cargarFranjas(franjaSeleccionadaId = "") {
-      const select = document.getElementById("franja");
-
-      const response = await fetch("/api/franjas");
-      if (!response.ok) throw new Error("No se pudieron cargar las franjas");
-
-      const franjas = await response.json();
-      franjasCache = franjas;
-
-      select.innerHTML = '<option value="">Seleccione una opción</option>';
-
-      franjas.forEach(f => {
-        const option = document.createElement("option");
-        option.value = f.id;
-        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
-        if (String(f.id) === String(franjaSeleccionadaId)) option.selected = true;
-        select.appendChild(option);
-      });
-
-      const existe = franjas.some(f => String(f.id) === String(franjaSeleccionadaId));
-      if (!existe && franjaSeleccionadaId && reservaActual) {
-        const option = document.createElement("option");
-        option.value = reservaActual.franja_id;
-        option.textContent = `${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin} (franja actual de la reserva)`;
-        option.selected = true;
-        select.appendChild(option);
-      }
-
-      actualizarInfoPlazas();
-      actualizarAvisoCapacidad();
-    }
-
-    async function cargarResumenAsistentes() {
+    async function cargarVisitantes() {
       try {
         const response = await fetch(`/api/visitantes?token=${encodeURIComponent(tokenEdicion)}`);
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          if (reservaActual && ["CANCELADA", "RECHAZADA"].includes(reservaActual.estado)) {
-            asistentesCargados = 0;
-            const resumen = document.getElementById("resumenAsistentes");
-            resumen.innerHTML = `
-              <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-              La solicitud no está en estado editable. No se permite gestionar asistentes.
-            `;
-            actualizarNotaPrereserva();
-            return;
-          }
-          throw new Error(data.error || "No se pudo cargar el resumen de asistentes.");
+          visitantesActuales = [];
+          recalcularResumenPantalla();
+          return;
         }
 
-        const alumnos = data.visitantes.filter(v => v.tipo_asistente === "ALUMNO").length;
-        const profesores = data.visitantes.filter(v => v.tipo_asistente === "PROFESOR").length;
-        const mayores = data.visitantes.filter(v => v.categoria_edad === "MAYOR_10").length;
-        const menores = data.visitantes.filter(v => v.categoria_edad === "MENOR_10").length;
-        const total = data.visitantes.length;
-
-        asistentesCargados = total;
-        document.getElementById("campoPlazasAsignadas").textContent = total;
-        document.getElementById("campoPlazasLibresFranja").textContent = plazasLibresFranja();
-
-        const resumen = document.getElementById("resumenAsistentes");
-        resumen.innerHTML = `
-          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-          <strong>Plazas reservadas pendientes:</strong> ${plazasReservadasPendientesReserva()}<br>
-          <strong>Plazas asignadas:</strong> ${total}<br>
-          <strong>Plazas libres en la franja:</strong> ${plazasLibresFranja()}<br>
-          <strong>Alumnos:</strong> ${alumnos}<br>
-          <strong>Profesores:</strong> ${profesores}<br>
-          <strong>Mayores de 10 años:</strong> ${mayores}<br>
-          <strong>Menores de 10 años:</strong> ${menores}
-        `;
-
-        actualizarNotaPrereserva();
-        actualizarAvisoCapacidad();
-      } catch (error) {
-        asistentesCargados = 0;
-        document.getElementById("campoPlazasAsignadas").textContent = "0";
-        const resumen = document.getElementById("resumenAsistentes");
-        resumen.innerHTML = `
-          <span class="info-titulo">Resumen de asistentes de esta reserva</span>
-          No se pudo cargar el resumen de asistentes.
-        `;
+        visitantesActuales = Array.isArray(data.visitantes) ? data.visitantes : [];
+        recalcularResumenPantalla();
+      } catch {
+        visitantesActuales = [];
+        recalcularResumenPantalla();
       }
+    }
+
+    function rellenarFormulario() {
+      if (!reservaActual) return;
+
+      document.getElementById("centro").value = reservaActual.centro || "";
+      document.getElementById("contacto").value = reservaActual.contacto || "";
+      document.getElementById("telefono").value = reservaActual.telefono || "";
+      document.getElementById("email").value = reservaActual.email || "";
+      document.getElementById("observaciones").value = reservaActual.observaciones || "";
+
+      document.getElementById("campoFranjaAsignada").textContent =
+        `${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}`;
+
+      const inputPendientes = document.getElementById("plazasReservadasPendientes");
+      inputPendientes.value = reservadasPendientesOriginales;
+      inputPendientes.min = 0;
+      inputPendientes.max = reservadasPendientesOriginales;
+      inputPendientes.disabled = !solicitudEditable() || reservadasPendientesOriginales === 0;
+
+      document.getElementById("formularioEdicion").style.display = "block";
+      actualizarModoPantalla();
+    }
+
+    function obtenerPendientesEditados() {
+      const input = document.getElementById("plazasReservadasPendientes");
+      let valor = parseInt(input.value || "0", 10);
+      if (!Number.isInteger(valor) || valor < 0) valor = 0;
+      if (valor > reservadasPendientesOriginales) valor = reservadasPendientesOriginales;
+      input.value = valor;
+      return valor;
+    }
+
+    function recalcularResumenPantalla() {
+      if (!reservaActual) return;
+
+      const plazasAsignadas = Number(reservaActual.plazas_asignadas || 0);
+      const pendientesEditados = obtenerPendientesEditados();
+      const capacidadFranja = Number(reservaActual.capacidad || 0);
+      const bloqueoOtrasReservas = Math.max(
+        capacidadFranja
+        - Number(reservaActual.disponibles || 0)
+        - Number(reservaActual.plazas_bloqueadas_actualmente || 0),
+        0
+      );
+
+      const bloqueoActualLocal = plazasAsignadas + pendientesEditados;
+      const disponiblesFranja = Math.max(capacidadFranja - bloqueoOtrasReservas - bloqueoActualLocal, 0);
+
+      const alumnos = visitantesActuales.filter(v => v.tipo_asistente === "ALUMNO").length;
+      const profesores = visitantesActuales.filter(v => v.tipo_asistente === "PROFESOR").length;
+      const mayores = visitantesActuales.filter(v => v.categoria_edad === "MAYOR_10").length;
+      const menores = visitantesActuales.filter(v => v.categoria_edad === "MENOR_10").length;
+
+      const claseEstado = claseEstadoBadge(reservaActual.estado);
+
+      document.getElementById("bloqueReserva").innerHTML = `
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja horaria asignada:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en)}
+      `;
+
+      document.getElementById("bloqueResumen").innerHTML = `
+        <div class="resumen-grid">
+          <div class="resumen-col">
+            <strong>Plazas</strong><br>
+            Reservadas pendientes: ${pendientesEditados}<br>
+            Asignadas: ${plazasAsignadas}<br>
+            Disponibles en la franja: ${disponiblesFranja}
+          </div>
+          <div class="resumen-col">
+            <strong>Desglose</strong><br>
+            Alumnos: ${alumnos}<br>
+            Profesores: ${profesores}<br>
+            Mayores de 10 años: ${mayores}<br>
+            Menores de 10 años: ${menores}
+          </div>
+        </div>
+      `;
+
+      document.getElementById("campoPlazasAsignadas").textContent = plazasAsignadas;
+      document.getElementById("campoPlazasDisponibles").textContent = disponiblesFranja;
+    }
+
+    function actualizarModoPantalla() {
+      const editable = solicitudEditable();
+
+      ["centro", "contacto", "telefono", "email", "observaciones"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !editable;
+      });
+
+      document.getElementById("btnGuardarNav").disabled = !editable || envioEnCurso;
+      document.getElementById("btnGestionarAsistentesNav").classList.toggle("deshabilitado", !editable);
+      document.getElementById("btnRecuperarAccesoNav").disabled = !editable;
+      document.getElementById("btnAnularSolicitudNav").disabled = !editable || anulacionEnCurso;
+
+      recalcularResumenPantalla();
     }
 
     function abrirModalAcceso() {
@@ -871,7 +759,7 @@
 
       const badge = document.getElementById("modalEstadoReserva");
       badge.className = `estado-badge ${claseEstadoBadge(reservaActual.estado)}`;
-      badge.textContent = textoEstadoModal(reservaActual.estado);
+      badge.textContent = reservaActual.estado;
 
       const modal = document.getElementById("modalAcceso");
       modal.classList.add("activo");
@@ -892,9 +780,7 @@
       const texto = `Código de reserva: ${reservaActual.codigo_reserva}
 
 Acceso a su solicitud:
-${enlaceSolicitudActual}
-
-Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
+${enlaceSolicitudActual}`;
 
       try {
         await navigator.clipboard.writeText(texto);
@@ -904,72 +790,12 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
       }
     }
 
-    async function cargarReserva() {
-      const params = new URLSearchParams(window.location.search);
-      tokenEdicion = params.get("token") || "";
+    async function guardarCambios() {
+      if (!solicitudEditable() || envioEnCurso) return;
 
-      if (!tokenEdicion) {
-        mostrarError("Falta el token de edición en la URL.");
-        return;
-      }
+      limpiarMensaje();
 
-      const response = await fetch(`/api/reserva?token=${encodeURIComponent(tokenEdicion)}`);
-      const data = await response.json();
-
-      if (!response.ok || !data.ok) {
-        mostrarError(data.error || "No se pudo recuperar la reserva.");
-        return;
-      }
-
-      reservaActual = data.reserva;
-      asistentesCargados = Number(reservaActual.plazas_asignadas || 0);
-      const claseEstado = claseEstadoBadge(reservaActual.estado);
-
-      document.getElementById("infoReserva").style.display = "block";
-      document.getElementById("infoReserva").innerHTML = `
-        <span class="info-titulo">Resumen de la reserva actual</span>
-        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-        <strong>Franja asignada a esta reserva:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Plazas reservadas pendientes:</strong> ${Number(reservaActual.plazas_reservadas || 0)}<br>
-        <strong>Plazas asignadas:</strong> ${Number(reservaActual.plazas_asignadas || 0)}<br>
-        <strong>Plazas libres en la franja:</strong> ${Number(reservaActual.disponibles || 0)}<br>
-        <strong>Expira:</strong> ${formatearFechaHora(reservaActual.prereserva_expira_en)}
-      `;
-
-      document.getElementById("centro").value = reservaActual.centro || "";
-      document.getElementById("contacto").value = reservaActual.contacto || "";
-      document.getElementById("telefono").value = reservaActual.telefono || "";
-      document.getElementById("email").value = reservaActual.email || "";
-      document.getElementById("plazasReservadas").value = 0;
-      document.getElementById("campoPlazasAsignadas").textContent = Number(reservaActual.plazas_asignadas || 0);
-      document.getElementById("campoPlazasLibresFranja").textContent = Number(reservaActual.disponibles || 0);
-      document.getElementById("observaciones").value = reservaActual.observaciones || "";
-
-      document.getElementById("btnGestionarAsistentes").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;
-
-      await cargarFranjas(reservaActual.franja_id);
-      await cargarResumenAsistentes();
-
-      document.getElementById("formularioEdicion").style.display = "block";
-      actualizarModoEdicion();
-    }
-
-    async function guardarCambios(event) {
-      event.preventDefault();
-
-      if (envioEnCurso || !solicitudEditable()) return;
-
-      limpiarMensajePrincipal();
-
-      const boton = document.getElementById("btnGuardar");
-      const plazasReservadasPendientesNuevas = parseInt(document.getElementById("plazasReservadas").value || "0", 10);
-
-      if (!Number.isInteger(plazasReservadasPendientesNuevas) || plazasReservadasPendientesNuevas < 0) {
-        mostrarError("Debe indicar un número válido de plazas adicionales a reservar.");
-        return;
-      }
+      const pendientesEditados = obtenerPendientesEditados();
 
       const datos = {
         token_edicion: tokenEdicion,
@@ -977,15 +803,14 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         contacto: document.getElementById("contacto").value.trim(),
         telefono: document.getElementById("telefono").value.trim(),
         email: document.getElementById("email").value.trim(),
-        plazas_reservadas: plazasReservadasPendientesNuevas,
-        franja: document.getElementById("franja").value,
+        franja: reservaActual.franja_id,
+        plazas_reservadas: pendientesEditados,
         observaciones: document.getElementById("observaciones").value.trim()
       };
 
       try {
         envioEnCurso = true;
-        boton.disabled = true;
-        boton.textContent = "Guardando...";
+        document.getElementById("btnGuardarNav").disabled = true;
 
         const response = await fetch("/api/reserva-actualizar", {
           method: "POST",
@@ -996,39 +821,34 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         const resultado = await response.json();
 
         if (!response.ok || !resultado.ok) {
-          mostrarError(resultado.error || "No se pudo actualizar la reserva.");
-          await cargarReserva();
+          mostrarMensaje("error", resultado.error || "No se pudo actualizar la solicitud.");
           return;
         }
 
-        mostrarOk(`Datos generales actualizados correctamente. Quedan ${resultado.disponibles_despues} plazas disponibles en la franja seleccionada.`);
+        mostrarMensaje("ok", "Solicitud actualizada correctamente.");
         await cargarReserva();
+        await cargarVisitantes();
+        rellenarFormulario();
+        limpiarCambiosPendientes();
 
       } catch (error) {
         console.error(error);
-        mostrarError("Error de conexión con el servidor.");
+        mostrarMensaje("error", "Error de conexión con el servidor.");
       } finally {
         envioEnCurso = false;
-        boton.disabled = false;
-        boton.textContent = "Guardar datos generales";
-        actualizarModoEdicion();
+        actualizarModoPantalla();
       }
     }
 
     async function anularSolicitud() {
-      if (anulacionEnCurso || !solicitudEditable()) return;
+      if (!solicitudEditable() || anulacionEnCurso) return;
 
       const confirmar = window.confirm("¿Desea anular esta solicitud? La solicitud pasará a estado CANCELADA y liberará sus plazas.");
       if (!confirmar) return;
 
-      limpiarMensajePrincipal();
-
-      const boton = document.getElementById("btnAnularSolicitud");
-
       try {
         anulacionEnCurso = true;
-        boton.disabled = true;
-        boton.textContent = "Anulando...";
+        document.getElementById("btnAnularSolicitudNav").disabled = true;
 
         const response = await fetch("/api/reserva-cancelar", {
           method: "POST",
@@ -1039,52 +859,34 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
         const resultado = await response.json();
 
         if (!response.ok || !resultado.ok) {
-          mostrarError(resultado.error || "No se pudo anular la solicitud.");
+          mostrarMensaje("error", resultado.error || "No se pudo anular la solicitud.");
           return;
         }
 
-        reservaActual = { ...reservaActual, estado: "CANCELADA" };
-        abrirModalCancelada();
+        const modal = document.getElementById("modalCancelada");
+        modal.classList.add("activo");
+        modal.setAttribute("aria-hidden", "false");
 
       } catch (error) {
         console.error(error);
-        mostrarError("Error de conexión con el servidor.");
+        mostrarMensaje("error", "Error de conexión con el servidor.");
       } finally {
         anulacionEnCurso = false;
-        boton.disabled = false;
-        boton.textContent = "Anular solicitud";
+        actualizarModoPantalla();
       }
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      document.getElementById("franja").addEventListener("change", function () {
-        limpiarMensajePrincipal();
-        actualizarInfoPlazas();
-        actualizarAvisoCapacidad();
-      });
-
-      document.getElementById("plazasReservadas").addEventListener("input", function () {
-        limpiarMensajePrincipal();
-        actualizarAvisoCapacidad();
-      });
-
-      document.getElementById("centro").addEventListener("input", limpiarMensajePrincipal);
-      document.getElementById("contacto").addEventListener("input", limpiarMensajePrincipal);
-      document.getElementById("telefono").addEventListener("input", limpiarMensajePrincipal);
-      document.getElementById("email").addEventListener("input", limpiarMensajePrincipal);
-      document.getElementById("observaciones").addEventListener("input", limpiarMensajePrincipal);
-
-      document.getElementById("formularioEdicion").addEventListener("submit", guardarCambios);
-      document.getElementById("btnRecuperarAcceso").addEventListener("click", abrirModalAcceso);
-      document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitud);
+      document.getElementById("btnGuardarNav").addEventListener("click", guardarCambios);
+      document.getElementById("btnRecuperarAccesoNav").addEventListener("click", abrirModalAcceso);
+      document.getElementById("btnAnularSolicitudNav").addEventListener("click", anularSolicitud);
 
       document.getElementById("btnAbrirSolicitud").addEventListener("click", abrirSolicitud);
       document.getElementById("btnCopiarAcceso").addEventListener("click", copiarAcceso);
       document.getElementById("btnCerrarModalAcceso").addEventListener("click", cerrarModalAcceso);
 
       document.getElementById("btnAceptarCancelacion").addEventListener("click", function () {
-        cerrarModalCancelada();
-        volverAInicio();
+        window.location.href = "index.html";
       });
 
       document.getElementById("modalAcceso").addEventListener("click", function (e) {
@@ -1093,17 +895,36 @@ Guarde este enlace para poder modificar la solicitud o gestionar asistentes.`;
 
       document.getElementById("modalCancelada").addEventListener("click", function (e) {
         if (e.target.id === "modalCancelada") {
-          cerrarModalCancelada();
-          volverAInicio();
+          window.location.href = "index.html";
         }
+      });
+
+      ["centro", "contacto", "telefono", "email", "observaciones"].forEach(id => {
+        document.getElementById(id).addEventListener("input", function () {
+          marcarCambiosPendientes();
+        });
+      });
+
+      document.getElementById("plazasReservadasPendientes").addEventListener("input", function () {
+        marcarCambiosPendientes();
+        recalcularResumenPantalla();
+      });
+
+      window.addEventListener("beforeunload", function (e) {
+        if (!hayCambiosPendientes) return;
+        e.preventDefault();
+        e.returnValue = "";
       });
 
       try {
         await cargarConfigEvento();
-        await cargarReserva();
-      } catch (err) {
-        console.error(err);
-        mostrarError("Error al cargar la página de edición.");
+        const ok = await cargarReserva();
+        if (!ok) return;
+        await cargarVisitantes();
+        rellenarFormulario();
+      } catch (error) {
+        console.error(error);
+        mostrarMensaje("error", "Error al cargar la página de edición.");
       }
     });
   </script>
