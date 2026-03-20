@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Usuario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { font-family: Arial; background:#0a1f2f; color:white; padding:20px; }
+button { padding:10px; margin:5px; }
+.card { background:#123; padding:10px; margin:10px 0; border-radius:5px; }
+</style>
+</head>
+
+<body>
+
+<h2>Mis reservas</h2>
+
+<button onclick="nueva()">Nueva reserva</button>
+<button onclick="logout()">Salir</button>
+
+<div id="lista"></div>
+
+<script>
+
+async function cargar() {
+  const res = await fetch("/api/usuario/session", { credentials:"include" });
+  if (res.status === 401) {
+    location.href = "portal.html";
+    return;
+  }
+
+  const r = await fetch("/api/reservas", { credentials:"include" });
+  const data = await r.json();
+
+  const div = document.getElementById("lista");
+  div.innerHTML = "";
+
+  data.forEach(r => {
+    div.innerHTML += `
+      <div class="card">
+        <b>${r.fecha}</b> ${r.hora_inicio}<br>
+        ${r.personas} personas<br>
+        <button onclick="editar('${r.token_edicion}')">Editar</button>
+      </div>
+    `;
+  });
+}
+
+function nueva() {
+  location.href = "index.html";
+}
+
+function editar(token) {
+  location.href = "editar.html?token=" + token;
+}
+
+async function logout() {
+  await fetch("/api/usuario/logout", { method:"POST", credentials:"include" });
+  location.href = "portal.html";
+}
+
+cargar();
+
+</script>
+
+</body>
+</html>
