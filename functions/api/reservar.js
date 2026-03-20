@@ -1,3 +1,5 @@
+import { getUserSession } from "./usuario/_auth.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -125,6 +127,9 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    const sessionUser = await getUserSession(request, env.SECRET_KEY);
+    const usuarioId = sessionUser?.id || null;
+
     const data = await request.json();
 
     const centro = limpiarTexto(data.centro);
@@ -220,9 +225,10 @@ export async function onRequestPost(context) {
         plazas_prereservadas,
         prereserva_expira_en,
         fecha_solicitud,
-        fecha_modificacion
+        fecha_modificacion,
+        usuario_id
       )
-      VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, 0, 0, ?, datetime('now', '+' || ? || ' minutes'), datetime('now'), datetime('now'))
+      VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, 0, 0, ?, datetime('now', '+' || ? || ' minutes'), datetime('now'), datetime('now'), ?)
     `;
 
     const result = await env.DB.prepare(sqlInsert)
@@ -237,7 +243,8 @@ export async function onRequestPost(context) {
         observaciones,
         plazasReservadas,
         plazasReservadas,
-        minutosConsolidacion
+        minutosConsolidacion,
+        usuarioId
       )
       .run();
 
@@ -256,7 +263,8 @@ export async function onRequestPost(context) {
         estado,
         franja_id,
         plazas_prereservadas,
-        prereserva_expira_en
+        prereserva_expira_en,
+        usuario_id
       FROM reservas
       WHERE token_edicion = ?
       LIMIT 1
@@ -278,7 +286,8 @@ export async function onRequestPost(context) {
       plazas_reservadas: plazasReservadas,
       plazas_disponibles_restantes: Math.max(disponibles - plazasReservadas, 0),
       minutos_consolidacion: minutosConsolidacion,
-      prereserva_expira_en: reservaCreada.prereserva_expira_en
+      prereserva_expira_en: reservaCreada.prereserva_expira_en,
+      usuario_id: reservaCreada.usuario_id
     });
   } catch (error) {
     return json(
