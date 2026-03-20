@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Acceso - DIFAS Bautismo de Mar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0a1f2f;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .logo {
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn-user {
+      background: #1e90ff;
+      color: white;
+    }
+
+    .btn-register {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-admin {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <img src="logo.png" class="logo" alt="Logo">
+
+    <h1>DIFAS Bautismo de Mar</h1>
+
+    <button class="btn btn-user" onclick="irLogin()">
+      Entrar como usuario
+    </button>
+
+    <button class="btn btn-register" onclick="irRegistro()">
+      Registrarse
+    </button>
+
+    <button class="btn btn-admin" onclick="irAdmin()">
+      Administrador
+    </button>
+
+  </div>
+
+  <script>
+    function irLogin() {
+      window.location.href = "usuario-login.html";
+    }
+
+    function irRegistro() {
+      window.location.href = "usuario-registro.html";
+    }
+
+    function irAdmin() {
+      window.location.href = "admin-login.html";
+    }
+  </script>
+
+</body>
+</html>
