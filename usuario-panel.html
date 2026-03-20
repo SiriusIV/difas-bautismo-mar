@@ -487,26 +487,23 @@
     }
 
     function pintarResumen(lista) {
-      const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
-      const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
-      const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
-      const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
-      const asignadas = lista.reduce((a, r) => a + Number(r.plazas_asignadas || 0), 0);
+  const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
+  const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
+  const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
+  const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
 
-      document.getElementById("resumenPanel").innerHTML = `
-        <span>Total reservas: ${lista.length}</span>
-        <span>|</span>
-        <span>Pendientes: ${pendientes}</span>
-        <span>|</span>
-        <span>Confirmadas: ${confirmadas}</span>
-        <span>|</span>
-        <span>Rechazadas: ${rechazadas}</span>
-        <span>|</span>
-        <span>Canceladas: ${canceladas}</span>
-        <span>|</span>
-        <span>Plazas asignadas: ${asignadas}</span>
-      `;
-    }
+  document.getElementById("resumenPanel").innerHTML = `
+    <span>Total reservas: ${lista.length}</span>
+    <span>|</span>
+    <span>Pendientes: ${pendientes}</span>
+    <span>|</span>
+    <span>Confirmadas: ${confirmadas}</span>
+    <span>|</span>
+    <span>Rechazadas: ${rechazadas}</span>
+    <span>|</span>
+    <span>Canceladas: ${canceladas}</span>
+  `;
+}
 
     function filtrarReservas(lista) {
       const actividad = document.getElementById("filtroActividad").value.trim().toLowerCase();
@@ -535,10 +532,10 @@
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
-        actualizarBotones();
-        return;
-      }
+  tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+  actualizarBotones();
+  return;
+}
 
       tbody.innerHTML = lista.map(r => `
         <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
@@ -552,7 +549,8 @@
           <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span></td>
           <td class="fecha-col">${r.fecha}<br>${r.hora_inicio} - ${r.hora_fin}</td>
           <td class="plazas-col">
-            Reservadas pendientes: ${r.plazas_reservadas}<br>
+            Reservadas: ${r.plazas_reservadas_historicas}<br>
+            Pendientes: ${r.plazas_pendientes}<br>
             Asignadas: ${r.plazas_asignadas}
           </td>
           <td class="acciones-col">
