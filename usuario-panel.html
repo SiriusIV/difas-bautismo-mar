@@ -13,7 +13,6 @@
       padding: 0;
       color: #222;
     }
-
     .contenedor {
       max-width: 1280px;
       margin: 20px auto;
@@ -22,17 +21,8 @@
       border-radius: 12px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
-
-    h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    h2 {
-      margin: 8px 0 0;
-      font-size: 18px;
-      font-weight: normal;
-    }
+    h1 { margin: 0; font-size: 28px; }
+    h2 { margin: 8px 0 0; font-size: 18px; font-weight: normal; }
 
     .cabecera {
       position: relative;
@@ -41,7 +31,6 @@
       border-bottom: 1px solid #d9e0e7;
       padding-bottom: 16px;
     }
-
     .logo {
       position: absolute;
       left: 0;
@@ -49,19 +38,16 @@
       max-width: 110px;
       height: auto;
     }
-
     .cabecera-centro {
       text-align: center;
-      padding: 0 220px 0 220px;
+      padding: 0 220px;
     }
-
     .subactividad {
       margin-top: 10px;
       font-size: 15px;
       color: #333;
       text-align: center;
     }
-
     .cabecera-acciones {
       position: absolute;
       right: 0;
@@ -85,24 +71,18 @@
       transition: all 0.15s ease;
       padding: 0;
     }
-
     .btn-icono:hover {
       background: #f7f9fb;
       color: #0b5ed7;
       border-color: #9fb2c7;
     }
-
     .btn-icono:disabled {
       opacity: 0.45;
       cursor: not-allowed;
       color: #8a98a8;
       background: #f8fafc;
     }
-
-    .btn-icono svg {
-      width: 18px;
-      height: 18px;
-    }
+    .btn-icono svg { width: 18px; height: 18px; }
 
     .bloque {
       background: #f7f9fb;
@@ -111,7 +91,6 @@
       padding: 16px;
       margin-bottom: 18px;
     }
-
     .bloque h3 {
       margin-top: 0;
       margin-bottom: 14px;
@@ -130,7 +109,6 @@
       font-weight: bold;
       margin-bottom: 6px;
     }
-
     input[type="text"],
     input[type="date"],
     select {
@@ -141,22 +119,6 @@
       border-radius: 6px;
       font-size: 15px;
       background: #fff;
-    }
-
-    .resumen-linea {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .resumen {
-      font-weight: bold;
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
     }
 
     .btn-icono-filtro {
@@ -173,39 +135,49 @@
       transition: all 0.15s ease;
       padding: 0;
     }
-
     .btn-icono-filtro:hover {
       background: #094db1;
       border-color: #094db1;
     }
-
     .btn-icono-filtro.secundario {
       background: #6c757d;
       border-color: #6c757d;
     }
-
     .btn-icono-filtro.secundario:hover {
       background: #565e64;
       border-color: #565e64;
     }
+    .btn-icono-filtro svg { width: 18px; height: 18px; }
 
-    .btn-icono-filtro svg {
-      width: 18px;
-      height: 18px;
+    .resumen-linea {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .resumen {
+      font-weight: bold;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .acciones-superiores {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
-    .tabla-wrap {
-      overflow-x: auto;
-    }
-
+    .tabla-wrap { overflow-x: auto; }
     table {
       width: 100%;
-      min-width: 1220px;
+      min-width: 1080px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
     }
-
     th, td {
       border-bottom: 1px solid #dde4ea;
       padding: 10px 8px;
@@ -214,56 +186,19 @@
       word-wrap: break-word;
       line-height: 1.25;
     }
-
     th {
       background: #eef4ff;
       color: #1d4f91;
       font-weight: bold;
     }
 
-    th.sel-col, td.sel-col {
-      width: 34px;
-      min-width: 34px;
-      max-width: 34px;
-      text-align: center;
-    }
-
-    th.obs-col, td.obs-col {
-      width: 30px;
-      min-width: 30px;
-      max-width: 30px;
-      text-align: center;
-    }
-
-    th.codigo-col, td.codigo-col {
-      width: 190px;
-      min-width: 190px;
-    }
-
-    th.actividad-col, td.actividad-col {
-      width: 170px;
-      min-width: 170px;
-    }
-
-    th.estado-col, td.estado-col {
-      width: 120px;
-      min-width: 120px;
-    }
-
-    th.fecha-col, td.fecha-col {
-      width: 190px;
-      min-width: 190px;
-    }
-
-    th.plazas-col, td.plazas-col {
-      width: 220px;
-      min-width: 220px;
-    }
-
-    th.acciones-col, td.acciones-col {
-      width: 150px;
-      min-width: 150px;
-    }
+    th.sel-col, td.sel-col { width: 34px; text-align: center; }
+    th.obs-col, td.obs-col { width: 30px; text-align: center; }
+    th.codigo-col, td.codigo-col { width: 210px; }
+    th.actividad-col, td.actividad-col { width: 170px; }
+    th.estado-col, td.estado-col { width: 120px; }
+    th.fecha-col, td.fecha-col { width: 190px; }
+    th.plazas-col, td.plazas-col { width: 240px; }
 
     .estado-badge {
       display: inline-block;
@@ -274,19 +209,13 @@
       color: #fff;
       white-space: nowrap;
     }
-
     .estado-badge.pendiente { background: #d39e00; }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
 
-    .fila-seleccionada {
-      background: #f2f7ff;
-    }
-
-    .muted {
-      color: #6b7280;
-    }
+    .fila-seleccionada { background: #f2f7ff; }
+    .muted { color: #6b7280; }
 
     .mensaje {
       margin-bottom: 14px;
@@ -294,7 +223,6 @@
       border-radius: 6px;
       display: none;
     }
-
     .mensaje.error {
       display: block;
       background: #fdeaea;
@@ -302,22 +230,12 @@
       border: 1px solid #f5c2c2;
     }
 
-    .mensaje.ok {
-      display: block;
-      background: #eaf7ea;
-      color: #146c2e;
-      border: 1px solid #b9e0c0;
-    }
-
     .codigo {
       font-weight: bold;
       white-space: nowrap;
       color: #111;
     }
-
-    .codigo.con-observaciones {
-      color: #c62828;
-    }
+    .codigo.con-observaciones { color: #c62828; }
 
     .icono-observacion {
       display: inline-flex;
@@ -330,21 +248,10 @@
       border: none;
       padding: 0;
     }
-
     .icono-observacion svg {
       width: 16px;
       height: 16px;
       display: block;
-    }
-
-    .icono-observacion:hover {
-      transform: scale(1.08);
-    }
-
-    .acciones-redondas {
-      display: flex;
-      gap: 8px;
-      align-items: center;
     }
 
     .modal-fondo {
@@ -357,11 +264,7 @@
       padding: 20px;
       z-index: 9999;
     }
-
-    .modal-fondo.activo {
-      display: flex;
-    }
-
+    .modal-fondo.activo { display: flex; }
     .modal {
       background: #fff;
       width: 100%;
@@ -370,13 +273,11 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
     }
-
     .modal h3 {
       margin-top: 0;
       margin-bottom: 14px;
       font-size: 24px;
     }
-
     .modal-contenido {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
@@ -387,37 +288,20 @@
       word-break: break-word;
     }
 
-    .modal-acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
     @media (max-width: 1200px) {
-      .filtros {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .cabecera-centro {
-        padding: 120px 0 0 0;
-      }
-
+      .filtros { grid-template-columns: 1fr 1fr; }
+      .cabecera-centro { padding: 120px 0 0 0; }
       .logo {
         position: static;
         display: block;
         margin: 0 auto 12px auto;
       }
-
       .cabecera-acciones {
         position: static;
         justify-content: center;
         margin-top: 14px;
       }
-
-      .cabecera {
-        min-height: auto;
-      }
+      .cabecera { min-height: auto; }
     }
   </style>
 </head>
@@ -433,33 +317,10 @@
       </div>
 
       <div class="cabecera-acciones">
-        <button type="button" class="btn-icono" id="btnNueva" title="Nueva solicitud">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-
-        <button type="button" class="btn-icono" id="btnEditar" title="Editar" disabled>
+        <button type="button" class="btn-icono" id="btnRecargar" title="Recargar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-          </svg>
-        </button>
-
-        <button type="button" class="btn-icono" id="btnAsistentes" title="Asistentes" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </button>
-
-        <button type="button" class="btn-icono" id="btnNotificaciones" title="Notificaciones">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+            <polyline points="21 3 21 9 15 9"></polyline>
           </svg>
         </button>
 
@@ -525,6 +386,38 @@
     <div class="bloque">
       <div class="resumen-linea">
         <div class="resumen" id="resumenPanel"></div>
+
+        <div class="acciones-superiores">
+          <button type="button" class="btn-icono" id="btnNueva" title="Nueva solicitud">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="btn-icono" id="btnEditar" title="Editar" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="btn-icono" id="btnAsistentes" title="Asistentes" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="btn-icono" id="btnNotificaciones" title="Notificaciones" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="tabla-wrap">
@@ -538,7 +431,6 @@
               <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha / franja</th>
               <th class="plazas-col">Plazas</th>
-              <th class="acciones-col">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyReservas"></tbody>
@@ -551,14 +443,6 @@
     <div class="modal">
       <h3 id="modalObservacionesTitulo">Observaciones</h3>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
-      <div class="modal-acciones">
-        <button type="button" class="btn-icono" id="btnCerrarModalObservaciones" title="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
     </div>
   </div>
 
@@ -623,6 +507,7 @@
       const hay = !!reservaSeleccionada;
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnAsistentes").disabled = !hay;
+      document.getElementById("btnNotificaciones").disabled = !hay;
     }
 
     function seleccionarReserva(id) {
@@ -656,7 +541,7 @@
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
         actualizarBotones();
         return;
       }
@@ -692,24 +577,6 @@
               Reservadas: ${r.plazas_reservadas_historicas}<br>
               Pendientes: ${r.plazas_pendientes}<br>
               Asignadas: ${r.plazas_asignadas}
-            </td>
-            <td class="acciones-col">
-              <div class="acciones-redondas">
-                <button type="button" class="btn-icono" title="Editar" onclick="editarReserva('${r.token_edicion}')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-                  </svg>
-                </button>
-                <button type="button" class="btn-icono" title="Asistentes" onclick="abrirAsistentes('${r.token_edicion}')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                </button>
-              </div>
             </td>
           </tr>
         `;
@@ -783,6 +650,7 @@
     document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
     document.getElementById("btnNueva").addEventListener("click", nuevaReserva);
+    document.getElementById("btnRecargar").addEventListener("click", cargarPanel);
     document.getElementById("btnSalir").addEventListener("click", salir);
     document.getElementById("btnNotificaciones").addEventListener("click", abrirNotificaciones);
     document.getElementById("btnEditar").addEventListener("click", () => {
@@ -792,14 +660,11 @@
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
 
-    document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
     });
 
     window.seleccionarReserva = seleccionarReserva;
-    window.editarReserva = editarReserva;
-    window.abrirAsistentes = abrirAsistentes;
     window.abrirModalObservaciones = abrirModalObservaciones;
 
     cargarPanel();
