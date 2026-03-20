@@ -1,109 +1,644 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Panel usuario</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Panel de usuario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-body { font-family: Arial; margin:0; background:#f4f6f8; }
-.header { padding:15px; background:#fff; border-bottom:1px solid #ccc; display:flex; justify-content:space-between; align-items:center; }
-.container { padding:20px; }
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
 
-table { width:100%; border-collapse:collapse; background:#fff; }
-th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
-th { background:#eef2f7; }
+    .contenedor {
+      max-width: 1280px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
 
-button { padding:6px 10px; margin:2px; cursor:pointer; }
-.actions button { font-size:12px; }
-</style>
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    h2 {
+      margin: 8px 0 0;
+      font-size: 18px;
+      font-weight: normal;
+    }
+
+    .cabecera {
+      position: relative;
+      min-height: 150px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #d9e0e7;
+      padding-bottom: 16px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      top: 0;
+      max-width: 110px;
+      height: auto;
+    }
+
+    .cabecera-centro {
+      text-align: center;
+      padding: 0 220px 0 220px;
+    }
+
+    .subactividad {
+      margin-top: 10px;
+      font-size: 15px;
+      color: #333;
+      text-align: center;
+    }
+
+    .cabecera-acciones {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-icono {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      color: #8a98a8;
+      background: #f8fafc;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .bloque {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .bloque h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 16px;
+    }
+
+    .filtros {
+      display: grid;
+      grid-template-columns: 180px 180px 220px 1fr auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    .resumen-linea {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .resumen {
+      font-weight: bold;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .acciones-superiores {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-icono-filtro {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #0b5ed7;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono-filtro:hover {
+      background: #094db1;
+      border-color: #094db1;
+    }
+
+    .btn-icono-filtro.secundario {
+      background: #6c757d;
+      border-color: #6c757d;
+    }
+
+    .btn-icono-filtro.secundario:hover {
+      background: #565e64;
+      border-color: #565e64;
+    }
+
+    .btn-icono-filtro svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .tabla-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1150px;
+      border-collapse: collapse;
+      background: #fff;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border-bottom: 1px solid #dde4ea;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word;
+      line-height: 1.25;
+    }
+
+    th {
+      background: #eef4ff;
+      color: #1d4f91;
+      font-weight: bold;
+    }
+
+    th.sel-col, td.sel-col {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+    }
+
+    th.actividad-col, td.actividad-col {
+      width: 180px;
+      min-width: 180px;
+    }
+
+    th.estado-col, td.estado-col {
+      width: 120px;
+      min-width: 120px;
+    }
+
+    th.fecha-col, td.fecha-col {
+      width: 190px;
+      min-width: 190px;
+    }
+
+    th.plazas-col, td.plazas-col {
+      width: 220px;
+      min-width: 220px;
+    }
+
+    th.codigo-col, td.codigo-col {
+      width: 180px;
+      min-width: 180px;
+    }
+
+    th.acciones-col, td.acciones-col {
+      width: 150px;
+      min-width: 150px;
+    }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.confirmada { background: #198754; }
+    .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.cancelada { background: #6c757d; }
+
+    .fila-seleccionada {
+      background: #f2f7ff;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    .mensaje {
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    @media (max-width: 1200px) {
+      .filtros {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .cabecera-centro {
+        padding: 120px 0 0 0;
+      }
+
+      .logo {
+        position: static;
+        display: block;
+        margin: 0 auto 12px auto;
+      }
+
+      .cabecera-acciones {
+        position: static;
+        justify-content: center;
+        margin-top: 14px;
+      }
+
+      .cabecera {
+        min-height: auto;
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <img src="logo.png" alt="Logo Armada" class="logo">
 
-<div class="header">
-  <div><b>Mis reservas</b></div>
-  <div>
-    <button onclick="nueva()">Nueva</button>
-    <button onclick="logout()">Salir</button>
+      <div class="cabecera-centro">
+        <h1 id="tituloEvento">DIFAS 2026</h1>
+        <h2>Panel de usuario</h2>
+        <div class="subactividad">Mis reservas</div>
+      </div>
+
+      <div class="cabecera-acciones">
+        <button type="button" class="btn-icono" id="btnNueva" title="Nueva solicitud">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+
+        <button type="button" class="btn-icono" id="btnEditar" title="Editar" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+          </svg>
+        </button>
+
+        <button type="button" class="btn-icono" id="btnAsistentes" title="Asistentes" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </button>
+
+        <button type="button" class="btn-icono" id="btnSalir" title="Salir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="mensaje" class="mensaje"></div>
+
+    <div class="bloque">
+      <h3>Filtros</h3>
+      <div class="filtros">
+        <div>
+          <label for="filtroActividad">Actividad</label>
+          <input type="text" id="filtroActividad" placeholder="Actividad">
+        </div>
+
+        <div>
+          <label for="filtroEstado">Estado</label>
+          <select id="filtroEstado">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="RECHAZADA">Rechazada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filtroFecha">Fecha</label>
+          <input type="date" id="filtroFecha">
+        </div>
+
+        <div>
+          <label for="filtroBuscar">Buscar</label>
+          <input type="text" id="filtroBuscar" placeholder="Código o franja">
+        </div>
+
+        <button type="button" class="btn-icono-filtro" id="btnAplicarFiltros" title="Aplicar filtros">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <polygon points="3 4 21 4 14 12 14 19 10 17 10 12 3 4"></polygon>
+          </svg>
+        </button>
+
+        <button type="button" class="btn-icono-filtro secundario" id="btnLimpiarFiltros" title="Limpiar filtros">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14H6L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+            <path d="M9 6V4h6v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <div class="resumen-linea">
+        <div class="resumen" id="resumenPanel"></div>
+      </div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sel-col"></th>
+              <th class="codigo-col">Código</th>
+              <th class="actividad-col">Actividad</th>
+              <th class="estado-col">Estado</th>
+              <th class="fecha-col">Fecha / franja</th>
+              <th class="plazas-col">Plazas</th>
+              <th class="acciones-col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyReservas"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="container">
+  <script>
+    let reservasActuales = [];
+    let reservaSeleccionada = null;
 
-<table>
-<thead>
-<tr>
-  <th></th>
-  <th>Actividad</th>
-  <th>Estado</th>
-  <th>Fecha / franja</th>
-  <th>Plazas</th>
-  <th>Acciones</th>
-</tr>
-</thead>
+    function claseEstado(estado) {
+      const e = String(estado || "").toLowerCase();
+      if (e === "pendiente") return "pendiente";
+      if (e === "confirmada") return "confirmada";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
 
-<tbody id="tabla"></tbody>
-</table>
+    function mostrarMensaje(tipo, texto) {
+      const m = document.getElementById("mensaje");
+      m.className = "mensaje " + tipo;
+      m.style.display = "block";
+      m.textContent = texto;
+    }
 
-</div>
+    function seleccionarReserva(id) {
+      reservaSeleccionada = reservasActuales.find(r => Number(r.id) === Number(id)) || null;
+      pintarReservas(filtrarReservas(reservasActuales));
+      actualizarBotones();
+    }
 
-<script>
+    function actualizarBotones() {
+      const hay = !!reservaSeleccionada;
+      document.getElementById("btnEditar").disabled = !hay;
+      document.getElementById("btnAsistentes").disabled = !hay;
+    }
 
-async function cargar() {
-  const res = await fetch("/api/usuario/reservas", {
-    credentials: "include"
-  });
+    function pintarResumen(lista) {
+      const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
+      const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
+      const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
+      const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
+      const asignadas = lista.reduce((a, r) => a + Number(r.plazas_asignadas || 0), 0);
 
-  if (res.status === 401) {
-    location.href = "portal.html";
-    return;
-  }
+      document.getElementById("resumenPanel").innerHTML = `
+        <span>Total reservas: ${lista.length}</span>
+        <span>|</span>
+        <span>Pendientes: ${pendientes}</span>
+        <span>|</span>
+        <span>Confirmadas: ${confirmadas}</span>
+        <span>|</span>
+        <span>Rechazadas: ${rechazadas}</span>
+        <span>|</span>
+        <span>Canceladas: ${canceladas}</span>
+        <span>|</span>
+        <span>Plazas asignadas: ${asignadas}</span>
+      `;
+    }
 
-  const data = await res.json();
-  const tbody = document.getElementById("tabla");
-  tbody.innerHTML = "";
+    function filtrarReservas(lista) {
+      const actividad = document.getElementById("filtroActividad").value.trim().toLowerCase();
+      const estado = document.getElementById("filtroEstado").value.trim().toUpperCase();
+      const fecha = document.getElementById("filtroFecha").value.trim();
+      const buscar = document.getElementById("filtroBuscar").value.trim().toLowerCase();
 
-  data.data.forEach(r => {
-    tbody.innerHTML += `
-      <tr>
-        <td><input type="checkbox"></td>
-        <td>${r.actividad}</td>
-        <td>${r.estado}</td>
-        <td>${r.fecha} ${r.hora_inicio}-${r.hora_fin}</td>
-        <td>
-          Asignadas: ${r.plazas_asignadas}<br>
-          Pendientes: ${r.plazas_reservadas}
-        </td>
-        <td class="actions">
-          <button onclick="editar('${r.token_edicion}')">✏️</button>
-          <button onclick="asistentes('${r.token_edicion}')">👥</button>
-        </td>
-      </tr>
-    `;
-  });
-}
+      return lista.filter(r => {
+        if (actividad && !String(r.actividad || "").toLowerCase().includes(actividad)) return false;
+        if (estado && String(r.estado || "").toUpperCase() !== estado) return false;
+        if (fecha && String(r.fecha || "") !== fecha) return false;
+        if (buscar) {
+          const texto = `${r.codigo_reserva} ${r.fecha} ${r.hora_inicio} ${r.hora_fin}`.toLowerCase();
+          if (!texto.includes(buscar)) return false;
+        }
+        return true;
+      });
+    }
 
-function nueva() {
-  location.href = "/";
-}
+    function pintarReservas(lista) {
+      const tbody = document.getElementById("tbodyReservas");
 
-function editar(token) {
-  location.href = "editar.html?token=" + token;
-}
+      if (reservaSeleccionada) {
+        const sigue = lista.find(r => Number(r.id) === Number(reservaSeleccionada.id));
+        reservaSeleccionada = sigue || null;
+      }
 
-function asistentes(token) {
-  location.href = "asistentes.html?token=" + token;
-}
+      if (!lista.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        actualizarBotones();
+        return;
+      }
 
-async function logout() {
-  await fetch("/api/usuario/logout", { method:"POST", credentials:"include" });
-  location.href = "portal.html";
-}
+      tbody.innerHTML = lista.map(r => `
+        <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
+          <td class="sel-col">
+            <input type="radio" name="seleccionReserva"
+              ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
+              onchange="seleccionarReserva(${r.id})">
+          </td>
+          <td class="codigo-col">${r.codigo_reserva}</td>
+          <td class="actividad-col">${r.actividad || ''}</td>
+          <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span></td>
+          <td class="fecha-col">${r.fecha}<br>${r.hora_inicio} - ${r.hora_fin}</td>
+          <td class="plazas-col">
+            Reservadas pendientes: ${r.plazas_reservadas}<br>
+            Asignadas: ${r.plazas_asignadas}
+          </td>
+          <td class="acciones-col">
+            <button onclick="editarReserva('${r.token_edicion}')">✏️</button>
+            <button onclick="abrirAsistentes('${r.token_edicion}')">👥</button>
+          </td>
+        </tr>
+      `).join("");
 
-cargar();
+      actualizarBotones();
+    }
 
-</script>
+    async function cargarPanel() {
+      const res = await fetch("/api/usuario/reservas", {
+        credentials: "include"
+      });
 
+      if (res.status === 401) {
+        location.href = "portal.html";
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        mostrarMensaje("error", data.error || "No se pudieron cargar las reservas.");
+        return;
+      }
+
+      reservasActuales = Array.isArray(data.data) ? data.data : [];
+      const filtradas = filtrarReservas(reservasActuales);
+      pintarResumen(filtradas);
+      pintarReservas(filtradas);
+    }
+
+    function aplicarFiltros() {
+      const filtradas = filtrarReservas(reservasActuales);
+      reservaSeleccionada = null;
+      pintarResumen(filtradas);
+      pintarReservas(filtradas);
+    }
+
+    function limpiarFiltros() {
+      document.getElementById("filtroActividad").value = "";
+      document.getElementById("filtroEstado").value = "";
+      document.getElementById("filtroFecha").value = "";
+      document.getElementById("filtroBuscar").value = "";
+      aplicarFiltros();
+    }
+
+    function editarReserva(token) {
+      location.href = "editar.html?token=" + encodeURIComponent(token);
+    }
+
+    function abrirAsistentes(token) {
+      location.href = "asistentes.html?token=" + encodeURIComponent(token);
+    }
+
+    function nuevaReserva() {
+      location.href = "/";
+    }
+
+    async function salir() {
+      await fetch("/api/usuario/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      location.href = "portal.html";
+    }
+
+    document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
+    document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
+    document.getElementById("btnNueva").addEventListener("click", nuevaReserva);
+    document.getElementById("btnSalir").addEventListener("click", salir);
+    document.getElementById("btnEditar").addEventListener("click", () => {
+      if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
+    });
+    document.getElementById("btnAsistentes").addEventListener("click", () => {
+      if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
+    });
+
+    window.seleccionarReserva = seleccionarReserva;
+    window.editarReserva = editarReserva;
+    window.abrirAsistentes = abrirAsistentes;
+
+    cargarPanel();
+  </script>
 </body>
 </html>
