@@ -2,57 +2,98 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Panel Usuario</title>
+<title>Panel usuario</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial; background:#0a1f2f; color:white; padding:20px; }
-button { padding:10px; margin:5px; }
-.card { background:#123; padding:10px; margin:10px 0; border-radius:5px; }
+body { font-family: Arial; margin:0; background:#f4f6f8; }
+.header { padding:15px; background:#fff; border-bottom:1px solid #ccc; display:flex; justify-content:space-between; align-items:center; }
+.container { padding:20px; }
+
+table { width:100%; border-collapse:collapse; background:#fff; }
+th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+th { background:#eef2f7; }
+
+button { padding:6px 10px; margin:2px; cursor:pointer; }
+.actions button { font-size:12px; }
 </style>
 </head>
 
 <body>
 
-<h2>Mis reservas</h2>
+<div class="header">
+  <div><b>Mis reservas</b></div>
+  <div>
+    <button onclick="nueva()">Nueva</button>
+    <button onclick="logout()">Salir</button>
+  </div>
+</div>
 
-<button onclick="nueva()">Nueva reserva</button>
-<button onclick="logout()">Salir</button>
+<div class="container">
 
-<div id="lista"></div>
+<table>
+<thead>
+<tr>
+  <th></th>
+  <th>Actividad</th>
+  <th>Estado</th>
+  <th>Fecha / franja</th>
+  <th>Plazas</th>
+  <th>Acciones</th>
+</tr>
+</thead>
+
+<tbody id="tabla"></tbody>
+</table>
+
+</div>
 
 <script>
 
 async function cargar() {
-  const res = await fetch("/api/usuario/session", { credentials:"include" });
+  const res = await fetch("/api/usuario/reservas", {
+    credentials: "include"
+  });
+
   if (res.status === 401) {
     location.href = "portal.html";
     return;
   }
 
-  const r = await fetch("/api/reservas", { credentials:"include" });
-  const data = await r.json();
+  const data = await res.json();
+  const tbody = document.getElementById("tabla");
+  tbody.innerHTML = "";
 
-  const div = document.getElementById("lista");
-  div.innerHTML = "";
-
-  data.forEach(r => {
-    div.innerHTML += `
-      <div class="card">
-        <b>${r.fecha}</b> ${r.hora_inicio}<br>
-        ${r.personas} personas<br>
-        <button onclick="editar('${r.token_edicion}')">Editar</button>
-      </div>
+  data.data.forEach(r => {
+    tbody.innerHTML += `
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>${r.actividad}</td>
+        <td>${r.estado}</td>
+        <td>${r.fecha} ${r.hora_inicio}-${r.hora_fin}</td>
+        <td>
+          Asignadas: ${r.plazas_asignadas}<br>
+          Pendientes: ${r.plazas_reservadas}
+        </td>
+        <td class="actions">
+          <button onclick="editar('${r.token_edicion}')">✏️</button>
+          <button onclick="asistentes('${r.token_edicion}')">👥</button>
+        </td>
+      </tr>
     `;
   });
 }
 
 function nueva() {
-  location.href = "index.html";
+  location.href = "/";
 }
 
 function editar(token) {
   location.href = "editar.html?token=" + token;
+}
+
+function asistentes(token) {
+  location.href = "asistentes.html?token=" + token;
 }
 
 async function logout() {
