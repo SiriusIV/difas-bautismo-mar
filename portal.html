@@ -1,104 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Acceso - DIFAS Bautismo de Mar</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Portal actividades</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0a1f2f;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #f4f6f8;
+  margin: 0;
+}
 
-    .container {
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-    }
+.header {
+  background: #fff;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 
-    .logo {
-      width: 100%;
-      max-width: 300px;
-      margin-bottom: 20px;
-    }
+.logo {
+  height: 50px;
+}
 
-    h1 {
-      margin-bottom: 30px;
-    }
+.btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #0b5ed7;
+  color: #fff;
+}
 
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+.grid {
+  max-width: 1200px;
+  margin: 30px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
 
-    .btn-user {
-      background: #1e90ff;
-      color: white;
-    }
+.card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+}
 
-    .btn-register {
-      background: #28a745;
-      color: white;
-    }
+.card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
 
-    .btn-admin {
-      background: #6c757d;
-      color: white;
-    }
+.card-body {
+  padding: 14px;
+  flex: 1;
+}
 
-    .btn:hover {
-      opacity: 0.9;
-    }
-  </style>
+.card h3 {
+  margin: 0 0 8px;
+}
+
+.card p {
+  font-size: 14px;
+  color: #555;
+}
+
+.card-actions {
+  padding: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+</style>
 </head>
 
 <body>
-  <div class="container">
 
-    <img src="logo.png" class="logo" alt="Logo">
-
-    <h1>DIFAS Bautismo de Mar</h1>
-
-    <button class="btn btn-user" onclick="irLogin()">
-      Entrar como usuario
-    </button>
-
-    <button class="btn btn-register" onclick="irRegistro()">
-      Registrarse
-    </button>
-
-    <button class="btn btn-admin" onclick="irAdmin()">
-      Administrador
-    </button>
-
+<div class="header">
+  <img src="logo.png" class="logo">
+  <div>
+    <button class="btn" onclick="irLogin()">Acceder</button>
   </div>
+</div>
 
-  <script>
-    function irLogin() {
-      window.location.href = "usuario-login.html";
-    }
+<div class="grid" id="gridActividades"></div>
 
-    function irRegistro() {
-      window.location.href = "usuario-registro.html";
-    }
+<script>
+async function cargarActividades() {
+  const res = await fetch("/api/actividades");
+  const data = await res.json();
 
-    function irAdmin() {
-      window.location.href = "admin-login.html";
-    }
-  </script>
+  if (!data.ok) {
+    alert("Error cargando actividades");
+    return;
+  }
+
+  const grid = document.getElementById("gridActividades");
+
+  grid.innerHTML = data.actividades.map(a => `
+    <div class="card">
+      <img src="${a.imagen_url || 'logo.png'}">
+      <div class="card-body">
+        <h3>${a.titulo_publico || a.nombre}</h3>
+        <p>${a.descripcion_corta || ''}</p>
+      </div>
+      <div class="card-actions">
+        <button class="btn" onclick="verActividad(${a.id})">Más info</button>
+        <button class="btn" onclick="irLogin()">Solicitar</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function irLogin() {
+  location.href = "login.html";
+}
+
+function verActividad(id) {
+  alert("Pendiente modal de detalle actividad " + id);
+}
+
+cargarActividades();
+</script>
 
 </body>
 </html>
