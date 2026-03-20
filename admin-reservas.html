@@ -727,6 +727,12 @@
     let reservasActuales = [];
     let reservaObservacionesActiva = null;
 
+    function actividadIdDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      const v = parseInt(params.get("actividad_id") || "", 10);
+      return Number.isInteger(v) && v > 0 ? v : "";
+    }
+    
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensaje");
       m.className = "mensaje " + tipo;
@@ -755,7 +761,8 @@
         fecha: document.getElementById("filtroFecha").value || "",
         franja: document.getElementById("filtroFranja").value || "",
         estado: document.getElementById("filtroEstado").value || "",
-        buscar: document.getElementById("filtroBuscar").value.trim()
+        buscar: document.getElementById("filtroBuscar").value.trim(),
+        actividad_id: actividadIdDesdeURL()
       };
     }
 
@@ -765,6 +772,7 @@
       if (filtros.franja) params.set("franja", filtros.franja);
       if (filtros.estado) params.set("estado", filtros.estado);
       if (filtros.buscar) params.set("buscar", filtros.buscar);
+      if (filtros.actividad_id) params.set("actividad_id", filtros.actividad_id);
       return params.toString();
     }
 
