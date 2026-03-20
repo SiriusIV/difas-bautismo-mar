@@ -48,6 +48,7 @@ export async function onRequestGet(context) {
         r.codigo_reserva,
         r.estado,
         r.token_edicion,
+        r.observaciones,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
         f.fecha,
@@ -73,6 +74,7 @@ export async function onRequestGet(context) {
   codigo_reserva: row.codigo_reserva,
   estado: row.estado,
   token_edicion: row.token_edicion || "",
+  observaciones: row.observaciones || "",    
   actividad: row.actividad || "Actividad",
   fecha: row.fecha,
   hora_inicio: row.hora_inicio,
@@ -80,6 +82,7 @@ export async function onRequestGet(context) {
   plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
   plazas_pendientes: calcularPlazasReservadasPendientes(row),
   plazas_asignadas: calcularPlazasAsignadas(row)
+  
 }));
 
     return json({ ok: true, data });
