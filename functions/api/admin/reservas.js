@@ -43,21 +43,14 @@ function calcularPlazasReservadasPendientes(row) {
     }
   }
 
-  if (!estadoBloqueaPlazas(row.estado)) {
-    return 0;
-  }
-
-  if (!vigente) {
-    return 0;
-  }
+  if (!estadoBloqueaPlazas(row.estado)) return 0;
+  if (!vigente) return 0;
 
   return Math.max(pre - asistentes, 0);
 }
 
 function calcularPlazasAsignadas(row) {
-  if (!estadoBloqueaPlazas(row.estado)) {
-    return 0;
-  }
+  if (!estadoBloqueaPlazas(row.estado)) return 0;
   return Number(row.asistentes_cargados || 0);
 }
 
@@ -75,6 +68,11 @@ async function obtenerReservas(env, filtros) {
     binds.push(filtros.franjaId);
   }
 
+  if (filtros.actividadId) {
+    where.push("r.actividad_id = ?");
+    binds.push(filtros.actividadId);
+  }
+
   if (filtros.estado) {
     where.push("r.estado = ?");
     binds.push(filtros.estado);
@@ -88,16 +86,18 @@ async function obtenerReservas(env, filtros) {
         OR r.contacto LIKE ?
         OR r.email LIKE ?
         OR r.telefono LIKE ?
+        OR COALESCE(a.nombre, '') LIKE ?
       )
     `);
     const q = likeValue(filtros.buscar);
-    binds.push(q, q, q, q, q);
+    binds.push(q, q, q, q, q, q);
   }
 
   const sql = `
     SELECT
       r.id,
       r.franja_id,
+      r.actividad_id,
       r.codigo_reserva,
       r.token_edicion,
       r.estado,
@@ -115,6 +115,8 @@ async function obtenerReservas(env, filtros) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+
+      COALESCE(a.nombre, 'Actividad') AS actividad_nombre,
 
       COALESCE((
         SELECT COUNT(*)
@@ -139,6 +141,8 @@ async function obtenerReservas(env, filtros) {
     FROM reservas r
     INNER JOIN franjas f
       ON f.id = r.franja_id
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
     ORDER BY
       f.fecha ASC,
@@ -156,8 +160,7 @@ function resumirReservas(rows) {
     pendientes: 0,
     confirmadas: 0,
     rechazadas: 0,
-    canceladas: 0,
-    plazas_asignadas: 0
+    canceladas: 0
   };
 
   for (const row of rows) {
@@ -167,24 +170,31 @@ function resumirReservas(rows) {
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
     if (estado === "CANCELADA") resumen.canceladas += 1;
-
-    resumen.plazas_asignadas += calcularPlazasAsignadas(row);
   }
 
   return resumen;
 }
 
-async function obtenerFranjas(env) {
-  const result = await env.DB.prepare(`
+async function obtenerFranjas(env, actividadId = null) {
+  let sql = `
     SELECT
       id,
       fecha,
       hora_inicio,
-      hora_fin
+      hora_fin,
+      actividad_id
     FROM franjas
-    ORDER BY fecha ASC, hora_inicio ASC
-  `).all();
+  `;
+  const binds = [];
 
+  if (actividadId) {
+    sql += ` WHERE actividad_id = ?`;
+    binds.push(actividadId);
+  }
+
+  sql += ` ORDER BY fecha ASC, hora_inicio ASC`;
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
   return result.results || [];
 }
 
@@ -200,6 +210,10 @@ export async function onRequestGet(context) {
         const v = parseInt(url.searchParams.get("franja") || "", 10);
         return Number.isInteger(v) && v > 0 ? v : null;
       })(),
+      actividadId: (() => {
+        const v = parseInt(url.searchParams.get("actividad_id") || "", 10);
+        return Number.isInteger(v) && v > 0 ? v : null;
+      })(),
       estado: (() => {
         const v = limpiarTexto(url.searchParams.get("estado") || "").toUpperCase();
         return v && v !== "TODOS" ? v : null;
@@ -209,38 +223,35 @@ export async function onRequestGet(context) {
 
     const [rows, franjas] = await Promise.all([
       obtenerReservas(env, filtros),
-      obtenerFranjas(env)
+      obtenerFranjas(env, filtros.actividadId)
     ]);
 
-    const reservas = rows.map(row => {
-      const plazasAsignadas = calcularPlazasAsignadas(row);
-      const plazasReservadas = calcularPlazasReservadasPendientes(row);
-
-      return {
-        id: row.id,
-        franja_id: row.franja_id,
-        codigo_reserva: row.codigo_reserva,
-        token_edicion: row.token_edicion || "",
-        estado: row.estado,
-        centro: row.centro || "",
-        contacto: row.contacto || "",
-        telefono: row.telefono || "",
-        email: row.email || "",
-        observaciones: row.observaciones || "",
-        fecha_solicitud: row.fecha_solicitud,
-        fecha_modificacion: row.fecha_modificacion,
-        fecha: row.fecha,
-        hora_inicio: row.hora_inicio,
-        hora_fin: row.hora_fin,
-        capacidad: Number(row.capacidad || 0),
-        plazas_prereservadas_historicas: Number(row.plazas_prereservadas || 0),
-        prereserva_expira_en: row.prereserva_expira_en,
-        plazas_reservadas: plazasReservadas,
-        plazas_asignadas: plazasAsignadas,
-        alumnos: Number(row.alumnos || 0),
-        profesores: Number(row.profesores || 0)
-      };
-    });
+    const reservas = rows.map(row => ({
+      id: row.id,
+      franja_id: row.franja_id,
+      actividad_id: row.actividad_id,
+      actividad_nombre: row.actividad_nombre,
+      codigo_reserva: row.codigo_reserva,
+      token_edicion: row.token_edicion || "",
+      estado: row.estado,
+      centro: row.centro || "",
+      contacto: row.contacto || "",
+      telefono: row.telefono || "",
+      email: row.email || "",
+      observaciones: row.observaciones || "",
+      fecha_solicitud: row.fecha_solicitud,
+      fecha_modificacion: row.fecha_modificacion,
+      fecha: row.fecha,
+      hora_inicio: row.hora_inicio,
+      hora_fin: row.hora_fin,
+      capacidad: Number(row.capacidad || 0),
+      plazas_prereservadas_historicas: Number(row.plazas_prereservadas || 0),
+      prereserva_expira_en: row.prereserva_expira_en,
+      plazas_reservadas: calcularPlazasReservadasPendientes(row),
+      plazas_asignadas: calcularPlazasAsignadas(row),
+      alumnos: Number(row.alumnos || 0),
+      profesores: Number(row.profesores || 0)
+    }));
 
     const resumen = resumirReservas(rows);
 
@@ -249,6 +260,7 @@ export async function onRequestGet(context) {
       filtros_aplicados: {
         fecha: filtros.fecha,
         franja: filtros.franjaId,
+        actividad_id: filtros.actividadId,
         estado: filtros.estado,
         buscar: filtros.buscar
       },
@@ -257,7 +269,8 @@ export async function onRequestGet(context) {
         id: f.id,
         fecha: f.fecha,
         hora_inicio: f.hora_inicio,
-        hora_fin: f.hora_fin
+        hora_fin: f.hora_fin,
+        actividad_id: f.actividad_id
       })),
       reservas
     });
