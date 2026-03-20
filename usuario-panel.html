@@ -159,13 +159,6 @@
       flex-wrap: wrap;
     }
 
-    .acciones-superiores {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
     .btn-icono-filtro {
       width: 44px;
       height: 44px;
@@ -207,7 +200,7 @@
 
     table {
       width: 100%;
-      min-width: 1150px;
+      min-width: 1220px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
@@ -229,15 +222,27 @@
     }
 
     th.sel-col, td.sel-col {
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
+      width: 34px;
+      min-width: 34px;
+      max-width: 34px;
       text-align: center;
     }
 
+    th.obs-col, td.obs-col {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+      text-align: center;
+    }
+
+    th.codigo-col, td.codigo-col {
+      width: 190px;
+      min-width: 190px;
+    }
+
     th.actividad-col, td.actividad-col {
-      width: 180px;
-      min-width: 180px;
+      width: 170px;
+      min-width: 170px;
     }
 
     th.estado-col, td.estado-col {
@@ -253,11 +258,6 @@
     th.plazas-col, td.plazas-col {
       width: 220px;
       min-width: 220px;
-    }
-
-    th.codigo-col, td.codigo-col {
-      width: 180px;
-      min-width: 180px;
     }
 
     th.acciones-col, td.acciones-col {
@@ -307,6 +307,91 @@
       background: #eaf7ea;
       color: #146c2e;
       border: 1px solid #b9e0c0;
+    }
+
+    .codigo {
+      font-weight: bold;
+      white-space: nowrap;
+      color: #111;
+    }
+
+    .codigo.con-observaciones {
+      color: #c62828;
+    }
+
+    .icono-observacion {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .icono-observacion svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .icono-observacion:hover {
+      transform: scale(1.08);
+    }
+
+    .acciones-redondas {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 720px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 24px;
+    }
+
+    .modal-contenido {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     @media (max-width: 1200px) {
@@ -368,6 +453,13 @@
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </button>
+
+        <button type="button" class="btn-icono" id="btnNotificaciones" title="Notificaciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
         </button>
 
@@ -440,6 +532,7 @@
           <thead>
             <tr>
               <th class="sel-col"></th>
+              <th class="obs-col"></th>
               <th class="codigo-col">Código</th>
               <th class="actividad-col">Actividad</th>
               <th class="estado-col">Estado</th>
@@ -450,6 +543,21 @@
           </thead>
           <tbody id="tbodyReservas"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalObservaciones" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="modalObservacionesTitulo">Observaciones</h3>
+      <div id="modalObservacionesContenido" class="modal-contenido"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-icono" id="btnCerrarModalObservaciones" title="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -474,36 +582,24 @@
       m.textContent = texto;
     }
 
-    function seleccionarReserva(id) {
-      reservaSeleccionada = reservasActuales.find(r => Number(r.id) === Number(id)) || null;
-      pintarReservas(filtrarReservas(reservasActuales));
-      actualizarBotones();
-    }
-
-    function actualizarBotones() {
-      const hay = !!reservaSeleccionada;
-      document.getElementById("btnEditar").disabled = !hay;
-      document.getElementById("btnAsistentes").disabled = !hay;
-    }
-
     function pintarResumen(lista) {
-  const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
-  const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
-  const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
-  const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
+      const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
+      const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
+      const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
+      const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
 
-  document.getElementById("resumenPanel").innerHTML = `
-    <span>Total reservas: ${lista.length}</span>
-    <span>|</span>
-    <span>Pendientes: ${pendientes}</span>
-    <span>|</span>
-    <span>Confirmadas: ${confirmadas}</span>
-    <span>|</span>
-    <span>Rechazadas: ${rechazadas}</span>
-    <span>|</span>
-    <span>Canceladas: ${canceladas}</span>
-  `;
-}
+      document.getElementById("resumenPanel").innerHTML = `
+        <span>Total reservas: ${lista.length}</span>
+        <span>|</span>
+        <span>Pendientes: ${pendientes}</span>
+        <span>|</span>
+        <span>Confirmadas: ${confirmadas}</span>
+        <span>|</span>
+        <span>Rechazadas: ${rechazadas}</span>
+        <span>|</span>
+        <span>Canceladas: ${canceladas}</span>
+      `;
+    }
 
     function filtrarReservas(lista) {
       const actividad = document.getElementById("filtroActividad").value.trim().toLowerCase();
@@ -523,6 +619,34 @@
       });
     }
 
+    function actualizarBotones() {
+      const hay = !!reservaSeleccionada;
+      document.getElementById("btnEditar").disabled = !hay;
+      document.getElementById("btnAsistentes").disabled = !hay;
+    }
+
+    function seleccionarReserva(id) {
+      reservaSeleccionada = reservasActuales.find(r => Number(r.id) === Number(id)) || null;
+      const filtradas = filtrarReservas(reservasActuales);
+      pintarReservas(filtradas);
+      actualizarBotones();
+    }
+
+    function abrirModalObservaciones(id) {
+      const reserva = reservasActuales.find(r => Number(r.id) === Number(id));
+      if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
+
+      document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.codigo_reserva}`;
+      document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
+      document.getElementById("modalObservaciones").classList.add("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalObservaciones() {
+      document.getElementById("modalObservaciones").classList.remove("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
+    }
+
     function pintarReservas(lista) {
       const tbody = document.getElementById("tbodyReservas");
 
@@ -532,33 +656,64 @@
       }
 
       if (!lista.length) {
-  tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
-  actualizarBotones();
-  return;
-}
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        actualizarBotones();
+        return;
+      }
 
-      tbody.innerHTML = lista.map(r => `
-        <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
-          <td class="sel-col">
-            <input type="radio" name="seleccionReserva"
-              ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
-              onchange="seleccionarReserva(${r.id})">
-          </td>
-          <td class="codigo-col">${r.codigo_reserva}</td>
-          <td class="actividad-col">${r.actividad || ''}</td>
-          <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span></td>
-          <td class="fecha-col">${r.fecha}<br>${r.hora_inicio} - ${r.hora_fin}</td>
-          <td class="plazas-col">
-            Reservadas: ${r.plazas_reservadas_historicas}<br>
-            Pendientes: ${r.plazas_pendientes}<br>
-            Asignadas: ${r.plazas_asignadas}
-          </td>
-          <td class="acciones-col">
-            <button onclick="editarReserva('${r.token_edicion}')">✏️</button>
-            <button onclick="abrirAsistentes('${r.token_edicion}')">👥</button>
-          </td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = lista.map(r => {
+        const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
+
+        return `
+          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
+            <td class="sel-col">
+              <input type="radio" name="seleccionReserva"
+                ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
+                onchange="seleccionarReserva(${r.id})">
+            </td>
+            <td class="obs-col">
+              ${tieneObservaciones ? `
+                <button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="abrirModalObservaciones(${r.id})">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/>
+                    <rect x="11" y="9" width="2" height="6" fill="#222"/>
+                    <rect x="11" y="16.5" width="2" height="2" fill="#222"/>
+                  </svg>
+                </button>
+              ` : ''}
+            </td>
+            <td class="codigo-col">
+              <div class="codigo ${tieneObservaciones ? 'con-observaciones' : ''}">${r.codigo_reserva}</div>
+            </td>
+            <td class="actividad-col">${r.actividad || ''}</td>
+            <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span></td>
+            <td class="fecha-col">${r.fecha}<br>${r.hora_inicio} - ${r.hora_fin}</td>
+            <td class="plazas-col">
+              Reservadas: ${r.plazas_reservadas_historicas}<br>
+              Pendientes: ${r.plazas_pendientes}<br>
+              Asignadas: ${r.plazas_asignadas}
+            </td>
+            <td class="acciones-col">
+              <div class="acciones-redondas">
+                <button type="button" class="btn-icono" title="Editar" onclick="editarReserva('${r.token_edicion}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                </button>
+                <button type="button" class="btn-icono" title="Asistentes" onclick="abrirAsistentes('${r.token_edicion}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
 
       actualizarBotones();
     }
@@ -587,8 +742,8 @@
     }
 
     function aplicarFiltros() {
-      const filtradas = filtrarReservas(reservasActuales);
       reservaSeleccionada = null;
+      const filtradas = filtrarReservas(reservasActuales);
       pintarResumen(filtradas);
       pintarReservas(filtradas);
     }
@@ -621,10 +776,15 @@
       location.href = "portal.html";
     }
 
+    function abrirNotificaciones() {
+      alert("Panel de notificaciones pendiente de implementar.");
+    }
+
     document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
     document.getElementById("btnNueva").addEventListener("click", nuevaReserva);
     document.getElementById("btnSalir").addEventListener("click", salir);
+    document.getElementById("btnNotificaciones").addEventListener("click", abrirNotificaciones);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
     });
@@ -632,9 +792,15 @@
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
 
+    document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
+    document.getElementById("modalObservaciones").addEventListener("click", function (e) {
+      if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
+    });
+
     window.seleccionarReserva = seleccionarReserva;
     window.editarReserva = editarReserva;
     window.abrirAsistentes = abrirAsistentes;
+    window.abrirModalObservaciones = abrirModalObservaciones;
 
     cargarPanel();
   </script>
