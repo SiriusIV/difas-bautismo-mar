@@ -881,5 +881,27 @@
       }
     });
   </script>
+
+<script>
+async function comprobarSesion() {
+  const res = await fetch("/api/usuario/session", {
+    credentials: "include"
+  });
+
+  if (res.status === 401) {
+    window.location.href = "portal.html";
+    return;
+  }
+
+  const data = await res.json();
+
+  if (!data.ok || !data.authenticated) {
+    window.location.href = "portal.html";
+  }
+}
+
+comprobarSesion();
+</script>
+  
 </body>
 </html>
