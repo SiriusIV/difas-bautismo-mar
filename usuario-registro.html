@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro Usuario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0a1f2f;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Registro</h2>
+
+  <input type="text" id="nombre" placeholder="Nombre">
+  <input type="text" id="centro" placeholder="Centro">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Contraseña">
+
+  <button onclick="registro()">Crear cuenta</button>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+async function registro() {
+  const nombre = document.getElementById("nombre").value;
+  const centro = document.getElementById("centro").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/api/usuario/registro", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ nombre, centro, email, password })
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    window.location.href = "index.html";
+  } else {
+    document.getElementById("msg").innerText = data.error;
+  }
+}
+</script>
+
+</body>
+</html>
