@@ -69,17 +69,18 @@ export async function onRequestGet(context) {
     const rows = result.results || [];
 
     const data = rows.map(row => ({
-      id: row.id,
-      codigo_reserva: row.codigo_reserva,
-      estado: row.estado,
-      token_edicion: row.token_edicion || "",
-      actividad: row.actividad || "Actividad",
-      fecha: row.fecha,
-      hora_inicio: row.hora_inicio,
-      hora_fin: row.hora_fin,
-      plazas_reservadas: calcularPlazasReservadasPendientes(row),
-      plazas_asignadas: calcularPlazasAsignadas(row)
-    }));
+  id: row.id,
+  codigo_reserva: row.codigo_reserva,
+  estado: row.estado,
+  token_edicion: row.token_edicion || "",
+  actividad: row.actividad || "Actividad",
+  fecha: row.fecha,
+  hora_inicio: row.hora_inicio,
+  hora_fin: row.hora_fin,
+  plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
+  plazas_pendientes: calcularPlazasReservadasPendientes(row),
+  plazas_asignadas: calcularPlazasAsignadas(row)
+}));
 
     return json({ ok: true, data });
   } catch (error) {
