@@ -39,6 +39,13 @@
       padding: 0 20px 30px;
     }
 
+    .barra-admin {
+      display: none;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
     .grid-actividades {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -114,6 +121,22 @@
 
     .btn-secundario:hover {
       background: #565e64;
+    }
+
+    .btn-admin {
+      background: #198754;
+    }
+
+    .btn-admin:hover {
+      background: #13653f;
+    }
+
+    .btn-admin-secundario {
+      background: #5c7cfa;
+    }
+
+    .btn-admin-secundario:hover {
+      background: #4263eb;
     }
 
     .bloque-acceso {
@@ -274,6 +297,7 @@
       display: flex;
       justify-content: flex-end;
       gap: 10px;
+      flex-wrap: wrap;
     }
   </style>
 </head>
@@ -284,9 +308,14 @@
   </div>
 
   <div class="contenedor">
+    <div id="barraAdmin" class="barra-admin">
+      <button class="btn btn-admin" onclick="nuevaActividad()">Nueva actividad</button>
+      <button class="btn btn-secundario" onclick="logoutAdmin()">Salir área privada</button>
+    </div>
+
     <div id="gridActividades" class="grid-actividades"></div>
 
-    <div class="bloque-acceso">
+    <div id="bloqueAcceso" class="bloque-acceso">
       <h3>Acceso usuarios</h3>
 
       <div class="campo">
@@ -302,8 +331,8 @@
       <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">¿Has olvidado tu contraseña?</a>
 
       <div class="acciones-acceso">
-        <button class="btn" onclick="login()">Entrar</button>
-        <button class="btn btn-secundario" onclick="irAdmin()">Área privada</button>
+        <button class="btn" onclick="loginUsuario()">Entrar</button>
+        <button class="btn btn-secundario" onclick="loginAdminDesdePortal()">Área privada</button>
       </div>
 
       <div id="mensajeLogin" class="mensaje"></div>
@@ -323,6 +352,8 @@
       <div id="modalTexto" class="modal-texto"></div>
       <div class="modal-acciones">
         <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
+        <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
+        <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
         <button class="btn btn-secundario" onclick="cerrarModalActividad()">Cerrar</button>
       </div>
     </div>
@@ -331,6 +362,7 @@
   <script>
     let actividadesCache = [];
     let usuarioAutenticado = null;
+    let adminAutenticado = null;
     let actividadModalActual = null;
 
     function mensaje(id, tipo, texto) {
@@ -347,7 +379,7 @@
       el.style.display = "none";
     }
 
-    async function comprobarSesion() {
+    async function comprobarSesionUsuario() {
       const res = await fetch("/api/usuario/session", {
         credentials: "include"
       });
@@ -359,6 +391,27 @@
 
       const data = await res.json();
       usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
+    }
+
+    async function comprobarSesionAdmin() {
+      const res = await fetch("/api/admin/session", {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        adminAutenticado = null;
+        actualizarModoAdmin();
+        return;
+      }
+
+      const data = await res.json();
+      adminAutenticado = data.ok && data.authenticated ? data.user : null;
+      actualizarModoAdmin();
+    }
+
+    function actualizarModoAdmin() {
+      document.getElementById("barraAdmin").style.display = adminAutenticado ? "flex" : "none";
+      document.getElementById("bloqueAcceso").style.display = adminAutenticado ? "none" : "block";
     }
 
     async function cargarActividades() {
@@ -408,8 +461,9 @@
         ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
       `;
 
-      const btnSolicitar = document.getElementById("btnSolicitarActividad");
-      btnSolicitar.style.display = usuarioAutenticado ? "inline-block" : "none";
+      document.getElementById("btnSolicitarActividad").style.display = usuarioAutenticado ? "inline-block" : "none";
+      document.getElementById("btnEditarActividad").style.display = adminAutenticado ? "inline-block" : "none";
+      document.getElementById("btnVerReservasActividad").style.display = adminAutenticado ? "inline-block" : "none";
 
       document.getElementById("modalActividad").classList.add("activo");
       document.getElementById("modalActividad").setAttribute("aria-hidden", "false");
@@ -426,7 +480,17 @@
       location.href = `/?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
     }
 
-    async function login() {
+    function editarActividadActual() {
+      if (!actividadModalActual) return;
+      alert("Panel de edición de actividad pendiente de implementar. Actividad ID: " + actividadModalActual.id);
+    }
+
+    function verReservasActividadActual() {
+      if (!actividadModalActual) return;
+      location.href = `admin-reservas.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
+    }
+
+    async function loginUsuario() {
       limpiarMensaje("mensajeLogin");
 
       const email = document.getElementById("emailLogin").value.trim();
@@ -448,6 +512,42 @@
       }
     }
 
+    async function loginAdminDesdePortal() {
+      limpiarMensaje("mensajeLogin");
+
+      const username = document.getElementById("emailLogin").value.trim();
+      const password = document.getElementById("passwordLogin").value.trim();
+
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        await comprobarSesionAdmin();
+        mensaje("mensajeLogin", "ok", "Área privada activada.");
+      } else {
+        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión como administrador.");
+      }
+    }
+
+    async function logoutAdmin() {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      adminAutenticado = null;
+      actualizarModoAdmin();
+    }
+
+    function nuevaActividad() {
+      alert("Alta de nueva actividad pendiente de implementar.");
+    }
+
     function recuperarPassword(event) {
       event.preventDefault();
       alert("Recuperación de contraseña pendiente de implementar.");
@@ -457,17 +557,17 @@
       location.href = "usuario-registro.html";
     }
 
-    function irAdmin() {
-      location.href = "admin-login.html";
-    }
-
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
+    document.getElementById("btnEditarActividad").addEventListener("click", editarActividadActual);
+    document.getElementById("btnVerReservasActividad").addEventListener("click", verReservasActividadActual);
+
     document.getElementById("modalActividad").addEventListener("click", function (e) {
       if (e.target.id === "modalActividad") cerrarModalActividad();
     });
 
     (async function init() {
-      await comprobarSesion();
+      await comprobarSesionUsuario();
+      await comprobarSesionAdmin();
       await cargarActividades();
     })();
   </script>
