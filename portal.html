@@ -332,7 +332,7 @@
 
       <div class="acciones-acceso">
         <button class="btn" onclick="loginUsuario()">Entrar</button>
-        <button class="btn btn-secundario" onclick="loginAdminDesdePortal()">Área privada</button>
+        <button class="btn btn-secundario" onclick="abrirModalAdmin()">Área privada</button>
       </div>
 
       <div id="mensajeLogin" class="mensaje"></div>
@@ -360,6 +360,30 @@
   </div>
 
   <script>
+
+    <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
+  <div class="modal" style="max-width: 460px;">
+    <h3>Acceso área privada</h3>
+
+    <div class="campo">
+      <label for="adminUsuario">Usuario</label>
+      <input type="text" id="adminUsuario">
+    </div>
+
+    <div class="campo">
+      <label for="adminPassword">Contraseña</label>
+      <input type="password" id="adminPassword">
+    </div>
+
+    <div id="mensajeAdmin" class="mensaje"></div>
+
+    <div class="modal-acciones">
+      <button class="btn" onclick="loginAdminModal()">Entrar</button>
+      <button class="btn btn-secundario" onclick="cerrarModalAdmin()">Cerrar</button>
+    </div>
+  </div>
+</div>
+    
     let actividadesCache = [];
     let usuarioAutenticado = null;
     let adminAutenticado = null;
@@ -512,28 +536,41 @@
       }
     }
 
-    async function loginAdminDesdePortal() {
-      limpiarMensaje("mensajeLogin");
+    function abrirModalAdmin() {
+  const modal = document.getElementById("modalAdmin");
+  modal.classList.add("activo");
+  modal.setAttribute("aria-hidden", "false");
+}
 
-      const username = document.getElementById("emailLogin").value.trim();
-      const password = document.getElementById("passwordLogin").value.trim();
+function cerrarModalAdmin() {
+  const modal = document.getElementById("modalAdmin");
+  modal.classList.remove("activo");
+  modal.setAttribute("aria-hidden", "true");
+  limpiarMensaje("mensajeAdmin");
+}
 
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ username, password })
-      });
+async function loginAdminModal() {
+  limpiarMensaje("mensajeAdmin");
 
-      const data = await res.json();
+  const username = document.getElementById("adminUsuario").value.trim();
+  const password = document.getElementById("adminPassword").value.trim();
 
-      if (data.ok) {
-        await comprobarSesionAdmin();
-        mensaje("mensajeLogin", "ok", "Área privada activada.");
-      } else {
-        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión como administrador.");
-      }
-    }
+  const res = await fetch("/api/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    await comprobarSesionAdmin();
+    cerrarModalAdmin();
+  } else {
+    mensaje("mensajeAdmin", "error", data.error || "No se pudo iniciar sesión como administrador.");
+  }
+}
 
     async function logoutAdmin() {
       await fetch("/api/admin/logout", {
@@ -563,6 +600,10 @@
 
     document.getElementById("modalActividad").addEventListener("click", function (e) {
       if (e.target.id === "modalActividad") cerrarModalActividad();
+    });
+
+    document.getElementById("modalAdmin").addEventListener("click", function (e) {
+      if (e.target.id === "modalAdmin") cerrarModalAdmin();
     });
 
     (async function init() {
