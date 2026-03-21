@@ -1,5 +1,9 @@
 import { getUserSession } from "../usuario/_auth.js";
 
+export async function createSessionCookie() {
+  return "";
+}
+
 export async function getAdminSession(request, env) {
   const session = await getUserSession(request, env.SECRET_KEY);
 
