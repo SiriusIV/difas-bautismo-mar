@@ -20,7 +20,7 @@
     }
 
     .contenedor {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
@@ -73,6 +73,7 @@
       border-bottom: 1px solid #ddd;
       text-align: left;
       font-size: 14px;
+      vertical-align: top;
     }
 
     .mensaje {
@@ -93,6 +94,22 @@
       color: #9b1c1c;
       display: block;
     }
+
+    .lista-actividades {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .asignar {
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .asignar select {
+      flex: 1;
+    }
   </style>
 </head>
 
@@ -102,7 +119,7 @@
   <h1>Gestión de administradores</h1>
 
   <div class="bloque">
-    <h3>Crear nuevo usuario</h3>
+    <h3>Crear nuevo administrador</h3>
 
     <div class="campo">
       <label>Nombre</label>
@@ -119,20 +136,13 @@
       <input type="password" id="password">
     </div>
 
-    <div class="campo">
-  <label>Rol</label>
-  <select id="rol">
-    <option value="ADMIN">ADMIN</option>
-  </select>
-</div>
-
-    <button class="btn" onclick="crearUsuario()">Crear</button>
+    <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
 
     <div id="mensajeCrear" class="mensaje"></div>
   </div>
 
   <div class="bloque">
-    <h3>Administradores existentes</h3>
+    <h3>Administradores y superadministrador</h3>
 
     <table>
       <thead>
@@ -150,43 +160,64 @@
 </div>
 
 <script>
+let actividadesDisponibles = [];
+
 async function cargarUsuarios() {
   const res = await fetch("/api/admin/usuarios-lista", {
     credentials: "include"
   });
 
   const data = await res.json();
-
   if (!data.ok) return;
+
+  actividadesDisponibles = data.actividades_disponibles || [];
 
   const tbody = document.getElementById("tablaUsuarios");
 
-  tbody.innerHTML = data.usuarios.map(u => `
-    <tr>
-      <td>${u.nombre}</td>
-      <td>${u.email}</td>
-      <td>${u.rol}</td>
-      <td>
-        ${u.rol === "SUPERADMIN"
-          ? "Todas"
-          : (u.actividades || []).map(a => a.actividad_nombre).join(", ")
-        }
-      </td>
-    </tr>
-  `).join("");
+  tbody.innerHTML = data.usuarios.map(u => {
+    const actividadesTexto = u.rol === "SUPERADMIN"
+      ? "Todas"
+      : (u.actividades || []).map(a => a.actividad_nombre).join(", ");
+
+    const selector = u.rol === "ADMIN"
+      ? `
+        <div class="asignar">
+          <select id="sel_${u.id}">
+            ${actividadesDisponibles.map(a =>
+              `<option value="${a.id}">${a.titulo_publico || a.nombre}</option>`
+            ).join("")}
+          </select>
+          <button class="btn" onclick="asignar(${u.id})">+</button>
+        </div>
+      `
+      : "";
+
+    return `
+      <tr>
+        <td>${u.nombre}</td>
+        <td>${u.email}</td>
+        <td>${u.rol}</td>
+        <td>
+          <div class="lista-actividades">
+            ${actividadesTexto || "-"}
+          </div>
+          ${selector}
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 async function crearUsuario() {
   const nombre = document.getElementById("nombre").value;
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  const rol = document.getElementById("rol").value;
 
   const res = await fetch("/api/admin/usuarios-crear", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     credentials: "include",
-    body: JSON.stringify({ nombre, email, password, rol })
+    body: JSON.stringify({ nombre, email, password, rol: "ADMIN" })
   });
 
   const data = await res.json();
@@ -194,11 +225,31 @@ async function crearUsuario() {
 
   if (data.ok) {
     msg.className = "mensaje ok";
-    msg.textContent = "Usuario creado correctamente";
+    msg.textContent = "Administrador creado";
     cargarUsuarios();
   } else {
     msg.className = "mensaje error";
     msg.textContent = data.error || "Error";
+  }
+}
+
+async function asignar(usuario_id) {
+  const select = document.getElementById("sel_" + usuario_id);
+  const actividad_id = select.value;
+
+  const res = await fetch("/api/admin/usuario-actividad-asignar", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    credentials: "include",
+    body: JSON.stringify({ usuario_id, actividad_id })
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    cargarUsuarios();
+  } else {
+    alert(data.error || "Error");
   }
 }
 
