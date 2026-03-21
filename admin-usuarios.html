@@ -138,14 +138,7 @@
       <input type="password" id="password">
     </div>
 
-    <div class="campo">
-      <label for="actividad">Actividad inicial</label>
-      <select id="actividad">
-        <option value="">Seleccione una actividad</option>
-      </select>
-    </div>
-
-    <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
+  <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
 
     <div id="mensajeCrear" class="mensaje"></div>
   </div>
@@ -254,12 +247,11 @@ async function crearUsuario() {
   const nombre = document.getElementById("nombre").value.trim();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-  const actividad_id = document.getElementById("actividad").value;
 
-  if (!nombre || !email || !password || !actividad_id) {
-    mostrarMensajeCrear("error", "Debe rellenar nombre, email, contraseña y actividad inicial.");
-    return;
-  }
+  if (!nombre || !email || !password) {
+  mostrarMensajeCrear("error", "Debe rellenar nombre, email y contraseña.");
+  return;
+}
 
   const res = await fetch("/api/admin/usuarios-crear", {
     method: "POST",
@@ -269,8 +261,7 @@ async function crearUsuario() {
       nombre,
       email,
       password,
-      rol: "ADMIN",
-      actividad_id
+      rol: "ADMIN"
     })
   });
 
