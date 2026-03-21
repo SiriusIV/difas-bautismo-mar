@@ -33,12 +33,14 @@ async function signString(secret, value) {
   return toBase64Url(raw);
 }
 
-export async function createSessionCookie(env, username) {
+export async function createSessionCookie(env, username, usuario_id, rol) {
   const now = Math.floor(Date.now() / 1000);
   const exp = now + SESSION_TTL_SECONDS;
 
   const payloadObj = {
     u: username,
+    usuario_id,
+    rol,
     exp
   };
 
@@ -94,9 +96,11 @@ export async function getAdminSession(request, env) {
     if (decoded.exp < now) return null;
 
     return {
-      username: decoded.u,
-      exp: decoded.exp
-    };
+  username: decoded.u,
+  usuario_id: decoded.usuario_id,
+  rol: decoded.rol,
+  exp: decoded.exp
+};
   } catch {
     return null;
   }
