@@ -67,7 +67,7 @@ const rol = results[0].rol;
 
 
     
-    const cookie = await createSessionCookie(env, username);
+    const cookie = await createSessionCookie(env, username, usuario_id, rol);
 
     return new Response(
       JSON.stringify({
