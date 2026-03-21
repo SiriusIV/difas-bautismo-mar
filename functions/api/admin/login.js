@@ -41,6 +41,32 @@ export async function onRequestPost(context) {
       );
     }
 
+const { results } = await env.DB.prepare(`
+  SELECT id, rol
+  FROM usuarios
+  WHERE email = ?
+    AND activo = 1
+    AND rol IN ('ADMIN', 'SUPERADMIN')
+  LIMIT 1
+`)
+.bind(username)
+.all();
+
+if (!results || results.length === 0) {
+  return json(
+    {
+      ok: false,
+      error: "El usuario administrador no existe en la base de datos."
+    },
+    { status: 401 }
+  );
+}
+
+const usuario_id = results[0].id;
+const rol = results[0].rol;
+
+
+    
     const cookie = await createSessionCookie(env, username);
 
     return new Response(
