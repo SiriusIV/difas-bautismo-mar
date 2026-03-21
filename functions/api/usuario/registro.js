@@ -10,6 +10,10 @@ function json(data, status = 200, headers = {}) {
   });
 }
 
+function limpiarTexto(valor) {
+  return String(valor || "").trim();
+}
+
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -22,7 +26,11 @@ export async function onRequestPost(context) {
   const db = env.DB;
 
   const body = await request.json();
-  const { nombre, centro, email, password } = body;
+
+  const nombre = limpiarTexto(body.nombre);
+  const centro = limpiarTexto(body.centro);
+  const email = limpiarTexto(body.email).toLowerCase();
+  const password = String(body.password || "");
 
   if (!nombre || !centro || !email || !password) {
     return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
@@ -38,9 +46,9 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "Email ya registrado" }, 400);
   }
 
-  // comprobar centro existente
+  // comprobar centro existente solo entre solicitantes
   const existingCentro = await db
-    .prepare("SELECT id FROM usuarios WHERE centro = ?")
+    .prepare("SELECT id FROM usuarios WHERE centro = ? AND rol = 'SOLICITANTE'")
     .bind(centro)
     .first();
 
@@ -61,6 +69,7 @@ export async function onRequestPost(context) {
   const user = {
     id: result.meta.last_row_id,
     nombre,
+    centro,
     email,
     rol: "SOLICITANTE"
   };
