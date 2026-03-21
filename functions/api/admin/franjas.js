@@ -1,4 +1,5 @@
-import { requireAdminSession } from "./_auth.js";
+import { requireAdminSession, getAdminSession } from "./_auth.js";
+import { checkAdminActividad } from "./_permisos.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -18,6 +19,11 @@ function normalizarHora(valor) {
 function parsearCapacidad(valor) {
   const n = parseInt(valor, 10);
   return Number.isInteger(n) ? n : NaN;
+}
+
+function parsearIdPositivo(valor) {
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 function validarDatosFranja({ fecha, hora_inicio, hora_fin, capacidad }) {
@@ -44,7 +50,38 @@ function validarDatosFranja({ fecha, hora_inicio, hora_fin, capacidad }) {
   return null;
 }
 
-async function obtenerResumenFranjas(env) {
+async function obtenerActividad(env, actividad_id) {
+  return await env.DB.prepare(`
+    SELECT id, nombre, tipo, fecha_inicio, fecha_fin
+    FROM actividades
+    WHERE id = ?
+    LIMIT 1
+  `)
+    .bind(actividad_id)
+    .first();
+}
+
+function validarFechaDentroDeActividad(actividad, fecha) {
+  if (!actividad) {
+    return "La actividad indicada no existe.";
+  }
+
+  if (actividad.tipo === "PERMANENTE") {
+    return null;
+  }
+
+  if (!actividad.fecha_inicio || !actividad.fecha_fin) {
+    return "La actividad temporal no tiene definido correctamente su intervalo de fechas.";
+  }
+
+  if (fecha < actividad.fecha_inicio || fecha > actividad.fecha_fin) {
+    return `La fecha de la franja debe estar dentro del intervalo de la actividad (${actividad.fecha_inicio} a ${actividad.fecha_fin}).`;
+  }
+
+  return null;
+}
+
+async function obtenerResumenFranjas(env, actividad_id) {
   const sql = `
     SELECT
       f.id,
@@ -52,6 +89,7 @@ async function obtenerResumenFranjas(env) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      f.actividad_id,
       COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
@@ -70,30 +108,53 @@ async function obtenerResumenFranjas(env) {
     FROM franjas f
     LEFT JOIN reservas r
       ON f.id = r.franja_id
+    WHERE f.actividad_id = ?
     GROUP BY
       f.id,
       f.fecha,
       f.hora_inicio,
       f.hora_fin,
-      f.capacidad
+      f.capacidad,
+      f.actividad_id
     ORDER BY
       f.fecha,
       f.hora_inicio,
       f.hora_fin
   `;
 
-  const result = await env.DB.prepare(sql).all();
+  const result = await env.DB.prepare(sql).bind(actividad_id).all();
   return result.results || [];
+}
+
+async function obtenerFranjaPorId(env, id) {
+  return await env.DB.prepare(`
+    SELECT id, actividad_id, fecha, hora_inicio, hora_fin, capacidad
+    FROM franjas
+    WHERE id = ?
+    LIMIT 1
+  `)
+    .bind(id)
+    .first();
 }
 
 export async function onRequestGet(context) {
   const authError = await requireAdminSession(context);
   if (authError) return authError;
 
-  const { env } = context;
+  const { request, env } = context;
 
   try {
-    const franjas = await obtenerResumenFranjas(env);
+    const session = await getAdminSession(request, env);
+    const url = new URL(request.url);
+    const actividad_id = parsearIdPositivo(url.searchParams.get("actividad_id"));
+
+    if (!actividad_id) {
+      return json({ ok: false, error: "actividad_id es obligatorio." }, { status: 400 });
+    }
+
+    await checkAdminActividad(env, session.usuario_id, actividad_id);
+
+    const franjas = await obtenerResumenFranjas(env, actividad_id);
 
     return json({
       ok: true,
@@ -119,12 +180,20 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
     const data = await request.json();
 
+    const actividad_id = parsearIdPositivo(data.actividad_id);
     const fecha = normalizarFecha(data.fecha);
     const hora_inicio = normalizarHora(data.hora_inicio);
     const hora_fin = normalizarHora(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
+
+    if (!actividad_id) {
+      return json({ ok: false, error: "actividad_id es obligatorio." }, { status: 400 });
+    }
+
+    await checkAdminActividad(env, session.usuario_id, actividad_id);
 
     const errorValidacion = validarDatosFranja({
       fecha,
@@ -137,22 +206,30 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: errorValidacion }, { status: 400 });
     }
 
+    const actividad = await obtenerActividad(env, actividad_id);
+    const errorFecha = validarFechaDentroDeActividad(actividad, fecha);
+
+    if (errorFecha) {
+      return json({ ok: false, error: errorFecha }, { status: 400 });
+    }
+
     const duplicada = await env.DB.prepare(`
       SELECT id
       FROM franjas
-      WHERE fecha = ?
+      WHERE actividad_id = ?
+        AND fecha = ?
         AND hora_inicio = ?
         AND hora_fin = ?
       LIMIT 1
     `)
-      .bind(fecha, hora_inicio, hora_fin)
+      .bind(actividad_id, fecha, hora_inicio, hora_fin)
       .first();
 
     if (duplicada) {
       return json(
         {
           ok: false,
-          error: "Ya existe una franja con esa fecha y ese rango horario."
+          error: "Ya existe una franja con esa fecha y ese rango horario para esta actividad."
         },
         { status: 409 }
       );
@@ -163,11 +240,12 @@ export async function onRequestPost(context) {
         fecha,
         hora_inicio,
         hora_fin,
-        capacidad
+        capacidad,
+        actividad_id
       )
-      VALUES (?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
     `)
-      .bind(fecha, hora_inicio, hora_fin, capacidad)
+      .bind(fecha, hora_inicio, hora_fin, capacidad, actividad_id)
       .run();
 
     if ((insertResult?.meta?.changes || 0) === 0) {
@@ -177,7 +255,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    const franjas = await obtenerResumenFranjas(env);
+    const franjas = await obtenerResumenFranjas(env, actividad_id);
 
     return json({
       ok: true,
@@ -203,15 +281,16 @@ export async function onRequestPut(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
     const data = await request.json();
 
-    const id = parseInt(data.id, 10);
+    const id = parsearIdPositivo(data.id);
     const fecha = normalizarFecha(data.fecha);
     const hora_inicio = normalizarHora(data.hora_inicio);
     const hora_fin = normalizarHora(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
 
-    if (!Number.isInteger(id) || id <= 0) {
+    if (!id) {
       return json({ ok: false, error: "ID de franja no válido." }, { status: 400 });
     }
 
@@ -226,14 +305,7 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: errorValidacion }, { status: 400 });
     }
 
-    const existente = await env.DB.prepare(`
-      SELECT id
-      FROM franjas
-      WHERE id = ?
-      LIMIT 1
-    `)
-      .bind(id)
-      .first();
+    const existente = await obtenerFranjaPorId(env, id);
 
     if (!existente) {
       return json(
@@ -242,23 +314,33 @@ export async function onRequestPut(context) {
       );
     }
 
+    await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
+
+    const actividad = await obtenerActividad(env, existente.actividad_id);
+    const errorFecha = validarFechaDentroDeActividad(actividad, fecha);
+
+    if (errorFecha) {
+      return json({ ok: false, error: errorFecha }, { status: 400 });
+    }
+
     const duplicada = await env.DB.prepare(`
       SELECT id
       FROM franjas
-      WHERE fecha = ?
+      WHERE actividad_id = ?
+        AND fecha = ?
         AND hora_inicio = ?
         AND hora_fin = ?
         AND id <> ?
       LIMIT 1
     `)
-      .bind(fecha, hora_inicio, hora_fin, id)
+      .bind(existente.actividad_id, fecha, hora_inicio, hora_fin, id)
       .first();
 
     if (duplicada) {
       return json(
         {
           ok: false,
-          error: "Ya existe otra franja con esa fecha y ese rango horario."
+          error: "Ya existe otra franja con esa fecha y ese rango horario para esta actividad."
         },
         { status: 409 }
       );
@@ -304,7 +386,7 @@ export async function onRequestPut(context) {
       );
     }
 
-    const franjas = await obtenerResumenFranjas(env);
+    const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
 
     return json({
       ok: true,
@@ -330,21 +412,15 @@ export async function onRequestDelete(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
     const data = await request.json();
-    const id = parseInt(data.id, 10);
+    const id = parsearIdPositivo(data.id);
 
-    if (!Number.isInteger(id) || id <= 0) {
+    if (!id) {
       return json({ ok: false, error: "ID de franja no válido." }, { status: 400 });
     }
 
-    const existente = await env.DB.prepare(`
-      SELECT id
-      FROM franjas
-      WHERE id = ?
-      LIMIT 1
-    `)
-      .bind(id)
-      .first();
+    const existente = await obtenerFranjaPorId(env, id);
 
     if (!existente) {
       return json(
@@ -352,6 +428,8 @@ export async function onRequestDelete(context) {
         { status: 404 }
       );
     }
+
+    await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
     const uso = await env.DB.prepare(`
       SELECT COUNT(*) AS total
@@ -388,7 +466,7 @@ export async function onRequestDelete(context) {
       );
     }
 
-    const franjas = await obtenerResumenFranjas(env);
+    const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
 
     return json({
       ok: true,
