@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { checkAdminActividad } from "./_permisos.js";
+import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -243,14 +243,18 @@ export async function onRequestGet(context) {
       buscar: limpiarTexto(url.searchParams.get("buscar") || "")
     };
 
-    if (!filtros.actividadId) {
+    const rol = await getRolUsuario(env, session.usuario_id);
+
+    if (rol !== "SUPERADMIN" && !filtros.actividadId) {
       return json(
         { ok: false, error: "actividad_id requerido." },
         { status: 400 }
       );
     }
 
-    await checkAdminActividad(env, session.usuario_id, filtros.actividadId);
+    if (filtros.actividadId) {
+      await checkAdminActividad(env, session.usuario_id, filtros.actividadId);
+    }
 
     const [rows, franjas] = await Promise.all([
       obtenerReservas(env, filtros),
