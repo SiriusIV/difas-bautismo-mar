@@ -310,13 +310,14 @@
   <div class="contenedor">
     <div id="barraAdmin" class="barra-admin">
       <button class="btn btn-admin" onclick="nuevaActividad()">Nueva actividad</button>
-      <button class="btn btn-secundario" onclick="logoutAdmin()">Salir área privada</button>
+      <button class="btn btn-admin-secundario" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
+      <button class="btn btn-secundario" onclick="logoutActual()">Salir</button>
     </div>
 
     <div id="gridActividades" class="grid-actividades"></div>
 
     <div id="bloqueAcceso" class="bloque-acceso">
-      <h3>Acceso usuarios</h3>
+      <h3>Acceso</h3>
 
       <div class="campo">
         <label for="emailLogin">Email</label>
@@ -332,7 +333,6 @@
 
       <div class="acciones-acceso">
         <button class="btn" onclick="loginUsuario()">Entrar</button>
-        <button class="btn btn-secundario" onclick="abrirModalAdmin()">Área privada</button>
       </div>
 
       <div id="mensajeLogin" class="mensaje"></div>
@@ -359,34 +359,9 @@
     </div>
   </div>
 
-    <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
-  <div class="modal" style="max-width: 460px;">
-    <h3>Acceso área privada</h3>
-
-    <div class="campo">
-      <label for="adminUsuario">Usuario</label>
-      <input type="text" id="adminUsuario">
-    </div>
-
-    <div class="campo">
-      <label for="adminPassword">Contraseña</label>
-      <input type="password" id="adminPassword">
-    </div>
-
-    <div id="mensajeAdmin" class="mensaje"></div>
-
-    <div class="modal-acciones">
-      <button class="btn" onclick="loginAdminModal()">Entrar</button>
-      <button class="btn btn-secundario" onclick="cerrarModalAdmin()">Cerrar</button>
-    </div>
-  </div>
-</div>  
-  
   <script>
-    
     let actividadesCache = [];
     let usuarioAutenticado = null;
-    let adminAutenticado = null;
     let actividadModalActual = null;
 
     function mensaje(id, tipo, texto) {
@@ -403,6 +378,14 @@
       el.style.display = "none";
     }
 
+    function esAdmin() {
+      return usuarioAutenticado && (usuarioAutenticado.rol === "ADMIN" || usuarioAutenticado.rol === "SUPERADMIN");
+    }
+
+    function esSuperAdmin() {
+      return usuarioAutenticado && usuarioAutenticado.rol === "SUPERADMIN";
+    }
+
     async function comprobarSesionUsuario() {
       const res = await fetch("/api/usuario/session", {
         credentials: "include"
@@ -410,36 +393,28 @@
 
       if (!res.ok) {
         usuarioAutenticado = null;
+        actualizarModoAcceso();
         return;
       }
 
       const data = await res.json();
       usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
+      actualizarModoAcceso();
     }
 
-    async function comprobarSesionAdmin() {
-      const res = await fetch("/api/admin/session", {
-        credentials: "include"
-      });
+    function actualizarModoAcceso() {
+      const admin = esAdmin();
+      const superadmin = esSuperAdmin();
 
-      if (!res.ok) {
-        adminAutenticado = null;
-        actualizarModoAdmin();
-        return;
-      }
-
-      const data = await res.json();
-      adminAutenticado = data.ok && data.authenticated ? data.user : null;
-      actualizarModoAdmin();
-    }
-
-    function actualizarModoAdmin() {
-      document.getElementById("barraAdmin").style.display = adminAutenticado ? "flex" : "none";
-      document.getElementById("bloqueAcceso").style.display = adminAutenticado ? "none" : "block";
+      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+      document.getElementById("bloqueAcceso").style.display = usuarioAutenticado ? "none" : "block";
+      document.getElementById("btnGestionAdmins").style.display = superadmin ? "inline-block" : "none";
     }
 
     async function cargarActividades() {
-      const res = await fetch("/api/actividades");
+      const res = await fetch("/api/actividades", {
+        credentials: "include"
+      });
       const data = await res.json();
 
       if (!data.ok) return;
@@ -485,9 +460,14 @@
         ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
       `;
 
-      document.getElementById("btnSolicitarActividad").style.display = usuarioAutenticado ? "inline-block" : "none";
-      document.getElementById("btnEditarActividad").style.display = adminAutenticado ? "inline-block" : "none";
-      document.getElementById("btnVerReservasActividad").style.display = adminAutenticado ? "inline-block" : "none";
+      document.getElementById("btnSolicitarActividad").style.display =
+        usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
+
+      document.getElementById("btnEditarActividad").style.display =
+        esAdmin() ? "inline-block" : "none";
+
+      document.getElementById("btnVerReservasActividad").style.display =
+        esAdmin() ? "inline-block" : "none";
 
       document.getElementById("modalActividad").classList.add("activo");
       document.getElementById("modalActividad").setAttribute("aria-hidden", "false");
@@ -530,59 +510,42 @@
       const data = await res.json();
 
       if (data.ok) {
+        if (data.redirect_to) {
+          location.href = data.redirect_to;
+          return;
+        }
+
         location.href = "usuario-panel.html";
       } else {
         mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
       }
     }
 
-    function abrirModalAdmin() {
-  const modal = document.getElementById("modalAdmin");
-  modal.classList.add("activo");
-  modal.setAttribute("aria-hidden", "false");
-}
+    async function logoutActual() {
+      if (esAdmin()) {
+        await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "include"
+        });
+      }
 
-function cerrarModalAdmin() {
-  const modal = document.getElementById("modalAdmin");
-  modal.classList.remove("activo");
-  modal.setAttribute("aria-hidden", "true");
-  limpiarMensaje("mensajeAdmin");
-}
-
-async function loginAdminModal() {
-  limpiarMensaje("mensajeAdmin");
-
-  const username = document.getElementById("adminUsuario").value.trim();
-  const password = document.getElementById("adminPassword").value.trim();
-
-  const res = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ username, password })
-  });
-
-  const data = await res.json();
-
-  if (data.ok) {
-    await comprobarSesionAdmin();
-    cerrarModalAdmin();
-  } else {
-    mensaje("mensajeAdmin", "error", data.error || "No se pudo iniciar sesión como administrador.");
-  }
-}
-
-    async function logoutAdmin() {
-      await fetch("/api/admin/logout", {
+      await fetch("/api/usuario/logout", {
         method: "POST",
         credentials: "include"
       });
-      adminAutenticado = null;
-      actualizarModoAdmin();
+
+      usuarioAutenticado = null;
+      actualizarModoAcceso();
+      cerrarModalActividad();
+      location.href = "portal.html";
     }
 
     function nuevaActividad() {
       alert("Alta de nueva actividad pendiente de implementar.");
+    }
+
+    function gestionAdmins() {
+      alert("Panel de administradores pendiente de implementar.");
     }
 
     function recuperarPassword(event) {
@@ -602,13 +565,8 @@ async function loginAdminModal() {
       if (e.target.id === "modalActividad") cerrarModalActividad();
     });
 
-    document.getElementById("modalAdmin").addEventListener("click", function (e) {
-      if (e.target.id === "modalAdmin") cerrarModalAdmin();
-    });
-
     (async function init() {
       await comprobarSesionUsuario();
-      await comprobarSesionAdmin();
       await cargarActividades();
     })();
   </script>
