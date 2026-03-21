@@ -31,9 +31,9 @@ export async function onRequestPost(context) {
     const password = String(body.password || "").trim();
     const rol = "ADMIN";
 
-    const actividad_id = Number(body.actividad_id || 0);
+    // ❌ ELIMINADO: actividad_id obligatorio
 
-    if (!nombre || !email || !password || !actividad_id) {
+    if (!nombre || !email || !password) {
       return json({ ok: false, error: "Faltan datos obligatorios" }, 400);
     }
 
@@ -48,7 +48,7 @@ export async function onRequestPost(context) {
 
     const password_hash = await hashPassword(password);
 
-    // 1. Crear usuario
+    // 1. Crear usuario (SIN actividad)
     const result = await db.prepare(`
       INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_alta)
       VALUES (?, ?, ?, ?, 1, datetime('now'))
@@ -56,15 +56,12 @@ export async function onRequestPost(context) {
 
     const usuario_id = result.meta.last_row_id;
 
-    // 2. ASIGNAR ACTIVIDAD (CLAVE DEL PROBLEMA)
-    await db.prepare(`
-      INSERT INTO usuario_actividad (usuario_id, actividad_id, activo)
-      VALUES (?, ?, 1)
-    `).bind(usuario_id, actividad_id).run();
+    // ❌ ELIMINADO: asignación automática de actividad
 
     return json({
       ok: true,
-      mensaje: "Administrador creado correctamente"
+      mensaje: "Administrador creado correctamente",
+      usuario_id
     });
 
   } catch (error) {
