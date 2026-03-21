@@ -44,6 +44,7 @@ async function obtenerFranja(env, franjaId) {
   return await env.DB.prepare(`
     SELECT
       id,
+      actividad_id,
       fecha,
       hora_inicio,
       hora_fin,
@@ -132,6 +133,7 @@ export async function onRequestPost(context) {
 
     const data = await request.json();
 
+    const actividadId = parseInt(data.actividad_id, 10);
     const centro = limpiarTexto(data.centro);
     const contacto = limpiarTexto(data.contacto);
     const telefono = limpiarTexto(data.telefono);
@@ -139,6 +141,13 @@ export async function onRequestPost(context) {
     const observaciones = limpiarTexto(data.observaciones);
     const franjaId = parseInt(data.franja, 10);
     const plazasReservadas = parseInt(data.plazas_solicitadas, 10);
+
+    if (!Number.isInteger(actividadId) || actividadId <= 0) {
+      return json(
+        { ok: false, error: "La actividad indicada no es válida." },
+        { status: 400 }
+      );
+    }
 
     if (!centro || !contacto || !telefono || !email) {
       return json(
@@ -177,6 +186,13 @@ export async function onRequestPost(context) {
       );
     }
 
+    if (Number(franja.actividad_id || 0) !== actividadId) {
+      return json(
+        { ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." },
+        { status: 400 }
+      );
+    }
+
     const centroComparacion = normalizarCentroComparacion(centro);
     const duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
 
@@ -211,6 +227,7 @@ export async function onRequestPost(context) {
     const sqlInsert = `
       INSERT INTO reservas (
         franja_id,
+        actividad_id,
         codigo_reserva,
         token_edicion,
         estado,
@@ -228,12 +245,13 @@ export async function onRequestPost(context) {
         fecha_modificacion,
         usuario_id
       )
-      VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, 0, 0, ?, datetime('now', '+' || ? || ' minutes'), datetime('now'), datetime('now'), ?)
+      VALUES (?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, 0, 0, ?, datetime('now', '+' || ? || ' minutes'), datetime('now'), datetime('now'), ?)
     `;
 
     const result = await env.DB.prepare(sqlInsert)
       .bind(
         franjaId,
+        actividadId,
         codigoReserva,
         tokenEdicion,
         centro,
@@ -262,6 +280,7 @@ export async function onRequestPost(context) {
         token_edicion,
         estado,
         franja_id,
+        actividad_id,
         plazas_prereservadas,
         prereserva_expira_en,
         usuario_id
@@ -278,6 +297,7 @@ export async function onRequestPost(context) {
       estado: reservaCreada.estado,
       franja: {
         id: franja.id,
+        actividad_id: franja.actividad_id,
         fecha: franja.fecha,
         hora_inicio: franja.hora_inicio,
         hora_fin: franja.hora_fin,
