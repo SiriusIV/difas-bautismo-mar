@@ -5,7 +5,7 @@ function json(data, init = {}) {
   });
 }
 
-async function obtenerFranjasConDisponibilidad(env) {
+async function obtenerFranjasConDisponibilidad(env, actividad_id) {
   const sql = `
     SELECT
       f.id,
@@ -53,18 +53,22 @@ async function obtenerFranjasConDisponibilidad(env) {
     FROM franjas f
     LEFT JOIN reservas r
       ON r.franja_id = f.id
+
+    WHERE f.actividad_id = ?
+
     GROUP BY
       f.id,
       f.fecha,
       f.hora_inicio,
       f.hora_fin,
       f.capacidad
+
     ORDER BY
       f.fecha ASC,
       f.hora_inicio ASC
   `;
 
-  const result = await env.DB.prepare(sql).all();
+  const result = await env.DB.prepare(sql).bind(actividad_id).all();
   return result.results || [];
 }
 
@@ -76,13 +80,14 @@ export async function onRequestGet(context) {
     const actividad_id = Number(url.searchParams.get("actividad_id"));
 
     if (!actividad_id) {
-      return json({ ok: false, error: "Actividad obligatoria" }, 400);
+      return json({ ok: false, error: "Actividad obligatoria" }, { status: 400 });
     }
 
     const franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
 
-    return json(
-      franjas.map(f => ({
+    return json({
+      ok: true,
+      franjas: franjas.map(f => ({
         id: f.id,
         fecha: f.fecha,
         hora_inicio: f.hora_inicio,
@@ -91,7 +96,8 @@ export async function onRequestGet(context) {
         ocupadas: Number(f.ocupadas || 0),
         disponibles: Number(f.disponibles || 0)
       }))
-    );
+    });
+
   } catch (error) {
     return json(
       {
