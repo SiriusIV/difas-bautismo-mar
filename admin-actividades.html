@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de actividades</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+
+    .contenedor {
+      max-width: 1200px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 { margin: 0; font-size: 28px; }
+    h2 { margin: 8px 0 0; font-size: 18px; font-weight: normal; }
+
+    .cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 24px;
+      min-height: 120px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 0;
+      top: 0;
+      max-width: 110px;
+      height: auto;
+    }
+
+    .titulos {
+      text-align: center;
+    }
+
+    .acciones-cabecera {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn, .btn-enlace {
+      background: #0b5ed7;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover, .btn-enlace:hover {
+      background: #094db1;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .fila {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .fila-una {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .acciones-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mensaje {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .preview {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.6;
+    }
+
+    .preview img {
+      max-width: 260px;
+      max-height: 180px;
+      object-fit: cover;
+      display: block;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      background: #dfe7ef;
+    }
+
+    @media (max-width: 900px) {
+      .fila {
+        grid-template-columns: 1fr;
+      }
+
+      .logo,
+      .acciones-cabecera {
+        position: static;
+        display: block;
+        margin: 0 auto 12px auto;
+      }
+
+      .cabecera {
+        display: block;
+        min-height: auto;
+      }
+
+      .acciones-cabecera {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor" id="app" style="display:none;">
+    <div class="cabecera">
+      <img src="logo.png" alt="Logo" class="logo">
+      <div class="titulos">
+        <h1>Gestión de actividades</h1>
+        <h2>Alta y edición de eventos</h2>
+      </div>
+      <div class="acciones-cabecera">
+        <a class="btn-enlace btn-secundario" href="portal.html">Volver al portal</a>
+        <button type="button" class="btn" id="btnCerrarSesion">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div id="mensajeActividad" class="mensaje"></div>
+
+    <div class="panel">
+      <h3>Nueva actividad / evento</h3>
+
+      <form id="formActividad" novalidate>
+        <input type="hidden" id="actividadId" value="">
+
+        <div class="fila">
+          <div>
+            <label for="nombre">Nombre interno</label>
+            <input type="text" id="nombre" required>
+          </div>
+
+          <div>
+            <label for="admin_id">Administrador responsable</label>
+            <select id="admin_id" required></select>
+          </div>
+        </div>
+
+        <div class="fila">
+          <div>
+            <label for="organizador_publico">Organizador público</label>
+            <input type="text" id="organizador_publico">
+          </div>
+
+          <div>
+            <label for="tipo">Tipo</label>
+            <select id="tipo">
+              <option value="TEMPORAL">TEMPORAL</option>
+              <option value="PERMANENTE">PERMANENTE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fila" id="bloqueFechas">
+          <div>
+            <label for="fecha_inicio">Fecha inicio</label>
+            <input type="date" id="fecha_inicio">
+          </div>
+
+          <div>
+            <label for="fecha_fin">Fecha fin</label>
+            <input type="date" id="fecha_fin">
+          </div>
+        </div>
+
+        <div class="fila">
+          <div>
+            <label for="titulo_publico">Título público</label>
+            <input type="text" id="titulo_publico">
+          </div>
+
+          <div>
+            <label for="subtitulo_publico">Subtítulo público</label>
+            <input type="text" id="subtitulo_publico">
+          </div>
+        </div>
+
+        <div class="fila">
+          <div>
+            <label for="lugar">Lugar</label>
+            <input type="text" id="lugar">
+          </div>
+
+          <div>
+            <label for="imagen_url">Imagen URL</label>
+            <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+          </div>
+        </div>
+
+        <div class="fila">
+          <div>
+            <label for="visible_portal">Visible en portal</label>
+            <select id="visible_portal">
+              <option value="1">Sí</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="activa">Activa</label>
+            <select id="activa">
+              <option value="1">Sí</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fila">
+          <div>
+            <label for="orden_portal">Orden en portal</label>
+            <input type="number" id="orden_portal" value="0" min="0" step="1">
+          </div>
+
+          <div>
+            <label for="descripcion">Descripción interna</label>
+            <input type="text" id="descripcion">
+          </div>
+        </div>
+
+        <div class="fila-una">
+          <div>
+            <label for="descripcion_corta">Descripción corta</label>
+            <textarea id="descripcion_corta"></textarea>
+          </div>
+        </div>
+
+        <div class="fila-una">
+          <div>
+            <label for="descripcion_larga">Descripción larga</label>
+            <textarea id="descripcion_larga"></textarea>
+          </div>
+        </div>
+
+        <div class="acciones-form">
+          <button type="submit" class="btn" id="btnGuardarActividad">Guardar actividad</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Vista previa básica</h3>
+      <div class="preview">
+        <img id="previewImagen" src="logo.png" alt="Vista previa">
+        <div><strong>Título:</strong> <span id="previewTitulo">-</span></div>
+        <div><strong>Organizador:</strong> <span id="previewOrganizador">-</span></div>
+        <div><strong>Subtítulo:</strong> <span id="previewSubtitulo">-</span></div>
+        <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
+        <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
+        <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
+        <div style="margin-top:8px;"><strong>Descripción corta:</strong></div>
+        <div id="previewDescripcionCorta">-</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminsCache = [];
+
+    function mostrarMensaje(tipo, texto) {
+      const m = document.getElementById("mensajeActividad");
+      m.className = "mensaje " + tipo;
+      m.style.display = "block";
+      m.textContent = texto;
+    }
+
+    function limpiarMensaje() {
+      const m = document.getElementById("mensajeActividad");
+      m.className = "mensaje";
+      m.style.display = "none";
+      m.textContent = "";
+    }
+
+    function redirigirLogin() {
+      window.location.href = "portal.html";
+    }
+
+    async function comprobarSesionAdmin() {
+      const response = await fetch("/api/admin/session", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) {
+        redirigirLogin();
+        return false;
+      }
+
+      return true;
+    }
+
+    async function cerrarSesion() {
+      try {
+        await fetch("/api/usuario/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+      } catch (_) {}
+      redirigirLogin();
+    }
+
+    async function cargarAdmins() {
+      const res = await fetch("/api/admin/admins-lista", {
+        credentials: "same-origin"
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar los administradores.");
+      }
+
+      adminsCache = Array.isArray(data.admins) ? data.admins : [];
+
+      const sel = document.getElementById("admin_id");
+      sel.innerHTML = `<option value="">Seleccione administrador</option>` +
+        adminsCache.map(a => `
+          <option value="${a.id}">${a.nombre} (${a.email})</option>
+        `).join("");
+    }
+
+    function actualizarBloqueFechas() {
+      const tipo = document.getElementById("tipo").value;
+      document.getElementById("bloqueFechas").style.display =
+        tipo === "TEMPORAL" ? "grid" : "none";
+    }
+
+    function actualizarPreview() {
+      const titulo = document.getElementById("titulo_publico").value.trim() || document.getElementById("nombre").value.trim() || "-";
+      const organizador = document.getElementById("organizador_publico").value.trim() || "-";
+      const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "-";
+      const lugar = document.getElementById("lugar").value.trim() || "-";
+      const tipo = document.getElementById("tipo").value;
+      const fecha_inicio = document.getElementById("fecha_inicio").value;
+      const fecha_fin = document.getElementById("fecha_fin").value;
+      const descripcion_corta = document.getElementById("descripcion_corta").value.trim() || "-";
+      const imagen = document.getElementById("imagen_url").value.trim() || "logo.png";
+
+      document.getElementById("previewTitulo").textContent = titulo;
+      document.getElementById("previewOrganizador").textContent = organizador;
+      document.getElementById("previewSubtitulo").textContent = subtitulo;
+      document.getElementById("previewLugar").textContent = lugar;
+      document.getElementById("previewTipo").textContent = tipo;
+      document.getElementById("previewFechas").textContent =
+        tipo === "TEMPORAL"
+          ? `${fecha_inicio || "-"} a ${fecha_fin || "-"}`
+          : "Permanente";
+      document.getElementById("previewDescripcionCorta").textContent = descripcion_corta;
+      document.getElementById("previewImagen").src = imagen;
+    }
+
+    async function guardarActividad(event) {
+      event.preventDefault();
+      limpiarMensaje();
+
+      const payload = {
+        id: document.getElementById("actividadId").value || null,
+        nombre: document.getElementById("nombre").value.trim(),
+        admin_id: document.getElementById("admin_id").value,
+        organizador_publico: document.getElementById("organizador_publico").value.trim(),
+        tipo: document.getElementById("tipo").value,
+        fecha_inicio: document.getElementById("fecha_inicio").value,
+        fecha_fin: document.getElementById("fecha_fin").value,
+        activa: document.getElementById("activa").value,
+        descripcion: document.getElementById("descripcion").value.trim(),
+        titulo_publico: document.getElementById("titulo_publico").value.trim(),
+        subtitulo_publico: document.getElementById("subtitulo_publico").value.trim(),
+        descripcion_corta: document.getElementById("descripcion_corta").value.trim(),
+        descripcion_larga: document.getElementById("descripcion_larga").value.trim(),
+        lugar: document.getElementById("lugar").value.trim(),
+        imagen_url: document.getElementById("imagen_url").value.trim(),
+        visible_portal: document.getElementById("visible_portal").value,
+        orden_portal: document.getElementById("orden_portal").value
+      };
+
+      if (!payload.nombre || !payload.admin_id) {
+        mostrarMensaje("error", "Debe indicar al menos nombre y administrador responsable.");
+        return;
+      }
+
+      const esEdicion = !!payload.id;
+
+      const res = await fetch("/api/admin/actividades-guardar", {
+        method: esEdicion ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        mostrarMensaje("ok", data.mensaje || "Actividad guardada correctamente.");
+        if (!esEdicion && data.id) {
+          document.getElementById("actividadId").value = data.id;
+        }
+      } else {
+        mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await comprobarSesionAdmin();
+      if (!ok) return;
+
+      document.getElementById("app").style.display = "block";
+
+      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+      document.getElementById("formActividad").addEventListener("submit", guardarActividad);
+      document.getElementById("tipo").addEventListener("change", function () {
+        actualizarBloqueFechas();
+        actualizarPreview();
+      });
+
+      [
+        "nombre",
+        "admin_id",
+        "organizador_publico",
+        "fecha_inicio",
+        "fecha_fin",
+        "titulo_publico",
+        "subtitulo_publico",
+        "descripcion_corta",
+        "lugar",
+        "imagen_url",
+        "tipo"
+      ].forEach(id => {
+        document.getElementById(id).addEventListener("input", actualizarPreview);
+        document.getElementById(id).addEventListener("change", actualizarPreview);
+      });
+
+      try {
+        await cargarAdmins();
+        actualizarBloqueFechas();
+        actualizarPreview();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
+      }
+    });
+  </script>
+</body>
+</html>
