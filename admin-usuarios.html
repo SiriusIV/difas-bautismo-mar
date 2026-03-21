@@ -42,8 +42,7 @@
       margin-bottom: 4px;
     }
 
-    .campo input,
-    .campo select {
+    .campo input {
       width: 100%;
       padding: 8px;
       border-radius: 6px;
@@ -64,6 +63,47 @@
       background: #094db1;
     }
 
+    .barra-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icono {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #f8fafc;
+      color: #8a98a8;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -75,7 +115,16 @@
       border-bottom: 1px solid #ddd;
       text-align: left;
       font-size: 14px;
-      vertical-align: top;
+      vertical-align: middle;
+    }
+
+    th.sel-col, td.sel-col {
+      width: 36px;
+      text-align: center;
+    }
+
+    .fila-seleccionada {
+      background: #f2f7ff;
     }
 
     .mensaje {
@@ -97,20 +146,51 @@
       display: block;
     }
 
-    .lista-actividades {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
     }
 
-    .asignar {
-      margin-top: 6px;
+    .modal-fondo.activo {
       display: flex;
-      gap: 6px;
     }
 
-    .asignar select {
-      flex: 1;
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 720px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 24px;
+      color: #123a63;
+    }
+
+    .modal-contenido {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.6;
+      min-height: 70px;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
     }
   </style>
 </head>
@@ -146,13 +226,41 @@
   <div class="bloque">
     <h3>Administradores y superadministrador</h3>
 
+    <div class="barra-acciones">
+      <button type="button" class="btn-icono" id="btnConsultarActividades" title="Consultar actividades asociadas" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"></path>
+          <path d="M9 9l12-2"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+      </button>
+
+      <button type="button" class="btn-icono" id="btnEditarAdmin" title="Editar administrador" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+        </svg>
+      </button>
+
+      <button type="button" class="btn-icono" id="btnEliminarAdmin" title="Eliminar administrador" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M8 6V4h8v2"></path>
+          <path d="M19 6l-1 14H6L5 6"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </button>
+    </div>
+
     <table>
       <thead>
         <tr>
+          <th class="sel-col"></th>
           <th>Nombre</th>
           <th>Email</th>
           <th>Rol</th>
-          <th>Actividades</th>
         </tr>
       </thead>
       <tbody id="tablaUsuarios"></tbody>
@@ -161,8 +269,20 @@
 
 </div>
 
+<div id="modalActividades" class="modal-fondo" aria-hidden="true">
+  <div class="modal">
+    <h3 id="modalActividadesTitulo">Actividades asociadas</h3>
+    <div id="modalActividadesContenido" class="modal-contenido"></div>
+
+    <div class="modal-acciones">
+      <button type="button" class="btn" id="btnCerrarModalActividades">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let actividadesDisponibles = [];
+let usuariosCache = [];
+let usuarioSeleccionado = null;
 
 function mostrarMensajeCrear(tipo, texto) {
   const msg = document.getElementById("mensajeCrear");
@@ -178,6 +298,42 @@ function limpiarMensajeCrear() {
   msg.style.display = "none";
 }
 
+function actualizarBotonesAccion() {
+  const hay = !!usuarioSeleccionado;
+  document.getElementById("btnConsultarActividades").disabled = !hay;
+  document.getElementById("btnEditarAdmin").disabled = !hay;
+  document.getElementById("btnEliminarAdmin").disabled = !hay;
+
+  if (usuarioSeleccionado && usuarioSeleccionado.rol === "SUPERADMIN") {
+    document.getElementById("btnEliminarAdmin").disabled = true;
+  }
+}
+
+function seleccionarUsuario(id) {
+  usuarioSeleccionado = usuariosCache.find(u => Number(u.id) === Number(id)) || null;
+  renderizarTabla();
+  actualizarBotonesAccion();
+}
+
+function renderizarTabla() {
+  const tbody = document.getElementById("tablaUsuarios");
+
+  tbody.innerHTML = (usuariosCache || []).map(u => `
+    <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(u.id) ? 'fila-seleccionada' : ''}">
+      <td class="sel-col">
+        <input type="radio" name="seleccionUsuario"
+          ${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(u.id) ? 'checked' : ''}
+          onchange="seleccionarUsuario(${u.id})">
+      </td>
+      <td>${u.nombre || ""}</td>
+      <td>${u.email || ""}</td>
+      <td>${u.rol || ""}</td>
+    </tr>
+  `).join("");
+
+  actualizarBotonesAccion();
+}
+
 async function cargarUsuarios() {
   const res = await fetch("/api/admin/usuarios-lista", {
     credentials: "include"
@@ -189,45 +345,13 @@ async function cargarUsuarios() {
     throw new Error(data.error || "No se pudo cargar la lista de administradores");
   }
 
-  actividadesDisponibles = Array.isArray(data.actividades_disponibles)
-    ? data.actividades_disponibles
-    : [];
+  usuariosCache = Array.isArray(data.usuarios) ? data.usuarios : [];
 
-  const tbody = document.getElementById("tablaUsuarios");
+  if (usuarioSeleccionado) {
+    usuarioSeleccionado = usuariosCache.find(u => Number(u.id) === Number(usuarioSeleccionado.id)) || null;
+  }
 
-  tbody.innerHTML = (data.usuarios || []).map(u => {
-    const actividadesTexto = u.rol === "SUPERADMIN"
-      ? "Todas"
-      : (u.actividades || []).map(a => a.actividad_nombre).join(", ");
-
-    const selector = u.rol === "ADMIN"
-      ? `
-        <div class="asignar">
-          <select id="sel_${u.id}">
-            <option value="">Seleccione una actividad</option>
-            ${actividadesDisponibles.map(a =>
-              `<option value="${a.id}">${a.titulo_publico || a.nombre}</option>`
-            ).join("")}
-          </select>
-          <button class="btn" onclick="asignar(${u.id})">+</button>
-        </div>
-      `
-      : "";
-
-    return `
-      <tr>
-        <td>${u.nombre || ""}</td>
-        <td>${u.email || ""}</td>
-        <td>${u.rol || ""}</td>
-        <td>
-          <div class="lista-actividades">
-            ${actividadesTexto || "-"}
-          </div>
-          ${selector}
-        </td>
-      </tr>
-    `;
-  }).join("");
+  renderizarTabla();
 }
 
 async function crearUsuario() {
@@ -267,30 +391,52 @@ async function crearUsuario() {
   }
 }
 
-async function asignar(usuario_id) {
-  const select = document.getElementById("sel_" + usuario_id);
-  const actividad_id = select.value;
+function abrirModalActividades() {
+  if (!usuarioSeleccionado) return;
 
-  if (!actividad_id) {
-    alert("Seleccione una actividad.");
-    return;
-  }
+  const titulo = `Actividades asociadas · ${usuarioSeleccionado.nombre}`;
+  document.getElementById("modalActividadesTitulo").textContent = titulo;
 
-  const res = await fetch("/api/admin/usuario-actividad-asignar", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    credentials: "include",
-    body: JSON.stringify({ usuario_id, actividad_id })
-  });
+  const actividades = Array.isArray(usuarioSeleccionado.actividades)
+    ? usuarioSeleccionado.actividades
+    : [];
 
-  const data = await res.json();
+  document.getElementById("modalActividadesContenido").innerHTML =
+    usuarioSeleccionado.rol === "SUPERADMIN"
+      ? "El superadministrador tiene visibilidad global sobre todos los eventos."
+      : (
+          actividades.length
+            ? actividades.map(a => `• ${a.actividad_nombre}`).join("<br>")
+            : "Este administrador no tiene actividades asociadas actualmente."
+        );
 
-  if (res.ok && data.ok) {
-    await cargarUsuarios();
-  } else {
-    alert(data.error || "Error al asignar actividad");
-  }
+  document.getElementById("modalActividades").classList.add("activo");
+  document.getElementById("modalActividades").setAttribute("aria-hidden", "false");
 }
+
+function cerrarModalActividades() {
+  document.getElementById("modalActividades").classList.remove("activo");
+  document.getElementById("modalActividades").setAttribute("aria-hidden", "true");
+}
+
+function editarAdminSeleccionado() {
+  if (!usuarioSeleccionado) return;
+  alert("Edición de administrador pendiente de implementar.");
+}
+
+function eliminarAdminSeleccionado() {
+  if (!usuarioSeleccionado) return;
+  alert("Eliminación de administrador pendiente de implementar.");
+}
+
+document.getElementById("btnConsultarActividades").addEventListener("click", abrirModalActividades);
+document.getElementById("btnEditarAdmin").addEventListener("click", editarAdminSeleccionado);
+document.getElementById("btnEliminarAdmin").addEventListener("click", eliminarAdminSeleccionado);
+document.getElementById("btnCerrarModalActividades").addEventListener("click", cerrarModalActividades);
+
+document.getElementById("modalActividades").addEventListener("click", function (e) {
+  if (e.target.id === "modalActividades") cerrarModalActividades();
+});
 
 (async function init() {
   try {
@@ -299,6 +445,8 @@ async function asignar(usuario_id) {
     mostrarMensajeCrear("error", error.message || "Error al cargar la pantalla");
   }
 })();
+
+window.seleccionarUsuario = seleccionarUsuario;
 </script>
 
 </body>
