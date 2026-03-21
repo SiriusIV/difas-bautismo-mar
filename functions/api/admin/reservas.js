@@ -1,3 +1,6 @@
+import { getAdminSession } from "./_auth.js";
+import { checkAdminActividad } from "./_permisos.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -198,10 +201,29 @@ async function obtenerFranjas(env, actividadId = null) {
   return result.results || [];
 }
 
+async function obtenerActividadIdDeReserva(env, reservaId) {
+  const result = await env.DB.prepare(`
+    SELECT actividad_id
+    FROM reservas
+    WHERE id = ?
+    LIMIT 1
+  `).bind(reservaId).all();
+
+  return result?.results?.[0]?.actividad_id || null;
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json(
+        { ok: false, error: "No autorizado." },
+        { status: 401 }
+      );
+    }
+
     const url = new URL(request.url);
 
     const filtros = {
@@ -220,6 +242,15 @@ export async function onRequestGet(context) {
       })(),
       buscar: limpiarTexto(url.searchParams.get("buscar") || "")
     };
+
+    if (!filtros.actividadId) {
+      return json(
+        { ok: false, error: "actividad_id requerido." },
+        { status: 400 }
+      );
+    }
+
+    await checkAdminActividad(env, session.usuario_id, filtros.actividadId);
 
     const [rows, franjas] = await Promise.all([
       obtenerReservas(env, filtros),
@@ -290,6 +321,14 @@ export async function onRequestPatch(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json(
+        { ok: false, error: "No autorizado." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const id = Number(body.id || 0);
     const accion = limpiarTexto(body.accion || "").toLowerCase();
@@ -300,6 +339,17 @@ export async function onRequestPatch(context) {
         { status: 400 }
       );
     }
+
+    const actividadId = await obtenerActividadIdDeReserva(env, id);
+
+    if (!actividadId) {
+      return json(
+        { ok: false, error: "Reserva no encontrada o sin actividad asociada." },
+        { status: 404 }
+      );
+    }
+
+    await checkAdminActividad(env, session.usuario_id, actividadId);
 
     let nuevoEstado = null;
     if (accion === "confirmar") nuevoEstado = "CONFIRMADA";
