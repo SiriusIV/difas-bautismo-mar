@@ -459,12 +459,12 @@
       <div class="cabecera-centro">
         <h1 id="tituloEvento">DIFAS 2026</h1>
         <h2>Panel de administración de reservas</h2>
-        <div class="subactividad">Bautismos de mar</div>
+        <div class="subactividad" id="subactividadActual">Actividad</div>
 
         <div class="nav-admin">
-          <a class="nav-btn" href="admin-franjas.html">Franjas horarias</a>
-          <a class="nav-btn activo" href="admin-reservas.html">Reservas</a>
-          <a class="nav-btn" href="admin-calendario.html">Calendario</a>
+          <a class="nav-btn" id="navFranjas" href="admin-franjas.html">Franjas horarias</a>
+          <a class="nav-btn activo" id="navReservas" href="admin-reservas.html">Reservas</a>
+          <a class="nav-btn" id="navCalendario" href="admin-calendario.html">Calendario</a>
         </div>
       </div>
 
@@ -630,30 +630,6 @@
     let reservaSeleccionada = null;
     let reservasActuales = [];
 
-    async function cargarActividadesFiltro() {
-    try {
-    const res = await fetch("/api/actividades");
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) return;
-
-    const sel = document.getElementById("filtroActividad");
-    const valorActual = actividadIdDesdeURL() || sel.value || "";
-
-    sel.innerHTML = `<option value="">Todas</option>`;
-
-    (data.actividades || []).forEach(a => {
-      const opt = document.createElement("option");
-      opt.value = a.id;
-      opt.textContent = a.titulo_publico || a.nombre;
-      if (String(valorActual) === String(a.id)) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  } catch (_) {}
-}
-    
-    
-    
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensaje");
       m.className = "mensaje " + tipo;
@@ -683,12 +659,56 @@
       return Number.isInteger(v) && v > 0 ? v : "";
     }
 
+    function actualizarNavegacionActividad() {
+      const actividadId = (() => {
+        const v = parseInt(document.getElementById("filtroActividad").value || "", 10);
+        return Number.isInteger(v) && v > 0 ? v : "";
+      })();
+
+      const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : "";
+
+      document.getElementById("navFranjas").href = `admin-franjas.html${sufijo}`;
+      document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`;
+      document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`;
+    }
+
+    function actualizarSubactividad() {
+      const sel = document.getElementById("filtroActividad");
+      const texto = sel.options[sel.selectedIndex]?.text || "Todas las actividades";
+      document.getElementById("subactividadActual").textContent = texto;
+      actualizarNavegacionActividad();
+    }
+
+    async function cargarActividadesFiltro() {
+      try {
+        const res = await fetch("/api/actividades", { credentials: "include" });
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) return;
+
+        const sel = document.getElementById("filtroActividad");
+        const valorActual = actividadIdDesdeURL() || sel.value || "";
+
+        sel.innerHTML = `<option value="">Todas</option>`;
+
+        (data.actividades || []).forEach(a => {
+          const opt = document.createElement("option");
+          opt.value = a.id;
+          opt.textContent = a.titulo_publico || a.nombre;
+          if (String(valorActual) === String(a.id)) opt.selected = true;
+          sel.appendChild(opt);
+        });
+
+        actualizarSubactividad();
+      } catch (_) {}
+    }
+
     function leerFiltros() {
       return {
         actividad_id: (() => {
-  const v = parseInt(document.getElementById("filtroActividad").value || "", 10);
-  return Number.isInteger(v) && v > 0 ? v : "";
-})(),
+          const v = parseInt(document.getElementById("filtroActividad").value || "", 10);
+          return Number.isInteger(v) && v > 0 ? v : "";
+        })(),
         fecha: document.getElementById("filtroFecha").value || "",
         franja: document.getElementById("filtroFranja").value || "",
         estado: document.getElementById("filtroEstado").value || "",
@@ -819,6 +839,8 @@
       limpiarMensaje();
 
       try {
+        actualizarSubactividad();
+
         const filtros = leerFiltros();
         const query = construirQuery(filtros);
         const url = `/api/admin/reservas${query ? "?" + query : ""}`;
@@ -846,7 +868,7 @@
 
     async function cerrarSesion() {
       try {
-        await fetch("/api/admin/logout", {
+        await fetch("/api/usuario/logout", {
           method: "POST",
           credentials: "same-origin"
         });
@@ -912,15 +934,22 @@
       }
     }
 
+    document.getElementById("filtroActividad").addEventListener("change", function () {
+      actualizarSubactividad();
+      reservaSeleccionada = null;
+      cargarPanel();
+    });
+
     document.getElementById("btnAplicarFiltros").addEventListener("click", cargarPanel);
 
     document.getElementById("btnLimpiarFiltros").addEventListener("click", function () {
-      document.getElementById("filtroActividad").value = "";
+      document.getElementById("filtroActividad").value = actividadIdDesdeURL() || "";
       document.getElementById("filtroFecha").value = "";
       document.getElementById("filtroFranja").value = "";
       document.getElementById("filtroEstado").value = "";
       document.getElementById("filtroBuscar").value = "";
       reservaSeleccionada = null;
+      actualizarSubactividad();
       cargarPanel();
     });
 
@@ -946,9 +975,9 @@
     });
 
     (async function init() {
-  await cargarActividadesFiltro();
-  await cargarPanel();
-})();
+      await cargarActividadesFiltro();
+      await cargarPanel();
+    })();
 
     window.seleccionarReserva = seleccionarReserva;
     window.abrirModalObservaciones = abrirModalObservaciones;
