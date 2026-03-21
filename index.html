@@ -53,40 +53,13 @@
       text-align: center;
     }
 
-    .lugar-evento {
+    .organizador-evento,
+    .lugar-evento,
+    .fechas-evento {
       margin-top: 8px;
       font-size: 15px;
       color: #444;
       text-align: center;
-    }
-
-    .btn-admin {
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: 1px solid #cfd8e3;
-      background: #fff;
-      color: #334155;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      padding: 0;
-      transition: all 0.15s ease;
-    }
-
-    .btn-admin:hover {
-      background: #f7f9fb;
-      color: #0b5ed7;
-      border-color: #b8c7d8;
-    }
-
-    .btn-admin svg {
-      width: 18px;
-      height: 18px;
     }
 
     .panel {
@@ -341,12 +314,6 @@
         margin: 0 auto 10px auto;
       }
 
-      .btn-admin {
-        position: static;
-        display: flex;
-        margin: 0 auto 12px auto;
-      }
-
       .cabecera {
         display: block;
         min-height: auto;
@@ -360,17 +327,12 @@
       <img src="logo.png" alt="Logo" class="logo">
 
       <div class="titulos">
-        <h1 id="tituloEvento">Cargando evento...</h1>
+        <h1 id="tituloEvento">Cargando actividad...</h1>
         <h2 id="subtituloEvento">Solicitud de reserva</h2>
+        <div id="organizadorEvento" class="organizador-evento" style="display:none;"></div>
         <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+        <div id="fechasEvento" class="fechas-evento" style="display:none;"></div>
       </div>
-
-      <button type="button" id="btnAbrirAdmin" class="btn-admin" title="Acceso administración" aria-label="Acceso administración">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82L4.3 6.46a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.37.37.8.37 1.24 0 .44-.13.87-.37 1.24"></path>
-        </svg>
-      </button>
     </div>
 
     <div id="mensaje" class="mensaje"></div>
@@ -423,6 +385,7 @@
 
         <div class="acciones">
           <button type="submit" id="btnPrepararEnvio">Enviar solicitud</button>
+          <a href="portal.html" class="btn-enlace btn-secundario">Volver al portal</a>
         </div>
       </form>
     </div>
@@ -442,29 +405,6 @@
             Cargando disponibilidad...
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalAdmin" class="modal-fondo" aria-hidden="true">
-    <div class="modal" style="max-width: 460px;">
-      <h3>Acceso administración</h3>
-
-      <div class="fila">
-        <label for="adminUsuario">Usuario</label>
-        <input type="text" id="adminUsuario" autocomplete="username">
-      </div>
-
-      <div class="fila">
-        <label for="adminPassword">Contraseña</label>
-        <input type="password" id="adminPassword" autocomplete="current-password">
-      </div>
-
-      <div id="mensajeAdmin" class="mensaje" style="margin-top:0;"></div>
-
-      <div class="acciones">
-        <button type="button" id="btnLoginAdmin">Entrar</button>
-        <button type="button" id="btnCerrarAdmin" class="btn-secundario">Cerrar</button>
       </div>
     </div>
   </div>
@@ -515,10 +455,17 @@
   </div>
 
   <script>
+    let actividadActual = null;
     let franjasCache = [];
     let envioEnCurso = false;
     let reservaCreada = null;
     let datosPendientesEnvio = null;
+
+    function getActividadId() {
+      const params = new URLSearchParams(window.location.search);
+      const id = parseInt(params.get("actividad_id") || "", 10);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    }
 
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
@@ -529,20 +476,6 @@
 
     function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
-      mensaje.className = "mensaje";
-      mensaje.style.display = "none";
-      mensaje.textContent = "";
-    }
-
-    function mostrarMensajeAdmin(tipo, texto) {
-      const mensaje = document.getElementById("mensajeAdmin");
-      mensaje.className = "mensaje " + tipo;
-      mensaje.style.display = "block";
-      mensaje.textContent = texto;
-    }
-
-    function limpiarMensajeAdmin() {
-      const mensaje = document.getElementById("mensajeAdmin");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
@@ -571,41 +504,109 @@
       return estado || "";
     }
 
-    async function cargarConfigEvento() {
-      try {
-        const response = await fetch("/api/config-evento");
-        const data = await response.json();
+    async function comprobarSesion() {
+      const res = await fetch("/api/usuario/session", {
+        credentials: "include"
+      });
 
-        if (!response.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
-        }
+      if (!res.ok) {
+        window.location.href = "portal.html";
+        return false;
+      }
 
-        const config = data.config || {};
+      const data = await res.json();
 
-        document.title = config.subtitulo_evento || "Solicitud de reserva";
-        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
-        document.getElementById("subtituloEvento").textContent = "Solicitud de reserva";
+      if (!data.ok || !data.authenticated) {
+        window.location.href = "portal.html";
+        return false;
+      }
 
-        const lugarEl = document.getElementById("lugarEvento");
-        if (config.lugar && String(config.lugar).trim() !== "") {
-          lugarEl.style.display = "block";
-          lugarEl.innerHTML = `<strong>Lugar:</strong> ${config.lugar}`;
-        } else {
-          lugarEl.style.display = "none";
-          lugarEl.textContent = "";
-        }
-      } catch (error) {
-        console.error(error);
-        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+      return true;
+    }
+
+    async function cargarActividad() {
+      const actividad_id = getActividadId();
+
+      if (!actividad_id) {
+        throw new Error("No se ha indicado la actividad.");
+      }
+
+      const response = await fetch("/api/actividades", {
+        credentials: "include"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las actividades.");
+      }
+
+      const actividades = Array.isArray(data.actividades) ? data.actividades : [];
+      actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
+
+      if (!actividadActual) {
+        throw new Error("La actividad no está disponible.");
+      }
+
+      document.title = (actividadActual.titulo_publico || actividadActual.nombre || "Solicitud de reserva") + " - Solicitud";
+      document.getElementById("tituloEvento").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
+      document.getElementById("subtituloEvento").textContent = actividadActual.subtitulo_publico || "Solicitud de reserva";
+
+      const organizadorEl = document.getElementById("organizadorEvento");
+      const organizador = String(actividadActual.organizador_publico || "").trim();
+      if (organizador) {
+        organizadorEl.style.display = "block";
+        organizadorEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
+      } else {
+        organizadorEl.style.display = "none";
+        organizadorEl.textContent = "";
+      }
+
+      const lugarEl = document.getElementById("lugarEvento");
+      const lugar = String(actividadActual.lugar || "").trim();
+      if (lugar) {
+        lugarEl.style.display = "block";
+        lugarEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
+      } else {
+        lugarEl.style.display = "none";
+        lugarEl.textContent = "";
+      }
+
+      const fechasEl = document.getElementById("fechasEvento");
+      if (
+        actividadActual.tipo === "TEMPORAL" &&
+        (actividadActual.fecha_inicio || actividadActual.fecha_fin)
+      ) {
+        fechasEl.style.display = "block";
+        fechasEl.innerHTML = `<strong>Fechas:</strong> ${actividadActual.fecha_inicio || ""}${actividadActual.fecha_inicio && actividadActual.fecha_fin ? " - " : ""}${actividadActual.fecha_fin || ""}`;
+      } else {
+        fechasEl.style.display = "none";
+        fechasEl.textContent = "";
       }
     }
 
     async function cargarFranjas() {
-      const response = await fetch("/api/franjas");
-      if (!response.ok) throw new Error("No se pudieron cargar las franjas.");
+      const actividad_id = getActividadId();
+
+      if (!actividad_id) {
+        throw new Error("No se ha indicado la actividad.");
+      }
+
+      const response = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad_id)}`, {
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudieron cargar las franjas.");
+      }
 
       const data = await response.json();
-      franjasCache = Array.isArray(data) ? data : [];
+
+      if (!data.ok) {
+        throw new Error(data.error || "Error cargando franjas.");
+      }
+
+      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
 
       const select = document.getElementById("franja");
       select.innerHTML = '<option value="">Seleccione una opción</option>';
@@ -643,12 +644,13 @@
 
       const disponibles = Number(franja.disponibles || 0);
       const capacidad = Number(franja.capacidad || 0);
-      const ocupadas = capacidad - disponibles;
+      const ocupadas = Number(franja.ocupadas || 0);
       const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
 
       infoFranja.textContent = `Capacidad total: ${capacidad}. Ocupadas: ${ocupadas}. Disponibles: ${disponibles}.`;
 
       resumenReserva.innerHTML = `
+        <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
         <strong>Franja seleccionada:</strong> ${franja.fecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
         <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
@@ -661,6 +663,7 @@
     }
 
     function validarDatosFormulario() {
+      const actividad_id = getActividadId();
       const centro = document.getElementById("centro").value.trim();
       const contacto = document.getElementById("contacto").value.trim();
       const telefono = document.getElementById("telefono").value.trim();
@@ -668,6 +671,10 @@
       const franja = document.getElementById("franja").value;
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
       const observaciones = document.getElementById("observaciones").value.trim();
+
+      if (!actividad_id) {
+        return { ok: false, error: "No se ha indicado la actividad." };
+      }
 
       if (!centro || !contacto || !telefono || !email || !franja) {
         return { ok: false, error: "Debe completar todos los datos obligatorios." };
@@ -692,6 +699,7 @@
       return {
         ok: true,
         datos: {
+          actividad_id,
           centro,
           contacto,
           telefono,
@@ -703,22 +711,11 @@
       };
     }
 
-    function abrirModalAdmin() {
-      limpiarMensajeAdmin();
-      document.getElementById("modalAdmin").classList.add("activo");
-      document.getElementById("modalAdmin").setAttribute("aria-hidden", "false");
-    }
-
-    function cerrarModalAdmin() {
-      document.getElementById("modalAdmin").classList.remove("activo");
-      document.getElementById("modalAdmin").setAttribute("aria-hidden", "true");
-    }
-
     function abrirModalConfirmacion(datos) {
       const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
-        Va a enviar una solicitud con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
+        Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
         El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
         Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
         Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
@@ -762,6 +759,7 @@
         const response = await fetch("/api/reservar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(datosPendientesEnvio)
         });
 
@@ -804,38 +802,10 @@
       alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
     }
 
-    async function loginAdmin() {
-      limpiarMensajeAdmin();
-
-      const username = document.getElementById("adminUsuario").value.trim();
-      const password = document.getElementById("adminPassword").value;
-
-      if (!username || !password) {
-        mostrarMensajeAdmin("error", "Debe introducir usuario y contraseña.");
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ username, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo iniciar sesión.");
-        }
-
-        window.location.href = "admin-reservas.html";
-      } catch (error) {
-        mostrarMensajeAdmin("error", error.message || "No se pudo iniciar sesión.");
-      }
-    }
-
     document.addEventListener("DOMContentLoaded", async function () {
+      const sesionOk = await comprobarSesion();
+      if (!sesionOk) return;
+
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
       document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
 
@@ -860,48 +830,18 @@
       document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
       document.getElementById("btnCerrarModalAsistentes").addEventListener("click", cerrarModalAsistentes);
 
-      document.getElementById("btnAbrirAdmin").addEventListener("click", abrirModalAdmin);
-      document.getElementById("btnCerrarAdmin").addEventListener("click", cerrarModalAdmin);
-      document.getElementById("btnLoginAdmin").addEventListener("click", loginAdmin);
-
-      document.getElementById("modalAdmin").addEventListener("click", function (e) {
-        if (e.target.id === "modalAdmin") cerrarModalAdmin();
-      });
-
       document.getElementById("modalAsistentes").addEventListener("click", function (e) {
         if (e.target.id === "modalAsistentes") cerrarModalAsistentes();
       });
 
       try {
-        await cargarConfigEvento();
+        await cargarActividad();
         await cargarFranjas();
       } catch (error) {
         console.error(error);
-        mostrarMensaje("error", "No se pudo inicializar la página.");
+        mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
       }
     });
   </script>
-
-<script>
-async function comprobarSesion() {
-  const res = await fetch("/api/usuario/session", {
-    credentials: "include"
-  });
-
-  if (res.status === 401) {
-    window.location.href = "portal.html";
-    return;
-  }
-
-  const data = await res.json();
-
-  if (!data.ok || !data.authenticated) {
-    window.location.href = "portal.html";
-  }
-}
-
-comprobarSesion();
-</script>
-  
 </body>
 </html>
