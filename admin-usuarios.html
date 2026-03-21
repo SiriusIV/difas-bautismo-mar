@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de administradores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #123a63;
+    }
+
+    .contenedor {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .bloque {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .campo {
+      margin-bottom: 10px;
+    }
+
+    .campo label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .campo input, .campo select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #0b5ed7;
+      color: #fff;
+    }
+
+    .btn:hover {
+      background: #094db1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .mensaje {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.ok {
+      background: #eaf7ea;
+      color: #146c2e;
+      display: block;
+    }
+
+    .mensaje.error {
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+<div class="contenedor">
+
+  <h1>Gestión de administradores</h1>
+
+  <div class="bloque">
+    <h3>Crear nuevo usuario</h3>
+
+    <div class="campo">
+      <label>Nombre</label>
+      <input id="nombre">
+    </div>
+
+    <div class="campo">
+      <label>Email</label>
+      <input id="email">
+    </div>
+
+    <div class="campo">
+      <label>Contraseña</label>
+      <input type="password" id="password">
+    </div>
+
+    <div class="campo">
+      <label>Rol</label>
+      <select id="rol">
+        <option value="ADMIN">ADMIN</option>
+        <option value="SUPERADMIN">SUPERADMIN</option>
+      </select>
+    </div>
+
+    <button class="btn" onclick="crearUsuario()">Crear</button>
+
+    <div id="mensajeCrear" class="mensaje"></div>
+  </div>
+
+  <div class="bloque">
+    <h3>Administradores existentes</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Actividades</th>
+        </tr>
+      </thead>
+      <tbody id="tablaUsuarios"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+async function cargarUsuarios() {
+  const res = await fetch("/api/admin/usuarios-lista", {
+    credentials: "include"
+  });
+
+  const data = await res.json();
+
+  if (!data.ok) return;
+
+  const tbody = document.getElementById("tablaUsuarios");
+
+  tbody.innerHTML = data.usuarios.map(u => `
+    <tr>
+      <td>${u.nombre}</td>
+      <td>${u.email}</td>
+      <td>${u.rol}</td>
+      <td>
+        ${u.rol === "SUPERADMIN"
+          ? "Todas"
+          : (u.actividades || []).map(a => a.actividad_nombre).join(", ")
+        }
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function crearUsuario() {
+  const nombre = document.getElementById("nombre").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const rol = document.getElementById("rol").value;
+
+  const res = await fetch("/api/admin/usuarios-crear", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    credentials: "include",
+    body: JSON.stringify({ nombre, email, password, rol })
+  });
+
+  const data = await res.json();
+  const msg = document.getElementById("mensajeCrear");
+
+  if (data.ok) {
+    msg.className = "mensaje ok";
+    msg.textContent = "Usuario creado correctamente";
+    cargarUsuarios();
+  } else {
+    msg.className = "mensaje error";
+    msg.textContent = data.error || "Error";
+  }
+}
+
+cargarUsuarios();
+</script>
+
+</body>
+</html>
