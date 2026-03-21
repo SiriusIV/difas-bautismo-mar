@@ -138,7 +138,7 @@
       <input type="password" id="password">
     </div>
 
-  <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
+    <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
 
     <div id="mensajeCrear" class="mensaje"></div>
   </div>
@@ -178,16 +178,6 @@ function limpiarMensajeCrear() {
   msg.style.display = "none";
 }
 
-function pintarSelectorActividad() {
-  const select = document.getElementById("actividad");
-  const valorActual = select.value || "";
-
-  select.innerHTML = `<option value="">Seleccione una actividad</option>` +
-    actividadesDisponibles.map(a =>
-      `<option value="${a.id}" ${String(valorActual) === String(a.id) ? "selected" : ""}>${a.titulo_publico || a.nombre}</option>`
-    ).join("");
-}
-
 async function cargarUsuarios() {
   const res = await fetch("/api/admin/usuarios-lista", {
     credentials: "include"
@@ -203,8 +193,6 @@ async function cargarUsuarios() {
     ? data.actividades_disponibles
     : [];
 
-  pintarSelectorActividad();
-
   const tbody = document.getElementById("tablaUsuarios");
 
   tbody.innerHTML = (data.usuarios || []).map(u => {
@@ -216,6 +204,7 @@ async function cargarUsuarios() {
       ? `
         <div class="asignar">
           <select id="sel_${u.id}">
+            <option value="">Seleccione una actividad</option>
             ${actividadesDisponibles.map(a =>
               `<option value="${a.id}">${a.titulo_publico || a.nombre}</option>`
             ).join("")}
@@ -249,9 +238,9 @@ async function crearUsuario() {
   const password = document.getElementById("password").value;
 
   if (!nombre || !email || !password) {
-  mostrarMensajeCrear("error", "Debe rellenar nombre, email y contraseña.");
-  return;
-}
+    mostrarMensajeCrear("error", "Debe rellenar nombre, email y contraseña.");
+    return;
+  }
 
   const res = await fetch("/api/admin/usuarios-crear", {
     method: "POST",
@@ -272,7 +261,6 @@ async function crearUsuario() {
     document.getElementById("nombre").value = "";
     document.getElementById("email").value = "";
     document.getElementById("password").value = "";
-    document.getElementById("actividad").value = "";
     await cargarUsuarios();
   } else {
     mostrarMensajeCrear("error", data.error || "Error al crear el administrador");
