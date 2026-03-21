@@ -42,11 +42,13 @@
       margin-bottom: 4px;
     }
 
-    .campo input, .campo select {
+    .campo input,
+    .campo select {
       width: 100%;
       padding: 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     .btn {
@@ -122,18 +124,25 @@
     <h3>Crear nuevo administrador</h3>
 
     <div class="campo">
-      <label>Nombre</label>
+      <label for="nombre">Nombre</label>
       <input id="nombre">
     </div>
 
     <div class="campo">
-      <label>Email</label>
-      <input id="email">
+      <label for="email">Email</label>
+      <input id="email" type="email">
     </div>
 
     <div class="campo">
-      <label>Contraseña</label>
+      <label for="password">Contraseña</label>
       <input type="password" id="password">
+    </div>
+
+    <div class="campo">
+      <label for="actividad">Actividad inicial</label>
+      <select id="actividad">
+        <option value="">Seleccione una actividad</option>
+      </select>
     </div>
 
     <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
@@ -162,19 +171,50 @@
 <script>
 let actividadesDisponibles = [];
 
+function mostrarMensajeCrear(tipo, texto) {
+  const msg = document.getElementById("mensajeCrear");
+  msg.className = "mensaje " + tipo;
+  msg.textContent = texto;
+  msg.style.display = "block";
+}
+
+function limpiarMensajeCrear() {
+  const msg = document.getElementById("mensajeCrear");
+  msg.className = "mensaje";
+  msg.textContent = "";
+  msg.style.display = "none";
+}
+
+function pintarSelectorActividad() {
+  const select = document.getElementById("actividad");
+  const valorActual = select.value || "";
+
+  select.innerHTML = `<option value="">Seleccione una actividad</option>` +
+    actividadesDisponibles.map(a =>
+      `<option value="${a.id}" ${String(valorActual) === String(a.id) ? "selected" : ""}>${a.titulo_publico || a.nombre}</option>`
+    ).join("");
+}
+
 async function cargarUsuarios() {
   const res = await fetch("/api/admin/usuarios-lista", {
     credentials: "include"
   });
 
   const data = await res.json();
-  if (!data.ok) return;
 
-  actividadesDisponibles = data.actividades_disponibles || [];
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || "No se pudo cargar la lista de administradores");
+  }
+
+  actividadesDisponibles = Array.isArray(data.actividades_disponibles)
+    ? data.actividades_disponibles
+    : [];
+
+  pintarSelectorActividad();
 
   const tbody = document.getElementById("tablaUsuarios");
 
-  tbody.innerHTML = data.usuarios.map(u => {
+  tbody.innerHTML = (data.usuarios || []).map(u => {
     const actividadesTexto = u.rol === "SUPERADMIN"
       ? "Todas"
       : (u.actividades || []).map(a => a.actividad_nombre).join(", ");
@@ -194,9 +234,9 @@ async function cargarUsuarios() {
 
     return `
       <tr>
-        <td>${u.nombre}</td>
-        <td>${u.email}</td>
-        <td>${u.rol}</td>
+        <td>${u.nombre || ""}</td>
+        <td>${u.email || ""}</td>
+        <td>${u.rol || ""}</td>
         <td>
           <div class="lista-actividades">
             ${actividadesTexto || "-"}
@@ -209,41 +249,53 @@ async function cargarUsuarios() {
 }
 
 async function crearUsuario() {
-  const nombre = document.getElementById("nombre").value;
-  const email = document.getElementById("email").value;
+  limpiarMensajeCrear();
+
+  const nombre = document.getElementById("nombre").value.trim();
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+  const actividad_id = document.getElementById("actividad").value;
+
+  if (!nombre || !email || !password || !actividad_id) {
+    mostrarMensajeCrear("error", "Debe rellenar nombre, email, contraseña y actividad inicial.");
+    return;
+  }
 
   const res = await fetch("/api/admin/usuarios-crear", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     credentials: "include",
-    const actividad_id = document.getElementById("actividad").value;
-
-body: JSON.stringify({
-  nombre,
-  email,
-  password,
-  rol,
-  actividad_id
-})
+    body: JSON.stringify({
+      nombre,
+      email,
+      password,
+      rol: "ADMIN",
+      actividad_id
+    })
   });
 
   const data = await res.json();
-  const msg = document.getElementById("mensajeCrear");
 
-  if (data.ok) {
-    msg.className = "mensaje ok";
-    msg.textContent = "Administrador creado";
-    cargarUsuarios();
+  if (res.ok && data.ok) {
+    mostrarMensajeCrear("ok", "Administrador creado");
+    document.getElementById("nombre").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("actividad").value = "";
+    await cargarUsuarios();
   } else {
-    msg.className = "mensaje error";
-    msg.textContent = data.error || "Error";
+    mostrarMensajeCrear("error", data.error || "Error al crear el administrador");
   }
 }
 
 async function asignar(usuario_id) {
   const select = document.getElementById("sel_" + usuario_id);
   const actividad_id = select.value;
+
+  if (!actividad_id) {
+    alert("Seleccione una actividad.");
+    return;
+  }
 
   const res = await fetch("/api/admin/usuario-actividad-asignar", {
     method: "POST",
@@ -254,14 +306,20 @@ async function asignar(usuario_id) {
 
   const data = await res.json();
 
-  if (data.ok) {
-    cargarUsuarios();
+  if (res.ok && data.ok) {
+    await cargarUsuarios();
   } else {
-    alert(data.error || "Error");
+    alert(data.error || "Error al asignar actividad");
   }
 }
 
-cargarUsuarios();
+(async function init() {
+  try {
+    await cargarUsuarios();
+  } catch (error) {
+    mostrarMensajeCrear("error", error.message || "Error al cargar la pantalla");
+  }
+})();
 </script>
 
 </body>
