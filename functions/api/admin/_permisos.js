@@ -1,22 +1,27 @@
-export async function checkAdminActividad(env, usuario_id, actividad_id) {
-  if (!actividad_id) {
-    throw new Error("actividad_id requerido");
-  }
-
-  // Obtener rol
-  const { results: rolRes } = await env.DB.prepare(`
+export async function getRolUsuario(env, usuario_id) {
+  const { results } = await env.DB.prepare(`
     SELECT rol
     FROM usuarios
     WHERE id = ?
+    LIMIT 1
   `)
     .bind(usuario_id)
     .all();
 
-  if (rolRes.length && rolRes[0].rol === "SUPERADMIN") {
-    return; // acceso total
+  return results?.[0]?.rol || null;
+}
+
+export async function checkAdminActividad(env, usuario_id, actividad_id) {
+  const rol = await getRolUsuario(env, usuario_id);
+
+  if (rol === "SUPERADMIN") {
+    return;
   }
 
-  // Validar asignación a actividad
+  if (!actividad_id) {
+    throw new Error("actividad_id requerido");
+  }
+
   const { results } = await env.DB.prepare(`
     SELECT 1
     FROM usuario_actividad
