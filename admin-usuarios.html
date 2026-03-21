@@ -217,7 +217,15 @@ async function crearUsuario() {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     credentials: "include",
-    body: JSON.stringify({ nombre, email, password, rol: "ADMIN" })
+    const actividad_id = document.getElementById("actividad").value;
+
+body: JSON.stringify({
+  nombre,
+  email,
+  password,
+  rol,
+  actividad_id
+})
   });
 
   const data = await res.json();
