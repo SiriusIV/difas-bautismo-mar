@@ -24,13 +24,12 @@ export async function checkAdminActividad(env, usuario_id, actividad_id) {
 
   const { results } = await env.DB.prepare(`
     SELECT 1
-    FROM usuario_actividad
-    WHERE usuario_id = ?
-      AND actividad_id = ?
-      AND activo = 1
+    FROM actividades
+    WHERE id = ?
+      AND admin_id = ?
     LIMIT 1
   `)
-    .bind(usuario_id, actividad_id)
+    .bind(actividad_id, usuario_id)
     .all();
 
   if (!results || results.length === 0) {
