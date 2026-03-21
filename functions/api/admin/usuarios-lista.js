@@ -37,7 +37,9 @@ export async function onRequestGet(context) {
         u.fecha_alta
       FROM usuarios u
       WHERE u.rol IN ('ADMIN', 'SUPERADMIN')
-      ORDER BY u.rol DESC, u.nombre ASC
+      ORDER BY
+        CASE WHEN u.rol = 'SUPERADMIN' THEN 0 ELSE 1 END,
+        u.nombre ASC
     `).all();
 
     const actividades = await env.DB.prepare(`
@@ -51,6 +53,17 @@ export async function onRequestGet(context) {
         ON a.id = ua.actividad_id
       WHERE ua.activo = 1
       ORDER BY a.nombre ASC
+    `).all();
+
+    const actividadesDisponibles = await env.DB.prepare(`
+      SELECT
+        id,
+        nombre,
+        titulo_publico,
+        activa,
+        visible_portal
+      FROM actividades
+      ORDER BY nombre ASC
     `).all();
 
     const actividadesPorUsuario = new Map();
@@ -68,6 +81,13 @@ export async function onRequestGet(context) {
 
     return json({
       ok: true,
+      actividades_disponibles: (actividadesDisponibles.results || []).map(a => ({
+        id: a.id,
+        nombre: a.nombre,
+        titulo_publico: a.titulo_publico,
+        activa: a.activa,
+        visible_portal: a.visible_portal
+      })),
       usuarios: (usuarios.results || []).map(u => ({
         id: u.id,
         nombre: u.nombre,
