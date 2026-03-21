@@ -27,6 +27,16 @@ export async function onRequestGet(context) {
       FROM actividades
       WHERE activa = 1
         AND visible_portal = 1
+        AND (
+          tipo = 'PERMANENTE'
+          OR (
+            tipo = 'TEMPORAL'
+            AND (
+              fecha_fin IS NULL
+              OR date(fecha_fin) >= date('now')
+            )
+          )
+        )
       ORDER BY orden_portal ASC, id ASC
     `).all();
 
