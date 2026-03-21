@@ -101,18 +101,13 @@
       margin-bottom: 6px;
     }
 
-    input, select, textarea {
+    input, select {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
       border-radius: 6px;
       font-size: 15px;
       box-sizing: border-box;
-    }
-
-    textarea {
-      min-height: 110px;
-      resize: vertical;
     }
 
     button, .btn-enlace {
@@ -418,6 +413,12 @@
 
       const select = document.getElementById("actividadSelect");
       const idUrl = actividadIdDesdeURL();
+
+      if (!actividadesDisponibles.length) {
+        select.innerHTML = `<option value="">No hay actividades disponibles</option>`;
+        actualizarCabeceraYLinks();
+        return;
+      }
 
       select.innerHTML = actividadesDisponibles.map(a => `
         <option value="${a.id}">${a.titulo_publico || a.nombre}</option>
