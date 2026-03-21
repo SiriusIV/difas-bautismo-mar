@@ -57,6 +57,13 @@
       text-align: center;
     }
 
+    .subactividad {
+      margin-top: 10px;
+      font-size: 15px;
+      color: #333;
+      text-align: center;
+    }
+
     .acciones-cabecera {
       position: absolute;
       right: 0;
@@ -81,14 +88,7 @@
       margin-bottom: 14px;
     }
 
-    .fila-config {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .fila-config-una {
+    .fila-form-selector {
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
@@ -101,7 +101,7 @@
       margin-bottom: 6px;
     }
 
-    input, textarea {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
@@ -230,29 +230,8 @@
       margin-bottom: 12px;
     }
 
-    .vista-previa {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 14px;
-      margin-top: 10px;
-      line-height: 1.6;
-    }
-
-    .vista-previa h4 {
-      margin: 0 0 6px 0;
-      font-size: 20px;
-    }
-
-    .vista-previa .sub {
-      font-size: 17px;
-      color: #444;
-      margin-bottom: 10px;
-    }
-
     @media (max-width: 1000px) {
-      .fila-form,
-      .fila-config {
+      .fila-form {
         grid-template-columns: 1fr;
       }
 
@@ -279,62 +258,26 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1 id="cabeceraNombreEvento">Cargando evento...</h1>
-        <h2 id="cabeceraSubtituloEvento">Panel de administración</h2>
+        <h1>Panel de administración</h1>
+        <h2>Gestión de franjas</h2>
+        <div class="subactividad" id="subactividadActual">Actividad</div>
       </div>
       <div class="acciones-cabecera">
         <span class="btn-enlace btn-secundario" style="opacity:.7; pointer-events:none;">Franjas</span>
-        <a class="btn-enlace btn-secundario" href="admin-reservas.html">Reservas</a>
-        <a class="btn-enlace btn-secundario" href="admin-calendario.html">Calendario</a>
+        <a class="btn-enlace btn-secundario" id="linkReservas" href="admin-reservas.html">Reservas</a>
+        <a class="btn-enlace btn-secundario" id="linkCalendario" href="admin-calendario.html">Calendario</a>
         <button type="button" id="btnCerrarSesion">Cerrar sesión</button>
       </div>
-   </div>
-    
-    <div id="mensajeEvento" class="mensaje"></div>
+    </div>
+
     <div id="mensajeFranjas" class="mensaje"></div>
 
     <div class="panel">
-      <h3>Configuración del evento activo</h3>
-
-      <form id="formEvento" novalidate>
-        <div class="fila-config">
-          <div>
-            <label for="nombreEvento">Nombre del evento</label>
-            <input type="text" id="nombreEvento" required />
-          </div>
-
-          <div>
-            <label for="subtituloEvento">Subtítulo del evento</label>
-            <input type="text" id="subtituloEvento" required />
-          </div>
+      <div class="fila-form-selector">
+        <div>
+          <label for="actividadSelect">Actividad</label>
+          <select id="actividadSelect"></select>
         </div>
-
-        <div class="fila-config">
-          <div>
-            <label for="lugarEvento">Lugar</label>
-            <input type="text" id="lugarEvento" />
-          </div>
-          <div></div>
-        </div>
-
-        <div class="fila-config-una">
-          <div>
-            <label for="descripcionEvento">Descripción pública</label>
-            <textarea id="descripcionEvento"></textarea>
-          </div>
-        </div>
-
-        <div class="acciones-form">
-          <button type="submit" id="btnGuardarEvento">Guardar configuración del evento</button>
-        </div>
-      </form>
-
-      <div class="vista-previa">
-        <strong>Vista previa pública</strong>
-        <h4 id="previewNombreEvento">-</h4>
-        <div class="sub" id="previewSubtituloEvento">-</div>
-        <div><strong>Lugar:</strong> <span id="previewLugarEvento">-</span></div>
-        <div style="margin-top:8px;" id="previewDescripcionEvento"></div>
       </div>
     </div>
 
@@ -403,12 +346,22 @@
 
   <script>
     let franjasCache = [];
+    let actividadesDisponibles = [];
     let envioFranjasEnCurso = false;
-    let envioEventoEnCurso = false;
+
+    function actividadIdDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      const v = parseInt(params.get("actividad_id") || "", 10);
+      return Number.isInteger(v) && v > 0 ? v : "";
+    }
+
+    function actividadSeleccionadaId() {
+      const v = parseInt(document.getElementById("actividadSelect").value || "", 10);
+      return Number.isInteger(v) && v > 0 ? v : "";
+    }
 
     function redirigirLogin() {
-      const next = encodeURIComponent(window.location.pathname);
-      window.location.href = `admin-login.html?next=${next}`;
+      window.location.href = "portal.html";
     }
 
     async function comprobarSesionAdmin() {
@@ -427,13 +380,11 @@
 
     async function cerrarSesion() {
       try {
-        await fetch("/api/admin/logout", {
+        await fetch("/api/usuario/logout", {
           method: "POST",
           credentials: "same-origin"
         });
-      } catch {
-        // sin acción
-      }
+      } catch (_) {}
 
       redirigirLogin();
     }
@@ -452,94 +403,47 @@
       mensaje.textContent = "";
     }
 
-    function actualizarVistaPreviaEvento() {
-      const nombre = document.getElementById("nombreEvento").value.trim() || "-";
-      const subtitulo = document.getElementById("subtituloEvento").value.trim() || "-";
-      const lugar = document.getElementById("lugarEvento").value.trim() || "-";
-      const descripcion = document.getElementById("descripcionEvento").value.trim() || "";
-
-      document.getElementById("previewNombreEvento").textContent = nombre;
-      document.getElementById("previewSubtituloEvento").textContent = subtitulo;
-      document.getElementById("previewLugarEvento").textContent = lugar;
-      document.getElementById("previewDescripcionEvento").textContent = descripcion || "-";
-
-      document.getElementById("cabeceraNombreEvento").textContent = nombre;
-      document.getElementById("cabeceraSubtituloEvento").textContent = subtitulo;
-    }
-
-    async function cargarConfigEvento() {
-      const response = await fetch("/api/admin/config-evento", {
+    async function cargarActividades() {
+      const res = await fetch("/api/actividades", {
         credentials: "same-origin"
       });
 
-      if (response.status === 401) {
-        redirigirLogin();
-        return;
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las actividades.");
       }
 
-      const data = await response.json();
+      actividadesDisponibles = Array.isArray(data.actividades) ? data.actividades : [];
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+      const select = document.getElementById("actividadSelect");
+      const idUrl = actividadIdDesdeURL();
+
+      select.innerHTML = actividadesDisponibles.map(a => `
+        <option value="${a.id}">${a.titulo_publico || a.nombre}</option>
+      `).join("");
+
+      if (idUrl) {
+        select.value = String(idUrl);
       }
 
-      const config = data.config || {};
+      if (!select.value && actividadesDisponibles.length) {
+        select.value = String(actividadesDisponibles[0].id);
+      }
 
-      document.getElementById("nombreEvento").value = config.nombre_evento || "";
-      document.getElementById("subtituloEvento").value = config.subtitulo_evento || "";
-      document.getElementById("descripcionEvento").value = config.descripcion_publica || "";
-      document.getElementById("lugarEvento").value = config.lugar || "";
-
-      actualizarVistaPreviaEvento();
+      actualizarCabeceraYLinks();
     }
 
-    async function guardarConfigEvento(event) {
-      event.preventDefault();
-      if (envioEventoEnCurso) return;
+    function actualizarCabeceraYLinks() {
+      const actividadId = actividadSeleccionadaId();
+      const actividad = actividadesDisponibles.find(a => Number(a.id) === Number(actividadId));
 
-      limpiarMensaje("mensajeEvento");
+      document.getElementById("subactividadActual").textContent =
+        actividad ? (actividad.titulo_publico || actividad.nombre) : "Actividad";
 
-      const payload = {
-        nombre_evento: document.getElementById("nombreEvento").value.trim(),
-        subtitulo_evento: document.getElementById("subtituloEvento").value.trim(),
-        descripcion_publica: document.getElementById("descripcionEvento").value.trim(),
-        lugar: document.getElementById("lugarEvento").value.trim()
-      };
-
-      try {
-        envioEventoEnCurso = true;
-        document.getElementById("btnGuardarEvento").disabled = true;
-
-        const response = await fetch("/api/admin/config-evento", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "same-origin",
-          body: JSON.stringify(payload)
-        });
-
-        if (response.status === 401) {
-          redirigirLogin();
-          return;
-        }
-
-        const data = await response.json();
-
-        if (!response.ok || !data.ok) {
-          mostrarMensaje("mensajeEvento", "error", data.error || "No se pudo guardar la configuración del evento.");
-          return;
-        }
-
-        mostrarMensaje("mensajeEvento", "ok", data.mensaje || "Configuración guardada correctamente.");
-        await cargarConfigEvento();
-
-      } catch (error) {
-        mostrarMensaje("mensajeEvento", "error", error.message || "Error de conexión con el servidor.");
-      } finally {
-        envioEventoEnCurso = false;
-        document.getElementById("btnGuardarEvento").disabled = false;
-      }
+      const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : "";
+      document.getElementById("linkReservas").href = `admin-reservas.html${sufijo}`;
+      document.getElementById("linkCalendario").href = `admin-calendario.html${sufijo}`;
     }
 
     function limpiarFormulario() {
@@ -562,14 +466,14 @@
       document.getElementById("tituloFormulario").textContent = `Editar franja #${franja.id}`;
       document.getElementById("btnGuardar").textContent = "Guardar cambios";
       document.getElementById("btnCancelarEdicion").style.display = "inline-block";
-      window.scrollTo({ top: 300, behavior: "smooth" });
+      window.scrollTo({ top: 250, behavior: "smooth" });
     }
 
     function actualizarResumen() {
       const resumen = document.getElementById("resumen");
 
       if (!franjasCache.length) {
-        resumen.textContent = "No hay franjas registradas.";
+        resumen.textContent = "No hay franjas registradas para esta actividad.";
         return;
       }
 
@@ -638,10 +542,17 @@
     }
 
     async function cargarFranjas() {
+      const actividad_id = actividadSeleccionadaId();
       const tbody = document.getElementById("tablaFranjas");
       tbody.innerHTML = `<tr><td colspan="9">Cargando datos...</td></tr>`;
 
-      const response = await fetch("/api/admin/franjas", {
+      if (!actividad_id) {
+        franjasCache = [];
+        renderizarTabla();
+        return;
+      }
+
+      const response = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividad_id)}`, {
         credentials: "same-origin"
       });
 
@@ -666,13 +577,20 @@
 
       limpiarMensaje("mensajeFranjas");
 
+      const actividad_id = actividadSeleccionadaId();
       const id = document.getElementById("franjaId").value.trim();
       const fecha = document.getElementById("fecha").value;
       const hora_inicio = document.getElementById("horaInicio").value;
       const hora_fin = document.getElementById("horaFin").value;
       const capacidad = document.getElementById("capacidad").value;
 
+      if (!actividad_id) {
+        mostrarMensaje("mensajeFranjas", "error", "Debe seleccionar una actividad.");
+        return;
+      }
+
       const payload = {
+        actividad_id,
         fecha,
         hora_inicio,
         hora_fin,
@@ -772,7 +690,6 @@
 
       document.getElementById("app").style.display = "block";
 
-      document.getElementById("formEvento").addEventListener("submit", guardarConfigEvento);
       document.getElementById("formFranja").addEventListener("submit", guardarFranja);
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
 
@@ -781,16 +698,19 @@
         limpiarMensaje("mensajeFranjas");
       });
 
-      ["nombreEvento", "subtituloEvento", "descripcionEvento", "lugarEvento"].forEach(id => {
-        document.getElementById(id).addEventListener("input", actualizarVistaPreviaEvento);
+      document.getElementById("actividadSelect").addEventListener("change", async function () {
+        actualizarCabeceraYLinks();
+        limpiarFormulario();
+        limpiarMensaje("mensajeFranjas");
+        await cargarFranjas();
       });
 
       try {
-        await cargarConfigEvento();
+        await cargarActividades();
         await cargarFranjas();
         limpiarFormulario();
       } catch (error) {
-        mostrarMensaje("mensajeEvento", "error", error.message || "No se pudo inicializar el panel.");
+        mostrarMensaje("mensajeFranjas", "error", error.message || "No se pudo inicializar el panel.");
       }
     });
   </script>
