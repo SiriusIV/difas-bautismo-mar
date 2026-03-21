@@ -47,9 +47,9 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Faltan datos" }, 400);
     }
 
-    if (!["ADMIN", "SUPERADMIN"].includes(rol)) {
-      return json({ ok: false, error: "Rol inválido" }, 400);
-    }
+    if (rol !== "ADMIN") {
+  return json({ ok: false, error: "Solo se pueden crear usuarios ADMIN desde este panel" }, 400);
+}
 
     const existing = await env.DB.prepare(`
       SELECT id FROM usuarios WHERE email = ?
