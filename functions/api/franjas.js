@@ -69,10 +69,17 @@ async function obtenerFranjasConDisponibilidad(env) {
 }
 
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { env, request } = context;
 
   try {
-    const franjas = await obtenerFranjasConDisponibilidad(env);
+    const url = new URL(request.url);
+    const actividad_id = Number(url.searchParams.get("actividad_id"));
+
+    if (!actividad_id) {
+      return json({ ok: false, error: "Actividad obligatoria" }, 400);
+    }
+
+    const franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
 
     return json(
       franjas.map(f => ({
