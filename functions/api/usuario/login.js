@@ -10,6 +10,10 @@ function json(data, status = 200, headers = {}) {
   });
 }
 
+function limpiarTexto(valor) {
+  return String(valor || "").trim();
+}
+
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -23,7 +27,7 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const email = String(body.email || "").trim();
+    const email = limpiarTexto(body.email).toLowerCase();
     const password = String(body.password || "").trim();
 
     if (!email || !password) {
@@ -68,7 +72,14 @@ export async function onRequestPost(context) {
     const cookie = await createSessionCookie(sessionUser, env.SECRET_KEY);
 
     return json(
-      { ok: true, user: sessionUser },
+      {
+        ok: true,
+        user: sessionUser,
+        redirect_to:
+          user.rol === "SOLICITANTE"
+            ? "/usuario-panel.html"
+            : "/portal.html"
+      },
       200,
       { "Set-Cookie": cookie }
     );
