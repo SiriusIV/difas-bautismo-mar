@@ -7,10 +7,6 @@ function json(data, status = 200) {
   });
 }
 
-function limpiarTexto(v) {
-  return String(v || "").trim();
-}
-
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -20,38 +16,29 @@ async function hashPassword(password) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  const db = env.DB;
 
   try {
     const session = await getAdminSession(request, env);
-    if (!session) {
-      return json({ ok: false, error: "No autorizado" }, 401);
-    }
-
-    // SOLO SUPERADMIN puede crear admins
-    const rolSession = await env.DB.prepare(`
-      SELECT rol FROM usuarios WHERE id = ?
-    `).bind(session.usuario_id).first();
-
-    if (!rolSession || rolSession.rol !== "SUPERADMIN") {
-      return json({ ok: false, error: "Solo SUPERADMIN puede crear administradores" }, 403);
+    if (!session || session.rol !== "SUPERADMIN") {
+      return json({ ok: false, error: "Solo SUPERADMIN" }, 403);
     }
 
     const body = await request.json();
 
-    const nombre = limpiarTexto(body.nombre);
-    const email = limpiarTexto(body.email).toLowerCase();
-    const password = String(body.password || "");
-    const rol = limpiarTexto(body.rol).toUpperCase(); // ADMIN o SUPERADMIN
+    const nombre = String(body.nombre || "").trim();
+    const email = String(body.email || "").trim();
+    const password = String(body.password || "").trim();
+    const rol = "ADMIN";
 
-    if (!nombre || !email || !password || !rol) {
-      return json({ ok: false, error: "Faltan datos" }, 400);
+    const actividad_id = Number(body.actividad_id || 0);
+
+    if (!nombre || !email || !password || !actividad_id) {
+      return json({ ok: false, error: "Faltan datos obligatorios" }, 400);
     }
 
-    if (rol !== "ADMIN") {
-  return json({ ok: false, error: "Solo se pueden crear usuarios ADMIN desde este panel" }, 400);
-}
-
-    const existing = await env.DB.prepare(`
+    // comprobar email existente
+    const existing = await db.prepare(`
       SELECT id FROM usuarios WHERE email = ?
     `).bind(email).first();
 
@@ -61,23 +48,30 @@ export async function onRequestPost(context) {
 
     const password_hash = await hashPassword(password);
 
-    const result = await env.DB.prepare(`
-      INSERT INTO usuarios (nombre, centro, email, password_hash, rol)
-      VALUES (?, NULL, ?, ?, ?)
-    `)
-      .bind(nombre, email, password_hash, rol)
-      .run();
+    // 1. Crear usuario
+    const result = await db.prepare(`
+      INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_alta)
+      VALUES (?, ?, ?, ?, 1, datetime('now'))
+    `).bind(nombre, email, password_hash, rol).run();
+
+    const usuario_id = result.meta.last_row_id;
+
+    // 2. ASIGNAR ACTIVIDAD (CLAVE DEL PROBLEMA)
+    await db.prepare(`
+      INSERT INTO usuario_actividad (usuario_id, actividad_id, activo)
+      VALUES (?, ?, 1)
+    `).bind(usuario_id, actividad_id).run();
 
     return json({
       ok: true,
-      id: result.meta.last_row_id,
-      mensaje: "Usuario creado correctamente"
+      mensaje: "Administrador creado correctamente"
     });
 
   } catch (error) {
-    return json(
-      { ok: false, error: "Error creando usuario", detalle: error.message },
-      500
-    );
+    return json({
+      ok: false,
+      error: "Error creando administrador",
+      detalle: error.message
+    }, 500);
   }
 }
