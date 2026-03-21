@@ -27,6 +27,7 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Solo SUPERADMIN" }, 403);
     }
 
+    // USUARIOS
     const usuarios = await env.DB.prepare(`
       SELECT
         u.id,
@@ -42,52 +43,34 @@ export async function onRequestGet(context) {
         u.nombre ASC
     `).all();
 
+    // ACTIVIDADES (NUEVO MODELO)
     const actividades = await env.DB.prepare(`
-      SELECT
-        ua.usuario_id,
-        ua.actividad_id,
-        ua.activo,
-        a.nombre AS actividad_nombre
-      FROM usuario_actividad ua
-      INNER JOIN actividades a
-        ON a.id = ua.actividad_id
-      WHERE ua.activo = 1
-      ORDER BY a.nombre ASC
-    `).all();
-
-    const actividadesDisponibles = await env.DB.prepare(`
       SELECT
         id,
         nombre,
         titulo_publico,
-        activa,
-        visible_portal
+        admin_id
       FROM actividades
+      WHERE admin_id IS NOT NULL
       ORDER BY nombre ASC
     `).all();
 
+    // MAPA admin → actividades
     const actividadesPorUsuario = new Map();
 
     for (const act of (actividades.results || [])) {
-      if (!actividadesPorUsuario.has(act.usuario_id)) {
-        actividadesPorUsuario.set(act.usuario_id, []);
+      if (!actividadesPorUsuario.has(act.admin_id)) {
+        actividadesPorUsuario.set(act.admin_id, []);
       }
 
-      actividadesPorUsuario.get(act.usuario_id).push({
-        actividad_id: act.actividad_id,
-        actividad_nombre: act.actividad_nombre
+      actividadesPorUsuario.get(act.admin_id).push({
+        actividad_id: act.id,
+        actividad_nombre: act.titulo_publico || act.nombre
       });
     }
 
     return json({
       ok: true,
-      actividades_disponibles: (actividadesDisponibles.results || []).map(a => ({
-        id: a.id,
-        nombre: a.nombre,
-        titulo_publico: a.titulo_publico,
-        activa: a.activa,
-        visible_portal: a.visible_portal
-      })),
       usuarios: (usuarios.results || []).map(u => ({
         id: u.id,
         nombre: u.nombre,
@@ -100,6 +83,7 @@ export async function onRequestGet(context) {
           : (actividadesPorUsuario.get(u.id) || [])
       }))
     });
+
   } catch (error) {
     return json(
       { ok: false, error: "Error cargando usuarios", detalle: error.message },
