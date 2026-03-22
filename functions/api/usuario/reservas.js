@@ -13,9 +13,11 @@ function estadoBloqueaPlazas(estado) {
 
 function esPrereservaVigente(expira) {
   if (!expira) return false;
-  const d = new Date(String(expira).replace(" ", "T"));
+
+  const d = new Date(String(expira).replace(" ", "T") + "Z");
   if (Number.isNaN(d.getTime())) return false;
-  return d >= new Date();
+
+  return d.getTime() >= Date.now();
 }
 
 function calcularPlazasAsignadas(row) {
@@ -70,20 +72,19 @@ export async function onRequestGet(context) {
     const rows = result.results || [];
 
     const data = rows.map(row => ({
-  id: row.id,
-  codigo_reserva: row.codigo_reserva,
-  estado: row.estado,
-  token_edicion: row.token_edicion || "",
-  observaciones: row.observaciones || "",    
-  actividad: row.actividad || "Actividad",
-  fecha: row.fecha,
-  hora_inicio: row.hora_inicio,
-  hora_fin: row.hora_fin,
-  plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
-  plazas_pendientes: calcularPlazasReservadasPendientes(row),
-  plazas_asignadas: calcularPlazasAsignadas(row)
-  
-}));
+      id: row.id,
+      codigo_reserva: row.codigo_reserva,
+      estado: row.estado,
+      token_edicion: row.token_edicion || "",
+      observaciones: row.observaciones || "",
+      actividad: row.actividad || "Actividad",
+      fecha: row.fecha,
+      hora_inicio: row.hora_inicio,
+      hora_fin: row.hora_fin,
+      plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
+      plazas_pendientes: calcularPlazasReservadasPendientes(row),
+      plazas_asignadas: calcularPlazasAsignadas(row)
+    }));
 
     return json({ ok: true, data });
   } catch (error) {
