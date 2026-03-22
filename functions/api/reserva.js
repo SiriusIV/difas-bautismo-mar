@@ -15,9 +15,13 @@ function estadoBloqueaPlazas(estado) {
 
 function esPrereservaVigente(expira) {
   if (!expira) return false;
-  const d = new Date(String(expira).replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return false;
-  return d >= new Date();
+
+  const exp = new Date(String(expira).replace(" ", "T") + "Z"); // FORZAR UTC
+  const ahora = new Date(); // ya es UTC internamente
+
+  if (Number.isNaN(exp.getTime())) return false;
+
+  return exp.getTime() >= ahora.getTime();
 }
 
 function calcularPlazasAsignadas(row) {
