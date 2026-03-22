@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mis actividades</title>
+<title>Actividades</title>
 
 <style>
 body { font-family: Arial; background:#f4f6f8; margin:0; }
@@ -60,7 +60,22 @@ th { background:#eef4ff; }
 </div>
 
 <script>
+
+let nombreSesion = "Administrador";
+
 async function cargar() {
+  const ses = await fetch("/api/usuario/session", { credentials:"same-origin" });
+  const sesData = await ses.json().catch(() => null);
+
+  if (sesData?.ok && sesData?.authenticated && sesData?.user) {
+    nombreSesion = sesData.user.nombre || sesData.user.email || "Administrador";
+    document.title = `${nombreSesion} - Actividades`;
+    document.querySelector("h1").textContent = `${nombreSesion} - Actividades`;
+  }
+
+  const res = await fetch("/api/admin/mis-actividades", { credentials:"same-origin" });
+  
+  async function cargar() {
   const res = await fetch("/api/admin/mis-actividades", { credentials:"same-origin" });
   const data = await res.json();
 
