@@ -101,28 +101,15 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
     .run();
 }
 
-async function actualizarReservaTrasGuardar(env, reservaId, visitantesNormalizados) {
-  const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
-  const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
-  const personas = visitantesNormalizados.length;
-
+async function actualizarReservaTrasGuardar(env, reservaId) {
   const sql = `
     UPDATE reservas
-    SET
-      mayores10 = ?,
-      menores10 = ?,
-      personas = ?,
-      fecha_modificacion = datetime('now')
+    SET fecha_modificacion = datetime('now')
     WHERE id = ?
   `;
 
   return await env.DB.prepare(sql)
-    .bind(
-      mayores10,
-      menores10,
-      personas,
-      reservaId
-    )
+    .bind(reservaId)
     .run();
 }
 
@@ -206,7 +193,11 @@ export async function onRequestPost(context) {
         tipo_asistente: normalizarTipoAsistente(v.tipo_asistente),
         categoria_edad: normalizarCategoriaEdad(v.categoria_edad)
       }))
-      .filter(v => v.nombre_completo !== "");
+      .filter(v => v.nombre_completo !== "")
+      .map(v => ({
+        ...v,
+        categoria_edad: v.tipo_asistente === "PROFESOR" ? "MAYOR_10" : v.categoria_edad
+      }));
 
     const franja = await obtenerCapacidadFranja(env, reserva.franja_id);
 
@@ -241,11 +232,7 @@ export async function onRequestPost(context) {
       await insertarVisitante(env, reserva.id, visitante, columnasVisitantes);
     }
 
-    await actualizarReservaTrasGuardar(
-      env,
-      reserva.id,
-      visitantesNormalizados
-    );
+    await actualizarReservaTrasGuardar(env, reserva.id);
 
     const alumnos = visitantesNormalizados.filter(v => v.tipo_asistente === "ALUMNO").length;
     const profesores = visitantesNormalizados.filter(v => v.tipo_asistente === "PROFESOR").length;
