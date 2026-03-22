@@ -40,6 +40,11 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
+function calcularFechaExpiracion(minutos) {
+  const ms = Date.now() + (Number(minutos || 0) * 60 * 1000);
+  return new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+}
+
 async function obtenerFranja(env, franjaId) {
   return await env.DB.prepare(`
     SELECT
@@ -223,51 +228,52 @@ export async function onRequestPost(context) {
     const codigoReserva = generarCodigoReserva();
     const tokenEdicion = generarToken();
     const minutosConsolidacion = calcularMinutosConsolidacion(plazasReservadas);
+    const prereservaExpiraEn = calcularFechaExpiracion(minutosConsolidacion);
 
     const sqlInsert = `
-  INSERT INTO reservas (
-    franja_id,
-    actividad_id,
-    codigo_reserva,
-    token_edicion,
-    estado,
-    centro,
-    contacto,
-    telefono,
-    email,
-    observaciones,
-    plazas_prereservadas,
-    prereserva_expira_en,
-    fecha_solicitud,
-    fecha_modificacion,
-    usuario_id
-  )
-  VALUES (
-    ?, ?, ?, ?, 'PENDIENTE',
-    ?, ?, ?, ?, ?,
-    ?, datetime('now', '+' || ? || ' minutes'),
-    datetime('now'),
-    datetime('now'),
-    ?
-  )
-`;
+      INSERT INTO reservas (
+        franja_id,
+        actividad_id,
+        codigo_reserva,
+        token_edicion,
+        estado,
+        centro,
+        contacto,
+        telefono,
+        email,
+        observaciones,
+        plazas_prereservadas,
+        prereserva_expira_en,
+        fecha_solicitud,
+        fecha_modificacion,
+        usuario_id
+      )
+      VALUES (
+        ?, ?, ?, ?, 'PENDIENTE',
+        ?, ?, ?, ?, ?,
+        ?, ?,
+        datetime('now'),
+        datetime('now'),
+        ?
+      )
+    `;
 
-const result = await env.DB.prepare(sqlInsert)
-  .bind(
-    franjaId,
-    actividadId,
-    codigoReserva,
-    tokenEdicion,
-    centro,
-    contacto,
-    telefono,
-    email,
-    observaciones,
-    plazasReservadas,
-    minutosConsolidacion,
-    usuarioId
-  )
-  .run();
+    const result = await env.DB.prepare(sqlInsert)
+      .bind(
+        franjaId,
+        actividadId,
+        codigoReserva,
+        tokenEdicion,
+        centro,
+        contacto,
+        telefono,
+        email,
+        observaciones,
+        plazasReservadas,
+        prereservaExpiraEn,
+        usuarioId
+      )
+      .run();
 
     if ((result?.meta?.changes || 0) === 0) {
       return json(
