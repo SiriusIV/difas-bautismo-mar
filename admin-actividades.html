@@ -22,16 +22,15 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
-    h1 { margin: 0; font-size: 28px; }
-    h2 { margin: 8px 0 0; font-size: 18px; font-weight: normal; }
+    h1 { margin: 0; font-size: 34px; }
+    h2 { margin: 10px 0 0; font-size: 18px; font-weight: normal; color: #444; }
 
     .cabecera {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
+      min-height: 150px;
       margin-bottom: 24px;
-      min-height: 120px;
+      border-bottom: 1px solid #d9e0e7;
+      padding-bottom: 18px;
     }
 
     .logo {
@@ -44,18 +43,69 @@
 
     .titulos {
       text-align: center;
+      padding: 0 180px;
+    }
+
+    .nav-centro {
+      margin-top: 18px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: #f7f9fb;
     }
 
     .acciones-cabecera {
       position: absolute;
       right: 0;
       top: 0;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
     }
 
-    .btn, .btn-enlace {
+    .btn-icono {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn {
       background: #0b5ed7;
       color: white;
       border: none;
@@ -67,16 +117,8 @@
       display: inline-block;
     }
 
-    .btn:hover, .btn-enlace:hover {
+    .btn:hover {
       background: #094db1;
-    }
-
-    .btn-secundario {
-      background: #6c757d;
-    }
-
-    .btn-secundario:hover {
-      background: #565e64;
     }
 
     .panel {
@@ -175,20 +217,25 @@
         grid-template-columns: 1fr;
       }
 
-      .logo,
-      .acciones-cabecera {
+      .titulos {
+        padding: 120px 0 0 0;
+      }
+
+      .logo {
         position: static;
         display: block;
         margin: 0 auto 12px auto;
       }
 
-      .cabecera {
-        display: block;
-        min-height: auto;
+      .acciones-cabecera {
+        position: static;
+        display: flex;
+        justify-content: center;
+        margin-top: 12px;
       }
 
-      .acciones-cabecera {
-        text-align: center;
+      .cabecera {
+        min-height: auto;
       }
     }
   </style>
@@ -197,13 +244,25 @@
   <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
+
       <div class="titulos">
         <h1 id="tituloCabecera">Actividades</h1>
         <h2 id="subtituloCabecera">Alta y edición de eventos</h2>
+
+        <div class="nav-centro">
+          <a class="nav-btn" href="mis-actividades.html">Actividades</a>
+          <a class="nav-btn" href="portal.html">Portal</a>
+        </div>
       </div>
+
       <div class="acciones-cabecera">
-        <a class="btn-enlace btn-secundario" href="mis-actividades.html">Volver a actividades</a>
-        <button type="button" class="btn" id="btnCerrarSesion">Cerrar sesión</button>
+        <button type="button" class="btn-icono" id="btnCerrarSesion" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -399,7 +458,8 @@
       esSuperAdmin = rol === "SUPERADMIN";
 
       const nombreCabecera = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
-      document.getElementById("tituloCabecera").textContent = `${nombreCabecera} - Actividades`;
+      document.getElementById("tituloCabecera").textContent = "Actividades";
+      document.getElementById("subtituloCabecera").textContent = nombreCabecera;
 
       return true;
     }
@@ -486,7 +546,6 @@
       document.getElementById("orden_portal").value = String(actividad.orden_portal ?? 0);
 
       document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
-      document.getElementById("subtituloCabecera").textContent = "Edición de evento existente";
       actualizarBloqueFechas();
       actualizarPreview();
     }
@@ -591,7 +650,6 @@
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
-          document.getElementById("subtituloCabecera").textContent = "Edición de evento existente";
         }
       } else {
         mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
