@@ -478,6 +478,7 @@
       if (!a) return;
 
       actividadModalActual = a;
+      sessionStorage.setItem("actividad_id_actual", String(a.id));
 
       document.getElementById("modalTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("modalImagen").src = a.imagen_url || "logo.png";
@@ -560,12 +561,14 @@
     await cargarActividades();
 
     if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
-      if (actividadModalActual && actividadModalActual.id) {
-        location.href = `usuario-panel.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
-      } else {
-        location.href = "usuario-panel.html";
-      }
-    }
+  const actividadId = actividadModalActual?.id || sessionStorage.getItem("actividad_id_actual");
+
+  if (actividadId) {
+    location.href = `usuario-panel.html?actividad_id=${encodeURIComponent(actividadId)}`;
+  } else {
+    location.href = "usuario-panel.html";
+  }
+}
   } else {
     mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
   }
