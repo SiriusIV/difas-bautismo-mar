@@ -198,11 +198,11 @@
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="titulos">
-        <h1>Gestión de actividades</h1>
-        <h2>Alta y edición de eventos</h2>
+        <h1 id="tituloCabecera">Actividades</h1>
+        <h2 id="subtituloCabecera">Alta y edición de eventos</h2>
       </div>
       <div class="acciones-cabecera">
-        <a class="btn-enlace btn-secundario" href="portal.html">Volver al portal</a>
+        <a class="btn-enlace btn-secundario" href="mis-actividades.html">Volver a actividades</a>
         <button type="button" class="btn" id="btnCerrarSesion">Cerrar sesión</button>
       </div>
     </div>
@@ -210,7 +210,7 @@
     <div id="mensajeActividad" class="mensaje"></div>
 
     <div class="panel">
-      <h3>Nueva actividad / evento</h3>
+      <h3 id="tituloFormulario">Nueva actividad / evento</h3>
 
       <form id="formActividad" novalidate>
         <input type="hidden" id="actividadId" value="">
@@ -346,8 +346,16 @@
 
   <script>
     let adminsCache = [];
+    let actividadesCache = [];
     let usuarioSesion = null;
     let esSuperAdmin = false;
+    let actividadEditandoId = null;
+
+    function getActividadIdURL() {
+      const params = new URLSearchParams(window.location.search);
+      const v = parseInt(params.get("id") || "", 10);
+      return Number.isInteger(v) && v > 0 ? v : null;
+    }
 
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensajeActividad");
@@ -389,6 +397,10 @@
 
       usuarioSesion = data.user;
       esSuperAdmin = rol === "SUPERADMIN";
+
+      const nombreCabecera = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
+      document.getElementById("tituloCabecera").textContent = `${nombreCabecera} - Actividades`;
+
       return true;
     }
 
@@ -403,9 +415,7 @@
     }
 
     async function cargarAdminsSoloSiSuperadmin() {
-      if (!esSuperAdmin) {
-        return;
-      }
+      if (!esSuperAdmin) return;
 
       const res = await fetch("/api/admin/admins-lista", {
         credentials: "same-origin"
@@ -440,6 +450,59 @@
       select.innerHTML = `<option value="${usuarioSesion.id}">${usuarioSesion.nombre || usuarioSesion.email}</option>`;
       select.value = String(usuarioSesion.id);
       select.disabled = true;
+    }
+
+    async function cargarActividades() {
+      const res = await fetch("/api/admin/mis-actividades", {
+        credentials: "same-origin"
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las actividades.");
+      }
+
+      actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+    }
+
+    function rellenarFormulario(actividad) {
+      document.getElementById("actividadId").value = actividad.id || "";
+      document.getElementById("nombre").value = actividad.nombre || "";
+      document.getElementById("admin_id").value = actividad.admin_id || "";
+      document.getElementById("organizador_publico").value = actividad.organizador_publico || "";
+      document.getElementById("tipo").value = actividad.tipo || "TEMPORAL";
+      document.getElementById("fecha_inicio").value = actividad.fecha_inicio || "";
+      document.getElementById("fecha_fin").value = actividad.fecha_fin || "";
+      document.getElementById("activa").value = String(actividad.activa ?? 1);
+      document.getElementById("descripcion").value = actividad.descripcion || "";
+      document.getElementById("titulo_publico").value = actividad.titulo_publico || "";
+      document.getElementById("subtitulo_publico").value = actividad.subtitulo_publico || "";
+      document.getElementById("descripcion_corta").value = actividad.descripcion_corta || "";
+      document.getElementById("descripcion_larga").value = actividad.descripcion_larga || "";
+      document.getElementById("lugar").value = actividad.lugar || "";
+      document.getElementById("imagen_url").value = actividad.imagen_url || "";
+      document.getElementById("visible_portal").value = String(actividad.visible_portal ?? 1);
+      document.getElementById("orden_portal").value = String(actividad.orden_portal ?? 0);
+
+      document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+      document.getElementById("subtituloCabecera").textContent = "Edición de evento existente";
+      actualizarBloqueFechas();
+      actualizarPreview();
+    }
+
+    async function cargarActividadSiEsEdicion() {
+      actividadEditandoId = getActividadIdURL();
+      if (!actividadEditandoId) return;
+
+      await cargarActividades();
+
+      const actividad = actividadesCache.find(a => Number(a.id) === Number(actividadEditandoId));
+      if (!actividad) {
+        throw new Error("La actividad indicada no existe o no le pertenece.");
+      }
+
+      rellenarFormulario(actividad);
     }
 
     function actualizarBloqueFechas() {
@@ -523,8 +586,12 @@
 
       if (res.ok && data.ok) {
         mostrarMensaje("ok", data.mensaje || "Actividad guardada correctamente.");
+
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
+          history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
+          document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+          document.getElementById("subtituloCabecera").textContent = "Edición de evento existente";
         }
       } else {
         mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
@@ -567,6 +634,7 @@
         configurarModoAdminResponsable();
         await cargarAdminsSoloSiSuperadmin();
         configurarModoAdminResponsable();
+        await cargarActividadSiEsEdicion();
         actualizarBloqueFechas();
         actualizarPreview();
       } catch (error) {
