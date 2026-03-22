@@ -446,10 +446,17 @@
     </div>
   </div>
 
+
+  
   <script>
     let reservasActuales = [];
     let reservaSeleccionada = null;
 
+function obtenerActividadIdURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("actividad_id");
+}
+    
     function claseEstado(estado) {
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
@@ -632,8 +639,15 @@
     }
 
     function nuevaReserva() {
-      location.href = "/";
-    }
+  const actividadId = obtenerActividadIdURL();
+
+  if (!actividadId) {
+    alert("No se ha podido determinar la actividad.");
+    return;
+  }
+
+  location.href = "/?actividad_id=" + encodeURIComponent(actividadId);
+}
 
     async function salir() {
       await fetch("/api/usuario/logout", {
