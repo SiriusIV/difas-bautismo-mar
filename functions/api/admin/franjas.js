@@ -81,6 +81,40 @@ function validarFechaDentroDeActividad(actividad, fecha) {
   return null;
 }
 
+async function obtenerBloqueoActualFranja(env, franjaId) {
+  const sql = `
+    SELECT
+      COALESCE(SUM(
+        CASE
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+            CASE
+              WHEN r.prereserva_expira_en IS NOT NULL
+                   AND datetime('now') <= datetime(r.prereserva_expira_en)
+                THEN MAX(
+                  COALESCE(r.plazas_prereservadas, 0),
+                  COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                )
+              ELSE COALESCE((
+                SELECT COUNT(*)
+                FROM visitantes v
+                WHERE v.reserva_id = r.id
+              ), 0)
+            END
+          ELSE 0
+        END
+      ), 0) AS ocupadas
+    FROM reservas r
+    WHERE r.franja_id = ?
+  `;
+
+  const row = await env.DB.prepare(sql).bind(franjaId).first();
+  return Number(row?.ocupadas || 0);
+}
+
 async function obtenerResumenFranjas(env, actividad_id) {
   const sql = `
     SELECT
@@ -93,18 +127,27 @@ async function obtenerResumenFranjas(env, actividad_id) {
       COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+            CASE
+              WHEN r.prereserva_expira_en IS NOT NULL
+                   AND datetime('now') <= datetime(r.prereserva_expira_en)
+                THEN MAX(
+                  COALESCE(r.plazas_prereservadas, 0),
+                  COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                )
+              ELSE COALESCE((
+                SELECT COUNT(*)
+                FROM visitantes v
+                WHERE v.reserva_id = r.id
+              ), 0)
+            END
           ELSE 0
         END
-      ), 0) AS ocupadas,
-      (
-        f.capacidad - COALESCE(SUM(
-          CASE
-            WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
-            ELSE 0
-          END
-        ), 0)
-      ) AS disponibles
+      ), 0) AS ocupadas
     FROM franjas f
     LEFT JOIN reservas r
       ON f.id = r.franja_id
@@ -123,7 +166,19 @@ async function obtenerResumenFranjas(env, actividad_id) {
   `;
 
   const result = await env.DB.prepare(sql).bind(actividad_id).all();
-  return result.results || [];
+  const rows = result.results || [];
+
+  return rows.map(row => {
+    const capacidad = Number(row.capacidad || 0);
+    const ocupadas = Number(row.ocupadas || 0);
+
+    return {
+      ...row,
+      capacidad,
+      ocupadas,
+      disponibles: Math.max(capacidad - ocupadas, 0)
+    };
+  });
 }
 
 async function obtenerFranjaPorId(env, id) {
@@ -346,16 +401,7 @@ export async function onRequestPut(context) {
       );
     }
 
-    const ocupacion = await env.DB.prepare(`
-      SELECT COALESCE(SUM(personas), 0) AS ocupadas
-      FROM reservas
-      WHERE franja_id = ?
-        AND estado IN ('PENDIENTE', 'CONFIRMADA')
-    `)
-      .bind(id)
-      .first();
-
-    const ocupadas = Number(ocupacion?.ocupadas || 0);
+    const ocupadas = await obtenerBloqueoActualFranja(env, id);
 
     if (capacidad < ocupadas) {
       return json(
@@ -430,6 +476,18 @@ export async function onRequestDelete(context) {
     }
 
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
+
+    const ocupadas = await obtenerBloqueoActualFranja(env, id);
+
+    if (ocupadas > 0) {
+      return json(
+        {
+          ok: false,
+          error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
+        },
+        { status: 400 }
+      );
+    }
 
     const uso = await env.DB.prepare(`
       SELECT COUNT(*) AS total
