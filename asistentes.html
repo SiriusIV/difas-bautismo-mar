@@ -533,11 +533,23 @@
       return String(valor).replace("T", " ");
     }
 
+    function esPrereservaVigente(valor) {
+      if (!valor) return false;
+
+      const fecha = new Date(String(valor).replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return false;
+
+      return fecha.getTime() >= Date.now();
+    }
+
     function textoLimiteAsignacion(valor) {
       if (!valor) return "Finalizado";
+
       const fecha = new Date(String(valor).replace(" ", "T"));
       if (Number.isNaN(fecha.getTime())) return "Finalizado";
-      if (fecha < new Date()) return "Finalizado";
+
+      if (fecha.getTime() < Date.now()) return "Finalizado";
+
       return String(valor).replace("T", " ");
     }
 
@@ -795,99 +807,97 @@
       actualizarBotonEliminar();
     }
 
-function recalcularResumenEnPantalla() {
-  if (!reservaActual) return;
+    function recalcularResumenEnPantalla() {
+      if (!reservaActual) return;
 
-  const visitantesValidos = obtenerVisitantesValidosDeTabla();
-  const totalAsignadas = visitantesValidos.length;
+      const visitantesValidos = obtenerVisitantesValidosDeTabla();
+      const totalAsignadas = visitantesValidos.length;
 
-  const reservaOriginal = Number(reservaActual.plazas_prereservadas || 0);
-  const prereservaVigente = !!reservaActual.prereserva_vigente;
-  const capacidadFranja = Number(reservaActual.capacidad || 0);
+      const reservaOriginal = Number(reservaActual.plazas_prereservadas || 0);
+      const prereservaVigente = !!reservaActual.prereserva_vigente;
+      const capacidadFranja = Number(reservaActual.capacidad || 0);
 
-  const disponiblesGlobalesBackend = Number(reservaActual.disponibles || 0);
-  const bloqueoActualBackend = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
+      const disponiblesGlobalesBackend = Number(reservaActual.disponibles || 0);
+      const bloqueoActualBackend = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
 
-  // Bloqueo de otras reservas activas en la misma franja
-  const bloqueoOtrasReservas = Math.max(
-    capacidadFranja - disponiblesGlobalesBackend - bloqueoActualBackend,
-    0
-  );
+      const bloqueoOtrasReservas = Math.max(
+        capacidadFranja - disponiblesGlobalesBackend - bloqueoActualBackend,
+        0
+      );
 
-  const reservadasPendientes = prereservaVigente
-    ? Math.max(reservaOriginal - totalAsignadas, 0)
-    : 0;
+      const reservadasPendientes = prereservaVigente
+        ? Math.max(reservaOriginal - totalAsignadas, 0)
+        : 0;
 
-  const plazasBloqueadasActualmenteLocal = prereservaVigente
-    ? Math.max(reservaOriginal, totalAsignadas)
-    : totalAsignadas;
+      const plazasBloqueadasActualmenteLocal = prereservaVigente
+        ? Math.max(reservaOriginal, totalAsignadas)
+        : totalAsignadas;
 
-  const disponiblesFranja = Math.max(
-    capacidadFranja - bloqueoOtrasReservas - plazasBloqueadasActualmenteLocal,
-    0
-  );
+      const disponiblesFranja = Math.max(
+        capacidadFranja - bloqueoOtrasReservas - plazasBloqueadasActualmenteLocal,
+        0
+      );
 
-  const alumnos = visitantesValidos.filter(v => v.tipo_asistente === "ALUMNO").length;
-  const profesores = visitantesValidos.filter(v => v.tipo_asistente === "PROFESOR").length;
-  const mayores = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_10").length;
-  const menores = visitantesValidos.filter(v => v.categoria_edad === "MENOR_10").length;
+      const alumnos = visitantesValidos.filter(v => v.tipo_asistente === "ALUMNO").length;
+      const profesores = visitantesValidos.filter(v => v.tipo_asistente === "PROFESOR").length;
+      const mayores = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_10").length;
+      const menores = visitantesValidos.filter(v => v.categoria_edad === "MENOR_10").length;
 
-  const claseEstado = claseEstadoBadge(reservaActual.estado);
+      const claseEstado = claseEstadoBadge(reservaActual.estado);
 
-  document.getElementById("bloqueReserva").innerHTML = `
-    <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
-    <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-    <strong>Franja horaria asignada:</strong><br>
-    ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-    <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en)}
-  `;
+      document.getElementById("bloqueReserva").innerHTML = `
+        <strong>Código de reserva:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Franja horaria asignada:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
+        <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en)}
+      `;
 
-  document.getElementById("bloqueResumen").innerHTML = `
-    <div class="resumen-grid">
-      <div class="resumen-col">
-        <strong>Plazas</strong><br>
-        Reservadas pendientes: ${reservadasPendientes}<br>
-        Asignadas: ${totalAsignadas}<br>
-        Disponibles en la franja: ${disponiblesFranja}
-      </div>
-      <div class="resumen-col">
-        <strong>Desglose</strong><br>
-        Alumnos: ${alumnos}<br>
-        Profesores: ${profesores}<br>
-        Mayores de 10 años: ${mayores}<br>
-        Menores de 10 años: ${menores}
-      </div>
-    </div>
-  `;
+      document.getElementById("bloqueResumen").innerHTML = `
+        <div class="resumen-grid">
+          <div class="resumen-col">
+            <strong>Plazas</strong><br>
+            Reservadas pendientes: ${reservadasPendientes}<br>
+            Asignadas: ${totalAsignadas}<br>
+            Disponibles en la franja: ${disponiblesFranja}
+          </div>
+          <div class="resumen-col">
+            <strong>Desglose</strong><br>
+            Alumnos: ${alumnos}<br>
+            Profesores: ${profesores}<br>
+            Mayores de 10 años: ${mayores}<br>
+            Menores de 10 años: ${menores}
+          </div>
+        </div>
+      `;
 
-  const btnGuardar = document.getElementById("btnGuardarAsistentes");
-  const btnAnadir = document.getElementById("btnAnadirFila");
+      const btnGuardar = document.getElementById("btnGuardarAsistentes");
+      const btnAnadir = document.getElementById("btnAnadirFila");
 
-  // Máximo asignable para ESTA reserva, respetando lo bloqueado por otras
-  const maximoPermitido = Math.max(capacidadFranja - bloqueoOtrasReservas, 0);
+      const maximoPermitido = Math.max(capacidadFranja - bloqueoOtrasReservas, 0);
 
-  if (!solicitudEditable()) {
-    btnGuardar.disabled = true;
-    btnAnadir.disabled = true;
-    actualizarBotonEliminar();
-    return;
-  }
+      if (!solicitudEditable()) {
+        btnGuardar.disabled = true;
+        btnAnadir.disabled = true;
+        actualizarBotonEliminar();
+        return;
+      }
 
-  if (totalAsignadas > maximoPermitido) {
-    mostrarMensaje(
-      "error",
-      `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
-    );
-    btnGuardar.disabled = true;
-    btnAnadir.disabled = true;
-  } else {
-    limpiarMensaje();
-    btnGuardar.disabled = envioEnCurso;
-    btnAnadir.disabled = totalAsignadas >= maximoPermitido;
-  }
+      if (totalAsignadas > maximoPermitido) {
+        mostrarMensaje(
+          "error",
+          `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
+        );
+        btnGuardar.disabled = true;
+        btnAnadir.disabled = true;
+      } else {
+        limpiarMensaje();
+        btnGuardar.disabled = envioEnCurso;
+        btnAnadir.disabled = totalAsignadas >= maximoPermitido;
+      }
 
-  actualizarBotonEliminar();
-}
+      actualizarBotonEliminar();
+    }
 
     function actualizarModoPantalla() {
       const editable = solicitudEditable();
