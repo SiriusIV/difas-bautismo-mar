@@ -324,6 +324,13 @@
           </svg>
         </button>
 
+        <button type="button" class="btn-icono" id="btnPortal" title="Portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 11.5L12 4l9 7.5"></path>
+            <path d="M5 10.5V20h14v-9.5"></path>
+          </svg>
+        </button>
+        
         <button type="button" class="btn-icono" id="btnSalir" title="Salir">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -651,11 +658,16 @@ function obtenerActividadIdURL() {
       alert("Panel de notificaciones pendiente de implementar.");
     }
 
+    function irPortal() {
+      location.href = "portal.html";
+    }
+    
     document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
     document.getElementById("btnRecargar").addEventListener("click", cargarPanel);
     document.getElementById("btnSalir").addEventListener("click", salir);
     document.getElementById("btnNotificaciones").addEventListener("click", abrirNotificaciones);
+    document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
     });
