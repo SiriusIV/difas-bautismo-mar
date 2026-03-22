@@ -542,14 +542,9 @@
       return fecha.getTime() >= Date.now();
     }
 
-    function textoLimiteAsignacion(valor) {
+    function textoLimiteAsignacion(valor, vigente) {
       if (!valor) return "Finalizado";
-
-      const fecha = new Date(String(valor).replace(" ", "T"));
-      if (Number.isNaN(fecha.getTime())) return "Finalizado";
-
-      if (fecha.getTime() < Date.now()) return "Finalizado";
-
+      if (!vigente) return "Finalizado";
       return String(valor).replace("T", " ");
     }
 
@@ -850,7 +845,7 @@
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja horaria asignada:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en)}
+        <strong>Hora límite de asignación de plazas reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
