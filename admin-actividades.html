@@ -166,6 +166,10 @@
       background: #dfe7ef;
     }
 
+    .oculto {
+      display: none !important;
+    }
+
     @media (max-width: 900px) {
       .fila {
         grid-template-columns: 1fr;
@@ -217,9 +221,9 @@
             <input type="text" id="nombre" required>
           </div>
 
-          <div>
+          <div id="bloqueAdminResponsable">
             <label for="admin_id">Administrador responsable</label>
-            <select id="admin_id" required></select>
+            <select id="admin_id"></select>
           </div>
         </div>
 
@@ -342,6 +346,8 @@
 
   <script>
     let adminsCache = [];
+    let usuarioSesion = null;
+    let esSuperAdmin = false;
 
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensajeActividad");
@@ -362,16 +368,27 @@
     }
 
     async function comprobarSesionAdmin() {
-      const response = await fetch("/api/admin/session", {
+      const response = await fetch("/api/usuario/session", {
         method: "GET",
         credentials: "same-origin"
       });
 
-      if (!response.ok) {
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.ok || !data?.authenticated || !data?.user) {
         redirigirLogin();
         return false;
       }
 
+      const rol = String(data.user.rol || "").toUpperCase();
+
+      if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+        redirigirLogin();
+        return false;
+      }
+
+      usuarioSesion = data.user;
+      esSuperAdmin = rol === "SUPERADMIN";
       return true;
     }
 
@@ -385,7 +402,11 @@
       redirigirLogin();
     }
 
-    async function cargarAdmins() {
+    async function cargarAdminsSoloSiSuperadmin() {
+      if (!esSuperAdmin) {
+        return;
+      }
+
       const res = await fetch("/api/admin/admins-lista", {
         credentials: "same-origin"
       });
@@ -403,6 +424,22 @@
         adminsCache.map(a => `
           <option value="${a.id}">${a.nombre} (${a.email})</option>
         `).join("");
+    }
+
+    function configurarModoAdminResponsable() {
+      const bloque = document.getElementById("bloqueAdminResponsable");
+      const select = document.getElementById("admin_id");
+
+      if (esSuperAdmin) {
+        bloque.classList.remove("oculto");
+        select.disabled = false;
+        return;
+      }
+
+      bloque.classList.add("oculto");
+      select.innerHTML = `<option value="${usuarioSesion.id}">${usuarioSesion.nombre || usuarioSesion.email}</option>`;
+      select.value = String(usuarioSesion.id);
+      select.disabled = true;
     }
 
     function actualizarBloqueFechas() {
@@ -459,9 +496,18 @@
         orden_portal: document.getElementById("orden_portal").value
       };
 
-      if (!payload.nombre || !payload.admin_id) {
-        mostrarMensaje("error", "Debe indicar al menos nombre y administrador responsable.");
+      if (!payload.nombre) {
+        mostrarMensaje("error", "Debe indicar al menos el nombre de la actividad.");
         return;
+      }
+
+      if (esSuperAdmin && !payload.admin_id) {
+        mostrarMensaje("error", "Debe indicar el administrador responsable.");
+        return;
+      }
+
+      if (!esSuperAdmin) {
+        payload.admin_id = String(usuarioSesion.id);
       }
 
       const esEdicion = !!payload.id;
@@ -511,12 +557,16 @@
         "imagen_url",
         "tipo"
       ].forEach(id => {
-        document.getElementById(id).addEventListener("input", actualizarPreview);
-        document.getElementById(id).addEventListener("change", actualizarPreview);
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", actualizarPreview);
+        el.addEventListener("change", actualizarPreview);
       });
 
       try {
-        await cargarAdmins();
+        configurarModoAdminResponsable();
+        await cargarAdminsSoloSiSuperadmin();
+        configurarModoAdminResponsable();
         actualizarBloqueFechas();
         actualizarPreview();
       } catch (error) {
