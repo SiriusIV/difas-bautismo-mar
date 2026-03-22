@@ -314,6 +314,11 @@
       <button class="btn btn-secundario" onclick="logoutActual()">Salir</button>
     </div>
 
+    <div id="barraUsuario" class="barra-admin" style="display:none;">
+      <button class="btn btn-admin-secundario" onclick="irPanelUsuario()">Mi panel de reservas</button>
+      <button class="btn btn-secundario" onclick="logoutActual()">Cerrar sesión</button>
+    </div>
+
     <div id="gridActividades" class="grid-actividades"></div>
 
     <div id="bloqueAcceso" class="bloque-acceso">
@@ -403,13 +408,15 @@
     }
 
     function actualizarModoAcceso() {
-      const admin = esAdmin();
-      const superadmin = esSuperAdmin();
+  const admin = esAdmin();
+  const superadmin = esSuperAdmin();
+  const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
 
-      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
-      document.getElementById("bloqueAcceso").style.display = usuarioAutenticado ? "none" : "block";
-      document.getElementById("btnGestionAdmins").style.display = superadmin ? "inline-block" : "none";
-    }
+  document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+  document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
+  document.getElementById("bloqueAcceso").style.display = usuarioAutenticado ? "none" : "block";
+  document.getElementById("btnGestionAdmins").style.display = superadmin ? "inline-block" : "none";
+}
 
     async function cargarActividadesPublicas() {
       const res = await fetch("/api/actividades", {
@@ -427,6 +434,10 @@
       renderizarActividades();
     }
 
+    function irPanelUsuario() {
+  location.href = "usuario-panel.html";
+}
+    
     async function cargarActividadesAdmin() {
       const res = await fetch("/api/admin/mis-actividades", {
         credentials: "include"
@@ -546,14 +557,9 @@
     await comprobarSesionUsuario();
     await cargarActividades();
 
-    if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
-  const actividadId = actividadModalActual?.id || sessionStorage.getItem("actividad_id_actual");
-
-  if (actividadId) {
-    location.href = `usuario-panel.html?actividad_id=${encodeURIComponent(actividadId)}`;
-  } else {
-    location.href = "usuario-panel.html";
-  }
+if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
+  actualizarModoAcceso();
+  return;
 }
   } else {
     mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
