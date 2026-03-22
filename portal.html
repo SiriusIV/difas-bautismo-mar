@@ -411,16 +411,44 @@
       document.getElementById("btnGestionAdmins").style.display = superadmin ? "inline-block" : "none";
     }
 
-    async function cargarActividades() {
+    async function cargarActividadesPublicas() {
       const res = await fetch("/api/actividades", {
         credentials: "include"
       });
       const data = await res.json();
 
-      if (!data.ok) return;
+      if (!res.ok || !data.ok) {
+        actividadesCache = [];
+        renderizarActividades();
+        return;
+      }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       renderizarActividades();
+    }
+
+    async function cargarActividadesAdmin() {
+      const res = await fetch("/api/admin/mis-actividades", {
+        credentials: "include"
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        actividadesCache = [];
+        renderizarActividades();
+        return;
+      }
+
+      actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      renderizarActividades();
+    }
+
+    async function cargarActividades() {
+      if (esAdmin()) {
+        await cargarActividadesAdmin();
+      } else {
+        await cargarActividadesPublicas();
+      }
     }
 
     function renderizarActividades() {
@@ -433,6 +461,7 @@
             <h3>${a.titulo_publico || a.nombre}</h3>
             <p>${a.descripcion_corta || ''}</p>
             <div class="card-meta">
+              ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
               ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ''}
               ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
             </div>
@@ -455,9 +484,11 @@
       document.getElementById("modalTexto").textContent = a.descripcion_larga || a.descripcion_corta || "";
 
       document.getElementById("modalMeta").innerHTML = `
+        ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
         ${a.subtitulo_publico ? `<div><strong>${a.subtitulo_publico}</strong></div>` : ''}
         ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ''}
         ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
+        ${a.tipo === 'PERMANENTE' ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ''}
       `;
 
       document.getElementById("btnSolicitarActividad").style.display =
@@ -480,13 +511,13 @@
     }
 
     function solicitarActividadActual() {
-  if (!actividadModalActual) return;
-  location.href = `index.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
-}
+      if (!actividadModalActual) return;
+      location.href = `index.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
+    }
 
     function editarActividadActual() {
       if (!actividadModalActual) return;
-      alert("Panel de edición de actividad pendiente de implementar. Actividad ID: " + actividadModalActual.id);
+      location.href = `admin-actividades.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
     }
 
     function verReservasActividadActual() {
@@ -510,25 +541,18 @@
       const data = await res.json();
 
       if (data.ok) {
-        if (data.redirect_to) {
-          location.href = data.redirect_to;
-          return;
-        }
+        await comprobarSesionUsuario();
+        await cargarActividades();
 
-        location.href = "usuario-panel.html";
+        if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
+          location.href = "usuario-panel.html";
+        }
       } else {
         mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
       }
     }
 
     async function logoutActual() {
-      if (esAdmin()) {
-        await fetch("/api/admin/logout", {
-          method: "POST",
-          credentials: "include"
-        });
-      }
-
       await fetch("/api/usuario/logout", {
         method: "POST",
         credentials: "include"
@@ -537,16 +561,16 @@
       usuarioAutenticado = null;
       actualizarModoAcceso();
       cerrarModalActividad();
-      location.href = "portal.html";
+      await cargarActividadesPublicas();
     }
 
     function nuevaActividad() {
-      alert("Alta de nueva actividad pendiente de implementar.");
+      location.href = "admin-actividades.html";
     }
 
     function gestionAdmins() {
-  location.href = "admin-usuarios.html";
-}
+      location.href = "admin-usuarios.html";
+    }
 
     function recuperarPassword(event) {
       event.preventDefault();
