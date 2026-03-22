@@ -11,13 +11,11 @@ function estadoBloqueaPlazas(estado) {
   return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
 }
 
-function esPrereservaVigente(expira) {
-  if (!expira) return false;
+function esPrereservaVigente(row) {
+  if (!row?.prereserva_expira_en) return false;
+  if (!estadoBloqueaPlazas(row.estado)) return false;
 
-  const d = new Date(String(expira).replace(" ", "T") + "Z");
-  if (Number.isNaN(d.getTime())) return false;
-
-  return d.getTime() >= Date.now();
+  return Number(row.prereserva_vigente || 0) === 1;
 }
 
 function calcularPlazasAsignadas(row) {
@@ -27,10 +25,11 @@ function calcularPlazasAsignadas(row) {
 
 function calcularPlazasReservadasPendientes(row) {
   if (!estadoBloqueaPlazas(row.estado)) return 0;
-  if (!esPrereservaVigente(row.prereserva_expira_en)) return 0;
+  if (!esPrereservaVigente(row)) return 0;
 
   const pre = Number(row.plazas_prereservadas || 0);
   const asignadas = Number(row.asistentes_cargados || 0);
+
   return Math.max(pre - asignadas, 0);
 }
 
@@ -53,6 +52,12 @@ export async function onRequestGet(context) {
         r.observaciones,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
+        CASE
+          WHEN r.prereserva_expira_en IS NOT NULL
+               AND datetime('now') <= datetime(r.prereserva_expira_en)
+            THEN 1
+          ELSE 0
+        END AS prereserva_vigente,
         f.fecha,
         f.hora_inicio,
         f.hora_fin,
@@ -61,12 +66,12 @@ export async function onRequestGet(context) {
           FROM visitantes v
           WHERE v.reserva_id = r.id
         ), 0) AS asistentes_cargados,
-        COALESCE(a.nombre, 'Actividad') AS actividad
+        COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad
       FROM reservas r
       LEFT JOIN franjas f ON r.franja_id = f.id
       LEFT JOIN actividades a ON r.actividad_id = a.id
       WHERE r.usuario_id = ?
-      ORDER BY f.fecha DESC, f.hora_inicio DESC
+      ORDER BY f.fecha DESC, f.hora_inicio DESC, r.fecha_solicitud DESC
     `).bind(user.id).all();
 
     const rows = result.results || [];
