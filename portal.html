@@ -540,18 +540,36 @@
 
       const data = await res.json();
 
-      if (data.ok) {
-        await comprobarSesionUsuario();
-        await cargarActividades();
+      async function loginUsuario() {
+  limpiarMensaje("mensajeLogin");
 
-        if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
-          location.href = "usuario-panel.html";
-        }
+  const email = document.getElementById("emailLogin").value.trim();
+  const password = document.getElementById("passwordLogin").value.trim();
+
+  const res = await fetch("/api/usuario/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    await comprobarSesionUsuario();
+    await cargarActividades();
+
+    if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
+      if (actividadModalActual && actividadModalActual.id) {
+        location.href = `usuario-panel.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
       } else {
-        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
+        location.href = "usuario-panel.html";
       }
     }
-
+  } else {
+    mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
+  }
+}
     async function logoutActual() {
       await fetch("/api/usuario/logout", {
         method: "POST",
