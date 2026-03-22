@@ -40,9 +40,12 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
-function calcularFechaExpiracion(minutos) {
-  const ms = Date.now() + (Number(minutos || 0) * 60 * 1000);
-  return new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+async function obtenerFechaExpiracionSQLite(env, minutos) {
+  const row = await env.DB.prepare(`
+    SELECT datetime('now', '+' || ? || ' minutes') AS expira
+  `).bind(minutos).first();
+
+  return row?.expira || null;
 }
 
 async function obtenerFranja(env, franjaId) {
@@ -228,7 +231,14 @@ export async function onRequestPost(context) {
     const codigoReserva = generarCodigoReserva();
     const tokenEdicion = generarToken();
     const minutosConsolidacion = calcularMinutosConsolidacion(plazasReservadas);
-    const prereservaExpiraEn = calcularFechaExpiracion(minutosConsolidacion);
+    const prereservaExpiraEn = await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
+
+    if (!prereservaExpiraEn) {
+      return json(
+        { ok: false, error: "No se pudo calcular la expiración de la prereserva." },
+        { status: 500 }
+      );
+    }
 
     const sqlInsert = `
       INSERT INTO reservas (
