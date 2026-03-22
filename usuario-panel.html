@@ -388,13 +388,7 @@
         <div class="resumen" id="resumenPanel"></div>
 
         <div class="acciones-superiores">
-          <button type="button" class="btn-icono" id="btnNueva" title="Nueva solicitud">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-
+          
           <button type="button" class="btn-icono" id="btnEditar" title="Editar" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 20h9"></path>
@@ -645,20 +639,6 @@ function obtenerActividadIdURL() {
       location.href = "asistentes.html?token=" + encodeURIComponent(token);
     }
 
-    function nuevaReserva() {
-  const actividadId = obtenerActividadIdURL();
-
-  if (!actividadId) {
-    alert("No se ha podido determinar la actividad.");
-    return;
-  }
-
-  location.href = "index.html?actividad_id=" + encodeURIComponent(actividadId);
-}
-
-  location.href = "/?actividad_id=" + encodeURIComponent(actividadId);
-}
-
     async function salir() {
       await fetch("/api/usuario/logout", {
         method: "POST",
@@ -673,7 +653,6 @@ function obtenerActividadIdURL() {
 
     document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
-    document.getElementById("btnNueva").addEventListener("click", nuevaReserva);
     document.getElementById("btnRecargar").addEventListener("click", cargarPanel);
     document.getElementById("btnSalir").addEventListener("click", salir);
     document.getElementById("btnNotificaciones").addEventListener("click", abrirNotificaciones);
