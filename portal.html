@@ -526,21 +526,7 @@
       location.href = `admin-reservas.html?actividad_id=${encodeURIComponent(actividadModalActual.id)}`;
     }
 
-    async function loginUsuario() {
-      limpiarMensaje("mensajeLogin");
-
-      const email = document.getElementById("emailLogin").value.trim();
-      const password = document.getElementById("passwordLogin").value.trim();
-
-      const res = await fetch("/api/usuario/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await res.json();
-
+    
       async function loginUsuario() {
   limpiarMensaje("mensajeLogin");
 
