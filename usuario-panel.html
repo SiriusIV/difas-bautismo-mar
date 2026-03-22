@@ -454,7 +454,14 @@
 
 function obtenerActividadIdURL() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("actividad_id");
+  const actividadId = params.get("actividad_id");
+
+  if (actividadId) {
+    sessionStorage.setItem("actividad_id_actual", actividadId);
+    return actividadId;
+  }
+
+  return sessionStorage.getItem("actividad_id_actual");
 }
     
     function claseEstado(estado) {
@@ -645,6 +652,9 @@ function obtenerActividadIdURL() {
     alert("No se ha podido determinar la actividad.");
     return;
   }
+
+  location.href = "index.html?actividad_id=" + encodeURIComponent(actividadId);
+}
 
   location.href = "/?actividad_id=" + encodeURIComponent(actividadId);
 }
