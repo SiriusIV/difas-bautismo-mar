@@ -96,11 +96,20 @@
       border-color: #0b5ed7;
     }
 
-    
-    <div id="franjaSesion" style="display:none; max-width:1320px; margin:18px auto 0; padding:0 20px;">
-      <div id="textoSesion" style="font-size:28px; font-weight:600; color:#123a63; line-height:1.2;"></div>
-    </div>
-    
+    .franja-sesion {
+      display: none;
+      max-width: 1320px;
+      margin: 18px auto 0;
+      padding: 0 20px;
+    }
+
+    .texto-sesion {
+      font-size: 28px;
+      font-weight: 600;
+      color: #123a63;
+      line-height: 1.2;
+    }
+
     .contenedor {
       max-width: 1320px;
       margin: 24px auto;
@@ -504,6 +513,10 @@
         font-size: 24px;
       }
 
+      .texto-sesion {
+        font-size: 24px;
+      }
+
       .btn-carrusel {
         display: none;
       }
@@ -541,6 +554,10 @@
         <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
       </div>
     </div>
+  </div>
+
+  <div id="franjaSesion" class="franja-sesion">
+    <div id="textoSesion" class="texto-sesion"></div>
   </div>
 
   <div class="contenedor">
@@ -631,31 +648,6 @@
       el.style.display = "block";
     }
 
-    function actualizarFranjaSesion() {
-      const franja = document.getElementById("franjaSesion");
-      const texto = document.getElementById("textoSesion");
-
-      if (!usuarioAutenticado) {
-        franja.style.display = "none";
-        texto.textContent = "";
-      return;
-      }
-
-      const rol = String(usuarioAutenticado.rol || "").toUpperCase();
-      const centro = String(usuarioAutenticado.centro || "").trim();
-      const nombre = String(usuarioAutenticado.nombre || "").trim();
-
-      if (rol === "SOLICITANTE") {
-        texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
-        } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
-        texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
-        } else {
-        texto.textContent = "";
-      }
-
-      franja.style.display = texto.textContent ? "block" : "none";
-  }
-    
     function limpiarMensaje(id) {
       const el = document.getElementById(id);
       el.className = "mensaje";
@@ -711,6 +703,31 @@
       actualizarModoAcceso();
     }
 
+    function actualizarFranjaSesion() {
+      const franja = document.getElementById("franjaSesion");
+      const texto = document.getElementById("textoSesion");
+
+      if (!usuarioAutenticado) {
+        franja.style.display = "none";
+        texto.textContent = "";
+        return;
+      }
+
+      const rol = String(usuarioAutenticado.rol || "").toUpperCase();
+      const centro = String(usuarioAutenticado.centro || "").trim();
+      const nombre = String(usuarioAutenticado.nombre || "").trim();
+
+      if (rol === "SOLICITANTE") {
+        texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
+      } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
+      } else {
+        texto.textContent = "";
+      }
+
+      franja.style.display = texto.textContent ? "block" : "none";
+    }
+
     function actualizarModoAcceso() {
       const admin = esAdmin();
       const superadmin = esSuperAdmin();
@@ -723,8 +740,8 @@
       const btnGestionAdmins = document.getElementById("btnGestionAdmins");
       if (btnGestionAdmins) btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
 
-      renderDetalle();
       actualizarFranjaSesion();
+      renderDetalle();
     }
 
     async function cargarActividadesPublicas() {
@@ -836,11 +853,7 @@
         esAdmin() ? "inline-block" : "none";
 
       document.getElementById("btnVerReservasActividad").style.display =
-        esAdmin() ? "inline-block" : "inline-none";
-
-      if (!esAdmin()) {
-        document.getElementById("btnVerReservasActividad").style.display = "none";
-      }
+        esAdmin() ? "inline-block" : "none";
     }
 
     function desplazarCarrusel(delta) {
@@ -920,19 +933,4 @@
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
     document.getElementById("btnEditarActividad").addEventListener("click", editarActividadActual);
-    document.getElementById("btnVerReservasActividad").addEventListener("click", verReservasActividadActual);
-    document.getElementById("btnVerPassword").addEventListener("click", alternarPassword);
-
-    document.getElementById("modalLogin").addEventListener("click", function (e) {
-      if (e.target.id === "modalLogin") cerrarModalLogin();
-    });
-
-    window.seleccionarActividad = seleccionarActividad;
-
-    (async function init() {
-      await comprobarSesionUsuario();
-      await cargarActividades();
-    })();
-  </script>
-</body>
-</html>
+    document.getElementById("btnVerReservasActividad").addEventListener("click", verReserv
