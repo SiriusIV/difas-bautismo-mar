@@ -528,6 +528,22 @@
       return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
     }
 
+    function formatearFechaHoraLocal(valor) {
+      if (!valor) return "";
+
+      const fecha = new Date(String(valor).replace(" ", "T") + "Z");
+      if (Number.isNaN(fecha.getTime())) return String(valor);
+
+      const yyyy = fecha.getFullYear();
+      const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dd = String(fecha.getDate()).padStart(2, "0");
+      const hh = String(fecha.getHours()).padStart(2, "0");
+      const mi = String(fecha.getMinutes()).padStart(2, "0");
+      const ss = String(fecha.getSeconds()).padStart(2, "0");
+
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+    
     function formatearFechaHora(valor) {
       if (!valor) return "No disponible";
       return String(valor).replace("T", " ");
@@ -545,7 +561,7 @@
     function textoLimiteAsignacion(valor, vigente) {
       if (!valor) return "Finalizado";
       if (!vigente) return "Finalizado";
-      return String(valor).replace("T", " ");
+      return formatearFechaHoraLocal(valor);
     }
 
     function mostrarMensaje(tipo, texto) {
