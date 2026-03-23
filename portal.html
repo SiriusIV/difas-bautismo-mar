@@ -14,37 +14,50 @@
     }
 
     .cabecera {
-      position: relative;
-      text-align: center;
-      padding: 28px 20px 20px;
       background: #ffffff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      min-height: 140px;
+      padding: 26px 20px 20px;
+    }
+
+    .cabecera-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      text-align: left;
+      flex-wrap: wrap;
     }
 
     .logo-cabecera {
-      position: absolute;
-      left: 24px;
-      top: 18px;
-      width: 90px;
+      width: 82px;
       height: auto;
+      display: block;
     }
 
-    .cabecera h1 {
+    .titulos-cabecera h1 {
       margin: 0;
       font-size: 34px;
       color: #123a63;
+      line-height: 1.15;
     }
 
-    .cabecera h2 {
+    .titulos-cabecera h2 {
       margin: 8px 0 0;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: normal;
       color: #4a5a6a;
     }
 
     .acciones-cabecera-centro {
-      margin-top: 18px;
       display: inline-flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -81,69 +94,77 @@
       display: none;
       justify-content: center;
       gap: 10px;
-      margin-top: 18px;
       flex-wrap: wrap;
     }
 
     .contenedor {
       max-width: 1320px;
-      margin: 28px auto;
+      margin: 24px auto;
       padding: 0 20px 30px;
     }
 
     .grid-actividades {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 18px;
     }
 
     .card {
       background: #fff;
       border-radius: 12px;
-      overflow: hidden;
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
+      position: relative;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      padding: 16px 16px 14px;
+      min-height: 130px;
     }
 
-    .card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      background: #dfe7ef;
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .card-info-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #0b5ed7;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .card-info-btn:hover {
+      background: #eef4ff;
+      border-color: #9fb2c7;
     }
 
     .card-body {
-      padding: 14px 16px 10px;
-      flex: 1;
+      padding-right: 40px;
     }
 
     .card-body h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
+      margin: 0 0 12px;
+      font-size: 22px;
       color: #123a63;
-    }
-
-    .card-body p {
-      margin: 0;
-      line-height: 1.45;
-      color: #4d5966;
-      min-height: 44px;
-      font-size: 14px;
+      line-height: 1.2;
     }
 
     .card-meta {
-      margin-top: 10px;
-      font-size: 14px;
+      font-size: 15px;
       color: #5f6d7a;
-      line-height: 1.45;
-    }
-
-    .card-actions {
-      padding: 0 16px 14px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      line-height: 1.55;
     }
 
     .btn {
@@ -372,45 +393,43 @@
     }
 
     @media (max-width: 700px) {
-      .cabecera {
-        padding-top: 120px;
+      .bloque-marca {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
       }
 
-      .logo-cabecera {
-        left: 50%;
-        transform: translateX(-50%);
-        top: 16px;
-      }
-
-      .cabecera h1 {
+      .titulos-cabecera h1 {
         font-size: 28px;
-      }
-
-      .cabecera h2 {
-        font-size: 18px;
       }
     }
   </style>
 </head>
 <body>
   <div class="cabecera">
-    <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
-    <h1>Actividades públicas institucionales</h1>
-    <h2>Armada - Ferrol</h2>
+    <div class="cabecera-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+        <div class="titulos-cabecera">
+          <h1>Actividades públicas institucionales</h1>
+          <h2>Armada - Ferrol</h2>
+        </div>
+      </div>
 
-    <div id="accionesPublicas" class="acciones-cabecera-centro">
-      <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
-    </div>
+      <div id="accionesPublicas" class="acciones-cabecera-centro">
+        <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
+      </div>
 
-    <div id="barraAdmin" class="barra-admin">
-      <button class="nav-btn activo" onclick="nuevaActividad()">Nueva actividad</button>
-      <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
-      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
-    </div>
+      <div id="barraAdmin" class="barra-admin">
+        <button class="nav-btn activo" onclick="nuevaActividad()">Nueva actividad</button>
+        <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
+        <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+      </div>
 
-    <div id="barraUsuario" class="barra-usuario">
-      <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
-      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+      <div id="barraUsuario" class="barra-usuario">
+        <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
+        <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+      </div>
     </div>
   </div>
 
@@ -589,18 +608,13 @@
 
       grid.innerHTML = actividadesCache.map(a => `
         <div class="card">
-          <img src="${a.imagen_url || 'logo.png'}" alt="${a.titulo_publico || a.nombre}">
+          <button class="card-info-btn" onclick="abrirModalActividad(${a.id})" title="Más información" aria-label="Más información">i</button>
           <div class="card-body">
             <h3>${a.titulo_publico || a.nombre}</h3>
-            <p>${a.descripcion_corta || ''}</p>
             <div class="card-meta">
-              ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
-              ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ''}
-              ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
+              ${a.lugar ? `<div>${a.lugar}</div>` : ''}
+              ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
             </div>
-          </div>
-          <div class="card-actions">
-            <button class="btn" onclick="abrirModalActividad(${a.id})">Más información</button>
           </div>
         </div>
       `).join("");
