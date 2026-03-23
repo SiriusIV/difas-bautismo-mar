@@ -96,6 +96,11 @@
       border-color: #0b5ed7;
     }
 
+    
+    <div id="franjaSesion" style="display:none; max-width:1320px; margin:18px auto 0; padding:0 20px;">
+      <div id="textoSesion" style="font-size:28px; font-weight:600; color:#123a63; line-height:1.2;"></div>
+    </div>
+    
     .contenedor {
       max-width: 1320px;
       margin: 24px auto;
@@ -626,6 +631,31 @@
       el.style.display = "block";
     }
 
+    function actualizarFranjaSesion() {
+      const franja = document.getElementById("franjaSesion");
+      const texto = document.getElementById("textoSesion");
+
+      if (!usuarioAutenticado) {
+        franja.style.display = "none";
+        texto.textContent = "";
+      return;
+      }
+
+      const rol = String(usuarioAutenticado.rol || "").toUpperCase();
+      const centro = String(usuarioAutenticado.centro || "").trim();
+      const nombre = String(usuarioAutenticado.nombre || "").trim();
+
+      if (rol === "SOLICITANTE") {
+        texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
+        } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
+        } else {
+        texto.textContent = "";
+      }
+
+      franja.style.display = texto.textContent ? "block" : "none";
+  }
+    
     function limpiarMensaje(id) {
       const el = document.getElementById(id);
       el.className = "mensaje";
@@ -694,6 +724,7 @@
       if (btnGestionAdmins) btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
 
       renderDetalle();
+      actualizarFranjaSesion();
     }
 
     async function cargarActividadesPublicas() {
