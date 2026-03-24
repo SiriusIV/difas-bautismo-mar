@@ -574,8 +574,8 @@
     <div id="textoSesion" class="franja-sesion-texto"></div>
   </div>
 
-<div id="franjaAvisoPortal" style="max-width:1320px; margin:10px auto 0; padding:0 20px; color:#4a5a6a; font-size:14px;">
-  Accede con tu usuario para solicitar una actividad.
+<div id="franjaAvisoPortal" style="max-width:1320px; margin:18px auto 0; padding:0 20px; text-align:center; color:#123a63; font-size:22px; font-weight:600; line-height:1.3;">
+  Inicia sesión como usuario para solicitar una actividad.
 </div>
   
   <div class="contenedor">
@@ -760,7 +760,7 @@
     btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
   }
 
-  document.getElementById("franjaAvisoPortal").style.display = solicitante ? "none" : "block";
+  document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
 
   actualizarFranjaSesion();
   renderDetalle();
