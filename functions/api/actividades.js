@@ -10,6 +10,54 @@ export async function onRequestGet(context) {
 
   try {
     const result = await env.DB.prepare(`
+      WITH franja_ocupacion AS (
+        SELECT
+          f.id AS franja_id,
+          f.actividad_id,
+          f.capacidad,
+          COALESCE(SUM(
+            CASE
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+                CASE
+                  WHEN r.prereserva_expira_en IS NOT NULL
+                       AND datetime('now') <= datetime(r.prereserva_expira_en)
+                    THEN max(
+                      COALESCE(r.plazas_prereservadas, 0),
+                      COALESCE((
+                        SELECT COUNT(*)
+                        FROM visitantes v
+                        WHERE v.reserva_id = r.id
+                      ), 0)
+                    )
+                  ELSE COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                END
+              ELSE 0
+            END
+          ), 0) AS ocupadas
+        FROM franjas f
+        LEFT JOIN reservas r
+          ON r.franja_id = f.id
+        GROUP BY
+          f.id,
+          f.actividad_id,
+          f.capacidad
+      ),
+      actividad_disponibilidad AS (
+        SELECT
+          actividad_id,
+          COALESCE(SUM(
+            CASE
+              WHEN (capacidad - ocupadas) > 0 THEN (capacidad - ocupadas)
+              ELSE 0
+            END
+          ), 0) AS plazas_disponibles
+        FROM franja_ocupacion
+        GROUP BY actividad_id
+      )
       SELECT
         a.id,
         a.nombre,
@@ -24,83 +72,14 @@ export async function onRequestGet(context) {
         a.imagen_url,
         a.visible_portal,
         a.orden_portal,
-
-        -- PLAZAS DISPONIBLES REALES
-        COALESCE((
-          SELECT SUM(
-            f.capacidad -
-            COALESCE((
-              SELECT SUM(
-                CASE
-                  WHEN r.estado IN ('PENDIENTE','CONFIRMADA') THEN
-                    CASE
-                      WHEN r.prereserva_expira_en IS NOT NULL
-                           AND datetime('now') <= datetime(r.prereserva_expira_en)
-                        THEN MAX(
-                          COALESCE(r.plazas_prereservadas,0),
-                          COALESCE((
-                            SELECT COUNT(*)
-                            FROM visitantes v
-                            WHERE v.reserva_id = r.id
-                          ),0)
-                        )
-                      ELSE COALESCE((
-                        SELECT COUNT(*)
-                        FROM visitantes v
-                        WHERE v.reserva_id = r.id
-                      ),0)
-                    END
-                  ELSE 0
-                END
-              )
-              FROM reservas r
-              WHERE r.franja_id = f.id
-            ),0)
-          )
-          FROM franjas f
-          WHERE f.actividad_id = a.id
-        ),0) AS plazas_disponibles,
-
-        -- FLAG COMPLETA
+        COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
         CASE
-          WHEN COALESCE((
-            SELECT SUM(
-              f.capacidad -
-              COALESCE((
-                SELECT SUM(
-                  CASE
-                    WHEN r.estado IN ('PENDIENTE','CONFIRMADA') THEN
-                      CASE
-                        WHEN r.prereserva_expira_en IS NOT NULL
-                             AND datetime('now') <= datetime(r.prereserva_expira_en)
-                          THEN MAX(
-                            COALESCE(r.plazas_prereservadas,0),
-                            COALESCE((
-                              SELECT COUNT(*)
-                              FROM visitantes v
-                              WHERE v.reserva_id = r.id
-                            ),0)
-                          )
-                        ELSE COALESCE((
-                          SELECT COUNT(*)
-                          FROM visitantes v
-                          WHERE v.reserva_id = r.id
-                        ),0)
-                      END
-                    ELSE 0
-                  END
-                )
-                FROM reservas r
-                WHERE r.franja_id = f.id
-              ),0)
-            )
-            FROM franjas f
-            WHERE f.actividad_id = a.id
-          ),0) <= 0
-          THEN 1 ELSE 0
+          WHEN COALESCE(ad.plazas_disponibles, 0) <= 0 THEN 1
+          ELSE 0
         END AS completa
-
       FROM actividades a
+      LEFT JOIN actividad_disponibilidad ad
+        ON ad.actividad_id = a.id
       WHERE a.activa = 1
         AND a.visible_portal = 1
         AND (
@@ -120,7 +99,6 @@ export async function onRequestGet(context) {
       ok: true,
       actividades: result.results || []
     });
-
   } catch (error) {
     return json(
       {
