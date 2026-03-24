@@ -1,31 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<title>Actividades Públicas Institucionales</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <title>Actividades Públicas Institucionales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-/* === SIN CAMBIOS MAYORES, SOLO AÑADIDOS === */
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      color: #222;
+    }
 
-.franja-sesion {
-  margin: 0;
-}
+    .cabecera {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 24px 20px 18px;
+    }
 
-.badge-completo {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #dc3545;
-  color: #fff;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-weight: 600;
-}
-</style>
+    .cabecera-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
 
-<!-- MANTENEMOS TODO TU CSS ORIGINAL -->
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      text-align: left;
+      flex-wrap: wrap;
+    }
+
+    .logo-cabecera {
+      width: 82px;
+    }
+
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #123a63;
+    }
+
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 16px;
+      color: #4a5a6a;
+    }
+
+    .acciones-cabecera-centro,
+    .barra-admin,
+    .barra-usuario {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .barra-admin,
+    .barra-usuario {
+      display: none;
+    }
+
+    .nav-btn {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .franja-sesion {
+      font-size: 16px;
+      color: #6a7282;
+    }
+
+    .contenedor {
+      max-width: 1320px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      cursor: pointer;
+    }
+
+    .detalle {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      background: #0b5ed7;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+  </style>
 </head>
 
 <body>
@@ -41,24 +120,23 @@
       </div>
     </div>
 
-    <!-- 👇 SESIÓN SUBIDA AL HEADER -->
+    <!-- ✔ SESIÓN EN HEADER -->
     <div id="franjaSesion" class="franja-sesion">
-      <div id="textoSesion" class="franja-sesion-texto"></div>
+      <div id="textoSesion"></div>
     </div>
 
-    <div id="accionesPublicas" class="acciones-cabecera-centro">
-      <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
+    <div id="accionesPublicas">
+      <button onclick="abrirModalLogin()">Login</button>
     </div>
 
-    <div id="barraAdmin" class="barra-admin">
-      <button class="nav-btn activo" onclick="nuevaActividad()">Nueva actividad</button>
-      <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
-      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+    <div id="barraAdmin">
+      <button onclick="nuevaActividad()">Nueva actividad</button>
+      <button onclick="logoutActual()">Cerrar sesión</button>
     </div>
 
-    <div id="barraUsuario" class="barra-usuario">
-      <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
-      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+    <div id="barraUsuario">
+      <button onclick="irPanelUsuario()">Mi panel</button>
+      <button onclick="logoutActual()">Cerrar sesión</button>
     </div>
 
   </div>
@@ -66,142 +144,50 @@
 
 <div class="contenedor">
 
-  <div class="carrusel-panel">
-    <div class="carrusel-top">
+  <div id="carruselActividades"></div>
 
-      <button class="btn-carrusel" onclick="desplazarCarrusel(-320)">‹</button>
+  <div class="detalle">
 
-      <div class="carrusel-wrap" id="carruselWrap">
-        <div id="carruselActividades" class="carrusel"></div>
-      </div>
+    <h3 id="detalleTitulo">Seleccione una actividad</h3>
 
-      <button class="btn-carrusel" onclick="desplazarCarrusel(320)">›</button>
-
+    <!-- ✔ MENSAJE LOGIN -->
+    <div id="mensajeLoginAviso" style="display:none; color:#5f6d7a;">
+      Inicia sesión para solicitar esta actividad
     </div>
-  </div>
 
-  <div class="detalle" id="detalleActividad">
-    <div class="detalle-grid">
+    <button id="btnSolicitarActividad" class="btn">Solicitar</button>
 
-      <img id="detalleImagen" class="detalle-img" src="logo.png">
-
-      <div class="detalle-contenido">
-        <h3 id="detalleTitulo">Seleccione una actividad</h3>
-        <div id="detalleSubtitulo"></div>
-        <div id="detalleMeta"></div>
-        <div id="detalleTexto"></div>
-
-        <div class="detalle-acciones" id="accionesDetalle">
-
-          <!-- 👇 MENSAJE UX -->
-          <div id="mensajeLoginAviso" style="display:none; font-size:14px; color:#5f6d7a;">
-            Inicia sesión para solicitar esta actividad
-          </div>
-
-          <button id="btnSolicitarActividad" class="btn">Solicitar</button>
-          <button id="btnEditarActividad" class="btn btn-admin">Editar actividad</button>
-          <button id="btnVerReservasActividad" class="btn btn-admin-secundario">Ver reservas</button>
-
-        </div>
-      </div>
-
-    </div>
   </div>
 
 </div>
 
 <script>
 
-/* === TU LÓGICA ORIGINAL RESPETADA === */
-
-let actividadesCache = [];
 let usuarioAutenticado = null;
 let actividadSeleccionada = null;
 
-function esAdmin() {
-  return usuarioAutenticado && (usuarioAutenticado.rol === "ADMIN" || usuarioAutenticado.rol === "SUPERADMIN");
-}
-
-/* === SESIÓN (SIN CAMBIOS DE LÓGICA) === */
-function actualizarFranjaSesion() {
-  const texto = document.getElementById("textoSesion");
-
-  if (!usuarioAutenticado) {
-    texto.textContent = "";
-    return;
-  }
-
-  const rol = usuarioAutenticado.rol;
-  const nombre = usuarioAutenticado.nombre || usuarioAutenticado.centro;
-
-  texto.textContent =
-    rol === "SOLICITANTE"
-      ? `Usuario: ${nombre}`
-      : `Administrador: ${nombre}`;
-}
-
-/* === RENDER TARJETAS === */
-function renderizarActividades() {
-  const cont = document.getElementById("carruselActividades");
-
-  cont.innerHTML = actividadesCache.map(a => `
-    <div class="card" onclick="seleccionarActividad(${a.id})">
-
-      <div class="card-img-wrap">
-        <img src="${a.imagen_url || 'logo.png'}" class="card-img">
-
-        ${a.disponible === false ? `<div class="badge-completo">Completo</div>` : ''}
-
-      </div>
-
-      <h3>${a.nombre}</h3>
-    </div>
-  `).join("");
-}
-
-/* === DETALLE === */
 function renderDetalle() {
 
-  const a = actividadSeleccionada;
-  if (!a) return;
-
-  document.getElementById("detalleTitulo").textContent = a.nombre;
-
-  /* 👇 MENSAJE LOGIN */
   const aviso = document.getElementById("mensajeLoginAviso");
-  aviso.style.display = usuarioAutenticado ? "none" : "block";
-
-  /* BOTÓN SOLICITAR */
   const btn = document.getElementById("btnSolicitarActividad");
+
+  aviso.style.display = usuarioAutenticado ? "none" : "block";
 
   if (usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE") {
     btn.style.display = "inline-block";
 
-    if (a.disponible === false) {
+    if (actividadSeleccionada && actividadSeleccionada.disponible === false) {
       btn.disabled = true;
       btn.style.opacity = "0.6";
-      btn.style.cursor = "not-allowed";
-      btn.title = "Actualmente sin plazas disponibles";
     } else {
       btn.disabled = false;
       btn.style.opacity = "1";
-      btn.style.cursor = "pointer";
-      btn.title = "";
     }
 
   } else {
     btn.style.display = "none";
   }
-
-  document.getElementById("btnEditarActividad").style.display = esAdmin() ? "inline-block" : "none";
-  document.getElementById("btnVerReservasActividad").style.display = esAdmin() ? "inline-block" : "none";
 }
-
-/* === INIT === */
-(async function init() {
-  await comprobarSesionUsuario();
-  await cargarActividades();
-})();
 
 </script>
 
