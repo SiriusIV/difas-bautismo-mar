@@ -829,7 +829,10 @@
     <div class="card-img-wrap">
       <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
       ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
-      <button class="card-info-btn" onclick="event.stopPropagation(); seleccionarActividad(${a.id});" title="Seleccionar actividad" aria-label="Seleccionar actividad">i</button>
+      
+      <!-- boton de info en la tarjeta actividad -->
+      <!-- <button class="card-info-btn" onclick="event.stopPropagation(); seleccionarActividad(${a.id});" title="Seleccionar actividad" aria-label="Seleccionar actividad">i</button> -->
+      
     </div>
     <div class="card-body">
       <h3>${a.titulo_publico || a.nombre}</h3>
