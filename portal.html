@@ -558,7 +558,7 @@
       </div>
 
       <div id="barraAdmin" class="barra-admin">
-        <button class="nav-btn activo" onclick="nuevaActividad()">Nueva actividad</button>
+        <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
         <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
         <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
       </div>
@@ -574,6 +574,10 @@
     <div id="textoSesion" class="franja-sesion-texto"></div>
   </div>
 
+<div id="franjaAvisoPortal" style="max-width:1320px; margin:10px auto 0; padding:0 20px; color:#4a5a6a; font-size:14px;">
+  Accede con tu usuario para solicitar una actividad.
+</div>
+  
   <div class="contenedor">
     <div class="carrusel-panel">
       <div class="carrusel-top">
@@ -743,20 +747,24 @@
     }
 
     function actualizarModoAcceso() {
-      const admin = esAdmin();
-      const superadmin = esSuperAdmin();
-      const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
+  const admin = esAdmin();
+  const superadmin = esSuperAdmin();
+  const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
 
-      document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
-      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
-      document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
+  document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
+  document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+  document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
 
-      const btnGestionAdmins = document.getElementById("btnGestionAdmins");
-      if (btnGestionAdmins) btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
+  const btnGestionAdmins = document.getElementById("btnGestionAdmins");
+  if (btnGestionAdmins) {
+    btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
+  }
 
-      actualizarFranjaSesion();
-      renderDetalle();
-    }
+  document.getElementById("franjaAvisoPortal").style.display = solicitante ? "none" : "block";
+
+  actualizarFranjaSesion();
+  renderDetalle();
+}
 
     async function cargarActividadesPublicas() {
       const res = await fetch("/api/actividades", {
@@ -959,8 +967,8 @@ if (Number(a.completa || 0) === 1) {
       await cargarActividadesPublicas();
     }
 
-    function nuevaActividad() {
-      location.href = "admin-actividades.html";
+    function irPanelActividades() {
+      location.href = "mis-actividades.html";
     }
 
     function gestionAdmins() {
