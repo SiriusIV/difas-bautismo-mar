@@ -415,6 +415,20 @@
       color: #334250;
     }
 
+    .badge-completa {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #dc3545;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 2;
+}
+    
+    
     .campo input {
       width: 100%;
       box-sizing: border-box;
@@ -811,20 +825,21 @@
       }
 
       cont.innerHTML = actividadesCache.map(a => `
-        <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" onclick="seleccionarActividad(${a.id})">
-          <div class="card-img-wrap">
-            <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-            <button class="card-info-btn" onclick="event.stopPropagation(); seleccionarActividad(${a.id});" title="Seleccionar actividad" aria-label="Seleccionar actividad">i</button>
-          </div>
-          <div class="card-body">
-            <h3>${a.titulo_publico || a.nombre}</h3>
-            <div class="card-meta">
-              ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-              ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
-            </div>
-          </div>
-        </div>
-      `).join("");
+  <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" onclick="seleccionarActividad(${a.id})">
+    <div class="card-img-wrap">
+      <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+      ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+      <button class="card-info-btn" onclick="event.stopPropagation(); seleccionarActividad(${a.id});" title="Seleccionar actividad" aria-label="Seleccionar actividad">i</button>
+    </div>
+    <div class="card-body">
+      <h3>${a.titulo_publico || a.nombre}</h3>
+      <div class="card-meta">
+        ${a.lugar ? `<div>${a.lugar}</div>` : ''}
+        ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
+      </div>
+    </div>
+  </div>
+`).join("");
 
       renderDetalle();
     }
@@ -847,7 +862,14 @@
       document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
-      document.getElementById("detalleTexto").textContent = a.descripcion_larga || a.descripcion_corta || "";
+      let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
+
+if (Number(a.completa || 0) === 1) {
+  textoDetalle += (textoDetalle ? "\n\n" : "") +
+    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
+}
+
+document.getElementById("detalleTexto").textContent = textoDetalle;
 
       document.getElementById("detalleMeta").innerHTML = `
         ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
@@ -856,14 +878,28 @@
         ${a.tipo === 'PERMANENTE' ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ''}
       `;
 
-      document.getElementById("btnSolicitarActividad").style.display =
-        usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
+      const btnSolicitar = document.getElementById("btnSolicitarActividad");
+const btnEditar = document.getElementById("btnEditarActividad");
+const btnReservas = document.getElementById("btnVerReservasActividad");
 
-      document.getElementById("btnEditarActividad").style.display =
-        esAdmin() ? "inline-block" : "none";
+btnSolicitar.style.display =
+  usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
 
-      document.getElementById("btnVerReservasActividad").style.display =
-        esAdmin() ? "inline-block" : "none";
+btnEditar.style.display =
+  esAdmin() ? "inline-block" : "none";
+
+btnReservas.style.display =
+  esAdmin() ? "inline-block" : "none";
+
+if (Number(a.completa || 0) === 1) {
+  btnSolicitar.disabled = true;
+  btnSolicitar.style.opacity = "0.5";
+  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+} else {
+  btnSolicitar.disabled = false;
+  btnSolicitar.style.opacity = "1";
+  btnSolicitar.title = "";
+}
     }
 
     function desplazarCarrusel(delta) {
