@@ -1,22 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
-
-  <link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""
-/>
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-  
-  <head>
+<head>
   <meta charset="UTF-8" />
   <title>Actividades Públicas Institucionales</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
   <style>
     body {
@@ -36,9 +35,8 @@
       max-width: 1320px;
       margin: 0 auto;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      gap: 14px;
     }
 
     .bloque-marca {
@@ -46,8 +44,8 @@
       align-items: center;
       justify-content: center;
       gap: 18px;
-      text-align: left;
       flex-wrap: wrap;
+      text-align: left;
     }
 
     .logo-cabecera {
@@ -71,11 +69,20 @@
       color: #4a5a6a;
     }
 
-    .acciones-cabecera-centro,
+    .barra-acciones {
+      max-width: 1320px;
+      margin: 12px auto 0;
+      padding: 0 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .accionesPublicas,
     .barra-admin,
     .barra-usuario {
       display: flex;
-      justify-content: center;
       gap: 10px;
       flex-wrap: wrap;
     }
@@ -85,15 +92,6 @@
       display: none;
     }
 
-    .direccion-actividad {
-      font-size: 14px;
-      color: #2c3e50;
-      background: #f4f7fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 8px 10px;
-    }
-    
     .nav-btn {
       display: inline-block;
       padding: 8px 16px;
@@ -126,16 +124,16 @@
     }
 
     .franja-sesion-texto {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 500;
-      color: #6a7282;
+      color: #123a63;
       line-height: 1.2;
     }
 
     .contenedor {
       max-width: 1320px;
-      margin: 24px auto;
-      padding: 0 20px 30px;
+      margin: 18px auto 30px;
+      padding: 0 20px;
     }
 
     .carrusel-panel {
@@ -143,7 +141,7 @@
       border-radius: 14px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
       padding: 18px;
-      margin-bottom: 22px;
+      margin-bottom: 12px;
     }
 
     .carrusel-top {
@@ -197,30 +195,16 @@
     .carrusel {
       display: flex;
       gap: 16px;
-      min-height: 190px;
+      min-height: 200px;
       padding-bottom: 6px;
     }
 
-   .aviso-login {
-      margin: 14px 0 18px;
-      padding: 12px 16px 0;
-      text-align: center;
-      color: #123a63;
-      font-size: 18px;
-      font-weight: 500;
-      line-height: 1.3;
-      border-top: 1px solid #dde4ea;
-    }
-    
-    
-    
-    
     .card {
       background: #fff;
       border: 1px solid #dde4ea;
       border-radius: 12px;
-      min-width: 260px;
-      max-width: 260px;
+      min-width: 280px;
+      max-width: 280px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.06);
       display: flex;
       flex-direction: column;
@@ -256,33 +240,21 @@
       object-fit: cover;
     }
 
-    .card-info-btn {
+    .badge-completa {
       position: absolute;
       top: 8px;
-      right: 8px;
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
-      color: #0b5ed7;
-      font-size: 16px;
+      left: 8px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 12px;
       font-weight: bold;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
+      padding: 4px 8px;
+      border-radius: 6px;
       z-index: 2;
     }
 
-    .card-info-btn:hover {
-      background: #eef4ff;
-      border-color: #9fb2c7;
-    }
-
     .card-body h3 {
-      margin: 0 24px 10px 0;
+      margin: 0 0 10px 0;
       font-size: 20px;
       color: #123a63;
       line-height: 1.2;
@@ -292,6 +264,17 @@
       font-size: 14px;
       color: #5f6d7a;
       line-height: 1.5;
+    }
+
+    .aviso-login {
+      margin: 14px 0 18px;
+      padding: 12px 16px 0;
+      text-align: center;
+      color: #123a63;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.3;
+      border-top: 1px solid #dde4ea;
     }
 
     .detalle {
@@ -308,6 +291,12 @@
       align-items: start;
     }
 
+    .detalle-col-izq {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
     .detalle-img {
       width: 100%;
       height: 260px;
@@ -315,6 +304,50 @@
       border-radius: 12px;
       background: #dfe7ef;
       display: block;
+    }
+
+    .mapa-info-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .direccion-actividad {
+      font-size: 14px;
+      color: #2c3e50;
+      background: #f4f7fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: none;
+    }
+
+    .direccion-actividad a {
+      color: #123a63;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .direccion-actividad a:hover {
+      text-decoration: underline;
+    }
+
+    .mapa-wrap {
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #dfe7ef;
+      border: 1px solid #dde4ea;
+    }
+
+    #mapaActividad {
+      width: 100%;
+      height: 100%;
+    }
+
+    .mapa-oculto {
+      display: none;
     }
 
     .detalle-contenido h3 {
@@ -361,6 +394,11 @@
 
     .btn:hover {
       background: #094db1;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn-secundario {
@@ -451,20 +489,6 @@
       color: #334250;
     }
 
-    .badge-completa {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: #dc3545;
-      color: #fff;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 4px 8px;
-      border-radius: 6px;
-      z-index: 2;
-    }
-    
-    
     .campo input {
       width: 100%;
       box-sizing: border-box;
@@ -542,59 +566,19 @@
       text-decoration: underline;
     }
 
-    .detalle-grid {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 20px;
-      align-items: start;
-    }
-
-    .detalle-col-izq {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .mapa-wrap {
-      width: 100%;
-      height: 260px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #dfe7ef;
-      border: 1px solid #dde4ea;
-    }
-
-    #mapaActividad {
-      width: 100%;
-      height: 100%;
-    }
-
-    .mapa-oculto {
-      display: none;
-    }
-
-    .barra-acciones {
-      max-width: 1320px;
-      margin: 10px auto 0;
-      padding: 0 20px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    
     @media (max-width: 980px) {
-    .detalle-grid {
-      grid-template-columns: 1fr;
-    }
+      .detalle-grid {
+        grid-template-columns: 1fr;
+      }
 
-    .detalle-img {
-      height: 220px;
-    }
+      .detalle-img {
+        height: 220px;
+      }
 
-    .mapa-wrap {
-      height: 240px;
+      .mapa-wrap {
+        height: 240px;
+      }
     }
-  }
 
     @media (max-width: 700px) {
       .bloque-marca {
@@ -615,100 +599,97 @@
         min-width: 240px;
         max-width: 240px;
       }
-
-      .franja-sesion-texto {
-        font-size: 22px;
-      }
     }
   </style>
 </head>
 <body>
-
-<div class="cabecera">
-  <img src="logo.png" class="logo">
-  <div>
-    <h1>Actividades Públicas Institucionales</h1>
-    <div class="subtitulo">Armada - Ferrol</div>
-  </div>
-</div>
-
-<div class="barra-acciones">
-  <div id="accionesPublicas">
-    <button class="btn-principal" onclick="abrirLogin()">Login</button>
+  <div class="cabecera">
+    <div class="cabecera-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+        <div class="titulos-cabecera">
+          <h1>Actividades Públicas Institucionales</h1>
+          <h2>Armada - Ferrol</h2>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div id="barraUsuario" style="display:none;">
-    <button class="btn-principal" onclick="irPanelUsuario()">Mi panel de reservas</button>
-    <button class="btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
+  <div class="barra-acciones">
+    <div id="accionesPublicas" class="accionesPublicas">
+      <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
+    </div>
+
+    <div id="barraUsuario" class="barra-usuario">
+      <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
+      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+    </div>
+
+    <div id="barraAdmin" class="barra-admin">
+      <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+      <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
+      <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+    </div>
   </div>
 
-  <div id="barraAdmin" style="display:none;">
-    <button class="btn-principal" onclick="irPanelActividades()">Panel de actividades</button>
-    <button class="btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
-  </div>
-</div>
-  
   <div id="franjaSesion" class="franja-sesion">
     <div id="textoSesion" class="franja-sesion-texto"></div>
   </div>
 
-
-  
   <div class="contenedor">
-  <div class="carrusel-panel">
-    <div class="carrusel-top">
-      <button class="btn-carrusel" onclick="desplazarCarrusel(-320)" title="Anterior" aria-label="Anterior">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
+    <div class="carrusel-panel">
+      <div class="carrusel-top">
+        <button class="btn-carrusel" onclick="desplazarCarrusel(-320)" title="Anterior" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
 
-      <div class="carrusel-wrap" id="carruselWrap">
-        <div id="carruselActividades" class="carrusel"></div>
+        <div class="carrusel-wrap" id="carruselWrap">
+          <div id="carruselActividades" class="carrusel"></div>
+        </div>
+
+        <button class="btn-carrusel" onclick="desplazarCarrusel(320)" title="Siguiente" aria-label="Siguiente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
-
-      <button class="btn-carrusel" onclick="desplazarCarrusel(320)" title="Siguiente" aria-label="Siguiente">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </button>
     </div>
-  </div>
 
-  <div id="franjaAvisoPortal" class="aviso-login">
-    Inicia sesión como usuario para solicitar una actividad.
-  </div>
+    <div id="franjaAvisoPortal" class="aviso-login">
+      Inicia sesión como usuario para solicitar una actividad.
+    </div>
 
-  <div class="detalle" id="detalleActividad">
-    <div class="detalle-grid">
-      <div class="detalle-col-izq">
-        <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
+    <div class="detalle" id="detalleActividad">
+      <div class="detalle-grid">
+        <div class="detalle-col-izq">
+          <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
 
-        <div class="mapa-info-wrap">
-          <div id="direccionActividad" class="direccion-actividad" style="display:none;"></div>
-          <div id="mapaWrap" class="mapa-wrap mapa-oculto">
-            <div id="mapaActividad"></div>
+          <div class="mapa-info-wrap">
+            <div id="direccionActividad" class="direccion-actividad"></div>
+
+            <div id="mapaWrap" class="mapa-wrap mapa-oculto">
+              <div id="mapaActividad"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detalle-contenido">
+          <h3 id="detalleTitulo">Seleccione una actividad</h3>
+          <div id="detalleSubtitulo" class="detalle-subtitulo"></div>
+          <div id="detalleMeta" class="detalle-meta"></div>
+          <div id="detalleTexto" class="detalle-texto"></div>
+
+          <div class="detalle-acciones">
+            <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
+            <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
+            <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
           </div>
         </div>
       </div>
-
-      <div class="detalle-contenido">
-        <h3 id="detalleTitulo">Seleccione una actividad</h3>
-        <div id="detalleSubtitulo" class="detalle-subtitulo"></div>
-        <div id="detalleMeta" class="detalle-meta"></div>
-        <div id="detalleTexto" class="detalle-texto"></div>
-
-        <div class="detalle-acciones">
-          <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
-          <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
-          <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
-        </div>
-      </div>
     </div>
   </div>
-</div>
-
-  
 
   <div id="modalLogin" class="modal-fondo" aria-hidden="true">
     <div class="modal-login">
@@ -838,24 +819,24 @@
     }
 
     function actualizarModoAcceso() {
-  const admin = esAdmin();
-  const superadmin = esSuperAdmin();
-  const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
+      const admin = esAdmin();
+      const superadmin = esSuperAdmin();
+      const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
 
-  document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
-  document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
-  document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
+      document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
+      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+      document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
 
-  const btnGestionAdmins = document.getElementById("btnGestionAdmins");
-  if (btnGestionAdmins) {
-    btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
-  }
+      const btnGestionAdmins = document.getElementById("btnGestionAdmins");
+      if (btnGestionAdmins) {
+        btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
+      }
 
-  document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
+      document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
 
-  actualizarFranjaSesion();
-  renderDetalle();
-}
+      actualizarFranjaSesion();
+      renderDetalle();
+    }
 
     async function cargarActividadesPublicas() {
       const res = await fetch("/api/actividades", {
@@ -906,69 +887,6 @@
       renderDetalle();
     }
 
-    function destruirMapaActividad() {
-  if (mapaActividad) {
-    mapaActividad.remove();
-    mapaActividad = null;
-    marcadorActividad = null;
-  }
-}
-
-const direccionDiv = document.getElementById("direccionActividad");
-
-if (a.direccion_postal && a.direccion_postal.trim() !== "") {
-  direccionDiv.textContent = a.direccion_postal;
-  direccionDiv.style.display = "block";
-} else {
-  direccionDiv.style.display = "none";
-}
-    
-  function renderMapaActividad(a) {
-  const mapaWrap = document.getElementById("mapaWrap");
-
-  if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
-    mapaWrap.classList.add("mapa-oculto");
-    destruirMapaActividad();
-    return;
-  }
-
-  mapaWrap.classList.remove("mapa-oculto");
-
-  const lat = Number(a.latitud);
-  const lng = Number(a.longitud);
-  const zoom = Number(a.zoom_mapa || 15);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    mapaWrap.classList.add("mapa-oculto");
-    destruirMapaActividad();
-    return;
-  }
-
-  destruirMapaActividad();
-
-  mapaActividad = L.map("mapaActividad").setView([lat, lng], zoom);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap"
-  }).addTo(mapaActividad);
-
-  marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
-
-  const titulo = a.titulo_publico || a.nombre || "Actividad";
-  const lugar = a.lugar || "";
-  marcadorActividad.bindPopup(
-    `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
-  );
-
-  setTimeout(() => {
-    if (mapaActividad) {
-      mapaActividad.invalidateSize();
-    }
-  }, 100);
-}
-    
-    
     function renderizarActividades() {
       const cont = document.getElementById("carruselActividades");
 
@@ -987,33 +905,82 @@ if (a.direccion_postal && a.direccion_postal.trim() !== "") {
       }
 
       cont.innerHTML = actividadesCache.map(a => `
-  <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" onclick="seleccionarActividad(${a.id})">
-    <div class="card-img-wrap">
-      <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-      ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
-      
-      <!-- boton de info en la tarjeta actividad -->
-      <!-- <button class="card-info-btn" onclick="event.stopPropagation(); seleccionarActividad(${a.id});" title="Seleccionar actividad" aria-label="Seleccionar actividad">i</button> -->
-      
-    </div>
-    <div class="card-body">
-      <h3>${a.titulo_publico || a.nombre}</h3>
-      <div class="card-meta">
-        ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-        ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
-      </div>
-    </div>
-  </div>
-`).join("");
+        <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" onclick="seleccionarActividad(${a.id})">
+          <div class="card-img-wrap">
+            <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+            ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+          </div>
+          <div class="card-body">
+            <h3>${a.titulo_publico || a.nombre}</h3>
+            <div class="card-meta">
+              ${a.lugar ? `<div>${a.lugar}</div>` : ''}
+              ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join("");
 
       renderDetalle();
+    }
+
+    function destruirMapaActividad() {
+      if (mapaActividad) {
+        mapaActividad.remove();
+        mapaActividad = null;
+        marcadorActividad = null;
+      }
+    }
+
+    function renderMapaActividad(a) {
+      const mapaWrap = document.getElementById("mapaWrap");
+
+      if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
+        mapaWrap.classList.add("mapa-oculto");
+        destruirMapaActividad();
+        return;
+      }
+
+      mapaWrap.classList.remove("mapa-oculto");
+
+      const lat = Number(a.latitud);
+      const lng = Number(a.longitud);
+      const zoom = Number(a.zoom_mapa || 15);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        mapaWrap.classList.add("mapa-oculto");
+        destruirMapaActividad();
+        return;
+      }
+
+      destruirMapaActividad();
+
+      mapaActividad = L.map("mapaActividad").setView([lat, lng], zoom);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(mapaActividad);
+
+      marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
+
+      const titulo = a.titulo_publico || a.nombre || "Actividad";
+      const lugar = a.lugar || "";
+      marcadorActividad.bindPopup(
+        `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
+      );
+
+      setTimeout(() => {
+        if (mapaActividad) {
+          mapaActividad.invalidateSize();
+        }
+      }, 100);
     }
 
     function renderDetalle() {
       const a = actividadSeleccionada;
 
       if (!a) {
-        document.getElementById("detalleTitulo").textContent = "No hay actividades";
+        document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
         document.getElementById("detalleSubtitulo").textContent = "";
         document.getElementById("detalleMeta").innerHTML = "";
         document.getElementById("detalleTexto").textContent = "";
@@ -1021,6 +988,7 @@ if (a.direccion_postal && a.direccion_postal.trim() !== "") {
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
+        document.getElementById("direccionActividad").style.display = "none";
         renderMapaActividad(null);
         return;
       }
@@ -1028,15 +996,6 @@ if (a.direccion_postal && a.direccion_postal.trim() !== "") {
       document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
-      renderMapaActividad(a);
-      let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
-
-if (Number(a.completa || 0) === 1) {
-  textoDetalle += (textoDetalle ? "\n\n" : "") +
-    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
-}
-
-document.getElementById("detalleTexto").textContent = textoDetalle;
 
       document.getElementById("detalleMeta").innerHTML = `
         ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
@@ -1045,28 +1004,48 @@ document.getElementById("detalleTexto").textContent = textoDetalle;
         ${a.tipo === 'PERMANENTE' ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ''}
       `;
 
+      let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
+
+      if (Number(a.completa || 0) === 1) {
+        textoDetalle += (textoDetalle ? "\n\n" : "") +
+          "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
+      }
+
+      document.getElementById("detalleTexto").textContent = textoDetalle;
+
       const btnSolicitar = document.getElementById("btnSolicitarActividad");
-const btnEditar = document.getElementById("btnEditarActividad");
-const btnReservas = document.getElementById("btnVerReservasActividad");
+      const btnEditar = document.getElementById("btnEditarActividad");
+      const btnReservas = document.getElementById("btnVerReservasActividad");
 
-btnSolicitar.style.display =
-  usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
+      btnSolicitar.style.display =
+        usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
 
-btnEditar.style.display =
-  esAdmin() ? "inline-block" : "none";
+      btnEditar.style.display =
+        esAdmin() ? "inline-block" : "none";
 
-btnReservas.style.display =
-  esAdmin() ? "inline-block" : "none";
+      btnReservas.style.display =
+        esAdmin() ? "inline-block" : "none";
 
-if (Number(a.completa || 0) === 1) {
-  btnSolicitar.disabled = true;
-  btnSolicitar.style.opacity = "0.5";
-  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-} else {
-  btnSolicitar.disabled = false;
-  btnSolicitar.style.opacity = "1";
-  btnSolicitar.title = "";
-}
+      if (Number(a.completa || 0) === 1) {
+        btnSolicitar.disabled = true;
+        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+      } else {
+        btnSolicitar.disabled = false;
+        btnSolicitar.title = "";
+      }
+
+      const direccionDiv = document.getElementById("direccionActividad");
+
+      if (a.direccion_postal && a.direccion_postal.trim() !== "") {
+        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.direccion_postal)}`;
+        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${a.direccion_postal}</a>`;
+        direccionDiv.style.display = "block";
+      } else {
+        direccionDiv.style.display = "none";
+        direccionDiv.innerHTML = "";
+      }
+
+      renderMapaActividad(a);
     }
 
     function desplazarCarrusel(delta) {
@@ -1075,6 +1054,7 @@ if (Number(a.completa || 0) === 1) {
 
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
+      if (Number(actividadSeleccionada.completa || 0) === 1) return;
       location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 
