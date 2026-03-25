@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+  
+  <head>
   <meta charset="UTF-8" />
   <title>Actividades Públicas Institucionales</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -416,17 +429,17 @@
     }
 
     .badge-completa {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #dc3545;
-  color: #fff;
-  font-size: 12px;
-  font-weight: bold;
-  padding: 4px 8px;
-  border-radius: 6px;
-  z-index: 2;
-}
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 2;
+    }
     
     
     .campo input {
@@ -506,15 +519,51 @@
       text-decoration: underline;
     }
 
-    @media (max-width: 980px) {
-      .detalle-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .detalle-img {
-        height: 220px;
-      }
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
     }
+
+    .detalle-col-izq {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mapa-wrap {
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #dfe7ef;
+      border: 1px solid #dde4ea;
+    }
+
+    #mapaActividad {
+      width: 100%;
+      height: 100%;
+    }
+
+    .mapa-oculto {
+      display: none;
+    }
+
+    
+    @media (max-width: 980px) {
+    .detalle-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .detalle-img {
+      height: 220px;
+    }
+
+    .mapa-wrap {
+      height: 240px;
+    }
+  }
 
     @media (max-width: 700px) {
       .bloque-marca {
@@ -601,9 +650,12 @@
 
     <div class="detalle" id="detalleActividad">
       <div class="detalle-grid">
-        <div>
+        <div class="detalle-col-izq">
           <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
+          <div id="mapaWrap" class="mapa-wrap mapa-oculto">
+          <div id="mapaActividad"></div>
         </div>
+      </div>
 
         <div class="detalle-contenido">
           <h3 id="detalleTitulo">Seleccione una actividad</h3>
@@ -658,6 +710,8 @@
     let actividadesCache = [];
     let usuarioAutenticado = null;
     let actividadSeleccionada = null;
+    let mapaActividad = null;
+    let marcadorActividad = null;
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -815,6 +869,60 @@
       renderDetalle();
     }
 
+    function destruirMapaActividad() {
+  if (mapaActividad) {
+    mapaActividad.remove();
+    mapaActividad = null;
+    marcadorActividad = null;
+  }
+}
+
+function renderMapaActividad(a) {
+  const mapaWrap = document.getElementById("mapaWrap");
+
+  if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
+
+  mapaWrap.classList.remove("mapa-oculto");
+
+  const lat = Number(a.latitud);
+  const lng = Number(a.longitud);
+  const zoom = Number(a.zoom_mapa || 15);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
+
+  destruirMapaActividad();
+
+  mapaActividad = L.map("mapaActividad").setView([lat, lng], zoom);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(mapaActividad);
+
+  marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
+
+  const titulo = a.titulo_publico || a.nombre || "Actividad";
+  const lugar = a.lugar || "";
+  marcadorActividad.bindPopup(
+    `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
+  );
+
+  setTimeout(() => {
+    if (mapaActividad) {
+      mapaActividad.invalidateSize();
+    }
+  }, 100);
+}
+    
+    
     function renderizarActividades() {
       const cont = document.getElementById("carruselActividades");
 
@@ -867,12 +975,14 @@
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
+        renderMapaActividad(null);
         return;
       }
 
       document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+      renderMapaActividad(a);
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
 if (Number(a.completa || 0) === 1) {
