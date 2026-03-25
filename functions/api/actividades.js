@@ -72,6 +72,9 @@ export async function onRequestGet(context) {
         a.imagen_url,
         a.visible_portal,
         a.orden_portal,
+        a.latitud,
+        a.longitud,
+        a.zoom_mapa,
         COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
         CASE
           WHEN COALESCE(ad.plazas_disponibles, 0) <= 0 THEN 1
