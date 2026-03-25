@@ -905,7 +905,16 @@
   }
 }
 
-function renderMapaActividad(a) {
+const direccionDiv = document.getElementById("direccionActividad");
+
+if (a.direccion_postal && a.direccion_postal.trim() !== "") {
+  direccionDiv.textContent = a.direccion_postal;
+  direccionDiv.style.display = "block";
+} else {
+  direccionDiv.style.display = "none";
+}
+    
+  function renderMapaActividad(a) {
   const mapaWrap = document.getElementById("mapaWrap");
 
   if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
