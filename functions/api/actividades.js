@@ -74,6 +74,7 @@ export async function onRequestGet(context) {
         a.orden_portal,
         a.latitud,
         a.longitud,
+        a.direccion_postal,
         a.zoom_mapa,
         COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
         CASE
