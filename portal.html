@@ -1200,6 +1200,25 @@ const filas = data.franjas
       document.getElementById("carruselWrap").scrollBy({ left: delta, behavior: "smooth" });
     }
 
+    function centrarActividadEnCarrusel(card) {
+  const contenedor = document.getElementById("carruselWrap");
+  if (!contenedor || !card) return;
+
+  const contenedorRect = contenedor.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+
+  const desplazamiento =
+    cardRect.left
+    - contenedorRect.left
+    - (contenedorRect.width / 2)
+    + (cardRect.width / 2);
+
+  contenedor.scrollBy({
+    left: desplazamiento,
+    behavior: "smooth"
+  });
+}
+    
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
       if (Number(actividadSeleccionada.completa || 0) === 1) return;
