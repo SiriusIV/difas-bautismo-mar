@@ -796,26 +796,23 @@
       }
     }
 
-    async function cargarFranjasActividad(actividadId, tipoActividad) {
+async function cargarFranjasActividad(actividadId, tipoActividad) {
   const wrap = document.getElementById("tablaFranjasWrap");
   const body = document.getElementById("tablaFranjasBody");
 
   actividadFranjasSolicitada = actividadId;
 
-  // Estado inicial: oculto y limpio
   wrap.style.display = "none";
   body.innerHTML = "";
 
-  // No mostrar para actividades permanentes o sin actividad
   if (!actividadId || !tipoActividad || String(tipoActividad).toUpperCase() === "PERMANENTE") {
     return;
   }
 
   try {
-    const res = await fetch(`/api/franjas?actividad_id=${actividadId}`);
+    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividadId)}`);
     const data = await res.json();
 
-    // Si mientras tanto el usuario seleccionó otra actividad, ignorar esta respuesta
     if (actividadFranjasSolicitada !== actividadId) {
       return;
     }
@@ -826,20 +823,31 @@
       return;
     }
 
-    body.innerHTML = data.franjas.map(f => `
-      <tr>
-        <td>${f.fecha || ""}</td>
-        <td>${f.hora_inicio || ""}</td>
-        <td>${f.hora_fin || ""}</td>
-      </tr>
-    `).join("");
+    const filas = data.franjas
+      .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
+      .map(f => `
+        <tr>
+          <td>${f.fecha}</td>
+          <td>${f.hora_inicio}</td>
+          <td>${f.hora_fin}</td>
+        </tr>
+      `)
+      .join("");
 
-    wrap.style.display = body.innerHTML.trim() ? "block" : "none";
+    if (!filas.trim()) {
+      wrap.style.display = "none";
+      body.innerHTML = "";
+      return;
+    }
+
+    body.innerHTML = filas;
+    wrap.style.display = "block";
 
   } catch (e) {
     if (actividadFranjasSolicitada !== actividadId) {
       return;
     }
+
     wrap.style.display = "none";
     body.innerHTML = "";
   }
@@ -1048,20 +1056,21 @@
       const a = actividadSeleccionada;
 
       if (!a) {
-        document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
-        document.getElementById("detalleSubtitulo").textContent = "";
-        document.getElementById("detalleMeta").innerHTML = "";
-        document.getElementById("detalleTexto").textContent = "";
-        document.getElementById("detalleImagen").src = "logo.png";
-        document.getElementById("btnSolicitarActividad").style.display = "none";
-        document.getElementById("btnEditarActividad").style.display = "none";
-        document.getElementById("btnVerReservasActividad").style.display = "none";
-        document.getElementById("direccionActividad").style.display = "none";
-        renderMapaActividad(null);
-        actividadFranjasSolicitada = null;
-        cargarFranjasActividad(null, null);
-        return;
-      }
+  document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
+  document.getElementById("detalleSubtitulo").textContent = "";
+  document.getElementById("detalleMeta").innerHTML = "";
+  document.getElementById("detalleTexto").textContent = "";
+  document.getElementById("detalleImagen").src = "logo.png";
+  document.getElementById("btnSolicitarActividad").style.display = "none";
+  document.getElementById("btnEditarActividad").style.display = "none";
+  document.getElementById("btnVerReservasActividad").style.display = "none";
+  document.getElementById("direccionActividad").style.display = "none";
+  document.getElementById("direccionActividad").innerHTML = "";
+  renderMapaActividad(null);
+  actividadFranjasSolicitada = null;
+  cargarFranjasActividad(null, null);
+  return;
+}
 
       document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
@@ -1116,6 +1125,7 @@
       }
 
       renderMapaActividad(a);
+      cargarFranjasActividad(a.id, a.tipo);
     }
 
     function desplazarCarrusel(delta) {
