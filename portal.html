@@ -795,6 +795,8 @@
     let mapaActividad = null;
     let marcadorActividad = null;
     let actividadFranjasSolicitada = null;
+    let carruselAutoPlay = null;
+    let carruselAutoPlayActivo = true;
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -1023,7 +1025,8 @@ const filas = data.franjas
     }
 
     function seleccionarActividad(id) {
-  const a = actividadesCache.find(x => Number(x.id) === Number(id));
+      detenerAutoPlayCarrusel();
+      const a = actividadesCache.find(x => Number(x.id) === Number(id));
   if (!a) return;
 
   actividadSeleccionada = a;
@@ -1055,7 +1058,7 @@ const filas = data.franjas
       }
 
       cont.innerHTML = actividadesCache.map(a => `
-        <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" onclick="seleccionarActividad(${a.id})">
+        <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
           <div class="card-img-wrap">
             <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
             ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
@@ -1207,9 +1210,60 @@ const filas = data.franjas
       cargarFranjasActividad(a.id, a.tipo);
     }
 
-    function desplazarCarrusel(delta) {
-      document.getElementById("carruselWrap").scrollBy({ left: delta, behavior: "smooth" });
-    }
+    function detenerAutoPlayCarrusel() {
+  carruselAutoPlayActivo = false;
+
+  if (carruselAutoPlay) {
+    clearInterval(carruselAutoPlay);
+    carruselAutoPlay = null;
+  }
+}
+
+function moverCarruselAutomaticamente() {
+  const contenedor = document.getElementById("carruselWrap");
+  const tarjetas = Array.from(document.querySelectorAll(".card"));
+
+  if (!contenedor || !tarjetas.length) return;
+
+  const activa = document.querySelector(".card.activa");
+  let indiceActual = tarjetas.findIndex(card => card === activa);
+
+  if (indiceActual < 0) indiceActual = 0;
+
+  let siguienteIndice = indiceActual + 1;
+  if (siguienteIndice >= tarjetas.length) {
+    siguienteIndice = 0;
+  }
+
+  const siguienteCard = tarjetas[siguienteIndice];
+  if (!siguienteCard) return;
+
+  const actividadId = Number(siguienteCard.getAttribute("data-actividad-id"));
+  if (!actividadId) return;
+
+  actividadSeleccionada = actividadesCache.find(x => Number(x.id) === actividadId) || actividadSeleccionada;
+  renderizarActividades();
+  renderDetalle();
+
+  setTimeout(() => {
+    const cardActiva = document.querySelector(".card.activa");
+    if (cardActiva) centrarActividadEnCarrusel(cardActiva);
+  }, 50);
+}
+
+function iniciarAutoPlayCarrusel() {
+  if (!carruselAutoPlayActivo || carruselAutoPlay) return;
+
+  carruselAutoPlay = setInterval(() => {
+    moverCarruselAutomaticamente();
+  }, 5000);
+}
+    
+    
+   function desplazarCarrusel(delta) {
+  detenerAutoPlayCarrusel();
+  document.getElementById("carruselWrap").scrollBy({ left: delta, behavior: "smooth" });
+}
 
     function centrarActividadEnCarrusel(card) {
   const contenedor = document.getElementById("carruselWrap");
@@ -1314,9 +1368,16 @@ const filas = data.franjas
     window.seleccionarActividad = seleccionarActividad;
 
     (async function init() {
-      await comprobarSesionUsuario();
-      await cargarActividades();
-    })();
+  await comprobarSesionUsuario();
+  await cargarActividades();
+
+  const carruselWrap = document.getElementById("carruselWrap");
+  if (carruselWrap) {
+    carruselWrap.addEventListener("mouseenter", detenerAutoPlayCarrusel);
+  }
+
+  iniciarAutoPlayCarrusel();
+})();
   </script>
 </body>
 </html>
