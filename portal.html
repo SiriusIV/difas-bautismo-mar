@@ -1023,13 +1023,19 @@ const filas = data.franjas
     }
 
     function seleccionarActividad(id) {
-      const a = actividadesCache.find(x => Number(x.id) === Number(id));
-      if (!a) return;
-      actividadSeleccionada = a;
-      sessionStorage.setItem("actividad_id_actual", String(a.id));
-      renderizarActividades();
-      renderDetalle();
-    }
+  const a = actividadesCache.find(x => Number(x.id) === Number(id));
+  if (!a) return;
+
+  actividadSeleccionada = a;
+  sessionStorage.setItem("actividad_id_actual", String(a.id));
+  renderizarActividades();
+  renderDetalle();
+
+  setTimeout(() => {
+    const card = document.querySelector(".card.activa");
+    if (card) centrarActividadEnCarrusel(card);
+  }, 50);
+}
 
     function renderizarActividades() {
       const cont = document.getElementById("carruselActividades");
@@ -1065,6 +1071,11 @@ const filas = data.franjas
       `).join("");
 
       renderDetalle();
+      setTimeout(() => {
+  const card = document.querySelector(".card.activa");
+  if (card) centrarActividadEnCarrusel(card);
+}, 50);
+      
     }
 
     function destruirMapaActividad() {
