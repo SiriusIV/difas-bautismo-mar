@@ -1226,32 +1226,29 @@ function moverCarruselAutomaticamente() {
 
   if (!contenedor || !tarjetas.length) return;
 
-  const contenedorRect = contenedor.getBoundingClientRect();
-  const centroContenedor = contenedorRect.left + (contenedorRect.width / 2);
+  // Detectar tarjeta activa (la seleccionada por usuario)
+  const activa = document.querySelector(".card.activa");
+  let indice = tarjetas.findIndex(t => t === activa);
 
-  let indiceMasCentrado = 0;
-  let distanciaMinima = Infinity;
-
-  tarjetas.forEach((card, i) => {
-    const rect = card.getBoundingClientRect();
-    const centroCard = rect.left + (rect.width / 2);
-    const distancia = Math.abs(centroCard - centroContenedor);
-
-    if (distancia < distanciaMinima) {
-      distanciaMinima = distancia;
-      indiceMasCentrado = i;
-    }
-  });
-
-  let siguienteIndice = indiceMasCentrado + 1;
-  if (siguienteIndice >= tarjetas.length) {
-    siguienteIndice = 0;
+  // Si no hay activa (caso inicial), usamos la primera visible
+  if (indice < 0) {
+    indice = 0;
   }
 
-  const siguienteCard = tarjetas[siguienteIndice];
+  // Siguiente índice (cíclico)
+  let siguiente = indice + 1;
+  if (siguiente >= tarjetas.length) {
+    siguiente = 0; // 🔁 ciclo
+  }
+
+  const siguienteCard = tarjetas[siguiente];
   if (!siguienteCard) return;
 
-  centrarActividadEnCarrusel(siguienteCard);
+  // Scroll EXACTO a la tarjeta (no relativo)
+  contenedor.scrollTo({
+    left: siguienteCard.offsetLeft - (contenedor.offsetWidth / 2) + (siguienteCard.offsetWidth / 2),
+    behavior: "smooth"
+  });
 }
 
 function iniciarAutoPlayCarrusel() {
