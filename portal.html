@@ -123,6 +123,11 @@
       padding: 0 20px;
     }
 
+    .tabla-franjas {
+      display: none;
+      margin-top: 16px;
+    }
+    
     .franja-sesion-texto {
       font-size: 16px;
       font-weight: 500;
@@ -743,6 +748,7 @@
     let actividadSeleccionada = null;
     let mapaActividad = null;
     let marcadorActividad = null;
+    let actividadFranjasSolicitada = null;
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -790,6 +796,55 @@
       }
     }
 
+    async function cargarFranjasActividad(actividadId, tipoActividad) {
+  const wrap = document.getElementById("tablaFranjasWrap");
+  const body = document.getElementById("tablaFranjasBody");
+
+  actividadFranjasSolicitada = actividadId;
+
+  // Estado inicial: oculto y limpio
+  wrap.style.display = "none";
+  body.innerHTML = "";
+
+  // No mostrar para actividades permanentes o sin actividad
+  if (!actividadId || !tipoActividad || String(tipoActividad).toUpperCase() === "PERMANENTE") {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/franjas?actividad_id=${actividadId}`);
+    const data = await res.json();
+
+    // Si mientras tanto el usuario seleccionó otra actividad, ignorar esta respuesta
+    if (actividadFranjasSolicitada !== actividadId) {
+      return;
+    }
+
+    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+      wrap.style.display = "none";
+      body.innerHTML = "";
+      return;
+    }
+
+    body.innerHTML = data.franjas.map(f => `
+      <tr>
+        <td>${f.fecha || ""}</td>
+        <td>${f.hora_inicio || ""}</td>
+        <td>${f.hora_fin || ""}</td>
+      </tr>
+    `).join("");
+
+    wrap.style.display = body.innerHTML.trim() ? "block" : "none";
+
+  } catch (e) {
+    if (actividadFranjasSolicitada !== actividadId) {
+      return;
+    }
+    wrap.style.display = "none";
+    body.innerHTML = "";
+  }
+}
+    
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
       const texto = document.getElementById("textoSesion");
@@ -1003,6 +1058,8 @@
         document.getElementById("btnVerReservasActividad").style.display = "none";
         document.getElementById("direccionActividad").style.display = "none";
         renderMapaActividad(null);
+        actividadFranjasSolicitada = null;
+        cargarFranjasActividad(null, null);
         return;
       }
 
