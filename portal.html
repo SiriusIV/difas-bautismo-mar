@@ -238,33 +238,37 @@
       height: 10px;
     }
 
-    .carrusel-wrap::-webkit-scrollbar-thumb {
-      background: #c5cfda;
-      border-radius: 999px;
+    .carrusel-wrap {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      flex: 1 1 auto;
+      scrollbar-width: thin;
+    scroll-snap-type: x mandatory;
     }
 
     .carrusel {
       display: flex;
       gap: 16px;
       min-height: 200px;
-      padding-bottom: 6px;
+      padding: 6px 0;
     }
 
-    .card {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 12px;
-      min-width: 280px;
-      max-width: 280px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      padding: 12px;
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
+  .card {
+    background: #fff;
+    border: 1px solid #dde4ea;
+    border-radius: 12px;
+    min-width: 280px;
+    max-width: 280px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    padding: 12px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+  }
 
     .card:hover {
       transform: translateY(-6px);
@@ -797,6 +801,10 @@
     let actividadFranjasSolicitada = null;
     let carruselAutoPlay = null;
     let carruselAutoPlayActivo = true;
+    let carruselAutoPlay = null;
+    let carruselAutoPlayActivo = true;
+    let carruselAutoIndex = 0;
+    let carruselReanudarTimeout = null;
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -1025,7 +1033,7 @@ const filas = data.franjas
     }
 
 function seleccionarActividad(id) {
-  detenerAutoPlayCarrusel();
+  pausarTemporalmenteAutoPlay();
 
   const a = actividadesCache.find(x => Number(x.id) === Number(id));
   if (!a) return;
@@ -1036,8 +1044,12 @@ function seleccionarActividad(id) {
   renderDetalle();
 
   setTimeout(() => {
+    const tarjetas = Array.from(document.querySelectorAll(".card"));
     const card = document.querySelector(".card.activa");
-    if (card) centrarActividadEnCarrusel(card);
+    if (card) {
+      centrarActividadEnCarrusel(card);
+      carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+    }
   }, 50);
 }
 
@@ -1076,8 +1088,16 @@ function seleccionarActividad(id) {
 
       renderDetalle();
       setTimeout(() => {
+  const tarjetas = Array.from(document.querySelectorAll(".card"));
   const card = document.querySelector(".card.activa");
-  if (card) centrarActividadEnCarrusel(card);
+
+  if (card) {
+    centrarActividadEnCarrusel(card);
+    carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+  } else if (tarjetas.length) {
+    carruselAutoIndex = 0;
+    centrarActividadEnCarrusel(tarjetas[0]);
+  }
 }, 50);
       
     }
@@ -1211,44 +1231,66 @@ function seleccionarActividad(id) {
       cargarFranjasActividad(a.id, a.tipo);
     }
 
-    function detenerAutoPlayCarrusel() {
+function desplazarCarrusel(delta) {
+  pausarTemporalmenteAutoPlay();
+
+  const contenedor = document.getElementById("carruselWrap");
+  if (!contenedor) return;
+
+  contenedor.scrollBy({
+    left: delta,
+    behavior: "smooth"
+  });
+}
+
+function detenerAutoPlayCarrusel() {
   carruselAutoPlayActivo = false;
 
   if (carruselAutoPlay) {
     clearInterval(carruselAutoPlay);
     carruselAutoPlay = null;
   }
+
+  if (carruselReanudarTimeout) {
+    clearTimeout(carruselReanudarTimeout);
+    carruselReanudarTimeout = null;
+  }
+}
+
+function programarReanudacionAutoPlay() {
+  if (carruselReanudarTimeout) {
+    clearTimeout(carruselReanudarTimeout);
+  }
+
+  carruselReanudarTimeout = setTimeout(() => {
+    carruselAutoPlayActivo = true;
+    iniciarAutoPlayCarrusel();
+  }, 8000);
+}
+
+function pausarTemporalmenteAutoPlay() {
+  if (carruselAutoPlay) {
+    clearInterval(carruselAutoPlay);
+    carruselAutoPlay = null;
+  }
+
+  carruselAutoPlayActivo = false;
+  programarReanudacionAutoPlay();
 }
 
 function moverCarruselAutomaticamente() {
-  const contenedor = document.getElementById("carruselWrap");
   const tarjetas = Array.from(document.querySelectorAll(".card"));
+  if (!tarjetas.length) return;
 
-  if (!contenedor || !tarjetas.length) return;
-
-  // Detectar tarjeta activa (la seleccionada por usuario)
-  const activa = document.querySelector(".card.activa");
-  let indice = tarjetas.findIndex(t => t === activa);
-
-  // Si no hay activa (caso inicial), usamos la primera visible
-  if (indice < 0) {
-    indice = 0;
+  carruselAutoIndex += 1;
+  if (carruselAutoIndex >= tarjetas.length) {
+    carruselAutoIndex = 0;
   }
 
-  // Siguiente índice (cíclico)
-  let siguiente = indice + 1;
-  if (siguiente >= tarjetas.length) {
-    siguiente = 0; // 🔁 ciclo
-  }
+  const card = tarjetas[carruselAutoIndex];
+  if (!card) return;
 
-  const siguienteCard = tarjetas[siguiente];
-  if (!siguienteCard) return;
-
-  // Scroll EXACTO a la tarjeta (no relativo)
-  contenedor.scrollTo({
-    left: siguienteCard.offsetLeft - (contenedor.offsetWidth / 2) + (siguienteCard.offsetWidth / 2),
-    behavior: "smooth"
-  });
+  centrarActividadEnCarrusel(card);
 }
 
 function iniciarAutoPlayCarrusel() {
@@ -1259,28 +1301,13 @@ function iniciarAutoPlayCarrusel() {
   }, 2000);
 }
     
-    
-function desplazarCarrusel(delta) {
-  detenerAutoPlayCarrusel();
-  document.getElementById("carruselWrap").scrollBy({ left: delta, behavior: "smooth" });
-}
-
     function centrarActividadEnCarrusel(card) {
-  const contenedor = document.getElementById("carruselWrap");
-  if (!contenedor || !card) return;
+  if (!card) return;
 
-  const contenedorRect = contenedor.getBoundingClientRect();
-  const cardRect = card.getBoundingClientRect();
-
-  const desplazamiento =
-    cardRect.left
-    - contenedorRect.left
-    - (contenedorRect.width / 2)
-    + (cardRect.width / 2);
-
-  contenedor.scrollBy({
-    left: desplazamiento,
-    behavior: "smooth"
+  card.scrollIntoView({
+    behavior: "smooth",
+    inline: "center",
+    block: "nearest"
   });
 }
     
@@ -1367,13 +1394,26 @@ function desplazarCarrusel(delta) {
 
     window.seleccionarActividad = seleccionarActividad;
 
-    (async function init() {
+(async function init() {
   await comprobarSesionUsuario();
   await cargarActividades();
 
   const carruselWrap = document.getElementById("carruselWrap");
   if (carruselWrap) {
-    carruselWrap.addEventListener("mouseenter", detenerAutoPlayCarrusel);
+    carruselWrap.addEventListener("mouseenter", () => {
+      if (carruselAutoPlay) {
+        clearInterval(carruselAutoPlay);
+        carruselAutoPlay = null;
+      }
+    });
+
+    carruselWrap.addEventListener("mouseleave", () => {
+      programarReanudacionAutoPlay();
+    });
+
+    carruselWrap.addEventListener("wheel", () => {
+      pausarTemporalmenteAutoPlay();
+    }, { passive: true });
   }
 
   iniciarAutoPlayCarrusel();
