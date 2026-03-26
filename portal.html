@@ -566,6 +566,43 @@
       text-decoration: underline;
     }
 
+.mapa-info-wrap-horizontal {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 14px;
+  align-items: start;
+}
+
+.mapa-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tabla-franjas {
+  font-size: 13px;
+  display: none;
+}
+
+.tabla-franjas h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #123a63;
+}
+
+.tabla-franjas table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-franjas th,
+.tabla-franjas td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+    
     @media (max-width: 980px) {
       .detalle-grid {
         grid-template-columns: 1fr;
@@ -577,6 +614,14 @@
 
       .mapa-wrap {
         height: 240px;
+      }
+
+      .mapa-info-wrap-horizontal {
+        grid-template-columns: 1fr;
+      }
+
+      .tabla-franjas {
+        margin-top: 10px;
       }
     }
 
@@ -666,13 +711,29 @@
         <div class="detalle-col-izq">
           <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
 
-          <div class="mapa-info-wrap">
-            <div id="direccionActividad" class="direccion-actividad"></div>
+          <div class="mapa-info-wrap-horizontal">
+  <div class="mapa-col">
+    <div id="direccionActividad" class="direccion-actividad"></div>
 
-            <div id="mapaWrap" class="mapa-wrap mapa-oculto">
-              <div id="mapaActividad"></div>
-            </div>
-          </div>
+    <div id="mapaWrap" class="mapa-wrap mapa-oculto">
+      <div id="mapaActividad"></div>
+    </div>
+  </div>
+
+  <div id="tablaFranjasWrap" class="tabla-franjas">
+    <h4>Franjas disponibles</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+        </tr>
+      </thead>
+      <tbody id="tablaFranjasBody"></tbody>
+    </table>
+  </div>
+</div>
         </div>
 
         <div class="detalle-contenido">
@@ -931,6 +992,44 @@
       }
     }
 
+    async function cargarFranjasActividad(actividadId, tipoActividad) {
+  const wrap = document.getElementById("tablaFranjasWrap");
+  const body = document.getElementById("tablaFranjasBody");
+
+  // Solo mostrar para actividades TEMPORALES
+  if (!tipoActividad || tipoActividad === "PERMANENTE") {
+    wrap.style.display = "none";
+    body.innerHTML = "";
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/franjas?actividad_id=${actividadId}`);
+    const data = await res.json();
+
+    if (!data.ok || !data.franjas || !data.franjas.length) {
+      wrap.style.display = "none";
+      body.innerHTML = "";
+      return;
+    }
+
+    body.innerHTML = data.franjas.map(f => `
+      <tr>
+        <td>${f.fecha}</td>
+        <td>${f.hora_inicio}</td>
+        <td>${f.hora_fin}</td>
+      </tr>
+    `).join("");
+
+    wrap.style.display = "block";
+
+  } catch (e) {
+    wrap.style.display = "none";
+    body.innerHTML = "";
+  }
+}
+    
+    
     function renderMapaActividad(a) {
       const mapaWrap = document.getElementById("mapaWrap");
 
@@ -990,6 +1089,7 @@
         document.getElementById("btnVerReservasActividad").style.display = "none";
         document.getElementById("direccionActividad").style.display = "none";
         renderMapaActividad(null);
+        cargarFranjasActividad(null, null);
         return;
       }
 
@@ -1046,6 +1146,7 @@
       }
 
       renderMapaActividad(a);
+      cargarFranjasActividad(a.id, a.tipo);
     }
 
     function desplazarCarrusel(delta) {
