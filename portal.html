@@ -124,9 +124,55 @@
     }
 
     .tabla-franjas {
-      display: none;
-      margin-top: 16px;
-    }
+  font-size: 14px;
+  display: none;
+  margin-top: 16px;
+}
+
+.tabla-franjas h4 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #123a63;
+}
+
+.tabla-franjas table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.tabla-franjas th,
+.tabla-franjas td {
+  padding: 6px 12px 6px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabla-franjas th {
+  color: #123a63;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid #dde4ea;
+  padding-bottom: 8px;
+}
+
+.tabla-franjas td {
+  color: #37424d;
+}
+
+.tabla-franjas th:nth-child(1),
+.tabla-franjas td:nth-child(1) {
+  min-width: 240px;
+  padding-right: 18px;
+}
+
+.tabla-franjas th:nth-child(2),
+.tabla-franjas td:nth-child(2),
+.tabla-franjas th:nth-child(3),
+.tabla-franjas td:nth-child(3) {
+  min-width: 70px;
+  white-space: nowrap;
+}
     
     .franja-sesion-texto {
       font-size: 16px;
@@ -692,7 +738,7 @@
             <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
           </div>
           <div id="tablaFranjasWrap" class="tabla-franjas" style="margin-top:16px;">
-            <h4>Franjas disponibles</h4>
+            <h4>Programación:</h4>
             <table>
               <thead>
                 <tr>
@@ -796,7 +842,29 @@
       }
     }
 
-async function cargarFranjasActividad(actividadId, tipoActividad) {
+  function formatearFechaLargaES(fechaISO) {
+  if (!fechaISO) return "";
+
+  const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
+  if (!yyyy || !mm || !dd) return fechaISO;
+
+  const fecha = new Date(yyyy, mm - 1, dd);
+  if (Number.isNaN(fecha.getTime())) return fechaISO;
+
+  const dias = [
+    "domingo", "lunes", "martes", "miércoles",
+    "jueves", "viernes", "sábado"
+  ];
+
+  const meses = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+  ];
+
+  return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
+}
+  
+  async function cargarFranjasActividad(actividadId, tipoActividad) {
   const wrap = document.getElementById("tablaFranjasWrap");
   const body = document.getElementById("tablaFranjasBody");
 
@@ -823,16 +891,16 @@ async function cargarFranjasActividad(actividadId, tipoActividad) {
       return;
     }
 
-    const filas = data.franjas
-      .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
-      .map(f => `
-        <tr>
-          <td>${f.fecha}</td>
-          <td>${f.hora_inicio}</td>
-          <td>${f.hora_fin}</td>
-        </tr>
-      `)
-      .join("");
+const filas = data.franjas
+  .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
+  .map(f => `
+    <tr>
+      <td>${formatearFechaLargaES(f.fecha)}</td>
+      <td>${f.hora_inicio}</td>
+      <td>${f.hora_fin}</td>
+    </tr>
+  `)
+  .join("");
 
     if (!filas.trim()) {
       wrap.style.display = "none";
