@@ -1024,9 +1024,10 @@ const filas = data.franjas
       }
     }
 
-    function seleccionarActividad(id) {
-      detenerAutoPlayCarrusel();
-      const a = actividadesCache.find(x => Number(x.id) === Number(id));
+function seleccionarActividad(id) {
+  detenerAutoPlayCarrusel();
+
+  const a = actividadesCache.find(x => Number(x.id) === Number(id));
   if (!a) return;
 
   actividadSeleccionada = a;
@@ -1225,12 +1226,24 @@ function moverCarruselAutomaticamente() {
 
   if (!contenedor || !tarjetas.length) return;
 
-  const activa = document.querySelector(".card.activa");
-  let indiceActual = tarjetas.findIndex(card => card === activa);
+  const contenedorRect = contenedor.getBoundingClientRect();
+  const centroContenedor = contenedorRect.left + (contenedorRect.width / 2);
 
-  if (indiceActual < 0) indiceActual = 0;
+  let indiceMasCentrado = 0;
+  let distanciaMinima = Infinity;
 
-  let siguienteIndice = indiceActual + 1;
+  tarjetas.forEach((card, i) => {
+    const rect = card.getBoundingClientRect();
+    const centroCard = rect.left + (rect.width / 2);
+    const distancia = Math.abs(centroCard - centroContenedor);
+
+    if (distancia < distanciaMinima) {
+      distanciaMinima = distancia;
+      indiceMasCentrado = i;
+    }
+  });
+
+  let siguienteIndice = indiceMasCentrado + 1;
   if (siguienteIndice >= tarjetas.length) {
     siguienteIndice = 0;
   }
@@ -1238,17 +1251,7 @@ function moverCarruselAutomaticamente() {
   const siguienteCard = tarjetas[siguienteIndice];
   if (!siguienteCard) return;
 
-  const actividadId = Number(siguienteCard.getAttribute("data-actividad-id"));
-  if (!actividadId) return;
-
-  actividadSeleccionada = actividadesCache.find(x => Number(x.id) === actividadId) || actividadSeleccionada;
-  renderizarActividades();
-  renderDetalle();
-
-  setTimeout(() => {
-    const cardActiva = document.querySelector(".card.activa");
-    if (cardActiva) centrarActividadEnCarrusel(cardActiva);
-  }, 50);
+  centrarActividadEnCarrusel(siguienteCard);
 }
 
 function iniciarAutoPlayCarrusel() {
@@ -1260,7 +1263,7 @@ function iniciarAutoPlayCarrusel() {
 }
     
     
-   function desplazarCarrusel(delta) {
+function desplazarCarrusel(delta) {
   detenerAutoPlayCarrusel();
   document.getElementById("carruselWrap").scrollBy({ left: delta, behavior: "smooth" });
 }
