@@ -123,57 +123,6 @@
       padding: 0 20px;
     }
 
-    .tabla-franjas {
-  font-size: 14px;
-  display: none;
-  margin-top: 16px;
-}
-
-.tabla-franjas h4 {
-  margin: 0 0 10px;
-  font-size: 18px;
-  color: #123a63;
-}
-
-.tabla-franjas table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 6px;
-}
-
-.tabla-franjas th,
-.tabla-franjas td {
-  padding: 6px 12px 6px 0;
-  text-align: left;
-  vertical-align: top;
-}
-
-.tabla-franjas th {
-  color: #123a63;
-  font-size: 14px;
-  font-weight: 600;
-  border-bottom: 1px solid #dde4ea;
-  padding-bottom: 8px;
-}
-
-.tabla-franjas td {
-  color: #37424d;
-}
-
-.tabla-franjas th:nth-child(1),
-.tabla-franjas td:nth-child(1) {
-  min-width: 240px;
-  padding-right: 18px;
-}
-
-.tabla-franjas th:nth-child(2),
-.tabla-franjas td:nth-child(2),
-.tabla-franjas th:nth-child(3),
-.tabla-franjas td:nth-child(3) {
-  min-width: 70px;
-  white-space: nowrap;
-}
-    
     .franja-sesion-texto {
       font-size: 16px;
       font-weight: 500;
@@ -231,44 +180,38 @@
       overflow-x: auto;
       scroll-behavior: smooth;
       flex: 1 1 auto;
-      scrollbar-width: thin;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
     .carrusel-wrap::-webkit-scrollbar {
-      height: 10px;
-    }
-
-    .carrusel-wrap {
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      flex: 1 1 auto;
-      scrollbar-width: thin;
-    scroll-snap-type: x mandatory;
+      display: none;
     }
 
     .carrusel {
       display: flex;
       gap: 16px;
-      min-height: 200px;
+      min-height: 220px;
       padding: 6px 0;
     }
 
-  .card {
-    background: #fff;
-    border: 1px solid #dde4ea;
-    border-radius: 12px;
-    min-width: 280px;
-    max-width: 280px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    padding: 12px;
-    cursor: pointer;
-    flex: 0 0 auto;
-    scroll-snap-align: center;
-  }
+    .card {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 12px;
+      min-width: 280px;
+      max-width: 280px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      padding: 12px;
+      cursor: pointer;
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+    }
 
     .card:hover {
       transform: translateY(-6px);
@@ -456,14 +399,6 @@
       cursor: not-allowed;
     }
 
-    .btn-secundario {
-      background: #6c757d;
-    }
-
-    .btn-secundario:hover {
-      background: #565e64;
-    }
-
     .btn-admin {
       background: #198754;
     }
@@ -621,6 +556,57 @@
       text-decoration: underline;
     }
 
+    .tabla-franjas {
+      font-size: 14px;
+      display: none;
+      margin-top: 16px;
+    }
+
+    .tabla-franjas h4 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #123a63;
+    }
+
+    .tabla-franjas table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+    }
+
+    .tabla-franjas th,
+    .tabla-franjas td {
+      padding: 6px 12px 6px 0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .tabla-franjas th {
+      color: #123a63;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid #dde4ea;
+      padding-bottom: 8px;
+    }
+
+    .tabla-franjas td {
+      color: #37424d;
+    }
+
+    .tabla-franjas th:nth-child(1),
+    .tabla-franjas td:nth-child(1) {
+      min-width: 240px;
+      padding-right: 18px;
+    }
+
+    .tabla-franjas th:nth-child(2),
+    .tabla-franjas td:nth-child(2),
+    .tabla-franjas th:nth-child(3),
+    .tabla-franjas td:nth-child(3) {
+      min-width: 70px;
+      white-space: nowrap;
+    }
+
     @media (max-width: 980px) {
       .detalle-grid {
         grid-template-columns: 1fr;
@@ -694,7 +680,7 @@
   <div class="contenedor">
     <div class="carrusel-panel">
       <div class="carrusel-top">
-        <button class="btn-carrusel" onclick="desplazarCarrusel(-320)" title="Anterior" aria-label="Anterior">
+        <button class="btn-carrusel" onclick="desplazarCarrusel(-1)" title="Anterior" aria-label="Anterior">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
@@ -704,7 +690,7 @@
           <div id="carruselActividades" class="carrusel"></div>
         </div>
 
-        <button class="btn-carrusel" onclick="desplazarCarrusel(320)" title="Siguiente" aria-label="Siguiente">
+        <button class="btn-carrusel" onclick="desplazarCarrusel(1)" title="Siguiente" aria-label="Siguiente">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
@@ -741,8 +727,9 @@
             <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
             <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
           </div>
-          <div id="tablaFranjasWrap" class="tabla-franjas" style="margin-top:16px;">
-            <h4>Programación:</h4>
+
+          <div id="tablaFranjasWrap" class="tabla-franjas">
+            <h4>Programación</h4>
             <table>
               <thead>
                 <tr>
@@ -751,7 +738,7 @@
                   <th>Fin</th>
                 </tr>
               </thead>
-                <tbody id="tablaFranjasBody"></tbody>
+              <tbody id="tablaFranjasBody"></tbody>
             </table>
           </div>
         </div>
@@ -780,7 +767,7 @@
 
       <div class="acciones-acceso">
         <button class="btn" onclick="loginUsuario()">Entrar</button>
-        <button class="btn btn-secundario" onclick="cerrarModalLogin()">Cerrar</button>
+        <button class="btn btn-admin" onclick="cerrarModalLogin()">Cerrar</button>
       </div>
 
       <div id="mensajeLogin" class="mensaje"></div>
@@ -799,6 +786,7 @@
     let mapaActividad = null;
     let marcadorActividad = null;
     let actividadFranjasSolicitada = null;
+
     let carruselAutoPlay = null;
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
@@ -850,85 +838,79 @@
       }
     }
 
-  function formatearFechaLargaES(fechaISO) {
-  if (!fechaISO) return "";
+    function formatearFechaLargaES(fechaISO) {
+      if (!fechaISO) return "";
 
-  const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
-  if (!yyyy || !mm || !dd) return fechaISO;
+      const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
+      if (!yyyy || !mm || !dd) return fechaISO;
 
-  const fecha = new Date(yyyy, mm - 1, dd);
-  if (Number.isNaN(fecha.getTime())) return fechaISO;
+      const fecha = new Date(yyyy, mm - 1, dd);
+      if (Number.isNaN(fecha.getTime())) return fechaISO;
 
-  const dias = [
-    "domingo", "lunes", "martes", "miércoles",
-    "jueves", "viernes", "sábado"
-  ];
+      const dias = [
+        "domingo", "lunes", "martes", "miércoles",
+        "jueves", "viernes", "sábado"
+      ];
 
-  const meses = [
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-  ];
+      const meses = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      ];
 
-  return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
-}
-  
-  async function cargarFranjasActividad(actividadId, tipoActividad) {
-  const wrap = document.getElementById("tablaFranjasWrap");
-  const body = document.getElementById("tablaFranjasBody");
-
-  actividadFranjasSolicitada = actividadId;
-
-  wrap.style.display = "none";
-  body.innerHTML = "";
-
-  if (!actividadId || !tipoActividad || String(tipoActividad).toUpperCase() === "PERMANENTE") {
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividadId)}`);
-    const data = await res.json();
-
-    if (actividadFranjasSolicitada !== actividadId) {
-      return;
+      return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
-    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+    async function cargarFranjasActividad(actividadId, tipoActividad) {
+      const wrap = document.getElementById("tablaFranjasWrap");
+      const body = document.getElementById("tablaFranjasBody");
+
+      actividadFranjasSolicitada = actividadId;
       wrap.style.display = "none";
       body.innerHTML = "";
-      return;
+
+      if (!actividadId || !tipoActividad || String(tipoActividad).toUpperCase() === "PERMANENTE") {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividadId)}`);
+        const data = await res.json();
+
+        if (actividadFranjasSolicitada !== actividadId) return;
+
+        if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+          wrap.style.display = "none";
+          body.innerHTML = "";
+          return;
+        }
+
+        const filas = data.franjas
+          .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
+          .map(f => `
+            <tr>
+              <td>${formatearFechaLargaES(f.fecha)}</td>
+              <td>${f.hora_inicio}</td>
+              <td>${f.hora_fin}</td>
+            </tr>
+          `)
+          .join("");
+
+        if (!filas.trim()) {
+          wrap.style.display = "none";
+          body.innerHTML = "";
+          return;
+        }
+
+        body.innerHTML = filas;
+        wrap.style.display = "block";
+
+      } catch (e) {
+        if (actividadFranjasSolicitada !== actividadId) return;
+        wrap.style.display = "none";
+        body.innerHTML = "";
+      }
     }
 
-const filas = data.franjas
-  .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
-  .map(f => `
-    <tr>
-      <td>${formatearFechaLargaES(f.fecha)}</td>
-      <td>${f.hora_inicio}</td>
-      <td>${f.hora_fin}</td>
-    </tr>
-  `)
-  .join("");
-
-    if (!filas.trim()) {
-      wrap.style.display = "none";
-      body.innerHTML = "";
-      return;
-    }
-
-    body.innerHTML = filas;
-    wrap.style.display = "block";
-
-  } catch (e) {
-    if (actividadFranjasSolicitada !== actividadId) {
-      return;
-    }
-
-    wrap.style.display = "none";
-    body.innerHTML = "";
-  }
-}
-    
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
       const texto = document.getElementById("textoSesion");
@@ -955,9 +937,7 @@ const filas = data.franjas
     }
 
     async function comprobarSesionUsuario() {
-      const res = await fetch("/api/usuario/session", {
-        credentials: "include"
-      });
+      const res = await fetch("/api/usuario/session", { credentials: "include" });
 
       if (!res.ok) {
         usuarioAutenticado = null;
@@ -991,9 +971,7 @@ const filas = data.franjas
     }
 
     async function cargarActividadesPublicas() {
-      const res = await fetch("/api/actividades", {
-        credentials: "include"
-      });
+      const res = await fetch("/api/actividades", { credentials: "include" });
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
@@ -1007,9 +985,7 @@ const filas = data.franjas
     }
 
     async function cargarActividadesAdmin() {
-      const res = await fetch("/api/admin/mis-actividades", {
-        credentials: "include"
-      });
+      const res = await fetch("/api/admin/mis-actividades", { credentials: "include" });
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
@@ -1030,26 +1006,26 @@ const filas = data.franjas
       }
     }
 
-function seleccionarActividad(id) {
-  pausarTemporalmenteAutoPlay();
+    function seleccionarActividad(id) {
+      pausarTemporalmenteAutoPlay();
 
-  const a = actividadesCache.find(x => Number(x.id) === Number(id));
-  if (!a) return;
+      const a = actividadesCache.find(x => Number(x.id) === Number(id));
+      if (!a) return;
 
-  actividadSeleccionada = a;
-  sessionStorage.setItem("actividad_id_actual", String(a.id));
-  renderizarActividades();
-  renderDetalle();
+      actividadSeleccionada = a;
+      sessionStorage.setItem("actividad_id_actual", String(a.id));
+      renderizarActividades();
+      renderDetalle();
 
-  setTimeout(() => {
-    const tarjetas = Array.from(document.querySelectorAll(".card"));
-    const card = document.querySelector(".card.activa");
-    if (card) {
-      centrarActividadEnCarrusel(card);
-      carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+      setTimeout(() => {
+        const tarjetas = Array.from(document.querySelectorAll(".card"));
+        const card = document.querySelector(".card.activa");
+        if (card) {
+          centrarActividadEnCarrusel(card);
+          carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+        }
+      }, 80);
     }
-  }, 50);
-}
 
     function renderizarActividades() {
       const cont = document.getElementById("carruselActividades");
@@ -1078,26 +1054,26 @@ function seleccionarActividad(id) {
             <h3>${a.titulo_publico || a.nombre}</h3>
             <div class="card-meta">
               ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-              ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
+              ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
             </div>
           </div>
         </div>
       `).join("");
 
       renderDetalle();
-      setTimeout(() => {
-  const tarjetas = Array.from(document.querySelectorAll(".card"));
-  const card = document.querySelector(".card.activa");
 
-  if (card) {
-    centrarActividadEnCarrusel(card);
-    carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
-  } else if (tarjetas.length) {
-    carruselAutoIndex = 0;
-    centrarActividadEnCarrusel(tarjetas[0]);
-  }
-}, 50);
-      
+      setTimeout(() => {
+        const tarjetas = Array.from(document.querySelectorAll(".card"));
+        const card = document.querySelector(".card.activa");
+
+        if (card) {
+          centrarActividadEnCarrusel(card);
+          carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+        } else if (tarjetas.length) {
+          carruselAutoIndex = 0;
+          centrarActividadEnCarrusel(tarjetas[0]);
+        }
+      }, 80);
     }
 
     function destruirMapaActividad() {
@@ -1147,9 +1123,7 @@ function seleccionarActividad(id) {
       );
 
       setTimeout(() => {
-        if (mapaActividad) {
-          mapaActividad.invalidateSize();
-        }
+        if (mapaActividad) mapaActividad.invalidateSize();
       }, 100);
     }
 
@@ -1157,31 +1131,31 @@ function seleccionarActividad(id) {
       const a = actividadSeleccionada;
 
       if (!a) {
-  document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
-  document.getElementById("detalleSubtitulo").textContent = "";
-  document.getElementById("detalleMeta").innerHTML = "";
-  document.getElementById("detalleTexto").textContent = "";
-  document.getElementById("detalleImagen").src = "logo.png";
-  document.getElementById("btnSolicitarActividad").style.display = "none";
-  document.getElementById("btnEditarActividad").style.display = "none";
-  document.getElementById("btnVerReservasActividad").style.display = "none";
-  document.getElementById("direccionActividad").style.display = "none";
-  document.getElementById("direccionActividad").innerHTML = "";
-  renderMapaActividad(null);
-  actividadFranjasSolicitada = null;
-  cargarFranjasActividad(null, null);
-  return;
-}
+        document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
+        document.getElementById("detalleSubtitulo").textContent = "";
+        document.getElementById("detalleMeta").innerHTML = "";
+        document.getElementById("detalleTexto").textContent = "";
+        document.getElementById("detalleImagen").src = "logo.png";
+        document.getElementById("btnSolicitarActividad").style.display = "none";
+        document.getElementById("btnEditarActividad").style.display = "none";
+        document.getElementById("btnVerReservasActividad").style.display = "none";
+        document.getElementById("direccionActividad").style.display = "none";
+        document.getElementById("direccionActividad").innerHTML = "";
+        renderMapaActividad(null);
+        actividadFranjasSolicitada = null;
+        cargarFranjasActividad(null, null);
+        return;
+      }
 
       document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
 
       document.getElementById("detalleMeta").innerHTML = `
-        ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ''}
-        ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ''}
-        ${a.tipo === 'TEMPORAL' && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ''}${a.fecha_inicio && a.fecha_fin ? ' - ' : ''}${a.fecha_fin || ''}</div>` : ''}
-        ${a.tipo === 'PERMANENTE' ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ''}
+        ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
+        ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
+        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+        ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
       `;
 
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
@@ -1199,12 +1173,8 @@ function seleccionarActividad(id) {
 
       btnSolicitar.style.display =
         usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
-
-      btnEditar.style.display =
-        esAdmin() ? "inline-block" : "none";
-
-      btnReservas.style.display =
-        esAdmin() ? "inline-block" : "none";
+      btnEditar.style.display = esAdmin() ? "inline-block" : "none";
+      btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
       if (Number(a.completa || 0) === 1) {
         btnSolicitar.disabled = true;
@@ -1215,7 +1185,6 @@ function seleccionarActividad(id) {
       }
 
       const direccionDiv = document.getElementById("direccionActividad");
-
       if (a.direccion_postal && a.direccion_postal.trim() !== "") {
         const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.direccion_postal)}`;
         direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${a.direccion_postal}</a>`;
@@ -1229,86 +1198,92 @@ function seleccionarActividad(id) {
       cargarFranjasActividad(a.id, a.tipo);
     }
 
-function desplazarCarrusel(delta) {
-  pausarTemporalmenteAutoPlay();
-
-  const contenedor = document.getElementById("carruselWrap");
-  if (!contenedor) return;
-
-  contenedor.scrollBy({
-    left: delta,
-    behavior: "smooth"
-  });
-}
-
-function detenerAutoPlayCarrusel() {
-  carruselAutoPlayActivo = false;
-
-  if (carruselAutoPlay) {
-    clearInterval(carruselAutoPlay);
-    carruselAutoPlay = null;
-  }
-
-  if (carruselReanudarTimeout) {
-    clearTimeout(carruselReanudarTimeout);
-    carruselReanudarTimeout = null;
-  }
-}
-
-function programarReanudacionAutoPlay() {
-  if (carruselReanudarTimeout) {
-    clearTimeout(carruselReanudarTimeout);
-  }
-
-  carruselReanudarTimeout = setTimeout(() => {
-    carruselAutoPlayActivo = true;
-    iniciarAutoPlayCarrusel();
-  }, 8000);
-}
-
-function pausarTemporalmenteAutoPlay() {
-  if (carruselAutoPlay) {
-    clearInterval(carruselAutoPlay);
-    carruselAutoPlay = null;
-  }
-
-  carruselAutoPlayActivo = false;
-  programarReanudacionAutoPlay();
-}
-
-function moverCarruselAutomaticamente() {
-  const tarjetas = Array.from(document.querySelectorAll(".card"));
-  if (!tarjetas.length) return;
-
-  carruselAutoIndex += 1;
-  if (carruselAutoIndex >= tarjetas.length) {
-    carruselAutoIndex = 0;
-  }
-
-  const card = tarjetas[carruselAutoIndex];
-  if (!card) return;
-
-  centrarActividadEnCarrusel(card);
-}
-
-function iniciarAutoPlayCarrusel() {
-  if (!carruselAutoPlayActivo || carruselAutoPlay) return;
-
-  carruselAutoPlay = setInterval(() => {
-    moverCarruselAutomaticamente();
-  }, 2000);
-}
-    
     function centrarActividadEnCarrusel(card) {
-  if (!card) return;
+      if (!card) return;
 
-  card.scrollIntoView({
-    behavior: "smooth",
-    inline: "center",
-    block: "nearest"
-  });
-}
-    
+      card.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+    }
+
+    function detenerAutoPlayCarrusel() {
+      carruselAutoPlayActivo = false;
+
+      if (carruselAutoPlay) {
+        clearInterval(carruselAutoPlay);
+        carruselAutoPlay = null;
+      }
+
+      if (carruselReanudarTimeout) {
+        clearTimeout(carruselReanudarTimeout);
+        carruselReanudarTimeout = null;
+      }
+    }
+
+    function programarReanudacionAutoPlay() {
+      if (carruselReanudarTimeout) {
+        clearTimeout(carruselReanudarTimeout);
+      }
+
+      carruselReanudarTimeout = setTimeout(() => {
+        carruselAutoPlayActivo = true;
+        iniciarAutoPlayCarrusel();
+      }, 20000);
+    }
+
+    function pausarTemporalmenteAutoPlay() {
+      if (carruselAutoPlay) {
+        clearInterval(carruselAutoPlay);
+        carruselAutoPlay = null;
+      }
+
+      carruselAutoPlayActivo = false;
+      programarReanudacionAutoPlay();
+    }
+
+    function moverCarruselAutomaticamente() {
+      const tarjetas = Array.from(document.querySelectorAll(".card"));
+      if (!tarjetas.length) return;
+
+      carruselAutoIndex += 1;
+      if (carruselAutoIndex >= tarjetas.length) {
+        carruselAutoIndex = 0;
+      }
+
+      const card = tarjetas[carruselAutoIndex];
+      if (!card) return;
+
+      centrarActividadEnCarrusel(card);
+    }
+
+    function iniciarAutoPlayCarrusel() {
+      if (!carruselAutoPlayActivo || carruselAutoPlay) return;
+
+      carruselAutoPlay = setInterval(() => {
+        moverCarruselAutomaticamente();
+      }, 2000);
+    }
+
+    function desplazarCarrusel(direccion) {
+      pausarTemporalmenteAutoPlay();
+
+      const tarjetas = Array.from(document.querySelectorAll(".card"));
+      if (!tarjetas.length) return;
+
+      if (direccion > 0) {
+        carruselAutoIndex += 1;
+        if (carruselAutoIndex >= tarjetas.length) carruselAutoIndex = 0;
+      } else {
+        carruselAutoIndex -= 1;
+        if (carruselAutoIndex < 0) carruselAutoIndex = tarjetas.length - 1;
+      }
+
+      const card = tarjetas[carruselAutoIndex];
+      if (card) centrarActividadEnCarrusel(card);
+    }
+
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
       if (Number(actividadSeleccionada.completa || 0) === 1) return;
@@ -1392,30 +1367,30 @@ function iniciarAutoPlayCarrusel() {
 
     window.seleccionarActividad = seleccionarActividad;
 
-(async function init() {
-  await comprobarSesionUsuario();
-  await cargarActividades();
+    (async function init() {
+      await comprobarSesionUsuario();
+      await cargarActividades();
 
-  const carruselWrap = document.getElementById("carruselWrap");
-  if (carruselWrap) {
-    carruselWrap.addEventListener("mouseenter", () => {
-      if (carruselAutoPlay) {
-        clearInterval(carruselAutoPlay);
-        carruselAutoPlay = null;
+      const carruselWrap = document.getElementById("carruselWrap");
+      if (carruselWrap) {
+        carruselWrap.addEventListener("mouseenter", () => {
+          if (carruselAutoPlay) {
+            clearInterval(carruselAutoPlay);
+            carruselAutoPlay = null;
+          }
+        });
+
+        carruselWrap.addEventListener("mouseleave", () => {
+          programarReanudacionAutoPlay();
+        });
+
+        carruselWrap.addEventListener("wheel", () => {
+          pausarTemporalmenteAutoPlay();
+        }, { passive: true });
       }
-    });
 
-    carruselWrap.addEventListener("mouseleave", () => {
-      programarReanudacionAutoPlay();
-    });
-
-    carruselWrap.addEventListener("wheel", () => {
-      pausarTemporalmenteAutoPlay();
-    }, { passive: true });
-  }
-
-  iniciarAutoPlayCarrusel();
-})();
+      iniciarAutoPlayCarrusel();
+    })();
   </script>
 </body>
 </html>
