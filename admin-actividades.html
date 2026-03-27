@@ -594,8 +594,13 @@
       document.getElementById("imagen_url").value = actividad.imagen_url || "";
       document.getElementById("visible_portal").value = String(actividad.visible_portal ?? 1);
       document.getElementById("orden_portal").value = String(actividad.orden_portal ?? 0);
-
       document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+      document.getElementById("usa_franjas").value = String(actividad.usa_franjas ?? 1);
+      document.getElementById("requiere_reserva").value = String(actividad.requiere_reserva ?? 1);
+      document.getElementById("aforo_limitado").value = String(actividad.aforo_limitado ?? 1);
+      document.getElementById("provincia").value = actividad.provincia || "";
+      document.getElementById("es_recurrente").value = String(actividad.es_recurrente ?? 0);
+      document.getElementById("patron_recurrencia").value = actividad.patron_recurrencia || "";
       actualizarBloqueFechas();
       actualizarPreview();
     }
@@ -666,6 +671,12 @@
         imagen_url: document.getElementById("imagen_url").value.trim(),
         visible_portal: document.getElementById("visible_portal").value,
         orden_portal: document.getElementById("orden_portal").value
+        usa_franjas: document.getElementById("usa_franjas").value,
+        requiere_reserva: document.getElementById("requiere_reserva").value,
+        aforo_limitado: document.getElementById("aforo_limitado").value,
+        provincia: document.getElementById("provincia").value.trim(),
+        es_recurrente: document.getElementById("es_recurrente").value,
+        patron_recurrencia: document.getElementById("patron_recurrencia").value.trim()
       };
 
       if (!payload.nombre) {
