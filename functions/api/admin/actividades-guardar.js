@@ -122,9 +122,15 @@ export async function onRequestPost(context) {
         visible_portal,
         orden_portal,
         organizador_publico,
-        admin_id
+        usa_franjas,
+        admin_id,
+        requiere_reserva,
+        aforo_limitado,
+        provincia,
+        es_recurrente,
+        patron_recurrencia
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       limpiarTexto(body.nombre),
       tipo,
@@ -141,7 +147,13 @@ export async function onRequestPost(context) {
       parsearFlag(body.visible_portal, 1),
       parseInt(body.orden_portal || 0, 10) || 0,
       normalizarNullable(body.organizador_publico),
-      admin_id
+      parsearFlag(body.usa_franjas, 1),
+      admin_id,
+      parsearFlag(body.requiere_reserva, 1),
+      parsearFlag(body.aforo_limitado, 1),
+      normalizarNullable(body.provincia),
+      parsearFlag(body.es_recurrente, 0),
+      normalizarNullable(body.patron_recurrencia)
     ).run();
 
     if ((result?.meta?.changes || 0) === 0) {
@@ -221,7 +233,13 @@ export async function onRequestPut(context) {
         visible_portal = ?,
         orden_portal = ?,
         organizador_publico = ?,
-        admin_id = ?
+        admin_id = ?,
+        usa_franjas = ?,
+        requiere_reserva = ?,
+        aforo_limitado = ?,
+        provincia = ?,
+        es_recurrente = ?,
+        patron_recurrencia = ?
       WHERE id = ?
     `).bind(
       limpiarTexto(body.nombre),
@@ -240,6 +258,12 @@ export async function onRequestPut(context) {
       parseInt(body.orden_portal || 0, 10) || 0,
       normalizarNullable(body.organizador_publico),
       admin_id,
+      parsearFlag(body.usa_franjas, 1),
+      parsearFlag(body.requiere_reserva, 1),
+      parsearFlag(body.aforo_limitado, 1),
+      normalizarNullable(body.provincia),
+      parsearFlag(body.es_recurrente, 0),
+      normalizarNullable(body.patron_recurrencia),
       id
     ).run();
 
