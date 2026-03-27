@@ -37,6 +37,12 @@ export async function onRequestGet(context) {
         organizador_publico,
         activa,
         admin_id
+        usa_franjas
+        requiere_reserva
+        aforo_limitado
+        provincia
+        es_recurrente
+        patron_recurrencia
       FROM actividades
     `;
     const binds = [];
