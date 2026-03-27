@@ -1265,16 +1265,55 @@ function renderizarActividades() {
       cargarFranjasActividad(a);
     }
 
-    function centrarActividadEnCarrusel(card) {
-      if (!card) return;
+function centrarActividadEnCarrusel(card) {
+  if (!card) return;
 
-      card.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest"
-      });
-    }
+  const wrap = document.getElementById("carruselWrap");
+  if (!wrap) return;
 
+  const wrapRect = wrap.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+
+  const delta = (cardRect.left - wrapRect.left) - ((wrap.clientWidth - card.offsetWidth) / 2);
+
+  wrap.scrollBy({
+    left: delta,
+    behavior: "smooth"
+  });
+}
+
+function reajustarCarruselInfinito() {
+  const wrap = document.getElementById("carruselWrap");
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  if (!wrap || !actividadesVisibles.length) return;
+
+  const tarjetas = Array.from(document.querySelectorAll(".card"));
+  const totalReales = actividadesVisibles.length;
+  if (tarjetas.length < totalReales * 2) return;
+
+  const primeraMitad = tarjetas.slice(0, totalReales);
+  const segundaMitad = tarjetas.slice(totalReales, totalReales * 2);
+
+  const primeraSegunda = segundaMitad[0];
+  if (!primeraSegunda) return;
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const segundaRect = primeraSegunda.getBoundingClientRect();
+
+  if (segundaRect.left < wrapRect.right) {
+    const cardObjetivo = primeraMitad[carruselAutoIndex];
+    if (!cardObjetivo) return;
+
+    const objetivoRect = cardObjetivo.getBoundingClientRect();
+    const delta = objetivoRect.left - segundaRect.left;
+
+    wrap.scrollBy({
+      left: delta,
+      behavior: "auto"
+    });
+  }
+}
+    
     function detenerAutoPlayCarrusel() {
       carruselAutoPlayActivo = false;
 
@@ -1329,6 +1368,7 @@ function moverCarruselAutomaticamente() {
   if (!card) return;
 
   centrarActividadEnCarrusel(card);
+  setTimeout(reajustarCarruselInfinito, 450);
 }
 
     function iniciarAutoPlayCarrusel() {
@@ -1360,6 +1400,7 @@ function moverCarruselAutomaticamente() {
 
   const card = tarjetas[carruselAutoIndex];
   if (card) centrarActividadEnCarrusel(card);
+  setTimeout(reajustarCarruselInfinito, 450);
 }
 
     function solicitarActividadActual() {
