@@ -1099,7 +1099,12 @@ function renderizarActividades() {
     actividadSeleccionada = actual || actividadesVisibles[0];
   }
 
-  cont.innerHTML = actividadesVisibles.map(a => `
+  const actividadesRender = [...actividadesVisibles, ...actividadesVisibles];
+
+cont.innerHTML = actividadesRender.map((a, i) => `
+  <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" 
+       data-actividad-id="${a.id}" 
+       onclick="seleccionarActividad(${a.id})"> `
     <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
       <div class="card-img-wrap">
         <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
