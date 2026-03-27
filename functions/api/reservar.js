@@ -48,6 +48,20 @@ async function obtenerFechaExpiracionSQLite(env, minutos) {
   return row?.expira || null;
 }
 
+
+async function obtenerActividad(env, actividadId) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      requiere_reserva,
+      usa_franjas,
+      aforo_limitado
+    FROM actividades
+    WHERE id = ?
+    LIMIT 1
+  `).bind(actividadId).first();
+}
+
 async function obtenerFranja(env, franjaId) {
   return await env.DB.prepare(`
     SELECT
@@ -150,13 +164,29 @@ export async function onRequestPost(context) {
     const franjaId = parseInt(data.franja, 10);
     const plazasReservadas = parseInt(data.plazas_solicitadas, 10);
 
-    if (!Number.isInteger(actividadId) || actividadId <= 0) {
+    if (!Number.isInteger(actividadId) || actividadId <= 0) {   
       return json(
         { ok: false, error: "La actividad indicada no es válida." },
         { status: 400 }
       );
     }
 
+const actividad = await obtenerActividad(env, actividadId);
+
+if (!actividad) {
+  return json(
+    { ok: false, error: "La actividad indicada no existe." },
+    { status: 404 }
+  );
+}
+
+if (Number(actividad.requiere_reserva || 0) !== 1) {
+  return json(
+    { ok: false, error: "Esta actividad no admite reservas." },
+    { status: 400 }
+  );
+}
+    
     if (!centro || !contacto || !telefono || !email) {
       return json(
         { ok: false, error: "Faltan datos obligatorios del solicitante." },
