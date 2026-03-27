@@ -1072,56 +1072,65 @@ async function cargarFranjasActividad(actividad) {
         provincias.map(p => `<option value="${p}">${p}</option>`).join("");
         select.value = provinciaSeleccionada;
       }
-    
-    
-    function renderizarActividades() {
-      const cont = document.getElementById("carruselActividades");
 
-      if (!actividadesCache.length) {
-        cont.innerHTML = "";
-        actividadSeleccionada = null;
-        renderDetalle();
-        return;
-      }
+    function obtenerActividadesFiltradas() {
+      if (!provinciaSeleccionada) return actividadesCache;
 
-      if (!actividadSeleccionada) {
-        actividadSeleccionada = actividadesCache[0];
-      } else {
-        const actual = actividadesCache.find(x => Number(x.id) === Number(actividadSeleccionada.id));
-        actividadSeleccionada = actual || actividadesCache[0];
-      }
-
-      cont.innerHTML = actividadesCache.map(a => `
-        <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
-          <div class="card-img-wrap">
-            <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-            ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
-          </div>
-          <div class="card-body">
-            <h3>${a.titulo_publico || a.nombre}</h3>
-            <div class="card-meta">
-              ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-              ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
-            </div>
-          </div>
-        </div>
-      `).join("");
-
-      renderDetalle();
-
-      setTimeout(() => {
-        const tarjetas = Array.from(document.querySelectorAll(".card"));
-        const card = document.querySelector(".card.activa");
-
-        if (card) {
-          centrarActividadEnCarrusel(card);
-          carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
-        } else if (tarjetas.length) {
-          carruselAutoIndex = 0;
-          centrarActividadEnCarrusel(tarjetas[0]);
-        }
-      }, 80);
+      return actividadesCache.filter(a =>
+      String(a.provincia || "").trim() === provinciaSeleccionada
+      );
     }
+    
+function renderizarActividades() {
+  const cont = document.getElementById("carruselActividades");
+  const actividadesVisibles = obtenerActividadesFiltradas();
+
+  if (!actividadesVisibles.length) {
+    cont.innerHTML = "";
+    actividadSeleccionada = null;
+    renderDetalle();
+    return;
+  }
+
+  if (!actividadSeleccionada || !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))) {
+    actividadSeleccionada = actividadesVisibles[0];
+  } else {
+    const actual = actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id));
+    actividadSeleccionada = actual || actividadesVisibles[0];
+  }
+
+  cont.innerHTML = actividadesVisibles.map(a => `
+    <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+      <div class="card-img-wrap">
+        <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+        ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+      </div>
+      <div class="card-body">
+        <h3>${a.titulo_publico || a.nombre}</h3>
+        <div class="card-meta">
+          ${a.lugar ? `<div>${a.lugar}</div>` : ''}
+          ${a.provincia ? `<div>${a.provincia}</div>` : ''}
+          ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  renderDetalle();
+
+  setTimeout(() => {
+    const tarjetas = Array.from(document.querySelectorAll(".card"));
+    const card = document.querySelector(".card.activa");
+
+    if (card) {
+      centrarActividadEnCarrusel(card);
+      carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
+    } else if (tarjetas.length) {
+      carruselAutoIndex = 0;
+      centrarActividadEnCarrusel(tarjetas[0]);
+    }
+  }, 80);
+}
 
     function destruirMapaActividad() {
       if (mapaActividad) {
@@ -1440,6 +1449,15 @@ async function cargarFranjasActividad(actividad) {
         }, { passive: true });
       }
 
+      const filtroProvincia = document.getElementById("filtroProvincia");
+      if (filtroProvincia) {
+        filtroProvincia.addEventListener("change", function () {
+        provinciaSeleccionada = this.value;
+        actividadSeleccionada = null;
+        renderizarActividades();
+        });
+      }
+      
       iniciarAutoPlayCarrusel();
     })();
   </script>
