@@ -1040,7 +1040,7 @@ async function cargarFranjasActividad(actividad) {
         <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
           <div class="card-img-wrap">
             <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-            ${Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+            ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
           </div>
           <div class="card-body">
             <h3>${a.titulo_publico || a.nombre}</h3>
@@ -1152,7 +1152,7 @@ async function cargarFranjasActividad(actividad) {
 
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
-      if (Number(a.completa || 0) === 1) {
+      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
         textoDetalle += (textoDetalle ? "\n\n" : "") +
           "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
       }
@@ -1172,13 +1172,13 @@ async function cargarFranjasActividad(actividad) {
       btnEditar.style.display = esAdmin() ? "inline-block" : "none";
       btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
-      if (Number(a.completa || 0) === 1) {
-        btnSolicitar.disabled = true;
-        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-      } else {
-        btnSolicitar.disabled = false;
-        btnSolicitar.title = "";
-      }
+      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
+  btnSolicitar.disabled = true;
+  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+} else {
+  btnSolicitar.disabled = false;
+  btnSolicitar.title = "";
+}
 
       const direccionDiv = document.getElementById("direccionActividad");
       if (a.direccion_postal && a.direccion_postal.trim() !== "") {
