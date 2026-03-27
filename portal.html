@@ -1310,20 +1310,26 @@ function renderizarActividades() {
       programarReanudacionAutoPlay();
     }
 
-    function moverCarruselAutomaticamente() {
-      const tarjetas = Array.from(document.querySelectorAll(".card"));
-      if (!tarjetas.length) return;
+function moverCarruselAutomaticamente() {
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  if (!actividadesVisibles.length) return;
 
-      carruselAutoIndex += 1;
-      if (carruselAutoIndex >= tarjetas.length) {
-        carruselAutoIndex = 0;
-      }
+  const tarjetas = Array.from(document.querySelectorAll(".card"));
+  if (!tarjetas.length) return;
 
-      const card = tarjetas[carruselAutoIndex];
-      if (!card) return;
+  const totalReales = actividadesVisibles.length;
 
-      centrarActividadEnCarrusel(card);
-    }
+  carruselAutoIndex += 1;
+
+  if (carruselAutoIndex >= totalReales) {
+    carruselAutoIndex = 0;
+  }
+
+  const card = tarjetas[carruselAutoIndex];
+  if (!card) return;
+
+  centrarActividadEnCarrusel(card);
+}
 
     function iniciarAutoPlayCarrusel() {
       if (!carruselAutoPlayActivo || carruselAutoPlay) return;
@@ -1334,22 +1340,27 @@ function renderizarActividades() {
     }
 
     function desplazarCarrusel(direccion) {
-      pausarTemporalmenteAutoPlay();
+  pausarTemporalmenteAutoPlay();
 
-      const tarjetas = Array.from(document.querySelectorAll(".card"));
-      if (!tarjetas.length) return;
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  if (!actividadesVisibles.length) return;
 
-      if (direccion > 0) {
-        carruselAutoIndex += 1;
-        if (carruselAutoIndex >= tarjetas.length) carruselAutoIndex = 0;
-      } else {
-        carruselAutoIndex -= 1;
-        if (carruselAutoIndex < 0) carruselAutoIndex = tarjetas.length - 1;
-      }
+  const tarjetas = Array.from(document.querySelectorAll(".card"));
+  if (!tarjetas.length) return;
 
-      const card = tarjetas[carruselAutoIndex];
-      if (card) centrarActividadEnCarrusel(card);
-    }
+  const totalReales = actividadesVisibles.length;
+
+  if (direccion > 0) {
+    carruselAutoIndex += 1;
+    if (carruselAutoIndex >= totalReales) carruselAutoIndex = 0;
+  } else {
+    carruselAutoIndex -= 1;
+    if (carruselAutoIndex < 0) carruselAutoIndex = totalReales - 1;
+  }
+
+  const card = tarjetas[carruselAutoIndex];
+  if (card) centrarActividadEnCarrusel(card);
+}
 
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
