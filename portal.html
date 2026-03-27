@@ -1092,19 +1092,21 @@ function renderizarActividades() {
     return;
   }
 
-  if (!actividadSeleccionada || !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))) {
+  if (
+    !actividadSeleccionada ||
+    !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
+  ) {
     actividadSeleccionada = actividadesVisibles[0];
   } else {
-    const actual = actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id));
+    const actual = actividadesVisibles.find(
+      x => Number(x.id) === Number(actividadSeleccionada.id)
+    );
     actividadSeleccionada = actual || actividadesVisibles[0];
   }
 
   const actividadesRender = [...actividadesVisibles, ...actividadesVisibles];
 
-cont.innerHTML = actividadesRender.map((a, i) => `
-  <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" 
-       data-actividad-id="${a.id}" 
-       onclick="seleccionarActividad(${a.id})"> `
+  cont.innerHTML = actividadesRender.map(a => `
     <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
       <div class="card-img-wrap">
         <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
