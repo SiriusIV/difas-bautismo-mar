@@ -95,6 +95,13 @@
       margin-bottom: 14px;
     }
 
+    .fila-form-doble {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
     label {
       display: block;
       font-weight: bold;
@@ -225,8 +232,13 @@
       margin-bottom: 12px;
     }
 
+    .oculto {
+      display: none !important;
+    }
+
     @media (max-width: 1000px) {
-      .fila-form {
+      .fila-form,
+      .fila-form-doble {
         grid-template-columns: 1fr;
       }
 
@@ -282,12 +294,38 @@
       <form id="formFranja" novalidate>
         <input type="hidden" id="franjaId" value="" />
 
-        <div class="fila-form">
+        <div class="fila-form-doble">
           <div>
-            <label for="fecha">Fecha</label>
-            <input type="date" id="fecha" required />
+            <label for="esRecurrente">¿Franja recurrente?</label>
+            <select id="esRecurrente">
+              <option value="0">No</option>
+              <option value="1">Sí</option>
+            </select>
           </div>
 
+          <div id="bloqueCapacidad">
+            <label for="capacidad">Capacidad</label>
+            <input type="number" id="capacidad" min="1" step="1" />
+          </div>
+        </div>
+
+        <div class="fila-form-doble" id="bloqueFecha">
+          <div>
+            <label for="fecha">Fecha</label>
+            <input type="date" id="fecha" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="fila-form-doble oculto" id="bloquePatron">
+          <div>
+            <label for="patronRecurrencia">Patrón de recurrencia</label>
+            <input type="text" id="patronRecurrencia" placeholder="Ej: Todos los sábados" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="fila-form">
           <div>
             <label for="horaInicio">Hora de inicio</label>
             <input type="time" id="horaInicio" required />
@@ -298,10 +336,8 @@
             <input type="time" id="horaFin" required />
           </div>
 
-          <div>
-            <label for="capacidad">Capacidad</label>
-            <input type="number" id="capacidad" min="1" step="1" required />
-          </div>
+          <div></div>
+          <div></div>
         </div>
 
         <div class="acciones-form">
@@ -319,7 +355,7 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Fecha</th>
+              <th>Programación</th>
               <th>Hora inicio</th>
               <th>Hora fin</th>
               <th>Capacidad</th>
@@ -353,6 +389,11 @@
     function actividadSeleccionadaId() {
       const v = parseInt(document.getElementById("actividadSelect").value || "", 10);
       return Number.isInteger(v) && v > 0 ? v : "";
+    }
+
+    function actividadSeleccionada() {
+      const id = actividadSeleccionadaId();
+      return actividadesDisponibles.find(a => Number(a.id) === Number(id)) || null;
     }
 
     function redirigirLogin() {
@@ -398,8 +439,33 @@
       mensaje.textContent = "";
     }
 
+    function textoProgramacionFranja(franja) {
+      if (Number(franja.es_recurrente || 0) === 1) {
+        return franja.patron_recurrencia || "-";
+      }
+      return franja.fecha || "-";
+    }
+
+    function actualizarModoFormulario() {
+      const actividad = actividadSeleccionada();
+      const esRecurrente = Number(document.getElementById("esRecurrente").value || 0) === 1;
+      const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
+
+      document.getElementById("bloqueFecha").classList.toggle("oculto", esRecurrente);
+      document.getElementById("bloquePatron").classList.toggle("oculto", !esRecurrente);
+      document.getElementById("bloqueCapacidad").classList.toggle("oculto", !aforoLimitado);
+
+      document.getElementById("fecha").required = !esRecurrente;
+      document.getElementById("patronRecurrencia").required = esRecurrente;
+      document.getElementById("capacidad").required = aforoLimitado;
+
+      if (!aforoLimitado) {
+        document.getElementById("capacidad").value = "";
+      }
+    }
+
     async function cargarActividades() {
-      const res = await fetch("/api/actividades", {
+      const res = await fetch("/api/admin/mis-actividades", {
         credentials: "same-origin"
       });
 
@@ -417,27 +483,37 @@
       if (!actividadesDisponibles.length) {
         select.innerHTML = `<option value="">No hay actividades disponibles</option>`;
         actualizarCabeceraYLinks();
+        actualizarModoFormulario();
         return;
       }
 
-      select.innerHTML = actividadesDisponibles.map(a => `
-        <option value="${a.id}">${a.titulo_publico || a.nombre}</option>
-      `).join("");
+      select.innerHTML = actividadesDisponibles
+        .filter(a => Number(a.usa_franjas || 0) === 1)
+        .map(a => `<option value="${a.id}">${a.titulo_publico || a.nombre}</option>`)
+        .join("");
+
+      if (!select.innerHTML.trim()) {
+        select.innerHTML = `<option value="">No hay actividades con franjas habilitadas</option>`;
+        actualizarCabeceraYLinks();
+        actualizarModoFormulario();
+        return;
+      }
 
       if (idUrl) {
         select.value = String(idUrl);
       }
 
-      if (!select.value && actividadesDisponibles.length) {
-        select.value = String(actividadesDisponibles[0].id);
+      if (!select.value) {
+        select.value = String(select.options[0].value);
       }
 
       actualizarCabeceraYLinks();
+      actualizarModoFormulario();
     }
 
     function actualizarCabeceraYLinks() {
       const actividadId = actividadSeleccionadaId();
-      const actividad = actividadesDisponibles.find(a => Number(a.id) === Number(actividadId));
+      const actividad = actividadSeleccionada();
 
       document.getElementById("subactividadActual").textContent =
         actividad ? (actividad.titulo_publico || actividad.nombre) : "Actividad";
@@ -449,29 +525,37 @@
 
     function limpiarFormulario() {
       document.getElementById("franjaId").value = "";
+      document.getElementById("esRecurrente").value = "0";
       document.getElementById("fecha").value = "";
+      document.getElementById("patronRecurrencia").value = "";
       document.getElementById("horaInicio").value = "";
       document.getElementById("horaFin").value = "";
       document.getElementById("capacidad").value = "";
       document.getElementById("tituloFormulario").textContent = "Crear nueva franja";
       document.getElementById("btnGuardar").textContent = "Guardar franja";
       document.getElementById("btnCancelarEdicion").style.display = "none";
+      actualizarModoFormulario();
     }
 
     function cargarFormularioDesdeFranja(franja) {
       document.getElementById("franjaId").value = franja.id;
-      document.getElementById("fecha").value = franja.fecha;
-      document.getElementById("horaInicio").value = franja.hora_inicio;
-      document.getElementById("horaFin").value = franja.hora_fin;
-      document.getElementById("capacidad").value = franja.capacidad;
+      document.getElementById("esRecurrente").value = String(Number(franja.es_recurrente || 0));
+      document.getElementById("fecha").value = franja.fecha || "";
+      document.getElementById("patronRecurrencia").value = franja.patron_recurrencia || "";
+      document.getElementById("horaInicio").value = franja.hora_inicio || "";
+      document.getElementById("horaFin").value = franja.hora_fin || "";
+      document.getElementById("capacidad").value = franja.capacidad ?? "";
       document.getElementById("tituloFormulario").textContent = `Editar franja #${franja.id}`;
       document.getElementById("btnGuardar").textContent = "Guardar cambios";
       document.getElementById("btnCancelarEdicion").style.display = "inline-block";
+      actualizarModoFormulario();
       window.scrollTo({ top: 250, behavior: "smooth" });
     }
 
     function actualizarResumen() {
       const resumen = document.getElementById("resumen");
+      const actividad = actividadSeleccionada();
+      const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
 
       if (!franjasCache.length) {
         resumen.textContent = "No hay franjas registradas para esta actividad.";
@@ -479,6 +563,15 @@
       }
 
       const totalFranjas = franjasCache.length;
+
+      if (!aforoLimitado) {
+        resumen.innerHTML = `
+          <strong>Total de franjas:</strong> ${totalFranjas} &nbsp; | &nbsp;
+          <strong>Modo:</strong> Programación informativa sin aforo limitado
+        `;
+        return;
+      }
+
       const totalCapacidad = franjasCache.reduce((acc, f) => acc + Number(f.capacidad || 0), 0);
       const totalOcupadas = franjasCache.reduce((acc, f) => acc + Number(f.ocupadas || 0), 0);
       const totalDisponibles = franjasCache.reduce((acc, f) => acc + Number(f.disponibles || 0), 0);
@@ -493,6 +586,9 @@
 
     function renderizarTabla() {
       const tbody = document.getElementById("tablaFranjas");
+      const actividad = actividadSeleccionada();
+      const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
+
       tbody.innerHTML = "";
 
       if (!franjasCache.length) {
@@ -506,13 +602,13 @@
 
         tr.innerHTML = `
           <td>${franja.id}</td>
-          <td>${franja.fecha}</td>
-          <td>${franja.hora_inicio}</td>
-          <td>${franja.hora_fin}</td>
-          <td>${franja.capacidad}</td>
-          <td>${franja.ocupadas}</td>
-          <td>${franja.disponibles}</td>
-          <td>${franja.numero_reservas}</td>
+          <td>${textoProgramacionFranja(franja)}</td>
+          <td>${franja.hora_inicio || ""}</td>
+          <td>${franja.hora_fin || ""}</td>
+          <td>${aforoLimitado ? (franja.capacidad ?? "") : "-"}</td>
+          <td>${aforoLimitado ? Number(franja.ocupadas || 0) : "-"}</td>
+          <td>${aforoLimitado ? Number(franja.disponibles || 0) : "-"}</td>
+          <td>${aforoLimitado ? Number(franja.numero_reservas || 0) : "-"}</td>
           <td>
             <div class="acciones-tabla">
               <button type="button" class="btn-editar">Editar</button>
@@ -528,7 +624,7 @@
 
         tr.querySelector(".btn-eliminar").addEventListener("click", async () => {
           const confirmar = window.confirm(
-            `¿Desea eliminar la franja ${franja.fecha} ${franja.hora_inicio}-${franja.hora_fin}?`
+            `¿Desea eliminar la franja "${textoProgramacionFranja(franja)}" ${franja.hora_inicio}-${franja.hora_fin}?`
           );
 
           if (!confirmar) return;
@@ -578,9 +674,12 @@
 
       limpiarMensaje("mensajeFranjas");
 
+      const actividad = actividadSeleccionada();
       const actividad_id = actividadSeleccionadaId();
       const id = document.getElementById("franjaId").value.trim();
+      const es_recurrente = document.getElementById("esRecurrente").value;
       const fecha = document.getElementById("fecha").value;
+      const patron_recurrencia = document.getElementById("patronRecurrencia").value.trim();
       const hora_inicio = document.getElementById("horaInicio").value;
       const hora_fin = document.getElementById("horaFin").value;
       const capacidad = document.getElementById("capacidad").value;
@@ -592,11 +691,16 @@
 
       const payload = {
         actividad_id,
+        es_recurrente,
         fecha,
+        patron_recurrencia,
         hora_inicio,
-        hora_fin,
-        capacidad
+        hora_fin
       };
+
+      if (Number(actividad?.aforo_limitado || 0) === 1) {
+        payload.capacidad = capacidad;
+      }
 
       const esEdicion = id !== "";
       if (esEdicion) {
@@ -693,6 +797,7 @@
 
       document.getElementById("formFranja").addEventListener("submit", guardarFranja);
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+      document.getElementById("esRecurrente").addEventListener("change", actualizarModoFormulario);
 
       document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
         limpiarFormulario();
@@ -703,6 +808,7 @@
         actualizarCabeceraYLinks();
         limpiarFormulario();
         limpiarMensaje("mensajeFranjas");
+        actualizarModoFormulario();
         await cargarFranjas();
       });
 
