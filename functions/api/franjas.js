@@ -66,6 +66,7 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
     return {
       id: row.id,
       fecha: row.fecha,
+      patron_recurrencia: null,
       hora_inicio: row.hora_inicio,
       hora_fin: row.hora_fin,
       capacidad,
@@ -84,6 +85,24 @@ export async function onRequestGet(context) {
 
     if (!Number.isInteger(actividad_id) || actividad_id <= 0) {
       return json({ ok: false, error: "Actividad obligatoria" }, { status: 400 });
+    }
+
+    const actividad = await env.DB.prepare(`
+      SELECT usa_franjas
+      FROM actividades
+      WHERE id = ?
+      LIMIT 1
+    `).bind(actividad_id).first();
+
+    if (!actividad) {
+      return json({ ok: false, error: "Actividad no encontrada." }, { status: 404 });
+    }
+
+    if (Number(actividad.usa_franjas || 0) !== 1) {
+      return json({
+        ok: true,
+        franjas: []
+      });
     }
 
     const franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
