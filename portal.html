@@ -860,56 +860,48 @@
       return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
-    async function cargarFranjasActividad(actividadId, tipoActividad) {
-      const wrap = document.getElementById("tablaFranjasWrap");
-      const body = document.getElementById("tablaFranjasBody");
+async function cargarFranjasActividad(actividad) {
+  const wrap = document.getElementById("tablaFranjasWrap");
+  const body = document.getElementById("tablaFranjasBody");
 
-      actividadFranjasSolicitada = actividadId;
-      wrap.style.display = "none";
-      body.innerHTML = "";
+  actividadFranjasSolicitada = actividad?.id || null;
+  wrap.style.display = "none";
+  body.innerHTML = "";
 
-      if (!actividadId || !tipoActividad || String(tipoActividad).toUpperCase() === "PERMANENTE") {
-        return;
-      }
+  if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+    return;
+  }
 
-      try {
-        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividadId)}`);
-        const data = await res.json();
+  try {
+    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
+    const data = await res.json();
 
-        if (actividadFranjasSolicitada !== actividadId) return;
+    if (actividadFranjasSolicitada !== actividad.id) return;
 
-        if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
-          wrap.style.display = "none";
-          body.innerHTML = "";
-          return;
-        }
-
-        const filas = data.franjas
-          .filter(f => f && f.fecha && f.hora_inicio && f.hora_fin)
-          .map(f => `
-            <tr>
-              <td>${formatearFechaLargaES(f.fecha)}</td>
-              <td>${f.hora_inicio}</td>
-              <td>${f.hora_fin}</td>
-            </tr>
-          `)
-          .join("");
-
-        if (!filas.trim()) {
-          wrap.style.display = "none";
-          body.innerHTML = "";
-          return;
-        }
-
-        body.innerHTML = filas;
-        wrap.style.display = "block";
-
-      } catch (e) {
-        if (actividadFranjasSolicitada !== actividadId) return;
-        wrap.style.display = "none";
-        body.innerHTML = "";
-      }
+    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+      return;
     }
+
+    const filas = data.franjas
+      .filter(f => f && f.hora_inicio && f.hora_fin)
+      .map(f => `
+        <tr>
+          <td>${f.fecha || f.patron_recurrencia || ""}</td>
+          <td>${f.hora_inicio}</td>
+          <td>${f.hora_fin}</td>
+        </tr>
+      `)
+      .join("");
+
+    if (!filas.trim()) return;
+
+    body.innerHTML = filas;
+    wrap.style.display = "block";
+  } catch (_) {
+    wrap.style.display = "none";
+    body.innerHTML = "";
+  }
+}
 
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
@@ -1171,8 +1163,12 @@
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
-      btnSolicitar.style.display =
-        usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE" ? "inline-block" : "none";
+     btnSolicitar.style.display =
+  usuarioAutenticado &&
+  usuarioAutenticado.rol === "SOLICITANTE" &&
+  Number(a.requiere_reserva || 0) === 1
+    ? "inline-block"
+    : "none";
       btnEditar.style.display = esAdmin() ? "inline-block" : "none";
       btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
@@ -1195,7 +1191,7 @@
       }
 
       renderMapaActividad(a);
-      cargarFranjasActividad(a.id, a.tipo);
+      cargarFranjasActividad(a);
     }
 
     function centrarActividadEnCarrusel(card) {
