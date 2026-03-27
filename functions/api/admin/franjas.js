@@ -8,15 +8,20 @@ function json(data, init = {}) {
   });
 }
 
-function normalizarFecha(valor) {
+function normalizarTexto(valor) {
   return String(valor || "").trim();
+}
+
+function normalizarFecha(valor) {
+  return normalizarTexto(valor);
 }
 
 function normalizarHora(valor) {
-  return String(valor || "").trim();
+  return normalizarTexto(valor);
 }
 
 function parsearCapacidad(valor) {
+  if (valor === null || valor === undefined || String(valor).trim() === "") return null;
   const n = parseInt(valor, 10);
   return Number.isInteger(n) ? n : NaN;
 }
@@ -26,25 +31,51 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-function validarDatosFranja({ fecha, hora_inicio, hora_fin, capacidad }) {
-  if (!fecha || !hora_inicio || !hora_fin) {
-    return "Faltan campos obligatorios de la franja.";
-  }
+function parsearFlag(valor, defecto = 0) {
+  if (valor === true || valor === 1 || valor === "1") return 1;
+  if (valor === false || valor === 0 || valor === "0") return 0;
+  return defecto;
+}
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    return "La fecha debe tener formato YYYY-MM-DD.";
+function validarDatosFranja({
+  fecha,
+  hora_inicio,
+  hora_fin,
+  capacidad,
+  es_recurrente,
+  patron_recurrencia,
+  aforo_limitado
+}) {
+  if (!hora_inicio || !hora_fin) {
+    return "Faltan las horas de la franja.";
   }
 
   if (!/^\d{2}:\d{2}$/.test(hora_inicio) || !/^\d{2}:\d{2}$/.test(hora_fin)) {
     return "Las horas deben tener formato HH:MM.";
   }
 
-  if (!(capacidad > 0)) {
-    return "La capacidad debe ser un entero mayor que 0.";
-  }
-
   if (hora_inicio >= hora_fin) {
     return "La hora de inicio debe ser anterior a la hora de fin.";
+  }
+
+  if (Number(es_recurrente) === 1) {
+    if (!patron_recurrencia) {
+      return "Debe indicar un patrón de recurrencia.";
+    }
+  } else {
+    if (!fecha) {
+      return "La fecha es obligatoria.";
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      return "La fecha debe tener formato YYYY-MM-DD.";
+    }
+  }
+
+  if (Number(aforo_limitado) === 1) {
+    if (!(capacidad > 0)) {
+      return "La capacidad debe ser un entero mayor que 0.";
+    }
   }
 
   return null;
@@ -52,7 +83,13 @@ function validarDatosFranja({ fecha, hora_inicio, hora_fin, capacidad }) {
 
 async function obtenerActividad(env, actividad_id) {
   return await env.DB.prepare(`
-    SELECT id, nombre, tipo, fecha_inicio, fecha_fin
+    SELECT
+      id,
+      nombre,
+      tipo,
+      fecha_inicio,
+      fecha_fin,
+      aforo_limitado
     FROM actividades
     WHERE id = ?
     LIMIT 1
@@ -61,9 +98,13 @@ async function obtenerActividad(env, actividad_id) {
     .first();
 }
 
-function validarFechaDentroDeActividad(actividad, fecha) {
+function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
   if (!actividad) {
     return "La actividad indicada no existe.";
+  }
+
+  if (Number(es_recurrente) === 1) {
+    return null;
   }
 
   if (actividad.tipo === "PERMANENTE") {
@@ -116,6 +157,9 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
 }
 
 async function obtenerResumenFranjas(env, actividad_id) {
+  const actividad = await obtenerActividad(env, actividad_id);
+  const aforoLimitado = Number(actividad?.aforo_limitado || 0);
+
   const sql = `
     SELECT
       f.id,
@@ -124,6 +168,8 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.hora_fin,
       f.capacidad,
       f.actividad_id,
+      f.es_recurrente,
+      f.patron_recurrencia,
       COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
@@ -158,9 +204,13 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
-      f.actividad_id
+      f.actividad_id,
+      f.es_recurrente,
+      f.patron_recurrencia
     ORDER BY
+      CASE WHEN f.es_recurrente = 1 THEN 1 ELSE 0 END,
       f.fecha,
+      f.patron_recurrencia,
       f.hora_inicio,
       f.hora_fin
   `;
@@ -169,21 +219,31 @@ async function obtenerResumenFranjas(env, actividad_id) {
   const rows = result.results || [];
 
   return rows.map(row => {
-    const capacidad = Number(row.capacidad || 0);
-    const ocupadas = Number(row.ocupadas || 0);
+    const capacidad = row.capacidad === null || row.capacidad === undefined ? null : Number(row.capacidad || 0);
+    const ocupadas = aforoLimitado ? Number(row.ocupadas || 0) : 0;
 
     return {
       ...row,
+      es_recurrente: Number(row.es_recurrente || 0),
       capacidad,
       ocupadas,
-      disponibles: Math.max(capacidad - ocupadas, 0)
+      disponibles: aforoLimitado && capacidad !== null ? Math.max(capacidad - ocupadas, 0) : null,
+      numero_reservas: aforoLimitado ? Number(row.numero_reservas || 0) : 0
     };
   });
 }
 
 async function obtenerFranjaPorId(env, id) {
   return await env.DB.prepare(`
-    SELECT id, actividad_id, fecha, hora_inicio, hora_fin, capacidad
+    SELECT
+      id,
+      actividad_id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad,
+      es_recurrente,
+      patron_recurrencia
     FROM franjas
     WHERE id = ?
     LIMIT 1
@@ -243,6 +303,8 @@ export async function onRequestPost(context) {
     const hora_inicio = normalizarHora(data.hora_inicio);
     const hora_fin = normalizarHora(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
+    const es_recurrente = parsearFlag(data.es_recurrente, 0);
+    const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
 
     if (!actividad_id) {
       return json({ ok: false, error: "actividad_id es obligatorio." }, { status: 400 });
@@ -250,41 +312,64 @@ export async function onRequestPost(context) {
 
     await checkAdminActividad(env, session.usuario_id, actividad_id);
 
+    const actividad = await obtenerActividad(env, actividad_id);
+    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+
     const errorValidacion = validarDatosFranja({
       fecha,
       hora_inicio,
       hora_fin,
-      capacidad
+      capacidad,
+      es_recurrente,
+      patron_recurrencia,
+      aforo_limitado
     });
 
     if (errorValidacion) {
       return json({ ok: false, error: errorValidacion }, { status: 400 });
     }
 
-    const actividad = await obtenerActividad(env, actividad_id);
-    const errorFecha = validarFechaDentroDeActividad(actividad, fecha);
+    const errorFecha = validarFechaDentroDeActividad(actividad, fecha, es_recurrente);
 
     if (errorFecha) {
       return json({ ok: false, error: errorFecha }, { status: 400 });
     }
 
-    const duplicada = await env.DB.prepare(`
-      SELECT id
-      FROM franjas
-      WHERE actividad_id = ?
-        AND fecha = ?
-        AND hora_inicio = ?
-        AND hora_fin = ?
-      LIMIT 1
-    `)
-      .bind(actividad_id, fecha, hora_inicio, hora_fin)
-      .first();
+    let duplicada;
+
+    if (es_recurrente === 1) {
+      duplicada = await env.DB.prepare(`
+        SELECT id
+        FROM franjas
+        WHERE actividad_id = ?
+          AND es_recurrente = 1
+          AND patron_recurrencia = ?
+          AND hora_inicio = ?
+          AND hora_fin = ?
+        LIMIT 1
+      `)
+        .bind(actividad_id, patron_recurrencia, hora_inicio, hora_fin)
+        .first();
+    } else {
+      duplicada = await env.DB.prepare(`
+        SELECT id
+        FROM franjas
+        WHERE actividad_id = ?
+          AND COALESCE(es_recurrente, 0) = 0
+          AND fecha = ?
+          AND hora_inicio = ?
+          AND hora_fin = ?
+        LIMIT 1
+      `)
+        .bind(actividad_id, fecha, hora_inicio, hora_fin)
+        .first();
+    }
 
     if (duplicada) {
       return json(
         {
           ok: false,
-          error: "Ya existe una franja con esa fecha y ese rango horario para esta actividad."
+          error: "Ya existe una franja con esos datos para esta actividad."
         },
         { status: 409 }
       );
@@ -296,11 +381,21 @@ export async function onRequestPost(context) {
         hora_inicio,
         hora_fin,
         capacidad,
-        actividad_id
+        actividad_id,
+        es_recurrente,
+        patron_recurrencia
       )
-      VALUES (?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
-      .bind(fecha, hora_inicio, hora_fin, capacidad, actividad_id)
+      .bind(
+        es_recurrente === 1 ? null : fecha,
+        hora_inicio,
+        hora_fin,
+        aforo_limitado === 1 ? capacidad : null,
+        actividad_id,
+        es_recurrente,
+        es_recurrente === 1 ? patron_recurrencia : null
+      )
       .run();
 
     if ((insertResult?.meta?.changes || 0) === 0) {
@@ -344,20 +439,11 @@ export async function onRequestPut(context) {
     const hora_inicio = normalizarHora(data.hora_inicio);
     const hora_fin = normalizarHora(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
+    const es_recurrente = parsearFlag(data.es_recurrente, 0);
+    const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
 
     if (!id) {
       return json({ ok: false, error: "ID de franja no válido." }, { status: 400 });
-    }
-
-    const errorValidacion = validarDatosFranja({
-      fecha,
-      hora_inicio,
-      hora_fin,
-      capacidad
-    });
-
-    if (errorValidacion) {
-      return json({ ok: false, error: errorValidacion }, { status: 400 });
     }
 
     const existente = await obtenerFranjaPorId(env, id);
@@ -372,45 +458,82 @@ export async function onRequestPut(context) {
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
     const actividad = await obtenerActividad(env, existente.actividad_id);
-    const errorFecha = validarFechaDentroDeActividad(actividad, fecha);
+    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+
+    const errorValidacion = validarDatosFranja({
+      fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad,
+      es_recurrente,
+      patron_recurrencia,
+      aforo_limitado
+    });
+
+    if (errorValidacion) {
+      return json({ ok: false, error: errorValidacion }, { status: 400 });
+    }
+
+    const errorFecha = validarFechaDentroDeActividad(actividad, fecha, es_recurrente);
 
     if (errorFecha) {
       return json({ ok: false, error: errorFecha }, { status: 400 });
     }
 
-    const duplicada = await env.DB.prepare(`
-      SELECT id
-      FROM franjas
-      WHERE actividad_id = ?
-        AND fecha = ?
-        AND hora_inicio = ?
-        AND hora_fin = ?
-        AND id <> ?
-      LIMIT 1
-    `)
-      .bind(existente.actividad_id, fecha, hora_inicio, hora_fin, id)
-      .first();
+    let duplicada;
+
+    if (es_recurrente === 1) {
+      duplicada = await env.DB.prepare(`
+        SELECT id
+        FROM franjas
+        WHERE actividad_id = ?
+          AND es_recurrente = 1
+          AND patron_recurrencia = ?
+          AND hora_inicio = ?
+          AND hora_fin = ?
+          AND id <> ?
+        LIMIT 1
+      `)
+        .bind(existente.actividad_id, patron_recurrencia, hora_inicio, hora_fin, id)
+        .first();
+    } else {
+      duplicada = await env.DB.prepare(`
+        SELECT id
+        FROM franjas
+        WHERE actividad_id = ?
+          AND COALESCE(es_recurrente, 0) = 0
+          AND fecha = ?
+          AND hora_inicio = ?
+          AND hora_fin = ?
+          AND id <> ?
+        LIMIT 1
+      `)
+        .bind(existente.actividad_id, fecha, hora_inicio, hora_fin, id)
+        .first();
+    }
 
     if (duplicada) {
       return json(
         {
           ok: false,
-          error: "Ya existe otra franja con esa fecha y ese rango horario para esta actividad."
+          error: "Ya existe otra franja con esos datos para esta actividad."
         },
         { status: 409 }
       );
     }
 
-    const ocupadas = await obtenerBloqueoActualFranja(env, id);
+    if (aforo_limitado === 1) {
+      const ocupadas = await obtenerBloqueoActualFranja(env, id);
 
-    if (capacidad < ocupadas) {
-      return json(
-        {
-          ok: false,
-          error: `La capacidad no puede ser inferior a las plazas ya bloqueadas (${ocupadas}).`
-        },
-        { status: 400 }
-      );
+      if (capacidad < ocupadas) {
+        return json(
+          {
+            ok: false,
+            error: `La capacidad no puede ser inferior a las plazas ya bloqueadas (${ocupadas}).`
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const updateResult = await env.DB.prepare(`
@@ -419,10 +542,20 @@ export async function onRequestPut(context) {
         fecha = ?,
         hora_inicio = ?,
         hora_fin = ?,
-        capacidad = ?
+        capacidad = ?,
+        es_recurrente = ?,
+        patron_recurrencia = ?
       WHERE id = ?
     `)
-      .bind(fecha, hora_inicio, hora_fin, capacidad, id)
+      .bind(
+        es_recurrente === 1 ? null : fecha,
+        hora_inicio,
+        hora_fin,
+        aforo_limitado === 1 ? capacidad : null,
+        es_recurrente,
+        es_recurrente === 1 ? patron_recurrencia : null,
+        id
+      )
       .run();
 
     if ((updateResult?.meta?.changes || 0) === 0) {
@@ -477,37 +610,42 @@ export async function onRequestDelete(context) {
 
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
-    const ocupadas = await obtenerBloqueoActualFranja(env, id);
+    const actividad = await obtenerActividad(env, existente.actividad_id);
+    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
 
-    if (ocupadas > 0) {
-      return json(
-        {
-          ok: false,
-          error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
-        },
-        { status: 400 }
-      );
-    }
+    if (aforo_limitado === 1) {
+      const ocupadas = await obtenerBloqueoActualFranja(env, id);
 
-    const uso = await env.DB.prepare(`
-      SELECT COUNT(*) AS total
-      FROM reservas
-      WHERE franja_id = ?
-        AND estado IN ('PENDIENTE', 'CONFIRMADA')
-    `)
-      .bind(id)
-      .first();
+      if (ocupadas > 0) {
+        return json(
+          {
+            ok: false,
+            error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
+          },
+          { status: 400 }
+        );
+      }
 
-    const totalReservas = Number(uso?.total || 0);
+      const uso = await env.DB.prepare(`
+        SELECT COUNT(*) AS total
+        FROM reservas
+        WHERE franja_id = ?
+          AND estado IN ('PENDIENTE', 'CONFIRMADA')
+      `)
+        .bind(id)
+        .first();
 
-    if (totalReservas > 0) {
-      return json(
-        {
-          ok: false,
-          error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
-        },
-        { status: 400 }
-      );
+      const totalReservas = Number(uso?.total || 0);
+
+      if (totalReservas > 0) {
+        return json(
+          {
+            ok: false,
+            error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const deleteResult = await env.DB.prepare(`
