@@ -133,7 +133,7 @@
     .contenedor {
       max-width: 1320px;
       margin: 18px auto 30px;
-      padding: 0 20px;
+      padding: 0 20px; 
     }
 
     .carrusel-panel {
@@ -479,6 +479,34 @@
       color: #334250;
     }
 
+    .filtro-panel {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 14px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-panel label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #123a63;
+    }
+
+    .filtro-panel select {
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: #1e2a36;
+    }
+    
     .campo input {
       width: 100%;
       box-sizing: border-box;
@@ -678,6 +706,13 @@
   </div>
 
   <div class="contenedor">
+    <div class="filtro-panel">
+      <label for="filtroProvincia">Provincia</label>
+      <select id="filtroProvincia">
+        <option value="">Todas</option>
+      </select>
+    </div>
+
     <div class="carrusel-panel">
       <div class="carrusel-top">
         <button class="btn-carrusel" onclick="desplazarCarrusel(-1)" title="Anterior" aria-label="Anterior">
