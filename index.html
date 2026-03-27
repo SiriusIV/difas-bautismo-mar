@@ -548,6 +548,10 @@
         throw new Error("La actividad no está disponible.");
       }
 
+      if (Number(actividadActual.requiere_reserva || 0) !== 1) {
+        throw new Error("Esta actividad es informativa y no admite reservas.");
+      }
+
       document.title = (actividadActual.titulo_publico || actividadActual.nombre || "Solicitud de reserva") + " - Solicitud";
       document.getElementById("tituloEvento").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
       document.getElementById("subtituloEvento").textContent = actividadActual.subtitulo_publico || "Solicitud de reserva";
@@ -612,9 +616,10 @@
       select.innerHTML = '<option value="">Seleccione una opción</option>';
 
       franjasCache.forEach(f => {
+        const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
         const option = document.createElement("option");
         option.value = f.id;
-        option.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+        option.textContent = `${etiquetaFecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
         select.appendChild(option);
       });
 
@@ -646,12 +651,13 @@
       const capacidad = Number(franja.capacidad || 0);
       const ocupadas = Number(franja.ocupadas || 0);
       const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
+      const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
 
       infoFranja.textContent = `Capacidad total: ${capacidad}. Ocupadas: ${ocupadas}. Disponibles: ${disponibles}.`;
 
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
-        <strong>Franja seleccionada:</strong> ${franja.fecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
         <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
       `;
@@ -674,6 +680,10 @@
 
       if (!actividad_id) {
         return { ok: false, error: "No se ha indicado la actividad." };
+      }
+
+      if (!actividadActual || Number(actividadActual.requiere_reserva || 0) !== 1) {
+        return { ok: false, error: "Esta actividad no admite reservas." };
       }
 
       if (!centro || !contacto || !telefono || !email || !franja) {
