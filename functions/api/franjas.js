@@ -13,6 +13,8 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      f.es_recurrente,
+      f.patron_recurrencia,
 
       COALESCE(SUM(
         CASE
@@ -49,10 +51,14 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
       f.fecha,
       f.hora_inicio,
       f.hora_fin,
-      f.capacidad
+      f.capacidad,
+      f.es_recurrente,
+      f.patron_recurrencia
 
     ORDER BY
+      CASE WHEN COALESCE(f.es_recurrente, 0) = 1 THEN 1 ELSE 0 END,
       f.fecha ASC,
+      f.patron_recurrencia ASC,
       f.hora_inicio ASC
   `;
 
@@ -60,18 +66,19 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
   const rows = result.results || [];
 
   return rows.map(row => {
-    const capacidad = Number(row.capacidad || 0);
+    const capacidad = row.capacidad == null ? null : Number(row.capacidad || 0);
     const ocupadas = Number(row.ocupadas || 0);
 
     return {
       id: row.id,
       fecha: row.fecha,
-      patron_recurrencia: null,
+      es_recurrente: Number(row.es_recurrente || 0),
+      patron_recurrencia: row.patron_recurrencia || null,
       hora_inicio: row.hora_inicio,
       hora_fin: row.hora_fin,
       capacidad,
       ocupadas,
-      disponibles: Math.max(capacidad - ocupadas, 0)
+      disponibles: capacidad == null ? null : Math.max(capacidad - ocupadas, 0)
     };
   });
 }
