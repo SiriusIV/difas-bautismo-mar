@@ -1104,9 +1104,23 @@ function renderizarActividades() {
     actividadSeleccionada = actual || actividadesVisibles[0];
   }
 
-  const actividadesRender = [...actividadesVisibles, ...actividadesVisibles];
+  const actividadesRender = [
+  ...actividadesVisibles,
+  ...actividadesVisibles,
+  ...actividadesVisibles
+];
 
   cont.innerHTML = actividadesRender.map(a => `
+    const totalReales = actividadesVisibles.length;
+    const tarjetas = Array.from(document.querySelectorAll(".card"));
+
+    setTimeout(() => {
+    const cardInicial = tarjetas[totalReales + carruselAutoIndex] || tarjetas[totalReales];
+    if (cardInicial) {
+    centrarActividadEnCarrusel(cardInicial);
+    }
+    }, 80);
+    
     <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
       <div class="card-img-wrap">
         <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
@@ -1359,16 +1373,14 @@ function moverCarruselAutomaticamente() {
   const totalReales = actividadesVisibles.length;
 
   carruselAutoIndex += 1;
-
   if (carruselAutoIndex >= totalReales) {
     carruselAutoIndex = 0;
   }
 
-  const card = tarjetas[carruselAutoIndex];
+  const card = tarjetas[totalReales + carruselAutoIndex];
   if (!card) return;
 
   centrarActividadEnCarrusel(card);
-  setTimeout(reajustarCarruselInfinito, 450);
 }
 
     function iniciarAutoPlayCarrusel() {
@@ -1379,7 +1391,7 @@ function moverCarruselAutomaticamente() {
       }, 2500);
     }
 
-    function desplazarCarrusel(direccion) {
+function desplazarCarrusel(direccion) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
@@ -1398,9 +1410,8 @@ function moverCarruselAutomaticamente() {
     if (carruselAutoIndex < 0) carruselAutoIndex = totalReales - 1;
   }
 
-  const card = tarjetas[carruselAutoIndex];
+  const card = tarjetas[totalReales + carruselAutoIndex];
   if (card) centrarActividadEnCarrusel(card);
-  setTimeout(reajustarCarruselInfinito, 450);
 }
 
     function solicitarActividadActual() {
