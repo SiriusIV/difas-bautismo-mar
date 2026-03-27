@@ -826,6 +826,7 @@
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
     let carruselReanudarTimeout = null;
+    let provinciaSeleccionada = "";
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -1009,6 +1010,7 @@ async function cargarFranjasActividad(actividad) {
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       renderizarActividades();
+      renderizarFiltroProvincias();
     }
 
     async function cargarActividadesAdmin() {
@@ -1018,6 +1020,7 @@ async function cargarFranjasActividad(actividad) {
       if (!res.ok || !data.ok) {
         actividadesCache = [];
         renderizarActividades();
+        renderizarFiltroProvincias();
         return;
       }
 
@@ -1054,6 +1057,23 @@ async function cargarFranjasActividad(actividad) {
       }, 80);
     }
 
+    function renderizarFiltroProvincias() {
+      const select = document.getElementById("filtroProvincia");
+      if (!select) return;
+
+        const provincias = [...new Set(
+        actividadesCache
+        .map(a => String(a.provincia || "").trim())
+        .filter(p => p !== "")
+        )].sort((a, b) => a.localeCompare(b, "es"));
+
+        select.innerHTML =
+        `<option value="">Todas</option>` +
+        provincias.map(p => `<option value="${p}">${p}</option>`).join("");
+        select.value = provinciaSeleccionada;
+      }
+    
+    
     function renderizarActividades() {
       const cont = document.getElementById("carruselActividades");
 
