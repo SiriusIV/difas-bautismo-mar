@@ -1179,9 +1179,9 @@
 
       const usarCarruselInfinito = actividadesVisibles.length >= 4;
 
-      const actividadesRender = usarCarruselInfinito
-      ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
-      : [...actividadesVisibles];
+const actividadesRender = usarCarruselInfinito
+  ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
+  : [...actividadesVisibles];
 
       cont.innerHTML = actividadesRender.map((a, i) => {
         const esCopiaCentral = i >= actividadesVisibles.length && i < actividadesVisibles.length * 2;
@@ -1205,20 +1205,24 @@
         `;
       }).join("");
 
+      const botonesCarrusel = document.querySelectorAll(".btn-carrusel");
+      botonesCarrusel.forEach(btn => {
+      btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
+    });
+
       renderDetalle();
 
       setTimeout(() => {
-        const totalReales = actividadesVisibles.length;
-        const tarjetas = obtenerTarjetasCarrusel();
+  const totalReales = actividadesVisibles.length;
+  const tarjetas = obtenerTarjetasCarrusel();
+  if (!tarjetas.length) return;
 
-        if (!tarjetas.length) return;
+  const cardInicial = usarCarruselInfinito
+    ? tarjetas[totalReales + carruselAutoIndex]
+    : tarjetas[carruselAutoIndex];
 
-        const cardInicial = usarCarruselInfinito
-        ? tarjetas[totalReales + carruselAutoIndex]
-        : tarjetas[carruselAutoIndex];
-
-      if (cardInicial) {
-      colocarWrapEnCardInstantaneo(cardInicial);
+  if (cardInicial) {
+    colocarWrapEnCardInstantaneo(cardInicial);
   }
 }, 50);
 
@@ -1402,10 +1406,10 @@
       programarReanudacionAutoPlay();
     }
 
-    function moverCarruselAutomaticamente() {
+function moverCarruselAutomaticamente() {
   const actividadesVisibles = obtenerActividadesFiltradas();
-
   if (!actividadesVisibles.length) return;
+
   if (actividadesVisibles.length < 4) return;
 
   const tarjetas = obtenerTarjetasCarrusel();
@@ -1423,7 +1427,7 @@
 
   carruselAutoIndex = 0;
 
-  const cardDerecha = tarjetas[(2 * totalReales)];
+  const cardDerecha = tarjetas[2 * totalReales];
   if (cardDerecha) {
     colocarWrapEnCard(cardDerecha, "smooth");
     programarResetInvisibleCarrusel(0);
@@ -1438,53 +1442,66 @@
       }, 2500);
     }
 
-    function desplazarCarrusel(direccion) {
-      pausarTemporalmenteAutoPlay();
+function desplazarCarrusel(direccion) {
+  pausarTemporalmenteAutoPlay();
 
-      const actividadesVisibles = obtenerActividadesFiltradas();
-      if (!actividadesVisibles.length) return;
-      if (actividadesVisibles.length < 4) return;
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  if (!actividadesVisibles.length) return;
 
-      const tarjetas = obtenerTarjetasCarrusel();
-      if (!tarjetas.length) return;
+  const tarjetas = obtenerTarjetasCarrusel();
+  if (!tarjetas.length) return;
 
-      const totalReales = actividadesVisibles.length;
+  const totalReales = actividadesVisibles.length;
 
-      if (direccion > 0) {
-        const siguienteIndice = carruselAutoIndex + 1;
-
-        if (siguienteIndice < totalReales) {
-          carruselAutoIndex = siguienteIndice;
-          const card = tarjetas[totalReales + carruselAutoIndex];
-          if (card) colocarWrapEnCard(card, "smooth");
-          return;
-        }
-
-        carruselAutoIndex = 0;
-        const cardDerecha = tarjetas[(2 * totalReales)];
-        if (cardDerecha) {
-          colocarWrapEnCard(cardDerecha, "smooth");
-          programarResetInvisibleCarrusel(0);
-        }
-        return;
-      }
-
-      const anteriorIndice = carruselAutoIndex - 1;
-
-      if (anteriorIndice >= 0) {
-        carruselAutoIndex = anteriorIndice;
-        const card = tarjetas[totalReales + carruselAutoIndex];
-        if (card) colocarWrapEnCard(card, "smooth");
-        return;
-      }
-
-      carruselAutoIndex = totalReales - 1;
-      const cardIzquierda = tarjetas[totalReales - 1];
-      if (cardIzquierda) {
-        colocarWrapEnCard(cardIzquierda, "smooth");
-        programarResetInvisibleCarrusel(totalReales - 1);
-      }
+  if (actividadesVisibles.length < 4) {
+    if (direccion > 0) {
+      carruselAutoIndex += 1;
+      if (carruselAutoIndex >= totalReales) carruselAutoIndex = 0;
+    } else {
+      carruselAutoIndex -= 1;
+      if (carruselAutoIndex < 0) carruselAutoIndex = totalReales - 1;
     }
+
+    const card = tarjetas[carruselAutoIndex];
+    if (card) colocarWrapEnCard(card, "smooth");
+    return;
+  }
+
+  if (direccion > 0) {
+    const siguienteIndice = carruselAutoIndex + 1;
+
+    if (siguienteIndice < totalReales) {
+      carruselAutoIndex = siguienteIndice;
+      const card = tarjetas[totalReales + carruselAutoIndex];
+      if (card) colocarWrapEnCard(card, "smooth");
+      return;
+    }
+
+    carruselAutoIndex = 0;
+    const cardDerecha = tarjetas[2 * totalReales];
+    if (cardDerecha) {
+      colocarWrapEnCard(cardDerecha, "smooth");
+      programarResetInvisibleCarrusel(0);
+    }
+    return;
+  }
+
+  const anteriorIndice = carruselAutoIndex - 1;
+
+  if (anteriorIndice >= 0) {
+    carruselAutoIndex = anteriorIndice;
+    const card = tarjetas[totalReales + carruselAutoIndex];
+    if (card) colocarWrapEnCard(card, "smooth");
+    return;
+  }
+
+  carruselAutoIndex = totalReales - 1;
+  const cardIzquierda = tarjetas[totalReales - 1];
+  if (cardIzquierda) {
+    colocarWrapEnCard(cardIzquierda, "smooth");
+    programarResetInvisibleCarrusel(totalReales - 1);
+  }
+}
 
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
