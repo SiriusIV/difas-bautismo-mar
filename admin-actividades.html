@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de actividades</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
   <style>
     :root {
       --bg: #f4f6f8;
@@ -435,6 +448,29 @@
       color: var(--brand);
     }
 
+    .mapa-preview-wrap {
+      width: 100%;
+      height: 280px;
+      min-height: 280px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #dfe7ef;
+      margin-top: 8px;
+    }
+
+    #mapaPreviewActividad {
+      width: 100%;
+      height: 100%;
+    }
+
+    .ayuda-localizacion {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
     @media (max-width: 980px) {
       .layout {
         grid-template-columns: 1fr;
@@ -752,6 +788,18 @@
               </div>
               <div></div>
             </div>
+
+            <div class="fila-una">
+              <div>
+                <label>Vista previa de mapa</label>
+                <div class="ayuda-localizacion">
+                  Introduce latitud, longitud y zoom para comprobar visualmente la ubicación antes de guardar.
+                </div>
+                <div class="mapa-preview-wrap">
+                  <div id="mapaPreviewActividad"></div>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section class="step-pane" data-step="6">
@@ -809,6 +857,8 @@
     let esSuperAdmin = false;
     let actividadEditandoId = null;
     let pasoActual = 0;
+    let mapaPreviewActividad = null;
+    let marcadorPreviewActividad = null;
 
     const pasos = [
       "Identificación",
@@ -975,6 +1025,7 @@
       actualizarVisibilidadFormulario();
       actualizarPreview();
       actualizarResumenLateral();
+      renderMapaPreviewActividad();
     }
 
     async function cargarActividadSiEsEdicion() {
@@ -1066,6 +1117,56 @@
       }
 
       return base;
+    }
+
+    function destruirMapaPreviewActividad() {
+      if (mapaPreviewActividad) {
+        mapaPreviewActividad.remove();
+        mapaPreviewActividad = null;
+        marcadorPreviewActividad = null;
+      }
+    }
+
+    function renderMapaPreviewActividad() {
+      const latStr = document.getElementById("latitud").value.trim();
+      const lngStr = document.getElementById("longitud").value.trim();
+      const zoomStr = document.getElementById("zoom_mapa").value.trim();
+
+      const lat = Number(latStr);
+      const lng = Number(lngStr);
+      const zoom = Number(zoomStr || 15);
+
+      const contenedor = document.getElementById("mapaPreviewActividad");
+      if (!contenedor) return;
+
+      if (!latStr || !lngStr || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+        destruirMapaPreviewActividad();
+        contenedor.innerHTML = "";
+        return;
+      }
+
+      destruirMapaPreviewActividad();
+      contenedor.innerHTML = "";
+
+      mapaPreviewActividad = L.map("mapaPreviewActividad", {
+        center: [lat, lng],
+        zoom: Number.isFinite(zoom) ? zoom : 15,
+        zoomControl: true
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(mapaPreviewActividad);
+
+      marcadorPreviewActividad = L.marker([lat, lng]).addTo(mapaPreviewActividad);
+
+      setTimeout(() => {
+        if (mapaPreviewActividad) {
+          mapaPreviewActividad.invalidateSize(true);
+          mapaPreviewActividad.setView([lat, lng], Number.isFinite(zoom) ? zoom : 15, { animate: false });
+        }
+      }, 120);
     }
 
     function actualizarPreview() {
@@ -1162,6 +1263,7 @@
       renderWizardProgress();
       actualizarPreview();
       actualizarResumenLateral();
+      renderMapaPreviewActividad();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1279,6 +1381,18 @@
         }
       }
 
+      const tieneLat = payload.latitud !== "";
+      const tieneLng = payload.longitud !== "";
+
+      if ((tieneLat && !tieneLng) || (!tieneLat && tieneLng)) {
+        mostrarMensaje("error", "Debe indicar latitud y longitud conjuntamente.");
+        return;
+      }
+
+      if ((tieneLat && tieneLng) && !payload.zoom_mapa) {
+        payload.zoom_mapa = "15";
+      }
+
       if (esSuperAdmin && !payload.admin_id) {
         mostrarMensaje("error", "Debe indicar el administrador responsable.");
         return;
@@ -1361,12 +1475,14 @@
           actualizarVisibilidadFormulario();
           actualizarPreview();
           actualizarResumenLateral();
+          renderMapaPreviewActividad();
         });
 
         el.addEventListener("change", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
           actualizarResumenLateral();
+          renderMapaPreviewActividad();
         });
       });
 
@@ -1378,6 +1494,7 @@
         actualizarVisibilidadFormulario();
         actualizarPreview();
         actualizarResumenLateral();
+        renderMapaPreviewActividad();
         mostrarPaso(0);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
