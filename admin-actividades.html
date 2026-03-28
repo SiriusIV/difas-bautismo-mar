@@ -672,11 +672,6 @@
                 <label for="orden_portal">Orden en portal</label>
                 <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
               </div>
-
-              <div>
-                <label for="provincia">Provincia</label>
-                <input type="text" id="provincia">
-              </div>
             </div>
           </section>
 
@@ -760,6 +755,11 @@
                 <input type="text" id="lugar">
               </div>
 
+              <div>
+                <label for="provincia">Provincia</label>
+                <input type="text" id="provincia" placeholder="Ej: Madrid, A Coruña...">
+              </div>
+              
               <div>
                 <label for="direccion_postal">Dirección postal</label>
                 <input type="text" id="direccion_postal">
@@ -1120,26 +1120,31 @@ function renderMapaPreviewActividad() {
   const latStr = document.getElementById("latitud").value.trim();
   const lngStr = document.getElementById("longitud").value.trim();
   const zoomStr = document.getElementById("zoom_mapa").value.trim();
+  const provincia = document.getElementById("provincia").value.trim();
 
-  const lat = Number(latStr);
-  const lng = Number(lngStr);
-  const zoom = Number(zoomStr || 15);
+  let lat = Number(latStr);
+  let lng = Number(lngStr);
+  let zoom = Number(zoomStr || 6);
 
   const contenedor = document.getElementById("mapaPreviewActividad");
   if (!contenedor) return;
 
-  if (!latStr || !lngStr || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-    destruirMapaPreviewActividad();
-    contenedor.innerHTML = "";
-    return;
-  }
-
   destruirMapaPreviewActividad();
   contenedor.innerHTML = "";
 
+  // 🟢 fallback inicial: España
+  let centro = [40.4168, -3.7038]; // Madrid
+  let zoomInicial = 6;
+
+  // 🟢 si hay coordenadas → prioridad máxima
+  if (latStr && lngStr && Number.isFinite(lat) && Number.isFinite(lng)) {
+    centro = [lat, lng];
+    zoomInicial = Number.isFinite(zoom) ? zoom : 15;
+  }
+
   mapaPreviewActividad = L.map("mapaPreviewActividad", {
-    center: [lat, lng],
-    zoom: Number.isFinite(zoom) ? zoom : 15,
+    center: centro,
+    zoom: zoomInicial,
     zoomControl: true
   });
 
@@ -1148,40 +1153,72 @@ function renderMapaPreviewActividad() {
     attribution: "&copy; OpenStreetMap"
   }).addTo(mapaPreviewActividad);
 
-  marcadorPreviewActividad = L.marker([lat, lng], {
-    draggable: true
-  }).addTo(mapaPreviewActividad);
+  // 🟢 si hay coordenadas → marcador inicial
+  if (latStr && lngStr && Number.isFinite(lat) && Number.isFinite(lng)) {
+    marcadorPreviewActividad = L.marker([lat, lng], {
+      draggable: true
+    }).addTo(mapaPreviewActividad);
 
-  // 🟢 1. CLICK EN MAPA → actualiza coordenadas
+    marcadorPreviewActividad.on("dragend", function (e) {
+      const pos = e.target.getLatLng();
+      document.getElementById("latitud").value = pos.lat.toFixed(6);
+      document.getElementById("longitud").value = pos.lng.toFixed(6);
+      actualizarPreview();
+    });
+  }
+
+  // 🟢 CLICK EN MAPA → crea o mueve marcador
   mapaPreviewActividad.on("click", function (e) {
     const { lat, lng } = e.latlng;
 
     document.getElementById("latitud").value = lat.toFixed(6);
     document.getElementById("longitud").value = lng.toFixed(6);
 
-    marcadorPreviewActividad.setLatLng([lat, lng]);
+    if (!marcadorPreviewActividad) {
+      marcadorPreviewActividad = L.marker([lat, lng], {
+        draggable: true
+      }).addTo(mapaPreviewActividad);
+
+      marcadorPreviewActividad.on("dragend", function (e) {
+        const pos = e.target.getLatLng();
+        document.getElementById("latitud").value = pos.lat.toFixed(6);
+        document.getElementById("longitud").value = pos.lng.toFixed(6);
+        actualizarPreview();
+      });
+    } else {
+      marcadorPreviewActividad.setLatLng([lat, lng]);
+    }
 
     actualizarPreview();
   });
 
-  // 🟢 2. DRAG DEL MARCADOR → actualiza coordenadas
-  marcadorPreviewActividad.on("dragend", function (e) {
-    const pos = e.target.getLatLng();
-
-    document.getElementById("latitud").value = pos.lat.toFixed(6);
-    document.getElementById("longitud").value = pos.lng.toFixed(6);
-
-    actualizarPreview();
-  });
+  // 🟢 si NO hay coordenadas pero hay provincia → centrar automáticamente
+  if ((!latStr || !lngStr) && provincia) {
+    buscarProvinciaYcentrar(provincia);
+  }
 
   setTimeout(() => {
-    if (mapaPreviewActividad) {
-      mapaPreviewActividad.invalidateSize(true);
-      mapaPreviewActividad.setView([lat, lng], Number.isFinite(zoom) ? zoom : 15, { animate: false });
-    }
+    mapaPreviewActividad.invalidateSize(true);
   }, 120);
 }
 
+    async function buscarProvinciaYcentrar(nombreProvincia) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreProvincia + ", España")}`);
+    const data = await res.json();
+
+    if (data && data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+
+      mapaPreviewActividad.setView([lat, lon], 9);
+    }
+  } catch (e) {
+    console.warn("No se pudo centrar por provincia", e);
+  }
+}
+
+    
     function actualizarPreview() {
       const titulo = document.getElementById("titulo_publico").value.trim() || document.getElementById("nombre").value.trim() || "-";
       const organizador = document.getElementById("organizador_publico").value.trim() || "-";
