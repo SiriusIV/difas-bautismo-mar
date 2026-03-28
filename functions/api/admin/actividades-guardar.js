@@ -128,9 +128,12 @@ export async function onRequestPost(context) {
         aforo_limitado,
         provincia,
         es_recurrente,
-        patron_recurrencia
+        patron_recurrencia,
+        usa_enlace_externo,
+        enlace_externo_url,
+        enlace_externo_texto
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       limpiarTexto(body.nombre),
       tipo,
@@ -153,7 +156,10 @@ export async function onRequestPost(context) {
       parsearFlag(body.aforo_limitado, 1),
       normalizarNullable(body.provincia),
       parsearFlag(body.es_recurrente, 0),
-      normalizarNullable(body.patron_recurrencia)
+      normalizarNullable(body.patron_recurrencia),
+      parsearFlag(body.usa_enlace_externo, 0),
+      normalizarNullable(body.enlace_externo_url),
+      normalizarNullable(body.enlace_externo_texto)
     ).run();
 
     if ((result?.meta?.changes || 0) === 0) {
@@ -239,7 +245,10 @@ export async function onRequestPut(context) {
         aforo_limitado = ?,
         provincia = ?,
         es_recurrente = ?,
-        patron_recurrencia = ?
+        patron_recurrencia = ?,
+        usa_enlace_externo = ?,
+        enlace_externo_url = ?,
+        enlace_externo_texto = ?
       WHERE id = ?
     `).bind(
       limpiarTexto(body.nombre),
@@ -264,6 +273,9 @@ export async function onRequestPut(context) {
       normalizarNullable(body.provincia),
       parsearFlag(body.es_recurrente, 0),
       normalizarNullable(body.patron_recurrencia),
+      parsearFlag(body.usa_enlace_externo, 0),
+      normalizarNullable(body.enlace_externo_url),
+      normalizarNullable(body.enlace_externo_texto),
       id
     ).run();
 
