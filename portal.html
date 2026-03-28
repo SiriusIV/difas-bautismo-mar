@@ -1261,51 +1261,57 @@ function renderizarActividades() {
       }
     }
 
-    function renderMapaActividad(a) {
-      const mapaWrap = document.getElementById("mapaWrap");
+function renderMapaActividad(a) {
+  const mapaWrap = document.getElementById("mapaWrap");
 
-      if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
-        mapaWrap.classList.add("mapa-oculto");
-        destruirMapaActividad();
-        return;
-      }
-
-      mapaWrap.classList.remove("mapa-oculto");
-
-      const lat = Number(a.latitud);
-      const lng = Number(a.longitud);
-      const zoom = Number(a.zoom_mapa || 15);
-
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        mapaWrap.classList.add("mapa-oculto");
-        destruirMapaActividad();
-        return;
-      }
-
-      destruirMapaActividad();
-
-      mapaActividad = L.map("mapaActividad").setView([lat, lng], zoom);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(mapaActividad);
-
-      marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
-
-      const titulo = a.titulo_publico || a.nombre || "Actividad";
-      const lugar = a.lugar || "";
-      marcadorActividad.bindPopup(
-        `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
-      );
-
-setTimeout(() => {
-  if (mapaActividad) {
-    mapaActividad.invalidateSize();
-    mapaActividad.setView([lat, lng], zoom);
+  if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
   }
-}, 150);
-    }
+
+  mapaWrap.classList.remove("mapa-oculto");
+
+  const lat = Number(a.latitud);
+  const lng = Number(a.longitud);
+  const zoom = Number(a.zoom_mapa || 15);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
+
+  destruirMapaActividad();
+
+  mapaActividad = L.map("mapaActividad", {
+    center: [lat, lng],
+    zoom: zoom,
+    zoomControl: true
+  });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(mapaActividad);
+
+  marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
+
+  const titulo = a.titulo_publico || a.nombre || "Actividad";
+  const lugar = a.lugar || "";
+  marcadorActividad.bindPopup(
+    `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
+  );
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (mapaActividad) {
+        mapaActividad.invalidateSize(true);
+        mapaActividad.setView([lat, lng], zoom, { animate: false });
+      }
+    }, 120);
+  });
+}
 
     function renderDetalle() {
   const a = actividadSeleccionada;
