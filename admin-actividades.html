@@ -1116,47 +1116,71 @@
       }
     }
 
-    function renderMapaPreviewActividad() {
-      const latStr = document.getElementById("latitud").value.trim();
-      const lngStr = document.getElementById("longitud").value.trim();
-      const zoomStr = document.getElementById("zoom_mapa").value.trim();
+function renderMapaPreviewActividad() {
+  const latStr = document.getElementById("latitud").value.trim();
+  const lngStr = document.getElementById("longitud").value.trim();
+  const zoomStr = document.getElementById("zoom_mapa").value.trim();
 
-      const lat = Number(latStr);
-      const lng = Number(lngStr);
-      const zoom = Number(zoomStr || 15);
+  const lat = Number(latStr);
+  const lng = Number(lngStr);
+  const zoom = Number(zoomStr || 15);
 
-      const contenedor = document.getElementById("mapaPreviewActividad");
-      if (!contenedor) return;
+  const contenedor = document.getElementById("mapaPreviewActividad");
+  if (!contenedor) return;
 
-      if (!latStr || !lngStr || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-        destruirMapaPreviewActividad();
-        contenedor.innerHTML = "";
-        return;
-      }
+  if (!latStr || !lngStr || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    destruirMapaPreviewActividad();
+    contenedor.innerHTML = "";
+    return;
+  }
 
-      destruirMapaPreviewActividad();
-      contenedor.innerHTML = "";
+  destruirMapaPreviewActividad();
+  contenedor.innerHTML = "";
 
-      mapaPreviewActividad = L.map("mapaPreviewActividad", {
-        center: [lat, lng],
-        zoom: Number.isFinite(zoom) ? zoom : 15,
-        zoomControl: true
-      });
+  mapaPreviewActividad = L.map("mapaPreviewActividad", {
+    center: [lat, lng],
+    zoom: Number.isFinite(zoom) ? zoom : 15,
+    zoomControl: true
+  });
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(mapaPreviewActividad);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(mapaPreviewActividad);
 
-      marcadorPreviewActividad = L.marker([lat, lng]).addTo(mapaPreviewActividad);
+  marcadorPreviewActividad = L.marker([lat, lng], {
+    draggable: true
+  }).addTo(mapaPreviewActividad);
 
-      setTimeout(() => {
-        if (mapaPreviewActividad) {
-          mapaPreviewActividad.invalidateSize(true);
-          mapaPreviewActividad.setView([lat, lng], Number.isFinite(zoom) ? zoom : 15, { animate: false });
-        }
-      }, 120);
+  // 🟢 1. CLICK EN MAPA → actualiza coordenadas
+  mapaPreviewActividad.on("click", function (e) {
+    const { lat, lng } = e.latlng;
+
+    document.getElementById("latitud").value = lat.toFixed(6);
+    document.getElementById("longitud").value = lng.toFixed(6);
+
+    marcadorPreviewActividad.setLatLng([lat, lng]);
+
+    actualizarPreview();
+  });
+
+  // 🟢 2. DRAG DEL MARCADOR → actualiza coordenadas
+  marcadorPreviewActividad.on("dragend", function (e) {
+    const pos = e.target.getLatLng();
+
+    document.getElementById("latitud").value = pos.lat.toFixed(6);
+    document.getElementById("longitud").value = pos.lng.toFixed(6);
+
+    actualizarPreview();
+  });
+
+  setTimeout(() => {
+    if (mapaPreviewActividad) {
+      mapaPreviewActividad.invalidateSize(true);
+      mapaPreviewActividad.setView([lat, lng], Number.isFinite(zoom) ? zoom : 15, { animate: false });
     }
+  }, 120);
+}
 
     function actualizarPreview() {
       const titulo = document.getElementById("titulo_publico").value.trim() || document.getElementById("nombre").value.trim() || "-";
