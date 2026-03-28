@@ -45,7 +45,11 @@ export async function onRequestGet(context) {
         patron_recurrencia,
         usa_enlace_externo,
         enlace_externo_url,
-        enlace_externo_texto
+        enlace_externo_texto,
+        direccion_postal,
+        latitud,
+        longitud,
+        zoom_mapa
       FROM actividades
     `;
     const binds = [];
