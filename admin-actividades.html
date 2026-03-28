@@ -188,12 +188,9 @@
       border-color: var(--ok-border);
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
-      gap: 18px;
-      align-items: start;
-    }
+   .layout {
+  display: block;
+}
 
     .panel {
       background: var(--card);
@@ -840,13 +837,6 @@
           </div>
         </form>
       </div>
-
-      <div class="panel">
-        <h3>Resumen rápido</h3>
-        <div class="resumen-lateral" id="resumenLateral">
-          Complete los pasos del asistente para revisar la configuración general de la actividad.
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1216,28 +1206,6 @@
         link.href = "#";
         link.textContent = "Más información";
       }
-    }
-
-    function actualizarResumenLateral() {
-      const nombre = document.getElementById("nombre").value.trim() || "-";
-      const tipo = document.getElementById("tipo").value;
-      const usaFranjas = document.getElementById("usa_franjas").value === "1" ? "Sí" : "No";
-      const requiereReserva = document.getElementById("requiere_reserva").value === "1" ? "Sí" : "No";
-      const aforoLimitado = document.getElementById("aforo_limitado").value === "1" ? "Sí" : "No";
-      const provincia = document.getElementById("provincia").value.trim() || "-";
-      const visible = document.getElementById("visible_portal").value === "1" ? "Sí" : "No";
-      const activa = document.getElementById("activa").value === "1" ? "Sí" : "No";
-
-      document.getElementById("resumenLateral").innerHTML = `
-        <div><strong>Actividad:</strong> ${nombre}</div>
-        <div><strong>Tipo:</strong> ${tipo}</div>
-        <div><strong>Usa franjas:</strong> ${usaFranjas}</div>
-        <div><strong>Requiere reserva:</strong> ${requiereReserva}</div>
-        <div><strong>Aforo limitado:</strong> ${aforoLimitado}</div>
-        <div><strong>Provincia:</strong> ${provincia}</div>
-        <div><strong>Visible en portal:</strong> ${visible}</div>
-        <div><strong>Activa:</strong> ${activa}</div>
-      `;
     }
 
     function renderWizardProgress() {
