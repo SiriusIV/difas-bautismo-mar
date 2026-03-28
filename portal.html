@@ -821,7 +821,7 @@
     let mapaActividad = null;
     let marcadorActividad = null;
     let actividadFranjasSolicitada = null;
-
+   
     let carruselAutoPlay = null;
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
@@ -1058,23 +1058,23 @@
       }
     }
 
-    function seleccionarActividad(id) {
-      pausarTemporalmenteAutoPlay();
+function seleccionarActividad(id) {
+  pausarTemporalmenteAutoPlay();
 
-      const actividadesVisibles = obtenerActividadesFiltradas();
-      const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
-      if (!a) return;
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
+  if (!a) return;
 
-      actividadSeleccionada = a;
-      carruselAutoIndex = Math.max(
-        actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
-        0
-      );
+  actividadSeleccionada = a;
+  carruselAutoIndex = Math.max(
+    actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
+    0
+  );
 
-      sessionStorage.setItem("actividad_id_actual", String(a.id));
-      renderizarActividades();
-      renderDetalle();
-    }
+  sessionStorage.setItem("actividad_id_actual", String(a.id));
+  renderizarActividades();
+  renderDetalle();
+}
 
     function renderizarFiltroProvincias() {
       const select = document.getElementById("filtroProvincia");
@@ -1106,125 +1106,147 @@
     }
 
     function obtenerTarjetasCarrusel() {
-      return Array.from(document.querySelectorAll("#carruselActividades .card"));
-    }
+  return Array.from(document.querySelectorAll("#carruselActividades .card"));
+}
 
-    function colocarWrapEnCard(card, comportamiento = "smooth") {
-      if (!card) return;
+function colocarWrapEnCard(card, comportamiento = "smooth") {
+  if (!card) return;
 
-      const wrap = document.getElementById("carruselWrap");
-      if (!wrap) return;
+  const wrap = document.getElementById("carruselWrap");
+  if (!wrap) return;
 
-      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
-      wrap.scrollTo({
-        left: Math.max(targetLeft, 0),
-        behavior: comportamiento
-      });
-    }
+  wrap.scrollTo({
+    left: Math.max(targetLeft, 0),
+    behavior: comportamiento
+  });
+}
 
-    function cancelarResetCarrusel() {
-      if (carruselResetTimeout) {
-        clearTimeout(carruselResetTimeout);
-        carruselResetTimeout = null;
-      }
-    }
+function colocarWrapEnCardInstantaneo(card) {
+  if (!card) return;
 
-    function programarResetInvisibleCarrusel(indiceReal) {
-      cancelarResetCarrusel();
+  const wrap = document.getElementById("carruselWrap");
+  if (!wrap) return;
 
-      carruselResetTimeout = setTimeout(() => {
-        const actividadesVisibles = obtenerActividadesFiltradas();
-        if (!actividadesVisibles.length) return;
+  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
-        const totalReales = actividadesVisibles.length;
-        const tarjetas = obtenerTarjetasCarrusel();
-        const cardCentral = tarjetas[totalReales + indiceReal];
-        if (!cardCentral) return;
+  const anterior = wrap.style.scrollBehavior;
+  wrap.style.scrollBehavior = "auto";
+  wrap.scrollLeft = Math.max(targetLeft, 0);
+  wrap.style.scrollBehavior = anterior || "";
+}
 
-        colocarWrapEnCardInstantaneo(cardCentral);
-      }, 420);
-    }
+    
 
-    function renderizarActividades() {
-      const cont = document.getElementById("carruselActividades");
-      const actividadesVisibles = obtenerActividadesFiltradas();
-
-      cancelarResetCarrusel();
-
-      if (!actividadesVisibles.length) {
-        cont.innerHTML = "";
-        actividadSeleccionada = null;
-        carruselAutoIndex = 0;
-        renderDetalle();
-        return;
-      }
-
-      if (
-        !actividadSeleccionada ||
-        !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
-      ) {
-        actividadSeleccionada = actividadesVisibles[0];
-        carruselAutoIndex = 0;
-      } else {
-        const actual = actividadesVisibles.find(
-          x => Number(x.id) === Number(actividadSeleccionada.id)
-        );
-        actividadSeleccionada = actual || actividadesVisibles[0];
-        carruselAutoIndex = Math.max(
-          actividadesVisibles.findIndex(x => Number(x.id) === Number(actividadSeleccionada.id)),
-          0
-        );
-      }
-
-      const usarCarruselInfinito = actividadesVisibles.length >= 4;
-
-const actividadesRender = usarCarruselInfinito
-  ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
-  : [...actividadesVisibles];
-
-      cont.innerHTML = actividadesRender.map((a, i) => {
-        const esCopiaCentral = i >= actividadesVisibles.length && i < actividadesVisibles.length * 2;
-        const activa = esCopiaCentral && actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id);
-
-        return `
-          <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
-            <div class="card-img-wrap">
-              <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
-            </div>
-            <div class="card-body">
-              <h3>${a.titulo_publico || a.nombre}</h3>
-              <div class="card-meta">
-                ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-                ${a.provincia ? `<div>${a.provincia}</div>` : ''}
-                ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      const botonesCarrusel = document.querySelectorAll(".btn-carrusel");
-      botonesCarrusel.forEach(btn => {
-      btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
-    });
-
-      renderDetalle();
-
-      setTimeout(() => {
-  const totalReales = actividadesVisibles.length;
-  const tarjetas = obtenerTarjetasCarrusel();
-  if (!tarjetas.length) return;
-
-  const cardInicial = usarCarruselInfinito
-    ? tarjetas[totalReales + carruselAutoIndex]
-    : tarjetas[carruselAutoIndex];
-
-  if (cardInicial) {
-    colocarWrapEnCardInstantaneo(cardInicial);
+    
+ function cancelarResetCarrusel() {
+  if (carruselResetTimeout) {
+    clearTimeout(carruselResetTimeout);
+    carruselResetTimeout = null;
   }
-}, 50);
+}
+
+function programarResetInvisibleCarrusel(indiceReal, totalReales) {
+  cancelarResetCarrusel();
+
+  carruselResetTimeout = setTimeout(() => {
+    const tarjetas = obtenerTarjetasCarrusel();
+    const cardCentral = tarjetas[totalReales + indiceReal];
+    if (cardCentral) {
+      colocarWrapEnCardInstantaneo(cardCentral);
+    }
+  }, 420);
+}
+
+function renderizarActividades() {
+  const cont = document.getElementById("carruselActividades");
+  const actividadesVisibles = obtenerActividadesFiltradas();
+
+  cancelarResetCarrusel();
+
+  if (!actividadesVisibles.length) {
+    cont.innerHTML = "";
+    actividadSeleccionada = null;
+    carruselAutoIndex = 0;
+    renderDetalle();
+    document.querySelectorAll(".btn-carrusel").forEach(btn => {
+      btn.style.display = "none";
+    });
+    return;
+  }
+
+  if (
+    !actividadSeleccionada ||
+    !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
+  ) {
+    actividadSeleccionada = actividadesVisibles[0];
+    carruselAutoIndex = 0;
+  } else {
+    const idx = actividadesVisibles.findIndex(
+      x => Number(x.id) === Number(actividadSeleccionada.id)
+    );
+    carruselAutoIndex = Math.max(idx, 0);
+  }
+
+  const usarCarruselInfinito = actividadesVisibles.length >= 4;
+
+  const actividadesRender = usarCarruselInfinito
+    ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
+    : [...actividadesVisibles];
+
+  cont.innerHTML = actividadesRender.map((a, i) => {
+    const activa = usarCarruselInfinito
+      ? (
+          i >= actividadesVisibles.length &&
+          i < actividadesVisibles.length * 2 &&
+          actividadSeleccionada &&
+          Number(actividadSeleccionada.id) === Number(a.id) &&
+          (i - actividadesVisibles.length) === carruselAutoIndex
+        )
+      : (
+          actividadSeleccionada &&
+          Number(actividadSeleccionada.id) === Number(a.id) &&
+          i === carruselAutoIndex
+        );
+
+    return `
+      <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+        <div class="card-img-wrap">
+          <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+          ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+        </div>
+        <div class="card-body">
+          <h3>${a.titulo_publico || a.nombre}</h3>
+          <div class="card-meta">
+            ${a.lugar ? `<div>${a.lugar}</div>` : ""}
+            ${a.provincia ? `<div>${a.provincia}</div>` : ""}
+            ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  document.querySelectorAll(".btn-carrusel").forEach(btn => {
+    btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
+  });
+
+  renderDetalle();
+
+  setTimeout(() => {
+    const tarjetas = obtenerTarjetasCarrusel();
+    if (!tarjetas.length) return;
+
+    const cardInicial = usarCarruselInfinito
+      ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
+      : tarjetas[carruselAutoIndex];
+
+    if (cardInicial) {
+      colocarWrapEnCardInstantaneo(cardInicial);
+    }
+  }, 50);
+}
 
     function destruirMapaActividad() {
       if (mapaActividad) {
@@ -1354,19 +1376,7 @@ const actividadesRender = usarCarruselInfinito
       cargarFranjasActividad(a);
     }
 
-    function colocarWrapEnCardInstantaneo(card) {
-      if (!card) return;
 
-      const wrap = document.getElementById("carruselWrap");
-      if (!wrap) return;
-
-      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
-
-      const valorAnterior = wrap.style.scrollBehavior;
-      wrap.style.scrollBehavior = "auto";
-      wrap.scrollLeft = Math.max(targetLeft, 0);
-      wrap.style.scrollBehavior = valorAnterior || "";
-    }
     
     function detenerAutoPlayCarrusel() {
       carruselAutoPlayActivo = false;
@@ -1395,27 +1405,26 @@ const actividadesRender = usarCarruselInfinito
       }, 10000);
     }
 
-    function pausarTemporalmenteAutoPlay() {
-      if (carruselAutoPlay) {
-        clearInterval(carruselAutoPlay);
-        carruselAutoPlay = null;
-      }
+function pausarTemporalmenteAutoPlay() {
+  if (carruselAutoPlay) {
+    clearInterval(carruselAutoPlay);
+    carruselAutoPlay = null;
+  }
 
-      cancelarResetCarrusel();
-      carruselAutoPlayActivo = false;
-      programarReanudacionAutoPlay();
-    }
+  cancelarResetCarrusel();
+  carruselAutoPlayActivo = false;
+  programarReanudacionAutoPlay();
+}
 
 function moverCarruselAutomaticamente() {
   const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!actividadesVisibles.length) return;
+  const totalReales = actividadesVisibles.length;
 
-  if (actividadesVisibles.length < 4) return;
+  if (totalReales < 4) return;
 
   const tarjetas = obtenerTarjetasCarrusel();
   if (!tarjetas.length) return;
 
-  const totalReales = actividadesVisibles.length;
   const siguienteIndice = carruselAutoIndex + 1;
 
   if (siguienteIndice < totalReales) {
@@ -1426,34 +1435,32 @@ function moverCarruselAutomaticamente() {
   }
 
   carruselAutoIndex = 0;
-
   const cardDerecha = tarjetas[2 * totalReales];
   if (cardDerecha) {
     colocarWrapEnCard(cardDerecha, "smooth");
-    programarResetInvisibleCarrusel(0);
+    programarResetInvisibleCarrusel(0, totalReales);
   }
 }
 
-    function iniciarAutoPlayCarrusel() {
-      if (!carruselAutoPlayActivo || carruselAutoPlay) return;
+function iniciarAutoPlayCarrusel() {
+  if (!carruselAutoPlayActivo || carruselAutoPlay) return;
 
-      carruselAutoPlay = setInterval(() => {
-        moverCarruselAutomaticamente();
-      }, 2500);
-    }
+  carruselAutoPlay = setInterval(() => {
+    moverCarruselAutomaticamente();
+  }, 2500);
+}
 
 function desplazarCarrusel(direccion) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!actividadesVisibles.length) return;
+  const totalReales = actividadesVisibles.length;
+  if (!totalReales) return;
 
   const tarjetas = obtenerTarjetasCarrusel();
   if (!tarjetas.length) return;
 
-  const totalReales = actividadesVisibles.length;
-
-  if (actividadesVisibles.length < 4) {
+  if (totalReales < 4) {
     if (direccion > 0) {
       carruselAutoIndex += 1;
       if (carruselAutoIndex >= totalReales) carruselAutoIndex = 0;
@@ -1481,7 +1488,7 @@ function desplazarCarrusel(direccion) {
     const cardDerecha = tarjetas[2 * totalReales];
     if (cardDerecha) {
       colocarWrapEnCard(cardDerecha, "smooth");
-      programarResetInvisibleCarrusel(0);
+      programarResetInvisibleCarrusel(0, totalReales);
     }
     return;
   }
@@ -1494,6 +1501,14 @@ function desplazarCarrusel(direccion) {
     if (card) colocarWrapEnCard(card, "smooth");
     return;
   }
+
+  carruselAutoIndex = totalReales - 1;
+  const cardIzquierda = tarjetas[totalReales - 1];
+  if (cardIzquierda) {
+    colocarWrapEnCard(cardIzquierda, "smooth");
+    programarResetInvisibleCarrusel(totalReales - 1, totalReales);
+  }
+}
 
   carruselAutoIndex = totalReales - 1;
   const cardIzquierda = tarjetas[totalReales - 1];
