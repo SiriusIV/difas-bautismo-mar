@@ -459,6 +459,29 @@
           </div>
 
           <div class="fila">
+  <div>
+    <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
+    <select id="usa_enlace_externo">
+      <option value="0">No</option>
+      <option value="1">Sí</option>
+    </select>
+  </div>
+
+  <div id="bloqueEnlaceExternoUrl">
+    <label for="enlace_externo_url">URL enlace externo</label>
+    <input type="text" id="enlace_externo_url" placeholder="https://...">
+  </div>
+</div>
+
+<div class="fila" id="bloqueEnlaceExternoTexto">
+  <div>
+    <label for="enlace_externo_texto">Texto del enlace</label>
+    <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+  </div>
+  <div></div>
+</div>
+          
+          <div class="fila">
             <div>
               <label for="imagen_url">Imagen URL</label>
               <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
@@ -668,6 +691,9 @@
       document.getElementById("es_recurrente").value = String(actividad.es_recurrente ?? 0);
       document.getElementById("patron_recurrencia").value = actividad.patron_recurrencia || "";
       document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+      document.getElementById("usa_enlace_externo").value = String(actividad.usa_enlace_externo ?? 0);
+      document.getElementById("enlace_externo_url").value = actividad.enlace_externo_url || "";
+      document.getElementById("enlace_externo_texto").value = actividad.enlace_externo_texto || "";
       actualizarVisibilidadFormulario();
       actualizarPreview();
     }
@@ -703,6 +729,16 @@
       const bloqueRecurrencia = document.getElementById("bloqueRecurrencia");
       const bloquePatron = document.getElementById("bloquePatronRecurrencia");
       const aviso = document.getElementById("avisoConfiguracion");
+
+      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
+
+      document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
+      document.getElementById("bloqueEnlaceExternoTexto").classList.toggle("oculto", !usaEnlaceExterno);
+
+      if (!usaEnlaceExterno) {
+        document.getElementById("enlace_externo_url").value = "";
+        document.getElementById("enlace_externo_texto").value = "";
+      }
 
       document.getElementById("bloqueFechas").style.display =
         tipo === "TEMPORAL" ? "grid" : "none";
@@ -813,6 +849,9 @@
         aforo_limitado: document.getElementById("aforo_limitado").value,
         provincia: document.getElementById("provincia").value.trim(),
         es_recurrente: document.getElementById("es_recurrente").value,
+        usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
+        enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
+        enlace_externo_texto: document.getElementById("enlace_externo_texto").value.trim(),
         patron_recurrencia: document.getElementById("patron_recurrencia").value.trim()
       };
 
@@ -879,6 +918,7 @@
         "requiere_reserva",
         "aforo_limitado",
         "es_recurrente"
+        "usa_enlace_externo",
       ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
