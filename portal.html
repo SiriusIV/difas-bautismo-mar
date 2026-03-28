@@ -1359,7 +1359,7 @@ function renderMapaActividad(a) {
   }
 }
 
-    function renderDetalle() {
+function renderDetalle() {
   const a = actividadSeleccionada;
 
   if (!a) {
@@ -1375,8 +1375,6 @@ function renderMapaActividad(a) {
     document.getElementById("btnEnlaceExterno").onclick = null;
     document.getElementById("direccionActividad").style.display = "none";
     document.getElementById("direccionActividad").innerHTML = "";
-    document.getElementById("btnEnlaceExterno").style.display = "none";
-    document.getElementById("btnEnlaceExterno").onclick = null;
     renderMapaActividad(null);
     actividadFranjasSolicitada = null;
     cargarFranjasActividad(null);
@@ -1385,29 +1383,27 @@ function renderMapaActividad(a) {
 
   document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
   document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
-  document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";     
+  document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
 
   const tieneEnlaceExterno =
-  Number(a.usa_enlace_externo || 0) === 1 &&
-  String(a.enlace_externo_url || "").trim() !== "";
+    Number(a.usa_enlace_externo || 0) === 1 &&
+    String(a.enlace_externo_url || "").trim() !== "";
 
-const organizadorHTML = a.organizador_publico
-  ? `<div><strong>Organiza:</strong> ${
-      tieneEnlaceExterno
-        ? `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="link-organizador">
-             ${a.organizador_publico}
-           </a>`
-        : a.organizador_publico
-    }</div>`
-  : "";
+  const organizadorHTML = a.organizador_publico
+    ? `<div><strong>Organiza:</strong> ${
+        tieneEnlaceExterno
+          ? `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="link-organizador">${a.organizador_publico}</a>`
+          : a.organizador_publico
+      }</div>`
+    : "";
 
-document.getElementById("detalleMeta").innerHTML = `
-  ${organizadorHTML}
-  ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
-  ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
-  ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
-  ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
-`;
+  document.getElementById("detalleMeta").innerHTML = `
+    ${organizadorHTML}
+    ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
+    ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
+    ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
+    ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+  `;
 
   let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
@@ -1440,10 +1436,6 @@ document.getElementById("detalleMeta").innerHTML = `
     btnSolicitar.disabled = false;
     btnSolicitar.title = "";
   }
-
-  const tieneEnlaceExterno =
-    Number(a.usa_enlace_externo || 0) === 1 &&
-    String(a.enlace_externo_url || "").trim() !== "";
 
   if (tieneEnlaceExterno) {
     btnEnlaceExterno.style.display = "inline-block";
