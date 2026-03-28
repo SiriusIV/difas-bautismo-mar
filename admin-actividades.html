@@ -5,54 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de actividades</title>
   <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --panel: #f7f9fb;
+      --border: #dde4ea;
+      --text: #222;
+      --muted: #5f6d7a;
+      --brand: #123a63;
+      --primary: #0b5ed7;
+      --primary-dark: #094db1;
+      --ok-bg: #eaf7ea;
+      --ok-text: #146c2e;
+      --ok-border: #b9e0c0;
+      --err-bg: #fdeaea;
+      --err-text: #9b1c1c;
+      --err-border: #f5c2c2;
+      --info-bg: #eef4ff;
+      --info-text: #1d4f91;
+      --info-border: #c9dcff;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background: var(--bg);
       margin: 0;
-      padding: 0;
-      color: #222;
+      color: var(--text);
     }
-
-    .contenedor {
-      max-width: 1200px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-    }
-
-    h1 { margin: 0; font-size: 34px; }
-    h2 { margin: 10px 0 0; font-size: 18px; font-weight: normal; color: #444; }
 
     .cabecera {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 24px 20px 18px;
       position: relative;
-      min-height: 150px;
-      margin-bottom: 24px;
-      border-bottom: 1px solid #d9e0e7;
-      padding-bottom: 18px;
     }
 
-    .logo {
-      position: absolute;
-      left: 0;
-      top: 0;
-      max-width: 110px;
-      height: auto;
-    }
-
-    .titulos {
-      text-align: center;
-      padding: 0 180px;
-    }
-
-    .nav-centro {
-      margin-top: 18px;
-      display: inline-flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    .cabecera-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
       justify-content: center;
       align-items: center;
+    }
+
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+
+    .logo-cabecera {
+      width: 82px;
+      height: auto;
+      display: block;
+    }
+
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 28px;
+      color: var(--brand);
+      line-height: 1.2;
+      font-weight: 600;
+    }
+
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 16px;
+      font-weight: normal;
+      color: #4a5a6a;
+    }
+
+    .acciones-cabecera {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+    }
+
+    .btn-icono {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: var(--primary);
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .barra-acciones {
+      max-width: 1320px;
+      margin: 12px auto 0;
+      padding: 0 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .nav-btn {
@@ -73,65 +140,132 @@
       background: #f7f9fb;
     }
 
-    .acciones-cabecera {
-      position: absolute;
-      right: 0;
-      top: 0;
+    .nav-btn.activo {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
     }
 
-    .btn-icono {
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
-      color: #4a5a6a;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      padding: 0;
+    .contenedor {
+      max-width: 1320px;
+      margin: 18px auto 30px;
+      padding: 0 20px;
     }
 
-    .btn-icono:hover {
-      background: #f7f9fb;
-      color: #0b5ed7;
-      border-color: #9fb2c7;
+    .mensaje {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      border: 1px solid transparent;
+      line-height: 1.5;
     }
 
-    .btn-icono svg {
-      width: 18px;
-      height: 18px;
+    .mensaje.error {
+      display: block;
+      background: var(--err-bg);
+      color: var(--err-text);
+      border-color: var(--err-border);
     }
 
-    .btn {
-      background: #0b5ed7;
-      color: white;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
+    .mensaje.ok {
+      display: block;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
     }
 
-    .btn:hover {
-      background: #094db1;
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      align-items: start;
     }
 
     .panel {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
       padding: 18px;
-      margin-bottom: 24px;
+    }
+
+    .panel h3 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      color: var(--brand);
+    }
+
+    .wizard-head {
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .wizard-head-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--brand);
+      margin-bottom: 10px;
+    }
+
+    .wizard-progress {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .wizard-step-chip {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #cfd8e3;
+      color: #4a5a6a;
+      background: #fff;
+    }
+
+    .wizard-step-chip.activo {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .wizard-step-chip.completo {
+      background: #eef4ff;
+      border-color: #c9dcff;
+      color: var(--info-text);
+    }
+
+    .step-pane {
+      display: none;
+    }
+
+    .step-pane.activo {
+      display: block;
+    }
+
+    .step-title {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: var(--brand);
+    }
+
+    .step-help {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .fila {
       display: grid;
       grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .fila-compacta {
+      display: grid;
+      grid-template-columns: minmax(180px, 240px) minmax(180px, 240px);
       gap: 14px;
       margin-bottom: 14px;
     }
@@ -147,119 +281,169 @@
       display: block;
       font-weight: bold;
       margin-bottom: 6px;
+      color: #334250;
     }
 
     input, select, textarea {
       width: 100%;
       padding: 10px;
       border: 1px solid #c9cfd6;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 15px;
       box-sizing: border-box;
+      background: #fff;
     }
 
     textarea {
-      min-height: 100px;
+      min-height: 110px;
       resize: vertical;
     }
 
-    .acciones-form {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    .input-corto {
+      max-width: 220px;
     }
 
-    .mensaje {
-      margin-bottom: 16px;
-      padding: 12px;
-      border-radius: 6px;
-      display: none;
-    }
-
-    .mensaje.error {
-      display: block;
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
-    }
-
-    .mensaje.ok {
-      display: block;
-      background: #eaf7ea;
-      color: #146c2e;
-      border: 1px solid #b9e0c0;
-    }
-
-    .preview {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 14px;
-      line-height: 1.6;
-    }
-
-    .preview img {
-      max-width: 260px;
-      max-height: 180px;
-      object-fit: cover;
-      display: block;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      background: #dfe7ef;
+    .input-mini {
+      max-width: 140px;
     }
 
     .oculto {
       display: none !important;
     }
 
-    .seccion-form {
-      margin-bottom: 22px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #dde4ea;
-    }
-
-    .seccion-form:last-of-type {
-      border-bottom: none;
-      margin-bottom: 14px;
-    }
-
-    .seccion-form h4 {
-      margin: 0 0 14px;
-      font-size: 18px;
-      color: #123a63;
-    }
-
-    .seccion-ayuda {
-      margin: -6px 0 14px;
-      font-size: 13px;
-      color: #5f6d7a;
-      line-height: 1.5;
-    }
-
     .aviso-config {
       margin: 10px 0 14px;
       padding: 10px 12px;
-      border-radius: 6px;
-      background: #eef4ff;
-      color: #1d4f91;
-      border: 1px solid #c9dcff;
+      border-radius: 8px;
+      background: var(--info-bg);
+      color: var(--info-text);
+      border: 1px solid var(--info-border);
       font-size: 13px;
       line-height: 1.5;
     }
 
-    @media (max-width: 900px) {
-      .fila {
+    .wizard-actions {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .wizard-actions-left,
+    .wizard-actions-right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .preview {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      line-height: 1.6;
+    }
+
+    .preview img {
+      width: 100%;
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      display: block;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      background: #dfe7ef;
+    }
+
+    .preview h4 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: var(--brand);
+      line-height: 1.2;
+    }
+
+    .preview-subtitulo {
+      margin: 0 0 12px;
+      color: #4a5a6a;
+      font-size: 16px;
+    }
+
+    .preview-meta {
+      font-size: 14px;
+      color: #4d5966;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
+    .preview-texto {
+      white-space: pre-wrap;
+      color: #37424d;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .preview-link {
+      display: inline-block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .preview-link:hover {
+      text-decoration: underline;
+    }
+
+    .resumen-lateral {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #37424d;
+    }
+
+    .resumen-lateral strong {
+      color: var(--brand);
+    }
+
+    @media (max-width: 980px) {
+      .layout {
         grid-template-columns: 1fr;
       }
+    }
 
-      .titulos {
-        padding: 120px 0 0 0;
-      }
-
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 12px auto;
+    @media (max-width: 900px) {
+      .fila, .fila-compacta {
+        grid-template-columns: 1fr;
       }
 
       .acciones-cabecera {
@@ -269,276 +453,351 @@
         margin-top: 12px;
       }
 
-      .cabecera {
-        min-height: auto;
+      .bloque-marca {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .titulos-cabecera h1 {
+        font-size: 24px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor" id="app" style="display:none;">
-    <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
-
-      <div class="titulos">
-        <h1 id="tituloCabecera">Actividades</h1>
-        <h2 id="subtituloCabecera">Alta y edición de eventos</h2>
-
-        <div class="nav-centro">
-          <a class="nav-btn" href="mis-actividades.html">Actividades</a>
-          <a class="nav-btn" href="portal.html">Portal</a>
+  <div class="cabecera">
+    <div class="cabecera-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+        <div class="titulos-cabecera">
+          <h1>Gestión de actividades</h1>
+          <h2 id="subtituloCabecera">Alta y edición de actividades</h2>
         </div>
-      </div>
-
-      <div class="acciones-cabecera">
-        <button type="button" class="btn-icono" id="btnCerrarSesion" title="Cerrar sesión" aria-label="Cerrar sesión">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-        </button>
       </div>
     </div>
 
+    <div class="acciones-cabecera">
+      <button type="button" class="btn-icono" id="btnCerrarSesion" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="barra-acciones">
+    <a class="nav-btn" href="mis-actividades.html">Lista de actividades</a>
+    <a class="nav-btn" href="portal.html">Inicio</a>
+  </div>
+
+  <div class="contenedor" id="app" style="display:none;">
     <div id="mensajeActividad" class="mensaje"></div>
 
-    <div class="panel">
-      <h3 id="tituloFormulario">Nueva actividad / evento</h3>
-
-      <form id="formActividad" novalidate>
-        <input type="hidden" id="actividadId" value="">
-
-        <div class="seccion-form">
-          <h4>Identificación</h4>
-
-          <div class="fila">
-            <div>
-              <label for="nombre">Nombre interno</label>
-              <input type="text" id="nombre" required>
-            </div>
-
-            <div id="bloqueAdminResponsable">
-              <label for="admin_id">Administrador responsable</label>
-              <select id="admin_id"></select>
-            </div>
-          </div>
-
-          <div class="fila">
-            <div>
-              <label for="organizador_publico">Organizador público</label>
-              <input type="text" id="organizador_publico">
-            </div>
-            <div></div>
-          </div>
+    <div class="layout">
+      <div class="panel">
+        <div class="wizard-head">
+          <div class="wizard-head-title" id="tituloFormulario">Nueva actividad</div>
+          <div class="wizard-progress" id="wizardProgress"></div>
         </div>
 
-        <div class="seccion-form">
-          <h4>Configuración de actividad</h4>
-          <div class="seccion-ayuda">
-            Define cómo se comportará la actividad: si usa franjas, si requiere reserva y si tendrá control de aforo.
+        <form id="formActividad" novalidate>
+          <input type="hidden" id="actividadId" value="">
+
+          <section class="step-pane activo" data-step="0">
+            <h4 class="step-title">Identificación</h4>
+            <p class="step-help">Define el nombre interno de la actividad y quién la gestiona.</p>
+
+            <div class="fila">
+              <div>
+                <label for="nombre">Nombre interno</label>
+                <input type="text" id="nombre" required>
+              </div>
+
+              <div id="bloqueAdminResponsable">
+                <label for="admin_id">Administrador responsable</label>
+                <select id="admin_id"></select>
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="organizador_publico">Organizador público</label>
+                <input type="text" id="organizador_publico">
+              </div>
+              <div></div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="1">
+            <h4 class="step-title">Comportamiento</h4>
+            <p class="step-help">Configura si la actividad es temporal o permanente, si usa franjas, si requiere reserva y si controla aforo.</p>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="tipo">Tipo</label>
+                <select id="tipo" class="input-corto">
+                  <option value="TEMPORAL">TEMPORAL</option>
+                  <option value="PERMANENTE">PERMANENTE</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="usa_franjas">¿Usa franjas horarias?</label>
+                <select id="usa_franjas" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="requiere_reserva">¿Requiere reserva?</label>
+                <select id="requiere_reserva" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aforo_limitado">¿Aforo limitado?</label>
+                <select id="aforo_limitado" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="avisoConfiguracion" class="aviso-config oculto"></div>
+          </section>
+
+          <section class="step-pane" data-step="2">
+            <h4 class="step-title">Programación</h4>
+            <p class="step-help">Define fechas para actividades temporales y, si procede, la recurrencia informativa de sus franjas.</p>
+
+            <div class="fila" id="bloqueFechas">
+              <div>
+                <label for="fecha_inicio">Fecha inicio</label>
+                <input type="date" id="fecha_inicio">
+              </div>
+
+              <div>
+                <label for="fecha_fin">Fecha fin</label>
+                <input type="date" id="fecha_fin">
+              </div>
+            </div>
+
+            <div id="bloqueRecurrencia">
+              <div class="fila-compacta">
+                <div>
+                  <label for="es_recurrente">¿Franja recurrente?</label>
+                  <select id="es_recurrente" class="input-mini">
+                    <option value="0">No</option>
+                    <option value="1">Sí</option>
+                  </select>
+                </div>
+                <div></div>
+              </div>
+
+              <div class="fila" id="bloquePatronRecurrencia">
+                <div>
+                  <label for="patron_recurrencia">Patrón (texto libre)</label>
+                  <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados">
+                </div>
+                <div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="3">
+            <h4 class="step-title">Publicación</h4>
+            <p class="step-help">Controla la visibilidad de la actividad y su orden de aparición en el portal.</p>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="visible_portal">Visible en portal</label>
+                <select id="visible_portal" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="activa">Activa</label>
+                <select id="activa" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="orden_portal">Orden en portal</label>
+                <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
+              </div>
+
+              <div>
+                <label for="provincia">Provincia</label>
+                <input type="text" id="provincia">
+              </div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="4">
+            <h4 class="step-title">Contenido</h4>
+            <p class="step-help">Configura los textos visibles, la imagen y el posible enlace externo asociado a la actividad.</p>
+
+            <div class="fila">
+              <div>
+                <label for="titulo_publico">Título público</label>
+                <input type="text" id="titulo_publico">
+              </div>
+
+              <div>
+                <label for="subtitulo_publico">Subtítulo público</label>
+                <input type="text" id="subtitulo_publico">
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="descripcion">Descripción interna</label>
+                <input type="text" id="descripcion">
+              </div>
+
+              <div>
+                <label for="imagen_url">Imagen URL</label>
+                <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="descripcion_corta">Descripción corta</label>
+                <textarea id="descripcion_corta"></textarea>
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="descripcion_larga">Descripción larga</label>
+                <textarea id="descripcion_larga"></textarea>
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
+                <select id="usa_enlace_externo" class="input-mini">
+                  <option value="0">No</option>
+                  <option value="1">Sí</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+
+            <div class="fila" id="bloqueEnlaceExternoUrl">
+              <div>
+                <label for="enlace_externo_url">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://...">
+              </div>
+              <div></div>
+            </div>
+
+            <div class="fila" id="bloqueEnlaceExternoTexto">
+              <div>
+                <label for="enlace_externo_texto">Texto del enlace</label>
+                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+              </div>
+              <div></div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="5">
+            <h4 class="step-title">Localización</h4>
+            <p class="step-help">Introduce el lugar visible al usuario y los datos necesarios para el mapa de Leaflet y el vínculo a Google Maps.</p>
+
+            <div class="fila">
+              <div>
+                <label for="lugar">Lugar</label>
+                <input type="text" id="lugar">
+              </div>
+
+              <div>
+                <label for="direccion_postal">Dirección postal</label>
+                <input type="text" id="direccion_postal">
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="latitud">Latitud</label>
+                <input type="number" id="latitud" step="any" class="input-corto">
+              </div>
+
+              <div>
+                <label for="longitud">Longitud</label>
+                <input type="number" id="longitud" step="any" class="input-corto">
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="zoom_mapa">Zoom mapa</label>
+                <input type="number" id="zoom_mapa" step="1" min="1" max="20" class="input-mini" value="15">
+              </div>
+              <div></div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="6">
+            <h4 class="step-title">Vista previa final</h4>
+            <p class="step-help">Revisa el resultado antes de guardar la actividad.</p>
+
+            <div class="preview">
+              <img id="previewImagen" src="logo.png" alt="Vista previa">
+              <h4 id="previewTitulo">-</h4>
+              <div id="previewSubtitulo" class="preview-subtitulo">-</div>
+
+              <div class="preview-meta">
+                <div><strong>Organiza:</strong> <span id="previewOrganizador">-</span></div>
+                <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
+                <div><strong>Provincia:</strong> <span id="previewProvincia">-</span></div>
+                <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
+                <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
+                <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
+                <div><strong>Dirección:</strong> <span id="previewDireccion">-</span></div>
+                <div><strong>Coordenadas:</strong> <span id="previewCoords">-</span></div>
+              </div>
+
+              <div class="preview-texto" id="previewDescripcionCorta">-</div>
+              <div class="preview-texto" id="previewDescripcionLarga">-</div>
+              <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
+            </div>
+          </section>
+
+          <div class="wizard-actions">
+            <div class="wizard-actions-left">
+              <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
+            </div>
+
+            <div class="wizard-actions-right">
+              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
+              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+            </div>
           </div>
+        </form>
+      </div>
 
-          <div class="fila">
-            <div>
-              <label for="tipo">Tipo</label>
-              <select id="tipo">
-                <option value="TEMPORAL">TEMPORAL</option>
-                <option value="PERMANENTE">PERMANENTE</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="usa_franjas">¿Usa franjas horarias?</label>
-              <select id="usa_franjas">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="fila">
-            <div>
-              <label for="requiere_reserva">¿Requiere reserva?</label>
-              <select id="requiere_reserva">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="aforo_limitado">¿Aforo limitado?</label>
-              <select id="aforo_limitado">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div id="avisoConfiguracion" class="aviso-config oculto"></div>
+      <div class="panel">
+        <h3>Resumen rápido</h3>
+        <div class="resumen-lateral" id="resumenLateral">
+          Complete los pasos del asistente para revisar la configuración general de la actividad.
         </div>
-
-        <div class="seccion-form" id="seccionProgramacion">
-          <h4>Programación</h4>
-
-          <div class="fila" id="bloqueFechas">
-            <div>
-              <label for="fecha_inicio">Fecha inicio</label>
-              <input type="date" id="fecha_inicio">
-            </div>
-
-            <div>
-              <label for="fecha_fin">Fecha fin</label>
-              <input type="date" id="fecha_fin">
-            </div>
-          </div>
-
-          <div class="fila" id="bloqueRecurrencia">
-            <div>
-              <label for="es_recurrente">¿Franja recurrente?</label>
-              <select id="es_recurrente">
-                <option value="0">No</option>
-                <option value="1">Sí</option>
-              </select>
-            </div>
-
-            <div id="bloquePatronRecurrencia">
-              <label for="patron_recurrencia">Patrón (texto libre)</label>
-              <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados">
-            </div>
-          </div>
-        </div>
-
-        <div class="seccion-form">
-          <h4>Publicación</h4>
-
-          <div class="fila">
-            <div>
-              <label for="visible_portal">Visible en portal</label>
-              <select id="visible_portal">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="activa">Activa</label>
-              <select id="activa">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="fila">
-            <div>
-              <label for="orden_portal">Orden en portal</label>
-              <input type="number" id="orden_portal" value="0" min="0" step="1">
-            </div>
-
-            <div>
-              <label for="provincia">Provincia</label>
-              <input type="text" id="provincia">
-            </div>
-          </div>
-        </div>
-
-        <div class="seccion-form">
-          <h4>Contenido público</h4>
-
-          <div class="fila">
-            <div>
-              <label for="titulo_publico">Título público</label>
-              <input type="text" id="titulo_publico">
-            </div>
-
-            <div>
-              <label for="subtitulo_publico">Subtítulo público</label>
-              <input type="text" id="subtitulo_publico">
-            </div>
-          </div>
-
-          <div class="fila">
-  <div>
-    <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
-    <select id="usa_enlace_externo">
-      <option value="0">No</option>
-      <option value="1">Sí</option>
-    </select>
-  </div>
-
-  <div id="bloqueEnlaceExternoUrl">
-    <label for="enlace_externo_url">URL enlace externo</label>
-    <input type="text" id="enlace_externo_url" placeholder="https://...">
-  </div>
-</div>
-
-<div class="fila" id="bloqueEnlaceExternoTexto">
-  <div>
-    <label for="enlace_externo_texto">Texto del enlace</label>
-    <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
-  </div>
-  <div></div>
-</div>
-          
-          <div class="fila">
-            <div>
-              <label for="imagen_url">Imagen URL</label>
-              <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
-            </div>
-
-            <div>
-              <label for="descripcion">Descripción interna</label>
-              <input type="text" id="descripcion">
-            </div>
-          </div>
-
-          <div class="fila-una">
-            <div>
-              <label for="descripcion_corta">Descripción corta</label>
-              <textarea id="descripcion_corta"></textarea>
-            </div>
-          </div>
-
-          <div class="fila-una">
-            <div>
-              <label for="descripcion_larga">Descripción larga</label>
-              <textarea id="descripcion_larga"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="seccion-form">
-          <h4>Localización</h4>
-
-          <div class="fila">
-            <div>
-              <label for="lugar">Lugar</label>
-              <input type="text" id="lugar">
-            </div>
-            <div></div>
-          </div>
-        </div>
-
-        <div class="acciones-form">
-          <button type="submit" class="btn" id="btnGuardarActividad">Guardar actividad</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="panel">
-      <h3>Vista previa básica</h3>
-      <div class="preview">
-        <img id="previewImagen" src="logo.png" alt="Vista previa">
-        <div><strong>Título:</strong> <span id="previewTitulo">-</span></div>
-        <div><strong>Organizador:</strong> <span id="previewOrganizador">-</span></div>
-        <div><strong>Subtítulo:</strong> <span id="previewSubtitulo">-</span></div>
-        <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
-        <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
-        <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
-        <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
-        <div style="margin-top:8px;"><strong>Descripción corta:</strong></div>
-        <div id="previewDescripcionCorta">-</div>
       </div>
     </div>
   </div>
@@ -549,6 +808,17 @@
     let usuarioSesion = null;
     let esSuperAdmin = false;
     let actividadEditandoId = null;
+    let pasoActual = 0;
+
+    const pasos = [
+      "Identificación",
+      "Comportamiento",
+      "Programación",
+      "Publicación",
+      "Contenido",
+      "Localización",
+      "Vista previa"
+    ];
 
     function getActividadIdURL() {
       const params = new URLSearchParams(window.location.search);
@@ -561,6 +831,7 @@
       m.className = "mensaje " + tipo;
       m.style.display = "block";
       m.textContent = texto;
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function limpiarMensaje() {
@@ -596,11 +867,7 @@
 
       usuarioSesion = data.user;
       esSuperAdmin = rol === "SUPERADMIN";
-
-      const nombreCabecera = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
-      document.getElementById("tituloCabecera").textContent = "Actividades";
-      document.getElementById("subtituloCabecera").textContent = nombreCabecera;
-
+      document.getElementById("subtituloCabecera").textContent = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
       return true;
     }
 
@@ -666,36 +933,48 @@
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
     }
 
+    function setValor(id, valor) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = valor ?? "";
+    }
+
     function rellenarFormulario(actividad) {
-      document.getElementById("actividadId").value = actividad.id || "";
-      document.getElementById("nombre").value = actividad.nombre || "";
-      document.getElementById("admin_id").value = actividad.admin_id || "";
-      document.getElementById("organizador_publico").value = actividad.organizador_publico || "";
-      document.getElementById("tipo").value = actividad.tipo || "TEMPORAL";
-      document.getElementById("fecha_inicio").value = actividad.fecha_inicio || "";
-      document.getElementById("fecha_fin").value = actividad.fecha_fin || "";
-      document.getElementById("activa").value = String(actividad.activa ?? 1);
-      document.getElementById("descripcion").value = actividad.descripcion || "";
-      document.getElementById("titulo_publico").value = actividad.titulo_publico || "";
-      document.getElementById("subtitulo_publico").value = actividad.subtitulo_publico || "";
-      document.getElementById("descripcion_corta").value = actividad.descripcion_corta || "";
-      document.getElementById("descripcion_larga").value = actividad.descripcion_larga || "";
-      document.getElementById("lugar").value = actividad.lugar || "";
-      document.getElementById("imagen_url").value = actividad.imagen_url || "";
-      document.getElementById("visible_portal").value = String(actividad.visible_portal ?? 1);
-      document.getElementById("orden_portal").value = String(actividad.orden_portal ?? 0);
-      document.getElementById("usa_franjas").value = String(actividad.usa_franjas ?? 1);
-      document.getElementById("requiere_reserva").value = String(actividad.requiere_reserva ?? 1);
-      document.getElementById("aforo_limitado").value = String(actividad.aforo_limitado ?? 1);
-      document.getElementById("provincia").value = actividad.provincia || "";
-      document.getElementById("es_recurrente").value = String(actividad.es_recurrente ?? 0);
-      document.getElementById("patron_recurrencia").value = actividad.patron_recurrencia || "";
-      document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
-      document.getElementById("usa_enlace_externo").value = String(actividad.usa_enlace_externo ?? 0);
-      document.getElementById("enlace_externo_url").value = actividad.enlace_externo_url || "";
-      document.getElementById("enlace_externo_texto").value = actividad.enlace_externo_texto || "";
+      setValor("actividadId", actividad.id || "");
+      setValor("nombre", actividad.nombre || "");
+      setValor("admin_id", actividad.admin_id || "");
+      setValor("organizador_publico", actividad.organizador_publico || "");
+      setValor("tipo", actividad.tipo || "TEMPORAL");
+      setValor("fecha_inicio", actividad.fecha_inicio || "");
+      setValor("fecha_fin", actividad.fecha_fin || "");
+      setValor("activa", String(actividad.activa ?? 1));
+      setValor("descripcion", actividad.descripcion || "");
+      setValor("titulo_publico", actividad.titulo_publico || "");
+      setValor("subtitulo_publico", actividad.subtitulo_publico || "");
+      setValor("descripcion_corta", actividad.descripcion_corta || "");
+      setValor("descripcion_larga", actividad.descripcion_larga || "");
+      setValor("lugar", actividad.lugar || "");
+      setValor("imagen_url", actividad.imagen_url || "");
+      setValor("visible_portal", String(actividad.visible_portal ?? 1));
+      setValor("orden_portal", String(actividad.orden_portal ?? 0));
+      setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
+      setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
+      setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
+      setValor("provincia", actividad.provincia || "");
+      setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
+      setValor("patron_recurrencia", actividad.patron_recurrencia || "");
+      setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
+      setValor("enlace_externo_url", actividad.enlace_externo_url || "");
+      setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
+      setValor("direccion_postal", actividad.direccion_postal || "");
+      setValor("latitud", actividad.latitud ?? "");
+      setValor("longitud", actividad.longitud ?? "");
+      setValor("zoom_mapa", actividad.zoom_mapa ?? 15);
+
+      document.getElementById("tituloFormulario").textContent = "Editar actividad";
       actualizarVisibilidadFormulario();
       actualizarPreview();
+      actualizarResumenLateral();
     }
 
     async function cargarActividadSiEsEdicion() {
@@ -712,44 +991,36 @@
       rellenarFormulario(actividad);
     }
 
-    function actualizarBloqueFechas() {
-      const tipo = document.getElementById("tipo").value;
-      document.getElementById("bloqueFechas").style.display =
-        tipo === "TEMPORAL" ? "grid" : "none";
-    }
-
     function actualizarVisibilidadFormulario() {
       const tipo = document.getElementById("tipo").value;
       const usaFranjas = document.getElementById("usa_franjas").value === "1";
       const requiereReserva = document.getElementById("requiere_reserva").value === "1";
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
       const esRecurrente = document.getElementById("es_recurrente").value === "1";
-
-      const seccionProgramacion = document.getElementById("seccionProgramacion");
-      const bloqueRecurrencia = document.getElementById("bloqueRecurrencia");
-      const bloquePatron = document.getElementById("bloquePatronRecurrencia");
-      const aviso = document.getElementById("avisoConfiguracion");
-
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
 
-      document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
-      document.getElementById("bloqueEnlaceExternoTexto").classList.toggle("oculto", !usaEnlaceExterno);
+      const bloqueFechas = document.getElementById("bloqueFechas");
+      const bloqueRecurrencia = document.getElementById("bloqueRecurrencia");
+      const bloquePatron = document.getElementById("bloquePatronRecurrencia");
+      const bloqueUrl = document.getElementById("bloqueEnlaceExternoUrl");
+      const bloqueTexto = document.getElementById("bloqueEnlaceExternoTexto");
+      const aviso = document.getElementById("avisoConfiguracion");
 
-      if (!usaEnlaceExterno) {
-        document.getElementById("enlace_externo_url").value = "";
-        document.getElementById("enlace_externo_texto").value = "";
-      }
-
-      document.getElementById("bloqueFechas").style.display =
-        tipo === "TEMPORAL" ? "grid" : "none";
-
-      seccionProgramacion.classList.toggle("oculto", !usaFranjas);
+      bloqueFechas.classList.toggle("oculto", tipo !== "TEMPORAL");
       bloqueRecurrencia.classList.toggle("oculto", !usaFranjas);
       bloquePatron.classList.toggle("oculto", !usaFranjas || !esRecurrente);
+
+      bloqueUrl.classList.toggle("oculto", !usaEnlaceExterno);
+      bloqueTexto.classList.toggle("oculto", !usaEnlaceExterno);
 
       if (!usaFranjas) {
         document.getElementById("es_recurrente").value = "0";
         document.getElementById("patron_recurrencia").value = "";
+      }
+
+      if (!usaEnlaceExterno) {
+        document.getElementById("enlace_externo_url").value = "";
+        document.getElementById("enlace_externo_texto").value = "";
       }
 
       const mensajes = [];
@@ -802,24 +1073,161 @@
       const organizador = document.getElementById("organizador_publico").value.trim() || "-";
       const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "-";
       const lugar = document.getElementById("lugar").value.trim() || "-";
+      const provincia = document.getElementById("provincia").value.trim() || "-";
       const tipo = document.getElementById("tipo").value;
       const fecha_inicio = document.getElementById("fecha_inicio").value;
       const fecha_fin = document.getElementById("fecha_fin").value;
       const descripcion_corta = document.getElementById("descripcion_corta").value.trim() || "-";
+      const descripcion_larga = document.getElementById("descripcion_larga").value.trim() || "-";
       const imagen = document.getElementById("imagen_url").value.trim() || "logo.png";
+      const direccion = document.getElementById("direccion_postal").value.trim() || "-";
+      const lat = document.getElementById("latitud").value.trim();
+      const lng = document.getElementById("longitud").value.trim();
+      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
+      const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
+      const enlaceTexto = document.getElementById("enlace_externo_texto").value.trim() || "Más información";
 
       document.getElementById("previewTitulo").textContent = titulo;
       document.getElementById("previewOrganizador").textContent = organizador;
       document.getElementById("previewSubtitulo").textContent = subtitulo;
       document.getElementById("previewLugar").textContent = lugar;
+      document.getElementById("previewProvincia").textContent = provincia;
       document.getElementById("previewTipo").textContent = tipo;
       document.getElementById("previewFechas").textContent =
         tipo === "TEMPORAL"
           ? `${fecha_inicio || "-"} a ${fecha_fin || "-"}`
           : "Permanente";
       document.getElementById("previewModo").textContent = obtenerTextoModoPreview();
+      document.getElementById("previewDireccion").textContent = direccion;
+      document.getElementById("previewCoords").textContent =
+        lat && lng ? `${lat}, ${lng}` : "-";
       document.getElementById("previewDescripcionCorta").textContent = descripcion_corta;
+      document.getElementById("previewDescripcionLarga").textContent = descripcion_larga;
       document.getElementById("previewImagen").src = imagen;
+
+      const link = document.getElementById("previewEnlaceExterno");
+      if (usaEnlaceExterno && enlaceUrl) {
+        link.classList.remove("oculto");
+        link.href = enlaceUrl;
+        link.textContent = enlaceTexto;
+      } else {
+        link.classList.add("oculto");
+        link.href = "#";
+        link.textContent = "Más información";
+      }
+    }
+
+    function actualizarResumenLateral() {
+      const nombre = document.getElementById("nombre").value.trim() || "-";
+      const tipo = document.getElementById("tipo").value;
+      const usaFranjas = document.getElementById("usa_franjas").value === "1" ? "Sí" : "No";
+      const requiereReserva = document.getElementById("requiere_reserva").value === "1" ? "Sí" : "No";
+      const aforoLimitado = document.getElementById("aforo_limitado").value === "1" ? "Sí" : "No";
+      const provincia = document.getElementById("provincia").value.trim() || "-";
+      const visible = document.getElementById("visible_portal").value === "1" ? "Sí" : "No";
+      const activa = document.getElementById("activa").value === "1" ? "Sí" : "No";
+
+      document.getElementById("resumenLateral").innerHTML = `
+        <div><strong>Actividad:</strong> ${nombre}</div>
+        <div><strong>Tipo:</strong> ${tipo}</div>
+        <div><strong>Usa franjas:</strong> ${usaFranjas}</div>
+        <div><strong>Requiere reserva:</strong> ${requiereReserva}</div>
+        <div><strong>Aforo limitado:</strong> ${aforoLimitado}</div>
+        <div><strong>Provincia:</strong> ${provincia}</div>
+        <div><strong>Visible en portal:</strong> ${visible}</div>
+        <div><strong>Activa:</strong> ${activa}</div>
+      `;
+    }
+
+    function renderWizardProgress() {
+      const cont = document.getElementById("wizardProgress");
+      cont.innerHTML = pasos.map((p, i) => {
+        const clase = i === pasoActual ? "activo" : (i < pasoActual ? "completo" : "");
+        return `<span class="wizard-step-chip ${clase}">${i + 1}. ${p}</span>`;
+      }).join("");
+    }
+
+    function mostrarPaso(index) {
+      const panes = Array.from(document.querySelectorAll(".step-pane"));
+      pasoActual = Math.max(0, Math.min(index, panes.length - 1));
+
+      panes.forEach((pane, i) => {
+        pane.classList.toggle("activo", i === pasoActual);
+      });
+
+      document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
+      document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
+      document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
+
+      renderWizardProgress();
+      actualizarPreview();
+      actualizarResumenLateral();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function validarPasoActual() {
+      limpiarMensaje();
+
+      if (pasoActual === 0) {
+        const nombre = document.getElementById("nombre").value.trim();
+        const adminId = document.getElementById("admin_id").value;
+
+        if (!nombre) {
+          mostrarMensaje("error", "Debe indicar el nombre interno de la actividad.");
+          return false;
+        }
+
+        if (esSuperAdmin && !adminId) {
+          mostrarMensaje("error", "Debe indicar el administrador responsable.");
+          return false;
+        }
+      }
+
+      if (pasoActual === 2) {
+        const tipo = document.getElementById("tipo").value;
+        const usaFranjas = document.getElementById("usa_franjas").value === "1";
+        const esRecurrente = document.getElementById("es_recurrente").value === "1";
+        const fechaInicio = document.getElementById("fecha_inicio").value;
+        const fechaFin = document.getElementById("fecha_fin").value;
+        const patron = document.getElementById("patron_recurrencia").value.trim();
+
+        if (tipo === "TEMPORAL") {
+          if (!fechaInicio || !fechaFin) {
+            mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
+            return false;
+          }
+          if (fechaInicio > fechaFin) {
+            mostrarMensaje("error", "La fecha de inicio no puede ser posterior a la fecha de fin.");
+            return false;
+          }
+        }
+
+        if (usaFranjas && esRecurrente && !patron) {
+          mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
+          return false;
+        }
+      }
+
+      if (pasoActual === 4) {
+        const usaEnlace = document.getElementById("usa_enlace_externo").value === "1";
+        const url = document.getElementById("enlace_externo_url").value.trim();
+
+        if (usaEnlace && !url) {
+          mostrarMensaje("error", "Debe indicar la URL del enlace externo.");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function avanzarPaso() {
+      if (!validarPasoActual()) return;
+      mostrarPaso(pasoActual + 1);
+    }
+
+    function retrocederPaso() {
+      mostrarPaso(pasoActual - 1);
     }
 
     async function guardarActividad(event) {
@@ -849,15 +1257,26 @@
         aforo_limitado: document.getElementById("aforo_limitado").value,
         provincia: document.getElementById("provincia").value.trim(),
         es_recurrente: document.getElementById("es_recurrente").value,
+        patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
         usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
         enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
         enlace_externo_texto: document.getElementById("enlace_externo_texto").value.trim(),
-        patron_recurrencia: document.getElementById("patron_recurrencia").value.trim()
+        direccion_postal: document.getElementById("direccion_postal").value.trim(),
+        latitud: document.getElementById("latitud").value.trim(),
+        longitud: document.getElementById("longitud").value.trim(),
+        zoom_mapa: document.getElementById("zoom_mapa").value.trim()
       };
 
       if (!payload.nombre) {
         mostrarMensaje("error", "Debe indicar al menos el nombre de la actividad.");
         return;
+      }
+
+      if (payload.tipo === "TEMPORAL") {
+        if (!payload.fecha_inicio || !payload.fecha_fin) {
+          mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
+          return;
+        }
       }
 
       if (esSuperAdmin && !payload.admin_id) {
@@ -886,7 +1305,7 @@
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
-          document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+          document.getElementById("tituloFormulario").textContent = "Editar actividad";
         }
       } else {
         mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
@@ -901,36 +1320,53 @@
 
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
+      document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
+      document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
 
       [
         "nombre",
         "admin_id",
         "organizador_publico",
-        "fecha_inicio",
-        "fecha_fin",
-        "titulo_publico",
-        "subtitulo_publico",
-        "descripcion_corta",
-        "lugar",
-        "imagen_url",
         "tipo",
         "usa_franjas",
         "requiere_reserva",
         "aforo_limitado",
-        "es_recurrente"
+        "fecha_inicio",
+        "fecha_fin",
+        "es_recurrente",
+        "patron_recurrencia",
+        "visible_portal",
+        "activa",
+        "orden_portal",
+        "provincia",
+        "titulo_publico",
+        "subtitulo_publico",
+        "descripcion",
+        "descripcion_corta",
+        "descripcion_larga",
+        "imagen_url",
         "usa_enlace_externo",
+        "enlace_externo_url",
+        "enlace_externo_texto",
+        "lugar",
+        "direccion_postal",
+        "latitud",
+        "longitud",
+        "zoom_mapa"
       ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
 
-        el.addEventListener("input", function () {
+        el.addEventListener("input", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
+          actualizarResumenLateral();
         });
 
-        el.addEventListener("change", function () {
+        el.addEventListener("change", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
+          actualizarResumenLateral();
         });
       });
 
@@ -941,6 +1377,8 @@
         await cargarActividadSiEsEdicion();
         actualizarVisibilidadFormulario();
         actualizarPreview();
+        actualizarResumenLateral();
+        mostrarPaso(0);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
       }
