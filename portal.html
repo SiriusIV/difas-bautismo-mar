@@ -370,8 +370,6 @@
 }
 
 #mapaActividad {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
 }
@@ -1263,6 +1261,7 @@ function renderizarActividades() {
 
 function renderMapaActividad(a) {
   const mapaWrap = document.getElementById("mapaWrap");
+  const mapaDiv = document.getElementById("mapaActividad");
 
   if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
     mapaWrap.classList.add("mapa-oculto");
@@ -1283,6 +1282,7 @@ function renderMapaActividad(a) {
   }
 
   destruirMapaActividad();
+  mapaDiv.innerHTML = "";
 
   mapaActividad = L.map("mapaActividad", {
     center: [lat, lng],
@@ -1295,21 +1295,24 @@ function renderMapaActividad(a) {
     attribution: "&copy; OpenStreetMap"
   }).addTo(mapaActividad);
 
-  marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
-
   const titulo = a.titulo_publico || a.nombre || "Actividad";
   const lugar = a.lugar || "";
+
+  marcadorActividad = L.marker([lat, lng]).addTo(mapaActividad);
   marcadorActividad.bindPopup(
     `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
-  );
+  ).openPopup();
+
+  const refrescarMapa = () => {
+    if (!mapaActividad) return;
+    mapaActividad.invalidateSize(true);
+    mapaActividad.setView([lat, lng], zoom, { animate: false });
+  };
 
   requestAnimationFrame(() => {
-    setTimeout(() => {
-      if (mapaActividad) {
-        mapaActividad.invalidateSize(true);
-        mapaActividad.setView([lat, lng], zoom, { animate: false });
-      }
-    }, 120);
+    setTimeout(refrescarMapa, 100);
+    setTimeout(refrescarMapa, 300);
+    setTimeout(refrescarMapa, 600);
   });
 }
 
@@ -1340,6 +1343,13 @@ function renderMapaActividad(a) {
   document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
   document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
   document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+    const imgDetalle = document.getElementById("detalleImagen");
+    imgDetalle.onload = () => {
+    if (mapaActividad) {
+      mapaActividad.invalidateSize(true);
+      }
+    };
+      
 
   document.getElementById("detalleMeta").innerHTML = `
     ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
