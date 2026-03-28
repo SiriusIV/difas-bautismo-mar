@@ -212,6 +212,41 @@
       display: none !important;
     }
 
+    .seccion-form {
+      margin-bottom: 22px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #dde4ea;
+    }
+
+    .seccion-form:last-of-type {
+      border-bottom: none;
+      margin-bottom: 14px;
+    }
+
+    .seccion-form h4 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      color: #123a63;
+    }
+
+    .seccion-ayuda {
+      margin: -6px 0 14px;
+      font-size: 13px;
+      color: #5f6d7a;
+      line-height: 1.5;
+    }
+
+    .aviso-config {
+      margin: 10px 0 14px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     @media (max-width: 900px) {
       .fila {
         grid-template-columns: 1fr;
@@ -274,162 +309,191 @@
       <form id="formActividad" novalidate>
         <input type="hidden" id="actividadId" value="">
 
-        <div class="fila">
-          <div>
-            <label for="nombre">Nombre interno</label>
-            <input type="text" id="nombre" required>
+        <div class="seccion-form">
+          <h4>Identificación</h4>
+
+          <div class="fila">
+            <div>
+              <label for="nombre">Nombre interno</label>
+              <input type="text" id="nombre" required>
+            </div>
+
+            <div id="bloqueAdminResponsable">
+              <label for="admin_id">Administrador responsable</label>
+              <select id="admin_id"></select>
+            </div>
           </div>
 
-          <div id="bloqueAdminResponsable">
-            <label for="admin_id">Administrador responsable</label>
-            <select id="admin_id"></select>
-          </div>
-        </div>
-
-        <div class="fila">
-          <div>
-            <label for="organizador_publico">Organizador público</label>
-            <input type="text" id="organizador_publico">
-          </div>
-
-          <div>
-            <label for="tipo">Tipo</label>
-            <select id="tipo">
-              <option value="TEMPORAL">TEMPORAL</option>
-              <option value="PERMANENTE">PERMANENTE</option>
-            </select>
+          <div class="fila">
+            <div>
+              <label for="organizador_publico">Organizador público</label>
+              <input type="text" id="organizador_publico">
+            </div>
+            <div></div>
           </div>
         </div>
 
-        <div class="fila">
-          <div>
-            <label for="usa_franjas">¿Usa franjas horarias?</label>
-            <select id="usa_franjas">
-              <option value="1">Sí</option>
-              <option value="0">No</option>
-            </select>
+        <div class="seccion-form">
+          <h4>Configuración de actividad</h4>
+          <div class="seccion-ayuda">
+            Define cómo se comportará la actividad: si usa franjas, si requiere reserva y si tendrá control de aforo.
           </div>
 
-        <div>
-          <label for="requiere_reserva">¿Requiere reserva?</label>
-          <select id="requiere_reserva">
-            <option value="1">Sí</option>
-            <option value="0">No</option>
-          </select>
-        </div>
-      </div>
+          <div class="fila">
+            <div>
+              <label for="tipo">Tipo</label>
+              <select id="tipo">
+                <option value="TEMPORAL">TEMPORAL</option>
+                <option value="PERMANENTE">PERMANENTE</option>
+              </select>
+            </div>
 
-      <div class="fila">
-        <div>
-          <label for="aforo_limitado">¿Aforo limitado?</label>
-          <select id="aforo_limitado">
-            <option value="1">Sí</option>
-            <option value="0">No</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="provincia">Provincia</label>
-          <input type="text" id="provincia">
-        </div>
-      </div>
-
-
-        
-    <div class="fila" id="bloqueFechas">
-          <div>
-            <label for="fecha_inicio">Fecha inicio</label>
-            <input type="date" id="fecha_inicio">
+            <div>
+              <label for="usa_franjas">¿Usa franjas horarias?</label>
+              <select id="usa_franjas">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label for="fecha_fin">Fecha fin</label>
-            <input type="date" id="fecha_fin">
+          <div class="fila">
+            <div>
+              <label for="requiere_reserva">¿Requiere reserva?</label>
+              <select id="requiere_reserva">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="aforo_limitado">¿Aforo limitado?</label>
+              <select id="aforo_limitado">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
           </div>
+
+          <div id="avisoConfiguracion" class="aviso-config oculto"></div>
         </div>
 
-    <div class="fila">
-      <div>
-        <label for="es_recurrente">¿Franja recurrente?</label>
-        <select id="es_recurrente">
-          <option value="0">No</option>
-          <option value="1">Sí</option>
-        </select>
-      </div>
+        <div class="seccion-form" id="seccionProgramacion">
+          <h4>Programación</h4>
 
-      <div>
-        <label for="patron_recurrencia">Patrón (texto libre)</label>
-        <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados">
-      </div>
-    </div>
-        
-        <div class="fila">
-          <div>
-            <label for="titulo_publico">Título público</label>
-            <input type="text" id="titulo_publico">
+          <div class="fila" id="bloqueFechas">
+            <div>
+              <label for="fecha_inicio">Fecha inicio</label>
+              <input type="date" id="fecha_inicio">
+            </div>
+
+            <div>
+              <label for="fecha_fin">Fecha fin</label>
+              <input type="date" id="fecha_fin">
+            </div>
           </div>
 
-          <div>
-            <label for="subtitulo_publico">Subtítulo público</label>
-            <input type="text" id="subtitulo_publico">
-          </div>
-        </div>
+          <div class="fila" id="bloqueRecurrencia">
+            <div>
+              <label for="es_recurrente">¿Franja recurrente?</label>
+              <select id="es_recurrente">
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+              </select>
+            </div>
 
-        <div class="fila">
-          <div>
-            <label for="lugar">Lugar</label>
-            <input type="text" id="lugar">
-          </div>
-
-          <div>
-            <label for="imagen_url">Imagen URL</label>
-            <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+            <div id="bloquePatronRecurrencia">
+              <label for="patron_recurrencia">Patrón (texto libre)</label>
+              <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados">
+            </div>
           </div>
         </div>
 
-        <div class="fila">
-          <div>
-            <label for="visible_portal">Visible en portal</label>
-            <select id="visible_portal">
-              <option value="1">Sí</option>
-              <option value="0">No</option>
-            </select>
+        <div class="seccion-form">
+          <h4>Publicación</h4>
+
+          <div class="fila">
+            <div>
+              <label for="visible_portal">Visible en portal</label>
+              <select id="visible_portal">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="activa">Activa</label>
+              <select id="activa">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label for="activa">Activa</label>
-            <select id="activa">
-              <option value="1">Sí</option>
-              <option value="0">No</option>
-            </select>
-          </div>
-        </div>
+          <div class="fila">
+            <div>
+              <label for="orden_portal">Orden en portal</label>
+              <input type="number" id="orden_portal" value="0" min="0" step="1">
+            </div>
 
-       
-        
-        <div class="fila">
-          <div>
-            <label for="orden_portal">Orden en portal</label>
-            <input type="number" id="orden_portal" value="0" min="0" step="1">
-          </div>
-
-          <div>
-            <label for="descripcion">Descripción interna</label>
-            <input type="text" id="descripcion">
-          </div>
-        </div>
-
-        <div class="fila-una">
-          <div>
-            <label for="descripcion_corta">Descripción corta</label>
-            <textarea id="descripcion_corta"></textarea>
+            <div>
+              <label for="provincia">Provincia</label>
+              <input type="text" id="provincia">
+            </div>
           </div>
         </div>
 
-        <div class="fila-una">
-          <div>
-            <label for="descripcion_larga">Descripción larga</label>
-            <textarea id="descripcion_larga"></textarea>
+        <div class="seccion-form">
+          <h4>Contenido público</h4>
+
+          <div class="fila">
+            <div>
+              <label for="titulo_publico">Título público</label>
+              <input type="text" id="titulo_publico">
+            </div>
+
+            <div>
+              <label for="subtitulo_publico">Subtítulo público</label>
+              <input type="text" id="subtitulo_publico">
+            </div>
+          </div>
+
+          <div class="fila">
+            <div>
+              <label for="imagen_url">Imagen URL</label>
+              <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+            </div>
+
+            <div>
+              <label for="descripcion">Descripción interna</label>
+              <input type="text" id="descripcion">
+            </div>
+          </div>
+
+          <div class="fila-una">
+            <div>
+              <label for="descripcion_corta">Descripción corta</label>
+              <textarea id="descripcion_corta"></textarea>
+            </div>
+          </div>
+
+          <div class="fila-una">
+            <div>
+              <label for="descripcion_larga">Descripción larga</label>
+              <textarea id="descripcion_larga"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="seccion-form">
+          <h4>Localización</h4>
+
+          <div class="fila">
+            <div>
+              <label for="lugar">Lugar</label>
+              <input type="text" id="lugar">
+            </div>
+            <div></div>
           </div>
         </div>
 
@@ -449,6 +513,7 @@
         <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
         <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
         <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
+        <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
         <div style="margin-top:8px;"><strong>Descripción corta:</strong></div>
         <div id="previewDescripcionCorta">-</div>
       </div>
@@ -596,14 +661,14 @@
       document.getElementById("imagen_url").value = actividad.imagen_url || "";
       document.getElementById("visible_portal").value = String(actividad.visible_portal ?? 1);
       document.getElementById("orden_portal").value = String(actividad.orden_portal ?? 0);
-      document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
       document.getElementById("usa_franjas").value = String(actividad.usa_franjas ?? 1);
       document.getElementById("requiere_reserva").value = String(actividad.requiere_reserva ?? 1);
       document.getElementById("aforo_limitado").value = String(actividad.aforo_limitado ?? 1);
       document.getElementById("provincia").value = actividad.provincia || "";
       document.getElementById("es_recurrente").value = String(actividad.es_recurrente ?? 0);
       document.getElementById("patron_recurrencia").value = actividad.patron_recurrencia || "";
-      actualizarBloqueFechas();
+      document.getElementById("tituloFormulario").textContent = "Editar actividad / evento";
+      actualizarVisibilidadFormulario();
       actualizarPreview();
     }
 
@@ -627,6 +692,75 @@
         tipo === "TEMPORAL" ? "grid" : "none";
     }
 
+    function actualizarVisibilidadFormulario() {
+      const tipo = document.getElementById("tipo").value;
+      const usaFranjas = document.getElementById("usa_franjas").value === "1";
+      const requiereReserva = document.getElementById("requiere_reserva").value === "1";
+      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
+      const esRecurrente = document.getElementById("es_recurrente").value === "1";
+
+      const seccionProgramacion = document.getElementById("seccionProgramacion");
+      const bloqueRecurrencia = document.getElementById("bloqueRecurrencia");
+      const bloquePatron = document.getElementById("bloquePatronRecurrencia");
+      const aviso = document.getElementById("avisoConfiguracion");
+
+      document.getElementById("bloqueFechas").style.display =
+        tipo === "TEMPORAL" ? "grid" : "none";
+
+      seccionProgramacion.classList.toggle("oculto", !usaFranjas);
+      bloqueRecurrencia.classList.toggle("oculto", !usaFranjas);
+      bloquePatron.classList.toggle("oculto", !usaFranjas || !esRecurrente);
+
+      if (!usaFranjas) {
+        document.getElementById("es_recurrente").value = "0";
+        document.getElementById("patron_recurrencia").value = "";
+      }
+
+      const mensajes = [];
+
+      if (!requiereReserva) {
+        mensajes.push("Actividad informativa: no mostrará botón de solicitud ni generará reservas.");
+      }
+
+      if (!aforoLimitado) {
+        mensajes.push("Sin control de aforo: no habrá cálculo de plazas ni gestión nominal de asistentes.");
+      }
+
+      if (usaFranjas && !requiereReserva) {
+        mensajes.push("Las franjas se mostrarán solo con valor informativo.");
+      }
+
+      if (!usaFranjas) {
+        mensajes.push("No se mostrará bloque de programación en el portal.");
+      }
+
+      aviso.textContent = mensajes.join(" ");
+      aviso.classList.toggle("oculto", mensajes.length === 0);
+    }
+
+    function obtenerTextoModoPreview() {
+      const usaFranjas = document.getElementById("usa_franjas").value === "1";
+      const requiereReserva = document.getElementById("requiere_reserva").value === "1";
+      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
+      const esRecurrente = document.getElementById("es_recurrente").value === "1";
+
+      let base = requiereReserva ? "Reservable" : "Informativa";
+
+      if (requiereReserva && aforoLimitado) {
+        base += " con aforo";
+      } else if (requiereReserva && !aforoLimitado) {
+        base += " sin aforo";
+      }
+
+      if (usaFranjas) {
+        base += esRecurrente ? " · Franjas recurrentes" : " · Franjas";
+      } else {
+        base += " · Sin franjas";
+      }
+
+      return base;
+    }
+
     function actualizarPreview() {
       const titulo = document.getElementById("titulo_publico").value.trim() || document.getElementById("nombre").value.trim() || "-";
       const organizador = document.getElementById("organizador_publico").value.trim() || "-";
@@ -647,6 +781,7 @@
         tipo === "TEMPORAL"
           ? `${fecha_inicio || "-"} a ${fecha_fin || "-"}`
           : "Permanente";
+      document.getElementById("previewModo").textContent = obtenerTextoModoPreview();
       document.getElementById("previewDescripcionCorta").textContent = descripcion_corta;
       document.getElementById("previewImagen").src = imagen;
     }
@@ -727,10 +862,6 @@
 
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
-      document.getElementById("tipo").addEventListener("change", function () {
-        actualizarBloqueFechas();
-        actualizarPreview();
-      });
 
       [
         "nombre",
@@ -743,12 +874,24 @@
         "descripcion_corta",
         "lugar",
         "imagen_url",
-        "tipo"
+        "tipo",
+        "usa_franjas",
+        "requiere_reserva",
+        "aforo_limitado",
+        "es_recurrente"
       ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener("input", actualizarPreview);
-        el.addEventListener("change", actualizarPreview);
+
+        el.addEventListener("input", function () {
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+        });
+
+        el.addEventListener("change", function () {
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+        });
       });
 
       try {
@@ -756,7 +899,7 @@
         await cargarAdminsSoloSiSuperadmin();
         configurarModoAdminResponsable();
         await cargarActividadSiEsEdicion();
-        actualizarBloqueFechas();
+        actualizarVisibilidadFormulario();
         actualizarPreview();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
