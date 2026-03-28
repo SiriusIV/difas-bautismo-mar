@@ -131,7 +131,11 @@ export async function onRequestPost(context) {
         patron_recurrencia,
         usa_enlace_externo,
         enlace_externo_url,
-        enlace_externo_texto
+        enlace_externo_texto,
+        direccion_postal,
+        latitud,
+        longitud,
+        zoom_mapa
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
@@ -249,6 +253,10 @@ export async function onRequestPut(context) {
         usa_enlace_externo = ?,
         enlace_externo_url = ?,
         enlace_externo_texto = ?
+        direccion_postal = ?,
+        latitud = ?,
+        longitud = ?,
+        zoom_mapa = ?,
       WHERE id = ?
     `).bind(
       limpiarTexto(body.nombre),
@@ -262,6 +270,10 @@ export async function onRequestPut(context) {
       normalizarNullable(body.descripcion_corta),
       normalizarNullable(body.descripcion_larga),
       normalizarNullable(body.lugar),
+      normalizarNullable(body.direccion_postal),
+      normalizarNullable(body.latitud),
+      normalizarNullable(body.longitud),
+      normalizarNullable(body.zoom_mapa),
       normalizarNullable(body.imagen_url),
       parsearFlag(body.visible_portal, 1),
       parseInt(body.orden_portal || 0, 10) || 0,
