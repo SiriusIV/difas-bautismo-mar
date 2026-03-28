@@ -83,6 +83,9 @@ export async function onRequestGet(context) {
         a.provincia,
         a.es_recurrente,
         a.patron_recurrencia,
+        a.usa_enlace_externo,
+        a.enlace_externo_url,
+        a.enlace_externo_texto,
         COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
         CASE
           WHEN COALESCE(ad.plazas_disponibles, 0) <= 0 THEN 1
