@@ -1014,7 +1014,6 @@
       document.getElementById("tituloFormulario").textContent = "Editar actividad";
       actualizarVisibilidadFormulario();
       actualizarPreview();
-      actualizarResumenLateral();
       renderMapaPreviewActividad();
     }
 
@@ -1230,7 +1229,6 @@
 
       renderWizardProgress();
       actualizarPreview();
-      actualizarResumenLateral();
       renderMapaPreviewActividad();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -1442,14 +1440,12 @@
         el.addEventListener("input", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
-          actualizarResumenLateral();
           renderMapaPreviewActividad();
         });
 
         el.addEventListener("change", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
-          actualizarResumenLateral();
           renderMapaPreviewActividad();
         });
       });
@@ -1461,7 +1457,6 @@
         await cargarActividadSiEsEdicion();
         actualizarVisibilidadFormulario();
         actualizarPreview();
-        actualizarResumenLateral();
         renderMapaPreviewActividad();
         mostrarPaso(0);
       } catch (error) {
