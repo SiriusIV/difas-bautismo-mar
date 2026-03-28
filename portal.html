@@ -358,19 +358,23 @@
       text-decoration: underline;
     }
 
-    .mapa-wrap {
-      width: 100%;
-      height: 260px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #dfe7ef;
-      border: 1px solid #dde4ea;
-    }
+.mapa-wrap {
+  width: 100%;
+  height: 260px;
+  min-height: 260px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #dfe7ef;
+  border: 1px solid #dde4ea;
+  position: relative;
+}
 
-    #mapaActividad {
-      width: 100%;
-      height: 100%;
-    }
+#mapaActividad {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 
     .mapa-oculto {
       display: none;
@@ -761,6 +765,7 @@
             <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
             <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
             <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
+            <button id="btnEnlaceExterno" class="btn" style="display:none;" type="button">Más información</button>
           </div>
 
           <div id="tablaFranjasWrap" class="tabla-franjas">
@@ -1294,87 +1299,111 @@ function renderizarActividades() {
         `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
       );
 
-      setTimeout(() => {
-        if (mapaActividad) mapaActividad.invalidateSize();
-      }, 100);
+setTimeout(() => {
+  if (mapaActividad) {
+    mapaActividad.invalidateSize();
+    mapaActividad.setView([lat, lng], zoom);
+  }
+}, 150);
     }
 
     function renderDetalle() {
-      const a = actividadSeleccionada;
+  const a = actividadSeleccionada;
 
-      if (!a) {
-        document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
-        document.getElementById("detalleSubtitulo").textContent = "";
-        document.getElementById("detalleMeta").innerHTML = "";
-        document.getElementById("detalleTexto").textContent = "";
-        document.getElementById("detalleImagen").src = "logo.png";
-        document.getElementById("btnSolicitarActividad").style.display = "none";
-        document.getElementById("btnEditarActividad").style.display = "none";
-        document.getElementById("btnVerReservasActividad").style.display = "none";
-        document.getElementById("direccionActividad").style.display = "none";
-        document.getElementById("direccionActividad").innerHTML = "";
-        renderMapaActividad(null);
-        actividadFranjasSolicitada = null;
-        cargarFranjasActividad(null);
-        return;
-      }
+  if (!a) {
+    document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
+    document.getElementById("detalleSubtitulo").textContent = "";
+    document.getElementById("detalleMeta").innerHTML = "";
+    document.getElementById("detalleTexto").textContent = "";
+    document.getElementById("detalleImagen").src = "logo.png";
+    document.getElementById("btnSolicitarActividad").style.display = "none";
+    document.getElementById("btnEditarActividad").style.display = "none";
+    document.getElementById("btnVerReservasActividad").style.display = "none";
+    document.getElementById("btnEnlaceExterno").style.display = "none";
+    document.getElementById("btnEnlaceExterno").onclick = null;
+    document.getElementById("direccionActividad").style.display = "none";
+    document.getElementById("direccionActividad").innerHTML = "";
+    document.getElementById("btnEnlaceExterno").style.display = "none";
+    document.getElementById("btnEnlaceExterno").onclick = null;
+    renderMapaActividad(null);
+    actividadFranjasSolicitada = null;
+    cargarFranjasActividad(null);
+    return;
+  }
 
-      document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
-      document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
-      document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+  document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
+  document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
+  document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
 
-      document.getElementById("detalleMeta").innerHTML = `
-        ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
-        ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
-        ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
-        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
-        ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
-      `;
+  document.getElementById("detalleMeta").innerHTML = `
+    ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
+    ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
+    ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
+    ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
+    ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+  `;
 
-      let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
+  let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
-      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
-        textoDetalle += (textoDetalle ? "\n\n" : "") +
-          "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
-      }
+  if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
+    textoDetalle += (textoDetalle ? "\n\n" : "") +
+      "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
+  }
 
-      document.getElementById("detalleTexto").textContent = textoDetalle;
+  document.getElementById("detalleTexto").textContent = textoDetalle;
 
-      const btnSolicitar = document.getElementById("btnSolicitarActividad");
-      const btnEditar = document.getElementById("btnEditarActividad");
-      const btnReservas = document.getElementById("btnVerReservasActividad");
+  const btnSolicitar = document.getElementById("btnSolicitarActividad");
+  const btnEditar = document.getElementById("btnEditarActividad");
+  const btnReservas = document.getElementById("btnVerReservasActividad");
+  const btnEnlaceExterno = document.getElementById("btnEnlaceExterno");
 
-      btnSolicitar.style.display =
-        usuarioAutenticado &&
-        usuarioAutenticado.rol === "SOLICITANTE" &&
-        Number(a.requiere_reserva || 0) === 1
-          ? "inline-block"
-          : "none";
+  btnSolicitar.style.display =
+    usuarioAutenticado &&
+    usuarioAutenticado.rol === "SOLICITANTE" &&
+    Number(a.requiere_reserva || 0) === 1
+      ? "inline-block"
+      : "none";
 
-      btnEditar.style.display = esAdmin() ? "inline-block" : "none";
-      btnReservas.style.display = esAdmin() ? "inline-block" : "none";
+  btnEditar.style.display = esAdmin() ? "inline-block" : "none";
+  btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
-      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
-        btnSolicitar.disabled = true;
-        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-      } else {
-        btnSolicitar.disabled = false;
-        btnSolicitar.title = "";
-      }
+  if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+  } else {
+    btnSolicitar.disabled = false;
+    btnSolicitar.title = "";
+  }
 
-      const direccionDiv = document.getElementById("direccionActividad");
-      if (a.direccion_postal && a.direccion_postal.trim() !== "") {
-        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.direccion_postal)}`;
-        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${a.direccion_postal}</a>`;
-        direccionDiv.style.display = "block";
-      } else {
-        direccionDiv.style.display = "none";
-        direccionDiv.innerHTML = "";
-      }
+  const tieneEnlaceExterno =
+    Number(a.usa_enlace_externo || 0) === 1 &&
+    String(a.enlace_externo_url || "").trim() !== "";
 
-      renderMapaActividad(a);
-      cargarFranjasActividad(a);
-    }
+  if (tieneEnlaceExterno) {
+    btnEnlaceExterno.style.display = "inline-block";
+    btnEnlaceExterno.textContent = (a.enlace_externo_texto || "").trim() || "Más información";
+    btnEnlaceExterno.onclick = () => {
+      window.open(a.enlace_externo_url, "_blank", "noopener,noreferrer");
+    };
+  } else {
+    btnEnlaceExterno.style.display = "none";
+    btnEnlaceExterno.textContent = "Más información";
+    btnEnlaceExterno.onclick = null;
+  }
+
+  const direccionDiv = document.getElementById("direccionActividad");
+  if (a.direccion_postal && a.direccion_postal.trim() !== "") {
+    const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.direccion_postal)}`;
+    direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${a.direccion_postal}</a>`;
+    direccionDiv.style.display = "block";
+  } else {
+    direccionDiv.style.display = "none";
+    direccionDiv.innerHTML = "";
+  }
+
+  renderMapaActividad(a);
+  cargarFranjasActividad(a);
+}
 
 
     
