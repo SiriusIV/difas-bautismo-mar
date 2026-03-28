@@ -8,7 +8,7 @@
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    integrity="sha256-p4NxAoJBhNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
   <script
@@ -133,7 +133,35 @@
     .contenedor {
       max-width: 1320px;
       margin: 18px auto 30px;
-      padding: 0 20px; 
+      padding: 0 20px;
+    }
+
+    .filtro-panel {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 14px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-panel label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #123a63;
+    }
+
+    .filtro-panel select {
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: #1e2a36;
     }
 
     .carrusel-panel {
@@ -479,34 +507,6 @@
       color: #334250;
     }
 
-    .filtro-panel {
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-      padding: 14px 18px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .filtro-panel label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #123a63;
-    }
-
-    .filtro-panel select {
-      min-width: 220px;
-      padding: 10px 12px;
-      border: 1px solid #c9cfd6;
-      border-radius: 8px;
-      font-size: 14px;
-      background: #fff;
-      color: #1e2a36;
-    }
-    
     .campo input {
       width: 100%;
       box-sizing: border-box;
@@ -623,7 +623,7 @@
 
     .tabla-franjas th:nth-child(1),
     .tabla-franjas td:nth-child(1) {
-      min-width: 240px;
+      min-width: 260px;
       padding-right: 18px;
     }
 
@@ -787,13 +787,13 @@
 
       <div class="campo">
         <label for="emailLogin">Email</label>
-        <input type="email" id="emailLogin">
+        <input type="email" id="emailLogin" autocomplete="off">
       </div>
 
       <div class="campo">
         <label for="passwordLogin">Contraseña</label>
         <div class="campo-password-wrap">
-          <input type="password" id="passwordLogin">
+          <input type="password" id="passwordLogin" autocomplete="new-password">
           <button type="button" class="btn-ver-password" id="btnVerPassword">Ver</button>
         </div>
       </div>
@@ -827,6 +827,7 @@
     let carruselAutoIndex = 0;
     let carruselReanudarTimeout = null;
     let provinciaSeleccionada = "";
+    let carruselResetTimeout = null;
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -852,6 +853,15 @@
 
     function abrirModalLogin() {
       limpiarMensaje("mensajeLogin");
+
+      const email = document.getElementById("emailLogin");
+      const password = document.getElementById("passwordLogin");
+
+      email.value = "";
+      password.value = "";
+      password.type = "password";
+      document.getElementById("btnVerPassword").textContent = "Ver";
+
       document.getElementById("modalLogin").classList.add("activo");
       document.getElementById("modalLogin").setAttribute("aria-hidden", "false");
     }
@@ -896,48 +906,58 @@
       return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
-async function cargarFranjasActividad(actividad) {
-  const wrap = document.getElementById("tablaFranjasWrap");
-  const body = document.getElementById("tablaFranjasBody");
-
-  actividadFranjasSolicitada = actividad?.id || null;
-  wrap.style.display = "none";
-  body.innerHTML = "";
-
-  if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
-    const data = await res.json();
-
-    if (actividadFranjasSolicitada !== actividad.id) return;
-
-    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
-      return;
+    function textoProgramacionFranja(f) {
+      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
+        return f.patron_recurrencia;
+      }
+      if (f.fecha) {
+        return formatearFechaLargaES(f.fecha);
+      }
+      return "";
     }
 
-    const filas = data.franjas
-      .filter(f => f && f.hora_inicio && f.hora_fin)
-      .map(f => `
-        <tr>
-          <td>${f.fecha || f.patron_recurrencia || ""}</td>
-          <td>${f.hora_inicio}</td>
-          <td>${f.hora_fin}</td>
-        </tr>
-      `)
-      .join("");
+    async function cargarFranjasActividad(actividad) {
+      const wrap = document.getElementById("tablaFranjasWrap");
+      const body = document.getElementById("tablaFranjasBody");
 
-    if (!filas.trim()) return;
+      actividadFranjasSolicitada = actividad?.id || null;
+      wrap.style.display = "none";
+      body.innerHTML = "";
 
-    body.innerHTML = filas;
-    wrap.style.display = "block";
-  } catch (_) {
-    wrap.style.display = "none";
-    body.innerHTML = "";
-  }
-}
+      if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
+        const data = await res.json();
+
+        if (actividadFranjasSolicitada !== actividad.id) return;
+
+        if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+          return;
+        }
+
+        const filas = data.franjas
+          .filter(f => f && f.hora_inicio && f.hora_fin)
+          .map(f => `
+            <tr>
+              <td>${textoProgramacionFranja(f)}</td>
+              <td>${f.hora_inicio}</td>
+              <td>${f.hora_fin}</td>
+            </tr>
+          `)
+          .join("");
+
+        if (!filas.trim()) return;
+
+        body.innerHTML = filas;
+        wrap.style.display = "block";
+      } catch (_) {
+        wrap.style.display = "none";
+        body.innerHTML = "";
+      }
+    }
 
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
@@ -1004,13 +1024,14 @@ async function cargarFranjasActividad(actividad) {
 
       if (!res.ok || !data.ok) {
         actividadesCache = [];
+        renderizarFiltroProvincias();
         renderizarActividades();
         return;
       }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
-      renderizarActividades();
       renderizarFiltroProvincias();
+      renderizarActividades();
     }
 
     async function cargarActividadesAdmin() {
@@ -1019,12 +1040,13 @@ async function cargarFranjasActividad(actividad) {
 
       if (!res.ok || !data.ok) {
         actividadesCache = [];
-        renderizarActividades();
         renderizarFiltroProvincias();
+        renderizarActividades();
         return;
       }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      renderizarFiltroProvincias();
       renderizarActividades();
     }
 
@@ -1039,119 +1061,161 @@ async function cargarFranjasActividad(actividad) {
     function seleccionarActividad(id) {
       pausarTemporalmenteAutoPlay();
 
-      const a = actividadesCache.find(x => Number(x.id) === Number(id));
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
       if (!a) return;
 
       actividadSeleccionada = a;
+      carruselAutoIndex = Math.max(
+        actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
+        0
+      );
+
       sessionStorage.setItem("actividad_id_actual", String(a.id));
       renderizarActividades();
       renderDetalle();
-
-      setTimeout(() => {
-        const tarjetas = Array.from(document.querySelectorAll(".card"));
-        const card = document.querySelector(".card.activa");
-        if (card) {
-          centrarActividadEnCarrusel(card);
-          carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
-        }
-      }, 80);
     }
 
     function renderizarFiltroProvincias() {
       const select = document.getElementById("filtroProvincia");
       if (!select) return;
 
-        const provincias = [...new Set(
+      const provincias = [...new Set(
         actividadesCache
-        .map(a => String(a.provincia || "").trim())
-        .filter(p => p !== "")
-        )].sort((a, b) => a.localeCompare(b, "es"));
+          .map(a => String(a.provincia || "").trim())
+          .filter(p => p !== "")
+      )].sort((a, b) => a.localeCompare(b, "es"));
 
-        select.innerHTML =
+      select.innerHTML =
         `<option value="">Todas</option>` +
         provincias.map(p => `<option value="${p}">${p}</option>`).join("");
-        select.value = provinciaSeleccionada;
+
+      if (provinciaSeleccionada && !provincias.includes(provinciaSeleccionada)) {
+        provinciaSeleccionada = "";
       }
+
+      select.value = provinciaSeleccionada;
+    }
 
     function obtenerActividadesFiltradas() {
       if (!provinciaSeleccionada) return actividadesCache;
 
       return actividadesCache.filter(a =>
-      String(a.provincia || "").trim() === provinciaSeleccionada
+        String(a.provincia || "").trim() === provinciaSeleccionada
       );
     }
-    
-function renderizarActividades() {
-  const cont = document.getElementById("carruselActividades");
-  const actividadesVisibles = obtenerActividadesFiltradas();
 
-  if (!actividadesVisibles.length) {
-    cont.innerHTML = "";
-    actividadSeleccionada = null;
-    renderDetalle();
-    return;
-  }
-
-  if (
-    !actividadSeleccionada ||
-    !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
-  ) {
-    actividadSeleccionada = actividadesVisibles[0];
-  } else {
-    const actual = actividadesVisibles.find(
-      x => Number(x.id) === Number(actividadSeleccionada.id)
-    );
-    actividadSeleccionada = actual || actividadesVisibles[0];
-  }
-
-  const actividadesRender = [
-  ...actividadesVisibles,
-  ...actividadesVisibles,
-  ...actividadesVisibles
-];
-
-  cont.innerHTML = actividadesRender.map(a => `
-    const totalReales = actividadesVisibles.length;
-    const tarjetas = Array.from(document.querySelectorAll(".card"));
-
-    setTimeout(() => {
-    const cardInicial = tarjetas[totalReales + carruselAutoIndex] || tarjetas[totalReales];
-    if (cardInicial) {
-    centrarActividadEnCarrusel(cardInicial);
+    function obtenerTarjetasCarrusel() {
+      return Array.from(document.querySelectorAll("#carruselActividades .card"));
     }
-    }, 80);
-    
-    <div class="card ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
-      <div class="card-img-wrap">
-        <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-        ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
-      </div>
-      <div class="card-body">
-        <h3>${a.titulo_publico || a.nombre}</h3>
-        <div class="card-meta">
-          ${a.lugar ? `<div>${a.lugar}</div>` : ''}
-          ${a.provincia ? `<div>${a.provincia}</div>` : ''}
-          ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
-        </div>
-      </div>
-    </div>
-  `).join("");
 
-  renderDetalle();
+    function colocarWrapEnCard(card, comportamiento = "smooth") {
+      if (!card) return;
 
-  setTimeout(() => {
-    const tarjetas = Array.from(document.querySelectorAll(".card"));
-    const card = document.querySelector(".card.activa");
+      const wrap = document.getElementById("carruselWrap");
+      if (!wrap) return;
 
-    if (card) {
-      centrarActividadEnCarrusel(card);
-      carruselAutoIndex = Math.max(tarjetas.findIndex(t => t === card), 0);
-    } else if (tarjetas.length) {
-      carruselAutoIndex = 0;
-      centrarActividadEnCarrusel(tarjetas[0]);
+      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+
+      wrap.scrollTo({
+        left: Math.max(targetLeft, 0),
+        behavior: comportamiento
+      });
     }
-  }, 80);
-}
+
+    function cancelarResetCarrusel() {
+      if (carruselResetTimeout) {
+        clearTimeout(carruselResetTimeout);
+        carruselResetTimeout = null;
+      }
+    }
+
+    function programarResetInvisibleCarrusel(indiceReal) {
+      cancelarResetCarrusel();
+
+      carruselResetTimeout = setTimeout(() => {
+        const actividadesVisibles = obtenerActividadesFiltradas();
+        if (!actividadesVisibles.length) return;
+
+        const totalReales = actividadesVisibles.length;
+        const tarjetas = obtenerTarjetasCarrusel();
+        const cardCentral = tarjetas[totalReales + indiceReal];
+        if (!cardCentral) return;
+
+        colocarWrapEnCard(cardCentral, "auto");
+      }, 420);
+    }
+
+    function renderizarActividades() {
+      const cont = document.getElementById("carruselActividades");
+      const actividadesVisibles = obtenerActividadesFiltradas();
+
+      cancelarResetCarrusel();
+
+      if (!actividadesVisibles.length) {
+        cont.innerHTML = "";
+        actividadSeleccionada = null;
+        carruselAutoIndex = 0;
+        renderDetalle();
+        return;
+      }
+
+      if (
+        !actividadSeleccionada ||
+        !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
+      ) {
+        actividadSeleccionada = actividadesVisibles[0];
+        carruselAutoIndex = 0;
+      } else {
+        const actual = actividadesVisibles.find(
+          x => Number(x.id) === Number(actividadSeleccionada.id)
+        );
+        actividadSeleccionada = actual || actividadesVisibles[0];
+        carruselAutoIndex = Math.max(
+          actividadesVisibles.findIndex(x => Number(x.id) === Number(actividadSeleccionada.id)),
+          0
+        );
+      }
+
+      const actividadesRender = [
+        ...actividadesVisibles,
+        ...actividadesVisibles,
+        ...actividadesVisibles
+      ];
+
+      cont.innerHTML = actividadesRender.map((a, i) => {
+        const esCopiaCentral = i >= actividadesVisibles.length && i < actividadesVisibles.length * 2;
+        const activa = esCopiaCentral && actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id);
+
+        return `
+          <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+            <div class="card-img-wrap">
+              <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+            </div>
+            <div class="card-body">
+              <h3>${a.titulo_publico || a.nombre}</h3>
+              <div class="card-meta">
+                ${a.lugar ? `<div>${a.lugar}</div>` : ''}
+                ${a.provincia ? `<div>${a.provincia}</div>` : ''}
+                ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      renderDetalle();
+
+      setTimeout(() => {
+        const totalReales = actividadesVisibles.length;
+        const tarjetas = obtenerTarjetasCarrusel();
+        const cardInicial = tarjetas[totalReales + carruselAutoIndex];
+        if (cardInicial) {
+          colocarWrapEnCard(cardInicial, "auto");
+        }
+      }, 50);
+    }
 
     function destruirMapaActividad() {
       if (mapaActividad) {
@@ -1220,7 +1284,7 @@ function renderizarActividades() {
         document.getElementById("direccionActividad").innerHTML = "";
         renderMapaActividad(null);
         actividadFranjasSolicitada = null;
-        cargarFranjasActividad(null, null);
+        cargarFranjasActividad(null);
         return;
       }
 
@@ -1231,7 +1295,8 @@ function renderizarActividades() {
       document.getElementById("detalleMeta").innerHTML = `
         ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
         ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
-        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+        ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
+        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
         ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
       `;
 
@@ -1248,22 +1313,23 @@ function renderizarActividades() {
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
-     btnSolicitar.style.display =
-  usuarioAutenticado &&
-  usuarioAutenticado.rol === "SOLICITANTE" &&
-  Number(a.requiere_reserva || 0) === 1
-    ? "inline-block"
-    : "none";
+      btnSolicitar.style.display =
+        usuarioAutenticado &&
+        usuarioAutenticado.rol === "SOLICITANTE" &&
+        Number(a.requiere_reserva || 0) === 1
+          ? "inline-block"
+          : "none";
+
       btnEditar.style.display = esAdmin() ? "inline-block" : "none";
       btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
       if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
-  btnSolicitar.disabled = true;
-  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-} else {
-  btnSolicitar.disabled = false;
-  btnSolicitar.title = "";
-}
+        btnSolicitar.disabled = true;
+        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+      } else {
+        btnSolicitar.disabled = false;
+        btnSolicitar.title = "";
+      }
 
       const direccionDiv = document.getElementById("direccionActividad");
       if (a.direccion_postal && a.direccion_postal.trim() !== "") {
@@ -1279,55 +1345,6 @@ function renderizarActividades() {
       cargarFranjasActividad(a);
     }
 
-function centrarActividadEnCarrusel(card) {
-  if (!card) return;
-
-  const wrap = document.getElementById("carruselWrap");
-  if (!wrap) return;
-
-  const wrapRect = wrap.getBoundingClientRect();
-  const cardRect = card.getBoundingClientRect();
-
-  const delta = (cardRect.left - wrapRect.left) - ((wrap.clientWidth - card.offsetWidth) / 2);
-
-  wrap.scrollBy({
-    left: delta,
-    behavior: "smooth"
-  });
-}
-
-function reajustarCarruselInfinito() {
-  const wrap = document.getElementById("carruselWrap");
-  const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!wrap || !actividadesVisibles.length) return;
-
-  const tarjetas = Array.from(document.querySelectorAll(".card"));
-  const totalReales = actividadesVisibles.length;
-  if (tarjetas.length < totalReales * 2) return;
-
-  const primeraMitad = tarjetas.slice(0, totalReales);
-  const segundaMitad = tarjetas.slice(totalReales, totalReales * 2);
-
-  const primeraSegunda = segundaMitad[0];
-  if (!primeraSegunda) return;
-
-  const wrapRect = wrap.getBoundingClientRect();
-  const segundaRect = primeraSegunda.getBoundingClientRect();
-
-  if (segundaRect.left < wrapRect.right) {
-    const cardObjetivo = primeraMitad[carruselAutoIndex];
-    if (!cardObjetivo) return;
-
-    const objetivoRect = cardObjetivo.getBoundingClientRect();
-    const delta = objetivoRect.left - segundaRect.left;
-
-    wrap.scrollBy({
-      left: delta,
-      behavior: "auto"
-    });
-  }
-}
-    
     function detenerAutoPlayCarrusel() {
       carruselAutoPlayActivo = false;
 
@@ -1335,6 +1352,8 @@ function reajustarCarruselInfinito() {
         clearInterval(carruselAutoPlay);
         carruselAutoPlay = null;
       }
+
+      cancelarResetCarrusel();
 
       if (carruselReanudarTimeout) {
         clearTimeout(carruselReanudarTimeout);
@@ -1359,29 +1378,36 @@ function reajustarCarruselInfinito() {
         carruselAutoPlay = null;
       }
 
+      cancelarResetCarrusel();
       carruselAutoPlayActivo = false;
       programarReanudacionAutoPlay();
     }
 
-function moverCarruselAutomaticamente() {
-  const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!actividadesVisibles.length) return;
+    function moverCarruselAutomaticamente() {
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      if (!actividadesVisibles.length) return;
 
-  const tarjetas = Array.from(document.querySelectorAll(".card"));
-  if (!tarjetas.length) return;
+      const tarjetas = obtenerTarjetasCarrusel();
+      if (!tarjetas.length) return;
 
-  const totalReales = actividadesVisibles.length;
+      const totalReales = actividadesVisibles.length;
+      const siguienteIndice = carruselAutoIndex + 1;
 
-  carruselAutoIndex += 1;
-  if (carruselAutoIndex >= totalReales) {
-    carruselAutoIndex = 0;
-  }
+      if (siguienteIndice < totalReales) {
+        carruselAutoIndex = siguienteIndice;
+        const card = tarjetas[totalReales + carruselAutoIndex];
+        if (card) colocarWrapEnCard(card, "smooth");
+        return;
+      }
 
-  const card = tarjetas[totalReales + carruselAutoIndex];
-  if (!card) return;
+      carruselAutoIndex = 0;
 
-  centrarActividadEnCarrusel(card);
-}
+      const cardDerecha = tarjetas[(2 * totalReales)];
+      if (cardDerecha) {
+        colocarWrapEnCard(cardDerecha, "smooth");
+        programarResetInvisibleCarrusel(0);
+      }
+    }
 
     function iniciarAutoPlayCarrusel() {
       if (!carruselAutoPlayActivo || carruselAutoPlay) return;
@@ -1391,32 +1417,56 @@ function moverCarruselAutomaticamente() {
       }, 2500);
     }
 
-function desplazarCarrusel(direccion) {
-  pausarTemporalmenteAutoPlay();
+    function desplazarCarrusel(direccion) {
+      pausarTemporalmenteAutoPlay();
 
-  const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!actividadesVisibles.length) return;
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      if (!actividadesVisibles.length) return;
 
-  const tarjetas = Array.from(document.querySelectorAll(".card"));
-  if (!tarjetas.length) return;
+      const tarjetas = obtenerTarjetasCarrusel();
+      if (!tarjetas.length) return;
 
-  const totalReales = actividadesVisibles.length;
+      const totalReales = actividadesVisibles.length;
 
-  if (direccion > 0) {
-    carruselAutoIndex += 1;
-    if (carruselAutoIndex >= totalReales) carruselAutoIndex = 0;
-  } else {
-    carruselAutoIndex -= 1;
-    if (carruselAutoIndex < 0) carruselAutoIndex = totalReales - 1;
-  }
+      if (direccion > 0) {
+        const siguienteIndice = carruselAutoIndex + 1;
 
-  const card = tarjetas[totalReales + carruselAutoIndex];
-  if (card) centrarActividadEnCarrusel(card);
-}
+        if (siguienteIndice < totalReales) {
+          carruselAutoIndex = siguienteIndice;
+          const card = tarjetas[totalReales + carruselAutoIndex];
+          if (card) colocarWrapEnCard(card, "smooth");
+          return;
+        }
+
+        carruselAutoIndex = 0;
+        const cardDerecha = tarjetas[(2 * totalReales)];
+        if (cardDerecha) {
+          colocarWrapEnCard(cardDerecha, "smooth");
+          programarResetInvisibleCarrusel(0);
+        }
+        return;
+      }
+
+      const anteriorIndice = carruselAutoIndex - 1;
+
+      if (anteriorIndice >= 0) {
+        carruselAutoIndex = anteriorIndice;
+        const card = tarjetas[totalReales + carruselAutoIndex];
+        if (card) colocarWrapEnCard(card, "smooth");
+        return;
+      }
+
+      carruselAutoIndex = totalReales - 1;
+      const cardIzquierda = tarjetas[totalReales - 1];
+      if (cardIzquierda) {
+        colocarWrapEnCard(cardIzquierda, "smooth");
+        programarResetInvisibleCarrusel(totalReales - 1);
+      }
+    }
 
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
-      if (Number(actividadSeleccionada.completa || 0) === 1) return;
+      if (Number(actividadSeleccionada.aforo_limitado || 0) === 1 && Number(actividadSeleccionada.completa || 0) === 1) return;
       location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 
@@ -1522,12 +1572,13 @@ function desplazarCarrusel(direccion) {
       const filtroProvincia = document.getElementById("filtroProvincia");
       if (filtroProvincia) {
         filtroProvincia.addEventListener("change", function () {
-        provinciaSeleccionada = this.value;
-        actividadSeleccionada = null;
-        renderizarActividades();
+          provinciaSeleccionada = this.value;
+          actividadSeleccionada = null;
+          carruselAutoIndex = 0;
+          renderizarActividades();
         });
       }
-      
+
       iniciarAutoPlayCarrusel();
     })();
   </script>
