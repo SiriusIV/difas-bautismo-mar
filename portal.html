@@ -1142,7 +1142,7 @@
         const cardCentral = tarjetas[totalReales + indiceReal];
         if (!cardCentral) return;
 
-        colocarWrapEnCard(cardCentral, "auto");
+        colocarWrapEnCardInstantaneo(cardCentral);
       }, 420);
     }
 
@@ -1212,7 +1212,7 @@
         const tarjetas = obtenerTarjetasCarrusel();
         const cardInicial = tarjetas[totalReales + carruselAutoIndex];
         if (cardInicial) {
-          colocarWrapEnCard(cardInicial, "auto");
+          colocarWrapEnCardInstantaneo(cardInicial);
         }
       }, 50);
     }
@@ -1345,6 +1345,20 @@
       cargarFranjasActividad(a);
     }
 
+    function colocarWrapEnCardInstantaneo(card) {
+      if (!card) return;
+
+      const wrap = document.getElementById("carruselWrap");
+      if (!wrap) return;
+
+      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+
+      const valorAnterior = wrap.style.scrollBehavior;
+      wrap.style.scrollBehavior = "auto";
+      wrap.scrollLeft = Math.max(targetLeft, 0);
+      wrap.style.scrollBehavior = valorAnterior || "";
+    }
+    
     function detenerAutoPlayCarrusel() {
       carruselAutoPlayActivo = false;
 
