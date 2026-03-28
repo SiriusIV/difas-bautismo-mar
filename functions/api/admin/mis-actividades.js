@@ -42,7 +42,10 @@ export async function onRequestGet(context) {
         aforo_limitado,
         provincia,
         es_recurrente,
-        patron_recurrencia
+        patron_recurrencia,
+        usa_enlace_externo,
+        enlace_externo_url,
+        enlace_externo_texto
       FROM actividades
     `;
     const binds = [];
