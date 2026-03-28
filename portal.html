@@ -636,6 +636,16 @@
       white-space: nowrap;
     }
 
+  .link-organizador {
+  color: #0b5ed7;
+  text-decoration: none;
+  font-weight: 600;
+    }
+
+  .link-organizador:hover {
+    text-decoration: underline;
+  }
+    
     @media (max-width: 980px) {
       .detalle-grid {
         grid-template-columns: 1fr;
@@ -1377,13 +1387,27 @@ function renderMapaActividad(a) {
   document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
   document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";     
 
-  document.getElementById("detalleMeta").innerHTML = `
-    ${a.organizador_publico ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>` : ""}
-    ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
-    ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
-    ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
-    ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
-  `;
+  const tieneEnlaceExterno =
+  Number(a.usa_enlace_externo || 0) === 1 &&
+  String(a.enlace_externo_url || "").trim() !== "";
+
+const organizadorHTML = a.organizador_publico
+  ? `<div><strong>Organiza:</strong> ${
+      tieneEnlaceExterno
+        ? `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="link-organizador">
+             ${a.organizador_publico}
+           </a>`
+        : a.organizador_publico
+    }</div>`
+  : "";
+
+document.getElementById("detalleMeta").innerHTML = `
+  ${organizadorHTML}
+  ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
+  ${a.provincia ? `<div><strong>Provincia:</strong> ${a.provincia}</div>` : ""}
+  ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
+  ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+`;
 
   let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
