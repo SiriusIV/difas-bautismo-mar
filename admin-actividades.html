@@ -188,9 +188,12 @@
       border-color: var(--ok-border);
     }
 
-   .layout {
-  display: block;
-}
+    .layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
 
     .panel {
       background: var(--card);
@@ -529,301 +532,59 @@
   <div class="contenedor" id="app" style="display:none;">
     <div id="mensajeActividad" class="mensaje"></div>
 
-    <div class="layout">
-      <div class="panel">
-        <div class="wizard-head">
-          <div class="wizard-head-title" id="tituloFormulario">Nueva actividad</div>
-          <div class="wizard-progress" id="wizardProgress"></div>
-        </div>
+<div class="layout">
 
-        <form id="formActividad" novalidate>
-          <input type="hidden" id="actividadId" value="">
+  <!-- IZQUIERDA -->
+  <div class="panel">
 
-          <section class="step-pane activo" data-step="0">
-            <h4 class="step-title">Identificación</h4>
-            <p class="step-help">Define el nombre interno de la actividad y quién la gestiona.</p>
-
-            <div class="fila">
-              <div>
-                <label for="nombre">Nombre interno</label>
-                <input type="text" id="nombre" required>
-              </div>
-
-              <div id="bloqueAdminResponsable">
-                <label for="admin_id">Administrador responsable</label>
-                <select id="admin_id"></select>
-              </div>
-            </div>
-
-            <div class="fila">
-              <div>
-                <label for="organizador_publico">Organizador público</label>
-                <input type="text" id="organizador_publico">
-              </div>
-              <div></div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="1">
-            <h4 class="step-title">Comportamiento</h4>
-            <p class="step-help">Configura si la actividad es temporal o permanente, si usa franjas, si requiere reserva y si controla aforo.</p>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="tipo">Tipo</label>
-                <select id="tipo" class="input-corto">
-                  <option value="TEMPORAL">TEMPORAL</option>
-                  <option value="PERMANENTE">PERMANENTE</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="usa_franjas">¿Usa franjas horarias?</label>
-                <select id="usa_franjas" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="requiere_reserva">¿Requiere reserva?</label>
-                <select id="requiere_reserva" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="aforo_limitado">¿Aforo limitado?</label>
-                <select id="aforo_limitado" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="avisoConfiguracion" class="aviso-config oculto"></div>
-          </section>
-
-          <section class="step-pane" data-step="2">
-            <h4 class="step-title">Programación</h4>
-            <p class="step-help">Define fechas para actividades temporales y, si procede, la recurrencia informativa de sus franjas.</p>
-
-            <div class="fila" id="bloqueFechas">
-              <div>
-                <label for="fecha_inicio">Fecha inicio</label>
-                <input type="date" id="fecha_inicio">
-              </div>
-
-              <div>
-                <label for="fecha_fin">Fecha fin</label>
-                <input type="date" id="fecha_fin">
-              </div>
-            </div>
-
-            <div id="bloqueRecurrencia">
-              <div class="fila-compacta">
-                <div>
-                  <label for="es_recurrente">¿Franja recurrente?</label>
-                  <select id="es_recurrente" class="input-mini">
-                    <option value="0">No</option>
-                    <option value="1">Sí</option>
-                  </select>
-                </div>
-                <div></div>
-              </div>
-
-              <div class="fila" id="bloquePatronRecurrencia">
-                <div>
-                  <label for="patron_recurrencia">Patrón (texto libre)</label>
-                  <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados">
-                </div>
-                <div></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="3">
-            <h4 class="step-title">Publicación</h4>
-            <p class="step-help">Controla la visibilidad de la actividad y su orden de aparición en el portal.</p>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="visible_portal">Visible en portal</label>
-                <select id="visible_portal" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="activa">Activa</label>
-                <select id="activa" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="fila">
-              <div>
-                <label for="orden_portal">Orden en portal</label>
-                <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
-              </div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="4">
-            <h4 class="step-title">Contenido</h4>
-            <p class="step-help">Configura los textos visibles, la imagen y el posible enlace externo asociado a la actividad.</p>
-
-            <div class="fila">
-              <div>
-                <label for="titulo_publico">Título público</label>
-                <input type="text" id="titulo_publico">
-              </div>
-
-              <div>
-                <label for="subtitulo_publico">Subtítulo público</label>
-                <input type="text" id="subtitulo_publico">
-              </div>
-            </div>
-
-            <div class="fila">
-              <div>
-                <label for="descripcion">Descripción interna</label>
-                <input type="text" id="descripcion">
-              </div>
-
-              <div>
-                <label for="imagen_url">Imagen URL</label>
-                <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
-              </div>
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label for="descripcion_corta">Descripción corta</label>
-                <textarea id="descripcion_corta"></textarea>
-              </div>
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label for="descripcion_larga">Descripción larga</label>
-                <textarea id="descripcion_larga"></textarea>
-              </div>
-            </div>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
-                <select id="usa_enlace_externo" class="input-mini">
-                  <option value="0">No</option>
-                  <option value="1">Sí</option>
-                </select>
-              </div>
-              <div></div>
-            </div>
-
-            <div class="fila" id="bloqueEnlaceExternoUrl">
-              <div>
-                <label for="enlace_externo_url">URL enlace externo</label>
-                <input type="text" id="enlace_externo_url" placeholder="https://...">
-              </div>
-              <div></div>
-            </div>
-
-            <div class="fila" id="bloqueEnlaceExternoTexto">
-              <div>
-                <label for="enlace_externo_texto">Texto del enlace</label>
-                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
-              </div>
-              <div></div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="5">
-            <h4 class="step-title">Localización</h4>
-            <p class="step-help">Introduce el lugar visible al usuario y los datos necesarios para el mapa de Leaflet y el vínculo a Google Maps.</p>
-
-            <div class="fila">
-              <div>
-                <label for="lugar">Lugar</label>
-                <input type="text" id="lugar">
-              </div>
-
-              <div>
-                <label for="provincia">Provincia</label>
-                <input type="text" id="provincia" placeholder="Ej: Madrid, A Coruña...">
-              </div>
-              
-              <div>
-                <label for="direccion_postal">Dirección postal</label>
-                <input type="text" id="direccion_postal">
-              </div>
-            </div>
-
-            <div class="oculto">
-              <input type="number" id="latitud" step="any">
-              <input type="number" id="longitud" step="any">
-              <input type="number" id="zoom_mapa" step="1" min="1" max="20" value="15">
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label>Vista previa de mapa</label>
-                <div class="ayuda-localizacion">
-                  Haz clic en el mapa para fijar la ubicación. Después puedes ajustar el punto arrastrando el marcador.
-                </div>
-                <div class="mapa-preview-wrap">
-                  <div id="mapaPreviewActividad"></div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="6">
-            <h4 class="step-title">Vista previa final</h4>
-            <p class="step-help">Revisa el resultado antes de guardar la actividad.</p>
-
-            <div class="preview">
-              <img id="previewImagen" src="logo.png" alt="Vista previa">
-              <h4 id="previewTitulo">-</h4>
-              <div id="previewSubtitulo" class="preview-subtitulo">-</div>
-
-              <div class="preview-meta">
-                <div><strong>Organiza:</strong> <span id="previewOrganizador">-</span></div>
-                <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
-                <div><strong>Provincia:</strong> <span id="previewProvincia">-</span></div>
-                <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
-                <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
-                <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
-                <div><strong>Dirección:</strong> <span id="previewDireccion">-</span></div>
-                <div><strong>Coordenadas:</strong> <span id="previewCoords">-</span></div>
-              </div>
-
-              <div class="preview-texto" id="previewDescripcionCorta">-</div>
-              <div class="preview-texto" id="previewDescripcionLarga">-</div>
-              <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
-            </div>
-          </section>
-
-          <div class="wizard-actions">
-            <div class="wizard-actions-left">
-              <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
-            </div>
-
-            <div class="wizard-actions-right">
-              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
-              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
-            </div>
-          </div>
-        </form>
-      </div>
+    <div class="wizard-head-title" id="tituloFormulario">
+      Nueva actividad
     </div>
+
+    <div id="tituloActividadContexto" style="font-size:14px;color:#5f6d7a;margin-bottom:12px;"></div>
+
+    <form id="formActividad" novalidate>
+
+      <!-- PASOS (SOLO IZQUIERDA) -->
+      <div id="contenedorPasos"></div>
+
+      <div class="wizard-actions">
+        <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
+        <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
+        <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- DERECHA -->
+  <div class="panel">
+    <h3>Vista previa</h3>
+
+    <div class="preview">
+      <img id="previewImagen" src="logo.png">
+
+      <h4 id="previewTitulo">-</h4>
+      <div id="previewSubtitulo" class="preview-subtitulo"></div>
+
+      <div class="preview-meta">
+        <div><strong>Organiza:</strong> <span id="previewOrganizador"></span></div>
+        <div><strong>Lugar:</strong> <span id="previewLugar"></span></div>
+        <div><strong>Provincia:</strong> <span id="previewProvincia"></span></div>
+        <div><strong>Tipo:</strong> <span id="previewTipo"></span></div>
+        <div><strong>Fechas:</strong> <span id="previewFechas"></span></div>
+      </div>
+
+      <div id="previewDescripcionCorta" class="preview-texto"></div>
+      <div id="previewDescripcionLarga" class="preview-texto"></div>
+
+      <a id="previewEnlaceExterno" class="preview-link oculto" target="_blank"></a>
+
+      <div id="mapaPreviewActividad" style="height:260px;margin-top:12px;border-radius:10px;"></div>
+    </div>
+  </div>
+
+</div>
   </div>
 
   <script>
@@ -1258,6 +1019,12 @@ function renderMapaPreviewActividad() {
         link.href = "#";
         link.textContent = "Más información";
       }
+      const contexto = document.getElementById("tituloActividadContexto");
+
+      const nombre = document.getElementById("nombre").value.trim();
+      const titulo = document.getElementById("titulo_publico").value.trim();
+
+      contexto.textContent = titulo || nombre || "Nueva actividad";
     }
 
     function renderWizardProgress() {
