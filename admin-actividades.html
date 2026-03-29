@@ -967,6 +967,7 @@
     let mapaPreviewActividad = null;
     let marcadorPreviewActividad = null;
     let franjasCache = [];
+    let actividadEsBorradorTecnico = false;
 
     const pasos = [
       "Identificación",
@@ -1125,6 +1126,7 @@
       setValor("longitud", actividad.longitud ?? "");
       setValor("zoom_mapa", actividad.zoom_mapa ?? 15);
 
+      actividadEsBorradorTecnico = Number(actividad.borrador_tecnico || 0) === 1;
       document.getElementById("tituloFormulario").textContent = "Editar actividad";
       actualizarVisibilidadFormulario();
       actualizarPreview();
@@ -1559,6 +1561,7 @@
       const data = await res.json();
 
       if (res.ok && data.ok) {
+        actividadEsBorradorTecnico = false;
         mostrarMensaje("ok", data.mensaje || "Actividad guardada correctamente.");
 
         if (!esEdicion && data.id) {
@@ -1619,6 +1622,13 @@
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
       }
 
+      actividadEsBorradorTecnico = true;
+      
+      document.getElementById("tituloActividadContexto").textContent =
+      document.getElementById("titulo_publico").value.trim() ||
+      document.getElementById("nombre").value.trim() ||
+      "Nueva actividad";
+      
       return document.getElementById("actividadId").value;
     }
 
@@ -1829,6 +1839,53 @@
       mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
     }
 
+    async function cancelarActividadEnEdicion() {
+  const id = document.getElementById("actividadId").value;
+
+  const hayCambios =
+    document.getElementById("nombre").value.trim() ||
+    document.getElementById("titulo_publico").value.trim() ||
+    document.getElementById("descripcion_corta").value.trim() ||
+    document.getElementById("descripcion_larga").value.trim() ||
+    franjasCache.length > 0;
+
+  if (!id) {
+    if (hayCambios) {
+      const confirmarSalir = confirm("Hay cambios no guardados. ¿Quieres cancelar y salir?");
+      if (!confirmarSalir) return;
+    }
+    window.location.href = "mis-actividades.html";
+    return;
+  }
+
+  if (actividadEsBorradorTecnico) {
+    const confirmarBorrado = confirm("Vas a cancelar esta actividad en borrador. Se eliminarán también sus franjas. ¿Continuar?");
+    if (!confirmarBorrado) return;
+
+    const res = await fetch("/api/admin/actividades-guardar", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      mostrarMensaje("error", data.error || "No se pudo cancelar el borrador técnico.");
+      return;
+    }
+
+    window.location.href = "mis-actividades.html";
+    return;
+  }
+
+  const confirmarSalir = confirm("La actividad no es un borrador técnico. Cancelar solo cerrará esta edición. ¿Continuar?");
+  if (!confirmarSalir) return;
+
+  window.location.href = "mis-actividades.html";
+}
+    
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
@@ -1839,6 +1896,7 @@
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
+      document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
       document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
       document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
 
