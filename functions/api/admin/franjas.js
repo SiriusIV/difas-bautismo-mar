@@ -89,7 +89,8 @@ async function obtenerActividad(env, actividad_id) {
       tipo,
       fecha_inicio,
       fecha_fin,
-      aforo_limitado
+      aforo_limitado,
+      borrador_tecnico
     FROM actividades
     WHERE id = ?
     LIMIT 1
@@ -107,6 +108,10 @@ function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
     return null;
   }
 
+  if (Number(actividad.borrador_tecnico) === 1) {
+    return null;
+  }
+  
   if (actividad.tipo === "PERMANENTE") {
     return null;
   }
@@ -313,6 +318,11 @@ export async function onRequestPost(context) {
     await checkAdminActividad(env, session.usuario_id, actividad_id);
 
     const actividad = await obtenerActividad(env, actividad_id);
+
+    if (!actividad) {
+      return json({ ok: false, error: "Actividad no válida." }, { status: 400 });
+    }
+    
     const aforo_limitado = Number(actividad?.aforo_limitado || 0);
 
     const errorValidacion = validarDatosFranja({
@@ -616,37 +626,40 @@ export async function onRequestDelete(context) {
     if (aforo_limitado === 1) {
       const ocupadas = await obtenerBloqueoActualFranja(env, id);
 
-      if (ocupadas > 0) {
-        return json(
-          {
-            ok: false,
-            error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
-          },
-          { status: 400 }
-        );
-      }
+if (Number(actividad.borrador_tecnico) === 1) {
+  // en borrador se permite borrar siempre
+} else {
+  if (ocupadas > 0) {
+    return json(
+      {
+        ok: false,
+        error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
+      },
+      { status: 400 }
+    );
+  }
 
-      const uso = await env.DB.prepare(`
-        SELECT COUNT(*) AS total
-        FROM reservas
-        WHERE franja_id = ?
-          AND estado IN ('PENDIENTE', 'CONFIRMADA')
-      `)
-        .bind(id)
-        .first();
+  const uso = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas
+    WHERE franja_id = ?
+      AND estado IN ('PENDIENTE', 'CONFIRMADA')
+  `)
+    .bind(id)
+    .first();
 
-      const totalReservas = Number(uso?.total || 0);
+  const totalReservas = Number(uso?.total || 0);
 
-      if (totalReservas > 0) {
-        return json(
-          {
-            ok: false,
-            error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
-          },
-          { status: 400 }
-        );
-      }
-    }
+  if (totalReservas > 0) {
+    return json(
+      {
+        ok: false,
+        error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
+      },
+      { status: 400 }
+    );
+  }
+}
 
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
