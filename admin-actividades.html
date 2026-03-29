@@ -21,7 +21,6 @@
     :root {
       --bg: #f4f6f8;
       --card: #ffffff;
-      --panel: #f7f9fb;
       --border: #dde4ea;
       --text: #222;
       --muted: #5f6d7a;
@@ -153,12 +152,6 @@
       background: #f7f9fb;
     }
 
-    .nav-btn.activo {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
     .contenedor {
       max-width: 1320px;
       margin: 18px auto 30px;
@@ -190,7 +183,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 420px 1fr;
+      grid-template-columns: 440px minmax(0, 1fr);
       gap: 20px;
       align-items: start;
     }
@@ -202,50 +195,23 @@
       padding: 18px;
     }
 
-    .panel h3 {
-      margin: 0 0 14px;
-      font-size: 22px;
-      color: var(--brand);
-    }
-
-    .wizard-head {
-      margin-bottom: 18px;
+    .contexto-head {
+      margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
     }
 
-    .wizard-head-title {
+    .contexto-modo {
       font-size: 18px;
       font-weight: 700;
       color: var(--brand);
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
-    .wizard-progress {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .wizard-step-chip {
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #cfd8e3;
-      color: #4a5a6a;
-      background: #fff;
-    }
-
-    .wizard-step-chip.activo {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-    }
-
-    .wizard-step-chip.completo {
-      background: #eef4ff;
-      border-color: #c9dcff;
-      color: var(--info-text);
+    .contexto-actividad {
+      font-size: 14px;
+      color: var(--muted);
+      min-height: 18px;
     }
 
     .step-pane {
@@ -258,7 +224,7 @@
 
     .step-title {
       margin: 0 0 10px;
-      font-size: 18px;
+      font-size: 20px;
       color: var(--brand);
     }
 
@@ -278,7 +244,7 @@
 
     .fila-compacta {
       display: grid;
-      grid-template-columns: minmax(180px, 240px) minmax(180px, 240px);
+      grid-template-columns: minmax(180px, 220px) minmax(180px, 220px);
       gap: 14px;
       margin-bottom: 14px;
     }
@@ -303,7 +269,6 @@
       border: 1px solid #c9cfd6;
       border-radius: 8px;
       font-size: 15px;
-      box-sizing: border-box;
       background: #fff;
     }
 
@@ -376,12 +341,22 @@
       background: #565e64;
     }
 
+    .btn-suave {
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .btn-suave:hover {
+      background: #ddeafe;
+    }
+
     .btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
 
-    .preview {
+    .preview-card {
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -389,10 +364,10 @@
       line-height: 1.6;
     }
 
-    .preview img {
+    .preview-card img {
       width: 100%;
       max-width: 100%;
-      max-height: 220px;
+      max-height: 240px;
       object-fit: cover;
       display: block;
       margin-bottom: 12px;
@@ -400,9 +375,9 @@
       background: #dfe7ef;
     }
 
-    .preview h4 {
+    .preview-card h3 {
       margin: 0 0 8px;
-      font-size: 22px;
+      font-size: 24px;
       color: var(--brand);
       line-height: 1.2;
     }
@@ -432,26 +407,17 @@
       color: var(--primary);
       text-decoration: none;
       font-weight: 700;
+      margin-bottom: 12px;
     }
 
     .preview-link:hover {
       text-decoration: underline;
     }
 
-    .resumen-lateral {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #37424d;
-    }
-
-    .resumen-lateral strong {
-      color: var(--brand);
-    }
-
     .mapa-preview-wrap {
       width: 100%;
-      height: 280px;
-      min-height: 280px;
+      height: 300px;
+      min-height: 300px;
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--border);
@@ -471,7 +437,28 @@
       margin-top: 4px;
     }
 
-    @media (max-width: 980px) {
+    .bloque-programacion-extra {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .bloque-programacion-extra h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: var(--brand);
+    }
+
+    .bloque-programacion-extra p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
       .layout {
         grid-template-columns: 1fr;
       }
@@ -532,59 +519,299 @@
   <div class="contenedor" id="app" style="display:none;">
     <div id="mensajeActividad" class="mensaje"></div>
 
-<div class="layout">
+    <div class="layout">
+      <div class="panel">
+        <div class="contexto-head">
+          <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
+          <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+        </div>
 
-  <!-- IZQUIERDA -->
-  <div class="panel">
+        <form id="formActividad" novalidate>
+          <input type="hidden" id="actividadId" value="">
+          <input type="hidden" id="latitud" step="any">
+          <input type="hidden" id="longitud" step="any">
+          <input type="hidden" id="zoom_mapa" step="1" min="1" max="20" value="15">
 
-    <div class="wizard-head-title" id="tituloFormulario">
-      Nueva actividad
-    </div>
+          <section class="step-pane activo" data-step="0">
+            <h3 class="step-title">Identificación</h3>
+            <p class="step-help">Define la actividad que estás creando o editando y quién la gestiona.</p>
 
-    <div id="tituloActividadContexto" style="font-size:14px;color:#5f6d7a;margin-bottom:12px;"></div>
+            <div class="fila">
+              <div>
+                <label for="nombre">Nombre interno</label>
+                <input type="text" id="nombre" required>
+              </div>
 
-    <form id="formActividad" novalidate>
+              <div id="bloqueAdminResponsable">
+                <label for="admin_id">Administrador responsable</label>
+                <select id="admin_id"></select>
+              </div>
+            </div>
 
-      <!-- PASOS (SOLO IZQUIERDA) -->
-      <div id="contenedorPasos"></div>
+            <div class="fila">
+              <div>
+                <label for="organizador_publico">Organizador público</label>
+                <input type="text" id="organizador_publico">
+              </div>
+              <div></div>
+            </div>
+          </section>
 
-      <div class="wizard-actions">
-        <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
-        <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
-        <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar</button>
+          <section class="step-pane" data-step="1">
+            <h3 class="step-title">Programación</h3>
+            <p class="step-help">Configura el tipo de actividad, sus fechas, el uso de franjas y la modalidad de reserva.</p>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="tipo">Tipo</label>
+                <select id="tipo" class="input-corto">
+                  <option value="TEMPORAL">TEMPORAL</option>
+                  <option value="PERMANENTE">PERMANENTE</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="usa_franjas">¿Usa franjas horarias?</label>
+                <select id="usa_franjas" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="requiere_reserva">¿Requiere reserva?</label>
+                <select id="requiere_reserva" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aforo_limitado">¿Aforo limitado?</label>
+                <select id="aforo_limitado" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fila" id="bloqueFechas">
+              <div>
+                <label for="fecha_inicio">Fecha inicio</label>
+                <input type="date" id="fecha_inicio">
+              </div>
+
+              <div>
+                <label for="fecha_fin">Fecha fin</label>
+                <input type="date" id="fecha_fin">
+              </div>
+            </div>
+
+            <div id="bloqueRecurrencia">
+              <div class="fila-compacta">
+                <div>
+                  <label for="es_recurrente">¿Franja recurrente?</label>
+                  <select id="es_recurrente" class="input-mini">
+                    <option value="0">No</option>
+                    <option value="1">Sí</option>
+                  </select>
+                </div>
+                <div></div>
+              </div>
+
+              <div class="fila" id="bloquePatronRecurrencia">
+                <div>
+                  <label for="patron_recurrencia">Patrón de recurrencia</label>
+                  <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados, primer domingo de mes...">
+                </div>
+                <div></div>
+              </div>
+            </div>
+
+            <div id="avisoConfiguracion" class="aviso-config oculto"></div>
+
+            <div class="bloque-programacion-extra" id="bloqueFranjasIntegracion">
+              <h4>Franjas horarias</h4>
+              <p>En el siguiente paso integraremos aquí el editor de franjas, usando borrador técnico cuando la actividad sea nueva.</p>
+              <button type="button" class="btn btn-suave" id="btnPrepararFranjas" disabled>Editor de franjas pendiente</button>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="2">
+            <h3 class="step-title">Publicación</h3>
+            <p class="step-help">Controla visibilidad, activación y orden de aparición.</p>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="visible_portal">Visible en portal</label>
+                <select id="visible_portal" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="activa">Activa</label>
+                <select id="activa" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="orden_portal">Orden en portal</label>
+                <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
+              </div>
+              <div></div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="3">
+            <h3 class="step-title">Contenido</h3>
+            <p class="step-help">Define la presentación pública de la actividad.</p>
+
+            <div class="fila">
+              <div>
+                <label for="titulo_publico">Título público</label>
+                <input type="text" id="titulo_publico">
+              </div>
+
+              <div>
+                <label for="subtitulo_publico">Subtítulo público</label>
+                <input type="text" id="subtitulo_publico">
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="descripcion">Descripción interna</label>
+                <input type="text" id="descripcion">
+              </div>
+
+              <div>
+                <label for="imagen_url">Imagen URL</label>
+                <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="descripcion_corta">Descripción corta</label>
+                <textarea id="descripcion_corta"></textarea>
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="descripcion_larga">Descripción larga</label>
+                <textarea id="descripcion_larga"></textarea>
+              </div>
+            </div>
+
+            <div class="fila-compacta">
+              <div>
+                <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
+                <select id="usa_enlace_externo" class="input-mini">
+                  <option value="0">No</option>
+                  <option value="1">Sí</option>
+                </select>
+              </div>
+              <div></div>
+            </div>
+
+            <div class="fila" id="bloqueEnlaceExternoUrl">
+              <div>
+                <label for="enlace_externo_url">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://...">
+              </div>
+              <div></div>
+            </div>
+
+            <div class="fila" id="bloqueEnlaceExternoTexto">
+              <div>
+                <label for="enlace_externo_texto">Texto del enlace</label>
+                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+              </div>
+              <div></div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="4">
+            <h3 class="step-title">Localización</h3>
+            <p class="step-help">La vista previa de la derecha incluye el mapa interactivo. Haz clic en él para fijar la ubicación y arrastra el marcador para ajustar el punto.</p>
+
+            <div class="fila">
+              <div>
+                <label for="lugar">Lugar</label>
+                <input type="text" id="lugar">
+              </div>
+
+              <div>
+                <label for="provincia">Provincia</label>
+                <input type="text" id="provincia" placeholder="Ej: Madrid, A Coruña...">
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="direccion_postal">Dirección postal</label>
+                <input type="text" id="direccion_postal">
+              </div>
+            </div>
+
+            <div class="ayuda-localizacion">
+              Si no hay coordenadas aún, el mapa se abrirá sobre España o se centrará automáticamente en la provincia indicada.
+            </div>
+          </section>
+
+          <div class="wizard-actions">
+            <div class="wizard-actions-left">
+              <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
+            </div>
+
+            <div class="wizard-actions-right">
+              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
+              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+            </div>
+          </div>
+        </form>
       </div>
 
-    </form>
-  </div>
+      <div class="panel">
+        <h3>Vista previa</h3>
 
-  <!-- DERECHA -->
-  <div class="panel">
-    <h3>Vista previa</h3>
+        <div class="preview-card">
+          <img id="previewImagen" src="logo.png" alt="Vista previa">
 
-    <div class="preview">
-      <img id="previewImagen" src="logo.png">
+          <h3 id="previewTitulo">-</h3>
+          <div id="previewSubtitulo" class="preview-subtitulo"></div>
 
-      <h4 id="previewTitulo">-</h4>
-      <div id="previewSubtitulo" class="preview-subtitulo"></div>
+          <div class="preview-meta">
+            <div><strong>Organiza:</strong> <span id="previewOrganizador">-</span></div>
+            <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
+            <div><strong>Provincia:</strong> <span id="previewProvincia">-</span></div>
+            <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
+            <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
+            <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
+            <div><strong>Dirección:</strong> <span id="previewDireccion">-</span></div>
+            <div><strong>Coordenadas:</strong> <span id="previewCoords">-</span></div>
+          </div>
 
-      <div class="preview-meta">
-        <div><strong>Organiza:</strong> <span id="previewOrganizador"></span></div>
-        <div><strong>Lugar:</strong> <span id="previewLugar"></span></div>
-        <div><strong>Provincia:</strong> <span id="previewProvincia"></span></div>
-        <div><strong>Tipo:</strong> <span id="previewTipo"></span></div>
-        <div><strong>Fechas:</strong> <span id="previewFechas"></span></div>
+          <div id="previewDescripcionCorta" class="preview-texto">-</div>
+          <div id="previewDescripcionLarga" class="preview-texto">-</div>
+
+          <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
+
+          <div class="mapa-preview-wrap">
+            <div id="mapaPreviewActividad"></div>
+          </div>
+        </div>
       </div>
-
-      <div id="previewDescripcionCorta" class="preview-texto"></div>
-      <div id="previewDescripcionLarga" class="preview-texto"></div>
-
-      <a id="previewEnlaceExterno" class="preview-link oculto" target="_blank"></a>
-
-      <div id="mapaPreviewActividad" style="height:260px;margin-top:12px;border-radius:10px;"></div>
     </div>
-  </div>
-
-</div>
   </div>
 
   <script>
@@ -599,12 +826,10 @@
 
     const pasos = [
       "Identificación",
-      "Comportamiento",
       "Programación",
       "Publicación",
       "Contenido",
-      "Localización",
-      "Vista previa"
+      "Localización"
     ];
 
     function getActividadIdURL() {
@@ -685,9 +910,7 @@
 
       const sel = document.getElementById("admin_id");
       sel.innerHTML = `<option value="">Seleccione administrador</option>` +
-        adminsCache.map(a => `
-          <option value="${a.id}">${a.nombre} (${a.email})</option>
-        `).join("");
+        adminsCache.map(a => `<option value="${a.id}">${a.nombre} (${a.email})</option>`).join("");
     }
 
     function configurarModoAdminResponsable() {
@@ -792,10 +1015,12 @@
       const bloqueUrl = document.getElementById("bloqueEnlaceExternoUrl");
       const bloqueTexto = document.getElementById("bloqueEnlaceExternoTexto");
       const aviso = document.getElementById("avisoConfiguracion");
+      const bloqueFranjas = document.getElementById("bloqueFranjasIntegracion");
 
       bloqueFechas.classList.toggle("oculto", tipo !== "TEMPORAL");
       bloqueRecurrencia.classList.toggle("oculto", !usaFranjas);
       bloquePatron.classList.toggle("oculto", !usaFranjas || !esRecurrente);
+      bloqueFranjas.classList.toggle("oculto", !usaFranjas);
 
       bloqueUrl.classList.toggle("oculto", !usaEnlaceExterno);
       bloqueTexto.classList.toggle("oculto", !usaEnlaceExterno);
@@ -863,119 +1088,114 @@
       }
     }
 
-function renderMapaPreviewActividad() {
-  const latStr = document.getElementById("latitud").value.trim();
-  const lngStr = document.getElementById("longitud").value.trim();
-  const zoomStr = document.getElementById("zoom_mapa").value.trim();
-  const provincia = document.getElementById("provincia").value.trim();
+    function renderMapaPreviewActividad() {
+      const latStr = document.getElementById("latitud").value.trim();
+      const lngStr = document.getElementById("longitud").value.trim();
+      const zoomStr = document.getElementById("zoom_mapa").value.trim();
+      const provincia = document.getElementById("provincia").value.trim();
 
-  let lat = Number(latStr);
-  let lng = Number(lngStr);
-  let zoom = Number(zoomStr || 15);
+      let lat = Number(latStr);
+      let lng = Number(lngStr);
+      let zoom = Number(zoomStr || 15);
 
-  const contenedor = document.getElementById("mapaPreviewActividad");
-  if (!contenedor) return;
+      const contenedor = document.getElementById("mapaPreviewActividad");
+      if (!contenedor) return;
 
-  destruirMapaPreviewActividad();
-  contenedor.innerHTML = "";
+      destruirMapaPreviewActividad();
+      contenedor.innerHTML = "";
 
-  // Vista inicial: España peninsular
-  let centro = [40.1, -3.7];
-  let zoomInicial = 6;
+      let centro = [40.1, -3.7];
+      let zoomInicial = 6;
 
-  // Si hay coordenadas, mandan
-  const hayCoordenadas = latStr !== "" && lngStr !== "" && Number.isFinite(lat) && Number.isFinite(lng);
-  if (hayCoordenadas) {
-    centro = [lat, lng];
-    zoomInicial = Number.isFinite(zoom) ? zoom : 15;
-  }
+      const hayCoordenadas = latStr !== "" && lngStr !== "" && Number.isFinite(lat) && Number.isFinite(lng);
+      if (hayCoordenadas) {
+        centro = [lat, lng];
+        zoomInicial = Number.isFinite(zoom) ? zoom : 15;
+      }
 
-  mapaPreviewActividad = L.map("mapaPreviewActividad", {
-    center: centro,
-    zoom: zoomInicial,
-    zoomControl: true
-  });
+      mapaPreviewActividad = L.map("mapaPreviewActividad", {
+        center: centro,
+        zoom: zoomInicial,
+        zoomControl: true
+      });
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap"
-  }).addTo(mapaPreviewActividad);
-
-  if (hayCoordenadas) {
-    marcadorPreviewActividad = L.marker([lat, lng], {
-      draggable: true
-    }).addTo(mapaPreviewActividad);
-
-    marcadorPreviewActividad.on("dragend", function (e) {
-      const pos = e.target.getLatLng();
-      document.getElementById("latitud").value = pos.lat.toFixed(6);
-      document.getElementById("longitud").value = pos.lng.toFixed(6);
-      document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
-      actualizarPreview();
-    });
-  }
-
-  mapaPreviewActividad.on("click", function (e) {
-    const { lat, lng } = e.latlng;
-
-    document.getElementById("latitud").value = lat.toFixed(6);
-    document.getElementById("longitud").value = lng.toFixed(6);
-    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
-
-    if (!marcadorPreviewActividad) {
-      marcadorPreviewActividad = L.marker([lat, lng], {
-        draggable: true
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
       }).addTo(mapaPreviewActividad);
 
-      marcadorPreviewActividad.on("dragend", function (e) {
-        const pos = e.target.getLatLng();
-        document.getElementById("latitud").value = pos.lat.toFixed(6);
-        document.getElementById("longitud").value = pos.lng.toFixed(6);
+      if (hayCoordenadas) {
+        marcadorPreviewActividad = L.marker([lat, lng], { draggable: true }).addTo(mapaPreviewActividad);
+
+        marcadorPreviewActividad.on("dragend", function (e) {
+          const pos = e.target.getLatLng();
+          document.getElementById("latitud").value = pos.lat.toFixed(6);
+          document.getElementById("longitud").value = pos.lng.toFixed(6);
+          document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+          actualizarPreview();
+        });
+      }
+
+      mapaPreviewActividad.on("click", function (e) {
+        const { lat, lng } = e.latlng;
+
+        document.getElementById("latitud").value = lat.toFixed(6);
+        document.getElementById("longitud").value = lng.toFixed(6);
         document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+
+        if (!marcadorPreviewActividad) {
+          marcadorPreviewActividad = L.marker([lat, lng], { draggable: true }).addTo(mapaPreviewActividad);
+
+          marcadorPreviewActividad.on("dragend", function (e) {
+            const pos = e.target.getLatLng();
+            document.getElementById("latitud").value = pos.lat.toFixed(6);
+            document.getElementById("longitud").value = pos.lng.toFixed(6);
+            document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+            actualizarPreview();
+          });
+        } else {
+          marcadorPreviewActividad.setLatLng([lat, lng]);
+        }
+
         actualizarPreview();
       });
-    } else {
-      marcadorPreviewActividad.setLatLng([lat, lng]);
+
+      mapaPreviewActividad.on("zoomend", function () {
+        document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+      });
+
+      if (!hayCoordenadas && provincia) {
+        buscarProvinciaYcentrar(provincia);
+      }
+
+      setTimeout(() => {
+        if (mapaPreviewActividad) {
+          mapaPreviewActividad.invalidateSize(true);
+        }
+      }, 150);
     }
 
-    actualizarPreview();
-  });
+    async function buscarProvinciaYcentrar(nombreProvincia) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreProvincia + ", España")}`);
+        const data = await res.json();
 
-  mapaPreviewActividad.on("zoomend", function () {
-    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
-  });
-
-  if (!hayCoordenadas && provincia) {
-    buscarProvinciaYcentrar(provincia);
-  }
-
-  setTimeout(() => {
-    if (mapaPreviewActividad) {
-      mapaPreviewActividad.invalidateSize(true);
+        if (data && data.length > 0 && mapaPreviewActividad) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          mapaPreviewActividad.setView([lat, lon], 9);
+        }
+      } catch (e) {
+        console.warn("No se pudo centrar por provincia", e);
+      }
     }
-  }, 150);
-}
 
- async function buscarProvinciaYcentrar(nombreProvincia) {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreProvincia + ", España")}`);
-    const data = await res.json();
-
-    if (data && data.length > 0 && mapaPreviewActividad) {
-      const lat = parseFloat(data[0].lat);
-      const lon = parseFloat(data[0].lon);
-      mapaPreviewActividad.setView([lat, lon], 9);
-    }
-  } catch (e) {
-    console.warn("No se pudo centrar por provincia", e);
-  }
-}
-
-    
     function actualizarPreview() {
-      const titulo = document.getElementById("titulo_publico").value.trim() || document.getElementById("nombre").value.trim() || "-";
+      const nombre = document.getElementById("nombre").value.trim();
+      const tituloPublico = document.getElementById("titulo_publico").value.trim();
+      const titulo = tituloPublico || nombre || "-";
       const organizador = document.getElementById("organizador_publico").value.trim() || "-";
-      const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "-";
+      const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "";
       const lugar = document.getElementById("lugar").value.trim() || "-";
       const provincia = document.getElementById("provincia").value.trim() || "-";
       const tipo = document.getElementById("tipo").value;
@@ -999,12 +1219,11 @@ function renderMapaPreviewActividad() {
       document.getElementById("previewTipo").textContent = tipo;
       document.getElementById("previewFechas").textContent =
         tipo === "TEMPORAL"
-          ? `${fecha_inicio || "-"} a ${fecha_fin || "-"}`
+          ? `${fecha_inicio || "-"}${fecha_inicio && fecha_fin ? " a " : ""}${fecha_fin || "-"}`
           : "Permanente";
       document.getElementById("previewModo").textContent = obtenerTextoModoPreview();
       document.getElementById("previewDireccion").textContent = direccion;
-      document.getElementById("previewCoords").textContent =
-        lat && lng ? `${lat}, ${lng}` : "-";
+      document.getElementById("previewCoords").textContent = lat && lng ? `${lat}, ${lng}` : "-";
       document.getElementById("previewDescripcionCorta").textContent = descripcion_corta;
       document.getElementById("previewDescripcionLarga").textContent = descripcion_larga;
       document.getElementById("previewImagen").src = imagen;
@@ -1019,20 +1238,8 @@ function renderMapaPreviewActividad() {
         link.href = "#";
         link.textContent = "Más información";
       }
-      const contexto = document.getElementById("tituloActividadContexto");
 
-      const nombre = document.getElementById("nombre").value.trim();
-      const titulo = document.getElementById("titulo_publico").value.trim();
-
-      contexto.textContent = titulo || nombre || "Nueva actividad";
-    }
-
-    function renderWizardProgress() {
-      const cont = document.getElementById("wizardProgress");
-      cont.innerHTML = pasos.map((p, i) => {
-        const clase = i === pasoActual ? "activo" : (i < pasoActual ? "completo" : "");
-        return `<span class="wizard-step-chip ${clase}">${i + 1}. ${p}</span>`;
-      }).join("");
+      document.getElementById("tituloActividadContexto").textContent = tituloPublico || nombre || "Nueva actividad";
     }
 
     function mostrarPaso(index) {
@@ -1047,7 +1254,6 @@ function renderMapaPreviewActividad() {
       document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
       document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
 
-      renderWizardProgress();
       actualizarPreview();
       renderMapaPreviewActividad();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1071,7 +1277,7 @@ function renderMapaPreviewActividad() {
         }
       }
 
-      if (pasoActual === 2) {
+      if (pasoActual === 1) {
         const tipo = document.getElementById("tipo").value;
         const usaFranjas = document.getElementById("usa_franjas").value === "1";
         const esRecurrente = document.getElementById("es_recurrente").value === "1";
@@ -1096,7 +1302,7 @@ function renderMapaPreviewActividad() {
         }
       }
 
-      if (pasoActual === 4) {
+      if (pasoActual === 3) {
         const usaEnlace = document.getElementById("usa_enlace_externo").value === "1";
         const url = document.getElementById("enlace_externo_url").value.trim();
 
