@@ -355,3 +355,63 @@ export async function onRequestPut(context) {
     );
   }
 }
+
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+
+  try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json({ ok: false, error: "No autorizado." }, 401);
+    }
+
+    const body = await request.json();
+    const id = parsearIdPositivo(body.id);
+
+    if (!id) {
+      return json({ ok: false, error: "ID de actividad no válido." }, 400);
+    }
+
+    const actual = await obtenerActividad(env, id);
+    if (!actual) {
+      return json({ ok: false, error: "La actividad no existe." }, 404);
+    }
+
+    const rol = await obtenerRol(env, session.usuario_id);
+    if (rol !== "SUPERADMIN" && Number(actual.admin_id || 0) !== Number(session.usuario_id)) {
+      return json({ ok: false, error: "No autorizado para eliminar esta actividad." }, 403);
+    }
+
+    if (Number(actual.borrador_tecnico || 0) !== 1) {
+      return json(
+        { ok: false, error: "Solo se pueden eliminar desde aquí actividades en borrador técnico." },
+        400
+      );
+    }
+
+    await env.DB.prepare(`
+      DELETE FROM franjas
+      WHERE actividad_id = ?
+    `).bind(id).run();
+
+    const result = await env.DB.prepare(`
+      DELETE FROM actividades
+      WHERE id = ?
+        AND borrador_tecnico = 1
+    `).bind(id).run();
+
+    if ((result?.meta?.changes || 0) === 0) {
+      return json({ ok: false, error: "No se pudo eliminar el borrador técnico." }, 500);
+    }
+
+    return json({
+      ok: true,
+      mensaje: "Borrador técnico eliminado correctamente."
+    });
+  } catch (error) {
+    return json(
+      { ok: false, error: "Error al eliminar el borrador técnico.", detalle: error.message },
+      500
+    );
+  }
+}
