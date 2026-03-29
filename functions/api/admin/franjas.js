@@ -660,7 +660,7 @@ if (Number(actividad.borrador_tecnico) === 1) {
     );
   }
 }
-
+}
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
       WHERE id = ?
