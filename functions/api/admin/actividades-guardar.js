@@ -21,6 +21,11 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+function parsearEntero(valor, defecto = 0) {
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) ? n : defecto;
+}
+
 function parsearFlag(valor, defecto = 0) {
   if (valor === true || valor === 1 || valor === "1") return 1;
   if (valor === false || valor === 0 || valor === "0") return 0;
@@ -76,6 +81,44 @@ async function obtenerActividad(env, id) {
   `).bind(id).first();
 }
 
+function construirPayload(body, admin_id) {
+  const tipo = limpiarTexto(body.tipo).toUpperCase();
+  const esTemporal = tipo === "TEMPORAL";
+
+  return {
+    nombre: limpiarTexto(body.nombre),
+    tipo,
+    fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
+    fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
+    activa: parsearFlag(body.activa, 1),
+    descripcion: normalizarNullable(body.descripcion),
+    titulo_publico: normalizarNullable(body.titulo_publico),
+    subtitulo_publico: normalizarNullable(body.subtitulo_publico),
+    descripcion_corta: normalizarNullable(body.descripcion_corta),
+    descripcion_larga: normalizarNullable(body.descripcion_larga),
+    lugar: normalizarNullable(body.lugar),
+    direccion_postal: normalizarNullable(body.direccion_postal),
+    latitud: normalizarNullable(body.latitud),
+    longitud: normalizarNullable(body.longitud),
+    zoom_mapa: normalizarNullable(body.zoom_mapa),
+    imagen_url: normalizarNullable(body.imagen_url),
+    visible_portal: parsearFlag(body.visible_portal, 1),
+    orden_portal: parsearEntero(body.orden_portal, 0),
+    organizador_publico: normalizarNullable(body.organizador_publico),
+    usa_franjas: parsearFlag(body.usa_franjas, 1),
+    admin_id,
+    requiere_reserva: parsearFlag(body.requiere_reserva, 1),
+    aforo_limitado: parsearFlag(body.aforo_limitado, 1),
+    provincia: normalizarNullable(body.provincia),
+    es_recurrente: parsearFlag(body.es_recurrente, 0),
+    patron_recurrencia: normalizarNullable(body.patron_recurrencia),
+    usa_enlace_externo: parsearFlag(body.usa_enlace_externo, 0),
+    enlace_externo_url: normalizarNullable(body.enlace_externo_url),
+    enlace_externo_texto: normalizarNullable(body.enlace_externo_texto),
+    borrador_tecnico: parsearFlag(body.borrador_tecnico, 0)
+  };
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -87,16 +130,13 @@ export async function onRequestPost(context) {
 
     const body = await request.json();
     const errorValidacion = validarActividad(body);
-
     if (errorValidacion) {
       return json({ ok: false, error: errorValidacion }, 400);
     }
 
     const rol = await obtenerRol(env, session.usuario_id);
-    const tipo = limpiarTexto(body.tipo).toUpperCase();
 
     let admin_id = parsearIdPositivo(body.admin_id);
-
     if (rol === "SUPERADMIN") {
       if (!admin_id) {
         return json({ ok: false, error: "Debe indicar el administrador responsable." }, 400);
@@ -104,6 +144,8 @@ export async function onRequestPost(context) {
     } else {
       admin_id = session.usuario_id;
     }
+
+    const p = construirPayload(body, admin_id);
 
     const result = await env.DB.prepare(`
       INSERT INTO actividades (
@@ -118,6 +160,10 @@ export async function onRequestPost(context) {
         descripcion_corta,
         descripcion_larga,
         lugar,
+        direccion_postal,
+        latitud,
+        longitud,
+        zoom_mapa,
         imagen_url,
         visible_portal,
         orden_portal,
@@ -132,38 +178,40 @@ export async function onRequestPost(context) {
         usa_enlace_externo,
         enlace_externo_url,
         enlace_externo_texto,
-        direccion_postal,
-        latitud,
-        longitud,
-        zoom_mapa
+        borrador_tecnico
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      limpiarTexto(body.nombre),
-      tipo,
-      tipo === "TEMPORAL" ? limpiarTexto(body.fecha_inicio) : null,
-      tipo === "TEMPORAL" ? limpiarTexto(body.fecha_fin) : null,
-      parsearFlag(body.activa, 1),
-      normalizarNullable(body.descripcion),
-      normalizarNullable(body.titulo_publico),
-      normalizarNullable(body.subtitulo_publico),
-      normalizarNullable(body.descripcion_corta),
-      normalizarNullable(body.descripcion_larga),
-      normalizarNullable(body.lugar),
-      normalizarNullable(body.imagen_url),
-      parsearFlag(body.visible_portal, 1),
-      parseInt(body.orden_portal || 0, 10) || 0,
-      normalizarNullable(body.organizador_publico),
-      parsearFlag(body.usa_franjas, 1),
-      admin_id,
-      parsearFlag(body.requiere_reserva, 1),
-      parsearFlag(body.aforo_limitado, 1),
-      normalizarNullable(body.provincia),
-      parsearFlag(body.es_recurrente, 0),
-      normalizarNullable(body.patron_recurrencia),
-      parsearFlag(body.usa_enlace_externo, 0),
-      normalizarNullable(body.enlace_externo_url),
-      normalizarNullable(body.enlace_externo_texto)
+      p.nombre,
+      p.tipo,
+      p.fecha_inicio,
+      p.fecha_fin,
+      p.activa,
+      p.descripcion,
+      p.titulo_publico,
+      p.subtitulo_publico,
+      p.descripcion_corta,
+      p.descripcion_larga,
+      p.lugar,
+      p.direccion_postal,
+      p.latitud,
+      p.longitud,
+      p.zoom_mapa,
+      p.imagen_url,
+      p.visible_portal,
+      p.orden_portal,
+      p.organizador_publico,
+      p.usa_franjas,
+      p.admin_id,
+      p.requiere_reserva,
+      p.aforo_limitado,
+      p.provincia,
+      p.es_recurrente,
+      p.patron_recurrencia,
+      p.usa_enlace_externo,
+      p.enlace_externo_url,
+      p.enlace_externo_texto,
+      p.borrador_tecnico
     ).run();
 
     if ((result?.meta?.changes || 0) === 0) {
@@ -172,7 +220,7 @@ export async function onRequestPost(context) {
 
     return json({
       ok: true,
-      mensaje: "Actividad creada correctamente.",
+      mensaje: p.borrador_tecnico ? "Borrador técnico creado correctamente." : "Actividad creada correctamente.",
       id: result.meta.last_row_id
     });
   } catch (error) {
@@ -205,7 +253,6 @@ export async function onRequestPut(context) {
     }
 
     const rol = await obtenerRol(env, session.usuario_id);
-
     if (rol !== "SUPERADMIN" && Number(actual.admin_id || 0) !== Number(session.usuario_id)) {
       return json({ ok: false, error: "No autorizado para editar esta actividad." }, 403);
     }
@@ -215,8 +262,6 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: errorValidacion }, 400);
     }
 
-    const tipo = limpiarTexto(body.tipo).toUpperCase();
-
     let admin_id = parsearIdPositivo(body.admin_id);
     if (rol !== "SUPERADMIN") {
       admin_id = actual.admin_id;
@@ -224,6 +269,8 @@ export async function onRequestPut(context) {
     if (rol === "SUPERADMIN" && !admin_id) {
       return json({ ok: false, error: "Debe indicar el administrador responsable." }, 400);
     }
+
+    const p = construirPayload(body, admin_id);
 
     const result = await env.DB.prepare(`
       UPDATE actividades
@@ -239,6 +286,10 @@ export async function onRequestPut(context) {
         descripcion_corta = ?,
         descripcion_larga = ?,
         lugar = ?,
+        direccion_postal = ?,
+        latitud = ?,
+        longitud = ?,
+        zoom_mapa = ?,
         imagen_url = ?,
         visible_portal = ?,
         orden_portal = ?,
@@ -252,42 +303,40 @@ export async function onRequestPut(context) {
         patron_recurrencia = ?,
         usa_enlace_externo = ?,
         enlace_externo_url = ?,
-        enlace_externo_texto = ?
-        direccion_postal = ?,
-        latitud = ?,
-        longitud = ?,
-        zoom_mapa = ?,
+        enlace_externo_texto = ?,
+        borrador_tecnico = ?
       WHERE id = ?
     `).bind(
-      limpiarTexto(body.nombre),
-      tipo,
-      tipo === "TEMPORAL" ? limpiarTexto(body.fecha_inicio) : null,
-      tipo === "TEMPORAL" ? limpiarTexto(body.fecha_fin) : null,
-      parsearFlag(body.activa, 1),
-      normalizarNullable(body.descripcion),
-      normalizarNullable(body.titulo_publico),
-      normalizarNullable(body.subtitulo_publico),
-      normalizarNullable(body.descripcion_corta),
-      normalizarNullable(body.descripcion_larga),
-      normalizarNullable(body.lugar),
-      normalizarNullable(body.direccion_postal),
-      normalizarNullable(body.latitud),
-      normalizarNullable(body.longitud),
-      normalizarNullable(body.zoom_mapa),
-      normalizarNullable(body.imagen_url),
-      parsearFlag(body.visible_portal, 1),
-      parseInt(body.orden_portal || 0, 10) || 0,
-      normalizarNullable(body.organizador_publico),
-      admin_id,
-      parsearFlag(body.usa_franjas, 1),
-      parsearFlag(body.requiere_reserva, 1),
-      parsearFlag(body.aforo_limitado, 1),
-      normalizarNullable(body.provincia),
-      parsearFlag(body.es_recurrente, 0),
-      normalizarNullable(body.patron_recurrencia),
-      parsearFlag(body.usa_enlace_externo, 0),
-      normalizarNullable(body.enlace_externo_url),
-      normalizarNullable(body.enlace_externo_texto),
+      p.nombre,
+      p.tipo,
+      p.fecha_inicio,
+      p.fecha_fin,
+      p.activa,
+      p.descripcion,
+      p.titulo_publico,
+      p.subtitulo_publico,
+      p.descripcion_corta,
+      p.descripcion_larga,
+      p.lugar,
+      p.direccion_postal,
+      p.latitud,
+      p.longitud,
+      p.zoom_mapa,
+      p.imagen_url,
+      p.visible_portal,
+      p.orden_portal,
+      p.organizador_publico,
+      p.admin_id,
+      p.usa_franjas,
+      p.requiere_reserva,
+      p.aforo_limitado,
+      p.provincia,
+      p.es_recurrente,
+      p.patron_recurrencia,
+      p.usa_enlace_externo,
+      p.enlace_externo_url,
+      p.enlace_externo_texto,
+      p.borrador_tecnico,
       id
     ).run();
 
@@ -297,7 +346,7 @@ export async function onRequestPut(context) {
 
     return json({
       ok: true,
-      mensaje: "Actividad actualizada correctamente."
+      mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
     return json(
