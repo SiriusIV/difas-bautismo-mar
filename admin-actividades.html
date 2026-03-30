@@ -1646,46 +1646,51 @@ function actualizarEstadoFranjasUI() {
       actualizarEstadoFranjasUI();
     }
 
-    async function guardarFranja() {
-      limpiarMensaje();
+async function guardarFranja() {
+  limpiarMensaje();
 
-      const actividadId = document.getElementById("actividadId").value;
-      if (!actividadId) {
-        mostrarMensaje("error", "Primero debes guardar el borrador técnico de la actividad.");
-        return;
-      }
+  let actividadId = document.getElementById("actividadId").value;
 
-      const payload = {
-        id: document.getElementById("franjaId").value || null,
-        actividad_id: actividadId,
-        es_recurrente: document.getElementById("fr_es_recurrente").value,
-        fecha: document.getElementById("fr_fecha").value,
-        patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
-        hora_inicio: document.getElementById("fr_hora_inicio").value,
-        hora_fin: document.getElementById("fr_hora_fin").value,
-        capacidad: document.getElementById("fr_capacidad").value
-      };
+  if (!actividadId) {
+    actividadId = await asegurarActividadBorradorParaFranjas();
+    if (!actividadId) return;
 
-      const esEdicion = !!payload.id;
+    actividadEsBorradorTecnico = true;
+    document.getElementById("bloqueFranjasEditor").classList.remove("oculto");
+  }
 
-      const res = await fetch("/api/admin/franjas", {
-        method: esEdicion ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload)
-      });
+  const payload = {
+    id: document.getElementById("franjaId").value || null,
+    actividad_id: actividadId,
+    es_recurrente: document.getElementById("fr_es_recurrente").value,
+    fecha: document.getElementById("fr_fecha").value,
+    patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
+    hora_inicio: document.getElementById("fr_hora_inicio").value,
+    hora_fin: document.getElementById("fr_hora_fin").value,
+    capacidad: document.getElementById("fr_capacidad").value
+  };
 
-      const data = await res.json();
+  const esEdicion = !!payload.id;
 
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
-        return;
-      }
+  const res = await fetch("/api/admin/franjas", {
+    method: esEdicion ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload)
+  });
 
-      await cargarFranjas();
-      limpiarFormularioFranja();
-      mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
-    }
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
+    return;
+  }
+
+  await cargarFranjas();
+  limpiarFormularioFranja();
+  renderPreviewFranjas();
+  mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
+}
 
     async function borrarFranja(id) {
       const confirmar = confirm("¿Seguro que quieres eliminar esta franja?");
