@@ -621,6 +621,41 @@ textarea {
       white-space: nowrap;
     }
 
+    .fila-franja-inline {
+  display: grid;
+  grid-template-columns: 160px minmax(200px, 1fr) 120px 120px 120px auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.campo-franja-inline label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.campo-franja-inline input {
+  width: 100%;
+}
+
+.campo-franja-acciones {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .fila-franja-inline {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .campo-franja-acciones {
+    justify-content: flex-start;
+  }
+}
+    
     @media (max-width: 980px) {
       .fila, .fila-compacta {
         grid-template-columns: 1fr;
@@ -799,48 +834,39 @@ textarea {
               <h4>Franjas horarias</h4>
                 <p>Define aquí cada franja. Se irán añadiendo debajo según las guardes.</p>
 
-              <input type="hidden" id="franjaId" value="">
+<div class="fila-franja-inline">
+  
+  <div id="fr_bloque_fecha" class="campo-franja-inline">
+    <label>Fecha</label>
+    <input type="date" id="fr_fecha">
+  </div>
 
-              <div class="fila" id="fr_bloque_fecha">
-                <div>
-                  <label for="fr_fecha">Fecha</label>
-                  <input type="date" id="fr_fecha">
-                </div>
-                <div></div>
-              </div>
+  <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
+    <label>Patrón</label>
+    <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+  </div>
 
-              <div class="fila" id="fr_bloque_patron">
-                <div>
-                  <label for="fr_patron_recurrencia">Patrón de frecuencia</label>
-                  <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
-                </div>
-                <div></div>
-              </div>
+  <div class="campo-franja-inline">
+    <label>Inicio</label>
+    <input type="time" id="fr_hora_inicio">
+  </div>
 
-              <div class="fila-compacta">
-                <div>
-                  <label for="fr_hora_inicio">Hora inicio</label>
-                  <input type="time" id="fr_hora_inicio">
-                </div>
+  <div class="campo-franja-inline">
+    <label>Fin</label>
+    <input type="time" id="fr_hora_fin">
+  </div>
 
-                <div>
-                  <label for="fr_hora_fin">Hora fin</label>
-                  <input type="time" id="fr_hora_fin">
-                </div>
-              </div>
+  <div id="fr_bloque_capacidad" class="campo-franja-inline">
+    <label>Capacidad</label>
+    <input type="number" id="fr_capacidad" min="1" step="1">
+  </div>
 
-              <div class="wizard-actions" style="margin-top:8px; padding-top:10px;">
-                <div class="wizard-actions-left">
-                  <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar edición</button>
-                </div>
-                <div class="wizard-actions-right">
-                  <button type="button" class="btn" id="btnGuardarFranja">Guardar franja</button>
-                </div>
-              </div>
+  <div class="campo-franja-inline campo-franja-acciones">
+    <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar</button>
+    <button type="button" class="btn" id="btnGuardarFranja">Guardar</button>
+  </div>
 
-              <div id="listaFranjasWrap" style="margin-top:12px;">
-                <div id="listaFranjas" class="sin-franjas">No hay franjas cargadas.</div>
-              </div>
+</div>
             </div>
           </div>
         </section>
