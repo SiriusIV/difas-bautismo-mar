@@ -798,13 +798,14 @@ textarea {
             </div>
 
             <div class="subbloque oculto" id="bloqueFranjasEditor">
-              <h4>Crear o editar franja</h4>
+              <h4>Franjas horarias</h4>
+                <p>Define aquí cada franja. Se irán añadiendo debajo según las guardes.</p>
 
               <input type="hidden" id="franjaId" value="">
 
               <div class="fila-compacta">
                 <div>
-                  <label for="fr_es_recurrente">Patrón de frecuencia</label>
+                  <label for="fr_es_recurrente">Tipo de franja</label>
                   <select id="fr_es_recurrente" class="input-mini">
                     <option value="0">Fecha concreta</option>
                     <option value="1">Recurrente</option>
@@ -1229,7 +1230,6 @@ textarea {
 
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
       document.getElementById("bloquePatronRecurrencia").classList.toggle("oculto", !usaFranjas || !esRecurrente);
-      document.getElementById("bloqueFranjasPreparacion").classList.toggle("oculto", !usaFranjas);
       document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
       document.getElementById("bloqueEnlaceExternoTexto").classList.toggle("oculto", !usaEnlaceExterno);
 
@@ -1490,32 +1490,23 @@ textarea {
       }
     }
 
-    function actualizarEstadoFranjasUI() {
-      const usaFranjas = document.getElementById("usa_franjas").value === "1";
-      const actividadId = document.getElementById("actividadId").value;
-      const bloquePrep = document.getElementById("bloqueFranjasPreparacion");
-      const bloqueEditor = document.getElementById("bloqueFranjasEditor");
-      const textoPrep = document.getElementById("textoFranjasPreparacion");
-      const btn = document.getElementById("btnHabilitarFranjas");
+function actualizarEstadoFranjasUI() {
+  const usaFranjas = document.getElementById("usa_franjas").value === "1";
+  const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
+  const frEsRecurrente = document.getElementById("fr_es_recurrente").value === "1";
 
-      if (!usaFranjas) {
-        bloquePrep.classList.add("oculto");
-        bloqueEditor.classList.add("oculto");
-        return;
-      }
+  document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
+  document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
+  document.getElementById("fr_bloque_patron").classList.toggle("oculto", !frEsRecurrente);
+  document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
 
-      bloquePrep.classList.remove("oculto");
-
-      if (actividadId) {
-        textoPrep.textContent = "La actividad ya está preparada. Puedes crear y editar franjas aquí mismo.";
-        btn.textContent = "Preparar editor";
-        bloqueEditor.classList.remove("oculto");
-      } else {
-        textoPrep.textContent = "Para crear franjas en una actividad nueva primero se crea un borrador técnico interno.";
-        btn.textContent = "Guardar borrador y abrir editor";
-        bloqueEditor.classList.add("oculto");
-      }
-    }
+  if (!usaFranjas) {
+    franjasCache = [];
+    renderListaFranjas();
+    renderPreviewFranjas();
+    limpiarFormularioFranja();
+  }
+}
 
     function limpiarFormularioFranja() {
       document.getElementById("franjaId").value = "";
