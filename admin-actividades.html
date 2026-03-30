@@ -183,18 +183,16 @@
       border-color: var(--ok-border);
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 460px minmax(0, 1fr);
-      gap: 20px;
-      align-items: start;
-    }
-
-    .panel {
+    .bloque-superior,
+    .bloque-inferior {
       background: var(--card);
       border-radius: 14px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
       padding: 18px;
+    }
+
+    .bloque-superior {
+      margin-bottom: 16px;
     }
 
     .contexto-head {
@@ -246,7 +244,7 @@
 
     .fila-compacta {
       display: grid;
-      grid-template-columns: minmax(180px, 220px) minmax(180px, 220px);
+      grid-template-columns: minmax(180px, 240px) minmax(180px, 240px);
       gap: 14px;
       margin-bottom: 14px;
     }
@@ -284,7 +282,7 @@
     }
 
     .input-mini {
-      max-width: 140px;
+      max-width: 160px;
     }
 
     .oculto {
@@ -366,89 +364,7 @@
       cursor: not-allowed;
     }
 
-    .preview-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      line-height: 1.6;
-    }
-
-    .preview-card img {
-      width: 100%;
-      max-width: 100%;
-      max-height: 240px;
-      object-fit: cover;
-      display: block;
-      margin-bottom: 12px;
-      border-radius: 10px;
-      background: #dfe7ef;
-    }
-
-    .preview-card h3 {
-      margin: 0 0 8px;
-      font-size: 24px;
-      color: var(--brand);
-      line-height: 1.2;
-    }
-
-    .preview-subtitulo {
-      margin: 0 0 12px;
-      color: #4a5a6a;
-      font-size: 16px;
-    }
-
-    .preview-meta {
-      font-size: 14px;
-      color: #4d5966;
-      line-height: 1.7;
-      margin-bottom: 12px;
-    }
-
-    .preview-texto {
-      white-space: pre-wrap;
-      color: #37424d;
-      line-height: 1.6;
-      margin-bottom: 12px;
-    }
-
-    .preview-link {
-      display: inline-block;
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .preview-link:hover {
-      text-decoration: underline;
-    }
-
-    .mapa-preview-wrap {
-      width: 100%;
-      height: 300px;
-      min-height: 300px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #dfe7ef;
-      margin-top: 8px;
-    }
-
-    #mapaPreviewActividad {
-      width: 100%;
-      height: 100%;
-    }
-
-    .ayuda-localizacion {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-top: 4px;
-    }
-
-    .bloque-programacion-extra,
-    .bloque-franjas {
+    .subbloque {
       margin-top: 14px;
       padding: 12px;
       border: 1px solid var(--soft-border);
@@ -456,22 +372,29 @@
       background: var(--soft-bg);
     }
 
-    .bloque-programacion-extra h4,
-    .bloque-franjas h4 {
+    .subbloque h4 {
       margin: 0 0 8px;
       font-size: 15px;
       color: var(--brand);
     }
 
-    .bloque-programacion-extra p,
-    .bloque-franjas p {
+    .subbloque p {
       margin: 0 0 10px;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
     }
 
-    .tabla-franjas {
+    .sin-franjas {
+      padding: 10px;
+      border: 1px dashed var(--soft-border);
+      border-radius: 8px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .tabla-franjas-admin {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
@@ -482,20 +405,20 @@
       overflow: hidden;
     }
 
-    .tabla-franjas th,
-    .tabla-franjas td {
+    .tabla-franjas-admin th,
+    .tabla-franjas-admin td {
       padding: 8px 10px;
       border-bottom: 1px solid var(--border);
       text-align: left;
       vertical-align: top;
     }
 
-    .tabla-franjas th {
+    .tabla-franjas-admin th {
       background: #f2f6fb;
       color: #334250;
     }
 
-    .tabla-franjas tr:last-child td {
+    .tabla-franjas-admin tr:last-child td {
       border-bottom: none;
     }
 
@@ -529,33 +452,192 @@
       background: #fad8d8;
     }
 
-    .sin-franjas {
-      padding: 10px;
-      border: 1px dashed var(--soft-border);
-      border-radius: 8px;
-      color: var(--muted);
+    /* Preview tipo portal */
+    .preview-detalle {
       background: #fff;
-      font-size: 13px;
+      border-radius: 14px;
     }
 
-    @media (max-width: 1150px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
+    .detalle-grid-preview {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
     }
 
-    @media (max-width: 900px) {
+    .detalle-col-izq-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .detalle-img-preview {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #dfe7ef;
+      display: block;
+    }
+
+    .mapa-info-wrap-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .direccion-actividad-preview {
+      font-size: 14px;
+      color: #2c3e50;
+      background: #f4f7fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: none;
+    }
+
+    .direccion-actividad-preview a {
+      color: #123a63;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .direccion-actividad-preview a:hover {
+      text-decoration: underline;
+    }
+
+    .mapa-wrap-preview {
+      width: 100%;
+      height: 260px;
+      min-height: 260px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #dfe7ef;
+      border: 1px solid #dde4ea;
+    }
+
+    #mapaPreviewActividad {
+      width: 100%;
+      height: 260px;
+    }
+
+    .mapa-oculto {
+      display: none;
+    }
+
+    .detalle-contenido-preview h3 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      color: #123a63;
+    }
+
+    .detalle-subtitulo-preview {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #4a5a6a;
+    }
+
+    .detalle-meta-preview {
+      font-size: 15px;
+      color: #4d5966;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .detalle-texto-preview {
+      line-height: 1.65;
+      color: #37424d;
+      white-space: pre-wrap;
+      margin-bottom: 16px;
+    }
+
+    .detalle-acciones-preview {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .link-organizador {
+      color: #0b5ed7;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link-organizador:hover {
+      text-decoration: underline;
+    }
+
+    .tabla-franjas-preview {
+      font-size: 14px;
+      display: none;
+      margin-top: 16px;
+    }
+
+    .tabla-franjas-preview h4 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #123a63;
+    }
+
+    .tabla-franjas-preview table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+    }
+
+    .tabla-franjas-preview th,
+    .tabla-franjas-preview td {
+      padding: 6px 12px 6px 0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .tabla-franjas-preview th {
+      color: #123a63;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid #dde4ea;
+      padding-bottom: 8px;
+    }
+
+    .tabla-franjas-preview td {
+      color: #37424d;
+    }
+
+    .tabla-franjas-preview th:nth-child(1),
+    .tabla-franjas-preview td:nth-child(1) {
+      min-width: 260px;
+      padding-right: 18px;
+    }
+
+    .tabla-franjas-preview th:nth-child(2),
+    .tabla-franjas-preview td:nth-child(2),
+    .tabla-franjas-preview th:nth-child(3),
+    .tabla-franjas-preview td:nth-child(3) {
+      min-width: 70px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 980px) {
       .fila, .fila-compacta {
         grid-template-columns: 1fr;
       }
 
-      .acciones-cabecera {
-        position: static;
-        display: flex;
-        justify-content: center;
-        margin-top: 12px;
+      .detalle-grid-preview {
+        grid-template-columns: 1fr;
       }
 
+      .detalle-img-preview {
+        height: 220px;
+      }
+
+      .mapa-wrap-preview {
+        height: 240px;
+      }
+    }
+
+    @media (max-width: 700px) {
       .bloque-marca {
         flex-direction: column;
         text-align: center;
@@ -564,6 +646,13 @@
 
       .titulos-cabecera h1 {
         font-size: 24px;
+      }
+
+      .acciones-cabecera {
+        position: static;
+        display: flex;
+        justify-content: center;
+        margin-top: 12px;
       }
     }
   </style>
@@ -599,57 +688,88 @@
   <div class="contenedor" id="app" style="display:none;">
     <div id="mensajeActividad" class="mensaje"></div>
 
-    <div class="layout">
-      <div class="panel">
-        <div class="contexto-head">
-          <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
-          <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
-        </div>
+    <div class="bloque-superior">
+      <div class="contexto-head">
+        <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
+        <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+      </div>
 
-        <form id="formActividad" novalidate>
-          <input type="hidden" id="actividadId" value="">
-          <input type="hidden" id="latitud">
-          <input type="hidden" id="longitud">
-          <input type="hidden" id="zoom_mapa" value="15">
+      <form id="formActividad" novalidate>
+        <input type="hidden" id="actividadId" value="">
+        <input type="hidden" id="latitud">
+        <input type="hidden" id="longitud">
+        <input type="hidden" id="zoom_mapa" value="15">
 
-          <section class="step-pane activo" data-step="0">
-            <h3 class="step-title">Identificación</h3>
-            <p class="step-help">Define la actividad que estás creando o editando y quién la gestiona.</p>
+        <section class="step-pane activo" data-step="0">
+          <h3 class="step-title">Identificación</h3>
+          <p class="step-help">Define la actividad que estás creando o editando.</p>
 
-            <div class="fila">
-              <div>
-                <label for="nombre">Nombre interno</label>
-                <input type="text" id="nombre" required>
-              </div>
-
-              <div id="bloqueAdminResponsable">
-                <label for="admin_id">Administrador responsable</label>
-                <select id="admin_id"></select>
-              </div>
+          <div class="fila">
+            <div>
+              <label for="nombre">Nombre interno</label>
+              <input type="text" id="nombre" required>
             </div>
 
-            <div class="fila">
-              <div>
-                <label for="organizador_publico">Organizador público</label>
-                <input type="text" id="organizador_publico">
-              </div>
-              <div></div>
+            <div>
+              <label for="organizador_publico">Organizador público</label>
+              <input type="text" id="organizador_publico">
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section class="step-pane" data-step="1">
-            <h3 class="step-title">Programación</h3>
-            <p class="step-help">Configura tipo, fechas, franjas, recurrencia y modalidad de reserva.</p>
+        <section class="step-pane" data-step="1">
+          <h3 class="step-title">Configuración</h3>
+          <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
+
+          <div class="fila-compacta">
+            <div>
+              <label for="tipo">Tipo</label>
+              <select id="tipo" class="input-corto">
+                <option value="TEMPORAL">TEMPORAL</option>
+                <option value="PERMANENTE">PERMANENTE</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="requiere_reserva">¿Requiere reserva?</label>
+              <select id="requiere_reserva" class="input-mini">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fila-compacta">
+            <div>
+              <label for="aforo_limitado">¿Aforo limitado?</label>
+              <select id="aforo_limitado" class="input-mini">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+
+            <div></div>
+          </div>
+
+          <div class="fila" id="bloqueFechas">
+            <div>
+              <label for="fecha_inicio">Fecha inicio</label>
+              <input type="date" id="fecha_inicio">
+            </div>
+
+            <div>
+              <label for="fecha_fin">Fecha fin</label>
+              <input type="date" id="fecha_fin">
+            </div>
+          </div>
+
+          <div id="avisoConfiguracion" class="aviso-config oculto"></div>
+
+          <div class="subbloque">
+            <h4>Franjas horarias</h4>
+            <p>Indica si esta actividad usa franjas y, si corresponde, crea aquí mismo su programación.</p>
 
             <div class="fila-compacta">
-              <div>
-                <label for="tipo">Tipo</label>
-                <select id="tipo" class="input-corto">
-                  <option value="TEMPORAL">TEMPORAL</option>
-                  <option value="PERMANENTE">PERMANENTE</option>
-                </select>
-              </div>
-
               <div>
                 <label for="usa_franjas">¿Usa franjas horarias?</label>
                 <select id="usa_franjas" class="input-mini">
@@ -657,79 +777,41 @@
                   <option value="0">No</option>
                 </select>
               </div>
-            </div>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="requiere_reserva">¿Requiere reserva?</label>
-                <select id="requiere_reserva" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
 
               <div>
-                <label for="aforo_limitado">¿Aforo limitado?</label>
-                <select id="aforo_limitado" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
+                <label for="es_recurrente">Patrón de frecuencia</label>
+                <select id="es_recurrente" class="input-mini">
+                  <option value="0">Fechas concretas</option>
+                  <option value="1">Recurrente</option>
                 </select>
               </div>
             </div>
 
-            <div class="fila" id="bloqueFechas">
+            <div class="fila" id="bloquePatronRecurrencia">
               <div>
-                <label for="fecha_inicio">Fecha inicio</label>
-                <input type="date" id="fecha_inicio">
+                <label for="patron_recurrencia">Descripción del patrón</label>
+                <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
               </div>
-
-              <div>
-                <label for="fecha_fin">Fecha fin</label>
-                <input type="date" id="fecha_fin">
-              </div>
+              <div></div>
             </div>
 
-            <div id="bloqueRecurrencia">
-              <div class="fila-compacta">
-                <div>
-                  <label for="es_recurrente">¿Franja recurrente?</label>
-                  <select id="es_recurrente" class="input-mini">
-                    <option value="0">No</option>
-                    <option value="1">Sí</option>
-                  </select>
-                </div>
-                <div></div>
-              </div>
-
-              <div class="fila" id="bloquePatronRecurrencia">
-                <div>
-                  <label for="patron_recurrencia">Patrón de recurrencia</label>
-                  <input type="text" id="patron_recurrencia" placeholder="Ej: Todos los sábados, primer domingo de mes...">
-                </div>
-                <div></div>
-              </div>
-            </div>
-
-            <div id="avisoConfiguracion" class="aviso-config oculto"></div>
-
-            <div class="bloque-programacion-extra" id="bloqueFranjasPreparacion">
-              <h4>Franjas horarias</h4>
-              <p id="textoFranjasPreparacion">Activa el uso de franjas para gestionarlas aquí mismo.</p>
-              <button type="button" class="btn btn-suave" id="btnHabilitarFranjas">Guardar borrador y habilitar franjas</button>
-            </div>
-
-            <div class="bloque-franjas oculto" id="bloqueFranjasEditor">
+            <div class="subbloque" id="bloqueFranjasPreparacion">
               <h4>Editor de franjas</h4>
-              <p>Gestiona aquí las franjas de esta actividad. Para actividades nuevas se usa un borrador técnico interno.</p>
+              <p id="textoFranjasPreparacion">Activa el uso de franjas para gestionarlas aquí mismo.</p>
+              <button type="button" class="btn btn-suave" id="btnHabilitarFranjas">Guardar borrador y abrir editor</button>
+            </div>
+
+            <div class="subbloque oculto" id="bloqueFranjasEditor">
+              <h4>Crear o editar franja</h4>
 
               <input type="hidden" id="franjaId" value="">
 
               <div class="fila-compacta">
                 <div>
-                  <label for="fr_es_recurrente">¿Esta franja es recurrente?</label>
+                  <label for="fr_es_recurrente">Patrón de frecuencia</label>
                   <select id="fr_es_recurrente" class="input-mini">
-                    <option value="0">No</option>
-                    <option value="1">Sí</option>
+                    <option value="0">Fecha concreta</option>
+                    <option value="1">Recurrente</option>
                   </select>
                 </div>
 
@@ -749,7 +831,7 @@
 
               <div class="fila" id="fr_bloque_patron">
                 <div>
-                  <label for="fr_patron_recurrencia">Patrón de recurrencia</label>
+                  <label for="fr_patron_recurrencia">Patrón de frecuencia</label>
                   <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
                 </div>
                 <div></div>
@@ -780,177 +862,185 @@
                 <div id="listaFranjas" class="sin-franjas">No hay franjas cargadas.</div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section class="step-pane" data-step="2">
-            <h3 class="step-title">Publicación</h3>
-            <p class="step-help">Controla visibilidad, activación y orden de aparición.</p>
+        <section class="step-pane" data-step="2">
+          <h3 class="step-title">Contenido</h3>
+          <p class="step-help">Define la presentación pública de la actividad.</p>
 
-            <div class="fila-compacta">
-              <div>
-                <label for="visible_portal">Visible en portal</label>
-                <select id="visible_portal" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="activa">Activa</label>
-                <select id="activa" class="input-mini">
-                  <option value="1">Sí</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
+          <div class="fila">
+            <div>
+              <label for="titulo_publico">Título público</label>
+              <input type="text" id="titulo_publico">
             </div>
 
-            <div class="fila">
-              <div>
-                <label for="orden_portal">Orden en portal</label>
-                <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
-              </div>
-              <div></div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="3">
-            <h3 class="step-title">Contenido</h3>
-            <p class="step-help">Define la presentación pública de la actividad.</p>
-
-            <div class="fila">
-              <div>
-                <label for="titulo_publico">Título público</label>
-                <input type="text" id="titulo_publico">
-              </div>
-
-              <div>
-                <label for="subtitulo_publico">Subtítulo público</label>
-                <input type="text" id="subtitulo_publico">
-              </div>
-            </div>
-
-            <div class="fila">
-              <div>
-                <label for="descripcion">Descripción interna</label>
-                <input type="text" id="descripcion">
-              </div>
-
-              <div>
-                <label for="imagen_url">Imagen URL</label>
-                <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
-              </div>
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label for="descripcion_corta">Descripción corta</label>
-                <textarea id="descripcion_corta"></textarea>
-              </div>
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label for="descripcion_larga">Descripción larga</label>
-                <textarea id="descripcion_larga"></textarea>
-              </div>
-            </div>
-
-            <div class="fila-compacta">
-              <div>
-                <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
-                <select id="usa_enlace_externo" class="input-mini">
-                  <option value="0">No</option>
-                  <option value="1">Sí</option>
-                </select>
-              </div>
-              <div></div>
-            </div>
-
-            <div class="fila" id="bloqueEnlaceExternoUrl">
-              <div>
-                <label for="enlace_externo_url">URL enlace externo</label>
-                <input type="text" id="enlace_externo_url" placeholder="https://...">
-              </div>
-              <div></div>
-            </div>
-
-            <div class="fila" id="bloqueEnlaceExternoTexto">
-              <div>
-                <label for="enlace_externo_texto">Texto del enlace</label>
-                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
-              </div>
-              <div></div>
-            </div>
-          </section>
-
-          <section class="step-pane" data-step="4">
-            <h3 class="step-title">Localización</h3>
-            <p class="step-help">La vista previa de la derecha incluye el mapa interactivo. Haz clic en él para fijar la ubicación y arrastra el marcador para ajustar el punto.</p>
-
-            <div class="fila">
-              <div>
-                <label for="lugar">Lugar</label>
-                <input type="text" id="lugar">
-              </div>
-
-              <div>
-                <label for="provincia">Provincia</label>
-                <input type="text" id="provincia" placeholder="Ej: Madrid, A Coruña...">
-              </div>
-            </div>
-
-            <div class="fila-una">
-              <div>
-                <label for="direccion_postal">Dirección postal</label>
-                <input type="text" id="direccion_postal">
-              </div>
-            </div>
-
-            <div class="ayuda-localizacion">
-              Si no hay coordenadas aún, el mapa se abrirá sobre España o se centrará automáticamente en la provincia indicada.
-            </div>
-          </section>
-
-          <div class="wizard-actions">
-            <div class="wizard-actions-left">
-              <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
-            </div>
-
-            <div class="wizard-actions-right">
-              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
-              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+            <div>
+              <label for="subtitulo_publico">Subtítulo público</label>
+              <input type="text" id="subtitulo_publico">
             </div>
           </div>
-        </form>
-      </div>
 
-      <div class="panel">
-        <h3>Vista previa</h3>
+          <div class="fila">
+            <div>
+              <label for="descripcion">Descripción interna</label>
+              <input type="text" id="descripcion">
+            </div>
 
-        <div class="preview-card">
-          <img id="previewImagen" src="logo.png" alt="Vista previa">
-
-          <h3 id="previewTitulo">-</h3>
-          <div id="previewSubtitulo" class="preview-subtitulo"></div>
-
-          <div class="preview-meta">
-            <div><strong>Organiza:</strong> <span id="previewOrganizador">-</span></div>
-            <div><strong>Lugar:</strong> <span id="previewLugar">-</span></div>
-            <div><strong>Provincia:</strong> <span id="previewProvincia">-</span></div>
-            <div><strong>Tipo:</strong> <span id="previewTipo">-</span></div>
-            <div><strong>Fechas:</strong> <span id="previewFechas">-</span></div>
-            <div><strong>Modo:</strong> <span id="previewModo">-</span></div>
-            <div><strong>Dirección:</strong> <span id="previewDireccion">-</span></div>
-            <div><strong>Coordenadas:</strong> <span id="previewCoords">-</span></div>
+            <div>
+              <label for="imagen_url">Imagen URL</label>
+              <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
+            </div>
           </div>
 
-          <div id="previewDescripcionCorta" class="preview-texto">-</div>
-          <div id="previewDescripcionLarga" class="preview-texto">-</div>
+          <div class="fila-una">
+            <div>
+              <label for="descripcion_corta">Descripción corta</label>
+              <textarea id="descripcion_corta"></textarea>
+            </div>
+          </div>
 
-          <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
+          <div class="fila-una">
+            <div>
+              <label for="descripcion_larga">Descripción larga</label>
+              <textarea id="descripcion_larga"></textarea>
+            </div>
+          </div>
 
-          <div class="mapa-preview-wrap">
-            <div id="mapaPreviewActividad"></div>
+          <div class="fila-compacta">
+            <div>
+              <label for="usa_enlace_externo">¿Mostrar enlace externo?</label>
+              <select id="usa_enlace_externo" class="input-mini">
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+              </select>
+            </div>
+            <div></div>
+          </div>
+
+          <div class="fila" id="bloqueEnlaceExternoUrl">
+            <div>
+              <label for="enlace_externo_url">URL enlace externo</label>
+              <input type="text" id="enlace_externo_url" placeholder="https://...">
+            </div>
+            <div></div>
+          </div>
+
+          <div class="fila" id="bloqueEnlaceExternoTexto">
+            <div>
+              <label for="enlace_externo_texto">Texto del enlace</label>
+              <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+            </div>
+            <div></div>
+          </div>
+
+          <div class="fila-compacta">
+            <div>
+              <label for="visible_portal">Visible en portal</label>
+              <select id="visible_portal" class="input-mini">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="activa">Activa</label>
+              <select id="activa" class="input-mini">
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fila">
+            <div>
+              <label for="orden_portal">Orden en portal</label>
+              <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
+            </div>
+            <div></div>
+          </div>
+        </section>
+
+        <section class="step-pane" data-step="3">
+          <h3 class="step-title">Localización</h3>
+          <p class="step-help">La ficha inferior incluye el mapa interactivo. Haz clic en él para fijar la ubicación y arrastra el marcador para ajustar el punto.</p>
+
+          <div class="fila">
+            <div>
+              <label for="lugar">Lugar</label>
+              <input type="text" id="lugar">
+            </div>
+
+            <div>
+              <label for="provincia">Provincia</label>
+              <input type="text" id="provincia" placeholder="Ej: Madrid, A Coruña...">
+            </div>
+          </div>
+
+          <div class="fila-una">
+            <div>
+              <label for="direccion_postal">Dirección postal</label>
+              <input type="text" id="direccion_postal">
+            </div>
+          </div>
+
+          <div class="ayuda-localizacion">
+            Si no hay coordenadas aún, el mapa se abrirá sobre España o se centrará automáticamente en la provincia indicada.
+          </div>
+        </section>
+
+        <div class="wizard-actions">
+          <div class="wizard-actions-left">
+            <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
+            <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
+          </div>
+
+          <div class="wizard-actions-right">
+            <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
+            <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="bloque-inferior">
+      <div class="preview-detalle">
+        <div class="detalle-grid-preview">
+          <div class="detalle-col-izq-preview">
+            <img id="previewImagen" class="detalle-img-preview" src="logo.png" alt="Imagen actividad">
+
+            <div class="mapa-info-wrap-preview">
+              <div id="direccionActividadPreview" class="direccion-actividad-preview"></div>
+
+              <div id="mapaWrapPreview" class="mapa-wrap-preview mapa-oculto">
+                <div id="mapaPreviewActividad"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detalle-contenido-preview">
+            <h3 id="previewTitulo">Seleccione una actividad</h3>
+            <div id="previewSubtitulo" class="detalle-subtitulo-preview"></div>
+            <div id="previewMeta" class="detalle-meta-preview"></div>
+            <div id="previewTexto" class="detalle-texto-preview"></div>
+
+            <div class="detalle-acciones-preview">
+              <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
+            </div>
+
+            <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview">
+              <h4>Programación</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaFranjasPreviewBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -958,10 +1048,8 @@
   </div>
 
   <script>
-    let adminsCache = [];
     let actividadesCache = [];
     let usuarioSesion = null;
-    let esSuperAdmin = false;
     let actividadEditandoId = null;
     let pasoActual = 0;
     let mapaPreviewActividad = null;
@@ -971,8 +1059,7 @@
 
     const pasos = [
       "Identificación",
-      "Programación",
-      "Publicación",
+      "Configuración",
       "Contenido",
       "Localización"
     ];
@@ -1002,6 +1089,31 @@
       window.location.href = "portal.html";
     }
 
+    function formatearFechaLargaES(fechaISO) {
+      if (!fechaISO) return "";
+
+      const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
+      if (!yyyy || !mm || !dd) return fechaISO;
+
+      const fecha = new Date(yyyy, mm - 1, dd);
+      if (Number.isNaN(fecha.getTime())) return fechaISO;
+
+      const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+      const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+      return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
+    }
+
+    function textoProgramacionFranja(f) {
+      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
+        return f.patron_recurrencia;
+      }
+      if (f.fecha) {
+        return formatearFechaLargaES(f.fecha);
+      }
+      return "";
+    }
+
     async function comprobarSesionAdmin() {
       const response = await fetch("/api/usuario/session", {
         method: "GET",
@@ -1016,14 +1128,12 @@
       }
 
       const rol = String(data.user.rol || "").toUpperCase();
-
       if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
         redirigirLogin();
         return false;
       }
 
       usuarioSesion = data.user;
-      esSuperAdmin = rol === "SUPERADMIN";
       document.getElementById("subtituloCabecera").textContent = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
       return true;
     }
@@ -1036,42 +1146,6 @@
         });
       } catch (_) {}
       redirigirLogin();
-    }
-
-    async function cargarAdminsSoloSiSuperadmin() {
-      if (!esSuperAdmin) return;
-
-      const res = await fetch("/api/admin/admins-lista", {
-        credentials: "same-origin"
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "No se pudieron cargar los administradores.");
-      }
-
-      adminsCache = Array.isArray(data.admins) ? data.admins : [];
-
-      const sel = document.getElementById("admin_id");
-      sel.innerHTML = `<option value="">Seleccione administrador</option>` +
-        adminsCache.map(a => `<option value="${a.id}">${a.nombre} (${a.email})</option>`).join("");
-    }
-
-    function configurarModoAdminResponsable() {
-      const bloque = document.getElementById("bloqueAdminResponsable");
-      const select = document.getElementById("admin_id");
-
-      if (esSuperAdmin) {
-        bloque.classList.remove("oculto");
-        select.disabled = false;
-        return;
-      }
-
-      bloque.classList.add("oculto");
-      select.innerHTML = `<option value="${usuarioSesion.id}">${usuarioSesion.nombre || usuarioSesion.email}</option>`;
-      select.value = String(usuarioSesion.id);
-      select.disabled = true;
     }
 
     async function cargarActividades() {
@@ -1097,7 +1171,6 @@
     function rellenarFormulario(actividad) {
       setValor("actividadId", actividad.id || "");
       setValor("nombre", actividad.nombre || "");
-      setValor("admin_id", actividad.admin_id || "");
       setValor("organizador_publico", actividad.organizador_publico || "");
       setValor("tipo", actividad.tipo || "TEMPORAL");
       setValor("fecha_inicio", actividad.fecha_inicio || "");
@@ -1159,7 +1232,6 @@
       const frEsRecurrente = document.getElementById("fr_es_recurrente").value === "1";
 
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
-      document.getElementById("bloqueRecurrencia").classList.toggle("oculto", !usaFranjas);
       document.getElementById("bloquePatronRecurrencia").classList.toggle("oculto", !usaFranjas || !esRecurrente);
       document.getElementById("bloqueFranjasPreparacion").classList.toggle("oculto", !usaFranjas);
       document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
@@ -1172,8 +1244,10 @@
       if (!usaFranjas) {
         document.getElementById("es_recurrente").value = "0";
         document.getElementById("patron_recurrencia").value = "";
+        document.getElementById("bloqueFranjasEditor").classList.add("oculto");
         franjasCache = [];
         renderListaFranjas();
+        renderPreviewFranjas();
         limpiarFormularioFranja();
       }
 
@@ -1230,6 +1304,82 @@
       return base;
     }
 
+    function construirMetaPreview() {
+      const titulo = document.getElementById("titulo_publico").value.trim();
+      const nombre = document.getElementById("nombre").value.trim();
+      const tipo = document.getElementById("tipo").value;
+      const fecha_inicio = document.getElementById("fecha_inicio").value;
+      const fecha_fin = document.getElementById("fecha_fin").value;
+      const lugar = document.getElementById("lugar").value.trim();
+      const provincia = document.getElementById("provincia").value.trim();
+      const organizador = document.getElementById("organizador_publico").value.trim();
+      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
+      const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
+
+      const organizadorHTML = organizador
+        ? `<div><strong>Organiza:</strong> ${
+            usaEnlaceExterno && enlaceUrl
+              ? `<a href="${enlaceUrl}" target="_blank" rel="noopener noreferrer" class="link-organizador">${organizador}</a>`
+              : organizador
+          }</div>`
+        : "";
+
+      return `
+        ${organizadorHTML}
+        ${lugar ? `<div><strong>Lugar:</strong> ${lugar}</div>` : ""}
+        ${provincia ? `<div><strong>Provincia:</strong> ${provincia}</div>` : ""}
+        ${tipo === "TEMPORAL" && (fecha_inicio || fecha_fin)
+          ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>`
+          : ""}
+        ${tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+      `;
+    }
+
+    function actualizarPreview() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const tituloPublico = document.getElementById("titulo_publico").value.trim();
+      const titulo = tituloPublico || nombre || "Seleccione una actividad";
+      const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "";
+      const imagen = document.getElementById("imagen_url").value.trim() || "logo.png";
+      const descripcionLarga = document.getElementById("descripcion_larga").value.trim();
+      const descripcionCorta = document.getElementById("descripcion_corta").value.trim();
+      const textoDetalle = descripcionLarga || descripcionCorta || "";
+      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
+      const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
+      const enlaceTexto = document.getElementById("enlace_externo_texto").value.trim() || "Más información";
+      const direccion = document.getElementById("direccion_postal").value.trim();
+
+      document.getElementById("previewTitulo").textContent = titulo;
+      document.getElementById("previewSubtitulo").textContent = subtitulo;
+      document.getElementById("previewImagen").src = imagen;
+      document.getElementById("previewMeta").innerHTML = construirMetaPreview();
+      document.getElementById("previewTexto").textContent = textoDetalle;
+      document.getElementById("tituloActividadContexto").textContent = tituloPublico || nombre || "Nueva actividad";
+
+      const link = document.getElementById("previewEnlaceExterno");
+      if (usaEnlaceExterno && enlaceUrl) {
+        link.classList.remove("oculto");
+        link.href = enlaceUrl;
+        link.textContent = enlaceTexto;
+      } else {
+        link.classList.add("oculto");
+        link.href = "#";
+        link.textContent = "Más información";
+      }
+
+      const direccionDiv = document.getElementById("direccionActividadPreview");
+      if (direccion) {
+        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${direccion}</a>`;
+        direccionDiv.style.display = "block";
+      } else {
+        direccionDiv.innerHTML = "";
+        direccionDiv.style.display = "none";
+      }
+
+      renderPreviewFranjas();
+    }
+
     function destruirMapaPreviewActividad() {
       if (mapaPreviewActividad) {
         mapaPreviewActividad.remove();
@@ -1248,11 +1398,12 @@
       let lng = Number(lngStr);
       let zoom = Number(zoomStr || 15);
 
-      const contenedor = document.getElementById("mapaPreviewActividad");
-      if (!contenedor) return;
+      const mapaWrap = document.getElementById("mapaWrapPreview");
+      const mapaDiv = document.getElementById("mapaPreviewActividad");
+      if (!mapaDiv || !mapaWrap) return;
 
       destruirMapaPreviewActividad();
-      contenedor.innerHTML = "";
+      mapaDiv.innerHTML = "";
 
       let centro = [40.1, -3.7];
       let zoomInicial = 6;
@@ -1262,6 +1413,8 @@
         centro = [lat, lng];
         zoomInicial = Number.isFinite(zoom) ? zoom : 15;
       }
+
+      mapaWrap.classList.remove("mapa-oculto");
 
       mapaPreviewActividad = L.map("mapaPreviewActividad", {
         center: centro,
@@ -1276,7 +1429,25 @@
 
       if (hayCoordenadas) {
         marcadorPreviewActividad = L.marker([lat, lng], { draggable: true }).addTo(mapaPreviewActividad);
+      }
 
+      const actualizarMarker = (latNuevo, lngNuevo) => {
+        if (!marcadorPreviewActividad) {
+          marcadorPreviewActividad = L.marker([latNuevo, lngNuevo], { draggable: true }).addTo(mapaPreviewActividad);
+
+          marcadorPreviewActividad.on("dragend", function (e) {
+            const pos = e.target.getLatLng();
+            document.getElementById("latitud").value = pos.lat.toFixed(6);
+            document.getElementById("longitud").value = pos.lng.toFixed(6);
+            document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+            actualizarPreview();
+          });
+        } else {
+          marcadorPreviewActividad.setLatLng([latNuevo, lngNuevo]);
+        }
+      };
+
+      if (hayCoordenadas) {
         marcadorPreviewActividad.on("dragend", function (e) {
           const pos = e.target.getLatLng();
           document.getElementById("latitud").value = pos.lat.toFixed(6);
@@ -1288,25 +1459,10 @@
 
       mapaPreviewActividad.on("click", function (e) {
         const { lat, lng } = e.latlng;
-
         document.getElementById("latitud").value = lat.toFixed(6);
         document.getElementById("longitud").value = lng.toFixed(6);
         document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
-
-        if (!marcadorPreviewActividad) {
-          marcadorPreviewActividad = L.marker([lat, lng], { draggable: true }).addTo(mapaPreviewActividad);
-
-          marcadorPreviewActividad.on("dragend", function (e) {
-            const pos = e.target.getLatLng();
-            document.getElementById("latitud").value = pos.lat.toFixed(6);
-            document.getElementById("longitud").value = pos.lng.toFixed(6);
-            document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
-            actualizarPreview();
-          });
-        } else {
-          marcadorPreviewActividad.setLatLng([lat, lng]);
-        }
-
+        actualizarMarker(lat, lng);
         actualizarPreview();
       });
 
@@ -1319,9 +1475,7 @@
       }
 
       setTimeout(() => {
-        if (mapaPreviewActividad) {
-          mapaPreviewActividad.invalidateSize(true);
-        }
+        if (mapaPreviewActividad) mapaPreviewActividad.invalidateSize(true);
       }, 150);
     }
 
@@ -1340,145 +1494,239 @@
       }
     }
 
-    function actualizarPreview() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const tituloPublico = document.getElementById("titulo_publico").value.trim();
-      const titulo = tituloPublico || nombre || "-";
-      const organizador = document.getElementById("organizador_publico").value.trim() || "-";
-      const subtitulo = document.getElementById("subtitulo_publico").value.trim() || "";
-      const lugar = document.getElementById("lugar").value.trim() || "-";
-      const provincia = document.getElementById("provincia").value.trim() || "-";
-      const tipo = document.getElementById("tipo").value;
-      const fecha_inicio = document.getElementById("fecha_inicio").value;
-      const fecha_fin = document.getElementById("fecha_fin").value;
-      const descripcion_corta = document.getElementById("descripcion_corta").value.trim() || "-";
-      const descripcion_larga = document.getElementById("descripcion_larga").value.trim() || "-";
-      const imagen = document.getElementById("imagen_url").value.trim() || "logo.png";
-      const direccion = document.getElementById("direccion_postal").value.trim() || "-";
-      const lat = document.getElementById("latitud").value.trim();
-      const lng = document.getElementById("longitud").value.trim();
-      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
-      const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
-      const enlaceTexto = document.getElementById("enlace_externo_texto").value.trim() || "Más información";
+    function actualizarEstadoFranjasUI() {
+      const usaFranjas = document.getElementById("usa_franjas").value === "1";
+      const actividadId = document.getElementById("actividadId").value;
+      const bloquePrep = document.getElementById("bloqueFranjasPreparacion");
+      const bloqueEditor = document.getElementById("bloqueFranjasEditor");
+      const textoPrep = document.getElementById("textoFranjasPreparacion");
+      const btn = document.getElementById("btnHabilitarFranjas");
 
-      document.getElementById("previewTitulo").textContent = titulo;
-      document.getElementById("previewOrganizador").textContent = organizador;
-      document.getElementById("previewSubtitulo").textContent = subtitulo;
-      document.getElementById("previewLugar").textContent = lugar;
-      document.getElementById("previewProvincia").textContent = provincia;
-      document.getElementById("previewTipo").textContent = tipo;
-      document.getElementById("previewFechas").textContent =
-        tipo === "TEMPORAL"
-          ? `${fecha_inicio || "-"}${fecha_inicio && fecha_fin ? " a " : ""}${fecha_fin || "-"}`
-          : "Permanente";
-      document.getElementById("previewModo").textContent = obtenerTextoModoPreview();
-      document.getElementById("previewDireccion").textContent = direccion;
-      document.getElementById("previewCoords").textContent = lat && lng ? `${lat}, ${lng}` : "-";
-      document.getElementById("previewDescripcionCorta").textContent = descripcion_corta;
-      document.getElementById("previewDescripcionLarga").textContent = descripcion_larga;
-      document.getElementById("previewImagen").src = imagen;
-
-      const link = document.getElementById("previewEnlaceExterno");
-      if (usaEnlaceExterno && enlaceUrl) {
-        link.classList.remove("oculto");
-        link.href = enlaceUrl;
-        link.textContent = enlaceTexto;
-      } else {
-        link.classList.add("oculto");
-        link.href = "#";
-        link.textContent = "Más información";
+      if (!usaFranjas) {
+        bloquePrep.classList.add("oculto");
+        bloqueEditor.classList.add("oculto");
+        return;
       }
 
-      document.getElementById("tituloActividadContexto").textContent = tituloPublico || nombre || "Nueva actividad";
+      bloquePrep.classList.remove("oculto");
+
+      if (actividadId) {
+        textoPrep.textContent = "La actividad ya está preparada. Puedes crear y editar franjas aquí mismo.";
+        btn.textContent = "Preparar editor";
+        bloqueEditor.classList.remove("oculto");
+      } else {
+        textoPrep.textContent = "Para crear franjas en una actividad nueva primero se crea un borrador técnico interno.";
+        btn.textContent = "Guardar borrador y abrir editor";
+        bloqueEditor.classList.add("oculto");
+      }
     }
 
-    function mostrarPaso(index) {
-      const panes = Array.from(document.querySelectorAll(".step-pane"));
-      pasoActual = Math.max(0, Math.min(index, panes.length - 1));
+    function limpiarFormularioFranja() {
+      document.getElementById("franjaId").value = "";
+      document.getElementById("fr_es_recurrente").value = document.getElementById("es_recurrente").value || "0";
+      document.getElementById("fr_fecha").value = "";
+      document.getElementById("fr_patron_recurrencia").value = "";
+      document.getElementById("fr_hora_inicio").value = "";
+      document.getElementById("fr_hora_fin").value = "";
+      document.getElementById("fr_capacidad").value = "";
+      document.getElementById("btnCancelarEdicionFranja").classList.add("oculto");
+      actualizarVisibilidadFormulario();
+    }
 
-      panes.forEach((pane, i) => {
-        pane.classList.toggle("activo", i === pasoActual);
+    function renderListaFranjas() {
+      const wrap = document.getElementById("listaFranjas");
+
+      if (!franjasCache.length) {
+        wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
+        return;
+      }
+
+      const filas = franjasCache.map(f => {
+        const bloqueProgramacion = textoProgramacionFranja(f);
+        const capacidad = f.capacidad == null ? "—" : String(f.capacidad);
+        const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
+        const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
+
+        return `
+          <tr>
+            <td>${bloqueProgramacion}</td>
+            <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
+            <td>${capacidad}</td>
+            <td>${ocupadas}</td>
+            <td>${disponibles}</td>
+            <td>
+              <div class="acciones-fila">
+                <button type="button" class="btn-mini" data-accion="editar" data-id="${f.id}">Editar</button>
+                <button type="button" class="btn-mini peligro" data-accion="borrar" data-id="${f.id}">Borrar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      wrap.innerHTML = `
+        <table class="tabla-franjas-admin">
+          <thead>
+            <tr>
+              <th>Fecha / patrón</th>
+              <th>Horario</th>
+              <th>Capacidad</th>
+              <th>Ocupadas</th>
+              <th>Disponibles</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      `;
+
+      wrap.querySelectorAll("button[data-accion]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = Number(btn.dataset.id);
+          const accion = btn.dataset.accion;
+
+          if (accion === "editar") {
+            editarFranja(id);
+          } else if (accion === "borrar") {
+            await borrarFranja(id);
+          }
+        });
+      });
+    }
+
+    function renderPreviewFranjas() {
+      const wrap = document.getElementById("tablaFranjasPreviewWrap");
+      const body = document.getElementById("tablaFranjasPreviewBody");
+
+      if (!franjasCache.length || document.getElementById("usa_franjas").value !== "1") {
+        wrap.style.display = "none";
+        body.innerHTML = "";
+        return;
+      }
+
+      body.innerHTML = franjasCache
+        .filter(f => f && f.hora_inicio && f.hora_fin)
+        .map(f => `
+          <tr>
+            <td>${textoProgramacionFranja(f)}</td>
+            <td>${f.hora_inicio}</td>
+            <td>${f.hora_fin}</td>
+          </tr>
+        `)
+        .join("");
+
+      wrap.style.display = body.innerHTML.trim() ? "block" : "none";
+    }
+
+    function editarFranja(id) {
+      const f = franjasCache.find(x => Number(x.id) === Number(id));
+      if (!f) return;
+
+      document.getElementById("franjaId").value = f.id;
+      document.getElementById("fr_es_recurrente").value = String(Number(f.es_recurrente || 0));
+      document.getElementById("fr_fecha").value = f.fecha || "";
+      document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
+      document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
+      document.getElementById("fr_hora_fin").value = f.hora_fin || "";
+      document.getElementById("fr_capacidad").value = f.capacidad == null ? "" : f.capacidad;
+      document.getElementById("btnCancelarEdicionFranja").classList.remove("oculto");
+      actualizarVisibilidadFormulario();
+    }
+
+    async function cargarFranjas() {
+      const actividadId = document.getElementById("actividadId").value;
+      if (!actividadId || document.getElementById("usa_franjas").value !== "1") {
+        franjasCache = [];
+        renderListaFranjas();
+        renderPreviewFranjas();
+        return;
+      }
+
+      const res = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}`, {
+        credentials: "same-origin"
       });
 
-      document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
-      document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
-      document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
+      const data = await res.json();
 
-      actualizarPreview();
-      renderMapaPreviewActividad();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (!res.ok || !data.ok) {
+        mostrarMensaje("error", data.error || "No se pudieron cargar las franjas.");
+        return;
+      }
+
+      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+      renderListaFranjas();
+      renderPreviewFranjas();
+      actualizarEstadoFranjasUI();
     }
 
-    function validarPasoActual() {
+    async function guardarFranja() {
       limpiarMensaje();
 
-      if (pasoActual === 0) {
-        const nombre = document.getElementById("nombre").value.trim();
-        const adminId = document.getElementById("admin_id").value;
-
-        if (!nombre) {
-          mostrarMensaje("error", "Debe indicar el nombre interno de la actividad.");
-          return false;
-        }
-
-        if (esSuperAdmin && !adminId) {
-          mostrarMensaje("error", "Debe indicar el administrador responsable.");
-          return false;
-        }
+      const actividadId = document.getElementById("actividadId").value;
+      if (!actividadId) {
+        mostrarMensaje("error", "Primero debes guardar el borrador técnico de la actividad.");
+        return;
       }
 
-      if (pasoActual === 1) {
-        const tipo = document.getElementById("tipo").value;
-        const usaFranjas = document.getElementById("usa_franjas").value === "1";
-        const esRecurrente = document.getElementById("es_recurrente").value === "1";
-        const fechaInicio = document.getElementById("fecha_inicio").value;
-        const fechaFin = document.getElementById("fecha_fin").value;
-        const patron = document.getElementById("patron_recurrencia").value.trim();
+      const payload = {
+        id: document.getElementById("franjaId").value || null,
+        actividad_id: actividadId,
+        es_recurrente: document.getElementById("fr_es_recurrente").value,
+        fecha: document.getElementById("fr_fecha").value,
+        patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
+        hora_inicio: document.getElementById("fr_hora_inicio").value,
+        hora_fin: document.getElementById("fr_hora_fin").value,
+        capacidad: document.getElementById("fr_capacidad").value
+      };
 
-        if (tipo === "TEMPORAL") {
-          if (!fechaInicio || !fechaFin) {
-            mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
-            return false;
-          }
-          if (fechaInicio > fechaFin) {
-            mostrarMensaje("error", "La fecha de inicio no puede ser posterior a la fecha de fin.");
-            return false;
-          }
-        }
+      const esEdicion = !!payload.id;
 
-        if (usaFranjas && esRecurrente && !patron) {
-          mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
-          return false;
-        }
+      const res = await fetch("/api/admin/franjas", {
+        method: esEdicion ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
+        return;
       }
 
-      if (pasoActual === 3) {
-        const usaEnlace = document.getElementById("usa_enlace_externo").value === "1";
-        const url = document.getElementById("enlace_externo_url").value.trim();
-
-        if (usaEnlace && !url) {
-          mostrarMensaje("error", "Debe indicar la URL del enlace externo.");
-          return false;
-        }
-      }
-
-      return true;
+      await cargarFranjas();
+      limpiarFormularioFranja();
+      mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
     }
 
-    function avanzarPaso() {
-      if (!validarPasoActual()) return;
-      mostrarPaso(pasoActual + 1);
-    }
+    async function borrarFranja(id) {
+      const confirmar = confirm("¿Seguro que quieres eliminar esta franja?");
+      if (!confirmar) return;
 
-    function retrocederPaso() {
-      mostrarPaso(pasoActual - 1);
+      const res = await fetch("/api/admin/franjas", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ id })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        mostrarMensaje("error", data.error || "No se pudo eliminar la franja.");
+        return;
+      }
+
+      await cargarFranjas();
+      mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
     }
 
     function construirPayloadActividad(borradorTecnico = 0) {
       return {
         id: document.getElementById("actividadId").value || null,
         nombre: document.getElementById("nombre").value.trim(),
-        admin_id: document.getElementById("admin_id").value,
+        admin_id: String(usuarioSesion.id),
         organizador_publico: document.getElementById("organizador_publico").value.trim(),
         tipo: document.getElementById("tipo").value,
         fecha_inicio: document.getElementById("fecha_inicio").value,
@@ -1521,11 +1769,9 @@
         return;
       }
 
-      if (payload.tipo === "TEMPORAL") {
-        if (!payload.fecha_inicio || !payload.fecha_fin) {
-          mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
-          return;
-        }
+      if (payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
+        mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
+        return;
       }
 
       const tieneLat = payload.latitud !== "";
@@ -1538,15 +1784,6 @@
 
       if ((tieneLat && tieneLng) && !payload.zoom_mapa) {
         payload.zoom_mapa = "15";
-      }
-
-      if (esSuperAdmin && !payload.admin_id) {
-        mostrarMensaje("error", "Debe indicar el administrador responsable.");
-        return;
-      }
-
-      if (!esSuperAdmin) {
-        payload.admin_id = String(usuarioSesion.id);
       }
 
       const esEdicion = !!payload.id;
@@ -1574,229 +1811,24 @@
       }
     }
 
-async function asegurarActividadBorradorParaFranjas() {
-  limpiarMensaje();
-
-  const payload = construirPayloadActividad(1);
-
-  if (!payload.nombre) {
-    mostrarMensaje("error", "Para habilitar franjas debes indicar al menos el nombre interno de la actividad.");
-    return null;
-  }
-
-  if (payload.tipo === "TEMPORAL") {
-    if (!payload.fecha_inicio || !payload.fecha_fin) {
-      mostrarMensaje("error", "Para habilitar franjas en una actividad temporal debes indicar fecha de inicio y fin.");
-      return null;
-    }
-  }
-
-  if (esSuperAdmin && !payload.admin_id) {
-    mostrarMensaje("error", "Debe indicar el administrador responsable.");
-    return null;
-  }
-
-  if (!esSuperAdmin) {
-    payload.admin_id = String(usuarioSesion.id);
-  }
-
-  const esEdicion = !!payload.id;
-
-  const res = await fetch("/api/admin/actividades-guardar", {
-    method: esEdicion ? "PUT" : "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-
-  if (!res.ok || !data.ok) {
-    mostrarMensaje("error", data.error || "No se pudo preparar la actividad para gestionar franjas.");
-    return null;
-  }
-
-  if (!esEdicion && data.id) {
-    document.getElementById("actividadId").value = data.id;
-    history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
-    document.getElementById("tituloFormulario").textContent = "Editar actividad";
-  }
-
-  actividadEsBorradorTecnico = true;
-
-  document.getElementById("tituloActividadContexto").textContent =
-    document.getElementById("titulo_publico").value.trim() ||
-    document.getElementById("nombre").value.trim() ||
-    "Nueva actividad";
-
-  return document.getElementById("actividadId").value;
-}
-
-function actualizarEstadoFranjasUI() {
-  const usaFranjas = document.getElementById("usa_franjas").value === "1";
-  const actividadId = document.getElementById("actividadId").value;
-  const bloquePrep = document.getElementById("bloqueFranjasPreparacion");
-  const bloqueEditor = document.getElementById("bloqueFranjasEditor");
-  const textoPrep = document.getElementById("textoFranjasPreparacion");
-  const btn = document.getElementById("btnHabilitarFranjas");
-
-  if (!usaFranjas) {
-    bloquePrep.classList.add("oculto");
-    bloqueEditor.classList.add("oculto");
-    return;
-  }
-
-  bloquePrep.classList.remove("oculto");
-
-  if (actividadId) {
-    textoPrep.textContent = "La actividad ya tiene identificador. Puedes gestionar aquí sus franjas horarias.";
-    btn.textContent = "Actualizar base para franjas";
-    bloqueEditor.classList.remove("oculto");
-  } else {
-    textoPrep.textContent = "Para crear franjas en una actividad nueva primero se crea un borrador técnico interno.";
-    btn.textContent = "Guardar borrador y habilitar franjas";
-    bloqueEditor.classList.add("oculto");
-  }
-}
-
-    function limpiarFormularioFranja() {
-      document.getElementById("franjaId").value = "";
-      document.getElementById("fr_es_recurrente").value = "0";
-      document.getElementById("fr_fecha").value = "";
-      document.getElementById("fr_patron_recurrencia").value = "";
-      document.getElementById("fr_hora_inicio").value = "";
-      document.getElementById("fr_hora_fin").value = "";
-      document.getElementById("fr_capacidad").value = "";
-      document.getElementById("btnCancelarEdicionFranja").classList.add("oculto");
-      actualizarVisibilidadFormulario();
-    }
-
-    function renderListaFranjas() {
-      const wrap = document.getElementById("listaFranjas");
-
-      if (!franjasCache.length) {
-        wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
-        return;
-      }
-
-      const filas = franjasCache.map(f => {
-        const bloqueProgramacion = Number(f.es_recurrente || 0) === 1
-          ? (f.patron_recurrencia || "-")
-          : (f.fecha || "-");
-
-        const capacidad = f.capacidad == null ? "—" : String(f.capacidad);
-        const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
-        const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
-
-        return `
-          <tr>
-            <td>${bloqueProgramacion}</td>
-            <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
-            <td>${capacidad}</td>
-            <td>${ocupadas}</td>
-            <td>${disponibles}</td>
-            <td>
-              <div class="acciones-fila">
-                <button type="button" class="btn-mini" data-accion="editar" data-id="${f.id}">Editar</button>
-                <button type="button" class="btn-mini peligro" data-accion="borrar" data-id="${f.id}">Borrar</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-
-      wrap.innerHTML = `
-        <table class="tabla-franjas">
-          <thead>
-            <tr>
-              <th>Fecha / patrón</th>
-              <th>Horario</th>
-              <th>Capacidad</th>
-              <th>Ocupadas</th>
-              <th>Disponibles</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>${filas}</tbody>
-        </table>
-      `;
-
-      wrap.querySelectorAll("button[data-accion]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = Number(btn.dataset.id);
-          const accion = btn.dataset.accion;
-
-          if (accion === "editar") {
-            editarFranja(id);
-          } else if (accion === "borrar") {
-            await borrarFranja(id);
-          }
-        });
-      });
-    }
-
-    function editarFranja(id) {
-      const f = franjasCache.find(x => Number(x.id) === Number(id));
-      if (!f) return;
-
-      document.getElementById("franjaId").value = f.id;
-      document.getElementById("fr_es_recurrente").value = String(Number(f.es_recurrente || 0));
-      document.getElementById("fr_fecha").value = f.fecha || "";
-      document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
-      document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
-      document.getElementById("fr_hora_fin").value = f.hora_fin || "";
-      document.getElementById("fr_capacidad").value = f.capacidad == null ? "" : f.capacidad;
-      document.getElementById("btnCancelarEdicionFranja").classList.remove("oculto");
-      actualizarVisibilidadFormulario();
-    }
-
-    async function cargarFranjas() {
-      const actividadId = document.getElementById("actividadId").value;
-      if (!actividadId || document.getElementById("usa_franjas").value !== "1") {
-        franjasCache = [];
-        renderListaFranjas();
-        return;
-      }
-
-      const res = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}`, {
-        credentials: "same-origin"
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudieron cargar las franjas.");
-        return;
-      }
-
-      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
-      renderListaFranjas();
-      actualizarEstadoFranjasUI();
-    }
-
-    async function guardarFranja() {
+    async function asegurarActividadBorradorParaFranjas() {
       limpiarMensaje();
 
-      const actividadId = document.getElementById("actividadId").value;
-      if (!actividadId) {
-        mostrarMensaje("error", "Primero debes guardar el borrador técnico de la actividad.");
-        return;
+      const payload = construirPayloadActividad(1);
+
+      if (!payload.nombre) {
+        mostrarMensaje("error", "Para habilitar franjas debes indicar al menos el nombre interno de la actividad.");
+        return null;
       }
 
-      const payload = {
-        id: document.getElementById("franjaId").value || null,
-        actividad_id: actividadId,
-        es_recurrente: document.getElementById("fr_es_recurrente").value,
-        fecha: document.getElementById("fr_fecha").value,
-        patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
-        hora_inicio: document.getElementById("fr_hora_inicio").value,
-        hora_fin: document.getElementById("fr_hora_fin").value,
-        capacidad: document.getElementById("fr_capacidad").value
-      };
+      if (payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
+        mostrarMensaje("error", "Para habilitar franjas en una actividad temporal debes indicar fecha de inicio y fin.");
+        return null;
+      }
 
       const esEdicion = !!payload.id;
 
-      const res = await fetch("/api/admin/franjas", {
+      const res = await fetch("/api/admin/actividades-guardar", {
         method: esEdicion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
@@ -1806,86 +1838,147 @@ function actualizarEstadoFranjasUI() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
-        return;
+        mostrarMensaje("error", data.error || "No se pudo preparar la actividad para gestionar franjas.");
+        return null;
       }
 
-      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
-      renderListaFranjas();
-      limpiarFormularioFranja();
-      mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
-    }
-
-    async function borrarFranja(id) {
-      const confirmar = confirm("¿Seguro que quieres eliminar esta franja?");
-      if (!confirmar) return;
-
-      const res = await fetch("/api/admin/franjas", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ id })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo eliminar la franja.");
-        return;
+      if (!esEdicion && data.id) {
+        document.getElementById("actividadId").value = data.id;
+        history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
+        document.getElementById("tituloFormulario").textContent = "Editar actividad";
       }
 
-      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
-      renderListaFranjas();
-      mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
+      actividadEsBorradorTecnico = true;
+      document.getElementById("tituloActividadContexto").textContent =
+        document.getElementById("titulo_publico").value.trim() ||
+        document.getElementById("nombre").value.trim() ||
+        "Nueva actividad";
+
+      return document.getElementById("actividadId").value;
     }
 
     async function cancelarActividadEnEdicion() {
-  const id = document.getElementById("actividadId").value;
+      const id = document.getElementById("actividadId").value;
 
-  const hayCambios =
-    document.getElementById("nombre").value.trim() ||
-    document.getElementById("titulo_publico").value.trim() ||
-    document.getElementById("descripcion_corta").value.trim() ||
-    document.getElementById("descripcion_larga").value.trim() ||
-    franjasCache.length > 0;
+      const hayCambios =
+        document.getElementById("nombre").value.trim() ||
+        document.getElementById("titulo_publico").value.trim() ||
+        document.getElementById("descripcion_corta").value.trim() ||
+        document.getElementById("descripcion_larga").value.trim() ||
+        franjasCache.length > 0;
 
-  if (!id) {
-    if (hayCambios) {
-      const confirmarSalir = confirm("Hay cambios no guardados. ¿Quieres cancelar y salir?");
+      if (!id) {
+        if (hayCambios) {
+          const confirmarSalir = confirm("Hay cambios no guardados. ¿Quieres cancelar y salir?");
+          if (!confirmarSalir) return;
+        }
+        window.location.href = "mis-actividades.html";
+        return;
+      }
+
+      if (actividadEsBorradorTecnico) {
+        const confirmarBorrado = confirm("Vas a cancelar esta actividad en borrador. Se eliminarán también sus franjas. ¿Continuar?");
+        if (!confirmarBorrado) return;
+
+        const res = await fetch("/api/admin/actividades-guardar", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          mostrarMensaje("error", data.error || "No se pudo cancelar el borrador técnico.");
+          return;
+        }
+
+        window.location.href = "mis-actividades.html";
+        return;
+      }
+
+      const confirmarSalir = confirm("La actividad no es un borrador técnico. Cancelar solo cerrará esta edición. ¿Continuar?");
       if (!confirmarSalir) return;
-    }
-    window.location.href = "mis-actividades.html";
-    return;
-  }
 
-  if (actividadEsBorradorTecnico) {
-    const confirmarBorrado = confirm("Vas a cancelar esta actividad en borrador. Se eliminarán también sus franjas. ¿Continuar?");
-    if (!confirmarBorrado) return;
-
-    const res = await fetch("/api/admin/actividades-guardar", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ id })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      mostrarMensaje("error", data.error || "No se pudo cancelar el borrador técnico.");
-      return;
+      window.location.href = "mis-actividades.html";
     }
 
-    window.location.href = "mis-actividades.html";
-    return;
-  }
+    function mostrarPaso(index) {
+      const panes = Array.from(document.querySelectorAll(".step-pane"));
+      pasoActual = Math.max(0, Math.min(index, panes.length - 1));
 
-  const confirmarSalir = confirm("La actividad no es un borrador técnico. Cancelar solo cerrará esta edición. ¿Continuar?");
-  if (!confirmarSalir) return;
+      panes.forEach((pane, i) => {
+        pane.classList.toggle("activo", i === pasoActual);
+      });
 
-  window.location.href = "mis-actividades.html";
-}
-    
+      document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
+      document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
+      document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
+
+      actualizarPreview();
+      renderMapaPreviewActividad();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function validarPasoActual() {
+      limpiarMensaje();
+
+      if (pasoActual === 0) {
+        const nombre = document.getElementById("nombre").value.trim();
+        if (!nombre) {
+          mostrarMensaje("error", "Debe indicar el nombre interno de la actividad.");
+          return false;
+        }
+      }
+
+      if (pasoActual === 1) {
+        const tipo = document.getElementById("tipo").value;
+        const usaFranjas = document.getElementById("usa_franjas").value === "1";
+        const esRecurrente = document.getElementById("es_recurrente").value === "1";
+        const fechaInicio = document.getElementById("fecha_inicio").value;
+        const fechaFin = document.getElementById("fecha_fin").value;
+        const patron = document.getElementById("patron_recurrencia").value.trim();
+
+        if (tipo === "TEMPORAL") {
+          if (!fechaInicio || !fechaFin) {
+            mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
+            return false;
+          }
+          if (fechaInicio > fechaFin) {
+            mostrarMensaje("error", "La fecha de inicio no puede ser posterior a la fecha de fin.");
+            return false;
+          }
+        }
+
+        if (usaFranjas && esRecurrente && !patron) {
+          mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
+          return false;
+        }
+      }
+
+      if (pasoActual === 2) {
+        const usaEnlace = document.getElementById("usa_enlace_externo").value === "1";
+        const url = document.getElementById("enlace_externo_url").value.trim();
+
+        if (usaEnlace && !url) {
+          mostrarMensaje("error", "Debe indicar la URL del enlace externo.");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function avanzarPaso() {
+      if (!validarPasoActual()) return;
+      mostrarPaso(pasoActual + 1);
+    }
+
+    function retrocederPaso() {
+      mostrarPaso(pasoActual - 1);
+    }
+
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
@@ -1896,6 +1989,9 @@ function actualizarEstadoFranjasUI() {
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
+      document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
+      document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
+      document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
 
       document.getElementById("btnHabilitarFranjas").addEventListener("click", async () => {
         const id = await asegurarActividadBorradorParaFranjas();
@@ -1907,25 +2003,11 @@ function actualizarEstadoFranjasUI() {
         limpiarFormularioFranja();
         document.getElementById("fr_hora_inicio").focus();
 
-        mostrarMensaje("ok", "La actividad ya puede gestionar franjas desde este paso.");
-      });
-      
-      document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
-      document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
-      document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
-
-      document.getElementById("btnHabilitarFranjas").addEventListener("click", async () => {
-        const id = await asegurarActividadBorradorParaFranjas();
-        if (!id) return;
-
-        actualizarEstadoFranjasUI();
-        await cargarFranjas();
-        mostrarMensaje("ok", "La actividad ya puede gestionar franjas desde este paso.");
+        mostrarMensaje("ok", "El editor de franjas ya está disponible.");
       });
 
       [
         "nombre",
-        "admin_id",
         "organizador_publico",
         "tipo",
         "usa_franjas",
@@ -1975,20 +2057,19 @@ function actualizarEstadoFranjasUI() {
             } else {
               franjasCache = [];
               renderListaFranjas();
+              renderPreviewFranjas();
             }
           }
         });
       });
 
       try {
-        configurarModoAdminResponsable();
-        await cargarAdminsSoloSiSuperadmin();
-        configurarModoAdminResponsable();
         await cargarActividadSiEsEdicion();
         actualizarVisibilidadFormulario();
         actualizarPreview();
         renderMapaPreviewActividad();
         renderListaFranjas();
+        renderPreviewFranjas();
         mostrarPaso(0);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
