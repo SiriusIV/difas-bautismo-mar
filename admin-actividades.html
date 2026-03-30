@@ -1574,90 +1574,90 @@
       }
     }
 
-    async function asegurarActividadBorradorParaFranjas() {
-      limpiarMensaje();
+async function asegurarActividadBorradorParaFranjas() {
+  limpiarMensaje();
 
-      const payload = construirPayloadActividad(1);
+  const payload = construirPayloadActividad(1);
 
-      if (!payload.nombre) {
-        mostrarMensaje("error", "Para habilitar franjas debes indicar al menos el nombre interno de la actividad.");
-        return null;
-      }
+  if (!payload.nombre) {
+    mostrarMensaje("error", "Para habilitar franjas debes indicar al menos el nombre interno de la actividad.");
+    return null;
+  }
 
-      if (payload.tipo === "TEMPORAL") {
-        if (!payload.fecha_inicio || !payload.fecha_fin) {
-          mostrarMensaje("error", "Para habilitar franjas en una actividad temporal debes indicar fecha de inicio y fin.");
-          return null;
-        }
-      }
-
-      if (esSuperAdmin && !payload.admin_id) {
-        mostrarMensaje("error", "Debe indicar el administrador responsable.");
-        return null;
-      }
-
-      if (!esSuperAdmin) {
-        payload.admin_id = String(usuarioSesion.id);
-      }
-
-      const esEdicion = !!payload.id;
-
-      const res = await fetch("/api/admin/actividades-guardar", {
-        method: esEdicion ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo preparar la actividad para gestionar franjas.");
-        return null;
-      }
-
-      if (!esEdicion && data.id) {
-        document.getElementById("actividadId").value = data.id;
-        history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
-        document.getElementById("tituloFormulario").textContent = "Editar actividad";
-      }
-
-      actividadEsBorradorTecnico = true;
-      
-      document.getElementById("tituloActividadContexto").textContent =
-      document.getElementById("titulo_publico").value.trim() ||
-      document.getElementById("nombre").value.trim() ||
-      "Nueva actividad";
-      
-      return document.getElementById("actividadId").value;
+  if (payload.tipo === "TEMPORAL") {
+    if (!payload.fecha_inicio || !payload.fecha_fin) {
+      mostrarMensaje("error", "Para habilitar franjas en una actividad temporal debes indicar fecha de inicio y fin.");
+      return null;
     }
+  }
 
-    function actualizarEstadoFranjasUI() {
-      const usaFranjas = document.getElementById("usa_franjas").value === "1";
-      const actividadId = document.getElementById("actividadId").value;
-      const bloquePrep = document.getElementById("bloqueFranjasPreparacion");
-      const bloqueEditor = document.getElementById("bloqueFranjasEditor");
-      const textoPrep = document.getElementById("textoFranjasPreparacion");
-      const btn = document.getElementById("btnHabilitarFranjas");
+  if (esSuperAdmin && !payload.admin_id) {
+    mostrarMensaje("error", "Debe indicar el administrador responsable.");
+    return null;
+  }
 
-      if (!usaFranjas) {
-        bloquePrep.classList.add("oculto");
-        bloqueEditor.classList.add("oculto");
-        return;
-      }
+  if (!esSuperAdmin) {
+    payload.admin_id = String(usuarioSesion.id);
+  }
 
-      bloquePrep.classList.remove("oculto");
+  const esEdicion = !!payload.id;
 
-      if (actividadId) {
-        textoPrep.textContent = "La actividad ya tiene identificador. Puedes gestionar aquí sus franjas horarias.";
-        btn.textContent = "Actualizar base para franjas";
-        bloqueEditor.classList.remove("oculto");
-      } else {
-        textoPrep.textContent = "Para crear franjas en una actividad nueva primero se crea un borrador técnico interno.";
-        btn.textContent = "Guardar borrador y habilitar franjas";
-        bloqueEditor.classList.add("oculto");
-      }
-    }
+  const res = await fetch("/api/admin/actividades-guardar", {
+    method: esEdicion ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    mostrarMensaje("error", data.error || "No se pudo preparar la actividad para gestionar franjas.");
+    return null;
+  }
+
+  if (!esEdicion && data.id) {
+    document.getElementById("actividadId").value = data.id;
+    history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
+    document.getElementById("tituloFormulario").textContent = "Editar actividad";
+  }
+
+  actividadEsBorradorTecnico = true;
+
+  document.getElementById("tituloActividadContexto").textContent =
+    document.getElementById("titulo_publico").value.trim() ||
+    document.getElementById("nombre").value.trim() ||
+    "Nueva actividad";
+
+  return document.getElementById("actividadId").value;
+}
+
+function actualizarEstadoFranjasUI() {
+  const usaFranjas = document.getElementById("usa_franjas").value === "1";
+  const actividadId = document.getElementById("actividadId").value;
+  const bloquePrep = document.getElementById("bloqueFranjasPreparacion");
+  const bloqueEditor = document.getElementById("bloqueFranjasEditor");
+  const textoPrep = document.getElementById("textoFranjasPreparacion");
+  const btn = document.getElementById("btnHabilitarFranjas");
+
+  if (!usaFranjas) {
+    bloquePrep.classList.add("oculto");
+    bloqueEditor.classList.add("oculto");
+    return;
+  }
+
+  bloquePrep.classList.remove("oculto");
+
+  if (actividadId) {
+    textoPrep.textContent = "La actividad ya tiene identificador. Puedes gestionar aquí sus franjas horarias.";
+    btn.textContent = "Actualizar base para franjas";
+    bloqueEditor.classList.remove("oculto");
+  } else {
+    textoPrep.textContent = "Para crear franjas en una actividad nueva primero se crea un borrador técnico interno.";
+    btn.textContent = "Guardar borrador y habilitar franjas";
+    bloqueEditor.classList.add("oculto");
+  }
+}
 
     function limpiarFormularioFranja() {
       document.getElementById("franjaId").value = "";
@@ -1896,6 +1896,20 @@
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
+
+      document.getElementById("btnHabilitarFranjas").addEventListener("click", async () => {
+        const id = await asegurarActividadBorradorParaFranjas();
+        if (!id) return;
+
+        actualizarEstadoFranjasUI();
+        document.getElementById("bloqueFranjasEditor").classList.remove("oculto");
+        await cargarFranjas();
+        limpiarFormularioFranja();
+        document.getElementById("fr_hora_inicio").focus();
+
+        mostrarMensaje("ok", "La actividad ya puede gestionar franjas desde este paso.");
+      });
+      
       document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
       document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
       document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
