@@ -801,21 +801,6 @@ textarea {
 
               <input type="hidden" id="franjaId" value="">
 
-              <div class="fila-compacta">
-                <div>
-                  <label for="fr_es_recurrente">Tipo de franja</label>
-                  <select id="fr_es_recurrente" class="input-mini">
-                    <option value="0">Fecha concreta</option>
-                    <option value="1">Recurrente</option>
-                  </select>
-                </div>
-
-                <div id="fr_bloque_capacidad">
-                  <label for="fr_capacidad">Capacidad</label>
-                  <input type="number" id="fr_capacidad" min="1" step="1" class="input-mini">
-                </div>
-              </div>
-
               <div class="fila" id="fr_bloque_fecha">
                 <div>
                   <label for="fr_fecha">Fecha</label>
@@ -1224,7 +1209,7 @@ textarea {
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
       const esRecurrente = document.getElementById("es_recurrente").value === "1";
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
-      const frEsRecurrente = document.getElementById("fr_es_recurrente").value === "1";
+      const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
 
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
       document.getElementById("bloquePatronRecurrencia").classList.toggle("oculto", !usaFranjas || !esRecurrente);
@@ -1492,11 +1477,11 @@ textarea {
 function actualizarEstadoFranjasUI() {
   const usaFranjas = document.getElementById("usa_franjas").value === "1";
   const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
-  const frEsRecurrente = document.getElementById("fr_es_recurrente").value === "1";
+  const esRecurrente = document.getElementById("es_recurrente").value === "1";
 
   document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
-  document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
-  document.getElementById("fr_bloque_patron").classList.toggle("oculto", !frEsRecurrente);
+  document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
+  document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
   document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
 
   if (!usaFranjas) {
@@ -1509,7 +1494,6 @@ function actualizarEstadoFranjasUI() {
 
 function limpiarFormularioFranja() {
   document.getElementById("franjaId").value = "";
-  document.getElementById("fr_es_recurrente").value = document.getElementById("es_recurrente").value || "0";
   document.getElementById("fr_fecha").value = "";
   document.getElementById("fr_patron_recurrencia").value = "";
   document.getElementById("fr_hora_inicio").value = "";
@@ -1609,7 +1593,7 @@ function limpiarFormularioFranja() {
       if (!f) return;
 
       document.getElementById("franjaId").value = f.id;
-      document.getElementById("fr_es_recurrente").value = String(Number(f.es_recurrente || 0));
+      document.getElementById("es_recurrente").value = String(Number(f.es_recurrente || 0));
       document.getElementById("fr_fecha").value = f.fecha || "";
       document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
       document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
@@ -1661,7 +1645,7 @@ async function guardarFranja() {
   const payload = {
     id: document.getElementById("franjaId").value || null,
     actividad_id: actividadId,
-    es_recurrente: document.getElementById("fr_es_recurrente").value,
+    es_recurrente: document.getElementById("es_recurrente").value,
     fecha: document.getElementById("fr_fecha").value,
     patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
     hora_inicio: document.getElementById("fr_hora_inicio").value,
@@ -2014,8 +1998,7 @@ async function guardarFranja() {
         "direccion_postal",
         "latitud",
         "longitud",
-        "zoom_mapa",
-        "fr_es_recurrente"
+        "zoom_mapa"
       ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
