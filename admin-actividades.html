@@ -621,29 +621,60 @@ textarea {
       white-space: nowrap;
     }
 
-    .fila-franja-inline {
+   .fila-franja-inline {
   display: grid;
-  grid-template-columns: 160px minmax(200px, 1fr) 120px 120px 120px auto;
+  grid-template-columns: minmax(280px, 1fr) 140px 140px 110px 52px;
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
+}
+
+.campo-franja-inline {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .campo-franja-inline label {
   display: block;
   margin-bottom: 4px;
   font-size: 13px;
+  line-height: 1.2;
+  min-height: 16px;
 }
 
 .campo-franja-inline input {
   width: 100%;
+  height: 38px;
 }
 
 .campo-franja-acciones {
   display: flex;
-  gap: 8px;
-  align-items: end;
+  align-items: flex-end;
   justify-content: flex-end;
+}
+
+.campo-franja-acciones .btn-icono-guardar {
+  width: 44px;
+  height: 38px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.campo-franja-acciones .btn-icono-guardar:hover {
+  background: var(--primary-dark);
+}
+
+.campo-franja-acciones .btn-icono-guardar svg {
+  width: 18px;
+  height: 18px;
 }
 
 @media (max-width: 1100px) {
@@ -862,9 +893,15 @@ textarea {
   </div>
 
   <div class="campo-franja-inline campo-franja-acciones">
-    <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar</button>
-    <button type="button" class="btn" id="btnGuardarFranja">Guardar</button>
-  </div>
+  <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar</button>
+  <button type="button" class="btn-icono-guardar" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+      <polyline points="7 3 7 8 15 8"></polyline>
+    </svg>
+  </button>
+</div>
 
 </div>
             </div>
