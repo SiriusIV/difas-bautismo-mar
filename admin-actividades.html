@@ -2138,6 +2138,110 @@ async function guardarFranja() {
       mostrarPaso(pasoActual - 1);
     }
 
+    function mostrarEstadoSubidaImagen(tipo, texto) {
+  const el = document.getElementById("estadoSubidaImagen");
+  if (!el) return;
+
+  if (!texto) {
+    el.className = "imagen-uploader-estado oculto";
+    el.textContent = "";
+    return;
+  }
+
+  el.className = `imagen-uploader-estado ${tipo}`;
+  el.textContent = texto;
+}
+
+function actualizarPreviewMiniImagen(url) {
+  const wrap = document.getElementById("previewMiniImagenWrap");
+  const img = document.getElementById("previewMiniImagen");
+  const btnQuitar = document.getElementById("btnQuitarImagen");
+
+  if (!wrap || !img || !btnQuitar) return;
+
+  if (url) {
+    img.src = url;
+    wrap.classList.remove("oculto");
+    btnQuitar.classList.remove("oculto");
+  } else {
+    img.removeAttribute("src");
+    wrap.classList.add("oculto");
+    btnQuitar.classList.add("oculto");
+  }
+}
+
+async function solicitarSubidaDirectaImagen(file) {
+  const actividadId = document.getElementById("actividadId")?.value || "";
+
+  const res = await fetch("/api/admin/imagenes-direct-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      actividad_id: actividadId,
+      filename: file.name,
+      content_type: file.type
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || "No se pudo preparar la subida.");
+  }
+
+  return data;
+}
+
+async function subirImagenActividad(file, uploadURL) {
+  const form = new FormData();
+  form.append("file", file, file.name);
+
+  const res = await fetch(uploadURL, {
+    method: "POST",
+    body: form
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.errors?.[0]?.message || "La subida directa de la imagen ha fallado.");
+  }
+
+  return data;
+}
+
+async function manejarSeleccionImagenActividad(file) {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    mostrarEstadoSubidaImagen("error", "El archivo seleccionado no es una imagen válida.");
+    return;
+  }
+
+  mostrarEstadoSubidaImagen("info", "Preparando subida de imagen...");
+
+  try {
+    const subida = await solicitarSubidaDirectaImagen(file);
+
+    mostrarEstadoSubidaImagen("info", "Subiendo imagen...");
+    await subirImagenActividad(file, subida.upload_url);
+
+    const imagenUrlInput = document.getElementById("imagen_url");
+    imagenUrlInput.value = subida.image_url;
+
+    actualizarPreviewMiniImagen(subida.image_url_thumbnail || subida.image_url);
+    mostrarEstadoSubidaImagen("ok", "Imagen subida correctamente.");
+
+    if (typeof actualizarPreview === "function") {
+      actualizarPreview();
+    }
+  } catch (error) {
+    mostrarEstadoSubidaImagen("error", error.message || "No se pudo subir la imagen.");
+  }
+}
+    
+    
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
