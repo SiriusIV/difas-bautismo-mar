@@ -2256,7 +2256,33 @@ async function manejarSeleccionImagenActividad(file) {
       document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
       document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
 
-      
+      const btnSeleccionarImagen = document.getElementById("btnSeleccionarImagen");
+const inputImagenActividad = document.getElementById("inputImagenActividad");
+const btnQuitarImagen = document.getElementById("btnQuitarImagen");
+const imagenUrlInput = document.getElementById("imagen_url");
+
+if (btnSeleccionarImagen && inputImagenActividad) {
+  btnSeleccionarImagen.addEventListener("click", () => {
+    inputImagenActividad.click();
+  });
+
+  inputImagenActividad.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    await manejarSeleccionImagenActividad(file);
+    inputImagenActividad.value = "";
+  });
+}
+
+if (btnQuitarImagen && imagenUrlInput) {
+  btnQuitarImagen.addEventListener("click", () => {
+    imagenUrlInput.value = "";
+    actualizarPreviewMiniImagen("");
+    mostrarEstadoSubidaImagen("", "");
+    if (typeof actualizarPreview === "function") {
+      actualizarPreview();
+    }
+  });
+}
 
       [
         "nombre",
@@ -2322,6 +2348,7 @@ async function manejarSeleccionImagenActividad(file) {
         renderListaFranjas();
         renderPreviewFranjas();
         mostrarPaso(0);
+        actualizarPreviewMiniImagen(document.getElementById("imagen_url")?.value || "");
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
       }
