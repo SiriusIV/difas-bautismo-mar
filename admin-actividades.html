@@ -696,6 +696,10 @@ textarea {
   height: 18px;
 }
 
+.fila-compacta-config-final {
+  grid-template-columns: 180px 180px 140px 160px;
+}
+
 @media (max-width: 1100px) {
   .fila-franja-inline {
     grid-template-columns: 1fr 1fr;
@@ -837,23 +841,37 @@ textarea {
 
           <textarea id="descripcion_larga" class="oculto"></textarea>
 
-          <div class="fila-compacta">
-            <div>
-              <label for="usa_enlace_externo">Mostrar enlace externo</label>
-              <select id="usa_enlace_externo" class="input-mini">
-                <option value="0">No</option>
-                <option value="1">Sí</option>
-              </select>
-            </div>
+          <div class="fila-compacta fila-compacta-config-final">
+  <div>
+    <label for="usa_enlace_externo">Mostrar enlace externo</label>
+    <select id="usa_enlace_externo" class="input-mini">
+      <option value="0">No</option>
+      <option value="1">Sí</option>
+    </select>
+  </div>
 
-            <div>
-              <label for="visible_portal">Visible en portal</label>
-              <select id="visible_portal" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-          </div>
+  <div>
+    <label for="visible_portal">Visible en portal</label>
+    <select id="visible_portal" class="input-mini">
+      <option value="1">Sí</option>
+      <option value="0">No</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="activa">Activa</label>
+    <select id="activa" class="input-mini">
+      <option value="1">Sí</option>
+      <option value="0">No</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="orden_portal">Orden en portal</label>
+    <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
+  </div>
+</div>
+  
 
           <div class="fila" id="bloqueEnlaceExternoUrl">
             <div>
@@ -867,21 +885,7 @@ textarea {
             </div>
           </div>
 
-          <div class="fila-compacta">
-            <div>
-              <label for="activa">Activa</label>
-              <select id="activa" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
 
-            <div>
-              <label for="orden_portal">Orden en portal</label>
-              <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
-            </div>
-          </div>
-        </section>
 
         <section class="step-pane" data-step="1">
           <h3 class="step-title">Programación</h3>
@@ -1032,7 +1036,7 @@ textarea {
 
         <div class="wizard-actions">
           <div class="wizard-actions-left">
-            <button type="button" class="btn btn-secundario" id="btnAnterior">Anterior</button>
+            <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
             <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
           </div>
 
