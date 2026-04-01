@@ -752,6 +752,59 @@ textarea {
         justify-content: center;
         margin-top: 12px;
       }
+
+.imagen-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.imagen-uploader-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.imagen-uploader-estado {
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+}
+
+.imagen-uploader-estado.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: var(--ok-border);
+}
+
+.imagen-uploader-estado.error {
+  background: var(--err-bg);
+  color: var(--err-text);
+  border-color: var(--err-border);
+}
+
+.imagen-uploader-estado.info {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
+}
+
+.preview-mini-imagen {
+  width: 220px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.preview-mini-imagen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+      
     }
   </style>
 </head>
@@ -833,10 +886,25 @@ textarea {
               <input type="text" id="descripcion">
             </div>
 
-            <div>
-              <label for="imagen_url">Imagen URL</label>
-              <input type="text" id="imagen_url" placeholder="logo.png o URL completa">
-            </div>
+<div>
+  <label for="imagen_url">Imagen de actividad</label>
+
+  <div class="imagen-uploader">
+    <input type="text" id="imagen_url" placeholder="URL de imagen" readonly>
+    <input type="file" id="inputImagenActividad" accept="image/*" class="oculto">
+
+    <div class="imagen-uploader-acciones">
+      <button type="button" class="btn btn-suave" id="btnSeleccionarImagen">Seleccionar imagen</button>
+      <button type="button" class="btn btn-secundario oculto" id="btnQuitarImagen">Quitar</button>
+    </div>
+
+    <div id="estadoSubidaImagen" class="imagen-uploader-estado oculto"></div>
+
+    <div id="previewMiniImagenWrap" class="preview-mini-imagen oculto">
+      <img id="previewMiniImagen" alt="Vista previa de imagen">
+    </div>
+  </div>
+</div>
           </div>
 
           <div class="fila-una">
