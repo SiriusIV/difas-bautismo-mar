@@ -1,3 +1,6 @@
+import { getAdminSession } from "./_auth.js";
+import { getRolUsuario } from "./_permisos.js";
+
 function json(data, init = 200) {
   const status = typeof init === "number" ? init : (init.status || 200);
   return new Response(JSON.stringify(data), {
@@ -6,31 +9,6 @@ function json(data, init = 200) {
       "Content-Type": "application/json; charset=utf-8"
     }
   });
-}
-
-async function getAdminSession(request, env) {
-  const cookie = request.headers.get("Cookie") || "";
-  const match = cookie.match(/(?:^|;\s*)session_id=([^;]+)/);
-  if (!match) return null;
-
-  const sessionId = decodeURIComponent(match[1]);
-
-  const session = await env.DB.prepare(`
-    SELECT s.id, s.usuario_id, u.email, u.nombre, u.rol
-    FROM sesiones s
-    JOIN usuarios u ON u.id = s.usuario_id
-    WHERE s.id = ?
-      AND s.activa = 1
-      AND (s.expira_en IS NULL OR s.expira_en > datetime('now'))
-    LIMIT 1
-  `).bind(sessionId).first();
-
-  if (!session) return null;
-
-  const rol = String(session.rol || "").toUpperCase();
-  if (rol !== "ADMIN" && rol !== "SUPERADMIN") return null;
-
-  return session;
 }
 
 function sanitizeFilename(name = "") {
@@ -46,9 +24,14 @@ export async function onRequestPost(context) {
 
   try {
     const session = await getAdminSession(request, env);
-    if (!session) {
-      return json({ ok: false, error: "No autorizado." }, 401);
-    }
+if (!session) {
+  return json({ ok: false, error: "No autorizado." }, 401);
+}
+
+const rol = await getRolUsuario(env, session.usuario_id);
+if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+  return json({ ok: false, error: "No autorizado." }, 403);
+}
 
     if (!env.CF_IMAGES_ACCOUNT_ID || !env.CF_IMAGES_API_TOKEN || !env.CF_IMAGES_DELIVERY_HASH) {
       return json(
