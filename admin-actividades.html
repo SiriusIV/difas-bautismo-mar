@@ -476,7 +476,7 @@
 
     .detalle-grid-preview {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 380px minmax(0, 1fr);
       gap: 20px;
       align-items: start;
     }
@@ -485,6 +485,12 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      align-self: start;
+      min-width: 0;
+    }
+
+    .detalle-contenido-preview {
+      min-width: 0;
     }
 
     .detalle-img-preview {
@@ -494,6 +500,67 @@
       border-radius: 12px;
       background: #dfe7ef;
       display: block;
+    }
+
+    .contenedor-imagen-preview {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .acciones-imagen-preview {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .btn-icono-imagen {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid rgba(18, 58, 99, 0.18);
+      background: rgba(255, 255, 255, 0.96);
+      color: #123a63;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .btn-icono-imagen:hover {
+      background: #ffffff;
+      border-color: rgba(18, 58, 99, 0.35);
+    }
+
+    .btn-icono-imagen.peligro {
+      color: #9b1c1c;
+    }
+
+    .btn-icono-imagen svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .btn-imagen-vacia {
+      width: 100%;
+      min-height: 260px;
+      border-radius: 12px;
+      border: 1px dashed #c9cfd6;
+      background: #f8fafc;
+      color: #123a63;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-imagen-vacia:hover {
+      background: #eef4ff;
     }
 
     .mapa-info-wrap-preview {
@@ -645,6 +712,22 @@
       .fila-compacta-config-final {
         grid-template-columns: 1fr 1fr;
       }
+
+      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro {
+        grid-template-columns: 1fr;
+      }
+
+      .detalle-grid-preview {
+        grid-template-columns: 1fr;
+      }
+
+      .detalle-img-preview {
+        height: 220px;
+      }
+
+      .mapa-wrap-preview {
+        height: 240px;
+      }
     }
 
     .fila-franja-inline {
@@ -713,24 +796,6 @@
       }
     }
 
-    @media (max-width: 980px) {
-      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro {
-        grid-template-columns: 1fr;
-      }
-
-      .detalle-grid-preview {
-        grid-template-columns: 1fr;
-      }
-
-      .detalle-img-preview {
-        height: 220px;
-      }
-
-      .mapa-wrap-preview {
-        height: 240px;
-      }
-    }
-
     @media (max-width: 700px) {
       .bloque-marca {
         flex-direction: column;
@@ -748,118 +813,6 @@
         justify-content: center;
         margin-top: 12px;
       }
-
-      .imagen-uploader {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .imagen-uploader-acciones {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .imagen-uploader-estado {
-        font-size: 12px;
-        border-radius: 8px;
-        padding: 8px 10px;
-        border: 1px solid transparent;
-      }
-
-      .imagen-uploader-estado.ok {
-        background: var(--ok-bg);
-        color: var(--ok-text);
-        border-color: var(--ok-border);
-      }
-
-      .imagen-uploader-estado.error {
-        background: var(--err-bg);
-        color: var(--err-text);
-        border-color: var(--err-border);
-      }
-
-      .imagen-uploader-estado.info {
-        background: var(--info-bg);
-        color: var(--info-text);
-        border-color: var(--info-border);
-      }
-
-      .preview-mini-imagen {
-        width: 220px;
-        max-width: 100%;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-        background: #fff;
-      }
-
-      .preview-mini-imagen img {
-        display: block;
-        width: 100%;
-        height: auto;
-      }
-
-      .contenedor-imagen-preview {
-  position: relative;
-  width: 100%;
-}
-
-.acciones-imagen-preview {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 8px;
-  z-index: 5;
-}
-
-.btn-icono-imagen {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(18, 58, 99, 0.18);
-  background: rgba(255, 255, 255, 0.96);
-  color: #123a63;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  padding: 0;
-}
-
-.btn-icono-imagen:hover {
-  background: #ffffff;
-  border-color: rgba(18, 58, 99, 0.35);
-}
-
-.btn-icono-imagen.peligro {
-  color: #9b1c1c;
-}
-
-.btn-icono-imagen svg {
-  width: 16px;
-  height: 16px;
-}
-
-.btn-imagen-vacia {
-  width: 100%;
-  min-height: 260px;
-  border-radius: 12px;
-  border: 1px dashed #c9cfd6;
-  background: #f8fafc;
-  color: #123a63;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-imagen-vacia:hover {
-  background: #eef4ff;
-}
-      
     }
   </style>
 </head>
@@ -905,6 +858,8 @@
         <input type="hidden" id="latitud">
         <input type="hidden" id="longitud">
         <input type="hidden" id="zoom_mapa" value="15">
+        <input type="hidden" id="imagen_url">
+        <input type="hidden" id="imagen_id">
 
         <section class="step-pane activo" data-step="0">
           <h3 class="step-title">Configuración</h3>
@@ -940,9 +895,6 @@
               <textarea id="descripcion_corta"></textarea>
             </div>
           </div>
-
-          <input type="hidden" id="imagen_url">
-          <input type="hidden" id="imagen_id">
 
           <div class="fila" id="bloqueEnlaceExternoUrl">
             <div>
@@ -1137,11 +1089,11 @@
 
         <div class="wizard-actions">
           <div class="wizard-actions-left">
-            <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
             <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
           </div>
 
           <div class="wizard-actions-right">
+            <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
             <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
             <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
           </div>
@@ -1175,10 +1127,14 @@
                 </button>
               </div>
 
+              <button type="button" class="btn-imagen-vacia" id="btnSeleccionarImagenPreview">Seleccionar imagen</button>
+              <input type="file" id="inputImagenActividad" accept="image/*" class="oculto">
+            </div>
+
             <div class="mapa-info-wrap-preview">
               <div id="previewDireccion" class="direccion-actividad-preview" style="display:none;"></div>
 
-              <div class="mapa-wrap-preview" id="mapaWrapPreview" style="display:none;">
+              <div class="mapa-wrap-preview mapa-oculto" id="mapaWrapPreview">
                 <div id="mapaPreviewActividad"></div>
               </div>
             </div>
@@ -1222,11 +1178,93 @@
     let franjasCache = [];
     let actividadEsBorradorTecnico = false;
 
-    const pasos = [
-      "Configuración",
-      "Programación",
-      "Localización"
-    ];
+    let imagenOriginalId = "";
+    let imagenOriginalUrl = "";
+    let imagenesPendientesBorrar = new Set();
+    let advertenciaImagenSinId = false;
+
+    function normalizarTexto(v) {
+      return String(v || "").trim();
+    }
+
+    function normalizarImageId(v) {
+      return normalizarTexto(v);
+    }
+
+    function getImagenIdActualFormulario() {
+      return normalizarImageId(document.getElementById("imagen_id")?.value);
+    }
+
+    function getImagenUrlActualFormulario() {
+      return normalizarTexto(document.getElementById("imagen_url")?.value);
+    }
+
+    function registrarImagenOriginalDesdeFormulario() {
+      imagenOriginalId = getImagenIdActualFormulario();
+      imagenOriginalUrl = getImagenUrlActualFormulario();
+      imagenesPendientesBorrar.clear();
+      advertenciaImagenSinId = false;
+    }
+
+    function marcarImagenParaBorrado(imageId) {
+      const id = normalizarImageId(imageId);
+      if (id) imagenesPendientesBorrar.add(id);
+    }
+
+    async function eliminarImagenCloudflare(imageId) {
+      const id = normalizarImageId(imageId);
+      if (!id) return;
+
+      const res = await fetch("/api/admin/imagenes-eliminar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ image_id: id })
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo eliminar la imagen en Cloudflare.");
+      }
+    }
+
+    async function procesarImagenesPendientesPostGuardado() {
+      const pendientes = Array.from(imagenesPendientesBorrar).filter(Boolean);
+      const errores = [];
+
+      for (const imageId of pendientes) {
+        try {
+          await eliminarImagenCloudflare(imageId);
+        } catch (error) {
+          errores.push(error?.message || String(error));
+        }
+      }
+
+      registrarImagenOriginalDesdeFormulario();
+
+      const avisos = [];
+      if (advertenciaImagenSinId) {
+        avisos.push("La imagen anterior no se pudo borrar automáticamente porque no tenía image_id.");
+      }
+      if (errores.length) {
+        avisos.push("Alguna imagen anterior no se pudo borrar en Cloudflare.");
+      }
+
+      return avisos.join(" ");
+    }
+
+    async function limpiarUploadTemporalSiExiste() {
+      const currentId = getImagenIdActualFormulario();
+      if (!currentId) return;
+
+      const esOriginal = imagenOriginalId && currentId === imagenOriginalId;
+      if (esOriginal) return;
+
+      try {
+        await eliminarImagenCloudflare(currentId);
+      } catch (_) {}
+    }
 
     function getActividadIdURL() {
       const params = new URLSearchParams(window.location.search);
@@ -1364,6 +1402,9 @@
 
       actividadEsBorradorTecnico = Number(actividad.borrador_tecnico || 0) === 1;
       document.getElementById("tituloFormulario").textContent = "Editar actividad";
+
+      registrarImagenOriginalDesdeFormulario();
+
       actualizarVisibilidadFormulario();
       actualizarPreview();
       renderMapaPreviewActividad();
@@ -1372,7 +1413,10 @@
 
     async function cargarActividadSiEsEdicion() {
       actividadEditandoId = getActividadIdURL();
-      if (!actividadEditandoId) return;
+      if (!actividadEditandoId) {
+        registrarImagenOriginalDesdeFormulario();
+        return;
+      }
 
       await cargarActividades();
 
@@ -1443,29 +1487,6 @@
       actualizarEstadoFranjasUI();
     }
 
-    function obtenerTextoModoPreview() {
-      const usaFranjas = document.getElementById("usa_franjas").value === "1";
-      const requiereReserva = document.getElementById("requiere_reserva").value === "1";
-      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
-      const esRecurrente = document.getElementById("es_recurrente").value === "1";
-
-      let base = requiereReserva ? "Reservable" : "Informativa";
-
-      if (requiereReserva && aforoLimitado) {
-        base += " con aforo";
-      } else if (requiereReserva && !aforoLimitado) {
-        base += " sin aforo";
-      }
-
-      if (usaFranjas) {
-        base += esRecurrente ? " · Franjas recurrentes" : " · Franjas";
-      } else {
-        base += " · Sin franjas";
-      }
-
-      return base;
-    }
-
     function construirMetaPreview() {
       const tipo = document.getElementById("tipo").value;
       const fecha_inicio = document.getElementById("fecha_inicio").value;
@@ -1500,7 +1521,7 @@
       const tituloPublico = document.getElementById("titulo_publico").value.trim();
       const titulo = tituloPublico || nombre;
       const subtitulo = document.getElementById("subtitulo_publico").value.trim();
-      const imagen = document.getElementById("imagen_url").value.trim();
+      const imagen = getImagenUrlActualFormulario();
       const descripcionCorta = document.getElementById("descripcion_corta").value.trim();
       const textoDetalle = descripcionCorta;
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
@@ -1534,20 +1555,19 @@
       }
 
       const btnSeleccionarImagenPreview = document.getElementById("btnSeleccionarImagenPreview");
-const accionesImagenPreview = document.getElementById("accionesImagenPreview");
+      const accionesImagenPreview = document.getElementById("accionesImagenPreview");
 
-// IMAGEN
-if (imagen) {
-  elImagen.src = imagen;
-  elImagen.style.display = "block";
-  if (btnSeleccionarImagenPreview) btnSeleccionarImagenPreview.classList.add("oculto");
-  if (accionesImagenPreview) accionesImagenPreview.classList.remove("oculto");
-} else {
-  elImagen.removeAttribute("src");
-  elImagen.style.display = "none";
-  if (btnSeleccionarImagenPreview) btnSeleccionarImagenPreview.classList.remove("oculto");
-  if (accionesImagenPreview) accionesImagenPreview.classList.add("oculto");
-}
+      if (imagen) {
+        elImagen.src = imagen;
+        elImagen.style.display = "block";
+        if (btnSeleccionarImagenPreview) btnSeleccionarImagenPreview.classList.add("oculto");
+        if (accionesImagenPreview) accionesImagenPreview.classList.remove("oculto");
+      } else {
+        elImagen.removeAttribute("src");
+        elImagen.style.display = "none";
+        if (btnSeleccionarImagenPreview) btnSeleccionarImagenPreview.classList.remove("oculto");
+        if (accionesImagenPreview) accionesImagenPreview.classList.add("oculto");
+      }
 
       const metaHTML = construirMetaPreview();
       if (metaHTML && metaHTML.trim() !== "") {
@@ -1586,10 +1606,7 @@ if (imagen) {
       }
 
       renderPreviewFranjas();
-
-      if (typeof renderMapaPreviewActividad === "function") {
-        renderMapaPreviewActividad();
-      }
+      renderMapaPreviewActividad();
     }
 
     function destruirMapaPreviewActividad() {
@@ -1937,8 +1954,8 @@ if (imagen) {
         subtitulo_publico: document.getElementById("subtitulo_publico").value.trim(),
         descripcion_corta: document.getElementById("descripcion_corta").value.trim(),
         lugar: document.getElementById("lugar").value.trim(),
-        imagen_url: document.getElementById("imagen_url").value.trim(),
-        imagen_id: document.getElementById("imagen_id").value.trim(),
+        imagen_url: getImagenUrlActualFormulario(),
+        imagen_id: getImagenIdActualFormulario(),
         visible_portal: document.getElementById("visible_portal").value,
         orden_portal: document.getElementById("orden_portal").value,
         usa_franjas: document.getElementById("usa_franjas").value,
@@ -1998,14 +2015,21 @@ if (imagen) {
       const data = await res.json();
 
       if (res.ok && data.ok) {
-        actividadEsBorradorTecnico = false;
-        mostrarMensaje("ok", data.mensaje || "Actividad guardada correctamente.");
-
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
         }
+
+        const avisoBorrado = await procesarImagenesPendientesPostGuardado();
+
+        actividadEsBorradorTecnico = false;
+        mostrarMensaje(
+          avisoBorrado ? "ok" : "ok",
+          avisoBorrado
+            ? `${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
+            : (data.mensaje || "Actividad guardada correctamente.")
+        );
       } else {
         mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
       }
@@ -2064,13 +2088,15 @@ if (imagen) {
         document.getElementById("nombre").value.trim() ||
         document.getElementById("titulo_publico").value.trim() ||
         document.getElementById("descripcion_corta").value.trim() ||
-        franjasCache.length > 0;
+        franjasCache.length > 0 ||
+        getImagenUrlActualFormulario();
 
       if (!id) {
         if (hayCambios) {
           const confirmarSalir = confirm("Hay cambios no guardados. ¿Quieres cancelar y salir?");
           if (!confirmarSalir) return;
         }
+        await limpiarUploadTemporalSiExiste();
         window.location.href = "mis-actividades.html";
         return;
       }
@@ -2093,6 +2119,7 @@ if (imagen) {
           return;
         }
 
+        await limpiarUploadTemporalSiExiste();
         window.location.href = "mis-actividades.html";
         return;
       }
@@ -2100,6 +2127,7 @@ if (imagen) {
       const confirmarSalir = confirm("La actividad no es un borrador técnico. Cancelar solo cerrará esta edición. ¿Continuar?");
       if (!confirmarSalir) return;
 
+      await limpiarUploadTemporalSiExiste();
       window.location.href = "mis-actividades.html";
     }
 
@@ -2116,7 +2144,6 @@ if (imagen) {
       document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
 
       actualizarPreview();
-      renderMapaPreviewActividad();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2233,6 +2260,10 @@ if (imagen) {
         return;
       }
 
+      const currentId = getImagenIdActualFormulario();
+      const currentUrl = getImagenUrlActualFormulario();
+      const currentEsOriginal = !!imagenOriginalId && currentId === imagenOriginalId;
+
       mostrarEstadoSubidaImagen("info", "Preparando subida de imagen...");
 
       try {
@@ -2241,143 +2272,170 @@ if (imagen) {
         mostrarEstadoSubidaImagen("info", "Subiendo imagen...");
         await subirImagenActividad(file, subida.upload_url);
 
-        const imagenUrlInput = document.getElementById("imagen_url");
-        imagenUrlInput.value = subida.image_url;
+        document.getElementById("imagen_url").value = subida.image_url || "";
+        document.getElementById("imagen_id").value = subida.image_id || "";
 
-        const imagenIdInput = document.getElementById("imagen_id");
-        if (imagenIdInput) {
-          imagenIdInput.value = subida.image_id;
+        if (currentId) {
+          if (currentEsOriginal) {
+            marcarImagenParaBorrado(currentId);
+          } else {
+            try {
+              await eliminarImagenCloudflare(currentId);
+            } catch (_) {}
+          }
+        } else if (currentUrl && !currentId) {
+          advertenciaImagenSinId = true;
         }
 
-        if (typeof actualizarPreview === "function") {
-          actualizarPreview();
-        }
+        actualizarPreview();
       } catch (error) {
         mostrarEstadoSubidaImagen("error", error.message || "No se pudo subir la imagen.");
       }
     }
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const ok = await comprobarSesionAdmin();
-  if (!ok) return;
+    async function eliminarImagenActualDesdeEditor() {
+      const currentId = getImagenIdActualFormulario();
+      const currentUrl = getImagenUrlActualFormulario();
+      const currentEsOriginal = !!imagenOriginalId && currentId === imagenOriginalId;
 
-  document.getElementById("app").style.display = "block";
+      if (!currentId && !currentUrl) return;
 
-  document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
-  document.getElementById("formActividad").addEventListener("submit", guardarActividad);
-  document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
-  document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
-  document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
-  document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
-  document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
-
-  const btnSeleccionarImagenPreview = document.getElementById("btnSeleccionarImagenPreview");
-  const inputImagenActividad = document.getElementById("inputImagenActividad");
-  const btnEliminarImagenPreview = document.getElementById("btnEliminarImagenPreview");
-  const btnCambiarImagenPreview = document.getElementById("btnCambiarImagenPreview");
-  const imagenUrlInput = document.getElementById("imagen_url");
-
-  if (btnSeleccionarImagenPreview && inputImagenActividad) {
-    btnSeleccionarImagenPreview.addEventListener("click", () => {
-      inputImagenActividad.click();
-    });
-  }
-
-  if (btnCambiarImagenPreview && inputImagenActividad) {
-    btnCambiarImagenPreview.addEventListener("click", () => {
-      inputImagenActividad.click();
-    });
-  }
-
-  if (inputImagenActividad) {
-    inputImagenActividad.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      await manejarSeleccionImagenActividad(file);
-      inputImagenActividad.value = "";
-    });
-  }
-
-  if (btnEliminarImagenPreview && imagenUrlInput) {
-    btnEliminarImagenPreview.addEventListener("click", () => {
-      imagenUrlInput.value = "";
-
-      const imagenIdInput = document.getElementById("imagen_id");
-      if (imagenIdInput) {
-        imagenIdInput.value = "";
-      }
-
-      if (typeof actualizarPreview === "function") {
-        actualizarPreview();
-      }
-    });
-  }
-
-  [
-    "nombre",
-    "organizador_publico",
-    "tipo",
-    "usa_franjas",
-    "requiere_reserva",
-    "aforo_limitado",
-    "fecha_inicio",
-    "fecha_fin",
-    "es_recurrente",
-    "patron_recurrencia",
-    "visible_portal",
-    "activa",
-    "orden_portal",
-    "provincia",
-    "titulo_publico",
-    "subtitulo_publico",
-    "descripcion_corta",
-    "imagen_url",
-    "usa_enlace_externo",
-    "enlace_externo_url",
-    "enlace_externo_texto",
-    "lugar",
-    "direccion_postal",
-    "latitud",
-    "longitud",
-    "zoom_mapa"
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.addEventListener("input", () => {
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      renderMapaPreviewActividad();
-    });
-
-    el.addEventListener("change", async () => {
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      renderMapaPreviewActividad();
-
-      if (id === "usa_franjas") {
-        if (document.getElementById("usa_franjas").value === "1" && document.getElementById("actividadId").value) {
-          await cargarFranjas();
+      if (currentId) {
+        if (currentEsOriginal) {
+          marcarImagenParaBorrado(currentId);
         } else {
-          franjasCache = [];
-          renderListaFranjas();
-          renderPreviewFranjas();
+          try {
+            await eliminarImagenCloudflare(currentId);
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo eliminar la imagen.");
+            return;
+          }
         }
+      } else if (currentUrl) {
+        advertenciaImagenSinId = true;
+      }
+
+      document.getElementById("imagen_url").value = "";
+      document.getElementById("imagen_id").value = "";
+      actualizarPreview();
+
+      if (currentId && !currentEsOriginal) {
+        mostrarMensaje("ok", "Imagen eliminada.");
+      } else if (currentEsOriginal) {
+        mostrarMensaje("ok", "La imagen se eliminará definitivamente al guardar la actividad.");
+      } else {
+        mostrarMensaje("ok", "La imagen se ha quitado del formulario. Al guardar, dejará de usarse.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      const ok = await comprobarSesionAdmin();
+      if (!ok) return;
+
+      document.getElementById("app").style.display = "block";
+
+      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+      document.getElementById("formActividad").addEventListener("submit", guardarActividad);
+      document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
+      document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
+      document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
+      document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
+      document.getElementById("btnCancelarEdicionFranja").addEventListener("click", limpiarFormularioFranja);
+
+      const btnSeleccionarImagenPreview = document.getElementById("btnSeleccionarImagenPreview");
+      const inputImagenActividad = document.getElementById("inputImagenActividad");
+      const btnEliminarImagenPreview = document.getElementById("btnEliminarImagenPreview");
+      const btnCambiarImagenPreview = document.getElementById("btnCambiarImagenPreview");
+
+      if (btnSeleccionarImagenPreview && inputImagenActividad) {
+        btnSeleccionarImagenPreview.addEventListener("click", () => {
+          inputImagenActividad.click();
+        });
+      }
+
+      if (btnCambiarImagenPreview && inputImagenActividad) {
+        btnCambiarImagenPreview.addEventListener("click", () => {
+          inputImagenActividad.click();
+        });
+      }
+
+      if (inputImagenActividad) {
+        inputImagenActividad.addEventListener("change", async (e) => {
+          const file = e.target.files && e.target.files[0];
+          await manejarSeleccionImagenActividad(file);
+          inputImagenActividad.value = "";
+        });
+      }
+
+      if (btnEliminarImagenPreview) {
+        btnEliminarImagenPreview.addEventListener("click", async () => {
+          await eliminarImagenActualDesdeEditor();
+        });
+      }
+
+      [
+        "nombre",
+        "organizador_publico",
+        "tipo",
+        "usa_franjas",
+        "requiere_reserva",
+        "aforo_limitado",
+        "fecha_inicio",
+        "fecha_fin",
+        "es_recurrente",
+        "patron_recurrencia",
+        "visible_portal",
+        "activa",
+        "orden_portal",
+        "provincia",
+        "titulo_publico",
+        "subtitulo_publico",
+        "descripcion_corta",
+        "imagen_url",
+        "usa_enlace_externo",
+        "enlace_externo_url",
+        "enlace_externo_texto",
+        "lugar",
+        "direccion_postal",
+        "latitud",
+        "longitud",
+        "zoom_mapa"
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        el.addEventListener("input", () => {
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+        });
+
+        el.addEventListener("change", async () => {
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+
+          if (id === "usa_franjas") {
+            if (document.getElementById("usa_franjas").value === "1" && document.getElementById("actividadId").value) {
+              await cargarFranjas();
+            } else {
+              franjasCache = [];
+              renderListaFranjas();
+              renderPreviewFranjas();
+            }
+          }
+        });
+      });
+
+      try {
+        await cargarActividadSiEsEdicion();
+        actualizarVisibilidadFormulario();
+        actualizarPreview();
+        renderListaFranjas();
+        renderPreviewFranjas();
+        mostrarPaso(0);
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
       }
     });
-  });
-
-  try {
-    await cargarActividadSiEsEdicion();
-    actualizarVisibilidadFormulario();
-    actualizarPreview();
-    renderMapaPreviewActividad();
-    renderListaFranjas();
-    renderPreviewFranjas();
-    mostrarPaso(0);
-  } catch (error) {
-    mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
-  }
-});
   </script>
 </body>
 </html>
