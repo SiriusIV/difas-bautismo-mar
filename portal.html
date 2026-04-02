@@ -92,6 +92,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .barra-admin,
@@ -121,6 +122,34 @@
       background: #0b5ed7;
       color: #fff;
       border-color: #0b5ed7;
+    }
+
+    .nav-btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+      flex: 0 0 36px;
+    }
+
+    .nav-btn-icon:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .nav-btn-icon svg {
+      width: 16px;
+      height: 16px;
+      display: block;
     }
 
     .franja-sesion {
@@ -787,8 +816,20 @@
 
           <div id="barraAdmin" class="barra-admin">
             <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
-            <button class="nav-btn" id="btnGestionAdmins" onclick="gestionAdmins()" style="display:none;">Administradores</button>
-            <button class="nav-btn" onclick="logoutActual()">Cerrar sesión</button>
+            <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
+            <button
+              class="nav-btn-icon"
+              type="button"
+              onclick="logoutActual()"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1715,6 +1756,10 @@
 
     function irPanelActividades() {
       location.href = "mis-actividades.html";
+    }
+
+    function irPanelReservas() {
+      location.href = "admin-reservas.html";
     }
 
     function gestionAdmins() {
