@@ -835,7 +835,7 @@
     let resizeObserverMapa = null;
     let marcadorActividad = null;
     let actividadFranjasSolicitada = null;
-   
+    let carruselBloqueadoPorSeleccionHasta = 0;
     let carruselAutoPlay = null;
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
@@ -1076,18 +1076,32 @@ function seleccionarActividad(id) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
-  if (!a) return;
+  const indiceReal = actividadesVisibles.findIndex(x => Number(x.id) === Number(id));
+  if (indiceReal < 0) return;
 
-  actividadSeleccionada = a;
-  carruselAutoIndex = Math.max(
-    actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
-    0
-  );
+  actividadSeleccionada = actividadesVisibles[indiceReal];
+  carruselAutoIndex = indiceReal;
+  carruselBloqueadoPorSeleccionHasta = Date.now() + 3000;
 
-  sessionStorage.setItem("actividad_id_actual", String(a.id));
+  sessionStorage.setItem("actividad_id_actual", String(id));
+
   renderizarActividades();
   renderDetalle();
+
+  requestAnimationFrame(() => {
+    const tarjetas = obtenerTarjetasCarrusel();
+    if (!tarjetas.length) return;
+
+    const usarCarruselInfinito = actividadesVisibles.length >= 4;
+    const indiceObjetivo = usarCarruselInfinito
+      ? actividadesVisibles.length + indiceReal
+      : indiceReal;
+
+    const cardObjetivo = tarjetas[indiceObjetivo];
+    if (cardObjetivo) {
+      colocarWrapEnCardInstantaneo(cardObjetivo);
+    }
+  });
 }
 
     function renderizarFiltroProvincias() {
@@ -1165,6 +1179,8 @@ function programarResetInvisibleCarrusel(indiceReal, totalReales) {
   cancelarResetCarrusel();
 
   carruselResetTimeout = setTimeout(() => {
+    if (Date.now() < carruselBloqueadoPorSeleccionHasta) return;
+
     const tarjetas = obtenerTarjetasCarrusel();
     const cardCentral = tarjetas[totalReales + indiceReal];
     if (cardCentral) {
@@ -1248,18 +1264,18 @@ function renderizarActividades() {
 
   renderDetalle();
 
-  setTimeout(() => {
-    const tarjetas = obtenerTarjetasCarrusel();
-    if (!tarjetas.length) return;
+  if (Date.now() < carruselBloqueadoPorSeleccionHasta) return;
 
-    const cardInicial = usarCarruselInfinito
-      ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
-      : tarjetas[carruselAutoIndex];
+  const tarjetas = obtenerTarjetasCarrusel();
+  if (!tarjetas.length) return;
 
-    if (cardInicial) {
-      colocarWrapEnCardInstantaneo(cardInicial);
-    }
-  }, 50);
+  const cardInicial = usarCarruselInfinito
+    ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
+    : tarjetas[carruselAutoIndex];
+
+  if (cardInicial) {
+    colocarWrapEnCardInstantaneo(cardInicial);
+  }
 }
 
 function destruirMapaActividad() {
@@ -1504,6 +1520,8 @@ function pausarTemporalmenteAutoPlay() {
 }
 
 function moverCarruselAutomaticamente() {
+  if (Date.now() < carruselBloqueadoPorSeleccionHasta) return;
+
   const actividadesVisibles = obtenerActividadesFiltradas();
   const totalReales = actividadesVisibles.length;
 
