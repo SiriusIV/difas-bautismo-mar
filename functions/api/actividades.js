@@ -67,7 +67,6 @@ export async function onRequestGet(context) {
         a.titulo_publico,
         a.subtitulo_publico,
         a.descripcion_corta,
-        a.descripcion_larga,
         a.lugar,
         a.imagen_url,
         a.visible_portal,
@@ -88,7 +87,10 @@ export async function onRequestGet(context) {
         a.enlace_externo_texto,
         COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
         CASE
-          WHEN COALESCE(ad.plazas_disponibles, 0) <= 0 THEN 1
+          WHEN a.requiere_reserva = 1
+               AND a.aforo_limitado = 1
+               AND COALESCE(ad.plazas_disponibles, 0) <= 0
+            THEN 1
           ELSE 0
         END AS completa
       FROM actividades a
