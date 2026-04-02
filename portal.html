@@ -1073,43 +1073,23 @@
       }
     }
 
-function seleccionarActividad(cardElement, id, realIndex) {
+function seleccionarActividad(cardElement, id) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  if (!actividadesVisibles.length) return;
-
-  const indiceReal = Number(realIndex);
-  if (!Number.isInteger(indiceReal) || indiceReal < 0 || indiceReal >= actividadesVisibles.length) {
-    return;
-  }
-
-  const actividad = actividadesVisibles[indiceReal];
-  if (!actividad || Number(actividad.id) !== Number(id)) return;
+  const actividad = actividadesVisibles.find(x => Number(x.id) === Number(id));
+  if (!actividad) return;
 
   actividadSeleccionada = actividad;
-  carruselAutoIndex = indiceReal;
+  carruselAutoIndex = Math.max(
+    actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
+    0
+  );
 
-  sessionStorage.setItem("actividad_id_actual", String(actividadSeleccionada.id));
+  sessionStorage.setItem("actividad_id_actual", String(actividad.id));
 
-  const usarCarruselInfinito = actividadesVisibles.length >= 4;
-  const tarjetas = obtenerTarjetasCarrusel();
-
-  let cardObjetivo = null;
-
-  if (usarCarruselInfinito) {
-    const indiceObjetivo = actividadesVisibles.length + indiceReal;
-    cardObjetivo = tarjetas[indiceObjetivo] || null;
-  } else {
-    cardObjetivo = tarjetas[indiceReal] || cardElement || null;
-  }
-
-  actualizarTarjetaActivaVisual();
-
-  if (cardObjetivo) {
-    colocarWrapEnCard(cardObjetivo, "smooth");
-  }
-
+  marcarCardActivaSeleccionada(cardElement);
+  colocarWrapEnCard(cardElement, "smooth");
   renderDetalle();
 }
 
@@ -1197,7 +1177,13 @@ function colocarWrapEnCardInstantaneo(card) {
   wrap.style.scrollBehavior = anterior || "";
 }
 
-    
+   function marcarCardActivaSeleccionada(cardElement) {
+  const tarjetas = obtenerTarjetasCarrusel();
+  tarjetas.forEach(card => card.classList.remove("activa"));
+  if (cardElement) {
+    cardElement.classList.add("activa");
+  }
+} 
 
     
  function cancelarResetCarrusel() {
@@ -1277,8 +1263,7 @@ function renderizarActividades() {
       <div
         class="card ${activa ? 'activa' : ''}"
         data-actividad-id="${a.id}"
-        data-real-index="${realIndex}"
-        onclick="seleccionarActividad(this, ${a.id}, ${realIndex})"
+        onclick="seleccionarActividad(this, ${a.id})"
       >
         <div class="card-img-wrap">
           <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
@@ -1302,19 +1287,17 @@ function renderizarActividades() {
 
   renderDetalle();
 
-  setTimeout(() => {
-    const tarjetas = obtenerTarjetasCarrusel();
-    if (!tarjetas.length) return;
+  const tarjetas = obtenerTarjetasCarrusel();
+  if (!tarjetas.length) return;
 
-    const indiceObjetivo = usarCarruselInfinito
-      ? actividadesVisibles.length + carruselAutoIndex
-      : carruselAutoIndex;
+  const indiceObjetivo = usarCarruselInfinito
+    ? actividadesVisibles.length + carruselAutoIndex
+    : carruselAutoIndex;
 
-    const cardInicial = tarjetas[indiceObjetivo];
-    if (cardInicial) {
-      colocarWrapEnCardInstantaneo(cardInicial);
-    }
-  }, 50);
+  const cardInicial = tarjetas[indiceObjetivo];
+  if (cardInicial) {
+    colocarWrapEnCardInstantaneo(cardInicial);
+  }
 }
 
 function destruirMapaActividad() {
