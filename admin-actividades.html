@@ -2230,23 +2230,20 @@ if (imagenIdInput) {
         });
       }
 
-      if (btnEliminarImagenPreview && imagenUrlInput) {
-        btnEliminarImagenPreview.addEventListener("click", () => {
-  imagenUrlInput.value = "";
+if (btnEliminarImagenPreview && imagenUrlInput) {
+  btnEliminarImagenPreview.addEventListener("click", () => {
+    imagenUrlInput.value = "";
 
-  const imagenIdInput = document.getElementById("imagen_id");
-  if (imagenIdInput) {
-    imagenIdInput.value = "";
-  }
+    const imagenIdInput = document.getElementById("imagen_id");
+    if (imagenIdInput) {
+      imagenIdInput.value = "";
+    }
 
-  if (typeof actualizarPreview === "function") {
-    actualizarPreview();
-  }
+    if (typeof actualizarPreview === "function") {
+      actualizarPreview();
+    }
+  });
 });
-          if (typeof actualizarPreview === "function") {
-            actualizarPreview();
-          }
-        });
       }
 
       [
