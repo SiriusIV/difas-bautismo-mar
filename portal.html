@@ -1073,20 +1073,43 @@
       }
     }
 
-function seleccionarActividad(id) {
+function seleccionarActividad(cardElement, id, realIndex) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  const indiceReal = actividadesVisibles.findIndex(x => Number(x.id) === Number(id));
-  if (indiceReal < 0) return;
+  if (!actividadesVisibles.length) return;
 
-  actividadSeleccionada = actividadesVisibles[indiceReal];
+  const indiceReal = Number(realIndex);
+  if (!Number.isInteger(indiceReal) || indiceReal < 0 || indiceReal >= actividadesVisibles.length) {
+    return;
+  }
+
+  const actividad = actividadesVisibles[indiceReal];
+  if (!actividad || Number(actividad.id) !== Number(id)) return;
+
+  actividadSeleccionada = actividad;
   carruselAutoIndex = indiceReal;
-  carruselForzarCentradoSeleccion = true;
 
   sessionStorage.setItem("actividad_id_actual", String(actividadSeleccionada.id));
 
-  renderizarActividades();
+  const usarCarruselInfinito = actividadesVisibles.length >= 4;
+  const tarjetas = obtenerTarjetasCarrusel();
+
+  let cardObjetivo = null;
+
+  if (usarCarruselInfinito) {
+    const indiceObjetivo = actividadesVisibles.length + indiceReal;
+    cardObjetivo = tarjetas[indiceObjetivo] || null;
+  } else {
+    cardObjetivo = tarjetas[indiceReal] || cardElement || null;
+  }
+
+  actualizarTarjetaActivaVisual();
+
+  if (cardObjetivo) {
+    colocarWrapEnCard(cardObjetivo, "smooth");
+  }
+
   renderDetalle();
 }
 
@@ -1121,6 +1144,29 @@ function seleccionarActividad(id) {
 
     function obtenerTarjetasCarrusel() {
   return Array.from(document.querySelectorAll("#carruselActividades .card"));
+}
+
+    function actualizarTarjetaActivaVisual() {
+  const tarjetas = obtenerTarjetasCarrusel();
+  tarjetas.forEach(card => card.classList.remove("activa"));
+
+  const actividadesVisibles = obtenerActividadesFiltradas();
+  if (!actividadSeleccionada || !actividadesVisibles.length) return;
+
+  const usarCarruselInfinito = actividadesVisibles.length >= 4;
+  const indiceReal = actividadesVisibles.findIndex(
+    x => Number(x.id) === Number(actividadSeleccionada.id)
+  );
+  if (indiceReal < 0) return;
+
+  const indiceObjetivo = usarCarruselInfinito
+    ? actividadesVisibles.length + indiceReal
+    : indiceReal;
+
+  const cardObjetivo = tarjetas[indiceObjetivo];
+  if (cardObjetivo) {
+    cardObjetivo.classList.add("activa");
+  }
 }
 
 function colocarWrapEnCard(card, comportamiento = "smooth") {
@@ -1204,19 +1250,22 @@ function renderizarActividades() {
   }
 
   const usarCarruselInfinito = actividadesVisibles.length >= 4;
-
   const actividadesRender = usarCarruselInfinito
     ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
     : [...actividadesVisibles];
 
   cont.innerHTML = actividadesRender.map((a, i) => {
+    const realIndex = usarCarruselInfinito
+      ? (i % actividadesVisibles.length)
+      : i;
+
     const activa = usarCarruselInfinito
       ? (
           i >= actividadesVisibles.length &&
           i < actividadesVisibles.length * 2 &&
           actividadSeleccionada &&
           Number(actividadSeleccionada.id) === Number(a.id) &&
-          (i - actividadesVisibles.length) === carruselAutoIndex
+          realIndex === carruselAutoIndex
         )
       : (
           actividadSeleccionada &&
@@ -1225,7 +1274,12 @@ function renderizarActividades() {
         );
 
     return `
-      <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+      <div
+        class="card ${activa ? 'activa' : ''}"
+        data-actividad-id="${a.id}"
+        data-real-index="${realIndex}"
+        onclick="seleccionarActividad(this, ${a.id}, ${realIndex})"
+      >
         <div class="card-img-wrap">
           <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
           ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
@@ -1256,14 +1310,9 @@ function renderizarActividades() {
       ? actividadesVisibles.length + carruselAutoIndex
       : carruselAutoIndex;
 
-    const cardObjetivo = tarjetas[indiceObjetivo];
-    if (!cardObjetivo) return;
-
-    if (carruselForzarCentradoSeleccion) {
-      colocarWrapEnCard(cardObjetivo, "smooth");
-      carruselForzarCentradoSeleccion = false;
-    } else {
-      colocarWrapEnCardInstantaneo(cardObjetivo);
+    const cardInicial = tarjetas[indiceObjetivo];
+    if (cardInicial) {
+      colocarWrapEnCardInstantaneo(cardInicial);
     }
   }, 50);
 }
