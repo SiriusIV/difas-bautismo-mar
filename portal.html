@@ -1076,44 +1076,18 @@ function seleccionarActividad(id) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  const indiceReal = actividadesVisibles.findIndex(x => Number(x.id) === Number(id));
-  if (indiceReal < 0) return;
+  const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
+  if (!a) return;
 
-  actividadSeleccionada = actividadesVisibles[indiceReal];
-  carruselAutoIndex = indiceReal;
+  actividadSeleccionada = a;
+  carruselAutoIndex = Math.max(
+    actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
+    0
+  );
 
-  sessionStorage.setItem("actividad_id_actual", String(id));
-
+  sessionStorage.setItem("actividad_id_actual", String(a.id));
   renderizarActividades();
   renderDetalle();
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const wrap = document.getElementById("carruselWrap");
-      const tarjetas = obtenerTarjetasCarrusel();
-      if (!wrap || !tarjetas.length) return;
-
-      const usarCarruselInfinito = actividadesVisibles.length >= 4;
-      const indiceObjetivo = usarCarruselInfinito
-        ? actividadesVisibles.length + indiceReal
-        : indiceReal;
-
-      const cardObjetivo = tarjetas[indiceObjetivo];
-      if (!cardObjetivo) return;
-
-      const snapAnterior = wrap.style.scrollSnapType;
-      wrap.style.scrollSnapType = "none";
-
-      const targetLeft =
-        cardObjetivo.offsetLeft - ((wrap.clientWidth - cardObjetivo.offsetWidth) / 2);
-
-      wrap.scrollLeft = Math.max(targetLeft, 0);
-
-      setTimeout(() => {
-        wrap.style.scrollSnapType = snapAnterior || "x mandatory";
-      }, 60);
-    });
-  });
 }
 
     function renderizarFiltroProvincias() {
