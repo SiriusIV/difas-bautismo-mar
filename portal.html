@@ -840,6 +840,7 @@
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
     let carruselReanudarTimeout = null;
+    let carruselForzarCentradoSeleccion = false;
     let provinciaSeleccionada = "";
     let carruselResetTimeout = null;
 
@@ -1081,26 +1082,12 @@ function seleccionarActividad(id) {
 
   actividadSeleccionada = actividadesVisibles[indiceReal];
   carruselAutoIndex = indiceReal;
+  carruselForzarCentradoSeleccion = true;
 
   sessionStorage.setItem("actividad_id_actual", String(actividadSeleccionada.id));
 
   renderizarActividades();
   renderDetalle();
-
-  requestAnimationFrame(() => {
-    const tarjetas = obtenerTarjetasCarrusel();
-    if (!tarjetas.length) return;
-
-    const usarCarruselInfinito = actividadesVisibles.length >= 4;
-    const indiceObjetivo = usarCarruselInfinito
-      ? actividadesVisibles.length + carruselAutoIndex
-      : carruselAutoIndex;
-
-    const cardCentral = tarjetas[indiceObjetivo];
-    if (cardCentral) {
-      colocarWrapEnCard(cardCentral, "smooth");
-    }
-  });
 }
 
     function renderizarFiltroProvincias() {
@@ -1265,12 +1252,18 @@ function renderizarActividades() {
     const tarjetas = obtenerTarjetasCarrusel();
     if (!tarjetas.length) return;
 
-    const cardInicial = usarCarruselInfinito
-      ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
-      : tarjetas[carruselAutoIndex];
+    const indiceObjetivo = usarCarruselInfinito
+      ? actividadesVisibles.length + carruselAutoIndex
+      : carruselAutoIndex;
 
-    if (cardInicial) {
-      colocarWrapEnCardInstantaneo(cardInicial);
+    const cardObjetivo = tarjetas[indiceObjetivo];
+    if (!cardObjetivo) return;
+
+    if (carruselForzarCentradoSeleccion) {
+      colocarWrapEnCard(cardObjetivo, "smooth");
+      carruselForzarCentradoSeleccion = false;
+    } else {
+      colocarWrapEnCardInstantaneo(cardObjetivo);
     }
   }, 50);
 }
