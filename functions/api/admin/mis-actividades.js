@@ -29,7 +29,6 @@ export async function onRequestGet(context) {
         titulo_publico,
         subtitulo_publico,
         descripcion_corta,
-        descripcion_larga,
         lugar,
         imagen_url,
         visible_portal,
