@@ -91,11 +91,13 @@ function construirPayload(body, admin_id) {
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
     activa: parsearFlag(body.activa, 1),
-    descripcion: normalizarNullable(body.descripcion),
+
     titulo_publico: normalizarNullable(body.titulo_publico),
     subtitulo_publico: normalizarNullable(body.subtitulo_publico),
+
+    // ÚNICA DESCRIPCIÓN
     descripcion_corta: normalizarNullable(body.descripcion_corta),
-    descripcion_larga: normalizarNullable(body.descripcion_larga),
+
     lugar: normalizarNullable(body.lugar),
     direccion_postal: normalizarNullable(body.direccion_postal),
     latitud: normalizarNullable(body.latitud),
@@ -154,11 +156,9 @@ export async function onRequestPost(context) {
         fecha_inicio,
         fecha_fin,
         activa,
-        descripcion,
         titulo_publico,
         subtitulo_publico,
         descripcion_corta,
-        descripcion_larga,
         lugar,
         direccion_postal,
         latitud,
@@ -180,18 +180,16 @@ export async function onRequestPost(context) {
         enlace_externo_texto,
         borrador_tecnico
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       p.nombre,
       p.tipo,
       p.fecha_inicio,
       p.fecha_fin,
       p.activa,
-      p.descripcion,
       p.titulo_publico,
       p.subtitulo_publico,
       p.descripcion_corta,
-      p.descripcion_larga,
       p.lugar,
       p.direccion_postal,
       p.latitud,
@@ -280,11 +278,9 @@ export async function onRequestPut(context) {
         fecha_inicio = ?,
         fecha_fin = ?,
         activa = ?,
-        descripcion = ?,
         titulo_publico = ?,
         subtitulo_publico = ?,
         descripcion_corta = ?,
-        descripcion_larga = ?,
         lugar = ?,
         direccion_postal = ?,
         latitud = ?,
@@ -312,11 +308,9 @@ export async function onRequestPut(context) {
       p.fecha_inicio,
       p.fecha_fin,
       p.activa,
-      p.descripcion,
       p.titulo_publico,
       p.subtitulo_publico,
       p.descripcion_corta,
-      p.descripcion_larga,
       p.lugar,
       p.direccion_postal,
       p.latitud,
