@@ -95,7 +95,6 @@ function construirPayload(body, admin_id) {
     titulo_publico: normalizarNullable(body.titulo_publico),
     subtitulo_publico: normalizarNullable(body.subtitulo_publico),
 
-    // ÚNICA DESCRIPCIÓN
     descripcion_corta: normalizarNullable(body.descripcion_corta),
 
     lugar: normalizarNullable(body.lugar),
@@ -103,7 +102,10 @@ function construirPayload(body, admin_id) {
     latitud: normalizarNullable(body.latitud),
     longitud: normalizarNullable(body.longitud),
     zoom_mapa: normalizarNullable(body.zoom_mapa),
+
     imagen_url: normalizarNullable(body.imagen_url),
+    imagen_id: normalizarNullable(body.imagen_id),
+
     visible_portal: parsearFlag(body.visible_portal, 1),
     orden_portal: parsearEntero(body.orden_portal, 0),
     organizador_publico: normalizarNullable(body.organizador_publico),
@@ -165,6 +167,7 @@ export async function onRequestPost(context) {
         longitud,
         zoom_mapa,
         imagen_url,
+        imagen_id,
         visible_portal,
         orden_portal,
         organizador_publico,
@@ -180,7 +183,7 @@ export async function onRequestPost(context) {
         enlace_externo_texto,
         borrador_tecnico
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       p.nombre,
       p.tipo,
@@ -196,6 +199,7 @@ export async function onRequestPost(context) {
       p.longitud,
       p.zoom_mapa,
       p.imagen_url,
+      p.imagen_id,
       p.visible_portal,
       p.orden_portal,
       p.organizador_publico,
@@ -287,6 +291,7 @@ export async function onRequestPut(context) {
         longitud = ?,
         zoom_mapa = ?,
         imagen_url = ?,
+        imagen_id = ?,
         visible_portal = ?,
         orden_portal = ?,
         organizador_publico = ?,
@@ -317,6 +322,7 @@ export async function onRequestPut(context) {
       p.longitud,
       p.zoom_mapa,
       p.imagen_url,
+      p.imagen_id,
       p.visible_portal,
       p.orden_portal,
       p.organizador_publico,
