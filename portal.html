@@ -1175,12 +1175,19 @@ function colocarWrapEnCard(card, comportamiento = "smooth") {
   const wrap = document.getElementById("carruselWrap");
   if (!wrap) return;
 
+  const snapAnterior = wrap.style.scrollSnapType;
+  wrap.style.scrollSnapType = "none";
+
   const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
   wrap.scrollTo({
     left: Math.max(targetLeft, 0),
     behavior: comportamiento
   });
+
+  setTimeout(() => {
+    wrap.style.scrollSnapType = snapAnterior || "x mandatory";
+  }, comportamiento === "smooth" ? 450 : 0);
 }
 
 function colocarWrapEnCardInstantaneo(card) {
@@ -1189,12 +1196,19 @@ function colocarWrapEnCardInstantaneo(card) {
   const wrap = document.getElementById("carruselWrap");
   if (!wrap) return;
 
-  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+  const anteriorScrollBehavior = wrap.style.scrollBehavior;
+  const anteriorSnap = wrap.style.scrollSnapType;
 
-  const anterior = wrap.style.scrollBehavior;
   wrap.style.scrollBehavior = "auto";
+  wrap.style.scrollSnapType = "none";
+
+  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
   wrap.scrollLeft = Math.max(targetLeft, 0);
-  wrap.style.scrollBehavior = anterior || "";
+
+  requestAnimationFrame(() => {
+    wrap.style.scrollBehavior = anteriorScrollBehavior || "";
+    wrap.style.scrollSnapType = anteriorSnap || "x mandatory";
+  });
 }
 
    function marcarCardActivaSeleccionada(cardElement) {
