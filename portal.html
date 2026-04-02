@@ -1088,8 +1088,28 @@ function seleccionarActividad(cardElement, id) {
 
   sessionStorage.setItem("actividad_id_actual", String(actividad.id));
 
-  marcarCardActivaSeleccionada(cardElement);
-  colocarWrapEnCard(cardElement, "smooth");
+  const tarjetas = obtenerTarjetasCarrusel();
+  const usarCarruselInfinito = actividadesVisibles.length >= 4;
+
+  let cardObjetivo = null;
+
+  if (usarCarruselInfinito) {
+    const inicioBloqueCentral = actividadesVisibles.length;
+    const finBloqueCentral = actividadesVisibles.length * 2;
+
+    cardObjetivo = tarjetas
+      .slice(inicioBloqueCentral, finBloqueCentral)
+      .find(card => Number(card.dataset.actividadId) === Number(id)) || null;
+  } else {
+    cardObjetivo = cardElement || null;
+  }
+
+  tarjetas.forEach(card => card.classList.remove("activa"));
+  if (cardObjetivo) {
+    cardObjetivo.classList.add("activa");
+    colocarWrapEnCard(cardObjetivo, "smooth");
+  }
+
   renderDetalle();
 }
 
@@ -1241,23 +1261,14 @@ function renderizarActividades() {
     : [...actividadesVisibles];
 
   cont.innerHTML = actividadesRender.map((a, i) => {
-    const realIndex = usarCarruselInfinito
-      ? (i % actividadesVisibles.length)
-      : i;
+    const esBloqueCentral = !usarCarruselInfinito || (
+      i >= actividadesVisibles.length &&
+      i < actividadesVisibles.length * 2
+    );
 
-    const activa = usarCarruselInfinito
-      ? (
-          i >= actividadesVisibles.length &&
-          i < actividadesVisibles.length * 2 &&
-          actividadSeleccionada &&
-          Number(actividadSeleccionada.id) === Number(a.id) &&
-          realIndex === carruselAutoIndex
-        )
-      : (
-          actividadSeleccionada &&
-          Number(actividadSeleccionada.id) === Number(a.id) &&
-          i === carruselAutoIndex
-        );
+    const activa = esBloqueCentral &&
+      actividadSeleccionada &&
+      Number(actividadSeleccionada.id) === Number(a.id);
 
     return `
       <div
@@ -1290,11 +1301,10 @@ function renderizarActividades() {
   const tarjetas = obtenerTarjetasCarrusel();
   if (!tarjetas.length) return;
 
-  const indiceObjetivo = usarCarruselInfinito
-    ? actividadesVisibles.length + carruselAutoIndex
-    : carruselAutoIndex;
+  const cardInicial = usarCarruselInfinito
+    ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
+    : tarjetas[carruselAutoIndex];
 
-  const cardInicial = tarjetas[indiceObjetivo];
   if (cardInicial) {
     colocarWrapEnCardInstantaneo(cardInicial);
   }
