@@ -31,6 +31,7 @@ export async function onRequestGet(context) {
         descripcion_corta,
         lugar,
         imagen_url,
+        imagen_id,
         visible_portal,
         orden_portal,
         organizador_publico,
