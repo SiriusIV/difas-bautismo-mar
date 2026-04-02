@@ -49,6 +49,7 @@ export async function onRequestGet(context) {
         direccion_postal,
         latitud,
         longitud,
+        borrador_tecnico,
         zoom_mapa
       FROM actividades
     `;
