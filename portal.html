@@ -1076,18 +1076,31 @@ function seleccionarActividad(id) {
   pausarTemporalmenteAutoPlay();
 
   const actividadesVisibles = obtenerActividadesFiltradas();
-  const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
-  if (!a) return;
+  const indiceReal = actividadesVisibles.findIndex(x => Number(x.id) === Number(id));
+  if (indiceReal < 0) return;
 
-  actividadSeleccionada = a;
-  carruselAutoIndex = Math.max(
-    actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
-    0
-  );
+  actividadSeleccionada = actividadesVisibles[indiceReal];
+  carruselAutoIndex = indiceReal;
 
-  sessionStorage.setItem("actividad_id_actual", String(a.id));
+  sessionStorage.setItem("actividad_id_actual", String(actividadSeleccionada.id));
+
   renderizarActividades();
   renderDetalle();
+
+  requestAnimationFrame(() => {
+    const tarjetas = obtenerTarjetasCarrusel();
+    if (!tarjetas.length) return;
+
+    const usarCarruselInfinito = actividadesVisibles.length >= 4;
+    const indiceObjetivo = usarCarruselInfinito
+      ? actividadesVisibles.length + carruselAutoIndex
+      : carruselAutoIndex;
+
+    const cardCentral = tarjetas[indiceObjetivo];
+    if (cardCentral) {
+      colocarWrapEnCard(cardCentral, "smooth");
+    }
+  });
 }
 
     function renderizarFiltroProvincias() {
