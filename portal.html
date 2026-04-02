@@ -1126,29 +1126,21 @@ function seleccionarActividad(id) {
 function colocarWrapEnCard(card, comportamiento = "smooth") {
   if (!card) return;
 
-  const wrap = document.getElementById("carruselWrap");
-  if (!wrap) return;
-
-  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
-
-  wrap.scrollTo({
-    left: Math.max(targetLeft, 0),
-    behavior: comportamiento
+  card.scrollIntoView({
+    behavior: comportamiento,
+    block: "nearest",
+    inline: "center"
   });
 }
 
 function colocarWrapEnCardInstantaneo(card) {
   if (!card) return;
 
-  const wrap = document.getElementById("carruselWrap");
-  if (!wrap) return;
-
-  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
-
-  const anterior = wrap.style.scrollBehavior;
-  wrap.style.scrollBehavior = "auto";
-  wrap.scrollLeft = Math.max(targetLeft, 0);
-  wrap.style.scrollBehavior = anterior || "";
+  card.scrollIntoView({
+    behavior: "auto",
+    block: "nearest",
+    inline: "center"
+  });
 }
 
     
