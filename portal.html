@@ -1129,12 +1129,24 @@ function colocarWrapEnCard(card, comportamiento = "smooth") {
   const wrap = document.getElementById("carruselWrap");
   if (!wrap) return;
 
+  const snapAnterior = wrap.style.scrollSnapType;
+  wrap.style.scrollSnapType = "none";
+
   const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
-  wrap.scrollTo({
-    left: Math.max(targetLeft, 0),
-    behavior: comportamiento
-  });
+  if (comportamiento === "smooth") {
+    wrap.scrollTo({
+      left: Math.max(targetLeft, 0),
+      behavior: "smooth"
+    });
+
+    setTimeout(() => {
+      wrap.style.scrollSnapType = snapAnterior || "";
+    }, 450);
+  } else {
+    wrap.scrollLeft = Math.max(targetLeft, 0);
+    wrap.style.scrollSnapType = snapAnterior || "";
+  }
 }
 
 function colocarWrapEnCardInstantaneo(card) {
@@ -1143,14 +1155,20 @@ function colocarWrapEnCardInstantaneo(card) {
   const wrap = document.getElementById("carruselWrap");
   if (!wrap) return;
 
-  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+  const snapAnterior = wrap.style.scrollSnapType;
+  const behaviorAnterior = wrap.style.scrollBehavior;
 
-  const anterior = wrap.style.scrollBehavior;
+  wrap.style.scrollSnapType = "none";
   wrap.style.scrollBehavior = "auto";
-  wrap.scrollLeft = Math.max(targetLeft, 0);
-  wrap.style.scrollBehavior = anterior || "";
-}
 
+  const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+  wrap.scrollLeft = Math.max(targetLeft, 0);
+
+  requestAnimationFrame(() => {
+    wrap.style.scrollBehavior = behaviorAnterior || "";
+    wrap.style.scrollSnapType = snapAnterior || "";
+  });
+}
     
 
     
