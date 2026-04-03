@@ -42,67 +42,80 @@
 
     * { box-sizing: border-box; }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: var(--bg);
       margin: 0;
       color: var(--text);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .cabecera {
       background: #ffffff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      padding: 24px 20px 18px;
-      position: relative;
+      padding: 18px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex: 0 0 auto;
     }
 
     .cabecera-inner {
-      max-width: 1320px;
+      max-width: 1120px;
       margin: 0 auto;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
+      gap: 16px;
     }
 
     .bloque-marca {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 18px;
+      gap: 16px;
       flex-wrap: wrap;
       text-align: left;
+      min-width: 0;
     }
 
     .logo-cabecera {
-      width: 82px;
+      width: 70px;
       height: auto;
       display: block;
+      flex: 0 0 auto;
     }
 
     .titulos-cabecera h1 {
       margin: 0;
-      font-size: 28px;
+      font-size: 24px;
       color: var(--brand);
-      line-height: 1.2;
+      line-height: 1.15;
       font-weight: 600;
     }
 
     .titulos-cabecera h2 {
       margin: 4px 0 0;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: normal;
       color: #4a5a6a;
     }
 
     .acciones-cabecera {
-      position: absolute;
-      right: 20px;
-      top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
     }
 
     .btn-icono {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
@@ -113,6 +126,7 @@
       cursor: pointer;
       transition: all 0.15s ease;
       padding: 0;
+      text-decoration: none;
     }
 
     .btn-icono:hover {
@@ -122,42 +136,21 @@
     }
 
     .btn-icono svg {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
     }
 
-    .barra-acciones {
-      max-width: 1180px;
-      margin: 12px auto 0;
-      padding: 0 16px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .nav-btn {
-      display: inline-block;
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
-      color: #1e2a36;
-      text-decoration: none;
-      font-size: 14px;
-      line-height: 1;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-
-    .nav-btn:hover {
-      background: #f7f9fb;
+    .app-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .contenedor {
-      max-width: 1180px;
+      max-width: 1120px;
       margin: 14px auto 24px;
-      padding: 0 16px;
+      padding: 0 16px 20px;
     }
 
     .mensaje {
@@ -167,6 +160,7 @@
       display: none;
       border: 1px solid transparent;
       line-height: 1.5;
+      font-size: 13px;
     }
 
     .mensaje.error {
@@ -201,8 +195,20 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .contexto-head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .contexto-titulos {
+      min-width: 0;
+    }
+
     .contexto-modo {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--brand);
       margin-bottom: 4px;
@@ -212,6 +218,41 @@
       font-size: 13px;
       color: var(--muted);
       min-height: 16px;
+    }
+
+    .contexto-acciones {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: #f7f9fb;
+    }
+
+    .nav-btn-peligro {
+      background: #fff;
+      color: #9b1c1c;
+      border-color: #efc2c2;
+    }
+
+    .nav-btn-peligro:hover {
+      background: #fdeaea;
     }
 
     .step-pane {
@@ -224,7 +265,7 @@
 
     .step-title {
       margin: 0 0 8px;
-      font-size: 18px;
+      font-size: 17px;
       color: var(--brand);
     }
 
@@ -476,15 +517,15 @@
 
     .detalle-grid-preview {
       display: grid;
-      grid-template-columns: 380px minmax(0, 1fr);
-      gap: 20px;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 16px;
       align-items: start;
     }
 
     .detalle-col-izq-preview {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       align-self: start;
       min-width: 0;
     }
@@ -495,7 +536,7 @@
 
     .detalle-img-preview {
       width: 100%;
-      height: 260px;
+      height: 200px;
       object-fit: cover;
       border-radius: 12px;
       background: #dfe7ef;
@@ -518,8 +559,8 @@
     }
 
     .btn-icono-imagen {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 999px;
       border: 1px solid rgba(18, 58, 99, 0.18);
       background: rgba(255, 255, 255, 0.96);
@@ -542,14 +583,14 @@
     }
 
     .btn-icono-imagen svg {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       display: block;
     }
 
     .btn-imagen-vacia {
       width: 100%;
-      min-height: 260px;
+      min-height: 200px;
       border-radius: 12px;
       border: 1px dashed #c9cfd6;
       background: #f8fafc;
@@ -566,16 +607,16 @@
     .mapa-info-wrap-preview {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .direccion-actividad-preview {
-      font-size: 14px;
+      font-size: 13px;
       color: #2c3e50;
       background: #f4f7fb;
       border: 1px solid #dde4ea;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 7px 9px;
       display: none;
     }
 
@@ -591,8 +632,8 @@
 
     .mapa-wrap-preview {
       width: 100%;
-      height: 260px;
-      min-height: 260px;
+      height: 200px;
+      min-height: 200px;
       border-radius: 12px;
       overflow: hidden;
       background: #dfe7ef;
@@ -601,7 +642,7 @@
 
     #mapaPreviewActividad {
       width: 100%;
-      height: 260px;
+      height: 200px;
     }
 
     .mapa-oculto {
@@ -609,38 +650,38 @@
     }
 
     .detalle-contenido-preview h3 {
-      margin: 0 0 12px;
-      font-size: 28px;
+      margin: 0 0 8px;
+      font-size: 22px;
       color: #123a63;
       line-height: 1.2;
     }
 
     .detalle-subtitulo-preview {
       margin: 0 0 8px;
-      font-size: 16px;
+      font-size: 15px;
       color: #4a5a6a;
     }
 
     .detalle-meta-preview {
-      font-size: 14px;
+      font-size: 13px;
       color: #4d5966;
-      line-height: 1.55;
+      line-height: 1.5;
       margin-bottom: 10px;
     }
 
     .detalle-texto-preview {
-      line-height: 1.5;
+      line-height: 1.45;
       color: #37424d;
       white-space: pre-wrap;
       margin-bottom: 10px;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .detalle-acciones-preview {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .link-organizador {
@@ -654,14 +695,14 @@
     }
 
     .tabla-franjas-preview {
-      font-size: 14px;
+      font-size: 13px;
       display: none;
-      margin-top: 16px;
+      margin-top: 12px;
     }
 
     .tabla-franjas-preview h4 {
-      margin: 0 0 10px;
-      font-size: 18px;
+      margin: 0 0 8px;
+      font-size: 16px;
       color: #123a63;
     }
 
@@ -680,19 +721,20 @@
 
     .tabla-franjas-preview th {
       color: #123a63;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       border-bottom: 1px solid #dde4ea;
-      padding-bottom: 8px;
+      padding-bottom: 7px;
     }
 
     .tabla-franjas-preview td {
       color: #37424d;
+      font-size: 13px;
     }
 
     .tabla-franjas-preview th:nth-child(1),
     .tabla-franjas-preview td:nth-child(1) {
-      min-width: 260px;
+      min-width: 240px;
       padding-right: 18px;
     }
 
@@ -706,28 +748,6 @@
 
     .fila-compacta-config-final {
       grid-template-columns: 180px 180px 140px 160px;
-    }
-
-    @media (max-width: 980px) {
-      .fila-compacta-config-final {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro {
-        grid-template-columns: 1fr;
-      }
-
-      .detalle-grid-preview {
-        grid-template-columns: 1fr;
-      }
-
-      .detalle-img-preview {
-        height: 220px;
-      }
-
-      .mapa-wrap-preview {
-        height: 240px;
-      }
     }
 
     .fila-franja-inline {
@@ -796,7 +816,34 @@
       }
     }
 
+    @media (max-width: 980px) {
+      .fila-compacta-config-final {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro {
+        grid-template-columns: 1fr;
+      }
+
+      .detalle-grid-preview {
+        grid-template-columns: 1fr;
+      }
+
+      .detalle-img-preview,
+      .btn-imagen-vacia,
+      .mapa-wrap-preview,
+      #mapaPreviewActividad {
+        height: 200px;
+        min-height: 200px;
+      }
+    }
+
     @media (max-width: 700px) {
+      .cabecera-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
       .bloque-marca {
         flex-direction: column;
         text-align: center;
@@ -804,14 +851,19 @@
       }
 
       .titulos-cabecera h1 {
-        font-size: 24px;
+        font-size: 22px;
       }
 
       .acciones-cabecera {
-        position: static;
-        display: flex;
         justify-content: center;
-        margin-top: 12px;
+      }
+
+      .contexto-head-top {
+        align-items: flex-start;
+      }
+
+      .contexto-acciones {
+        width: 100%;
       }
     }
   </style>
@@ -826,341 +878,354 @@
           <h2 id="subtituloCabecera">Alta y edición de actividades</h2>
         </div>
       </div>
-    </div>
 
-    <div class="acciones-cabecera">
-      <button type="button" class="btn-icono" id="btnCerrarSesion" title="Cerrar sesión" aria-label="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <div class="barra-acciones">
-    <a class="nav-btn" href="mis-actividades.html">Lista de actividades</a>
-    <a class="nav-btn" href="portal.html">Inicio</a>
-  </div>
-
-  <div class="contenedor" id="app" style="display:none;">
-    <div id="mensajeActividad" class="mensaje"></div>
-
-    <div class="bloque-superior">
-      <div class="contexto-head">
-        <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
-        <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+      <div class="acciones-cabecera">
+        <button type="button" class="btn-icono" id="btnCerrarSesion" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
       </div>
+    </div>
+  </div>
 
-      <form id="formActividad" novalidate>
-        <input type="hidden" id="actividadId" value="">
-        <input type="hidden" id="latitud">
-        <input type="hidden" id="longitud">
-        <input type="hidden" id="zoom_mapa" value="15">
-        <input type="hidden" id="imagen_url">
-        <input type="hidden" id="imagen_id">
+  <div class="app-scroll">
+    <div class="contenedor" id="app" style="display:none;">
+      <div id="mensajeActividad" class="mensaje"></div>
 
-        <section class="step-pane activo" data-step="0">
-          <h3 class="step-title">Configuración</h3>
-          <p class="step-help">Define la actividad y su presentación pública.</p>
-
-          <div class="fila">
-            <div>
-              <label for="nombre">Nombre</label>
-              <input type="text" id="nombre" required>
+      <div class="bloque-superior">
+        <div class="contexto-head">
+          <div class="contexto-head-top">
+            <div class="contexto-titulos">
+              <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
+              <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
             </div>
 
-            <div>
-              <label for="organizador_publico">Organiza</label>
-              <input type="text" id="organizador_publico">
-            </div>
-          </div>
+            <div class="contexto-acciones">
+              <button type="button" class="nav-btn nav-btn-peligro" id="btnEliminarActividad">Eliminar actividad</button>
 
-          <div class="fila">
-            <div>
-              <label for="titulo_publico">Título</label>
-              <input type="text" id="titulo_publico">
-            </div>
-
-            <div>
-              <label for="subtitulo_publico">Programa de actividades</label>
-              <input type="text" id="subtitulo_publico">
+              <a class="btn-icono" href="portal.html" title="Inicio" aria-label="Inicio">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 10.5L12 3l9 7.5"></path>
+                  <path d="M5 9.5V21h14V9.5"></path>
+                  <path d="M9 21v-6h6v6"></path>
+                </svg>
+              </a>
             </div>
           </div>
+        </div>
 
-          <div class="fila-una">
-            <div>
-              <label for="descripcion_corta">Descripción</label>
-              <textarea id="descripcion_corta"></textarea>
-            </div>
-          </div>
+        <form id="formActividad" novalidate>
+          <input type="hidden" id="actividadId" value="">
+          <input type="hidden" id="latitud">
+          <input type="hidden" id="longitud">
+          <input type="hidden" id="zoom_mapa" value="15">
+          <input type="hidden" id="imagen_url">
+          <input type="hidden" id="imagen_id">
 
-          <div class="fila" id="bloqueEnlaceExternoUrl">
-            <div>
-              <label for="enlace_externo_url">URL enlace externo</label>
-              <input type="text" id="enlace_externo_url" placeholder="https://...">
-            </div>
+          <section class="step-pane activo" data-step="0">
+            <h3 class="step-title">Configuración</h3>
+            <p class="step-help">Define la actividad y su presentación pública.</p>
 
-            <div>
-              <label for="enlace_externo_texto">Texto del enlace</label>
-              <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
-            </div>
-          </div>
-
-          <div class="fila-compacta fila-compacta-config-final">
-            <div>
-              <label for="usa_enlace_externo">Mostrar enlace externo</label>
-              <select id="usa_enlace_externo" class="input-mini">
-                <option value="0">No</option>
-                <option value="1">Sí</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="visible_portal">Visible en portal</label>
-              <select id="visible_portal" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="activa">Activa</label>
-              <select id="activa" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="orden_portal">Orden en portal</label>
-              <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
-            </div>
-          </div>
-        </section>
-
-        <section class="step-pane" data-step="1">
-          <h3 class="step-title">Programación</h3>
-          <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
-
-          <div class="fila-compacta fila-compacta-programacion">
-            <div>
-              <label for="tipo">Tipo</label>
-              <select id="tipo" class="input-corto">
-                <option value="TEMPORAL">TEMPORAL</option>
-                <option value="PERMANENTE">PERMANENTE</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="requiere_reserva">Con reserva</label>
-              <select id="requiere_reserva" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="aforo_limitado">Aforo limitado</label>
-              <select id="aforo_limitado" class="input-mini">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="fila fila-fechas-programacion" id="bloqueFechas">
-            <div>
-              <label for="fecha_inicio">Fecha inicio</label>
-              <input type="date" id="fecha_inicio">
-            </div>
-
-            <div>
-              <label for="fecha_fin">Fecha fin</label>
-              <input type="date" id="fecha_fin">
-            </div>
-          </div>
-
-          <div id="avisoConfiguracion" class="aviso-config oculto"></div>
-
-          <div class="subbloque">
-            <h4>Programación</h4>
-            <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
-
-            <div class="fila-compacta">
+            <div class="fila">
               <div>
-                <select id="usa_franjas" class="input-mini">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" required>
+              </div>
+
+              <div>
+                <label for="organizador_publico">Organiza</label>
+                <input type="text" id="organizador_publico">
+              </div>
+            </div>
+
+            <div class="fila">
+              <div>
+                <label for="titulo_publico">Título</label>
+                <input type="text" id="titulo_publico">
+              </div>
+
+              <div>
+                <label for="subtitulo_publico">Programa de actividades</label>
+                <input type="text" id="subtitulo_publico">
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="descripcion_corta">Descripción</label>
+                <textarea id="descripcion_corta"></textarea>
+              </div>
+            </div>
+
+            <div class="fila" id="bloqueEnlaceExternoUrl">
+              <div>
+                <label for="enlace_externo_url">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://...">
+              </div>
+
+              <div>
+                <label for="enlace_externo_texto">Texto del enlace</label>
+                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+              </div>
+            </div>
+
+            <div class="fila-compacta fila-compacta-config-final">
+              <div>
+                <label for="usa_enlace_externo">Mostrar enlace externo</label>
+                <select id="usa_enlace_externo" class="input-mini">
+                  <option value="0">No</option>
+                  <option value="1">Sí</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="visible_portal">Visible en portal</label>
+                <select id="visible_portal" class="input-mini">
                   <option value="1">Sí</option>
                   <option value="0">No</option>
                 </select>
               </div>
 
-              <div id="bloqueSelectorFrecuencia">
-                <select id="es_recurrente" class="input-mini">
-                  <option value="0">Fechas concretas</option>
-                  <option value="1">Patrón de frecuencia</option>
+              <div>
+                <label for="activa">Activa</label>
+                <select id="activa" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="orden_portal">Orden en portal</label>
+                <input type="number" id="orden_portal" value="0" min="0" step="1" class="input-mini">
+              </div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="1">
+            <h3 class="step-title">Programación</h3>
+            <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
+
+            <div class="fila-compacta fila-compacta-programacion">
+              <div>
+                <label for="tipo">Tipo</label>
+                <select id="tipo" class="input-corto">
+                  <option value="TEMPORAL">TEMPORAL</option>
+                  <option value="PERMANENTE">PERMANENTE</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="requiere_reserva">Con reserva</label>
+                <select id="requiere_reserva" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aforo_limitado">Aforo limitado</label>
+                <select id="aforo_limitado" class="input-mini">
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
                 </select>
               </div>
             </div>
 
-            <div class="fila" id="bloquePatronRecurrencia">
+            <div class="fila fila-fechas-programacion" id="bloqueFechas">
               <div>
-                <label for="patron_recurrencia">Descripción del patrón</label>
-                <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+                <label for="fecha_inicio">Fecha inicio</label>
+                <input type="date" id="fecha_inicio">
               </div>
-              <div></div>
+
+              <div>
+                <label for="fecha_fin">Fecha fin</label>
+                <input type="date" id="fecha_fin">
+              </div>
             </div>
 
-            <div class="subbloque oculto" id="bloqueFranjasEditor">
-              <h4>Franjas horarias</h4>
-              <p>Define aquí cada franja. Se irán añadiendo debajo según las guardes.</p>
+            <div id="avisoConfiguracion" class="aviso-config oculto"></div>
 
-              <input type="hidden" id="franjaId" value="">
+            <div class="subbloque">
+              <h4>Programación</h4>
+              <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
 
-              <div class="fila-franja-inline">
-                <div id="fr_bloque_fecha" class="campo-franja-inline">
-                  <label>Fecha</label>
-                  <input type="date" id="fr_fecha">
+              <div class="fila-compacta">
+                <div>
+                  <select id="usa_franjas" class="input-mini">
+                    <option value="1">Sí</option>
+                    <option value="0">No</option>
+                  </select>
                 </div>
 
-                <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-                  <label>Patrón</label>
-                  <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+                <div id="bloqueSelectorFrecuencia">
+                  <select id="es_recurrente" class="input-mini">
+                    <option value="0">Fechas concretas</option>
+                    <option value="1">Patrón de frecuencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="fila" id="bloquePatronRecurrencia">
+                <div>
+                  <label for="patron_recurrencia">Descripción del patrón</label>
+                  <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+                </div>
+                <div></div>
+              </div>
+
+              <div class="subbloque oculto" id="bloqueFranjasEditor">
+                <h4>Franjas horarias</h4>
+                <p>Define aquí cada franja. Se irán añadiendo debajo según las guardes.</p>
+
+                <input type="hidden" id="franjaId" value="">
+
+                <div class="fila-franja-inline">
+                  <div id="fr_bloque_fecha" class="campo-franja-inline">
+                    <label>Fecha</label>
+                    <input type="date" id="fr_fecha">
+                  </div>
+
+                  <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
+                    <label>Patrón</label>
+                    <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+                  </div>
+
+                  <div class="campo-franja-inline">
+                    <label>Inicio</label>
+                    <input type="time" id="fr_hora_inicio">
+                  </div>
+
+                  <div class="campo-franja-inline">
+                    <label>Fin</label>
+                    <input type="time" id="fr_hora_fin">
+                  </div>
+
+                  <div id="fr_bloque_capacidad" class="campo-franja-inline">
+                    <label>Capacidad</label>
+                    <input type="number" id="fr_capacidad" min="1" step="1">
+                  </div>
+
+                  <div class="campo-franja-inline campo-franja-acciones">
+                    <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar</button>
+                    <button type="button" class="btn-icono-guardar" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
-                <div class="campo-franja-inline">
-                  <label>Inicio</label>
-                  <input type="time" id="fr_hora_inicio">
+                <div id="listaFranjasWrap" style="margin-top:12px;">
+                  <div id="listaFranjas" class="sin-franjas">No hay franjas cargadas.</div>
                 </div>
+              </div>
+            </div>
+          </section>
 
-                <div class="campo-franja-inline">
-                  <label>Fin</label>
-                  <input type="time" id="fr_hora_fin">
-                </div>
+          <section class="step-pane" data-step="2">
+            <h3 class="step-title">Localización</h3>
+            <p class="step-help">Define el lugar y ajusta la posición en el mapa.</p>
 
-                <div id="fr_bloque_capacidad" class="campo-franja-inline">
-                  <label>Capacidad</label>
-                  <input type="number" id="fr_capacidad" min="1" step="1">
-                </div>
+            <div class="fila">
+              <div>
+                <label for="lugar">Lugar</label>
+                <input type="text" id="lugar">
+              </div>
 
-                <div class="campo-franja-inline campo-franja-acciones">
-                  <button type="button" class="btn btn-secundario oculto" id="btnCancelarEdicionFranja">Cancelar</button>
-                  <button type="button" class="btn-icono-guardar" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+              <div>
+                <label for="provincia">Localidad</label>
+                <input type="text" id="provincia" placeholder="Ej: Ferrol, Madrid...">
+              </div>
+            </div>
+
+            <div class="fila-una">
+              <div>
+                <label for="direccion_postal">Dirección postal</label>
+                <input type="text" id="direccion_postal">
+              </div>
+            </div>
+          </section>
+
+          <div class="wizard-actions">
+            <div class="wizard-actions-left">
+              <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
+            </div>
+
+            <div class="wizard-actions-right">
+              <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
+              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
+              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="bloque-inferior">
+        <div class="preview-detalle">
+          <div class="detalle-grid-preview">
+            <div class="detalle-col-izq-preview">
+              <div class="contenedor-imagen-preview" id="contenedorImagenPreview">
+                <img id="previewImagen" class="detalle-img-preview" style="display:none;" alt="Imagen de actividad">
+
+                <div class="acciones-imagen-preview oculto" id="accionesImagenPreview">
+                  <button type="button" class="btn-icono-imagen" id="btnCambiarImagenPreview" aria-label="Cambiar imagen" title="Cambiar imagen">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                      <polyline points="7 3 7 8 15 8"></polyline>
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                  </button>
+
+                  <button type="button" class="btn-icono-imagen peligro" id="btnEliminarImagenPreview" aria-label="Eliminar imagen" title="Eliminar imagen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
                     </svg>
                   </button>
                 </div>
+
+                <button type="button" class="btn-imagen-vacia" id="btnSeleccionarImagenPreview">Seleccionar imagen</button>
+                <input type="file" id="inputImagenActividad" accept="image/*" class="oculto">
               </div>
 
-              <div id="listaFranjasWrap" style="margin-top:12px;">
-                <div id="listaFranjas" class="sin-franjas">No hay franjas cargadas.</div>
+              <div class="mapa-info-wrap-preview">
+                <div id="previewDireccion" class="direccion-actividad-preview" style="display:none;"></div>
+
+                <div class="mapa-wrap-preview mapa-oculto" id="mapaWrapPreview">
+                  <div id="mapaPreviewActividad"></div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section class="step-pane" data-step="2">
-          <h3 class="step-title">Localización</h3>
-          <p class="step-help">Define el lugar y ajusta la posición en el mapa.</p>
-
-          <div class="fila">
-            <div>
-              <label for="lugar">Lugar</label>
-              <input type="text" id="lugar">
-            </div>
-
-            <div>
-              <label for="provincia">Localidad</label>
-              <input type="text" id="provincia" placeholder="Ej: Ferrol, Madrid...">
-            </div>
-          </div>
-
-          <div class="fila-una">
-            <div>
-              <label for="direccion_postal">Dirección postal</label>
-              <input type="text" id="direccion_postal">
-            </div>
-          </div>
-        </section>
-
-        <div class="wizard-actions">
-          <div class="wizard-actions-left">
-            <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
-          </div>
-
-          <div class="wizard-actions-right">
-            <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
-            <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
-            <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="bloque-inferior">
-      <div class="preview-detalle">
-        <div class="detalle-grid-preview">
-          <div class="detalle-col-izq-preview">
-            <div class="contenedor-imagen-preview" id="contenedorImagenPreview">
-              <img id="previewImagen" class="detalle-img-preview" style="display:none;" alt="Imagen de actividad">
-
-              <div class="acciones-imagen-preview oculto" id="accionesImagenPreview">
-                <button type="button" class="btn-icono-imagen" id="btnCambiarImagenPreview" aria-label="Cambiar imagen" title="Cambiar imagen">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                </button>
-
-                <button type="button" class="btn-icono-imagen peligro" id="btnEliminarImagenPreview" aria-label="Eliminar imagen" title="Eliminar imagen">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                </button>
+            <div class="detalle-contenido-preview">
+              <h3 id="previewTitulo" style="display:none;"></h3>
+              <div id="previewSubtitulo" class="detalle-subtitulo-preview" style="display:none;"></div>
+              <div id="previewMeta" class="detalle-meta-preview" style="display:none;"></div>
+              <div id="previewTexto" class="detalle-texto-preview" style="display:none;"></div>
+              <div class="detalle-acciones-preview">
+                <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
               </div>
 
-              <button type="button" class="btn-imagen-vacia" id="btnSeleccionarImagenPreview">Seleccionar imagen</button>
-              <input type="file" id="inputImagenActividad" accept="image/*" class="oculto">
-            </div>
-
-            <div class="mapa-info-wrap-preview">
-              <div id="previewDireccion" class="direccion-actividad-preview" style="display:none;"></div>
-
-              <div class="mapa-wrap-preview mapa-oculto" id="mapaWrapPreview">
-                <div id="mapaPreviewActividad"></div>
+              <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview" style="display:none;">
+                <h4>Programación</h4>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Inicio</th>
+                      <th>Fin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablaFranjasPreviewBody"></tbody>
+                </table>
               </div>
-            </div>
-          </div>
-
-          <div class="detalle-contenido-preview">
-            <h3 id="previewTitulo" style="display:none;"></h3>
-            <div id="previewSubtitulo" class="detalle-subtitulo-preview" style="display:none;"></div>
-            <div id="previewMeta" class="detalle-meta-preview" style="display:none;"></div>
-            <div id="previewTexto" class="detalle-texto-preview" style="display:none;"></div>
-            <div class="detalle-acciones-preview">
-              <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
-            </div>
-
-            <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview" style="display:none;">
-              <h4>Programación</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Inicio</th>
-                    <th>Fin</th>
-                  </tr>
-                </thead>
-                <tbody id="tablaFranjasPreviewBody"></tbody>
-              </table>
             </div>
           </div>
         </div>
@@ -1182,6 +1247,8 @@
     let imagenOriginalUrl = "";
     let imagenesPendientesBorrar = new Set();
     let advertenciaImagenSinId = false;
+    let debounceBusquedaLocalidad = null;
+    let ultimaLocalidadBuscada = "";
 
     function normalizarTexto(v) {
       return String(v || "").trim();
@@ -1277,7 +1344,7 @@
       m.className = "mensaje " + tipo;
       m.style.display = "block";
       m.textContent = texto;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function limpiarMensaje() {
@@ -1370,6 +1437,14 @@
       el.value = valor ?? "";
     }
 
+    function actualizarBotonEliminar() {
+      const btn = document.getElementById("btnEliminarActividad");
+      if (!btn) return;
+      const hayId = !!document.getElementById("actividadId").value;
+      btn.disabled = !hayId;
+      btn.title = hayId ? "Eliminar actividad" : "Guarda o abre una actividad existente para poder eliminarla";
+    }
+
     function rellenarFormulario(actividad) {
       setValor("actividadId", actividad.id || "");
       setValor("nombre", actividad.nombre || "");
@@ -1404,7 +1479,7 @@
       document.getElementById("tituloFormulario").textContent = "Editar actividad";
 
       registrarImagenOriginalDesdeFormulario();
-
+      actualizarBotonEliminar();
       actualizarVisibilidadFormulario();
       actualizarPreview();
       renderMapaPreviewActividad();
@@ -1415,6 +1490,7 @@
       actividadEditandoId = getActividadIdURL();
       if (!actividadEditandoId) {
         registrarImagenOriginalDesdeFormulario();
+        actualizarBotonEliminar();
         return;
       }
 
@@ -1684,7 +1760,7 @@
       });
 
       if (!hayCoordenadas && localidad) {
-        buscarProvinciaYcentrar(localidad, true);
+        buscarLocalidadYCentrar(localidad, true);
       }
 
       setTimeout(() => {
@@ -1694,10 +1770,17 @@
       }, 150);
     }
 
-    async function buscarProvinciaYcentrar(nombreProvincia, fijarMarcador = false) {
+    async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
+      const valor = normalizarTexto(nombreLocalidad);
+      if (!valor) return;
+
+      ultimaLocalidadBuscada = valor;
+
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nombreProvincia + ", España")}`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
         const data = await res.json();
+
+        if (valor !== ultimaLocalidadBuscada) return;
 
         if (data && data.length > 0 && mapaPreviewActividad) {
           const lat = parseFloat(data[0].lat);
@@ -1711,10 +1794,21 @@
             document.getElementById("longitud").value = lon.toFixed(6);
             document.getElementById("zoom_mapa").value = 9;
           }
+          actualizarPreview();
         }
       } catch (e) {
-        console.warn("No se pudo centrar por provincia", e);
+        console.warn("No se pudo centrar por localidad", e);
       }
+    }
+
+    function programarRecentradoLocalidad() {
+      const localidad = document.getElementById("provincia").value.trim();
+      if (!localidad) return;
+
+      clearTimeout(debounceBusquedaLocalidad);
+      debounceBusquedaLocalidad = setTimeout(() => {
+        buscarLocalidadYCentrar(localidad, true);
+      }, 450);
     }
 
     function actualizarEstadoFranjasUI() {
@@ -2019,13 +2113,14 @@
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
+          actualizarBotonEliminar();
         }
 
         const avisoBorrado = await procesarImagenesPendientesPostGuardado();
 
         actividadEsBorradorTecnico = false;
         mostrarMensaje(
-          avisoBorrado ? "ok" : "ok",
+          "ok",
           avisoBorrado
             ? `${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
             : (data.mensaje || "Actividad guardada correctamente.")
@@ -2070,6 +2165,7 @@
         document.getElementById("actividadId").value = data.id;
         history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
+        actualizarBotonEliminar();
       }
 
       actividadEsBorradorTecnico = true;
@@ -2097,7 +2193,7 @@
           if (!confirmarSalir) return;
         }
         await limpiarUploadTemporalSiExiste();
-        window.location.href = "mis-actividades.html";
+        window.location.href = "portal.html";
         return;
       }
 
@@ -2120,7 +2216,7 @@
         }
 
         await limpiarUploadTemporalSiExiste();
-        window.location.href = "mis-actividades.html";
+        window.location.href = "portal.html";
         return;
       }
 
@@ -2128,7 +2224,17 @@
       if (!confirmarSalir) return;
 
       await limpiarUploadTemporalSiExiste();
-      window.location.href = "mis-actividades.html";
+      window.location.href = "portal.html";
+    }
+
+    function accionEliminarActividadUI() {
+      const id = document.getElementById("actividadId").value;
+      if (!id) {
+        mostrarMensaje("error", "Debes guardar primero la actividad antes de poder eliminarla.");
+        return;
+      }
+
+      mostrarMensaje("error", "El botón ya está integrado en la interfaz, pero la lógica de validación y borrado definitivo se implementará en el siguiente paso de backend.");
     }
 
     function mostrarPaso(index) {
@@ -2144,7 +2250,7 @@
       document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
 
       actualizarPreview();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function validarPasoActual() {
@@ -2335,6 +2441,7 @@
       document.getElementById("app").style.display = "block";
 
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+      document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
@@ -2407,6 +2514,10 @@
         el.addEventListener("input", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
+
+          if (id === "provincia") {
+            programarRecentradoLocalidad();
+          }
         });
 
         el.addEventListener("change", async () => {
@@ -2422,6 +2533,10 @@
               renderPreviewFranjas();
             }
           }
+
+          if (id === "provincia") {
+            programarRecentradoLocalidad();
+          }
         });
       });
 
@@ -2429,6 +2544,7 @@
         await cargarActividadSiEsEdicion();
         actualizarVisibilidadFormulario();
         actualizarPreview();
+        actualizarBotonEliminar();
         renderListaFranjas();
         renderPreviewFranjas();
         mostrarPaso(0);
