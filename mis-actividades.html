@@ -185,13 +185,20 @@ function fechaES(f){
 }
 
 function estado(a){
- let hoy=new Date().toISOString().slice(0,10);
+ const hoy = new Date().toISOString().slice(0,10);
 
- if(a.fecha_fin && a.fecha_fin<hoy)
+ if (a.tipo === "TEMPORAL" && a.fecha_fin && a.fecha_fin < hoy) {
   return ["FINALIZADA","no"];
+ }
 
- if(a.completa==1)
+ if (
+  Number(a.aforo_limitado || 0) === 1 &&
+  Number(a.usa_franjas || 0) === 1 &&
+  Number(a.plazas_totales || 0) > 0 &&
+  Number(a.plazas_disponibles || 0) <= 0
+ ) {
   return ["COMPLETO","warn"];
+ }
 
  return ["DISPONIBLE","info"];
 }
@@ -209,7 +216,12 @@ function pintar(){
 <td>${a.subtitulo_publico||"-"}</td>
 <td>${fechaES(a.fecha_inicio)}</td>
 <td>${fechaES(a.fecha_fin)}</td>
-<td><span class="badge ${e[1]}">${e[0]}</span></td>
+<td>
+  <span class="badge ${e[1]}">${e[0]}</span>
+  <div style="font-size:11px;color:#666;">
+    ${a.plazas_disponibles}/${a.plazas_totales}
+  </div>
+</td>
 <td>${a.activa?"Sí":"No"}</td>
 <td>${a.visible_portal?"Sí":"No"}</td>
 </tr>`
