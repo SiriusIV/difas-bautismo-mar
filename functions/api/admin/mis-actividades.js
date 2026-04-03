@@ -20,39 +20,60 @@ export async function onRequestGet(context) {
     const rol = await getRolUsuario(env, session.usuario_id);
 
     let sql = `
-      SELECT
-        id,
-        nombre,
-        tipo,
-        fecha_inicio,
-        fecha_fin,
-        titulo_publico,
-        subtitulo_publico,
-        descripcion_corta,
-        lugar,
-        imagen_url,
-        imagen_id,
-        visible_portal,
-        orden_portal,
-        organizador_publico,
-        activa,
-        admin_id,
-        usa_franjas,
-        requiere_reserva,
-        aforo_limitado,
-        provincia,
-        es_recurrente,
-        patron_recurrencia,
-        usa_enlace_externo,
-        enlace_externo_url,
-        enlace_externo_texto,
-        direccion_postal,
-        latitud,
-        longitud,
-        borrador_tecnico,
-        zoom_mapa
-      FROM actividades
-    `;
+SELECT
+  a.*,
+
+  /* 🔹 plazas totales */
+  (
+    SELECT COALESCE(SUM(f.capacidad), 0)
+    FROM franjas f
+    WHERE f.actividad_id = a.id
+  ) AS plazas_totales,
+
+  /* 🔹 plazas ocupadas reales */
+  (
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN r.prereserva_expira_en IS NOT NULL
+             AND datetime('now') <= r.prereserva_expira_en
+        THEN r.plazas_prereservadas
+        ELSE (
+          SELECT COUNT(*)
+          FROM visitantes v
+          WHERE v.reserva_id = r.id
+        )
+      END
+    ), 0)
+    FROM reservas r
+    WHERE r.actividad_id = a.id
+      AND r.estado IN ('PENDIENTE','CONFIRMADA')
+  ) AS plazas_ocupadas,
+
+  /* 🔹 plazas disponibles */
+  (
+    (
+      SELECT COALESCE(SUM(f.capacidad), 0)
+      FROM franjas f
+      WHERE f.actividad_id = a.id
+    ) -
+    (
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN r.prereserva_expira_en IS NOT NULL
+               AND datetime('now') <= r.prereserva_expira_en
+          THEN r.plazas_prereservadas
+          ELSE (
+            SELECT COUNT(*)
+            FROM visitantes v
+            WHERE v.reserva_id = r.id
+          )
+        END
+      ), 0)
+      FROM reservas r
+      WHERE r.actividad_id = a.id
+        AND r.estado IN ('PENDIENTE','CONFIRMADA')
+    )
+  ) AS plazas_disponibles
     const binds = [];
 
     if (rol !== "SUPERADMIN") {
