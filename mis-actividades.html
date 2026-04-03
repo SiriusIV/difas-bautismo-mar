@@ -5,80 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Actividades</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 0;
-      color: #222;
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --border: #dde4ea;
+      --text: #222;
+      --muted: #5f6d7a;
+      --brand: #123a63;
+      --primary: #0b5ed7;
+      --primary-dark: #094db1;
+      --ok-bg: #198754;
+      --no-bg: #6c757d;
     }
 
-    .contenedor {
-      max-width: 1200px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      margin: 0;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 14px;
     }
 
     .cabecera {
-      position: relative;
-      min-height: 140px;
-      margin-bottom: 24px;
-      border-bottom: 1px solid #d9e0e7;
-      padding-bottom: 18px;
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex: 0 0 auto;
     }
 
-    .logo {
-      position: absolute;
-      left: 0;
-      top: 0;
-      max-width: 110px;
+    .cabecera-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 18px;
+    }
+
+    .logo-cabecera {
+      width: 74px;
       height: auto;
+      display: block;
+      flex: 0 0 auto;
     }
 
-    .cabecera-centro {
-      text-align: center;
-      padding: 0 180px;
+    .titulos-cabecera {
+      min-width: 0;
     }
 
-    h1 {
+    .titulos-cabecera h1 {
       margin: 0;
-      font-size: 34px;
+      font-size: 23px;
+      color: var(--brand);
+      line-height: 1.15;
+      font-weight: 600;
     }
 
-    h2 {
-      margin: 10px 0 0;
-      font-size: 18px;
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
       font-weight: normal;
-      color: #444;
+      color: #4a5a6a;
     }
 
-    .cabecera-acciones {
-      position: absolute;
-      right: 0;
-      top: 0;
+    .app-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .contenedor {
+      max-width: 1120px;
+      margin: 14px auto 22px;
+      padding: 0 16px 20px;
+    }
+
+    .panel-principal {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 14px;
+    }
+
+    .cabecera-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #d9e0e7;
+      text-align: center;
+    }
+
+    .cabecera-panel h1 {
+      margin: 0;
+      font-size: 21px;
+      color: #111827;
+    }
+
+    .cabecera-panel h2 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: normal;
+      color: #4b5563;
     }
 
     .nav-centro {
-      margin-top: 18px;
       display: inline-flex;
       gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
+      margin-top: 2px;
     }
 
     .nav-btn {
       display: inline-block;
-      padding: 8px 16px;
+      padding: 8px 15px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
       color: #1e2a36;
       text-decoration: none;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -89,9 +152,55 @@
     }
 
     .nav-btn.activo {
-      background: #0b5ed7;
+      background: var(--primary);
       color: #fff;
-      border-color: #0b5ed7;
+      border-color: var(--primary);
+    }
+
+    .mensaje {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: none;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .panel-titulo {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brand);
+      margin: 0 0 12px;
+    }
+
+    .barra-acciones {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
 
     .btn-icono {
@@ -111,7 +220,7 @@
 
     .btn-icono:hover {
       background: #f7f9fb;
-      color: #0b5ed7;
+      color: var(--primary);
       border-color: #9fb2c7;
     }
 
@@ -127,59 +236,22 @@
       height: 18px;
     }
 
-    .panel {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 18px;
-      margin-bottom: 20px;
-    }
-
-    .barra-acciones {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .mensaje {
-      margin-bottom: 16px;
-      padding: 12px;
-      border-radius: 6px;
-      display: none;
-    }
-
-    .mensaje.error {
-      display: block;
-      background: #fdeaea;
-      color: #9b1c1c;
-      border: 1px solid #f5c2c2;
-    }
-
-    .mensaje.ok {
-      display: block;
-      background: #eaf7ea;
-      color: #146c2e;
-      border: 1px solid #b9e0c0;
-    }
-
     .tabla-wrap {
       overflow-x: auto;
     }
 
     table {
       width: 100%;
-      min-width: 900px;
+      min-width: 980px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
+      font-size: 13px;
     }
 
     th, td {
       border-bottom: 1px solid #dde4ea;
-      padding: 10px 8px;
+      padding: 9px 8px;
       text-align: left;
       vertical-align: middle;
       line-height: 1.3;
@@ -189,31 +261,36 @@
       background: #eef4ff;
       color: #1d4f91;
       font-weight: bold;
+      font-size: 13px;
     }
 
     th.sel-col, td.sel-col {
-      width: 40px;
+      width: 44px;
       text-align: center;
     }
 
     th.nombre-col, td.nombre-col {
-      width: 28%;
+      width: 26%;
     }
 
     th.tipo-col, td.tipo-col {
       width: 14%;
     }
 
-    th.fechas-col, td.fechas-col {
-      width: 24%;
+    th.inicio-col, td.inicio-col {
+      width: 16%;
+    }
+
+    th.fin-col, td.fin-col {
+      width: 16%;
     }
 
     th.estado-col, td.estado-col {
-      width: 17%;
+      width: 12%;
     }
 
     th.visible-col, td.visible-col {
-      width: 17%;
+      width: 12%;
     }
 
     .badge {
@@ -226,8 +303,8 @@
       white-space: nowrap;
     }
 
-    .badge.ok { background: #198754; }
-    .badge.no { background: #6c757d; }
+    .badge.ok { background: var(--ok-bg); }
+    .badge.no { background: var(--no-bg); }
 
     .fila-seleccionada {
       background: #f2f7ff;
@@ -237,97 +314,111 @@
       color: #6b7280;
     }
 
-    @media (max-width: 1000px) {
-      .cabecera-centro {
-        padding: 120px 0 0 0;
+    @media (max-width: 900px) {
+      .cabecera-inner {
+        gap: 14px;
       }
 
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 12px auto;
+      .logo-cabecera {
+        width: 68px;
       }
 
-      .cabecera-acciones {
-        position: static;
-        display: flex;
+      .titulos-cabecera h1 {
+        font-size: 21px;
+      }
+
+      .cabecera-panel h1 {
+        font-size: 19px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .cabecera-inner {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .panel-principal {
+        padding: 12px;
+      }
+
+      .barra-acciones {
         justify-content: center;
-        margin-top: 12px;
-      }
-
-      .cabecera {
-        min-height: auto;
       }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor">
-    <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
+  <div class="cabecera">
+    <div class="cabecera-inner">
+      <img src="logo.png" alt="Logo" class="logo-cabecera">
 
-      <div class="cabecera-centro">
-        <h1 id="tituloPagina">Actividades</h1>
-        <h2 id="subtituloPagina">Administrador</h2>
-
-        <div class="nav-centro">
-          <button type="button" class="nav-btn activo" id="btnNuevaTexto">Nueva</button>
-          <button type="button" class="nav-btn" id="btnPortalTexto">Portal</button>
-        </div>
-      </div>
-
-      <div class="cabecera-acciones">
-        <button type="button" class="btn-icono" id="btnSalir" title="Cerrar sesión" aria-label="Cerrar sesión">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-        </button>
+      <div class="titulos-cabecera">
+        <h1 id="tituloCabecera">Actividades</h1>
+        <h2 id="subtituloCabecera">Administrador</h2>
       </div>
     </div>
+  </div>
 
-    <div id="mensaje" class="mensaje"></div>
+  <div class="app-scroll">
+    <div class="contenedor">
+      <div class="panel-principal">
+        <div class="cabecera-panel">
+          <h1 id="tituloPagina">Actividades</h1>
+          <h2 id="subtituloPagina">Administrador</h2>
 
-    <div class="panel">
-      <div class="barra-acciones">
-        <button type="button" class="btn-icono" id="btnEditar" title="Editar actividad" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-          </svg>
-        </button>
+          <div class="nav-centro">
+            <button type="button" class="nav-btn activo" id="btnNuevaTexto">Nueva</button>
+            <button type="button" class="nav-btn" id="btnPortalTexto">Portal</button>
+          </div>
+        </div>
 
-        <button type="button" class="btn-icono" id="btnFranjas" title="Franjas" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-        </button>
+        <div id="mensaje" class="mensaje"></div>
 
-        <button type="button" class="btn-icono" id="btnReservas" title="Reservas" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </button>
-      </div>
+        <div class="panel">
+          <div class="panel-titulo" id="tituloListado">Listado de actividades</div>
 
-      <div class="tabla-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="sel-col"></th>
-              <th class="nombre-col">Nombre</th>
-              <th class="tipo-col">Tipo</th>
-              <th class="fechas-col">Fechas</th>
-              <th class="estado-col">Activa</th>
-              <th class="visible-col">Visible</th>
-            </tr>
-          </thead>
-          <tbody id="tabla"></tbody>
-        </table>
+          <div class="barra-acciones">
+            <button type="button" class="btn-icono" id="btnEditar" title="Editar actividad" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+              </svg>
+            </button>
+
+            <button type="button" class="btn-icono" id="btnFranjas" title="Calendario" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </button>
+
+            <button type="button" class="btn-icono" id="btnReservas" title="Reservas" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="tabla-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sel-col"></th>
+                  <th class="nombre-col">Nombre</th>
+                  <th class="tipo-col">Tipo</th>
+                  <th class="inicio-col">Comienza</th>
+                  <th class="fin-col">Finaliza</th>
+                  <th class="estado-col">Activa</th>
+                  <th class="visible-col">Visible</th>
+                </tr>
+              </thead>
+              <tbody id="tabla"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -368,7 +459,7 @@
       const tbody = document.getElementById("tabla");
 
       if (!actividadesCache.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay actividades.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay actividades.</td></tr>`;
         actividadSeleccionada = null;
         actualizarBotones();
         return;
@@ -386,7 +477,8 @@
           </td>
           <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
           <td class="tipo-col">${a.tipo || ""}</td>
-          <td class="fechas-col">${a.tipo === "TEMPORAL" ? `${a.fecha_inicio || "-"} → ${a.fecha_fin || "-"}` : "-"}</td>
+          <td class="inicio-col">${a.tipo === "TEMPORAL" ? (a.fecha_inicio || "-") : "-"}</td>
+          <td class="fin-col">${a.tipo === "TEMPORAL" ? (a.fecha_fin || "-") : "-"}</td>
           <td class="estado-col">
             <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
               ${Number(a.activa || 0) === 1 ? "Sí" : "No"}
@@ -419,9 +511,16 @@
       }
 
       usuarioSesion = data.user;
+
+      const nombreAdmin = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
+
       document.title = "Actividades";
+      document.getElementById("tituloCabecera").textContent = "Actividades";
+      document.getElementById("subtituloCabecera").textContent = nombreAdmin;
       document.getElementById("tituloPagina").textContent = "Actividades";
-      document.getElementById("subtituloPagina").textContent = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
+      document.getElementById("subtituloPagina").textContent = nombreAdmin;
+      document.getElementById("tituloListado").textContent = `Listado de actividades de ${nombreAdmin}`;
+
       return true;
     }
 
@@ -455,7 +554,7 @@
 
     function franjas() {
       if (!actividadSeleccionada) return;
-      location.href = "admin-franjas.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
+      location.href = "admin-calendario.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
     }
 
     function reservas() {
@@ -463,19 +562,8 @@
       location.href = "admin-reservas.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
     }
 
-    async function salir() {
-      try {
-        await fetch("/api/usuario/logout", {
-          method: "POST",
-          credentials: "same-origin"
-        });
-      } catch (_) {}
-      location.href = "portal.html";
-    }
-
     document.getElementById("btnNuevaTexto").addEventListener("click", nueva);
     document.getElementById("btnPortalTexto").addEventListener("click", portal);
-    document.getElementById("btnSalir").addEventListener("click", salir);
     document.getElementById("btnEditar").addEventListener("click", editar);
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
