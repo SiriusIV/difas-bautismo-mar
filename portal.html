@@ -434,38 +434,76 @@
       display: none;
     }
 
-    .detalle-contenido h3 {
-      margin: 0 0 6px;
-      font-size: 21px;
-      color: #123a63;
-    }
+    .detalle-contenido {
+  position: relative;
+  min-width: 0;
+}
 
-    .detalle-subtitulo {
-      margin: 0 0 8px;
-      font-size: 15px;
-      color: #4a5a6a;
-    }
+.detalle-acciones {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 5;
+}
 
-    .detalle-meta {
-      font-size: 13px;
-      color: #4d5966;
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
+.detalle-accion-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #bfc9d4;
+  background: #fff;
+  color: #5b6b7c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex: 0 0 36px;
+}
 
-    .detalle-texto {
-      line-height: 1.45;
-      color: #37424d;
-      white-space: pre-wrap;
-      margin-bottom: 12px;
-      font-size: 13px;
-    }
+.detalle-accion-icon:hover {
+  background: #f7f9fb;
+  color: #0b5ed7;
+  border-color: #9fb2c7;
+}
 
-    .detalle-acciones {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+.detalle-accion-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.detalle-contenido h3 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  color: #123a63;
+  padding-right: 92px;
+}
+
+.detalle-subtitulo {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #4a5a6a;
+}
+
+.detalle-meta {
+  font-size: 13px;
+  color: #4d5966;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.detalle-texto {
+  line-height: 1.45;
+  color: #37424d;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
 
     .btn {
       border: none;
@@ -879,11 +917,24 @@
             <div id="detalleTexto" class="detalle-texto"></div>
 
             <div class="detalle-acciones">
-              <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
-              <button id="btnEditarActividad" class="btn btn-admin" style="display:none;">Editar actividad</button>
-              <button id="btnVerReservasActividad" class="btn btn-admin-secundario" style="display:none;">Ver reservas</button>
-              <button id="btnEnlaceExterno" class="btn" style="display:none;" type="button">Más información</button>
-            </div>
+  <button id="btnEditarActividad" class="detalle-accion-icon" style="display:none;" type="button" title="Editar actividad" aria-label="Editar actividad">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+    </svg>
+  </button>
+
+  <button id="btnVerReservasActividad" class="detalle-accion-icon" style="display:none;" type="button" title="Ver reservas" aria-label="Ver reservas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </button>
+</div>
+
+<div class="detalle-acciones" style="position:static; margin-top:8px;">
+  <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
+  <button id="btnEnlaceExterno" class="btn" style="display:none;" type="button">Más información</button>
+</div>
 
             <div id="tablaFranjasWrap" class="tabla-franjas">
               <h4>Programación</h4>
@@ -1336,7 +1387,7 @@
           <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
             <div class="card-img-wrap">
               <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
             </div>
             <div class="card-body">
               <h3>${a.titulo_publico || a.nombre}</h3>
@@ -1399,73 +1450,70 @@
       return markerIconDefault;
     }
     
-    function renderMapaActividad(a) {
-      const mapaWrap = document.getElementById("mapaWrap");
-      const mapaDiv = document.getElementById("mapaActividad");
+function renderMapaActividad(a) {
+  const mapaWrap = document.getElementById("mapaWrap");
+  const mapaDiv = document.getElementById("mapaActividad");
 
-      if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
-        mapaWrap.classList.add("mapa-oculto");
-        destruirMapaActividad();
-        return;
-      }
+  if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
 
-      const lat = Number(a.latitud);
-      const lng = Number(a.longitud);
-      const zoom = Number(a.zoom_mapa || 15);
+  const lat = Number(a.latitud);
+  const lng = Number(a.longitud);
+  const zoom = Number(a.zoom_mapa || 15);
 
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        mapaWrap.classList.add("mapa-oculto");
-        destruirMapaActividad();
-        return;
-      }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
 
-      mapaWrap.classList.remove("mapa-oculto");
-      destruirMapaActividad();
+  mapaWrap.classList.remove("mapa-oculto");
+  destruirMapaActividad();
 
-      mapaDiv.innerHTML = "";
-      mapaDiv.style.width = "100%";
-      mapaDiv.style.height = "200px";
+  mapaDiv.innerHTML = "";
+  mapaDiv.style.width = "100%";
+  mapaDiv.style.height = "200px";
 
-      mapaActividad = L.map(mapaDiv, {
-        center: [lat, lng],
-        zoom: zoom,
-        zoomControl: true
-      });
+  mapaActividad = L.map(mapaDiv, {
+    center: [lat, lng],
+    zoom: zoom,
+    zoomControl: true
+  });
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(mapaActividad);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(mapaActividad);
 
-      const titulo = a.titulo_publico || a.nombre || "Actividad";
-      const lugar = a.lugar || "";
+  const lugar = a.lugar || "Ubicación";
 
-      marcadorActividad = L.marker([lat, lng], {
-        icon: obtenerIconoMarcadorLeaflet()
-      }).addTo(mapaActividad);
+  marcadorActividad = L.marker([lat, lng], {
+    icon: obtenerIconoMarcadorLeaflet()
+  }).addTo(mapaActividad);
 
-      marcadorActividad.bindPopup(
-        `<strong>${titulo}</strong>${lugar ? `<br>${lugar}` : ""}`
-      );
+  marcadorActividad.bindPopup(lugar);
 
-      const refrescarMapa = () => {
-        if (!mapaActividad) return;
-        mapaActividad.invalidateSize(true);
-        mapaActividad.setView([lat, lng], zoom, { animate: false });
-        marcadorActividad.openPopup();
-      };
+  const refrescarMapa = () => {
+    if (!mapaActividad) return;
+    mapaActividad.invalidateSize(false);
+    marcadorActividad.openPopup();
+  };
 
-      setTimeout(refrescarMapa, 50);
-      setTimeout(refrescarMapa, 200);
-      setTimeout(refrescarMapa, 500);
+  requestAnimationFrame(() => {
+    refrescarMapa();
+  });
 
-      if ("ResizeObserver" in window) {
-        resizeObserverMapa = new ResizeObserver(() => {
-          refrescarMapa();
-        });
-        resizeObserverMapa.observe(mapaWrap);
-      }
-    }
+  if ("ResizeObserver" in window) {
+    resizeObserverMapa = new ResizeObserver(() => {
+      if (!mapaActividad) return;
+      mapaActividad.invalidateSize(false);
+    });
+    resizeObserverMapa.observe(mapaWrap);
+  }
+}
 
     function renderDetalle() {
       const a = actividadSeleccionada;
@@ -1515,10 +1563,10 @@
 
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
-      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
-        textoDetalle += (textoDetalle ? "\n\n" : "") +
-          "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
-      }
+if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+  textoDetalle += (textoDetalle ? "\n\n" : "") +
+    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
+}
 
       document.getElementById("detalleTexto").textContent = textoDetalle;
 
@@ -1537,13 +1585,13 @@
       btnEditar.style.display = esAdmin() ? "inline-block" : "none";
       btnReservas.style.display = esAdmin() ? "inline-block" : "none";
 
-      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa || 0) === 1) {
-        btnSolicitar.disabled = true;
-        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-      } else {
-        btnSolicitar.disabled = false;
-        btnSolicitar.title = "";
-      }
+if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+  btnSolicitar.disabled = true;
+  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+} else {
+  btnSolicitar.disabled = false;
+  btnSolicitar.title = "";
+}
 
       if (tieneEnlaceExterno) {
         btnEnlaceExterno.style.display = "inline-block";
@@ -1705,7 +1753,7 @@
 
     function solicitarActividadActual() {
       if (!actividadSeleccionada) return;
-      if (Number(actividadSeleccionada.aforo_limitado || 0) === 1 && Number(actividadSeleccionada.completa || 0) === 1) return;
+      if (Number(actividadSeleccionada.aforo_limitado || 0) === 1 && Number(actividadSeleccionada.completa_calculada || 0) === 1) return;
       location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 
