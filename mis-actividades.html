@@ -16,6 +16,8 @@
       --primary-dark: #094db1;
       --ok-bg: #198754;
       --no-bg: #6c757d;
+      --warn-bg: #d97706;
+      --info-bg: #0b5ed7;
     }
 
     * { box-sizing: border-box; }
@@ -105,37 +107,30 @@
       padding: 14px;
     }
 
-    .cabecera-panel {
+    .barra-superior {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
       padding-bottom: 12px;
       margin-bottom: 14px;
       border-bottom: 1px solid #d9e0e7;
-      text-align: center;
     }
 
-    .cabecera-panel h1 {
-      margin: 0;
-      font-size: 21px;
-      color: #111827;
+    .barra-superior-izq {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--brand);
+      min-width: 0;
     }
 
-    .cabecera-panel h2 {
-      margin: 0;
-      font-size: 13px;
-      font-weight: normal;
-      color: #4b5563;
-    }
-
-    .nav-centro {
-      display: inline-flex;
+    .barra-superior-der {
+      display: flex;
+      align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      margin-top: 2px;
+      margin-left: auto;
     }
 
     .nav-btn {
@@ -274,7 +269,7 @@
 
     table {
       width: 100%;
-      min-width: 1020px;
+      min-width: 1120px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
@@ -302,31 +297,35 @@
     }
 
     th.nombre-col, td.nombre-col {
-      width: 24%;
+      width: 22%;
     }
 
     th.tipo-col, td.tipo-col {
-      width: 14%;
+      width: 13%;
     }
 
     th.programa-col, td.programa-col {
-      width: 20%;
+      width: 18%;
     }
 
     th.inicio-col, td.inicio-col {
-      width: 12%;
+      width: 11%;
     }
 
     th.fin-col, td.fin-col {
-      width: 12%;
+      width: 11%;
     }
 
     th.estado-col, td.estado-col {
-      width: 9%;
+      width: 12%;
+    }
+
+    th.activa-col, td.activa-col {
+      width: 6.5%;
     }
 
     th.visible-col, td.visible-col {
-      width: 9%;
+      width: 6.5%;
     }
 
     .badge {
@@ -341,6 +340,8 @@
 
     .badge.ok { background: var(--ok-bg); }
     .badge.no { background: var(--no-bg); }
+    .badge.warn { background: var(--warn-bg); }
+    .badge.info { background: var(--info-bg); }
 
     .fila-seleccionada {
       background: #f2f7ff;
@@ -357,10 +358,6 @@
 
       .titulos-cabecera h1 {
         font-size: 21px;
-      }
-
-      .cabecera-panel h1 {
-        font-size: 19px;
       }
     }
 
@@ -389,6 +386,14 @@
       .panel-topbar select {
         min-width: 180px;
       }
+
+      .barra-superior {
+        align-items: stretch;
+      }
+
+      .barra-superior-der {
+        margin-left: 0;
+      }
     }
   </style>
 </head>
@@ -407,13 +412,13 @@
   <div class="app-scroll">
     <div class="contenedor">
       <div class="panel-principal">
-        <div class="cabecera-panel">
-          <h1 id="tituloPagina">Actividades</h1>
-          <h2 id="subtituloPagina">Administrador</h2>
+        <div class="barra-superior">
+          <div class="barra-superior-izq" id="tituloListado">Listado de actividades</div>
 
-          <div class="nav-centro">
+          <div class="barra-superior-der">
             <button type="button" class="nav-btn activo" id="btnNuevaTexto">Nueva actividad</button>
-            <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal" id="btnPortalCasa">
+
+            <a class="btn-icono" href="portal.html" title="Inicio" aria-label="Inicio" id="btnPortalCasa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 10.5L12 3l9 7.5"></path>
                 <path d="M5 9.5V21h14V9.5"></path>
@@ -469,7 +474,8 @@
                   <th class="programa-col">Programa</th>
                   <th class="inicio-col">Comienza</th>
                   <th class="fin-col">Finaliza</th>
-                  <th class="estado-col">Activa</th>
+                  <th class="estado-col">Estado</th>
+                  <th class="activa-col">Activa</th>
                   <th class="visible-col">Visible</th>
                 </tr>
               </thead>
@@ -507,6 +513,28 @@
       const partes = String(fecha).split("-");
       if (partes.length !== 3) return fecha;
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    function obtenerHoyISO() {
+      const ahora = new Date();
+      const y = ahora.getFullYear();
+      const m = String(ahora.getMonth() + 1).padStart(2, "0");
+      const d = String(ahora.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function calcularEstadoActividad(a) {
+      const hoy = obtenerHoyISO();
+
+      if (a.tipo === "TEMPORAL" && a.fecha_fin && a.fecha_fin < hoy) {
+        return { texto: "FINALIZADA", clase: "no" };
+      }
+
+      if (Number(a.completa || 0) === 1) {
+        return { texto: "COMPLETO", clase: "warn" };
+      }
+
+      return { texto: "DISPONIBLE", clase: "info" };
     }
 
     function actualizarBotones() {
@@ -563,39 +591,46 @@
       const tbody = document.getElementById("tabla");
 
       if (!actividadesFiltradas.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay actividades.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay actividades.</td></tr>`;
         actividadSeleccionada = null;
         actualizarBotones();
         return;
       }
 
-      tbody.innerHTML = actividadesFiltradas.map(a => `
-        <tr class="${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "fila-seleccionada" : ""}">
-          <td class="sel-col">
-            <input
-              type="radio"
-              name="seleccionActividad"
-              ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "checked" : ""}
-              onchange="seleccionarActividad(${a.id})"
-            >
-          </td>
-          <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
-          <td class="tipo-col">${a.tipo || ""}</td>
-          <td class="programa-col">${a.subtitulo_publico || "-"}</td>
-          <td class="inicio-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_inicio) : "-"}</td>
-          <td class="fin-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_fin) : "-"}</td>
-          <td class="estado-col">
-            <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
-              ${Number(a.activa || 0) === 1 ? "Sí" : "No"}
-            </span>
-          </td>
-          <td class="visible-col">
-            <span class="badge ${Number(a.visible_portal || 0) === 1 ? "ok" : "no"}">
-              ${Number(a.visible_portal || 0) === 1 ? "Sí" : "No"}
-            </span>
-          </td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = actividadesFiltradas.map(a => {
+        const estado = calcularEstadoActividad(a);
+
+        return `
+          <tr class="${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "fila-seleccionada" : ""}">
+            <td class="sel-col">
+              <input
+                type="radio"
+                name="seleccionActividad"
+                ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "checked" : ""}
+                onchange="seleccionarActividad(${a.id})"
+              >
+            </td>
+            <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
+            <td class="tipo-col">${a.tipo || ""}</td>
+            <td class="programa-col">${a.subtitulo_publico || "-"}</td>
+            <td class="inicio-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_inicio) : "-"}</td>
+            <td class="fin-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_fin) : "-"}</td>
+            <td class="estado-col">
+              <span class="badge ${estado.clase}">${estado.texto}</span>
+            </td>
+            <td class="activa-col">
+              <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
+                ${Number(a.activa || 0) === 1 ? "Sí" : "No"}
+              </span>
+            </td>
+            <td class="visible-col">
+              <span class="badge ${Number(a.visible_portal || 0) === 1 ? "ok" : "no"}">
+                ${Number(a.visible_portal || 0) === 1 ? "Sí" : "No"}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
 
       actualizarBotones();
     }
@@ -622,8 +657,7 @@
       document.title = "Actividades";
       document.getElementById("tituloCabecera").textContent = "Actividades";
       document.getElementById("subtituloCabecera").textContent = nombreAdmin;
-      document.getElementById("tituloPagina").textContent = "Actividades";
-      document.getElementById("subtituloPagina").textContent = nombreAdmin;
+      document.getElementById("tituloListado").textContent = `Listado de actividades de ${nombreAdmin}`;
 
       return true;
     }
@@ -638,7 +672,17 @@
         throw new Error(data.error || "No se pudieron cargar las actividades.");
       }
 
-      actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      actividadesCache = (Array.isArray(data.actividades) ? data.actividades : [])
+        .sort((a, b) => {
+          const fa = a.fecha_inicio || "";
+          const fb = b.fecha_inicio || "";
+
+          if (fa && fb) return fa < fb ? 1 : (fa > fb ? -1 : 0);
+          if (fa && !fb) return -1;
+          if (!fa && fb) return 1;
+          return String(a.titulo_publico || a.nombre || "").localeCompare(String(b.titulo_publico || b.nombre || ""), "es");
+        });
+
       poblarFiltroPrograma();
       aplicarFiltroPrograma();
       actividadSeleccionada = null;
