@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Actividades</title>
+  <title>Panel de actividades</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -18,6 +18,7 @@
       --no-bg: #6c757d;
       --warn-bg: #d97706;
       --info-bg: #0b5ed7;
+      --danger-bg: #b42318;
     }
 
     * { box-sizing: border-box; }
@@ -187,6 +188,12 @@
       background: #f8fafc;
     }
 
+    .btn-icono.peligro:hover {
+      color: var(--danger-bg);
+      border-color: #e7b1ac;
+      background: #fff5f4;
+    }
+
     .btn-icono svg {
       width: 18px;
       height: 18px;
@@ -343,6 +350,13 @@
     .badge.warn { background: var(--warn-bg); }
     .badge.info { background: var(--info-bg); }
 
+    .estado-extra {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.2;
+    }
+
     .fila-seleccionada {
       background: #f2f7ff;
     }
@@ -403,7 +417,7 @@
       <img src="logo.png" alt="Logo" class="logo-cabecera">
 
       <div class="titulos-cabecera">
-        <h1 id="tituloCabecera">Actividades</h1>
+        <h1 id="tituloCabecera">Panel de actividades</h1>
         <h2 id="subtituloCabecera">Administrador</h2>
       </div>
     </div>
@@ -459,6 +473,16 @@
               <button type="button" class="btn-icono" id="btnReservas" title="Reservas" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
+
+              <button type="button" class="btn-icono peligro" id="btnEliminar" title="Eliminar actividad" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
                 </svg>
               </button>
             </div>
@@ -530,7 +554,12 @@
         return { texto: "FINALIZADA", clase: "no" };
       }
 
-      if (Number(a.completa || 0) === 1) {
+      if (
+        Number(a.aforo_limitado || 0) === 1 &&
+        Number(a.usa_franjas || 0) === 1 &&
+        Number(a.plazas_totales || 0) > 0 &&
+        Number(a.plazas_disponibles || 0) <= 0
+      ) {
         return { texto: "COMPLETO", clase: "warn" };
       }
 
@@ -542,6 +571,7 @@
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnFranjas").disabled = !hay;
       document.getElementById("btnReservas").disabled = !hay;
+      document.getElementById("btnEliminar").disabled = !hay;
     }
 
     function aplicarFiltroPrograma() {
@@ -617,6 +647,13 @@
             <td class="fin-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_fin) : "-"}</td>
             <td class="estado-col">
               <span class="badge ${estado.clase}">${estado.texto}</span>
+              ${
+                Number(a.aforo_limitado || 0) === 1 &&
+                Number(a.usa_franjas || 0) === 1 &&
+                Number(a.plazas_totales || 0) > 0
+                  ? `<div class="estado-extra">${Number(a.plazas_disponibles || 0)}/${Number(a.plazas_totales || 0)}</div>`
+                  : ``
+              }
             </td>
             <td class="activa-col">
               <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
@@ -654,8 +691,8 @@
 
       const nombreAdmin = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
 
-      document.title = "Actividades";
-      document.getElementById("tituloCabecera").textContent = "Actividades";
+      document.title = "Panel de actividades";
+      document.getElementById("tituloCabecera").textContent = "Panel de actividades";
       document.getElementById("subtituloCabecera").textContent = nombreAdmin;
       document.getElementById("tituloListado").textContent = `Listado de actividades de ${nombreAdmin}`;
 
@@ -708,10 +745,71 @@
       location.href = "admin-reservas.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
     }
 
+    async function eliminarActividad() {
+      if (!actividadSeleccionada) return;
+
+      const id = actividadSeleccionada.id;
+
+      try {
+        const resPrevio = await fetch("/api/admin/actividades-eliminar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ id })
+        });
+
+        const dataPrevio = await resPrevio.json().catch(() => null);
+
+        if (!resPrevio.ok && !dataPrevio?.requiere_confirmacion) {
+          mostrarMensaje("error", dataPrevio?.error || "No se pudo comprobar si la actividad puede eliminarse.");
+          return;
+        }
+
+        if (dataPrevio?.bloqueado) {
+          mostrarMensaje("error", dataPrevio.error || "La actividad no se puede eliminar.");
+          return;
+        }
+
+        let textoConfirmacion = "¿Seguro que deseas eliminar esta actividad?";
+
+        if (dataPrevio?.requiere_confirmacion) {
+          textoConfirmacion = dataPrevio.mensaje || textoConfirmacion;
+        }
+
+        const confirmar = confirm(textoConfirmacion);
+        if (!confirmar) return;
+
+        const resFinal = await fetch("/api/admin/actividades-eliminar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            id,
+            confirmado: true
+          })
+        });
+
+        const dataFinal = await resFinal.json().catch(() => null);
+
+        if (!resFinal.ok || !dataFinal?.ok) {
+          mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la actividad.");
+          return;
+        }
+
+        mostrarMensaje("ok", dataFinal.mensaje || "Actividad eliminada correctamente.");
+
+        actividadSeleccionada = null;
+        await cargarActividades();
+      } catch (error) {
+        mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
+      }
+    }
+
     document.getElementById("btnNuevaTexto").addEventListener("click", nueva);
     document.getElementById("btnEditar").addEventListener("click", editar);
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
+    document.getElementById("btnEliminar").addEventListener("click", eliminarActividad);
 
     document.getElementById("filtroPrograma").addEventListener("change", function () {
       filtroPrograma = this.value;
