@@ -456,13 +456,14 @@
   border: 1px solid #bfc9d4;
   background: #fff;
   color: #5b6b7c;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
   padding: 0;
   flex: 0 0 36px;
+  line-height: 0; /* CLAVE */
 }
 
 .detalle-accion-icon:hover {
@@ -472,9 +473,11 @@
 }
 
 .detalle-accion-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   display: block;
+  margin: 0;
+  transform: translate(0, 0); /* evita offset raro */
 }
 
 .detalle-contenido h3 {
