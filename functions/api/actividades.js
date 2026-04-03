@@ -46,15 +46,11 @@ export async function onRequestGet(context) {
           f.actividad_id,
           f.capacidad
       ),
-      actividad_disponibilidad AS (
+      actividad_totales AS (
         SELECT
           actividad_id,
-          COALESCE(SUM(
-            CASE
-              WHEN (capacidad - ocupadas) > 0 THEN (capacidad - ocupadas)
-              ELSE 0
-            END
-          ), 0) AS plazas_disponibles
+          COALESCE(SUM(capacidad), 0) AS plazas_totales,
+          COALESCE(SUM(ocupadas), 0) AS plazas_ocupadas
         FROM franja_ocupacion
         GROUP BY actividad_id
       )
@@ -85,17 +81,20 @@ export async function onRequestGet(context) {
         a.usa_enlace_externo,
         a.enlace_externo_url,
         a.enlace_externo_texto,
-        COALESCE(ad.plazas_disponibles, 0) AS plazas_disponibles,
+        COALESCE(at.plazas_totales, 0) AS plazas_totales,
+        COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
+        (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
         CASE
-          WHEN a.requiere_reserva = 1
-               AND a.aforo_limitado = 1
-               AND COALESCE(ad.plazas_disponibles, 0) <= 0
+          WHEN a.aforo_limitado = 1
+               AND a.usa_franjas = 1
+               AND COALESCE(at.plazas_totales, 0) > 0
+               AND (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) <= 0
             THEN 1
           ELSE 0
-        END AS completa
+        END AS completa_calculada
       FROM actividades a
-      LEFT JOIN actividad_disponibilidad ad
-        ON ad.actividad_id = a.id
+      LEFT JOIN actividad_totales at
+        ON at.actividad_id = a.id
       WHERE a.activa = 1
         AND a.visible_portal = 1
         AND (
@@ -113,7 +112,13 @@ export async function onRequestGet(context) {
 
     return json({
       ok: true,
-      actividades: result.results || []
+      actividades: (result.results || []).map((a) => ({
+        ...a,
+        plazas_totales: Number(a.plazas_totales || 0),
+        plazas_ocupadas: Number(a.plazas_ocupadas || 0),
+        plazas_disponibles: Number(a.plazas_disponibles || 0),
+        completa_calculada: Number(a.completa_calculada || 0)
+      }))
     });
   } catch (error) {
     return json(
