@@ -461,6 +461,15 @@
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
               </button>
+              <button type="button" class="btn-icono" id="btnEliminar" title="Eliminar actividad" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6l-1 14H6L5 6"></path>
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                  <path d="M9 6V4h6v2"></path>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -542,6 +551,7 @@
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnFranjas").disabled = !hay;
       document.getElementById("btnReservas").disabled = !hay;
+      document.getElementById("btnEliminar").disabled = !hay;
     }
 
     function aplicarFiltroPrograma() {
@@ -708,10 +718,46 @@
       location.href = "admin-reservas.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
     }
 
+    async function eliminarActividad() {
+  if (!actividadSeleccionada) return;
+
+  const id = actividadSeleccionada.id;
+
+  // 🔹 Confirmación inicial SIEMPRE
+  if (!confirm("¿Seguro que deseas eliminar esta actividad?")) return;
+
+  try {
+    const res = await fetch("/api/admin/actividad-eliminar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "No se pudo eliminar la actividad");
+    }
+
+    // 🔹 Aviso si había pendientes
+    if (data.aviso) {
+      alert(data.aviso);
+    }
+
+    // 🔹 Refrescar tabla
+    await cargarActividades();
+
+  } catch (e) {
+    alert(e.message || "Error al eliminar");
+  }
+}
+
     document.getElementById("btnNuevaTexto").addEventListener("click", nueva);
     document.getElementById("btnEditar").addEventListener("click", editar);
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
+    document.getElementById("btnEliminar").addEventListener("click", eliminarActividad);
 
     document.getElementById("filtroPrograma").addEventListener("change", function () {
       filtroPrograma = this.value;
