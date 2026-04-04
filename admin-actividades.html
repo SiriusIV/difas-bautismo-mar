@@ -1231,6 +1231,17 @@
     let debounceBusquedaLocalidad = null;
     let ultimaLocalidadBuscada = "";
 
+    const CAMPOS_CRITICOS_ACTIVIDAD = [
+      "tipo",
+      "fecha_inicio",
+      "fecha_fin",
+      "usa_franjas",
+      "requiere_reserva",
+      "aforo_limitado"
+    ];
+
+    const valoresPreviosCamposCriticos = {};
+
     function normalizarTexto(v) {
       return String(v || "").trim();
     }
