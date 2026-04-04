@@ -1993,27 +1993,57 @@
       mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
     }
 
-    async function borrarFranja(id) {
-      const confirmar = confirm("¿Seguro que quieres eliminar esta franja?");
-      if (!confirmar) return;
+async function borrarFranja(id) {
+  limpiarMensaje();
 
-      const res = await fetch("/api/admin/franjas", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ id })
-      });
+  try {
+    const primeraRespuesta = await fetch("/api/admin/franjas", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ id })
+    });
 
-      const data = await res.json();
+    const primerData = await primeraRespuesta.json().catch(() => null);
 
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo eliminar la franja.");
-        return;
-      }
-
-      await cargarFranjas();
-      mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
+    if (primerData?.bloquear) {
+      mostrarMensaje("error", primerData.error || "La franja no se puede eliminar.");
+      return;
     }
+
+    let textoConfirmacion = "¿Seguro que quieres eliminar esta franja?";
+
+    if (primerData?.requiere_confirmacion) {
+      textoConfirmacion = primerData.mensaje || textoConfirmacion;
+    }
+
+    const confirmar = confirm(textoConfirmacion);
+    if (!confirmar) return;
+
+    const resFinal = await fetch("/api/admin/franjas", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        id,
+        confirmar: true
+      })
+    });
+
+    const dataFinal = await resFinal.json().catch(() => null);
+
+    if (!resFinal.ok || !dataFinal?.ok) {
+      mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la franja.");
+      return;
+    }
+
+    await cargarFranjas();
+    limpiarFormularioFranja();
+    mostrarMensaje("ok", dataFinal.mensaje || "Franja eliminada correctamente.");
+  } catch (error) {
+    mostrarMensaje("error", error?.message || "Error al eliminar la franja.");
+  }
+}
 
     function construirPayloadActividad(borradorTecnico = 0) {
       return {
