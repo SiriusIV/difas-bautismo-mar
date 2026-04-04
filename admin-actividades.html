@@ -2535,13 +2535,15 @@ function mostrarPaso(index) {
     }
 
     function avanzarPaso() {
-      if (!validarPasoActual()) return;
-      mostrarPaso(pasoActual + 1);
-    }
+  if (pantallaBloqueadaPorErrorActividad) return;
+  if (!validarPasoActual()) return;
+  mostrarPaso(pasoActual + 1);
+}
 
-    function retrocederPaso() {
-      mostrarPaso(pasoActual - 1);
-    }
+function retrocederPaso() {
+  if (pantallaBloqueadaPorErrorActividad) return;
+  mostrarPaso(pasoActual - 1);
+}
 
     function mostrarEstadoSubidaImagen(tipo, texto) {
       if (!texto) return;
