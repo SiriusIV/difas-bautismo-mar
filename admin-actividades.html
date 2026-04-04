@@ -170,6 +170,40 @@
       border-color: var(--ok-border);
     }
 
+    .mensaje-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-mensaje-aceptar {
+  border: 1px solid rgba(155, 28, 28, 0.28);
+  background: #fff;
+  color: #9b1c1c;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.btn-mensaje-aceptar:hover {
+  background: #fff5f5;
+}
+
+.pantalla-bloqueada .bloque-superior,
+.pantalla-bloqueada .bloque-inferior {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.pantalla-bloqueada #mensajeActividad {
+  pointer-events: auto;
+  opacity: 1;
+}
+    
     .bloque-superior,
     .bloque-inferior {
       background: var(--card);
