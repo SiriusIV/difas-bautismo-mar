@@ -1373,20 +1373,56 @@
       return Number.isInteger(v) && v > 0 ? v : null;
     }
 
-    function mostrarMensaje(tipo, texto) {
-      const m = document.getElementById("mensajeActividad");
-      m.className = "mensaje " + tipo;
-      m.style.display = "block";
-      m.textContent = texto;
-      document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    function bloquearPantallaPorErrorActividad() {
+  pantallaBloqueadaPorErrorActividad = true;
+  document.body.classList.add("pantalla-bloqueada");
+}
 
-    function limpiarMensaje() {
-      const m = document.getElementById("mensajeActividad");
-      m.className = "mensaje";
-      m.style.display = "none";
-      m.textContent = "";
-    }
+function desbloquearPantallaPorErrorActividad() {
+  pantallaBloqueadaPorErrorActividad = false;
+  document.body.classList.remove("pantalla-bloqueada");
+}
+
+function mostrarMensaje(tipo, texto, opciones = {}) {
+  const m = document.getElementById("mensajeActividad");
+  const textoEl = document.getElementById("mensajeActividadTexto");
+  const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
+
+  m.className = "mensaje " + tipo;
+  m.style.display = "block";
+  textoEl.textContent = texto || "";
+
+  if (opciones.bloqueante) {
+    btnAceptar.classList.remove("oculto");
+    bloquearPantallaPorErrorActividad();
+  } else {
+    btnAceptar.classList.add("oculto");
+    desbloquearPantallaPorErrorActividad();
+    callbackErrorPendienteActividad = null;
+  }
+
+  document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function limpiarMensaje() {
+  const m = document.getElementById("mensajeActividad");
+  const textoEl = document.getElementById("mensajeActividadTexto");
+  const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
+
+  m.className = "mensaje";
+  m.style.display = "none";
+  textoEl.textContent = "";
+  btnAceptar.classList.add("oculto");
+  callbackErrorPendienteActividad = null;
+  desbloquearPantallaPorErrorActividad();
+}
+
+function aceptarMensajeErrorActividad() {
+  if (typeof callbackErrorPendienteActividad === "function") {
+    callbackErrorPendienteActividad();
+  }
+  limpiarMensaje();
+}
 
     function redirigirLogin() {
       window.location.href = "portal.html";
