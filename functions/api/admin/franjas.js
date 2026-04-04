@@ -623,43 +623,44 @@ export async function onRequestDelete(context) {
     const actividad = await obtenerActividad(env, existente.actividad_id);
     const aforo_limitado = Number(actividad?.aforo_limitado || 0);
 
-    if (aforo_limitado === 1) {
-      const ocupadas = await obtenerBloqueoActualFranja(env, id);
+if (Number(actividad.borrador_tecnico) !== 1) {
 
-if (Number(actividad.borrador_tecnico) === 1) {
-  // en borrador se permite borrar siempre
-} else {
-  if (ocupadas > 0) {
-    return json(
-      {
-        ok: false,
-        error: "No se puede eliminar la franja porque tiene plazas bloqueadas o asistentes asociados."
-      },
-      { status: 400 }
-    );
+  // 1. Confirmadas FUTURAS → BLOQUEO DURO
+  const confirmadasFuturas = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas r
+    JOIN franjas f ON f.id = r.franja_id
+    WHERE r.franja_id = ?
+      AND r.estado = 'CONFIRMADA'
+      AND (
+        f.fecha IS NULL OR
+        datetime(f.fecha || ' ' || f.hora_inicio) >= datetime('now')
+      )
+  `).bind(id).first();
+
+  if (Number(confirmadasFuturas?.total || 0) > 0) {
+    return json({
+      ok: false,
+      bloquear: true,
+      error: "No se puede eliminar la franja porque tiene reservas confirmadas futuras."
+    }, { status: 400 });
   }
 
-  const uso = await env.DB.prepare(`
+  // 2. Pendientes → PERMITIR CON AVISO
+  const pendientes = await env.DB.prepare(`
     SELECT COUNT(*) AS total
     FROM reservas
     WHERE franja_id = ?
-      AND estado IN ('PENDIENTE', 'CONFIRMADA')
-  `)
-    .bind(id)
-    .first();
+      AND estado = 'PENDIENTE'
+  `).bind(id).first();
 
-  const totalReservas = Number(uso?.total || 0);
-
-  if (totalReservas > 0) {
-    return json(
-      {
-        ok: false,
-        error: "No se puede eliminar la franja porque tiene reservas operativas asociadas."
-      },
-      { status: 400 }
-    );
+  if (Number(pendientes?.total || 0) > 0 && !data.confirmar) {
+    return json({
+      ok: false,
+      requiere_confirmacion: true,
+      mensaje: "Existen solicitudes pendientes. Si continúas, serán rechazadas."
+    }, { status: 409 });
   }
-}
 }
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
