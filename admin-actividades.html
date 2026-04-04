@@ -1564,17 +1564,27 @@ async function validarCambioCriticoActividad() {
 }
 
 async function manejarCambioCriticoCampo(id) {
+  if (pantallaBloqueadaPorErrorActividad) return false;
+
   limpiarMensaje();
 
   const resultado = await validarCambioCriticoActividad();
 
   if (!resultado?.ok) {
-    restaurarValorPrevioCampoCritico(id);
-    actualizarVisibilidadFormulario();
-    actualizarPreview();
-    renderMapaPreviewActividad();
-    renderPreviewFranjas();
-    mostrarMensaje("error", resultado.error || "El cambio no es válido.");
+    callbackErrorPendienteActividad = () => {
+      restaurarValorPrevioCampoCritico(id);
+      actualizarVisibilidadFormulario();
+      actualizarPreview();
+      renderMapaPreviewActividad();
+      renderPreviewFranjas();
+    };
+
+    mostrarMensaje(
+      "error",
+      resultado.error || "El cambio no es válido.",
+      { bloqueante: true }
+    );
+
     return false;
   }
 
@@ -2664,6 +2674,7 @@ function mostrarPaso(index) {
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
+      document.getElementById("btnAceptarMensajeActividad").addEventListener("click", aceptarMensajeErrorActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
       document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
