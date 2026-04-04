@@ -81,6 +81,38 @@ async function obtenerActividad(env, id) {
   `).bind(id).first();
 }
 
+async function obtenerPlazasComprometidasActividad(env, actividad_id) {
+  const row = await env.DB.prepare(`
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+          CASE
+            WHEN r.prereserva_expira_en IS NOT NULL
+                 AND datetime('now') <= datetime(r.prereserva_expira_en)
+              THEN MAX(
+                COALESCE(r.plazas_prereservadas, 0),
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                ), 0)
+              )
+            ELSE COALESCE((
+              SELECT COUNT(*)
+              FROM visitantes v
+              WHERE v.reserva_id = r.id
+            ), 0)
+          END
+        ELSE 0
+      END
+    ), 0) AS comprometidas
+    FROM reservas r
+    WHERE r.actividad_id = ?
+  `).bind(actividad_id).first();
+
+  return Number(row?.comprometidas || 0);
+}
+
 function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
@@ -274,58 +306,94 @@ export async function onRequestPut(context) {
 
     const p = construirPayload(body, admin_id);
 
-    async function borrarFranja(id) {
-  limpiarMensaje();
+    // ===============================
+    // VALIDACIONES DE NEGOCIO
+    // ===============================
 
-  try {
-    const primeraRespuesta = await fetch("/api/admin/franjas", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ id })
-    });
+    const franjas = await env.DB.prepare(`
+      SELECT fecha, hora_inicio
+      FROM franjas
+      WHERE actividad_id = ?
+    `).bind(id).all();
 
-    const primerData = await primeraRespuesta.json().catch(() => null);
+    const listaFranjas = franjas.results || [];
 
-    if (primerData?.bloquear) {
-      mostrarMensaje("error", primerData.error || "La franja no se puede eliminar.");
-      return;
+    if (p.tipo === "TEMPORAL" && listaFranjas.length > 0) {
+      const fueraRango = listaFranjas.some(f =>
+        f.fecha && (f.fecha < p.fecha_inicio || f.fecha > p.fecha_fin)
+      );
+
+      if (fueraRango) {
+        return json({
+          ok: false,
+          error: "No puedes cambiar las fechas porque existen franjas fuera del nuevo rango."
+        }, 400);
+      }
     }
 
-    let textoConfirmacion = "¿Seguro que quieres eliminar esta franja?";
+    const confirmadasFuturas = await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM reservas r
+      JOIN franjas f ON f.id = r.franja_id
+      WHERE f.actividad_id = ?
+        AND r.estado = 'CONFIRMADA'
+        AND (
+          f.fecha IS NULL OR
+          datetime(f.fecha || ' ' || f.hora_inicio) >= datetime('now')
+        )
+    `).bind(id).first();
 
-    if (primerData?.requiere_confirmacion) {
-      textoConfirmacion = primerData.mensaje || textoConfirmacion;
+    const hayConfirmadas = Number(confirmadasFuturas?.total || 0) > 0;
+
+    if (hayConfirmadas && Number(actual.usa_franjas || 0) === 1 && Number(p.usa_franjas || 0) === 0) {
+      return json({
+        ok: false,
+        error: "No puedes desactivar las franjas porque existen reservas confirmadas futuras."
+      }, 400);
     }
 
-    const confirmar = confirm(textoConfirmacion);
-    if (!confirmar) return;
-
-    const resFinal = await fetch("/api/admin/franjas", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        id,
-        confirmar: true
-      })
-    });
-
-    const dataFinal = await resFinal.json().catch(() => null);
-
-    if (!resFinal.ok || !dataFinal?.ok) {
-      mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la franja.");
-      return;
+    if (hayConfirmadas && p.tipo === "PERMANENTE" && actual.tipo === "TEMPORAL") {
+      return json({
+        ok: false,
+        error: "No puedes cambiar a actividad permanente porque existen reservas confirmadas futuras."
+      }, 400);
     }
 
-    await cargarFranjas();
-    limpiarFormularioFranja();
-    mostrarMensaje("ok", dataFinal.mensaje || "Franja eliminada correctamente.");
-  } catch (error) {
-    mostrarMensaje("error", error?.message || "Error al eliminar la franja.");
-  }
-}
-    
+    const plazasComprometidas = await obtenerPlazasComprometidasActividad(env, id);
+
+    if (
+      plazasComprometidas > 0 &&
+      Number(actual.aforo_limitado || 0) === 1 &&
+      Number(p.aforo_limitado || 0) === 0
+    ) {
+      return json({
+        ok: false,
+        error: "No puedes desactivar el aforo limitado porque existen plazas comprometidas en reservas activas."
+      }, 400);
+    }
+
+    if (
+      plazasComprometidas > 0 &&
+      Number(actual.requiere_reserva || 0) === 1 &&
+      Number(p.requiere_reserva || 0) === 0
+    ) {
+      return json({
+        ok: false,
+        error: "No puedes desactivar la reserva porque existen plazas comprometidas en reservas activas."
+      }, 400);
+    }
+
+    if (
+      plazasComprometidas > 0 &&
+      Number(actual.usa_franjas || 0) === 1 &&
+      Number(p.usa_franjas || 0) === 0
+    ) {
+      return json({
+        ok: false,
+        error: "No puedes desactivar las franjas porque existen plazas comprometidas en reservas activas."
+      }, 400);
+    }
+
     const result = await env.DB.prepare(`
       UPDATE actividades
       SET
