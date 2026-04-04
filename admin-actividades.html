@@ -1437,6 +1437,73 @@
       btn.title = hayId ? "Eliminar actividad" : "Guarda o abre una actividad existente para poder eliminarla";
     }
 
+    function guardarValorPrevioCampoCritico(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  valoresPreviosCamposCriticos[id] = el.value;
+}
+
+function restaurarValorPrevioCampoCritico(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  if (Object.prototype.hasOwnProperty.call(valoresPreviosCamposCriticos, id)) {
+    el.value = valoresPreviosCamposCriticos[id];
+  }
+}
+
+async function validarCambioCriticoActividad() {
+  const actividadId = document.getElementById("actividadId").value;
+  if (!actividadId) return { ok: true };
+
+  const payload = {
+    id: actividadId,
+    tipo: document.getElementById("tipo").value,
+    fecha_inicio: document.getElementById("fecha_inicio").value,
+    fecha_fin: document.getElementById("fecha_fin").value,
+    usa_franjas: document.getElementById("usa_franjas").value,
+    requiere_reserva: document.getElementById("requiere_reserva").value,
+    aforo_limitado: document.getElementById("aforo_limitado").value
+  };
+
+  const res = await fetch("/api/admin/actividades-validar-cambio", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: data?.error || "No se pudo validar el cambio."
+    };
+  }
+
+  return data || { ok: true };
+}
+
+async function manejarCambioCriticoCampo(id) {
+  limpiarMensaje();
+
+  const resultado = await validarCambioCriticoActividad();
+
+  if (!resultado?.ok) {
+    restaurarValorPrevioCampoCritico(id);
+    actualizarVisibilidadFormulario();
+    actualizarPreview();
+    renderMapaPreviewActividad();
+    renderPreviewFranjas();
+    mostrarMensaje("error", resultado.error || "El cambio no es válido.");
+    return false;
+  }
+
+  guardarValorPrevioCampoCritico(id);
+  return true;
+}
+
     function rellenarFormulario(actividad) {
       setValor("actividadId", actividad.id || "");
       setValor("nombre", actividad.nombre || "");
@@ -2556,6 +2623,20 @@ function mostrarPaso(index) {
         });
       }
 
+      CAMPOS_CRITICOS_ACTIVIDAD.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+          el.addEventListener("focus", () => {
+            guardarValorPrevioCampoCritico(id);
+          });
+
+          el.addEventListener("change", async () => {
+            const okCambio = await manejarCambioCriticoCampo(id);
+          if (!okCambio) return;
+        });
+      });
+      
       [
         "nombre",
         "organizador_publico",
@@ -2623,6 +2704,7 @@ function mostrarPaso(index) {
         actualizarBotonEliminar();
         renderListaFranjas();
         renderPreviewFranjas();
+        CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
         mostrarPaso(0);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
