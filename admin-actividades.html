@@ -2303,21 +2303,21 @@ async function accionEliminarActividadUI() {
   }
 }
 
-    function mostrarPaso(index) {
-      const panes = Array.from(document.querySelectorAll(".step-pane"));
-      pasoActual = Math.max(0, Math.min(index, panes.length - 1));
+function mostrarPaso(index) {
+  const panes = Array.from(document.querySelectorAll(".step-pane"));
+  pasoActual = Math.max(0, Math.min(index, panes.length - 1));
 
-      panes.forEach((pane, i) => {
-        pane.classList.toggle("activo", i === pasoActual);
-      });
+  panes.forEach((pane, i) => {
+    pane.classList.toggle("activo", i === pasoActual);
+  });
 
-      document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
-      document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
-      document.getElementById("btnGuardarActividad").classList.toggle("oculto", pasoActual !== panes.length - 1);
+  document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
+  document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
+  document.getElementById("btnGuardarActividad").classList.remove("oculto");
 
-      actualizarPreview();
-      document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
-    }
+  actualizarPreview();
+  document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
+}
 
     function validarPasoActual() {
       limpiarMensaje();
