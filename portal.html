@@ -1263,12 +1263,18 @@
 async function cargarFranjasActividad(actividad) {
   const wrap = document.getElementById("tablaFranjasWrap");
   const body = document.getElementById("tablaFranjasBody");
+  const nota = document.getElementById("notaFranjasPortal");
 
   actividadFranjasSolicitada = actividad?.id || null;
   franjaSeleccionadaPortalId = null;
   franjasActividadActual = [];
   wrap.style.display = "none";
   body.innerHTML = "";
+
+  if (nota) {
+    nota.textContent = "";
+    nota.style.display = "none";
+  }
 
   actualizarBotonSolicitarSegunFranja();
 
@@ -1349,7 +1355,9 @@ async function cargarFranjasActividad(actividad) {
       `;
     }).join("");
 
-    if (!filas.trim()) return;
+    if (!filas.trim()) {
+      return;
+    }
 
     body.innerHTML = filas;
     wrap.style.display = "block";
@@ -1362,13 +1370,10 @@ async function cargarFranjasActividad(actividad) {
       });
     });
 
-    const notaExistente = wrap.querySelector(".nota-franjas");
-    if (notaExistente) notaExistente.remove();
-
-    const nota = document.createElement("div");
-    nota.className = "nota-franjas";
-    nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelacion de reservas confirmadas";
-    wrap.appendChild(nota);
+    if (nota) {
+      nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas.";
+      nota.style.display = "block";
+    }
 
     actualizarBotonSolicitarSegunFranja();
   } catch (_) {
@@ -1376,6 +1381,12 @@ async function cargarFranjasActividad(actividad) {
     franjaSeleccionadaPortalId = null;
     wrap.style.display = "none";
     body.innerHTML = "";
+
+    if (nota) {
+      nota.textContent = "";
+      nota.style.display = "none";
+    }
+
     actualizarBotonSolicitarSegunFranja();
   }
 }
