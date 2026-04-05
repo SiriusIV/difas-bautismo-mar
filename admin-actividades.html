@@ -2499,6 +2499,8 @@ async function borrarFranja(id) {
     }
 
 async function accionEliminarActividadUI() {
+  if (pantallaBloqueadaPorErrorActividad) return;
+
   limpiarMensaje();
 
   const id = document.getElementById("actividadId").value;
@@ -2517,7 +2519,7 @@ async function accionEliminarActividadUI() {
 
     const primerData = await primeraRespuesta.json().catch(() => null);
 
-    if (!primeraRespuesta.ok && !primerData?.requiere_confirmacion) {
+    if (!primeraRespuesta.ok && !primerData?.requiere_confirmacion && !primerData?.bloqueado) {
       mostrarMensaje("error", primerData?.error || "No se pudo comprobar si la actividad puede eliminarse.");
       return;
     }
@@ -2527,37 +2529,45 @@ async function accionEliminarActividadUI() {
       return;
     }
 
-    let textoConfirmacion = "¿Seguro que quieres eliminar esta actividad? Esta acción no se puede deshacer.";
+    const textoConfirmacion = primerData?.requiere_confirmacion
+      ? (primerData.mensaje || "Esta acción requiere confirmación.")
+      : "¿Seguro que quieres eliminar esta actividad? Esta acción no se puede deshacer.";
 
-    if (primerData?.requiere_confirmacion) {
-      textoConfirmacion = primerData.mensaje || textoConfirmacion;
-    }
+    mostrarMensaje(
+      "error",
+      textoConfirmacion,
+      {
+        confirmable: true,
+        onAccept: async () => {
+          try {
+            const resFinal = await fetch("/api/admin/actividades-eliminar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                id,
+                confirmado: true
+              })
+            });
 
-    const confirmar = confirm(textoConfirmacion);
-    if (!confirmar) return;
+            const dataFinal = await resFinal.json().catch(() => null);
 
-    const resFinal = await fetch("/api/admin/actividades-eliminar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        id,
-        confirmado: true
-      })
-    });
+            if (!resFinal.ok || !dataFinal?.ok) {
+              mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la actividad.");
+              return;
+            }
 
-    const dataFinal = await resFinal.json().catch(() => null);
+            mostrarMensaje("ok", dataFinal.mensaje || "Actividad eliminada correctamente.");
 
-    if (!resFinal.ok || !dataFinal?.ok) {
-      mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la actividad.");
-      return;
-    }
-
-    mostrarMensaje("ok", dataFinal.mensaje || "Actividad eliminada correctamente.");
-
-    setTimeout(() => {
-      window.location.href = "portal.html";
-    }, 900);
+            setTimeout(() => {
+              window.location.href = "portal.html";
+            }, 900);
+          } catch (error) {
+            mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
+          }
+        }
+      }
+    );
   } catch (error) {
     mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
   }
