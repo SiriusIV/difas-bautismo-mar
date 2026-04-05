@@ -1621,18 +1621,19 @@ async function manejarCambioCriticoCampo(id) {
   const resultado = await validarCambioCriticoActividad();
 
   if (!resultado?.ok) {
-    callbackErrorPendienteActividad = () => {
-      restaurarValorPrevioCampoCritico(id);
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      renderMapaPreviewActividad();
-      renderPreviewFranjas();
-    };
-
     mostrarMensaje(
       "error",
       resultado.error || "El cambio no es válido.",
-      { bloqueante: true }
+      {
+        bloqueante: true,
+        onAccept: () => {
+          restaurarValorPrevioCampoCritico(id);
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+          renderMapaPreviewActividad();
+          renderPreviewFranjas();
+        }
+      }
     );
 
     return false;
