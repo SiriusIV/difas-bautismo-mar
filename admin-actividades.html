@@ -1887,8 +1887,21 @@ async function manejarCambioCriticoCampo(id) {
         throw new Error("La actividad indicada no existe o no le pertenece.");
       }
 
-      rellenarFormulario(actividad);
+            rellenarFormulario(actividad);
       await cargarFranjas();
+
+      const lat = document.getElementById("latitud").value.trim();
+      const lng = document.getElementById("longitud").value.trim();
+      const localidad = document.getElementById("provincia").value.trim();
+      const direccion = document.getElementById("direccion_postal").value.trim();
+
+      if (!lat && !lng) {
+        if (direccion) {
+          await buscarDireccionYCentrar(direccion, localidad, true);
+        } else if (localidad) {
+          await buscarLocalidadYCentrar(localidad, true);
+        }
+      }
     }
 
     function actualizarVisibilidadFormulario() {
