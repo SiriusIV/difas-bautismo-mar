@@ -2299,20 +2299,47 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       address.county ||
       "";
 
-    const direccion =
-      [
-        address.road,
-        address.house_number,
-        localidad,
-        address.state
-      ].filter(Boolean).join(", ") || data.display_name || "";
+    const calle =
+      address.road ||
+      address.pedestrian ||
+      address.footway ||
+      address.path ||
+      address.cycleway ||
+      address.residential ||
+      "";
+
+    const numero = address.house_number || "";
+    const cp = address.postcode || "";
+
+    let direccionCorta = [
+      calle,
+      numero
+    ].filter(Boolean).join(", ");
+
+    if (cp || localidad) {
+      const bloqueLocalidad = [cp, localidad].filter(Boolean).join(" ");
+      if (bloqueLocalidad) {
+        direccionCorta = direccionCorta
+          ? `${direccionCorta}, ${bloqueLocalidad}`
+          : bloqueLocalidad;
+      }
+    }
+
+    if (!direccionCorta) {
+      direccionCorta =
+        address.neighbourhood ||
+        address.suburb ||
+        address.hamlet ||
+        localidad ||
+        "";
+    }
 
     if (localidad) {
       document.getElementById("provincia").value = localidad;
     }
 
-    if (direccion) {
-      document.getElementById("direccion_postal").value = direccion;
+    if (direccionCorta) {
+      document.getElementById("direccion_postal").value = direccionCorta;
     }
 
     return true;
