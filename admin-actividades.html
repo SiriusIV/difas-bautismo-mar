@@ -1672,45 +1672,51 @@ async function manejarCambioCriticoCampo(id) {
 }
 
     function rellenarFormulario(actividad) {
-      setValor("actividadId", actividad.id || "");
-      setValor("nombre", actividad.nombre || "");
-      setValor("organizador_publico", actividad.organizador_publico || "");
-      setValor("tipo", actividad.tipo || "TEMPORAL");
-      setValor("fecha_inicio", actividad.fecha_inicio || "");
-      setValor("fecha_fin", actividad.fecha_fin || "");
-      setValor("activa", String(actividad.activa ?? 1));
-      setValor("titulo_publico", actividad.titulo_publico || "");
-      setValor("subtitulo_publico", actividad.subtitulo_publico || "");
-      setValor("descripcion_corta", actividad.descripcion_corta || "");
-      setValor("lugar", actividad.lugar || "");
-      setValor("imagen_url", actividad.imagen_url || "");
-      setValor("imagen_id", actividad.imagen_id || "");
-      setValor("visible_portal", String(actividad.visible_portal ?? 1));
-      setValor("orden_portal", String(actividad.orden_portal ?? 0));
-      setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
-      setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
-      setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
-      setValor("provincia", actividad.provincia || "");
-      setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
-      setValor("patron_recurrencia", actividad.patron_recurrencia || "");
-      setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
-      setValor("enlace_externo_url", actividad.enlace_externo_url || "");
-      setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
-      setValor("direccion_postal", actividad.direccion_postal || "");
-      setValor("latitud", actividad.latitud ?? "");
-      setValor("longitud", actividad.longitud ?? "");
-      setValor("zoom_mapa", actividad.zoom_mapa ?? 15);
+  cargandoActividad = true;
 
-      actividadEsBorradorTecnico = Number(actividad.borrador_tecnico || 0) === 1;
-      document.getElementById("tituloFormulario").textContent = "Editar actividad";
+  try {
+    setValor("actividadId", actividad.id || "");
+    setValor("nombre", actividad.nombre || "");
+    setValor("organizador_publico", actividad.organizador_publico || "");
+    setValor("tipo", actividad.tipo || "TEMPORAL");
+    setValor("fecha_inicio", actividad.fecha_inicio || "");
+    setValor("fecha_fin", actividad.fecha_fin || "");
+    setValor("activa", String(actividad.activa ?? 1));
+    setValor("titulo_publico", actividad.titulo_publico || "");
+    setValor("subtitulo_publico", actividad.subtitulo_publico || "");
+    setValor("descripcion_corta", actividad.descripcion_corta || "");
+    setValor("lugar", actividad.lugar || "");
+    setValor("imagen_url", actividad.imagen_url || "");
+    setValor("imagen_id", actividad.imagen_id || "");
+    setValor("visible_portal", String(actividad.visible_portal ?? 1));
+    setValor("orden_portal", String(actividad.orden_portal ?? 0));
+    setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
+    setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
+    setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
+    setValor("provincia", actividad.provincia || "");
+    setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
+    setValor("patron_recurrencia", actividad.patron_recurrencia || "");
+    setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
+    setValor("enlace_externo_url", actividad.enlace_externo_url || "");
+    setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
+    setValor("direccion_postal", actividad.direccion_postal || "");
+    setValor("latitud", actividad.latitud ?? "");
+    setValor("longitud", actividad.longitud ?? "");
+    setValor("zoom_mapa", actividad.zoom_mapa ?? 15);
 
-      registrarImagenOriginalDesdeFormulario();
-      actualizarBotonEliminar();
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      renderMapaPreviewActividad();
-      actualizarEstadoFranjasUI();
-    }
+    actividadEsBorradorTecnico = Number(actividad.borrador_tecnico || 0) === 1;
+    document.getElementById("tituloFormulario").textContent = "Editar actividad";
+
+    registrarImagenOriginalDesdeFormulario();
+    actualizarBotonEliminar();
+    actualizarVisibilidadFormulario();
+    actualizarPreview();
+    renderMapaPreviewActividad();
+    actualizarEstadoFranjasUI();
+  } finally {
+    cargandoActividad = false;
+  }
+}
 
     async function cargarActividadSiEsEdicion() {
       actividadEditandoId = getActividadIdURL();
