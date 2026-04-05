@@ -3172,24 +3172,30 @@ function retrocederPaso() {
         if (!el) return;
 
         el.addEventListener("input", () => {
-          actualizarVisibilidadFormulario();
-          actualizarPreview();
+  actualizarVisibilidadFormulario();
+  actualizarPreview();
 
-          if (id === "provincia") {
-            programarRecentradoLocalidad();
-          }
-        });
+  if (id === "provincia") {
+    programarRecentradoLocalidad();
+  }
+
+  if (id === "direccion_postal") {
+    programarRecentradoDireccion();
+  }
+});
 
         el.addEventListener("change", () => {
-          actualizarVisibilidadFormulario();
-          actualizarPreview();
+  actualizarVisibilidadFormulario();
+  actualizarPreview();
 
-          if (id === "provincia") {
-            programarRecentradoLocalidad();
-          }
-        });
-      });
+  if (id === "provincia") {
+    programarRecentradoLocalidad();
+  }
 
+  if (id === "direccion_postal") {
+    programarRecentradoDireccion();
+  }
+});
       try {
         cargandoActividad = true;
         await cargarActividadSiEsEdicion();
