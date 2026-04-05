@@ -505,6 +505,104 @@
       background: var(--soft-bg);
     }
 
+    .subbloque-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.subbloque-head-texto {
+  min-width: 0;
+}
+
+.acciones-franja-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-icono-franja {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #bfc9d4;
+  background: #fff;
+  color: #4a5a6a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  text-decoration: none;
+}
+
+.btn-icono-franja:hover {
+  background: #f7f9fb;
+  color: var(--primary);
+  border-color: #9fb2c7;
+}
+
+.btn-icono-franja svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.btn-icono-franja.peligro {
+  color: #9b1c1c;
+  border-color: #efc2c2;
+}
+
+.btn-icono-franja.peligro:hover {
+  background: #fdeaea;
+  color: #9b1c1c;
+  border-color: #e5a9a9;
+}
+
+.btn-icono-franja:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f3f6f9;
+  color: #95a2b1;
+  border-color: #d7e2ee;
+}
+
+.btn-icono-franja:disabled:hover {
+  background: #f3f6f9;
+  color: #95a2b1;
+  border-color: #d7e2ee;
+}
+
+.col-seleccion-franja {
+  width: 42px;
+  text-align: center;
+}
+
+.input-seleccion-franja {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.tabla-franjas-admin tr.seleccionada td {
+  background: #f8fbff;
+}
+
+.fila-franja-inline {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 140px 140px 110px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+
+    
     .subbloque h4 {
       margin: 0 0 4px;
       font-size: 14px;
