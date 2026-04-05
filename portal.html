@@ -1141,48 +1141,169 @@
       return "";
     }
 
-    async function cargarFranjasActividad(actividad) {
-      const wrap = document.getElementById("tablaFranjasWrap");
-      const body = document.getElementById("tablaFranjasBody");
+async function cargarFranjasActividad(actividad) {
+  const wrap = document.getElementById("tablaFranjasWrap");
+  const body = document.getElementById("tablaFranjasBody");
 
-      actividadFranjasSolicitada = actividad?.id || null;
-      wrap.style.display = "none";
-      body.innerHTML = "";
+  actividadFranjasSolicitada = actividad?.id || null;
+  franjaSeleccionadaPortalId = null;
+  franjasActividadActual = [];
+  wrap.style.display = "none";
+  body.innerHTML = "";
 
-      if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
-        return;
-      }
+  actualizarBotonSolicitarSegunFranja();
 
-      try {
-        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
-        const data = await res.json();
+  if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+    return;
+  }
 
-        if (actividadFranjasSolicitada !== actividad.id) return;
+  try {
+    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
+    const data = await res.json();
 
-        if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
-          return;
+    if (actividadFranjasSolicitada !== actividad.id) return;
+
+    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+      return;
+    }
+
+    const ahora = new Date();
+
+    franjasActividadActual = data.franjas
+      .filter(f => f && f.hora_inicio && f.hora_fin)
+      .map(f => {
+        const ocupadas = Number(f.ocupadas || 0);
+        const disponibles = f.disponibles == null ? null : Number(f.disponibles);
+        const capacidad = f.capacidad == null ? null : Number(f.capacidad);
+
+        let fechaHoraFin = null;
+        if (f.fecha && f.hora_fin) {
+          fechaHoraFin = new Date(`${f.fecha}T${f.hora_fin}`);
         }
 
-        const filas = data.franjas
-          .filter(f => f && f.hora_inicio && f.hora_fin)
-          .map(f => `
-            <tr>
-              <td>${textoProgramacionFranja(f)}</td>
-              <td>${f.hora_inicio}</td>
-              <td>${f.hora_fin}</td>
-            </tr>
-          `)
-          .join("");
+        const finalizada = !!fechaHoraFin && fechaHoraFin.getTime() < ahora.getTime();
+        const completa = Number(actividad.aforo_limitado || 0) === 1 && disponibles !== null && disponibles <= 0;
 
-        if (!filas.trim()) return;
+        return {
+          ...f,
+          ocupadas,
+          disponibles,
+          capacidad,
+          finalizada,
+          completa,
+          seleccionable: !finalizada && !completa
+        };
+      });
 
-        body.innerHTML = filas;
-        wrap.style.display = "block";
-      } catch (_) {
-        wrap.style.display = "none";
-        body.innerHTML = "";
+    const filas = franjasActividadActual.map(f => {
+      let estadoTexto = "—";
+      let estadoClase = "";
+
+      if (f.finalizada) {
+        estadoTexto = "Finalizada";
+      } else if (f.completa) {
+        estadoTexto = "Completa";
+        estadoClase = "completa";
+      } else if (f.disponibles != null) {
+        estadoTexto = `Disponible (${f.disponibles})`;
+        estadoClase = "disponible";
+      } else {
+        estadoTexto = "Disponible";
+        estadoClase = "disponible";
       }
-    }
+
+      return `
+        <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"}">
+          <td class="col-seleccion">
+            <input
+              type="radio"
+              name="franjaPortalSeleccionada"
+              value="${f.id}"
+              ${f.seleccionable ? "" : "disabled"}
+            >
+          </td>
+          <td>${textoProgramacionFranja(f)}</td>
+          <td>${f.hora_inicio}</td>
+          <td>${f.hora_fin}</td>
+          <td class="estado-franja ${estadoClase}">${estadoTexto}</td>
+        </tr>
+      `;
+    }).join("");
+
+    if (!filas.trim()) return;
+
+    body.innerHTML = filas;
+    wrap.style.display = "block";
+
+    const radios = body.querySelectorAll('input[name="franjaPortalSeleccionada"]');
+    radios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        franjaSeleccionadaPortalId = Number(radio.value) || null;
+        actualizarBotonSolicitarSegunFranja();
+      });
+    });
+
+    const notaExistente = wrap.querySelector(".nota-franjas");
+    if (notaExistente) notaExistente.remove();
+
+    const nota = document.createElement("div");
+    nota.className = "nota-franjas";
+    nota.textContent = "La disponibilidad mostrada es orientativa y puede variar por cancelaciones, liberación de plazas reservadas o nuevas reservas confirmadas.";
+    wrap.appendChild(nota);
+
+    actualizarBotonSolicitarSegunFranja();
+  } catch (_) {
+    franjasActividadActual = [];
+    franjaSeleccionadaPortalId = null;
+    wrap.style.display = "none";
+    body.innerHTML = "";
+    actualizarBotonSolicitarSegunFranja();
+  }
+}
+
+
+function actualizarBotonSolicitarSegunFranja() {
+  const btnSolicitar = document.getElementById("btnSolicitarActividad");
+  if (!btnSolicitar) return;
+
+  if (
+    !actividadSeleccionada ||
+    !usuarioAutenticado ||
+    usuarioAutenticado.rol !== "SOLICITANTE" ||
+    Number(actividadSeleccionada.requiere_reserva || 0) !== 1
+  ) {
+    btnSolicitar.style.display = "none";
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "";
+    return;
+  }
+
+  btnSolicitar.style.display = "inline-block";
+
+  if (Number(actividadSeleccionada.usa_franjas || 0) !== 1) {
+    btnSolicitar.disabled = false;
+    btnSolicitar.title = "";
+    return;
+  }
+
+  const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
+
+  if (!franjaSeleccionadaPortalId) {
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "Debes seleccionar una franja horaria.";
+    return;
+  }
+
+  if (!franja || !franja.seleccionable) {
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "La franja seleccionada no está disponible.";
+    return;
+  }
+
+  btnSolicitar.disabled = false;
+  btnSolicitar.title = "";
+}
+    
 
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
