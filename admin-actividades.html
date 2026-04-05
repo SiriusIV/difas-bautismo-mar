@@ -2185,7 +2185,7 @@ function renderMapaPreviewActividad() {
             document.getElementById("longitud").value = lon.toFixed(6);
             document.getElementById("zoom_mapa").value = 9;
           }
-          actualizarPreview();
+          renderMapaPreviewActividad();
         }
       } catch (e) {
         console.warn("No se pudo centrar por localidad", e);
@@ -2276,7 +2276,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("direccion_postal").value = direccion;
     }
 
-    actualizarPreview();
+    renderMapaPreviewActividad();
     return true;
   } catch (e) {
     console.warn("No se pudo resolver dirección/localidad desde coordenadas", e);
