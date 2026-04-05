@@ -1931,11 +1931,26 @@ if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) ===
       }
     }
 
-    function solicitarActividadActual() {
-      if (!actividadSeleccionada) return;
-      if (Number(actividadSeleccionada.aforo_limitado || 0) === 1 && Number(actividadSeleccionada.completa_calculada || 0) === 1) return;
-      location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
-    }
+function solicitarActividadActual() {
+  if (!actividadSeleccionada) return;
+
+  if (
+    Number(actividadSeleccionada.aforo_limitado || 0) === 1 &&
+    Number(actividadSeleccionada.completa_calculada || 0) === 1
+  ) {
+    return;
+  }
+
+  if (Number(actividadSeleccionada.usa_franjas || 0) === 1) {
+    const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
+    if (!franja || !franja.seleccionable) return;
+
+    location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}&franja_id=${encodeURIComponent(franja.id)}`;
+    return;
+  }
+
+  location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+}
 
     function editarActividadActual() {
       if (!actividadSeleccionada) return;
