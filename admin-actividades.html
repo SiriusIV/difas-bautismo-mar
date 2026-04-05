@@ -2190,66 +2190,107 @@ function limpiarFormularioFranja() {
   document.getElementById("btnCancelarEdicionFranja").classList.add("oculto");
 }
 
-    function renderListaFranjas() {
-      const wrap = document.getElementById("listaFranjas");
+function actualizarAccionesFranjaUI() {
+  const btnEditar = document.getElementById("btnEditarFranjaSeleccionada");
+  const btnBorrar = document.getElementById("btnBorrarFranjaSeleccionada");
+  const haySeleccion = Number.isInteger(Number(franjaSeleccionadaId)) && Number(franjaSeleccionadaId) > 0;
 
-      if (!franjasCache.length) {
-        wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
-        return;
-      }
+  if (btnEditar) btnEditar.disabled = !haySeleccion;
+  if (btnBorrar) btnBorrar.disabled = !haySeleccion;
+}
 
-      const filas = franjasCache.map(f => {
-        const bloqueProgramacion = textoProgramacionFranja(f);
-        const capacidad = f.capacidad == null ? "—" : String(f.capacidad);
-        const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
-        const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
+function seleccionarFranja(id) {
+  franjaSeleccionadaId = Number(id) || null;
+  renderListaFranjas();
+  actualizarAccionesFranjaUI();
+}
 
-        return `
-          <tr>
-            <td>${bloqueProgramacion}</td>
-            <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
-            <td>${capacidad}</td>
-            <td>${ocupadas}</td>
-            <td>${disponibles}</td>
-            <td>
-              <div class="acciones-fila">
-                <button type="button" class="btn-mini" data-accion="editar" data-id="${f.id}">Editar</button>
-                <button type="button" class="btn-mini peligro" data-accion="borrar" data-id="${f.id}">Borrar</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
+function editarFranjaSeleccionada() {
+  if (!franjaSeleccionadaId) {
+    mostrarMensaje("error", "Debes seleccionar una franja para editarla.");
+    return;
+  }
 
-      wrap.innerHTML = `
-        <table class="tabla-franjas-admin">
-          <thead>
-            <tr>
-              <th>Fecha / patrón</th>
-              <th>Horario</th>
-              <th>Capacidad</th>
-              <th>Ocupadas</th>
-              <th>Disponibles</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>${filas}</tbody>
-        </table>
-      `;
+  editarFranja(franjaSeleccionadaId);
+}
 
-      wrap.querySelectorAll("button[data-accion]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = Number(btn.dataset.id);
-          const accion = btn.dataset.accion;
+async function borrarFranjaSeleccionada() {
+  if (!franjaSeleccionadaId) {
+    mostrarMensaje("error", "Debes seleccionar una franja para borrarla.");
+    return;
+  }
 
-          if (accion === "editar") {
-            editarFranja(id);
-          } else if (accion === "borrar") {
-            await borrarFranja(id);
-          }
-        });
-      });
-    }
+  await borrarFranja(franjaSeleccionadaId);
+}
+
+
+    
+function renderListaFranjas() {
+  const wrap = document.getElementById("listaFranjas");
+
+  if (!franjasCache.length) {
+    franjaSeleccionadaId = null;
+    wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
+    actualizarAccionesFranjaUI();
+    return;
+  }
+
+  const existeSeleccionada = franjasCache.some(f => Number(f.id) === Number(franjaSeleccionadaId));
+  if (!existeSeleccionada) {
+    franjaSeleccionadaId = null;
+  }
+
+  const filas = franjasCache.map(f => {
+    const bloqueProgramacion = textoProgramacionFranja(f);
+    const capacidad = f.capacidad == null ? "—" : String(f.capacidad);
+    const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
+    const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
+    const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
+
+    return `
+      <tr class="${seleccionada ? "seleccionada" : ""}">
+        <td class="col-seleccion-franja">
+          <input
+            type="radio"
+            name="franjaSeleccionada"
+            class="input-seleccion-franja"
+            data-id="${f.id}"
+            ${seleccionada ? "checked" : ""}
+          >
+        </td>
+        <td>${bloqueProgramacion}</td>
+        <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
+        <td>${capacidad}</td>
+        <td>${ocupadas}</td>
+        <td>${disponibles}</td>
+      </tr>
+    `;
+  }).join("");
+
+  wrap.innerHTML = `
+    <table class="tabla-franjas-admin">
+      <thead>
+        <tr>
+          <th class="col-seleccion-franja"></th>
+          <th>Fecha / patrón</th>
+          <th>Horario</th>
+          <th>Capacidad</th>
+          <th>Ocupadas</th>
+          <th>Disponibles</th>
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>
+  `;
+
+  wrap.querySelectorAll('input[name="franjaSeleccionada"]').forEach(input => {
+    input.addEventListener("change", () => {
+      seleccionarFranja(input.dataset.id);
+    });
+  });
+
+  actualizarAccionesFranjaUI();
+}
 
     function renderPreviewFranjas() {
       const wrap = document.getElementById("tablaFranjasPreviewWrap");
