@@ -1624,6 +1624,11 @@ function limpiarMensaje() {
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
   const btnCancelar = document.getElementById("btnCancelarMensajeActividad");
 
+  if (temporizadorMensajeActividad) {
+    clearTimeout(temporizadorMensajeActividad);
+    temporizadorMensajeActividad = null;
+  }
+
   m.className = "mensaje";
   m.style.display = "none";
   textoEl.textContent = "";
