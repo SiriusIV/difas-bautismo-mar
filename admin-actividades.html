@@ -2857,25 +2857,32 @@ function retrocederPaso() {
         const el = document.getElementById(id);
         if (!el) return;
 
-          el.addEventListener("focus", () => {
-            guardarValorPrevioCampoCritico(id);
-          });
+        el.addEventListener("focus", () => {
+          guardarValorPrevioCampoCritico(id);
+        });
 
-          el.addEventListener("change", async () => {
-            const okCambio = await manejarCambioCriticoCampo(id);
+        el.addEventListener("change", async () => {
+          const okCambio = await manejarCambioCriticoCampo(id);
           if (!okCambio) return;
+
+          actualizarVisibilidadFormulario();
+          actualizarPreview();
+
+          if (id === "usa_franjas") {
+            if (document.getElementById("usa_franjas").value === "1" && document.getElementById("actividadId").value) {
+              await cargarFranjas();
+            } else {
+              franjasCache = [];
+              renderListaFranjas();
+              renderPreviewFranjas();
+            }
+          }
         });
       });
-      
+
       [
         "nombre",
         "organizador_publico",
-        "tipo",
-        "usa_franjas",
-        "requiere_reserva",
-        "aforo_limitado",
-        "fecha_inicio",
-        "fecha_fin",
         "es_recurrente",
         "patron_recurrencia",
         "visible_portal",
@@ -2907,19 +2914,9 @@ function retrocederPaso() {
           }
         });
 
-        el.addEventListener("change", async () => {
+        el.addEventListener("change", () => {
           actualizarVisibilidadFormulario();
           actualizarPreview();
-
-          if (id === "usa_franjas") {
-            if (document.getElementById("usa_franjas").value === "1" && document.getElementById("actividadId").value) {
-              await cargarFranjas();
-            } else {
-              franjasCache = [];
-              renderListaFranjas();
-              renderPreviewFranjas();
-            }
-          }
 
           if (id === "provincia") {
             programarRecentradoLocalidad();
@@ -2927,25 +2924,22 @@ function retrocederPaso() {
         });
       });
 
-try {
-  cargandoActividad = true;
-  await cargarActividadSiEsEdicion();
-} catch (error) {
-  mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
-} finally {
-  cargandoActividad = false;
-}
-
-actualizarVisibilidadFormulario();
-actualizarPreview();
-actualizarBotonEliminar();
-renderListaFranjas();
-renderPreviewFranjas();
-CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
-mostrarPaso(0);
+      try {
+        cargandoActividad = true;
+        await cargarActividadSiEsEdicion();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
+      } finally {
+        cargandoActividad = false;
       }
+
+      actualizarVisibilidadFormulario();
+      actualizarPreview();
+      actualizarBotonEliminar();
+      renderListaFranjas();
+      renderPreviewFranjas();
+      CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
+      mostrarPaso(0);
     });
   </script>
 </body>
