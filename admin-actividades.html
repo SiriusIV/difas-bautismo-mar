@@ -2072,43 +2072,36 @@ async function manejarCambioCriticoCampo(id) {
     }
 
     function destruirMapaPreviewActividad() {
-      if (mapaPreviewActividad) {
-        mapaPreviewActividad.remove();
-        mapaPreviewActividad = null;
-        marcadorPreviewActividad = null;
-      }
-    }
+  if (mapaPreviewActividad) {
+    mapaPreviewActividad.remove();
+    mapaPreviewActividad = null;
+    marcadorPreviewActividad = null;
+  }
+}
 
-function renderMapaPreviewActividad() {
-  const latStr = document.getElementById("latitud").value.trim();
-  const lngStr = document.getElementById("longitud").value.trim();
-  const zoomStr = document.getElementById("zoom_mapa").value.trim();
-  const localidad = document.getElementById("provincia").value.trim();
-
+function ocultarMapaPreviewActividad() {
   const mapaWrap = document.getElementById("mapaWrapPreview");
   const mapaDiv = document.getElementById("mapaPreviewActividad");
-  if (!mapaDiv || !mapaWrap) return;
-
-  const lat = Number(latStr);
-  const lng = Number(lngStr);
-  const zoom = Number(zoomStr || 13);
-  const hayCoordenadas = latStr !== "" && lngStr !== "" && Number.isFinite(lat) && Number.isFinite(lng);
-
-  if (!hayCoordenadas && !localidad) {
-    destruirMapaPreviewActividad();
-    mapaDiv.innerHTML = "";
-    mapaWrap.classList.add("mapa-oculto");
-    mapaWrap.style.display = "none";
-    return;
-  }
+  if (!mapaWrap || !mapaDiv) return;
 
   destruirMapaPreviewActividad();
   mapaDiv.innerHTML = "";
+  mapaWrap.classList.add("mapa-oculto");
+  mapaWrap.style.display = "none";
+}
+
+function mostrarMapaPreviewActividad() {
+  const mapaWrap = document.getElementById("mapaWrapPreview");
+  if (!mapaWrap) return;
   mapaWrap.classList.remove("mapa-oculto");
   mapaWrap.style.display = "block";
+}
 
-  let centro = hayCoordenadas ? [lat, lng] : [40.4168, -3.7038];
-  let zoomInicial = hayCoordenadas && Number.isFinite(zoom) ? zoom : 6;
+function asegurarMapaPreviewActividad(centro, zoomInicial) {
+  const mapaDiv = document.getElementById("mapaPreviewActividad");
+  if (!mapaDiv) return false;
+
+  if (mapaPreviewActividad) return true;
 
   mapaPreviewActividad = L.map("mapaPreviewActividad", {
     center: centro,
@@ -2124,75 +2117,114 @@ function renderMapaPreviewActividad() {
   marcadorPreviewActividad = L.marker(centro, { draggable: true }).addTo(mapaPreviewActividad);
 
   marcadorPreviewActividad.on("dragend", async function (e) {
-  const pos = e.target.getLatLng();
-  document.getElementById("latitud").value = pos.lat.toFixed(6);
-  document.getElementById("longitud").value = pos.lng.toFixed(6);
-  document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+    const pos = e.target.getLatLng();
+    document.getElementById("latitud").value = pos.lat.toFixed(6);
+    document.getElementById("longitud").value = pos.lng.toFixed(6);
+    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
 
-  await actualizarDireccionYLocalidadDesdeCoordenadas(pos.lat, pos.lng);
-  actualizarPreview();
-});
+    await actualizarDireccionYLocalidadDesdeCoordenadas(pos.lat, pos.lng);
+    actualizarPreview();
+  });
 
- mapaPreviewActividad.on("click", async function (e) {
-  const nuevaLat = e.latlng.lat;
-  const nuevaLng = e.latlng.lng;
+  mapaPreviewActividad.on("click", async function (e) {
+    const nuevaLat = e.latlng.lat;
+    const nuevaLng = e.latlng.lng;
 
-  document.getElementById("latitud").value = nuevaLat.toFixed(6);
-  document.getElementById("longitud").value = nuevaLng.toFixed(6);
-  document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+    document.getElementById("latitud").value = nuevaLat.toFixed(6);
+    document.getElementById("longitud").value = nuevaLng.toFixed(6);
+    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
 
-  marcadorPreviewActividad.setLatLng([nuevaLat, nuevaLng]);
-  await actualizarDireccionYLocalidadDesdeCoordenadas(nuevaLat, nuevaLng);
-  actualizarPreview();
-});
+    if (marcadorPreviewActividad) {
+      marcadorPreviewActividad.setLatLng([nuevaLat, nuevaLng]);
+    }
+
+    await actualizarDireccionYLocalidadDesdeCoordenadas(nuevaLat, nuevaLng);
+    actualizarPreview();
+  });
 
   mapaPreviewActividad.on("zoomend", function () {
     document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
   });
-
-  if (!hayCoordenadas && localidad) {
-    buscarLocalidadYCentrar(localidad, true);
-  }
 
   setTimeout(() => {
     if (mapaPreviewActividad) {
       mapaPreviewActividad.invalidateSize(true);
     }
   }, 150);
+
+  return true;
 }
 
-    async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
-      const valor = normalizarTexto(nombreLocalidad);
-      if (!valor) return;
+function sincronizarMapaPreviewActividad(lat, lng, zoom = 13) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-      ultimaLocalidadBuscada = valor;
+  mostrarMapaPreviewActividad();
+  asegurarMapaPreviewActividad([lat, lng], zoom);
 
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
-        const data = await res.json();
+  if (mapaPreviewActividad) {
+    mapaPreviewActividad.setView([lat, lng], zoom);
+  }
 
-        if (valor !== ultimaLocalidadBuscada) return;
+  if (marcadorPreviewActividad) {
+    marcadorPreviewActividad.setLatLng([lat, lng]);
+  }
+}
 
-        if (data && data.length > 0 && mapaPreviewActividad) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
-          mapaPreviewActividad.setView([lat, lon], 9);
-          if (marcadorPreviewActividad) {
-            marcadorPreviewActividad.setLatLng([lat, lon]);
-          }
-          if (fijarMarcador) {
-            document.getElementById("latitud").value = lat.toFixed(6);
-            document.getElementById("longitud").value = lon.toFixed(6);
-            document.getElementById("zoom_mapa").value = 9;
-          }
-          renderMapaPreviewActividad();
-        }
-      } catch (e) {
-        console.warn("No se pudo centrar por localidad", e);
-      }
+function renderMapaPreviewActividad() {
+  const latStr = document.getElementById("latitud").value.trim();
+  const lngStr = document.getElementById("longitud").value.trim();
+  const zoomStr = document.getElementById("zoom_mapa").value.trim();
+  const localidad = document.getElementById("provincia").value.trim();
+
+  const lat = Number(latStr);
+  const lng = Number(lngStr);
+  const zoom = Number(zoomStr || 13);
+  const hayCoordenadas = latStr !== "" && lngStr !== "" && Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (!hayCoordenadas) {
+    if (!localidad) {
+      ocultarMapaPreviewActividad();
+    }
+    return;
+  }
+
+  sincronizarMapaPreviewActividad(lat, lng, Number.isFinite(zoom) ? zoom : 13);
+}
+
+async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
+  const valor = normalizarTexto(nombreLocalidad);
+  if (!valor) return false;
+
+  ultimaLocalidadBuscada = valor;
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
+    const data = await res.json();
+
+    if (valor !== ultimaLocalidadBuscada) return false;
+    if (!data || !data.length) return false;
+
+    const lat = parseFloat(data[0].lat);
+    const lon = parseFloat(data[0].lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+
+    if (fijarMarcador) {
+      document.getElementById("latitud").value = lat.toFixed(6);
+      document.getElementById("longitud").value = lon.toFixed(6);
+      document.getElementById("zoom_mapa").value = 9;
     }
 
-    async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador = false) {
+    sincronizarMapaPreviewActividad(lat, lon, 9);
+    actualizarPreview();
+    return true;
+  } catch (e) {
+    console.warn("No se pudo centrar por localidad", e);
+    return false;
+  }
+}
+
+async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador = false) {
   const dir = normalizarTexto(direccion);
   const loc = normalizarTexto(localidad);
 
@@ -2204,7 +2236,7 @@ function renderMapaPreviewActividad() {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`);
     const data = await res.json();
 
-    if (!data || !data.length || !mapaPreviewActividad) {
+    if (!data || !data.length) {
       return false;
     }
 
@@ -2215,18 +2247,13 @@ function renderMapaPreviewActividad() {
       return false;
     }
 
-    mapaPreviewActividad.setView([lat, lon], 16);
-
-    if (marcadorPreviewActividad) {
-      marcadorPreviewActividad.setLatLng([lat, lon]);
-    }
-
     if (fijarMarcador) {
       document.getElementById("latitud").value = lat.toFixed(6);
       document.getElementById("longitud").value = lon.toFixed(6);
       document.getElementById("zoom_mapa").value = 16;
     }
 
+    sincronizarMapaPreviewActividad(lat, lon, 16);
     actualizarPreview();
     return true;
   } catch (e) {
@@ -2260,13 +2287,12 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       "";
 
     const direccion =
-      data.display_name ||
       [
         address.road,
         address.house_number,
         localidad,
         address.state
-      ].filter(Boolean).join(", ");
+      ].filter(Boolean).join(", ") || data.display_name || "";
 
     if (localidad) {
       document.getElementById("provincia").value = localidad;
@@ -2276,7 +2302,6 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("direccion_postal").value = direccion;
     }
 
-    renderMapaPreviewActividad();
     return true;
   } catch (e) {
     console.warn("No se pudo resolver dirección/localidad desde coordenadas", e);
