@@ -1747,23 +1747,31 @@ if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) ===
       const btnReservas = document.getElementById("btnVerReservasActividad");
       const btnEnlaceExterno = document.getElementById("btnEnlaceExterno");
 
-      btnSolicitar.style.display =
-        usuarioAutenticado &&
-        usuarioAutenticado.rol === "SOLICITANTE" &&
-        Number(a.requiere_reserva || 0) === 1
-          ? "inline-block"
-          : "none";
-
       btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
 
-if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
-  btnSolicitar.disabled = true;
-  btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
-} else {
-  btnSolicitar.disabled = false;
-  btnSolicitar.title = "";
-}
+      if (
+        usuarioAutenticado &&
+        usuarioAutenticado.rol === "SOLICITANTE" &&
+        Number(a.requiere_reserva || 0) === 1
+      ) {
+        btnSolicitar.style.display = "inline-block";
+      } else {
+        btnSolicitar.style.display = "none";
+      }
+
+      franjaSeleccionadaPortalId = null;
+      franjasActividadActual = [];
+
+      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+        btnSolicitar.disabled = true;
+        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+      } else {
+        btnSolicitar.disabled = Number(a.usa_franjas || 0) === 1;
+        btnSolicitar.title = Number(a.usa_franjas || 0) === 1
+          ? "Debes seleccionar una franja horaria."
+          : "";
+      }
 
       if (tieneEnlaceExterno) {
         btnEnlaceExterno.style.display = "inline-block";
