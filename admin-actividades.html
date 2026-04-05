@@ -2450,6 +2450,9 @@ async function borrarFranja(id) {
                 return;
               }
 
+              if (Number(franjaSeleccionadaId) === Number(id)) {
+                franjaSeleccionadaId = null;
+              }
               await cargarFranjas();
               limpiarFormularioFranja();
               mostrarMensaje("ok", dataFinal.mensaje || "Franja eliminada correctamente.");
@@ -2486,6 +2489,10 @@ async function borrarFranja(id) {
               return;
             }
 
+            if (Number(franjaSeleccionadaId) === Number(id)) {
+              franjaSeleccionadaId = null;
+            }
+            
             await cargarFranjas();
             limpiarFormularioFranja();
             mostrarMensaje("ok", dataFinal.mensaje || "Franja eliminada correctamente.");
