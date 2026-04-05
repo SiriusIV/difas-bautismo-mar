@@ -371,7 +371,7 @@
       display: grid;
       grid-template-columns: 300px 1fr;
       gap: 16px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .detalle-col-izq {
@@ -755,7 +755,8 @@
 .detalle-contenido {
   display: flex;
   flex-direction: column;
-  min-height: 470px;
+  align-self: stretch;
+  min-height: 100%;
 }
 
 .bloque-programacion {
@@ -763,6 +764,7 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  width: 100%;
 }
 
 .tabla-franjas {
@@ -770,6 +772,8 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  width: 100%;
+  align-items: flex-start;
 }
 
 .tabla-franjas h4 {
@@ -778,53 +782,64 @@
 
 .tabla-franjas table {
   width: auto;
-  min-width: 640px;
+  min-width: 0;
   margin-left: 0;
+  border-collapse: separate;
+  border-spacing: 0 6px;
 }
 
 .tabla-franjas th,
 .tabla-franjas td {
-  padding: 5px 12px 5px 0;
+  padding: 5px 10px 5px 0;
+  text-align: left;
+  vertical-align: middle;
 }
 
 .tabla-franjas th.col-seleccion,
 .tabla-franjas td.col-seleccion {
-  width: 20px;
-  min-width: 20px;
-  padding-right: 4px;
+  width: 14px;
+  min-width: 14px;
+  padding-right: 2px;
   text-align: center;
 }
 
 .tabla-franjas th:nth-child(1),
 .tabla-franjas td:nth-child(1) {
-  width: 20px;
-  min-width: 20px;
-  padding-right: 4px;
+  width: 14px;
+  min-width: 14px;
+  padding-right: 2px;
 }
 
 .tabla-franjas th:nth-child(2),
 .tabla-franjas td:nth-child(2) {
-  min-width: 240px;
+  min-width: 210px;
 }
 
 .tabla-franjas th:nth-child(3),
 .tabla-franjas td:nth-child(3),
 .tabla-franjas th:nth-child(4),
 .tabla-franjas td:nth-child(4) {
-  min-width: 72px;
+  min-width: 54px;
+  white-space: nowrap;
 }
 
 .tabla-franjas th:nth-child(5),
 .tabla-franjas td:nth-child(5) {
-  min-width: 125px;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.tabla-franjas tbody tr td:first-child input[type="radio"] {
+  margin: 0;
 }
 
 .tabla-franjas .nota-franjas {
   margin-top: auto;
-  padding-top: 18px;
+  padding-top: 22px;
   font-size: 12px;
   color: #5f6d7a;
   line-height: 1.45;
+  align-self: flex-start;
 }
 
 .tabla-franjas tbody tr td:first-child input[type="radio"] {
