@@ -2922,7 +2922,9 @@ function retrocederPaso() {
       });
 
       try {
-        await cargarActividadSiEsEdicion();
+        cargandoActividad = true;
+          await cargarActividadSiEsEdicion();
+        cargandoActividad = false;
         actualizarVisibilidadFormulario();
         actualizarPreview();
         actualizarBotonEliminar();
