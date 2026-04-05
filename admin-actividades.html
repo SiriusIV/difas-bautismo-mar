@@ -2230,7 +2230,56 @@ async function manejarCambioCriticoCampo(id) {
   }
 }
     
-function programarRecentradoLocalidad() {
+async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon))) return false;
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`
+    );
+
+    const data = await res.json();
+
+    if (!data || !data.address) {
+      return false;
+    }
+
+    const address = data.address || {};
+
+    const localidad =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county ||
+      "";
+
+    const direccion =
+      data.display_name ||
+      [
+        address.road,
+        address.house_number,
+        localidad,
+        address.state
+      ].filter(Boolean).join(", ");
+
+    if (localidad) {
+      document.getElementById("provincia").value = localidad;
+    }
+
+    if (direccion) {
+      document.getElementById("direccion_postal").value = direccion;
+    }
+
+    actualizarPreview();
+    return true;
+  } catch (e) {
+    console.warn("No se pudo resolver dirección/localidad desde coordenadas", e);
+    return false;
+  }
+}
+    
+    function programarRecentradoLocalidad() {
   const localidad = document.getElementById("provincia").value.trim();
   if (!localidad) return;
 
