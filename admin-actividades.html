@@ -1414,18 +1414,29 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
   const m = document.getElementById("mensajeActividad");
   const textoEl = document.getElementById("mensajeActividadTexto");
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
+  const btnCancelar = document.getElementById("btnCancelarMensajeActividad");
 
   m.className = "mensaje " + tipo;
   m.style.display = "block";
   textoEl.textContent = texto || "";
 
+  btnAceptar.classList.add("oculto");
+  btnCancelar.classList.add("oculto");
+  callbackAceptarMensajeActividad = null;
+  callbackCancelarMensajeActividad = null;
+
   if (opciones.bloqueante) {
     btnAceptar.classList.remove("oculto");
+    callbackAceptarMensajeActividad = typeof opciones.onAccept === "function" ? opciones.onAccept : null;
+    bloquearPantallaPorErrorActividad();
+  } else if (opciones.confirmable) {
+    btnAceptar.classList.remove("oculto");
+    btnCancelar.classList.remove("oculto");
+    callbackAceptarMensajeActividad = typeof opciones.onAccept === "function" ? opciones.onAccept : null;
+    callbackCancelarMensajeActividad = typeof opciones.onCancel === "function" ? opciones.onCancel : null;
     bloquearPantallaPorErrorActividad();
   } else {
-    btnAceptar.classList.add("oculto");
     desbloquearPantallaPorErrorActividad();
-    callbackErrorPendienteActividad = null;
   }
 
   document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1435,20 +1446,32 @@ function limpiarMensaje() {
   const m = document.getElementById("mensajeActividad");
   const textoEl = document.getElementById("mensajeActividadTexto");
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
+  const btnCancelar = document.getElementById("btnCancelarMensajeActividad");
 
   m.className = "mensaje";
   m.style.display = "none";
   textoEl.textContent = "";
   btnAceptar.classList.add("oculto");
-  callbackErrorPendienteActividad = null;
+  btnCancelar.classList.add("oculto");
+  callbackAceptarMensajeActividad = null;
+  callbackCancelarMensajeActividad = null;
   desbloquearPantallaPorErrorActividad();
 }
 
 function aceptarMensajeErrorActividad() {
-  if (typeof callbackErrorPendienteActividad === "function") {
-    callbackErrorPendienteActividad();
-  }
+  const callback = callbackAceptarMensajeActividad;
   limpiarMensaje();
+  if (typeof callback === "function") {
+    callback();
+  }
+}
+
+function cancelarMensajeErrorActividad() {
+  const callback = callbackCancelarMensajeActividad;
+  limpiarMensaje();
+  if (typeof callback === "function") {
+    callback();
+  }
 }
 
     function redirigirLogin() {
