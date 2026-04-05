@@ -713,11 +713,11 @@
     }
 
     .tabla-franjas th,
-    .tabla-franjas td {
-      padding: 5px 10px 5px 0;
-      text-align: left;
-      vertical-align: top;
-    }
+.tabla-franjas td {
+  padding: 5px 6px 5px 0;
+  text-align: left;
+  vertical-align: middle;
+}
 
     .tabla-franjas .col-seleccion {
   width: 40px;
@@ -797,22 +797,24 @@
 
 .tabla-franjas th.col-seleccion,
 .tabla-franjas td.col-seleccion {
-  width: 12px;
-  min-width: 12px;
-  padding: 0 4px 0 0;
+  width: 1%;
+  min-width: 0;
+  white-space: nowrap;
+  padding: 0 2px 0 0;
   text-align: left;
 }
 
 .tabla-franjas th:nth-child(1),
 .tabla-franjas td:nth-child(1) {
-  width: 12px;
-  min-width: 12px;
-  padding: 0 4px 0 0;
+  width: 1%;
+  min-width: 0;
+  white-space: nowrap;
+  padding: 0 2px 0 0;
 }
 
 .tabla-franjas th:nth-child(2),
 .tabla-franjas td:nth-child(2) {
-  min-width: 170px;
+  min-width: 150px;
 }
 
 .tabla-franjas th:nth-child(3),
@@ -835,12 +837,8 @@
 }
 
 .tabla-franjas td.col-seleccion {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
   padding-left: 6px;
 }
-
 .tabla-franjas .nota-franjas {
   margin-top: auto;
   padding-top: 22px;
@@ -852,8 +850,9 @@
 
 .tabla-franjas tbody tr td:first-child input[type="radio"] {
   margin: 0;
+  display: inline-block;
+  vertical-align: middle;
 }
-
 .tabla-franjas tbody td {
   vertical-align: middle;
 }
