@@ -1583,6 +1583,11 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
   const btnCancelar = document.getElementById("btnCancelarMensajeActividad");
 
+  if (temporizadorMensajeActividad) {
+    clearTimeout(temporizadorMensajeActividad);
+    temporizadorMensajeActividad = null;
+  }
+
   m.className = "mensaje " + tipo;
   m.style.display = "block";
   textoEl.textContent = texto || "";
@@ -1604,6 +1609,10 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
     bloquearPantallaPorErrorActividad();
   } else {
     desbloquearPantallaPorErrorActividad();
+
+    temporizadorMensajeActividad = setTimeout(() => {
+      limpiarMensaje();
+    }, 5000);
   }
 
   document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
