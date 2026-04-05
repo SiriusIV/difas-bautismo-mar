@@ -2927,17 +2927,22 @@ function retrocederPaso() {
         });
       });
 
-      try {
-        cargandoActividad = true;
-          await cargarActividadSiEsEdicion();
-        cargandoActividad = false;
-        actualizarVisibilidadFormulario();
-        actualizarPreview();
-        actualizarBotonEliminar();
-        renderListaFranjas();
-        renderPreviewFranjas();
-        CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
-        mostrarPaso(0);
+try {
+  cargandoActividad = true;
+  await cargarActividadSiEsEdicion();
+} catch (error) {
+  mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
+} finally {
+  cargandoActividad = false;
+}
+
+actualizarVisibilidadFormulario();
+actualizarPreview();
+actualizarBotonEliminar();
+renderListaFranjas();
+renderPreviewFranjas();
+CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
+mostrarPaso(0);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
       }
