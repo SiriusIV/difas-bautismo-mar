@@ -1642,6 +1642,7 @@ async function validarCambioCriticoActividad() {
 
 async function manejarCambioCriticoCampo(id) {
   if (pantallaBloqueadaPorErrorActividad) return false;
+  if (cargandoActividad) return true;
 
   limpiarMensaje();
 
