@@ -2124,27 +2124,27 @@ function renderMapaPreviewActividad() {
   marcadorPreviewActividad = L.marker(centro, { draggable: true }).addTo(mapaPreviewActividad);
 
   marcadorPreviewActividad.on("dragend", async function (e) {
-    const pos = e.target.getLatLng();
-    document.getElementById("latitud").value = pos.lat.toFixed(6);
-    document.getElementById("longitud").value = pos.lng.toFixed(6);
-    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+  const pos = e.target.getLatLng();
+  document.getElementById("latitud").value = pos.lat.toFixed(6);
+  document.getElementById("longitud").value = pos.lng.toFixed(6);
+  document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
 
-    actualizarPreview();
-    await actualizarDireccionYLocalidadDesdeCoordenadas(pos.lat, pos.lng);
-  });
+  await actualizarDireccionYLocalidadDesdeCoordenadas(pos.lat, pos.lng);
+  actualizarPreview();
+});
 
-  mapaPreviewActividad.on("click", async function (e) {
-    const nuevaLat = e.latlng.lat;
-    const nuevaLng = e.latlng.lng;
+ mapaPreviewActividad.on("click", async function (e) {
+  const nuevaLat = e.latlng.lat;
+  const nuevaLng = e.latlng.lng;
 
-    document.getElementById("latitud").value = nuevaLat.toFixed(6);
-    document.getElementById("longitud").value = nuevaLng.toFixed(6);
-    document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
+  document.getElementById("latitud").value = nuevaLat.toFixed(6);
+  document.getElementById("longitud").value = nuevaLng.toFixed(6);
+  document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
 
-    marcadorPreviewActividad.setLatLng([nuevaLat, nuevaLng]);
-    actualizarPreview();
-    await actualizarDireccionYLocalidadDesdeCoordenadas(nuevaLat, nuevaLng);
-  });
+  marcadorPreviewActividad.setLatLng([nuevaLat, nuevaLng]);
+  await actualizarDireccionYLocalidadDesdeCoordenadas(nuevaLat, nuevaLng);
+  actualizarPreview();
+});
 
   mapaPreviewActividad.on("zoomend", function () {
     document.getElementById("zoom_mapa").value = mapaPreviewActividad.getZoom();
