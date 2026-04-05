@@ -790,29 +790,31 @@
 
 .tabla-franjas th,
 .tabla-franjas td {
-  padding: 5px 10px 5px 0;
+  padding: 5px 8px 5px 0;
   text-align: left;
   vertical-align: middle;
 }
 
 .tabla-franjas th.col-seleccion,
 .tabla-franjas td.col-seleccion {
-  width: 14px;
-  min-width: 14px;
+  width: 22px;
+  min-width: 22px;
   padding-right: 2px;
-  text-align: center;
+  padding-left: 0;
+  text-align: left;
 }
 
 .tabla-franjas th:nth-child(1),
 .tabla-franjas td:nth-child(1) {
-  width: 14px;
-  min-width: 14px;
+  width: 22px;
+  min-width: 22px;
   padding-right: 2px;
+  padding-left: 0;
 }
 
 .tabla-franjas th:nth-child(2),
 .tabla-franjas td:nth-child(2) {
-  min-width: 210px;
+  min-width: 190px;
 }
 
 .tabla-franjas th:nth-child(3),
@@ -831,6 +833,14 @@
 
 .tabla-franjas tbody tr td:first-child input[type="radio"] {
   margin: 0;
+  display: block;
+}
+
+.tabla-franjas td.col-seleccion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 8px;
 }
 
 .tabla-franjas .nota-franjas {
