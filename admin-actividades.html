@@ -2187,16 +2187,78 @@ async function manejarCambioCriticoCampo(id) {
       }
     }
 
-    function programarRecentradoLocalidad() {
-      const localidad = document.getElementById("provincia").value.trim();
-      if (!localidad) return;
+    async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador = false) {
+  const dir = normalizarTexto(direccion);
+  const loc = normalizarTexto(localidad);
 
-      clearTimeout(debounceBusquedaLocalidad);
-      debounceBusquedaLocalidad = setTimeout(() => {
-        buscarLocalidadYCentrar(localidad, true);
-      }, 450);
+  if (!dir) return false;
+
+  const consulta = loc ? `${dir}, ${loc}, España` : `${dir}, España`;
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`);
+    const data = await res.json();
+
+    if (!data || !data.length || !mapaPreviewActividad) {
+      return false;
     }
 
+    const lat = parseFloat(data[0].lat);
+    const lon = parseFloat(data[0].lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return false;
+    }
+
+    mapaPreviewActividad.setView([lat, lon], 16);
+
+    if (marcadorPreviewActividad) {
+      marcadorPreviewActividad.setLatLng([lat, lon]);
+    }
+
+    if (fijarMarcador) {
+      document.getElementById("latitud").value = lat.toFixed(6);
+      document.getElementById("longitud").value = lon.toFixed(6);
+      document.getElementById("zoom_mapa").value = 16;
+    }
+
+    actualizarPreview();
+    return true;
+  } catch (e) {
+    console.warn("No se pudo centrar por dirección postal", e);
+    return false;
+  }
+}
+    
+function programarRecentradoLocalidad() {
+  const localidad = document.getElementById("provincia").value.trim();
+  if (!localidad) return;
+
+  document.getElementById("direccion_postal").value = "";
+
+  clearTimeout(debounceBusquedaLocalidad);
+  debounceBusquedaLocalidad = setTimeout(() => {
+    buscarLocalidadYCentrar(localidad, true);
+  }, 450);
+}
+
+    function programarRecentradoDireccion() {
+  const direccion = document.getElementById("direccion_postal").value.trim();
+  const localidad = document.getElementById("provincia").value.trim();
+
+  if (!direccion) return;
+
+  clearTimeout(debounceBusquedaLocalidad);
+  debounceBusquedaLocalidad = setTimeout(async () => {
+    const ok = await buscarDireccionYCentrar(direccion, localidad, true);
+
+    if (!ok) {
+      mostrarMensaje("error", "No se ha podido localizar la dirección postal indicada.");
+    }
+  }, 500);
+}
+    
+    
     function actualizarEstadoFranjasUI() {
       const usaFranjas = document.getElementById("usa_franjas").value === "1";
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
