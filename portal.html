@@ -1921,11 +1921,7 @@ function renderMapaActividad(a) {
         String(a.enlace_externo_url || "").trim() !== "";
 
       const organizadorHTML = a.organizador_publico
-        ? `<div><strong>Organiza:</strong> ${
-            tieneEnlaceExterno
-              ? `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="link-organizador">${a.organizador_publico}</a>`
-              : a.organizador_publico
-          }</div>`
+        ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>`
         : "";
 
       document.getElementById("detalleMeta").innerHTML = `
