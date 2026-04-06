@@ -1619,6 +1619,17 @@ function actualizarBotonSolicitarSegunFranja() {
 
   select.value = programaSeleccionado;
 }
+
+function actualizarSubtituloCabecera() {
+  const h2 = document.getElementById("subtituloCabecera");
+  if (!h2) return;
+
+  if (!provinciaSeleccionada) {
+    h2.textContent = "Armada";
+  } else {
+    h2.textContent = `Armada - ${provinciaSeleccionada}`;
+  }
+}
     
 
 function obtenerActividadesFiltradas() {
@@ -1759,6 +1770,7 @@ function obtenerActividadesFiltradas() {
         btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
       });
 
+      actualizarSubtituloCabecera();
       renderDetalle();
 
       setTimeout(() => {
