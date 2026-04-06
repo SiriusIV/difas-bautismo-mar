@@ -1455,6 +1455,14 @@ function actualizarBotonSolicitarSegunFranja() {
       franja.style.display = texto.textContent ? "block" : "none";
     }
 
+    function actualizarVisibilidadSeleccionFranjas() {
+      if (usuarioAutenticado) {
+        document.body.classList.remove("sin-sesion-franjas");
+      } else {
+        document.body.classList.add("sin-sesion-franjas");
+      }
+    }
+    
     async function comprobarSesionUsuario() {
       const res = await fetch("/api/usuario/session", { credentials: "include" });
 
@@ -1486,6 +1494,7 @@ function actualizarBotonSolicitarSegunFranja() {
       document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
 
       actualizarFranjaSesion();
+      actualizarVisibilidadSeleccionFranjas();
       renderDetalle();
     }
 
