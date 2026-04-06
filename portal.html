@@ -2249,15 +2249,28 @@ function solicitarActividadActual() {
         }, { passive: true });
       }
 
-      const filtroProvincia = document.getElementById("filtroProvincia");
-      if (filtroProvincia) {
-        filtroProvincia.addEventListener("change", function () {
-          provinciaSeleccionada = this.value;
-          actividadSeleccionada = null;
-          carruselAutoIndex = 0;
-          renderizarActividades();
-        });
-      }
+const filtroProvincia = document.getElementById("filtroProvincia");
+if (filtroProvincia) {
+  filtroProvincia.addEventListener("change", function () {
+    provinciaSeleccionada = this.value;
+    programaSeleccionado = "";
+    actividadSeleccionada = null;
+    carruselAutoIndex = 0;
+    renderizarFiltroProgramas();
+    actualizarSubtituloCabecera();
+    renderizarActividades();
+  });
+}
+
+const filtroPrograma = document.getElementById("filtroPrograma");
+if (filtroPrograma) {
+  filtroPrograma.addEventListener("change", function () {
+    programaSeleccionado = this.value;
+    actividadSeleccionada = null;
+    carruselAutoIndex = 0;
+    renderizarActividades();
+  });
+}
 
       iniciarAutoPlayCarrusel();
     })();
