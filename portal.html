@@ -1902,8 +1902,6 @@ function renderMapaActividad(a) {
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
-        document.getElementById("btnEnlaceExterno").style.display = "none";
-        document.getElementById("btnEnlaceExterno").onclick = null;
         document.getElementById("direccionActividad").style.display = "none";
         document.getElementById("direccionActividad").innerHTML = "";
         renderMapaActividad(null);
@@ -1912,7 +1910,15 @@ function renderMapaActividad(a) {
         return;
       }
 
-      document.getElementById("detalleTitulo").textContent = a.titulo_publico || a.nombre;
+            const detalleTitulo = document.getElementById("detalleTitulo");
+      const tituloActividad = a.titulo_publico || a.nombre;
+
+      if (tieneEnlaceExterno) {
+        detalleTitulo.innerHTML = `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${tituloActividad}</a>`;
+      } else {
+        detalleTitulo.textContent = tituloActividad;
+      }
+
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
 
@@ -1970,18 +1976,6 @@ if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) ===
         btnSolicitar.title = Number(a.usa_franjas || 0) === 1
           ? "Debes seleccionar una franja horaria."
           : "";
-      }
-
-      if (tieneEnlaceExterno) {
-        btnEnlaceExterno.style.display = "inline-block";
-        btnEnlaceExterno.textContent = (a.enlace_externo_texto || "").trim() || "Más información";
-        btnEnlaceExterno.onclick = () => {
-          window.open(a.enlace_externo_url, "_blank", "noopener,noreferrer");
-        };
-      } else {
-        btnEnlaceExterno.style.display = "none";
-        btnEnlaceExterno.textContent = "Más información";
-        btnEnlaceExterno.onclick = null;
       }
 
       const direccionDiv = document.getElementById("direccionActividad");
