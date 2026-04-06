@@ -989,57 +989,57 @@
 
     <div class="contenedor">
       <div class="filtro-panel">
-        <div class="filtro-panel-izq">
-          <label for="filtroProvincia">Localidad</label>
-          <select id="filtroProvincia">
-            <option value="">Todas</option>
-          </select>
-          <label for="filtroPrograma">Programa</label>
-            <select id="filtroPrograma">
-              <option value="">Todos</option>
-            </select>
-        </div>
+<div class="filtro-panel-izq">
+  <label for="filtroProvincia">Localidad</label>
+  <select id="filtroProvincia">
+    <option value="">Todas</option>
+  </select>
+
+  <label for="filtroPrograma">Programa</label>
+  <select id="filtroPrograma">
+    <option value="">Todos</option>
+  </select>
+</div>
 
         <div class="filtro-panel-der">
           <div id="accionesPublicas" class="accionesPublicas">
             <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
           </div>
-        </div>
 
-        <div id="barraUsuario" class="barra-usuario">
-          <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
-          <button
-            class="nav-btn-icon"
-            type="button"
-            onclick="logoutActual()"
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-            >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </button>
-        </div>
+<div id="barraUsuario" class="barra-usuario">
+  <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
+  <button
+    class="nav-btn-icon"
+    type="button"
+    onclick="logoutActual()"
+    title="Cerrar sesión"
+    aria-label="Cerrar sesión"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+  </button>
+</div>
 
-        <div id="barraAdmin" class="barra-admin">
-          <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
-          <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
-          <button
-            class="nav-btn-icon"
-            type="button"
-            onclick="logoutActual()"
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
+          <div id="barraAdmin" class="barra-admin">
+            <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+            <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
+            <button
+              class="nav-btn-icon"
+              type="button"
+              onclick="logoutActual()"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
             >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </button>
-        </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1071,9 +1071,6 @@
         <div class="detalle-grid">
           <div class="detalle-col-izq">
             <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
-          </div>
-        </div>
-      </div>
 
             <div class="mapa-info-wrap">
               <div id="direccionActividad" class="direccion-actividad"></div>
@@ -1089,7 +1086,6 @@
             <div id="detalleSubtitulo" class="detalle-subtitulo"></div>
             <div id="detalleMeta" class="detalle-meta"></div>
             <div id="detalleTexto" class="detalle-texto"></div>
-           </div> 
 
 <div class="detalle-acciones">
   <button id="btnEditarActividad" class="btn-icono" style="display:none;" type="button" title="Editar actividad" aria-label="Editar actividad">
@@ -1904,7 +1900,7 @@ function renderMapaActividad(a) {
         return;
       }
 
-            const detalleTitulo = document.getElementById("detalleTitulo");
+           const detalleTitulo = document.getElementById("detalleTitulo");
 const tituloActividad = a.titulo_publico || a.nombre;
 
 const tieneEnlaceExterno =
