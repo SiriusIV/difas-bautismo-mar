@@ -1909,16 +1909,20 @@ function renderMapaActividad(a) {
       }
 
             const detalleTitulo = document.getElementById("detalleTitulo");
-      const tituloActividad = a.titulo_publico || a.nombre;
+const tituloActividad = a.titulo_publico || a.nombre;
 
-      if (tieneEnlaceExterno) {
-        detalleTitulo.innerHTML = `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${tituloActividad}</a>`;
-      } else {
-        detalleTitulo.textContent = tituloActividad;
-      }
+const tieneEnlaceExterno =
+  Number(a.usa_enlace_externo || 0) === 1 &&
+  String(a.enlace_externo_url || "").trim() !== "";
 
-      document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
-      document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+if (tieneEnlaceExterno) {
+  detalleTitulo.innerHTML = `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${tituloActividad}</a>`;
+} else {
+  detalleTitulo.textContent = tituloActividad;
+}
+
+document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
+document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
 
       const tieneEnlaceExterno =
         Number(a.usa_enlace_externo || 0) === 1 &&
@@ -1948,8 +1952,7 @@ if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) ===
       const btnSolicitar = document.getElementById("btnSolicitarActividad");
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
-      const btnEnlaceExterno = document.getElementById("btnEnlaceExterno");
-
+      
       btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
 
