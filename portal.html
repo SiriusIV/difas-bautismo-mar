@@ -1592,15 +1592,48 @@ function actualizarBotonSolicitarSegunFranja() {
       }
 
       select.value = provinciaSeleccionada;
+      renderizarFiltroProgramas();
     }
 
-    function obtenerActividadesFiltradas() {
-      if (!provinciaSeleccionada) return actividadesCache;
+    function renderizarFiltroProgramas() {
+  const select = document.getElementById("filtroPrograma");
+  if (!select) return;
 
-      return actividadesCache.filter(a =>
-        String(a.provincia || "").trim() === provinciaSeleccionada
-      );
-    }
+  const actividadesBase = provinciaSeleccionada
+    ? actividadesCache.filter(a => String(a.provincia || "").trim() === provinciaSeleccionada)
+    : actividadesCache;
+
+  const programas = [...new Set(
+    actividadesBase
+      .map(a => String(a.subtitulo_publico || "").trim())
+      .filter(p => p !== "")
+  )].sort((a, b) => a.localeCompare(b, "es"));
+
+  select.innerHTML =
+    `<option value="">Todos</option>` +
+    programas.map(p => `<option value="${p}">${p}</option>`).join("");
+
+  if (programaSeleccionado && !programas.includes(programaSeleccionado)) {
+    programaSeleccionado = "";
+  }
+
+  select.value = programaSeleccionado;
+}
+    
+
+function obtenerActividadesFiltradas() {
+  return actividadesCache.filter(a => {
+    const coincideProvincia =
+      !provinciaSeleccionada ||
+      String(a.provincia || "").trim() === provinciaSeleccionada;
+
+    const coincidePrograma =
+      !programaSeleccionado ||
+      String(a.subtitulo_publico || "").trim() === programaSeleccionado;
+
+    return coincideProvincia && coincidePrograma;
+  });
+}
 
     function obtenerTarjetasCarrusel() {
       return Array.from(document.querySelectorAll("#carruselActividades .card"));
