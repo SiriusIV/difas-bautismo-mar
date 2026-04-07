@@ -35,11 +35,11 @@ export async function onRequestPost(context) {
     }
 
     const user = await db.prepare(`
-      SELECT id, nombre, centro, email, password_hash, rol, activo
+      SELECT id, nombre, centro, email, password_hash, rol, activo, logo_url, web_externa_url
       FROM usuarios
       WHERE email = ?
       LIMIT 1
-    `).bind(email).first();
+      `).bind(email).first();
 
     if (!user) {
       return json({ ok: false, error: "Usuario no encontrado" }, 401);
@@ -66,7 +66,9 @@ export async function onRequestPost(context) {
       nombre: user.nombre,
       centro: user.centro,
       email: user.email,
-      rol: user.rol
+      rol: user.rol,
+      logo_url: user.logo_url || "",
+      web_externa_url: user.web_externa_url || ""
     };
 
     const cookie = await createSessionCookie(sessionUser, env.SECRET_KEY);
