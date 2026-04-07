@@ -150,7 +150,6 @@ function construirPayload(body, admin_id) {
     patron_recurrencia: normalizarNullable(body.patron_recurrencia),
     usa_enlace_externo: parsearFlag(body.usa_enlace_externo, 0),
     enlace_externo_url: normalizarNullable(body.enlace_externo_url),
-    enlace_externo_texto: normalizarNullable(body.enlace_externo_texto),
     borrador_tecnico: parsearFlag(body.borrador_tecnico, 0)
   };
 }
@@ -212,10 +211,9 @@ export async function onRequestPost(context) {
         patron_recurrencia,
         usa_enlace_externo,
         enlace_externo_url,
-        enlace_externo_texto,
         borrador_tecnico
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       p.nombre,
       p.tipo,
@@ -244,7 +242,6 @@ export async function onRequestPost(context) {
       p.patron_recurrencia,
       p.usa_enlace_externo,
       p.enlace_externo_url,
-      p.enlace_externo_texto,
       p.borrador_tecnico
     ).run();
 
@@ -424,7 +421,6 @@ export async function onRequestPut(context) {
         patron_recurrencia = ?,
         usa_enlace_externo = ?,
         enlace_externo_url = ?,
-        enlace_externo_texto = ?,
         borrador_tecnico = ?
       WHERE id = ?
     `).bind(
@@ -455,7 +451,6 @@ export async function onRequestPut(context) {
       p.patron_recurrencia,
       p.usa_enlace_externo,
       p.enlace_externo_url,
-      p.enlace_externo_texto,
       p.borrador_tecnico,
       id
     ).run();
