@@ -42,7 +42,7 @@ export async function onRequestPost(context) {
     }
 
 const { results } = await env.DB.prepare(`
-  SELECT id, rol
+  SELECT id, rol, email, nombre, centro, logo_url, web_externa_url
   FROM usuarios
   WHERE email = ?
     AND activo = 1
