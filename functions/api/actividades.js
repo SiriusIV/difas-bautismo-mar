@@ -80,7 +80,6 @@ export async function onRequestGet(context) {
         a.patron_recurrencia,
         a.usa_enlace_externo,
         a.enlace_externo_url,
-        a.enlace_externo_texto,
         COALESCE(at.plazas_totales, 0) AS plazas_totales,
         COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
         (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
