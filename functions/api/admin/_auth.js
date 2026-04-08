@@ -1,7 +1,18 @@
-import { getUserSession } from "../usuario/_auth.js";
+import {
+  createSessionCookie as createUserSessionCookie,
+  clearSessionCookie as clearUserSessionCookie,
+  getUserSession
+} from "../usuario/_auth.js";
 
-export async function createSessionCookie() {
-  return "";
+export async function createSessionCookie(env, username, usuario_id, rol, extra = {}) {
+  const payload = {
+    id: usuario_id,
+    email: username,
+    rol,
+    ...extra
+  };
+
+  return await createUserSessionCookie(payload, env.SECRET_KEY);
 }
 
 export async function getAdminSession(request, env) {
@@ -21,7 +32,7 @@ export async function getAdminSession(request, env) {
 }
 
 export function clearSessionCookie() {
-  return "";
+  return clearUserSessionCookie();
 }
 
 export async function requireAdminSession(context) {
