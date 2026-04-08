@@ -45,7 +45,6 @@ export async function onRequestGet(context) {
         a.patron_recurrencia,
         a.usa_enlace_externo,
         a.enlace_externo_url,
-        a.enlace_externo_texto,
         a.direccion_postal,
         a.latitud,
         a.longitud,
