@@ -42,7 +42,7 @@ export async function onRequestPost(context) {
     }
 
 const { results } = await env.DB.prepare(`
-  SELECT id, rol, email, nombre, centro, logo_url, web_externa_url
+  SELECT id, rol, email, nombre, centro, logo_url, web_externa_url, telefono_contacto
   FROM usuarios
   WHERE email = ?
     AND activo = 1
@@ -65,9 +65,13 @@ if (!results || results.length === 0) {
 const usuario_id = results[0].id;
 const rol = results[0].rol;
 
-
-    
-    const cookie = await createSessionCookie(env, username, usuario_id, rol);
+const cookie = await createSessionCookie(env, username, usuario_id, rol, {
+  nombre: results[0].nombre || "",
+  centro: results[0].centro || "",
+  logo_url: results[0].logo_url || "",
+  web_externa_url: results[0].web_externa_url || "",
+  telefono_contacto: results[0].telefono_contacto || ""
+});
 
     return new Response(
       JSON.stringify({
