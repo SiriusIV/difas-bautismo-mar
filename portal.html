@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Actividades Públicas Institucionales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 15px;
+    }
+
+    .cabecera {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 18px 20px 14px;
+      flex: 0 0 auto;
+      z-index: 20;
+    }
+
+    .cabecera-inner {
+      max-width: 1108px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .bloque-marca {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  flex-wrap: wrap;
+  text-align: left;
+}
+
+.logo-cabecera {
+  width: 77px;
+  height: auto;
+  display: block;
+}
+
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #123a63;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
+    }
+
+    .app-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .accionesPublicas,
+    .barra-admin,
+    .barra-usuario {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .barra-admin,
+    .barra-usuario {
+      display: none;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      background: #f7f9fb;
+    }
+
+    .nav-btn.activo {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
+    }
+
+    .nav-btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+      flex: 0 0 36px;
+    }
+
+    .nav-btn-icon:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .nav-btn-icon svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .franja-sesion {
+      display: none;
+      max-width: 1108px;
+      margin: 14px auto 0;
+      padding: 0 16px;
+    }
+
+    .franja-sesion-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .franja-sesion .nav-btn-icon {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+    }
+
+    .franja-sesion .nav-btn-icon svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .franja-sesion-texto {
+      font-size: 14px;
+      font-weight: 500;
+      color: #123a63;
+      line-height: 1.2;
+    }
+
+    .contenedor {
+      max-width: 1108px;
+      margin: 14px auto 22px;
+      padding: 0 16px 20px;
+    }
+
+    .filtro-panel {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filtro-panel-izq {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .filtro-panel-der {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .filtro-panel label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #123a63;
+    }
+
+.filtro-panel select {
+  min-width: 180px;
+  padding: 8px 10px;
+  border: 1px solid #c9cfd6;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1e2a36;
+}
+    .carrusel-panel {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .carrusel-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-carrusel {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex: 0 0 36px;
+    }
+
+    .btn-carrusel:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-carrusel svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .carrusel-wrap {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      flex: 1 1 auto;
+      min-width: 0;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .carrusel-wrap::-webkit-scrollbar {
+      display: none;
+    }
+
+    .carrusel {
+      display: flex;
+      gap: 12px;
+      min-height: 186px;
+      padding: 4px 0;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 12px;
+      width: 237px;
+      min-width: 237px;
+      max-width: 237px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      padding: 10px;
+      cursor: pointer;
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .card.activa {
+      border-color: #0b5ed7;
+      box-shadow: 0 8px 24px rgba(11,94,215,0.16);
+    }
+
+    .card-img-wrap {
+      position: relative;
+      height: 88px;
+      overflow: hidden;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #dfe7ef;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .badge-completa {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
+    .card-body h3 {
+      margin: 0 0 7px 0;
+      font-size: 16px;
+      color: #123a63;
+      line-height: 1.2;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      color: #5f6d7a;
+      line-height: 1.4;
+    }
+
+    .aviso-login {
+      margin: 12px 0 14px;
+      padding: 10px 14px 0;
+      text-align: center;
+      color: #123a63;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.25;
+      border-top: 1px solid #dde4ea;
+    }
+
+    .detalle {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 14px;
+    }
+
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .detalle-col-izq {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detalle-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #dfe7ef;
+      display: block;
+    }
+
+    .mapa-info-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .direccion-actividad {
+      font-size: 13px;
+      color: #2c3e50;
+      background: #f4f7fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 7px 9px;
+      display: none;
+    }
+
+    .direccion-actividad a {
+      color: #123a63;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .direccion-actividad a:hover {
+      text-decoration: underline;
+    }
+
+    .mapa-wrap {
+      width: 100%;
+      height: 200px;
+      min-height: 200px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #dfe7ef;
+      border: 1px solid #dde4ea;
+    }
+
+    #mapaActividad {
+      width: 100%;
+      height: 200px;
+    }
+
+    .mapa-oculto {
+      display: none;
+    }
+
+    .detalle-contenido {
+  position: relative;
+  min-width: 0;
+}
+
+.detalle-acciones {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 5;
+}
+
+.btn-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid #bfc9d4;
+  background: #fff;
+  color: #4a5a6a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 0;
+  font-size: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.btn-icono:hover {
+  background: #f7f9fb;
+  color: #0b5ed7;
+  border-color: #9fb2c7;
+}
+
+.btn-icono svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.detalle-acciones-inferiores {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.detalle-acciones-inferiores-izq {
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.detalle-acciones-inferiores-der {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+   
+    .detalle-contenido h3 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  color: #123a63;
+  padding-right: 92px;
+}
+
+.detalle-titulo-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.detalle-titulo-link:hover {
+  text-decoration: underline;
+}
+    
+.detalle-subtitulo {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #4a5a6a;
+}
+
+.detalle-meta {
+  font-size: 13px;
+  color: #4d5966;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.detalle-texto {
+  line-height: 1.45;
+  color: #37424d;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+
+    
+    .btn {
+      border: none;
+      border-radius: 6px;
+      padding: 9px 13px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #0b5ed7;
+      color: #fff;
+    }
+
+    .btn:hover {
+      background: #094db1;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-admin {
+      background: #198754;
+    }
+
+    .btn-admin:hover {
+      background: #13653f;
+    }
+
+    .btn-admin-secundario {
+      background: #5c7cfa;
+    }
+
+    .btn-admin-secundario:hover {
+      background: #4263eb;
+    }
+
+    .mensaje {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      display: none;
+      font-size: 13px;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal-login {
+      background: #fff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 20px;
+    }
+
+    .modal-login h3 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      color: #123a63;
+      text-align: center;
+    }
+
+    .campo {
+      margin-bottom: 10px;
+    }
+
+    .campo label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #334250;
+      font-size: 13px;
+    }
+
+    .campo input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 11px;
+      border: 1px solid #c9cfd6;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .campo-password-wrap {
+      position: relative;
+    }
+
+    .campo-password-wrap input {
+      padding-right: 92px;
+    }
+
+    .btn-ver-password {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #4a5a6a;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .btn-ver-password:hover {
+      background: #f7f9fb;
+    }
+
+    .enlace-pequeno {
+      display: inline-block;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #0b5ed7;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .enlace-pequeno:hover {
+      text-decoration: underline;
+    }
+
+    .acciones-acceso {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .acciones-acceso .btn {
+      flex: 1 1 160px;
+    }
+
+    .texto-final {
+      font-size: 13px;
+      color: #4d5966;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .texto-final a {
+      color: #0b5ed7;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .texto-final a:hover {
+      text-decoration: underline;
+    }
+
+    .tabla-franjas {
+      font-size: 12px;
+      display: none;
+      margin-top: 12px;
+    }
+
+    .tabla-franjas h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #123a63;
+    }
+
+    .tabla-franjas table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+    }
+
+    .tabla-franjas th,
+.tabla-franjas td {
+  padding: 5px 6px 5px 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+    .tabla-franjas .col-seleccion {
+  width: 40px;
+  text-align: center;
+}
+
+.tabla-franjas .fila-franja-inactiva td {
+  color: #97a3af;
+}
+
+.tabla-franjas .fila-franja-inactiva input[type="radio"] {
+  cursor: not-allowed;
+}
+
+.tabla-franjas .estado-franja {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabla-franjas .estado-franja.completa {
+  color: #9b1c1c;
+}
+
+.tabla-franjas .estado-franja.disponible {
+  color: #146c2e;
+}
+
+.detalle-contenido {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 100%;
+}
+
+.bloque-programacion {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.tabla-franjas {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.tabla-franjas h4 {
+  margin: 0 0 8px;
+}
+
+.tabla-franjas table {
+  width: auto;
+  min-width: 0;
+  margin-left: 0;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.tabla-franjas th,
+.tabla-franjas td {
+  padding: 5px 8px 5px 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabla-franjas th.col-seleccion,
+.tabla-franjas td.col-seleccion,
+.tabla-franjas th:nth-child(1),
+.tabla-franjas td:nth-child(1) {
+  width: 1%;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: left;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 18px;
+}
+
+.tabla-franjas th:nth-child(2),
+.tabla-franjas td:nth-child(2) {
+  min-width: 0;
+  width: auto;
+  white-space: nowrap;
+}
+
+.tabla-franjas th:nth-child(3),
+.tabla-franjas td:nth-child(3),
+.tabla-franjas th:nth-child(4),
+.tabla-franjas td:nth-child(4) {
+  min-width: 54px;
+  white-space: nowrap;
+}
+
+.tabla-franjas th:nth-child(5),
+.tabla-franjas td:nth-child(5) {
+  min-width: 210px;
+  white-space: nowrap;
+}
+
+.tabla-franjas tbody tr td:first-child input[type="radio"] {
+  margin: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+    .tabla-franjas .nota-franjas,
+#notaFranjasPortal {
+  margin-top: 0;
+  padding-top: 0;
+  font-size: 10px;
+  color: #6b7785;
+  line-height: 1.3;
+  align-self: flex-start;
+}
+
+.tabla-franjas tbody tr td:first-child input[type="radio"] {
+  margin: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+.tabla-franjas tbody td {
+  vertical-align: middle;
+}
+    
+    .tabla-franjas th {
+      color: #123a63;
+      font-size: 12px;
+      font-weight: 600;
+      border-bottom: 1px solid #dde4ea;
+      padding-bottom: 6px;
+    }
+
+    .tabla-franjas td {
+      color: #37424d;
+      font-size: 12px;
+    }
+
+    body.sin-sesion-franjas .tabla-franjas th.col-seleccion,
+    body.sin-sesion-franjas .tabla-franjas td.col-seleccion {
+    display: none;
+    }
+
+    
+
+    @media (max-width: 980px) {
+      .cabecera-inner,
+      .franja-sesion,
+      .contenedor {
+        max-width: 100%;
+      }
+
+      .detalle-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .detalle-img {
+        height: 200px;
+      }
+
+      .mapa-wrap {
+        height: 200px;
+      }
+
+      #mapaActividad {
+        height: 200px;
+      }
+
+      .filtro-panel {
+        align-items: flex-start;
+      }
+
+      .filtro-panel-der {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+      }
+
+      .card {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .bloque-marca {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .titulos-cabecera h1 {
+        font-size: 21px;
+      }
+
+      .btn-carrusel {
+        display: none;
+      }
+
+      .card {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+      }
+
+      .filtro-panel {
+        padding: 12px;
+      }
+
+      .filtro-panel select {
+        min-width: 170px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="cabecera">
+    <div class="cabecera-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabeceraPortal">
+        <div class="titulos-cabecera">
+          <h1>Actividades Públicas Institucionales</h1>
+          <h2 id="subtituloCabecera">Armada</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-scroll">
+    <div id="franjaSesion" class="franja-sesion">
+      <div class="franja-sesion-inner">
+        <button
+          id="btnPerfilSesion"
+          class="nav-btn-icon"
+          type="button"
+          onclick="irPerfilUsuario()"
+          title="Editar perfil"
+          aria-label="Editar perfil"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21a8 8 0 0 0-16 0"></path>
+            <circle cx="12" cy="8" r="4"></circle>
+          </svg>
+        </button>
+        <div id="textoSesion" class="franja-sesion-texto"></div>
+      </div>
+    </div>
+
+    <div class="contenedor">
+      <div class="filtro-panel">
+<div class="filtro-panel-izq">
+  <label for="filtroProvincia">Localidad</label>
+  <select id="filtroProvincia">
+    <option value="">Todas</option>
+  </select>
+
+  <label for="filtroPrograma">Programa</label>
+  <select id="filtroPrograma">
+    <option value="">Todos</option>
+  </select>
+</div>
+
+        <div class="filtro-panel-der">
+          <div id="accionesPublicas" class="accionesPublicas">
+            <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
+          </div>
+
+<div id="barraUsuario" class="barra-usuario">
+  <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
+  <button
+    class="nav-btn-icon"
+    type="button"
+    onclick="logoutActual()"
+    title="Cerrar sesión"
+    aria-label="Cerrar sesión"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+  </button>
+</div>
+
+          <div id="barraAdmin" class="barra-admin">
+            <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+            <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
+            <button
+              class="nav-btn-icon"
+              type="button"
+              onclick="logoutActual()"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="carrusel-panel">
+        <div class="carrusel-top">
+          <button class="btn-carrusel" onclick="desplazarCarrusel(-1)" title="Anterior" aria-label="Anterior">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <div class="carrusel-wrap" id="carruselWrap">
+            <div id="carruselActividades" class="carrusel"></div>
+          </div>
+
+          <button class="btn-carrusel" onclick="desplazarCarrusel(1)" title="Siguiente" aria-label="Siguiente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="franjaAvisoPortal" class="aviso-login">
+        Inicia sesión como usuario para solicitar una actividad.
+      </div>
+
+      <div class="detalle" id="detalleActividad">
+        <div class="detalle-grid">
+          <div class="detalle-col-izq">
+            <img id="detalleImagen" class="detalle-img" src="logo.png" alt="Imagen actividad">
+
+            <div class="mapa-info-wrap">
+              <div id="direccionActividad" class="direccion-actividad"></div>
+
+              <div id="mapaWrap" class="mapa-wrap mapa-oculto">
+                <div id="mapaActividad"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detalle-contenido">
+            <h3 id="detalleTitulo">Seleccione una actividad</h3>
+            <div id="detalleSubtitulo" class="detalle-subtitulo"></div>
+            <div id="detalleMeta" class="detalle-meta"></div>
+            <div id="detalleTexto" class="detalle-texto"></div>
+
+<div class="detalle-acciones">
+  <button id="btnEditarActividad" class="btn-icono" style="display:none;" type="button" title="Editar actividad" aria-label="Editar actividad">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+    </svg>
+  </button>
+
+  <button id="btnVerReservasActividad" class="btn-icono" style="display:none;" type="button" title="Ver reservas" aria-label="Ver reservas">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </button>
+</div>
+
+<div class="bloque-programacion">
+  <div id="tablaFranjasWrap" class="tabla-franjas">
+    <h4>Programación</h4>
+    <table>
+      <thead>
+        <tr>
+          <th class="col-seleccion"></th>
+          <th>Fecha</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Situación (plazas disponibles)</th>
+        </tr>
+      </thead>
+      <tbody id="tablaFranjasBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="detalle-acciones-inferiores">
+  <div class="detalle-acciones-inferiores-izq">
+    <div id="notaFranjasPortal" class="nota-franjas" style="display:none;"></div>
+  </div>
+  <div class="detalle-acciones-inferiores-der">
+    <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar</button>
+  </div>
+</div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalLogin" class="modal-fondo" aria-hidden="true">
+    <div class="modal-login">
+      <h3>Acceso</h3>
+
+      <div class="campo">
+        <label for="emailLogin">Email</label>
+        <input type="email" id="emailLogin" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <label for="passwordLogin">Contraseña</label>
+        <div class="campo-password-wrap">
+          <input type="password" id="passwordLogin" autocomplete="new-password">
+          <button type="button" class="btn-ver-password" id="btnVerPassword">Ver</button>
+        </div>
+      </div>
+
+      <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">¿Has olvidado tu contraseña?</a>
+
+      <div class="acciones-acceso">
+        <button class="btn" onclick="loginUsuario()">Entrar</button>
+        <button class="btn btn-admin" onclick="cerrarModalLogin()">Cerrar</button>
+      </div>
+
+      <div id="mensajeLogin" class="mensaje"></div>
+
+      <div class="texto-final">
+        ¿Aún no tienes usuario?
+        <a href="#" onclick="irRegistro()">Crear cuenta</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let actividadesCache = [];
+    let usuarioAutenticado = null;
+    let actividadSeleccionada = null;
+    let mapaActividad = null;
+    let markerIconDefault = null;
+    let resizeObserverMapa = null;
+    let marcadorActividad = null;
+    let actividadFranjasSolicitada = null;
+    let franjaSeleccionadaPortalId = null;
+    let franjasActividadActual = [];
+   
+    let carruselAutoPlay = null;
+    let carruselAutoPlayActivo = true;
+    let carruselAutoIndex = 0;
+    let carruselReanudarTimeout = null;
+    let provinciaSeleccionada = "";
+    let programaSeleccionado = "";
+    let carruselResetTimeout = null;
+
+    function mensaje(id, tipo, texto) {
+      const el = document.getElementById(id);
+      el.className = "mensaje " + tipo;
+      el.textContent = texto;
+      el.style.display = "block";
+    }
+
+    function limpiarMensaje(id) {
+      const el = document.getElementById(id);
+      el.className = "mensaje";
+      el.textContent = "";
+      el.style.display = "none";
+    }
+
+    function esAdmin() {
+      return usuarioAutenticado && (usuarioAutenticado.rol === "ADMIN" || usuarioAutenticado.rol === "SUPERADMIN");
+    }
+
+    function esSuperAdmin() {
+      return usuarioAutenticado && usuarioAutenticado.rol === "SUPERADMIN";
+    }
+
+    function abrirModalLogin() {
+      limpiarMensaje("mensajeLogin");
+
+      const email = document.getElementById("emailLogin");
+      const password = document.getElementById("passwordLogin");
+
+      email.value = "";
+      password.value = "";
+      password.type = "password";
+      document.getElementById("btnVerPassword").textContent = "Ver";
+
+      document.getElementById("modalLogin").classList.add("activo");
+      document.getElementById("modalLogin").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalLogin() {
+      document.getElementById("modalLogin").classList.remove("activo");
+      document.getElementById("modalLogin").setAttribute("aria-hidden", "true");
+    }
+
+    function alternarPassword() {
+      const input = document.getElementById("passwordLogin");
+      const btn = document.getElementById("btnVerPassword");
+
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "Ocultar";
+      } else {
+        input.type = "password";
+        btn.textContent = "Ver";
+      }
+    }
+
+    function formatearFechaLargaES(fechaISO) {
+      if (!fechaISO) return "";
+
+      const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
+      if (!yyyy || !mm || !dd) return fechaISO;
+
+      const fecha = new Date(yyyy, mm - 1, dd);
+      if (Number.isNaN(fecha.getTime())) return fechaISO;
+
+      const dias = [
+        "domingo", "lunes", "martes", "miércoles",
+        "jueves", "viernes", "sábado"
+      ];
+
+      const meses = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      ];
+
+      return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
+    }
+
+    function textoProgramacionFranja(f) {
+      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
+        return f.patron_recurrencia;
+      }
+      if (f.fecha) {
+        return formatearFechaLargaES(f.fecha);
+      }
+      return "";
+    }
+
+async function cargarFranjasActividad(actividad) {
+  const wrap = document.getElementById("tablaFranjasWrap");
+  const body = document.getElementById("tablaFranjasBody");
+  const nota = document.getElementById("notaFranjasPortal");
+
+  actividadFranjasSolicitada = actividad?.id || null;
+  franjaSeleccionadaPortalId = null;
+  franjasActividadActual = [];
+  wrap.style.display = "none";
+  body.innerHTML = "";
+
+  if (nota) {
+    nota.textContent = "";
+    nota.style.display = "none";
+  }
+
+  actualizarBotonSolicitarSegunFranja();
+
+  if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.id)}`);
+    const data = await res.json();
+
+    if (actividadFranjasSolicitada !== actividad.id) return;
+
+    if (!data.ok || !Array.isArray(data.franjas) || data.franjas.length === 0) {
+      return;
+    }
+
+    const ahora = new Date();
+
+    franjasActividadActual = data.franjas
+      .filter(f => f && f.hora_inicio && f.hora_fin)
+      .map(f => {
+        const ocupadas = Number(f.ocupadas || 0);
+        const disponibles = f.disponibles == null ? null : Number(f.disponibles);
+        const capacidad = f.capacidad == null ? null : Number(f.capacidad);
+
+        let fechaHoraFin = null;
+        if (f.fecha && f.hora_fin) {
+          fechaHoraFin = new Date(`${f.fecha}T${f.hora_fin}`);
+        }
+
+        const finalizada = !!fechaHoraFin && fechaHoraFin.getTime() < ahora.getTime();
+        const completa = Number(actividad.aforo_limitado || 0) === 1 && disponibles !== null && disponibles <= 0;
+
+        return {
+          ...f,
+          ocupadas,
+          disponibles,
+          capacidad,
+          finalizada,
+          completa,
+          seleccionable: !finalizada && !completa
+        };
+      });
+
+    const filas = franjasActividadActual.map(f => {
+      let estadoTexto = "—";
+      let estadoClase = "";
+
+      if (f.finalizada) {
+        estadoTexto = "Finalizada";
+      } else if (f.completa) {
+        estadoTexto = "Completa";
+        estadoClase = "completa";
+      } else if (f.disponibles != null) {
+        estadoTexto = `Disponible (${f.disponibles})`;
+        estadoClase = "disponible";
+      } else {
+        estadoTexto = "Disponible";
+        estadoClase = "disponible";
+      }
+
+      return `
+        <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"}">
+          <td class="col-seleccion">
+            <input
+              type="radio"
+              name="franjaPortalSeleccionada"
+              value="${f.id}"
+              ${f.seleccionable ? "" : "disabled"}
+            >
+          </td>
+          <td>${textoProgramacionFranja(f)}</td>
+          <td>${f.hora_inicio}</td>
+          <td>${f.hora_fin}</td>
+          <td class="estado-franja ${estadoClase}">${estadoTexto}</td>
+        </tr>
+      `;
+    }).join("");
+
+    if (!filas.trim()) {
+      return;
+    }
+
+    body.innerHTML = filas;
+    wrap.style.display = "block";
+
+    const radios = body.querySelectorAll('input[name="franjaPortalSeleccionada"]');
+    radios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        franjaSeleccionadaPortalId = Number(radio.value) || null;
+        actualizarBotonSolicitarSegunFranja();
+      });
+    });
+
+    if (nota) {
+      nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas.";
+      nota.style.display = "block";
+    }
+
+    actualizarBotonSolicitarSegunFranja();
+  } catch (_) {
+    franjasActividadActual = [];
+    franjaSeleccionadaPortalId = null;
+    wrap.style.display = "none";
+    body.innerHTML = "";
+
+    if (nota) {
+      nota.textContent = "";
+      nota.style.display = "none";
+    }
+
+    actualizarBotonSolicitarSegunFranja();
+  }
+}
+
+
+function actualizarBotonSolicitarSegunFranja() {
+  const btnSolicitar = document.getElementById("btnSolicitarActividad");
+  if (!btnSolicitar) return;
+
+  if (
+    !actividadSeleccionada ||
+    !usuarioAutenticado ||
+    usuarioAutenticado.rol !== "SOLICITANTE" ||
+    Number(actividadSeleccionada.requiere_reserva || 0) !== 1
+  ) {
+    btnSolicitar.style.display = "none";
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "";
+    return;
+  }
+
+  btnSolicitar.style.display = "inline-block";
+
+  if (Number(actividadSeleccionada.usa_franjas || 0) !== 1) {
+    btnSolicitar.disabled = false;
+    btnSolicitar.title = "";
+    return;
+  }
+
+  const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
+
+  if (!franjaSeleccionadaPortalId) {
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "Debes seleccionar una franja horaria.";
+    return;
+  }
+
+  if (!franja || !franja.seleccionable) {
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "La franja seleccionada no está disponible.";
+    return;
+  }
+
+  btnSolicitar.disabled = false;
+  btnSolicitar.title = "";
+}
+    
+
+    function actualizarLogoCabeceraSesion() {
+      const logo = document.getElementById("logoCabeceraPortal");
+      if (!logo) return;
+
+      const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
+      const logoUsuario = String(usuarioAutenticado?.logo_url || "").trim();
+
+      if ((rol === "ADMIN" || rol === "SUPERADMIN") && logoUsuario) {
+        logo.src = logoUsuario;
+        return;
+      }
+
+      logo.src = "logo.png";
+    }
+
+    function actualizarFranjaSesion() {
+      const franja = document.getElementById("franjaSesion");
+      const texto = document.getElementById("textoSesion");
+      const btnPerfil = document.getElementById("btnPerfilSesion");
+
+      if (!usuarioAutenticado) {
+        franja.style.display = "none";
+        texto.textContent = "";
+        btnPerfil.style.display = "none";
+        return;
+      }
+
+      const rol = String(usuarioAutenticado.rol || "").toUpperCase();
+      const centro = String(usuarioAutenticado.centro || "").trim();
+      const nombre = String(usuarioAutenticado.nombre || "").trim();
+
+      if (rol === "SOLICITANTE") {
+        texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
+      } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
+        texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
+      } else {
+        texto.textContent = "";
+      }
+
+      btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
+      franja.style.display = texto.textContent ? "block" : "none";
+    }
+
+    function actualizarVisibilidadSeleccionFranjas() {
+      if (usuarioAutenticado) {
+        document.body.classList.remove("sin-sesion-franjas");
+      } else {
+        document.body.classList.add("sin-sesion-franjas");
+      }
+    }
+    
+    async function comprobarSesionUsuario() {
+      const res = await fetch("/api/usuario/session", { credentials: "include" });
+
+      if (!res.ok) {
+        usuarioAutenticado = null;
+        actualizarModoAcceso();
+        return;
+      }
+
+      const data = await res.json();
+      usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
+      actualizarModoAcceso();
+    }
+
+    function actualizarModoAcceso() {
+      const admin = esAdmin();
+      const superadmin = esSuperAdmin();
+      const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
+
+      document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
+      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+      document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
+
+      const btnGestionAdmins = document.getElementById("btnGestionAdmins");
+      if (btnGestionAdmins) {
+        btnGestionAdmins.style.display = superadmin ? "inline-block" : "none";
+      }
+
+      document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
+
+      actualizarLogoCabeceraSesion();
+      actualizarFranjaSesion();
+      actualizarVisibilidadSeleccionFranjas();
+      renderDetalle();
+    }
+
+    async function cargarActividadesPublicas() {
+      const res = await fetch("/api/actividades", { credentials: "include" });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        actividadesCache = [];
+        renderizarFiltroProvincias();
+        renderizarActividades();
+        return;
+      }
+
+      actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      renderizarFiltroProvincias();
+      renderizarActividades();
+    }
+
+    async function cargarActividadesAdmin() {
+      const res = await fetch("/api/admin/mis-actividades", { credentials: "include" });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        actividadesCache = [];
+        renderizarFiltroProvincias();
+        renderizarActividades();
+        return;
+      }
+
+      actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      renderizarFiltroProvincias();
+      renderizarActividades();
+    }
+
+    async function cargarActividades() {
+      if (esAdmin()) {
+        await cargarActividadesAdmin();
+      } else {
+        await cargarActividadesPublicas();
+      }
+    }
+
+    function seleccionarActividad(id) {
+      pausarTemporalmenteAutoPlay();
+
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      const a = actividadesVisibles.find(x => Number(x.id) === Number(id));
+      if (!a) return;
+
+      actividadSeleccionada = a;
+      carruselAutoIndex = Math.max(
+        actividadesVisibles.findIndex(x => Number(x.id) === Number(id)),
+        0
+      );
+
+      sessionStorage.setItem("actividad_id_actual", String(a.id));
+      renderizarActividades();
+      renderDetalle();
+    }
+
+    function renderizarFiltroProvincias() {
+      const select = document.getElementById("filtroProvincia");
+      if (!select) return;
+
+      const provincias = [...new Set(
+        actividadesCache
+          .map(a => String(a.provincia || "").trim())
+          .filter(p => p !== "")
+      )].sort((a, b) => a.localeCompare(b, "es"));
+
+      select.innerHTML =
+        `<option value="">Todas</option>` +
+        provincias.map(p => `<option value="${p}">${p}</option>`).join("");
+
+      if (provinciaSeleccionada && !provincias.includes(provinciaSeleccionada)) {
+        provinciaSeleccionada = "";
+      }
+
+      select.value = provinciaSeleccionada;
+      renderizarFiltroProgramas();
+    }
+
+    function renderizarFiltroProgramas() {
+  const select = document.getElementById("filtroPrograma");
+  if (!select) return;
+
+  const actividadesBase = provinciaSeleccionada
+    ? actividadesCache.filter(a => String(a.provincia || "").trim() === provinciaSeleccionada)
+    : actividadesCache;
+
+  const programas = [...new Set(
+    actividadesBase
+      .map(a => String(a.subtitulo_publico || "").trim())
+      .filter(p => p !== "")
+  )].sort((a, b) => a.localeCompare(b, "es"));
+
+  select.innerHTML =
+    `<option value="">Todos</option>` +
+    programas.map(p => `<option value="${p}">${p}</option>`).join("");
+
+  if (programaSeleccionado && !programas.includes(programaSeleccionado)) {
+    programaSeleccionado = "";
+  }
+
+  select.value = programaSeleccionado;
+}
+
+function actualizarSubtituloCabecera() {
+  const h2 = document.getElementById("subtituloCabecera");
+  if (!h2) return;
+
+  if (!provinciaSeleccionada) {
+    h2.textContent = "Armada";
+  } else {
+    h2.textContent = `Armada - ${provinciaSeleccionada}`;
+  }
+}
+    
+
+function obtenerActividadesFiltradas() {
+  return actividadesCache.filter(a => {
+    const coincideProvincia =
+      !provinciaSeleccionada ||
+      String(a.provincia || "").trim() === provinciaSeleccionada;
+
+    const coincidePrograma =
+      !programaSeleccionado ||
+      String(a.subtitulo_publico || "").trim() === programaSeleccionado;
+
+    return coincideProvincia && coincidePrograma;
+  });
+}
+
+    function obtenerTarjetasCarrusel() {
+      return Array.from(document.querySelectorAll("#carruselActividades .card"));
+    }
+
+    function colocarWrapEnCard(card, comportamiento = "smooth") {
+      if (!card) return;
+
+      const wrap = document.getElementById("carruselWrap");
+      if (!wrap) return;
+
+      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+
+      wrap.scrollTo({
+        left: Math.max(targetLeft, 0),
+        behavior: comportamiento
+      });
+    }
+
+    function colocarWrapEnCardInstantaneo(card) {
+      if (!card) return;
+
+      const wrap = document.getElementById("carruselWrap");
+      if (!wrap) return;
+
+      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+
+      const anterior = wrap.style.scrollBehavior;
+      wrap.style.scrollBehavior = "auto";
+      wrap.scrollLeft = Math.max(targetLeft, 0);
+      wrap.style.scrollBehavior = anterior || "";
+    }
+
+    function cancelarResetCarrusel() {
+      if (carruselResetTimeout) {
+        clearTimeout(carruselResetTimeout);
+        carruselResetTimeout = null;
+      }
+    }
+
+    function programarResetInvisibleCarrusel(indiceReal, totalReales) {
+      cancelarResetCarrusel();
+
+      carruselResetTimeout = setTimeout(() => {
+        const tarjetas = obtenerTarjetasCarrusel();
+        const cardCentral = tarjetas[totalReales + indiceReal];
+        if (cardCentral) {
+          colocarWrapEnCardInstantaneo(cardCentral);
+        }
+      }, 420);
+    }
+
+    function renderizarActividades() {
+      const cont = document.getElementById("carruselActividades");
+      const actividadesVisibles = obtenerActividadesFiltradas();
+
+      cancelarResetCarrusel();
+
+      if (!actividadesVisibles.length) {
+        cont.innerHTML = "";
+        actividadSeleccionada = null;
+        carruselAutoIndex = 0;
+        renderDetalle();
+        document.querySelectorAll(".btn-carrusel").forEach(btn => {
+          btn.style.display = "none";
+        });
+        return;
+      }
+
+      if (
+        !actividadSeleccionada ||
+        !actividadesVisibles.find(x => Number(x.id) === Number(actividadSeleccionada.id))
+      ) {
+        actividadSeleccionada = actividadesVisibles[0];
+        carruselAutoIndex = 0;
+      } else {
+        const idx = actividadesVisibles.findIndex(
+          x => Number(x.id) === Number(actividadSeleccionada.id)
+        );
+        carruselAutoIndex = Math.max(idx, 0);
+      }
+
+      const usarCarruselInfinito = actividadesVisibles.length >= 4;
+
+      const actividadesRender = usarCarruselInfinito
+        ? [...actividadesVisibles, ...actividadesVisibles, ...actividadesVisibles]
+        : [...actividadesVisibles];
+
+      cont.innerHTML = actividadesRender.map((a, i) => {
+        const activa = usarCarruselInfinito
+          ? (
+              i >= actividadesVisibles.length &&
+              i < actividadesVisibles.length * 2 &&
+              actividadSeleccionada &&
+              Number(actividadSeleccionada.id) === Number(a.id) &&
+              (i - actividadesVisibles.length) === carruselAutoIndex
+            )
+          : (
+              actividadSeleccionada &&
+              Number(actividadSeleccionada.id) === Number(a.id) &&
+              i === carruselAutoIndex
+            );
+
+        return `
+          <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+            <div class="card-img-wrap">
+              <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+            </div>
+            <div class="card-body">
+              <h3>${a.titulo_publico || a.nombre}</h3>
+              <div class="card-meta">
+                ${a.lugar ? `<div>${a.lugar}</div>` : ""}
+                ${a.provincia ? `<div>${a.provincia}</div>` : ""}
+                ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".btn-carrusel").forEach(btn => {
+        btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
+      });
+
+      actualizarSubtituloCabecera();
+      renderDetalle();
+
+      setTimeout(() => {
+        const tarjetas = obtenerTarjetasCarrusel();
+        if (!tarjetas.length) return;
+
+        const cardInicial = usarCarruselInfinito
+          ? tarjetas[actividadesVisibles.length + carruselAutoIndex]
+          : tarjetas[carruselAutoIndex];
+
+        if (cardInicial) {
+          colocarWrapEnCardInstantaneo(cardInicial);
+        }
+      }, 50);
+    }
+
+    function destruirMapaActividad() {
+      if (resizeObserverMapa) {
+        resizeObserverMapa.disconnect();
+        resizeObserverMapa = null;
+      }
+
+      if (mapaActividad) {
+        mapaActividad.remove();
+        mapaActividad = null;
+        marcadorActividad = null;
+      }
+    }
+
+    function obtenerIconoMarcadorLeaflet() {
+      if (markerIconDefault) return markerIconDefault;
+
+      markerIconDefault = L.icon({
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+
+      return markerIconDefault;
+    }
+    
+function renderMapaActividad(a) {
+  const mapaWrap = document.getElementById("mapaWrap");
+  const mapaDiv = document.getElementById("mapaActividad");
+
+  if (!a || a.latitud == null || a.longitud == null || a.latitud === "" || a.longitud === "") {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
+
+  const lat = Number(a.latitud);
+  const lng = Number(a.longitud);
+  const zoom = Number(a.zoom_mapa || 15);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    mapaWrap.classList.add("mapa-oculto");
+    destruirMapaActividad();
+    return;
+  }
+
+  mapaWrap.classList.remove("mapa-oculto");
+  destruirMapaActividad();
+
+  mapaDiv.innerHTML = "";
+  mapaDiv.style.width = "100%";
+  mapaDiv.style.height = "200px";
+
+  mapaActividad = L.map(mapaDiv, {
+    center: [lat, lng],
+    zoom: zoom,
+    zoomControl: true
+  });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(mapaActividad);
+
+  const lugar = a.lugar || "Ubicación";
+
+  marcadorActividad = L.marker([lat, lng], {
+    icon: obtenerIconoMarcadorLeaflet()
+  }).addTo(mapaActividad);
+
+  marcadorActividad.bindPopup(lugar);
+
+  const refrescarMapa = () => {
+    if (!mapaActividad) return;
+    mapaActividad.invalidateSize(false);
+    marcadorActividad.openPopup();
+  };
+
+  requestAnimationFrame(() => {
+    refrescarMapa();
+  });
+
+  if ("ResizeObserver" in window) {
+    resizeObserverMapa = new ResizeObserver(() => {
+      if (!mapaActividad) return;
+      mapaActividad.invalidateSize(false);
+    });
+    resizeObserverMapa.observe(mapaWrap);
+  }
+}
+
+    function renderDetalle() {
+      const a = actividadSeleccionada;
+
+      if (!a) {
+        document.getElementById("detalleTitulo").textContent = "Seleccione una actividad";
+        document.getElementById("detalleSubtitulo").textContent = "";
+        document.getElementById("detalleMeta").innerHTML = "";
+        document.getElementById("detalleTexto").textContent = "";
+        document.getElementById("detalleImagen").src = "logo.png";
+        document.getElementById("btnSolicitarActividad").style.display = "none";
+        document.getElementById("btnEditarActividad").style.display = "none";
+        document.getElementById("btnVerReservasActividad").style.display = "none";
+        document.getElementById("direccionActividad").style.display = "none";
+        document.getElementById("direccionActividad").innerHTML = "";
+        renderMapaActividad(null);
+        actividadFranjasSolicitada = null;
+        cargarFranjasActividad(null);
+        return;
+      }
+
+           const detalleTitulo = document.getElementById("detalleTitulo");
+      const tituloActividad = a.titulo_publico || a.nombre;
+
+      const tieneEnlaceExterno =
+        Number(a.usa_enlace_externo || 0) === 1 &&
+        String(a.enlace_externo_url || "").trim() !== "";
+
+      if (tieneEnlaceExterno) {
+        detalleTitulo.innerHTML = `<a href="${a.enlace_externo_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${tituloActividad}</a>`;
+      } else {
+        detalleTitulo.textContent = tituloActividad;
+      }
+
+      document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
+      document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+
+
+      const organizadorHTML = a.organizador_publico
+        ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>`
+        : "";
+
+      document.getElementById("detalleMeta").innerHTML = `
+        ${organizadorHTML}
+        ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
+        ${a.provincia ? `<div><strong>Localidad:</strong> ${a.provincia}</div>` : ""}
+        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
+        ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+      `;
+
+      let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
+
+if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+  textoDetalle += (textoDetalle ? "\n\n" : "") +
+    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
+}
+
+      document.getElementById("detalleTexto").textContent = textoDetalle;
+
+      const btnSolicitar = document.getElementById("btnSolicitarActividad");
+      const btnEditar = document.getElementById("btnEditarActividad");
+      const btnReservas = document.getElementById("btnVerReservasActividad");
+      
+      btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
+      btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
+
+      if (
+        usuarioAutenticado &&
+        usuarioAutenticado.rol === "SOLICITANTE" &&
+        Number(a.requiere_reserva || 0) === 1
+      ) {
+        btnSolicitar.style.display = "inline-block";
+      } else {
+        btnSolicitar.style.display = "none";
+      }
+
+      franjaSeleccionadaPortalId = null;
+      franjasActividadActual = [];
+
+      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+        btnSolicitar.disabled = true;
+        btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
+      } else {
+        btnSolicitar.disabled = Number(a.usa_franjas || 0) === 1;
+        btnSolicitar.title = Number(a.usa_franjas || 0) === 1
+          ? "Debes seleccionar una franja horaria."
+          : "";
+      }
+
+      const direccionDiv = document.getElementById("direccionActividad");
+      if (a.direccion_postal && a.direccion_postal.trim() !== "") {
+        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.direccion_postal)}`;
+        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${a.direccion_postal}</a>`;
+        direccionDiv.style.display = "block";
+      } else {
+        direccionDiv.style.display = "none";
+        direccionDiv.innerHTML = "";
+      }
+
+      renderMapaActividad(a);
+      cargarFranjasActividad(a);
+    }
+
+    function detenerAutoPlayCarrusel() {
+      carruselAutoPlayActivo = false;
+
+      if (carruselAutoPlay) {
+        clearInterval(carruselAutoPlay);
+        carruselAutoPlay = null;
+      }
+
+      cancelarResetCarrusel();
+
+      if (carruselReanudarTimeout) {
+        clearTimeout(carruselReanudarTimeout);
+        carruselReanudarTimeout = null;
+      }
+    }
+
+    function programarReanudacionAutoPlay() {
+      if (carruselReanudarTimeout) {
+        clearTimeout(carruselReanudarTimeout);
+      }
+
+      carruselReanudarTimeout = setTimeout(() => {
+        carruselAutoPlayActivo = true;
+        iniciarAutoPlayCarrusel();
+      }, 10000);
+    }
+
+    function pausarTemporalmenteAutoPlay() {
+      if (carruselAutoPlay) {
+        clearInterval(carruselAutoPlay);
+        carruselAutoPlay = null;
+      }
+
+      cancelarResetCarrusel();
+      carruselAutoPlayActivo = false;
+      programarReanudacionAutoPlay();
+    }
+
+    function moverCarruselAutomaticamente() {
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      const totalReales = actividadesVisibles.length;
+
+      if (totalReales < 4) return;
+
+      const tarjetas = obtenerTarjetasCarrusel();
+      if (!tarjetas.length) return;
+
+      const siguienteIndice = carruselAutoIndex + 1;
+
+      if (siguienteIndice < totalReales) {
+        carruselAutoIndex = siguienteIndice;
+        const card = tarjetas[totalReales + carruselAutoIndex];
+        if (card) colocarWrapEnCard(card, "smooth");
+        return;
+      }
+
+      carruselAutoIndex = 0;
+      const cardDerecha = tarjetas[2 * totalReales];
+      if (cardDerecha) {
+        colocarWrapEnCard(cardDerecha, "smooth");
+        programarResetInvisibleCarrusel(0, totalReales);
+      }
+    }
+
+    function iniciarAutoPlayCarrusel() {
+      if (!carruselAutoPlayActivo || carruselAutoPlay) return;
+
+      carruselAutoPlay = setInterval(() => {
+        moverCarruselAutomaticamente();
+      }, 2500);
+    }
+
+    function desplazarCarrusel(direccion) {
+      pausarTemporalmenteAutoPlay();
+
+      const actividadesVisibles = obtenerActividadesFiltradas();
+      const totalReales = actividadesVisibles.length;
+      if (!totalReales) return;
+
+      const tarjetas = obtenerTarjetasCarrusel();
+      if (!tarjetas.length) return;
+
+      if (totalReales < 4) {
+        if (direccion > 0) {
+          carruselAutoIndex += 1;
+          if (carruselAutoIndex >= totalReales) carruselAutoIndex = 0;
+        } else {
+          carruselAutoIndex -= 1;
+          if (carruselAutoIndex < 0) carruselAutoIndex = totalReales - 1;
+        }
+
+        const card = tarjetas[carruselAutoIndex];
+        if (card) colocarWrapEnCard(card, "smooth");
+        return;
+      }
+
+      if (direccion > 0) {
+        const siguienteIndice = carruselAutoIndex + 1;
+
+        if (siguienteIndice < totalReales) {
+          carruselAutoIndex = siguienteIndice;
+          const card = tarjetas[totalReales + carruselAutoIndex];
+          if (card) colocarWrapEnCard(card, "smooth");
+          return;
+        }
+
+        carruselAutoIndex = 0;
+        const cardDerecha = tarjetas[2 * totalReales];
+        if (cardDerecha) {
+          colocarWrapEnCard(cardDerecha, "smooth");
+          programarResetInvisibleCarrusel(0, totalReales);
+        }
+        return;
+      }
+
+      const anteriorIndice = carruselAutoIndex - 1;
+
+      if (anteriorIndice >= 0) {
+        carruselAutoIndex = anteriorIndice;
+        const card = tarjetas[totalReales + carruselAutoIndex];
+        if (card) colocarWrapEnCard(card, "smooth");
+        return;
+      }
+
+      carruselAutoIndex = totalReales - 1;
+      const cardIzquierda = tarjetas[totalReales - 1];
+      if (cardIzquierda) {
+        colocarWrapEnCard(cardIzquierda, "smooth");
+        programarResetInvisibleCarrusel(totalReales - 1, totalReales);
+      }
+    }
+
+function solicitarActividadActual() {
+  if (!actividadSeleccionada) return;
+
+  if (
+    Number(actividadSeleccionada.aforo_limitado || 0) === 1 &&
+    Number(actividadSeleccionada.completa_calculada || 0) === 1
+  ) {
+    return;
+  }
+
+  if (Number(actividadSeleccionada.usa_franjas || 0) === 1) {
+    const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
+    if (!franja || !franja.seleccionable) return;
+
+    location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}&franja_id=${encodeURIComponent(franja.id)}`;
+    return;
+  }
+
+  location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+}
+
+    function editarActividadActual() {
+      if (!actividadSeleccionada) return;
+      location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}`;
+    }
+
+    function verReservasActividadActual() {
+      if (!actividadSeleccionada) return;
+      location.href = `admin-reservas.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+    }
+
+    async function loginUsuario() {
+      limpiarMensaje("mensajeLogin");
+
+      const email = document.getElementById("emailLogin").value.trim();
+      const password = document.getElementById("passwordLogin").value.trim();
+
+      const res = await fetch("/api/usuario/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        cerrarModalLogin();
+        await comprobarSesionUsuario();
+        await cargarActividades();
+      } else {
+        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
+      }
+    }
+
+    async function logoutActual() {
+      await fetch("/api/usuario/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+
+      usuarioAutenticado = null;
+      actualizarModoAcceso();
+      await cargarActividadesPublicas();
+    }
+
+    function irPanelActividades() {
+      location.href = "mis-actividades.html";
+    }
+
+    function irPanelReservas() {
+      location.href = "admin-reservas.html";
+    }
+
+    function gestionAdmins() {
+      location.href = "admin-usuarios.html";
+    }
+
+    function recuperarPassword(event) {
+      event.preventDefault();
+      alert("Recuperación de contraseña pendiente de implementar.");
+    }
+
+    function irRegistro() {
+      location.href = "usuario-registro.html";
+    }
+
+    function irPanelUsuario() {
+      location.href = "usuario-panel.html";
+    }
+
+    function irPerfilUsuario() {
+      location.href = "usuario-perfil.html";
+    }
+
+    document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
+    document.getElementById("btnEditarActividad").addEventListener("click", editarActividadActual);
+    document.getElementById("btnVerReservasActividad").addEventListener("click", verReservasActividadActual);
+    document.getElementById("btnVerPassword").addEventListener("click", alternarPassword);
+
+    document.getElementById("modalLogin").addEventListener("click", function (e) {
+      if (e.target.id === "modalLogin") cerrarModalLogin();
+    });
+
+    window.seleccionarActividad = seleccionarActividad;
+
+    (async function init() {
+      await comprobarSesionUsuario();
+      await cargarActividades();
+
+      const carruselWrap = document.getElementById("carruselWrap");
+      if (carruselWrap) {
+        carruselWrap.addEventListener("mouseenter", () => {
+          if (carruselAutoPlay) {
+            clearInterval(carruselAutoPlay);
+            carruselAutoPlay = null;
+          }
+        });
+
+        carruselWrap.addEventListener("mouseleave", () => {
+          programarReanudacionAutoPlay();
+        });
+
+        carruselWrap.addEventListener("wheel", () => {
+          pausarTemporalmenteAutoPlay();
+        }, { passive: true });
+      }
+
+const filtroProvincia = document.getElementById("filtroProvincia");
+if (filtroProvincia) {
+  filtroProvincia.addEventListener("change", function () {
+    provinciaSeleccionada = this.value;
+    programaSeleccionado = "";
+    actividadSeleccionada = null;
+    carruselAutoIndex = 0;
+    renderizarFiltroProgramas();
+    actualizarSubtituloCabecera();
+    renderizarActividades();
+  });
+}
+
+const filtroPrograma = document.getElementById("filtroPrograma");
+if (filtroPrograma) {
+  filtroPrograma.addEventListener("change", function () {
+    programaSeleccionado = this.value;
+    actividadSeleccionada = null;
+    carruselAutoIndex = 0;
+    renderizarActividades();
+  });
+}
+
+      iniciarAutoPlayCarrusel();
+    })();
+  </script>
+</body>
+</html>
