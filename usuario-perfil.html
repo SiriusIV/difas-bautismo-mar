@@ -39,13 +39,17 @@
     .mensaje.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
     .layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; }
+    .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 16px; height: 100%; }
     .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .campo-linea { margin-bottom: 12px; }
     .oculto { display: none !important; }
     label { display: block; font-weight: bold; margin-bottom: 5px; color: #334250; font-size: 12px; }
-    input[type="text"], input[type="email"], input[type="tel"], input[type="password"] { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+    .label-help { display: inline-flex; align-items: center; gap: 6px; }
+    .btn-ayuda-campo { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #c9d4de; background: #fff; color: #4c6278; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+    .btn-ayuda-campo:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
@@ -129,8 +133,54 @@
           </div>
           <div class="fila oculto" id="filaSuperadminNombreEmail"><div><label for="nombreSuperadmin">Nombre</label><input type="text" id="nombreSuperadmin" name="nombreSuperadmin"></div><div><label for="emailSuperadmin">Email</label><input type="email" id="emailSuperadmin" name="emailSuperadmin"></div></div>
           <div class="fila oculto" id="filaSuperadminTelefono"><div><label for="telefonoSuperadmin">Teléfono de contacto</label><input type="tel" id="telefonoSuperadmin" name="telefonoSuperadmin"></div></div>
-          <div class="fila oculto" id="filaSolicitanteCentroEmail"><div><label for="centroSolicitante">Centro</label><input type="text" id="centroSolicitante" name="centroSolicitante" readonly><div class="nota">El centro identifica la cuenta y no puede modificarse.</div></div><div><label for="emailSolicitante">Email</label><input type="email" id="emailSolicitante" name="emailSolicitante"></div></div>
-          <div class="fila oculto" id="filaSolicitanteTelefono"><div><label for="telefonoSolicitante">Teléfono de contacto</label><input type="tel" id="telefonoSolicitante" name="telefonoSolicitante"></div></div>
+          <div class="fila oculto" id="filaSolicitanteCuentaCentro">
+            <div class="campo-linea">
+              <label for="cuentaSolicitante">Cuenta</label>
+              <div id="cuentaSolicitante" class="campo-linea-valor-fijo">Usuario</div>
+            </div>
+            <div class="campo-linea">
+              <label for="centroSolicitante" class="label-help">Centro / Institución<button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button></label>
+              <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
+              <div class="nota">El centro identifica la cuenta y no puede modificarse.</div>
+            </div>
+          </div>
+          <div class="fila oculto" id="filaSolicitanteResponsableTipoDoc">
+            <div class="campo-linea">
+              <label for="responsableLegalSolicitante" class="label-help">Responsable legal / Titular<button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button></label>
+              <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
+            </div>
+            <div class="campo-linea">
+              <label for="tipoDocumentoSolicitante">Tipo de documento</label>
+              <select id="tipoDocumentoSolicitante" name="tipoDocumentoSolicitante">
+                <option value="">Seleccione una opción</option>
+                <option value="DNI">DNI</option>
+                <option value="NIE">NIE</option>
+                <option value="NIF">NIF</option>
+              </select>
+            </div>
+          </div>
+          <div class="fila oculto" id="filaSolicitanteDocumentoEmail">
+            <div class="campo-linea">
+              <label for="documentoSolicitante">Documento</label>
+              <input type="text" id="documentoSolicitante" name="documentoSolicitante" maxlength="16" autocomplete="off">
+            </div>
+            <div class="campo-linea">
+              <label for="emailSolicitante">Correo electrónico del centro</label>
+              <input type="email" id="emailSolicitante" name="emailSolicitante">
+            </div>
+          </div>
+          <div class="fila oculto" id="filaSolicitanteTelefonoPassword">
+            <div class="campo-linea">
+              <label for="telefonoSolicitante">Teléfono del centro</label>
+              <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
+            </div>
+            <div class="campo-linea">
+              <div class="password-linea">
+                <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
+                <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
+              </div>
+            </div>
+          </div>
           <input type="hidden" id="logo_url" name="logo_url">
         </form>
       </div>
@@ -175,6 +225,13 @@
       <div class="modal-acciones">
         <button type="button" class="btn" id="btnAceptarPasswordNueva">Aceptar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="modalAyudaCampo" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="tituloAyudaCampo">Información</h3>
+      <p id="textoAyudaCampo"></p>
     </div>
   </div>
 
@@ -237,24 +294,30 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCentroEmail","filaSolicitanteTelefono"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableTipoDoc","filaSolicitanteDocumentoEmail","filaSolicitanteTelefonoPassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
 
     function aplicarRol(perfil) {
       ocultarTodoPorRol();
+      const layout = document.getElementById("appPerfil");
 
       if (esSolicitante()) {
-        document.getElementById("filaSolicitanteCentroEmail").classList.remove("oculto");
-        document.getElementById("filaSolicitanteTelefono").classList.remove("oculto");
+        document.getElementById("filaSolicitanteCuentaCentro").classList.remove("oculto");
+        document.getElementById("filaSolicitanteResponsableTipoDoc").classList.remove("oculto");
+        document.getElementById("filaSolicitanteDocumentoEmail").classList.remove("oculto");
+        document.getElementById("filaSolicitanteTelefonoPassword").classList.remove("oculto");
+        layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminEmailTelefono").classList.remove("oculto");
         document.getElementById("campoPasswordAdmin").classList.remove("oculto");
+        layout.classList.remove("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
+        layout.classList.add("sin-imagen");
       }
 
       actualizarSubtitulo(perfil);
@@ -270,6 +333,9 @@
       document.getElementById("emailSuperadmin").value = perfil.email || "";
       document.getElementById("telefonoSuperadmin").value = perfil.telefono_contacto || "";
       document.getElementById("centroSolicitante").value = perfil.centro || "";
+      document.getElementById("responsableLegalSolicitante").value = perfil.responsable_legal || "";
+      document.getElementById("tipoDocumentoSolicitante").value = perfil.tipo_documento || "";
+      document.getElementById("documentoSolicitante").value = perfil.documento_identificacion || "";
       document.getElementById("emailSolicitante").value = perfil.email || "";
       document.getElementById("telefonoSolicitante").value = perfil.telefono_contacto || "";
       document.getElementById("logo_url").value = perfil.logo_url || "";
@@ -279,10 +345,14 @@
         centro: perfil.centro || "",
         email: perfil.email || "",
         telefono_contacto: perfil.telefono_contacto || "",
+        responsable_legal: perfil.responsable_legal || "",
+        tipo_documento: perfil.tipo_documento || "",
+        documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
         rol: rolActual
       };
 
+      aplicarFormatoDocumento();
       aplicarRol(perfil);
     }
 
@@ -301,6 +371,9 @@
         centro: perfil.centro || sesion?.centro || "",
         email: perfil.email || sesion?.email || "",
         telefono_contacto: perfil.telefono_contacto || sesion?.telefono_contacto || "",
+        responsable_legal: perfil.responsable_legal || sesion?.responsable_legal || "",
+        tipo_documento: perfil.tipo_documento || sesion?.tipo_documento || "",
+        documento_identificacion: perfil.documento_identificacion || sesion?.documento_identificacion || "",
         logo_url: perfil.logo_url || sesion?.logo_url || "",
         rol: String(perfil.rol || sesion?.rol || "").toUpperCase()
       };
@@ -328,6 +401,55 @@
       rellenarFormulario(perfil);
     }
 
+    function abrirAyudaCampo(titulo, texto) {
+      document.getElementById("tituloAyudaCampo").textContent = titulo;
+      document.getElementById("textoAyudaCampo").textContent = texto;
+      document.getElementById("modalAyudaCampo").classList.add("activo");
+    }
+
+    function cerrarAyudaCampo() {
+      document.getElementById("modalAyudaCampo").classList.remove("activo");
+    }
+
+    function limpiarDocumentoSegunTipo(valor, tipo) {
+      const texto = String(valor || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      if (tipo === "DNI") {
+        return texto.replace(/[^0-9A-Z]/g, "").slice(0, 9);
+      }
+
+      if (tipo === "NIE") {
+        return texto.replace(/[^XYZ0-9A-Z]/g, "").slice(0, 9);
+      }
+
+      if (tipo === "NIF") {
+        return texto.slice(0, 9);
+      }
+
+      return texto.slice(0, 16);
+    }
+
+    function aplicarFormatoDocumento() {
+      const tipo = document.getElementById("tipoDocumentoSolicitante").value.trim().toUpperCase();
+      const input = document.getElementById("documentoSolicitante");
+
+      input.value = limpiarDocumentoSegunTipo(input.value, tipo);
+
+      if (tipo === "DNI") {
+        input.placeholder = "12345678Z";
+        input.maxLength = 9;
+      } else if (tipo === "NIE") {
+        input.placeholder = "X1234567L";
+        input.maxLength = 9;
+      } else if (tipo === "NIF") {
+        input.placeholder = "A12345678";
+        input.maxLength = 9;
+      } else {
+        input.placeholder = "";
+        input.maxLength = 16;
+      }
+    }
+
     function obtenerEstadoActualPerfil() {
       if (esAdmin()) {
         return {
@@ -347,6 +469,9 @@
       }
 
       return {
+        responsable_legal: document.getElementById("responsableLegalSolicitante").value.trim(),
+        tipo_documento: document.getElementById("tipoDocumentoSolicitante").value.trim(),
+        documento_identificacion: document.getElementById("documentoSolicitante").value.trim().toUpperCase(),
         email: document.getElementById("emailSolicitante").value.trim(),
         telefono_contacto: document.getElementById("telefonoSolicitante").value.trim()
       };
@@ -370,12 +495,18 @@
       }
 
       return actual.email !== (perfilOriginal.email || "") ||
-        actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "");
+        actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "") ||
+        actual.responsable_legal !== (perfilOriginal.responsable_legal || "") ||
+        actual.tipo_documento !== (perfilOriginal.tipo_documento || "") ||
+        actual.documento_identificacion !== (perfilOriginal.documento_identificacion || "");
     }
 
     function construirPayloadPerfil() {
       if (esSolicitante()) {
         return {
+          responsable_legal: document.getElementById("responsableLegalSolicitante").value.trim(),
+          tipo_documento: document.getElementById("tipoDocumentoSolicitante").value.trim(),
+          documento_identificacion: document.getElementById("documentoSolicitante").value.trim().toUpperCase(),
           email: document.getElementById("emailSolicitante").value.trim(),
           telefono_contacto: document.getElementById("telefonoSolicitante").value.trim(),
           centro: document.getElementById("centroSolicitante").value.trim(),
@@ -634,19 +765,36 @@
       event.target.value = "";
     });
     document.getElementById("btnCambiarPasswordAdmin").addEventListener("click", abrirModalPasswordActual);
+    document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
+    document.getElementById("btnAyudaCentro").addEventListener("click", () => {
+      abrirAyudaCampo(
+        "Centro / Institución",
+        "Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
+      );
+    });
+    document.getElementById("btnAyudaResponsable").addEventListener("click", () => {
+      abrirAyudaCampo(
+        "Responsable legal / Titular",
+        "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
+      );
+    });
+    document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
+    document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
     document.getElementById("btnAceptarPasswordNueva").addEventListener("click", confirmarCambioPassword);
 
     [
       "modalCambiosPendientes",
       "modalPasswordActual",
-      "modalPasswordNueva"
+      "modalPasswordNueva",
+      "modalAyudaCampo"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
         if (id === "modalCambiosPendientes") cerrarModalCambiosPendientes();
         if (id === "modalPasswordActual") cerrarModalPasswordActual();
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
+        if (id === "modalAyudaCampo") cerrarAyudaCampo();
       });
     });
 
