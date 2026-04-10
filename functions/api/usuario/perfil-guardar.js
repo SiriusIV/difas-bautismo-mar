@@ -34,6 +34,10 @@ function normalizarNullable(valor) {
   return v === "" ? "" : v;
 }
 
+function esTipoDocumentoValido(tipo) {
+  return ["DNI", "NIE", "NIF"].includes(String(tipo || "").toUpperCase());
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -51,6 +55,9 @@ export async function onRequestPost(context) {
     const telefono_contacto = limpiarTexto(body.telefono_contacto);
     const webExternaRecibida = limpiarTexto(body.web_externa_url);
     const logo_url_recibido = normalizarNullable(body.logo_url);
+    const responsableLegalRecibido = limpiarTexto(body.responsable_legal);
+    const tipoDocumentoRecibido = limpiarTexto(body.tipo_documento).toUpperCase();
+    const documentoIdentificacionRecibido = limpiarTexto(body.documento_identificacion).toUpperCase();
 
     if (!email) {
       return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
@@ -71,6 +78,9 @@ export async function onRequestPost(context) {
         centro,
         email,
         rol,
+        responsable_legal,
+        tipo_documento,
+        documento_identificacion,
         logo_url,
         web_externa_url
       FROM usuarios
@@ -103,8 +113,34 @@ export async function onRequestPost(context) {
       ? centro
       : (nombreRecibido || user.nombre || "");
 
+    const responsable_legal = esSolicitante
+      ? responsableLegalRecibido
+      : (user.responsable_legal || "");
+
+    const tipo_documento = esSolicitante
+      ? tipoDocumentoRecibido
+      : (user.tipo_documento || "");
+
+    const documento_identificacion = esSolicitante
+      ? documentoIdentificacionRecibido
+      : (user.documento_identificacion || "");
+
     if (!nombre && (esAdmin || esSuperadmin)) {
       return json({ ok: false, error: "El nombre es obligatorio" }, 400);
+    }
+
+    if (esSolicitante) {
+      if (!responsable_legal) {
+        return json({ ok: false, error: "El responsable legal o titular es obligatorio" }, 400);
+      }
+
+      if (!esTipoDocumentoValido(tipo_documento)) {
+        return json({ ok: false, error: "Debe seleccionar un tipo de documento valido" }, 400);
+      }
+
+      if (!documento_identificacion) {
+        return json({ ok: false, error: "El documento identificativo es obligatorio" }, 400);
+      }
     }
 
     const web_externa_url = esAdmin ? webExternaRecibida : "";
@@ -117,6 +153,9 @@ export async function onRequestPost(context) {
         centro = ?,
         email = ?,
         telefono_contacto = ?,
+        responsable_legal = ?,
+        tipo_documento = ?,
+        documento_identificacion = ?,
         web_externa_url = ?,
         logo_url = ?
       WHERE id = ?
@@ -125,6 +164,9 @@ export async function onRequestPost(context) {
       centro,
       email,
       telefono_contacto,
+      responsable_legal,
+      tipo_documento,
+      documento_identificacion,
       web_externa_url,
       logo_url,
       user.id
@@ -137,6 +179,9 @@ export async function onRequestPost(context) {
         centro,
         email,
         telefono_contacto,
+        responsable_legal,
+        tipo_documento,
+        documento_identificacion,
         web_externa_url,
         logo_url,
         rol
@@ -152,6 +197,9 @@ export async function onRequestPost(context) {
         centro: perfil.centro || "",
         email: perfil.email || "",
         rol: perfil.rol || "",
+        responsable_legal: perfil.responsable_legal || "",
+        tipo_documento: perfil.tipo_documento || "",
+        documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
         web_externa_url: perfil.web_externa_url || ""
       },
@@ -168,6 +216,9 @@ export async function onRequestPost(context) {
           centro: perfil.centro || "",
           email: perfil.email || "",
           telefono_contacto: perfil.telefono_contacto || "",
+          responsable_legal: perfil.responsable_legal || "",
+          tipo_documento: perfil.tipo_documento || "",
+          documento_identificacion: perfil.documento_identificacion || "",
           web_externa_url: perfil.web_externa_url || "",
           logo_url: perfil.logo_url || "",
           rol: perfil.rol || ""
