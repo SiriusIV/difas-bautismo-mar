@@ -283,6 +283,17 @@
       gap: 10px;
     }
 
+    .doc-archivo-acciones {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .input-pdf-oculto {
+      display: none;
+    }
+
     label {
       display: block;
       font-weight: bold;
@@ -380,7 +391,7 @@
       </div>
 
       <div class="nota-compacta">
-        En esta primera versión, cada documento se registra con nombre, descripción y la URL del archivo ya disponible. Más adelante podremos integrar subida directa de archivos desde esta misma pantalla.
+        Cada documento se registra con nombre, descripción y un PDF asociado. Desde esta misma pantalla puedes subir el archivo y sustituirlo por una nueva versión cuando lo necesites.
       </div>
 
       <div id="documentosLista" class="documentos-lista" style="margin-top: 14px;"></div>
@@ -407,8 +418,14 @@
           <textarea class="doc-descripcion" maxlength="1000"></textarea>
         </div>
         <div>
-          <label>URL del archivo</label>
-          <input type="text" class="doc-archivo-url" maxlength="1000" placeholder="https://...">
+          <label>Documento PDF</label>
+          <div class="doc-archivo-acciones">
+            <button type="button" class="btn btn-suave btnSubirPdf">Subir PDF</button>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-suave doc-enlace-archivo oculto">Ver documento</a>
+          </div>
+          <div class="nota-compacta doc-archivo-estado">Todavía no hay ningún PDF asociado a este documento.</div>
+          <input type="file" class="input-pdf-oculto" accept="application/pdf,.pdf">
+          <input type="hidden" class="doc-archivo-url" maxlength="1000">
         </div>
       </div>
     </div>
@@ -478,15 +495,97 @@
       const tpl = document.getElementById("tplDocumento");
       const fragment = tpl.content.cloneNode(true);
       const card = fragment.querySelector(".documento-card");
+      const inputNombre = card.querySelector(".doc-nombre");
+      const inputDescripcion = card.querySelector(".doc-descripcion");
+      const inputArchivoUrl = card.querySelector(".doc-archivo-url");
+      const inputPdf = card.querySelector(".input-pdf-oculto");
+      const btnSubirPdf = card.querySelector(".btnSubirPdf");
+      const enlaceArchivo = card.querySelector(".doc-enlace-archivo");
+      const estadoArchivo = card.querySelector(".doc-archivo-estado");
 
-      card.querySelector(".doc-nombre").value = doc.nombre || "";
-      card.querySelector(".doc-descripcion").value = doc.descripcion || "";
-      card.querySelector(".doc-archivo-url").value = doc.archivo_url || "";
+      inputNombre.value = doc.nombre || "";
+      inputDescripcion.value = doc.descripcion || "";
+      inputArchivoUrl.value = doc.archivo_url || "";
+
+      function actualizarEstadoArchivo() {
+        const url = limpiarTexto(inputArchivoUrl.value);
+        if (url) {
+          enlaceArchivo.href = url;
+          enlaceArchivo.classList.remove("oculto");
+          estadoArchivo.textContent = "PDF cargado correctamente. Si subes otro para este mismo documento, sustituirá al anterior.";
+          return;
+        }
+
+        enlaceArchivo.href = "#";
+        enlaceArchivo.classList.add("oculto");
+        estadoArchivo.textContent = "Todavía no hay ningún PDF asociado a este documento.";
+      }
+
+      async function subirPdf(file) {
+        const nombre = limpiarTexto(inputNombre.value);
+
+        if (!nombre) {
+          mostrarMensaje("error", "Debes indicar antes el nombre del documento.");
+          return;
+        }
+
+        if (!file) return;
+
+        const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
+        if (!esPdf) {
+          mostrarMensaje("error", "Solo se admiten archivos PDF.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("nombre_documento", nombre);
+
+        btnSubirPdf.disabled = true;
+        btnSubirPdf.textContent = "Subiendo...";
+        limpiarMensaje();
+
+        try {
+          const res = await fetch("/api/admin/documentos-upload", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+          });
+
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            mostrarMensaje("error", data?.error || "No se pudo subir el documento PDF.");
+            return;
+          }
+
+          inputArchivoUrl.value = data.archivo_url || "";
+          actualizarEstadoArchivo();
+          mostrarMensaje("ok", data?.mensaje || "Documento PDF subido correctamente.");
+        } catch (error) {
+          mostrarMensaje("error", error.message || "No se pudo subir el documento PDF.");
+        } finally {
+          btnSubirPdf.disabled = false;
+          btnSubirPdf.textContent = "Subir PDF";
+          inputPdf.value = "";
+        }
+      }
+
+      btnSubirPdf.addEventListener("click", function () {
+        inputPdf.click();
+      });
+
+      inputPdf.addEventListener("change", function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (file) subirPdf(file);
+      });
+
       card.querySelector(".btnEliminarDocumento").addEventListener("click", function () {
         card.remove();
         actualizarIndicesDocumentos();
         renderEstadoVacio();
       });
+
+      actualizarEstadoArchivo();
 
       return card;
     }
