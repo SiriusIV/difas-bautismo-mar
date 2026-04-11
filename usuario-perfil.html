@@ -39,21 +39,22 @@
     .mensaje.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
     .layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; }
-    .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
+    .layout.sin-imagen { grid-template-columns: 240px minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 16px; height: 100%; }
-    .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; }
+    .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .campo-linea { margin-bottom: 12px; }
     .oculto { display: none !important; }
     label { display: block; font-weight: bold; margin-bottom: 5px; color: #334250; font-size: 12px; }
     .campo-obligatorio { color: #c62828; margin-left: 2px; }
-    .label-help { display: inline-flex; align-items: center; gap: 6px; }
-    .btn-ayuda-campo { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #c9d4de; background: #fff; color: #4c6278; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
-    .btn-ayuda-campo:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
+    .campo-con-ayuda { position: relative; }
+    .campo-con-ayuda input { padding-right: 34px; }
+    .btn-ayuda-campo { position: absolute; right: 10px; top: 35px; width: 20px; height: 20px; border-radius: 999px; border: 1px solid #6d87a3; background: #eef4ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
+    .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
-    .nota-obligatorios { margin: -2px 0 12px; font-size: 12px; color: #5f6d7a; }
+    .nota-obligatorios { margin: 0 0 14px; font-size: 12px; color: #5f6d7a; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
     .btn:hover { background: var(--primary-dark); }
     .btn-suave { background: #fff; color: #334250; border: 1px solid #c9cfd6; }
@@ -71,6 +72,8 @@
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
+    .campo-documento-inline { display: grid; grid-template-columns: 120px 150px; gap: 10px; align-items: end; }
+    .bloque-password-solicitante { display: flex; align-items: flex-end; height: 100%; padding: 16px; }
     .input-oculto { display: none; }
     .modal-fondo { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 9999; }
     .modal-fondo.activo { display: flex; }
@@ -111,6 +114,14 @@
         </div>
         <input type="file" id="inputImagenAdmin" class="input-oculto" accept="image/*">
       </div>
+      <div class="bloque oculto" id="bloquePasswordSolicitante">
+        <div class="bloque-password-solicitante">
+          <div class="password-linea">
+            <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
+            <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
+          </div>
+        </div>
+      </div>
       <div class="bloque">
         <form id="formPerfil">
           <div class="bloque-head">
@@ -141,47 +152,40 @@
               <label for="cuentaSolicitante">Cuenta</label>
               <div id="cuentaSolicitante" class="campo-linea-valor-fijo">Usuario</div>
             </div>
-            <div class="campo-linea">
-              <label for="centroSolicitante" class="label-help">Centro / Institución<span class="campo-obligatorio">*</span><button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button></label>
+            <div class="campo-linea campo-con-ayuda">
+              <label for="centroSolicitante">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
+              <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button>
               <div class="nota">El centro identifica la cuenta y no puede modificarse.</div>
             </div>
           </div>
-          <div class="fila oculto" id="filaSolicitanteResponsableTipoDoc">
-            <div class="campo-linea">
-              <label for="responsableLegalSolicitante" class="label-help">Responsable legal / Titular<span class="campo-obligatorio">*</span><button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button></label>
+          <div class="fila oculto" id="filaSolicitanteResponsableDocumento">
+            <div class="campo-linea campo-con-ayuda">
+              <label for="responsableLegalSolicitante">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
               <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
+              <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button>
             </div>
             <div class="campo-linea">
-              <label for="tipoDocumentoSolicitante">Tipo de documento<span class="campo-obligatorio">*</span></label>
-              <select id="tipoDocumentoSolicitante" name="tipoDocumentoSolicitante">
-                <option value="">Seleccione una opción</option>
-                <option value="DNI">DNI</option>
-                <option value="NIE">NIE</option>
-                <option value="NIF">NIF</option>
-              </select>
+              <label>Documento<span class="campo-obligatorio">*</span></label>
+              <div class="campo-documento-inline">
+                <select id="tipoDocumentoSolicitante" name="tipoDocumentoSolicitante">
+                  <option value="">Tipo</option>
+                  <option value="DNI_NIF">DNI/NIF</option>
+                  <option value="NIE">NIE</option>
+                  <option value="CIF">CIF</option>
+                </select>
+                <input type="text" id="documentoSolicitante" name="documentoSolicitante" maxlength="16" autocomplete="off">
+              </div>
             </div>
           </div>
-          <div class="fila oculto" id="filaSolicitanteDocumentoEmail">
-            <div class="campo-linea">
-              <label for="documentoSolicitante">Documento<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="documentoSolicitante" name="documentoSolicitante" maxlength="16" autocomplete="off">
-            </div>
+          <div class="fila oculto" id="filaSolicitanteEmailTelefono">
             <div class="campo-linea">
               <label for="emailSolicitante">Correo electrónico del centro<span class="campo-obligatorio">*</span></label>
               <input type="email" id="emailSolicitante" name="emailSolicitante">
             </div>
-          </div>
-          <div class="fila oculto" id="filaSolicitanteTelefonoPassword">
             <div class="campo-linea">
               <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
               <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
-            </div>
-            <div class="campo-linea">
-              <div class="password-linea">
-                <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-                <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
-              </div>
             </div>
           </div>
           <input type="hidden" id="logo_url" name="logo_url">
@@ -297,7 +301,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableTipoDoc","filaSolicitanteDocumentoEmail","filaSolicitanteTelefonoPassword"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -308,18 +312,20 @@
 
       if (esSolicitante()) {
         document.getElementById("filaSolicitanteCuentaCentro").classList.remove("oculto");
-        document.getElementById("filaSolicitanteResponsableTipoDoc").classList.remove("oculto");
-        document.getElementById("filaSolicitanteDocumentoEmail").classList.remove("oculto");
-        document.getElementById("filaSolicitanteTelefonoPassword").classList.remove("oculto");
+        document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
+        document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
+        document.getElementById("bloquePasswordSolicitante").classList.remove("oculto");
         layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminEmailTelefono").classList.remove("oculto");
         document.getElementById("campoPasswordAdmin").classList.remove("oculto");
+        document.getElementById("bloquePasswordSolicitante").classList.add("oculto");
         layout.classList.remove("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
+        document.getElementById("bloquePasswordSolicitante").classList.add("oculto");
         layout.classList.add("sin-imagen");
       }
 
@@ -417,7 +423,7 @@
     function limpiarDocumentoSegunTipo(valor, tipo) {
       const texto = String(valor || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-      if (tipo === "DNI") {
+      if (tipo === "DNI_NIF") {
         return texto.replace(/[^0-9A-Z]/g, "").slice(0, 9);
       }
 
@@ -425,7 +431,7 @@
         return texto.replace(/[^XYZ0-9A-Z]/g, "").slice(0, 9);
       }
 
-      if (tipo === "NIF") {
+      if (tipo === "CIF") {
         return texto.slice(0, 9);
       }
 
@@ -445,7 +451,7 @@
       const t = String(tipo || "").toUpperCase();
       const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-      if (t === "DNI") {
+      if (t === "DNI_NIF") {
         if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
         return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
       }
@@ -457,8 +463,8 @@
         return letraDni(numero) === d.slice(-1);
       }
 
-      if (t === "NIF") {
-        return /^[A-Z][0-9]{8}$/.test(d);
+      if (t === "CIF") {
+        return /^[A-Z][0-9]{7}[A-Z0-9]$/.test(d);
       }
 
       return false;
@@ -470,14 +476,14 @@
 
       input.value = limpiarDocumentoSegunTipo(input.value, tipo);
 
-      if (tipo === "DNI") {
+      if (tipo === "DNI_NIF") {
         input.placeholder = "12345678Z";
         input.maxLength = 9;
       } else if (tipo === "NIE") {
         input.placeholder = "X1234567L";
         input.maxLength = 9;
-      } else if (tipo === "NIF") {
-        input.placeholder = "A12345678";
+      } else if (tipo === "CIF") {
+        input.placeholder = "A1234567Z";
         input.maxLength = 9;
       } else {
         input.placeholder = "";
@@ -837,13 +843,13 @@
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
-        "Centro / Institución",
+        "Nombre del centro / entidad",
         "Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
       );
     });
     document.getElementById("btnAyudaResponsable").addEventListener("click", () => {
       abrirAyudaCampo(
-        "Responsable legal / Titular",
+        "Responsable legal / entidad titular",
         "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
       );
     });
