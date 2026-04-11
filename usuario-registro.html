@@ -160,6 +160,14 @@
       align-items: end;
     }
 
+    .input-con-ayuda {
+      position: relative;
+    }
+
+    .input-con-ayuda input {
+      padding-right: 34px;
+    }
+
     label {
       display: block;
       margin-bottom: 5px;
@@ -171,6 +179,33 @@
     .campo-obligatorio {
       color: #c62828;
       margin-left: 2px;
+    }
+
+    .btn-ayuda-campo {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid #6d87a3;
+      background: #eef4ff;
+      color: #123a63;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      z-index: 2;
+    }
+
+    .btn-ayuda-campo:hover {
+      background: #dce9ff;
+      color: #0b5ed7;
+      border-color: #54789a;
     }
 
     input, select {
@@ -316,13 +351,19 @@
           <div class="form-grid">
             <div class="campo-completo">
               <label for="centro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="centro" name="centro" autocomplete="organization" required>
+              <div class="input-con-ayuda">
+                <input type="text" id="centro" name="centro" autocomplete="organization" required>
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
+              </div>
               <div class="nota">Este dato identifica la cuenta y no podrá cambiarse después.</div>
             </div>
 
             <div class="campo-completo">
               <label for="responsable_legal">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="responsable_legal" name="responsable_legal" autocomplete="organization-title" required>
+              <div class="input-con-ayuda">
+                <input type="text" id="responsable_legal" name="responsable_legal" autocomplete="organization-title" required>
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o entidad titular" title="Información">i</button>
+              </div>
             </div>
 
             <div class="campo-completo">
@@ -372,6 +413,8 @@
     </div>
   </div>
 
+  <div id="modalAyudaCampo" class="mensaje" style="display:none;"></div>
+
   <script>
     function mostrarMensaje(tipo, texto) {
       const msg = document.getElementById("msg");
@@ -383,6 +426,20 @@
       const msg = document.getElementById("msg");
       msg.className = "mensaje";
       msg.textContent = "";
+    }
+
+    function mostrarAyudaCampo(texto) {
+      const box = document.getElementById("modalAyudaCampo");
+      box.className = "mensaje ok";
+      box.style.display = "block";
+      box.textContent = texto;
+    }
+
+    function limpiarAyudaCampo() {
+      const box = document.getElementById("modalAyudaCampo");
+      box.className = "mensaje";
+      box.style.display = "none";
+      box.textContent = "";
     }
 
     function letraDni(numero) {
@@ -469,6 +526,8 @@
       const password = document.getElementById("password").value;
       const passwordConfirmacion = document.getElementById("password_confirmacion").value;
 
+      limpiarAyudaCampo();
+
       if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || !password || !passwordConfirmacion) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
         return;
@@ -521,6 +580,12 @@
     document.getElementById("formRegistro").addEventListener("submit", registro);
     document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
+    document.getElementById("btnAyudaCentro").addEventListener("click", function () {
+      mostrarAyudaCampo("Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta.");
+    });
+    document.getElementById("btnAyudaResponsable").addEventListener("click", function () {
+      mostrarAyudaCampo("Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución.");
+    });
     document.getElementById("btnVolver").addEventListener("click", function () {
       window.location.href = "portal.html";
     });
