@@ -645,8 +645,8 @@
         const fragment = tpl.content.cloneNode(true);
         const card = fragment.querySelector(".admin-card");
         card.dataset.adminId = admin.id;
-        card.querySelector(".admin-nombre").textContent = admin.nombre_publico || admin.nombre || admin.email || "Administrador";
-        card.querySelector(".admin-email").textContent = [admin.localidad || "", admin.email || ""].filter(Boolean).join(" · ");
+        card.querySelector(".admin-nombre").textContent = admin.nombre_publico || admin.nombre || "Administrador";
+        card.querySelector(".admin-email").textContent = admin.localidad || "";
         card.querySelector(".admin-version").textContent = `Versión requerida: ${Number(admin.version_requerida || 0)}`;
         card.querySelector(".admin-total").textContent = `${Number(admin.total_documentos || 0)} documento(s) activos`;
         if (Number(admin.id) === Number(adminSeleccionadoId)) {

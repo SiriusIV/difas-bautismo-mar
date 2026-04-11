@@ -397,8 +397,8 @@
 
         tr.innerHTML = `
           <td class="td-centro">
-            <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || item.admin_email || "Organizador"}</div>
-            <div class="admin-doc-meta">${[item.admin_localidad || "", item.admin_email || ""].filter(Boolean).join(" · ")}</div>
+            <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
+            <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
           <td>${Number(item.version_requerida || 0)}</td>
           <td>${versionAportada > 0 ? versionAportada : "Sin entrega"}</td>
