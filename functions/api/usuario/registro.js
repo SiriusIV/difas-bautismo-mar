@@ -14,6 +14,10 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function normalizarCentro(valor) {
+  return limpiarTexto(valor).replace(/\s+/g, " ").toUpperCase();
+}
+
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -57,8 +61,8 @@ export async function onRequestPost(context) {
 
   // comprobar centro existente solo entre solicitantes
   const existingCentro = await db
-    .prepare("SELECT id FROM usuarios WHERE centro = ? AND rol = 'SOLICITANTE'")
-    .bind(centro)
+    .prepare("SELECT id FROM usuarios WHERE UPPER(TRIM(centro)) = ? AND rol = 'SOLICITANTE'")
+    .bind(normalizarCentro(centro))
     .first();
 
   if (existingCentro) {
