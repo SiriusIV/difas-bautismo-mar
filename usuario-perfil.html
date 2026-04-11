@@ -46,12 +46,14 @@
     .campo-linea { margin-bottom: 12px; }
     .oculto { display: none !important; }
     label { display: block; font-weight: bold; margin-bottom: 5px; color: #334250; font-size: 12px; }
+    .campo-obligatorio { color: #c62828; margin-left: 2px; }
     .label-help { display: inline-flex; align-items: center; gap: 6px; }
     .btn-ayuda-campo { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #c9d4de; background: #fff; color: #4c6278; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
     .btn-ayuda-campo:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .nota-obligatorios { margin: -2px 0 12px; font-size: 12px; color: #5f6d7a; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
     .btn:hover { background: var(--primary-dark); }
     .btn-suave { background: #fff; color: #334250; border: 1px solid #c9cfd6; }
@@ -117,6 +119,7 @@
               <button type="button" class="btn-icono" id="btnPortal" title="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5L12 4l9 7.5"></path><path d="M5 10.5V20h14v-9.5"></path></svg></button>
             </div>
           </div>
+          <div class="nota-obligatorios">* Campos obligatorios</div>
           <div class="fila oculto" id="filaAdminCuentaNombre">
             <div class="campo-linea"><label for="cuentaAdmin">Cuenta</label><div id="cuentaAdmin" class="campo-linea-valor-fijo">Administrador</div></div>
             <div class="campo-linea"><label for="nombre">Unidad (UCO)</label><input type="text" id="nombre" name="nombre"></div>
@@ -139,18 +142,18 @@
               <div id="cuentaSolicitante" class="campo-linea-valor-fijo">Usuario</div>
             </div>
             <div class="campo-linea">
-              <label for="centroSolicitante" class="label-help">Centro / Institución<button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button></label>
+              <label for="centroSolicitante" class="label-help">Centro / Institución<span class="campo-obligatorio">*</span><button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button></label>
               <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
               <div class="nota">El centro identifica la cuenta y no puede modificarse.</div>
             </div>
           </div>
           <div class="fila oculto" id="filaSolicitanteResponsableTipoDoc">
             <div class="campo-linea">
-              <label for="responsableLegalSolicitante" class="label-help">Responsable legal / Titular<button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button></label>
+              <label for="responsableLegalSolicitante" class="label-help">Responsable legal / Titular<span class="campo-obligatorio">*</span><button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button></label>
               <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
             </div>
             <div class="campo-linea">
-              <label for="tipoDocumentoSolicitante">Tipo de documento</label>
+              <label for="tipoDocumentoSolicitante">Tipo de documento<span class="campo-obligatorio">*</span></label>
               <select id="tipoDocumentoSolicitante" name="tipoDocumentoSolicitante">
                 <option value="">Seleccione una opción</option>
                 <option value="DNI">DNI</option>
@@ -161,17 +164,17 @@
           </div>
           <div class="fila oculto" id="filaSolicitanteDocumentoEmail">
             <div class="campo-linea">
-              <label for="documentoSolicitante">Documento</label>
+              <label for="documentoSolicitante">Documento<span class="campo-obligatorio">*</span></label>
               <input type="text" id="documentoSolicitante" name="documentoSolicitante" maxlength="16" autocomplete="off">
             </div>
             <div class="campo-linea">
-              <label for="emailSolicitante">Correo electrónico del centro</label>
+              <label for="emailSolicitante">Correo electrónico del centro<span class="campo-obligatorio">*</span></label>
               <input type="email" id="emailSolicitante" name="emailSolicitante">
             </div>
           </div>
           <div class="fila oculto" id="filaSolicitanteTelefonoPassword">
             <div class="campo-linea">
-              <label for="telefonoSolicitante">Teléfono del centro</label>
+              <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
               <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
             </div>
             <div class="campo-linea">
@@ -429,6 +432,38 @@
       return texto.slice(0, 16);
     }
 
+    function esTelefonoValido(telefono) {
+      return /^\+?[0-9]{9,15}$/.test(String(telefono || "").replace(/\s+/g, ""));
+    }
+
+    function letraDni(numero) {
+      const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+      return letras[numero % 23];
+    }
+
+    function esDocumentoValido(tipo, documento) {
+      const t = String(tipo || "").toUpperCase();
+      const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      if (t === "DNI") {
+        if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
+        return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
+      }
+
+      if (t === "NIE") {
+        if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) return false;
+        const mapa = { X: "0", Y: "1", Z: "2" };
+        const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
+        return letraDni(numero) === d.slice(-1);
+      }
+
+      if (t === "NIF") {
+        return /^[A-Z][0-9]{8}$/.test(d);
+      }
+
+      return false;
+    }
+
     function aplicarFormatoDocumento() {
       const tipo = document.getElementById("tipoDocumentoSolicitante").value.trim().toUpperCase();
       const input = document.getElementById("documentoSolicitante");
@@ -530,12 +565,46 @@
       };
     }
 
+    function validarFormularioPerfil() {
+      if (!esSolicitante()) return { ok: true };
+
+      const responsable = document.getElementById("responsableLegalSolicitante").value.trim();
+      const tipoDocumento = document.getElementById("tipoDocumentoSolicitante").value.trim().toUpperCase();
+      const documento = document.getElementById("documentoSolicitante").value.trim().toUpperCase();
+      const email = document.getElementById("emailSolicitante").value.trim();
+      const telefono = document.getElementById("telefonoSolicitante").value.trim();
+
+      if (!responsable || !tipoDocumento || !documento || !email || !telefono) {
+        return { ok: false, error: "Debes completar todos los campos obligatorios." };
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return { ok: false, error: "El correo electrónico no tiene un formato válido." };
+      }
+
+      if (!esTelefonoValido(telefono)) {
+        return { ok: false, error: "El teléfono del centro no tiene un formato válido." };
+      }
+
+      if (!esDocumentoValido(tipoDocumento, documento)) {
+        return { ok: false, error: "El documento no coincide con el tipo seleccionado." };
+      }
+
+      return { ok: true };
+    }
+
     async function guardarPerfil(event) {
       if (event && typeof event.preventDefault === "function") {
         event.preventDefault();
       }
 
       limpiarMensaje("mensajePerfil");
+      const validacion = validarFormularioPerfil();
+      if (!validacion.ok) {
+        jsonMessage("mensajePerfil", "error", validacion.error);
+        return false;
+      }
+
       const app = document.getElementById("appPerfil");
       app.classList.add("cargando");
 
