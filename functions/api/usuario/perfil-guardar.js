@@ -32,7 +32,7 @@ function esDocumentoValido(tipo, documento) {
   const t = String(tipo || "").toUpperCase();
   const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-  if (t === "DNI") {
+  if (t === "DNI_NIF") {
     if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
     return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
   }
@@ -44,8 +44,8 @@ function esDocumentoValido(tipo, documento) {
     return letraDni(numero) === d.slice(-1);
   }
 
-  if (t === "NIF") {
-    return /^[A-Z][0-9]{8}$/.test(d);
+  if (t === "CIF") {
+    return /^[A-Z][0-9]{7}[A-Z0-9]$/.test(d);
   }
 
   return false;
@@ -68,7 +68,7 @@ function normalizarNullable(valor) {
 }
 
 function esTipoDocumentoValido(tipo) {
-  return ["DNI", "NIE", "NIF"].includes(String(tipo || "").toUpperCase());
+  return ["DNI_NIF", "NIE", "CIF"].includes(String(tipo || "").toUpperCase());
 }
 
 export async function onRequestPost(context) {
