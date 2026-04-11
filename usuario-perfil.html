@@ -150,9 +150,13 @@
             <div class="campo-linea"><label for="cuentaAdmin">Cuenta</label><div id="cuentaAdmin" class="campo-linea-valor-fijo">Administrador</div></div>
             <div class="campo-linea"><label for="nombre">Unidad (UCO)</label><input type="text" id="nombre" name="nombre"></div>
           </div>
-          <div class="fila oculto" id="filaAdminEmailTelefono">
+          <div class="fila oculto" id="filaAdminNombrePublicoEmail">
+            <div class="campo-linea"><label for="nombrePublicoAdmin">Nombre público</label><input type="text" id="nombrePublicoAdmin" name="nombrePublicoAdmin"><div class="nota">Este nombre es el que verán los centros y usuarios cuando deban identificar al organizador de las actividades.</div></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"><div class="nota">Este correo se utilizará para el inicio de sesión y para las comunicaciones asociadas a la cuenta.</div></div>
+          </div>
+          <div class="fila oculto" id="filaAdminTelefono">
             <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
+            <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
           </div>
           <div class="campo-linea oculto" id="campoPasswordAdmin">
             <div class="password-linea">
@@ -208,6 +212,13 @@
               <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
               <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
             </div>
+          </div>
+          <div class="fila oculto" id="filaSolicitanteLocalidad">
+            <div class="campo-linea">
+              <label for="localidadSolicitante">Localidad</label>
+              <input type="text" id="localidadSolicitante" name="localidadSolicitante">
+            </div>
+            <div></div>
           </div>
           <div class="fila-password-solicitante oculto" id="filaSolicitantePassword">
             <div class="password-linea">
@@ -386,8 +397,8 @@
 
         tr.innerHTML = `
           <td class="td-centro">
-            <div class="admin-doc-nombre">${item.admin_nombre || item.admin_email || "Organizador"}</div>
-            <div class="admin-doc-meta">${item.admin_email || ""}</div>
+            <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || item.admin_email || "Organizador"}</div>
+            <div class="admin-doc-meta">${[item.admin_localidad || "", item.admin_email || ""].filter(Boolean).join(" · ")}</div>
           </td>
           <td>${Number(item.version_requerida || 0)}</td>
           <td>${versionAportada > 0 ? versionAportada : "Sin entrega"}</td>
@@ -423,7 +434,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitanteLocalidad","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -436,11 +447,13 @@
         document.getElementById("filaSolicitanteCuentaCentro").classList.remove("oculto");
         document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
+        document.getElementById("filaSolicitanteLocalidad").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
         layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
-        document.getElementById("filaAdminEmailTelefono").classList.remove("oculto");
+        document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
+        document.getElementById("filaAdminTelefono").classList.remove("oculto");
         document.getElementById("campoPasswordAdmin").classList.remove("oculto");
         layout.classList.remove("sin-imagen");
       } else if (esSuperadmin()) {
@@ -456,8 +469,10 @@
     function rellenarFormulario(perfil) {
       rolActual = String(perfil.rol || "").toUpperCase();
       document.getElementById("nombre").value = perfil.nombre || "";
+      document.getElementById("nombrePublicoAdmin").value = perfil.nombre_publico || "";
       document.getElementById("emailAdmin").value = perfil.email || "";
       document.getElementById("telefonoAdmin").value = perfil.telefono_contacto || "";
+      document.getElementById("localidadAdmin").value = perfil.localidad || "";
       document.getElementById("nombreSuperadmin").value = perfil.nombre || "";
       document.getElementById("emailSuperadmin").value = perfil.email || "";
       document.getElementById("telefonoSuperadmin").value = perfil.telefono_contacto || "";
@@ -467,10 +482,13 @@
       document.getElementById("documentoSolicitante").value = perfil.documento_identificacion || "";
       document.getElementById("emailSolicitante").value = perfil.email || "";
       document.getElementById("telefonoSolicitante").value = perfil.telefono_contacto || "";
+      document.getElementById("localidadSolicitante").value = perfil.localidad || "";
       document.getElementById("logo_url").value = perfil.logo_url || "";
 
       perfilOriginal = {
         nombre: perfil.nombre || "",
+        nombre_publico: perfil.nombre_publico || "",
+        localidad: perfil.localidad || "",
         centro: perfil.centro || "",
         email: perfil.email || "",
         telefono_contacto: perfil.telefono_contacto || "",
@@ -497,6 +515,8 @@
       return {
         id: perfil.id || sesion?.id || "",
         nombre: perfil.nombre || sesion?.nombre || "",
+        nombre_publico: perfil.nombre_publico || sesion?.nombre_publico || "",
+        localidad: perfil.localidad || sesion?.localidad || "",
         centro: perfil.centro || sesion?.centro || "",
         email: perfil.email || sesion?.email || "",
         telefono_contacto: perfil.telefono_contacto || sesion?.telefono_contacto || "",
@@ -643,6 +663,8 @@
       if (esAdmin()) {
         return {
           nombre: document.getElementById("nombre").value.trim(),
+          nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
+          localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim()
@@ -653,7 +675,8 @@
         return {
           nombre: document.getElementById("nombreSuperadmin").value.trim(),
           email: document.getElementById("emailSuperadmin").value.trim(),
-          telefono_contacto: document.getElementById("telefonoSuperadmin").value.trim()
+          telefono_contacto: document.getElementById("telefonoSuperadmin").value.trim(),
+          localidad: ""
         };
       }
 
@@ -662,7 +685,8 @@
         tipo_documento: document.getElementById("tipoDocumentoSolicitante").value.trim(),
         documento_identificacion: document.getElementById("documentoSolicitante").value.trim().toUpperCase(),
         email: document.getElementById("emailSolicitante").value.trim(),
-        telefono_contacto: document.getElementById("telefonoSolicitante").value.trim()
+        telefono_contacto: document.getElementById("telefonoSolicitante").value.trim(),
+        localidad: document.getElementById("localidadSolicitante").value.trim()
       };
     }
 
@@ -672,6 +696,8 @@
 
       if (esAdmin()) {
         return actual.nombre !== (perfilOriginal.nombre || "") ||
+          actual.nombre_publico !== (perfilOriginal.nombre_publico || "") ||
+          actual.localidad !== (perfilOriginal.localidad || "") ||
           actual.email !== (perfilOriginal.email || "") ||
           actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "") ||
           actual.logo_url !== (perfilOriginal.logo_url || "");
@@ -685,6 +711,7 @@
 
       return actual.email !== (perfilOriginal.email || "") ||
         actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "") ||
+        actual.localidad !== (perfilOriginal.localidad || "") ||
         actual.responsable_legal !== (perfilOriginal.responsable_legal || "") ||
         actual.tipo_documento !== (perfilOriginal.tipo_documento || "") ||
         actual.documento_identificacion !== (perfilOriginal.documento_identificacion || "");
@@ -699,6 +726,7 @@
           email: document.getElementById("emailSolicitante").value.trim(),
           telefono_contacto: document.getElementById("telefonoSolicitante").value.trim(),
           centro: document.getElementById("centroSolicitante").value.trim(),
+          localidad: document.getElementById("localidadSolicitante").value.trim(),
           nombre: ""
         };
       }
@@ -706,6 +734,8 @@
       if (esAdmin()) {
         return {
           nombre: document.getElementById("nombre").value.trim(),
+          nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
+          localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim()
@@ -715,7 +745,8 @@
       return {
         nombre: document.getElementById("nombreSuperadmin").value.trim(),
         email: document.getElementById("emailSuperadmin").value.trim(),
-        telefono_contacto: document.getElementById("telefonoSuperadmin").value.trim()
+        telefono_contacto: document.getElementById("telefonoSuperadmin").value.trim(),
+        localidad: ""
       };
     }
 

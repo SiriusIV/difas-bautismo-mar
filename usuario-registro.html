@@ -511,6 +511,11 @@
               <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel" required>
             </div>
 
+            <div class="campo-completo">
+              <label for="localidad">Localidad</label>
+              <input type="text" id="localidad" name="localidad" autocomplete="address-level2">
+            </div>
+
             <div>
               <label for="password">Contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password" name="password" autocomplete="new-password" required>
@@ -645,6 +650,7 @@
       const documento_identificacion = document.getElementById("documento_identificacion").value.trim().toUpperCase();
       const email = document.getElementById("email").value.trim();
       const telefono_contacto = document.getElementById("telefono_contacto").value.trim();
+      const localidad = document.getElementById("localidad").value.trim();
       const password = document.getElementById("password").value;
       const passwordConfirmacion = document.getElementById("password_confirmacion").value;
 
@@ -686,6 +692,7 @@
           documento_identificacion,
           email,
           telefono_contacto,
+          localidad,
           password
         })
       });
