@@ -162,15 +162,6 @@
     .franja-sesion-inner {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .franja-sesion-izq,
-    .franja-sesion-der {
-      display: flex;
-      align-items: center;
       gap: 14px;
       flex-wrap: wrap;
     }
@@ -191,14 +182,6 @@
       font-weight: 500;
       color: #123a63;
       line-height: 1.2;
-    }
-
-    .franja-sesion-aviso {
-      display: none;
-      font-size: 13px;
-      color: #4d5966;
-      line-height: 1.35;
-      max-width: 620px;
     }
 
     .contenedor {
@@ -1018,30 +1001,20 @@
   <div class="app-scroll">
     <div id="franjaSesion" class="franja-sesion">
       <div class="franja-sesion-inner">
-        <div class="franja-sesion-izq">
-          <button
-            id="btnPerfilSesion"
-            class="nav-btn-icon"
-            type="button"
-            onclick="irPerfilUsuario()"
-            title="Editar perfil"
-            aria-label="Editar perfil"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 21a8 8 0 0 0-16 0"></path>
-              <circle cx="12" cy="8" r="4"></circle>
-            </svg>
-          </button>
-          <div id="textoSesion" class="franja-sesion-texto"></div>
-        </div>
-        <div class="franja-sesion-der">
-          <div id="franjaAvisoDocumentacionSesion" class="franja-sesion-aviso">
-            La solicitud de actividades puede requerir la validación previa de la documentación exigida por el organizador.
-          </div>
-          <button id="btnRemitirDocumentacionSesion" class="nav-btn" type="button" onclick="irDocumentacionUsuario()">
-            Remitir documentación
-          </button>
-        </div>
+        <button
+          id="btnPerfilSesion"
+          class="nav-btn-icon"
+          type="button"
+          onclick="irPerfilUsuario()"
+          title="Editar perfil"
+          aria-label="Editar perfil"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21a8 8 0 0 0-16 0"></path>
+            <circle cx="12" cy="8" r="4"></circle>
+          </svg>
+        </button>
+        <div id="textoSesion" class="franja-sesion-texto"></div>
       </div>
     </div>
 
@@ -1087,7 +1060,6 @@
           <div id="barraAdmin" class="barra-admin">
             <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
             <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
-            <button class="nav-btn" onclick="irDocumentacionAdmin()">Documentación requerida</button>
             <button
               class="nav-btn-icon"
               type="button"
@@ -1527,15 +1499,11 @@ function actualizarBotonSolicitarSegunFranja() {
       const franja = document.getElementById("franjaSesion");
       const texto = document.getElementById("textoSesion");
       const btnPerfil = document.getElementById("btnPerfilSesion");
-      const avisoDocumentacion = document.getElementById("franjaAvisoDocumentacionSesion");
-      const btnDocumentacion = document.getElementById("btnRemitirDocumentacionSesion");
 
       if (!usuarioAutenticado) {
         franja.style.display = "none";
         texto.textContent = "";
         btnPerfil.style.display = "none";
-        avisoDocumentacion.style.display = "none";
-        btnDocumentacion.style.display = "none";
         return;
       }
 
@@ -1545,16 +1513,10 @@ function actualizarBotonSolicitarSegunFranja() {
 
       if (rol === "SOLICITANTE") {
         texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
-        avisoDocumentacion.style.display = "block";
-        btnDocumentacion.style.display = "inline-block";
       } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
         texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
-        avisoDocumentacion.style.display = "none";
-        btnDocumentacion.style.display = "none";
       } else {
         texto.textContent = "";
-        avisoDocumentacion.style.display = "none";
-        btnDocumentacion.style.display = "none";
       }
 
       btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
@@ -2334,14 +2296,6 @@ function continuarSolicitudActividad() {
 
     function irPanelUsuario() {
       location.href = "usuario-panel.html";
-    }
-
-    function irDocumentacionUsuario() {
-      location.href = "usuario-documentacion.html?modo=registro";
-    }
-
-    function irDocumentacionAdmin() {
-      location.href = "admin-documentos.html";
     }
 
     function irPerfilUsuario() {
