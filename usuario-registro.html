@@ -42,6 +42,23 @@
       max-width: 860px;
     }
 
+    .registro-cabecera {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(18, 58, 99, 0.12);
+      padding: 18px 26px;
+      margin-bottom: 16px;
+    }
+
+    .registro-cabecera h1 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.15;
+      color: var(--brand);
+      font-weight: 700;
+      text-align: center;
+    }
+
     .registro-card {
       background: var(--card);
       border-radius: 16px;
@@ -61,12 +78,19 @@
       gap: 18px;
     }
 
+    .registro-acciones-aside {
+      display: flex;
+      gap: 8px;
+      align-self: flex-start;
+      margin-bottom: 6px;
+    }
+
     .registro-marca {
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 18px;
+      gap: 0;
     }
 
     .registro-marca img {
@@ -76,26 +100,6 @@
       margin: 0 auto;
       flex: 0 0 auto;
       order: 2;
-    }
-
-    .registro-marca-texto {
-      order: 1;
-      width: 100%;
-    }
-
-    .registro-marca-texto strong {
-      display: block;
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.15;
-      white-space: nowrap;
-    }
-
-    .registro-marca-texto span {
-      display: block;
-      margin-top: 4px;
-      font-size: 15px;
-      color: rgba(255, 255, 255, 0.76);
     }
 
     .registro-aside h1 {
@@ -116,7 +120,7 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      margin-top: 18px;
+      margin-top: 24px;
     }
 
     .registro-main {
@@ -368,6 +372,28 @@
       background: #f7f9fb;
     }
 
+    .registro-aside .btn-icono {
+      border-color: rgba(255, 255, 255, 0.34);
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    .registro-aside .btn-icono:hover {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.44);
+    }
+
+    .registro-aside .btn-icono-primario {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.44);
+      color: #fff;
+    }
+
+    .registro-aside .btn-icono-primario:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.52);
+    }
+
     .btn-principal {
       background: var(--primary);
       color: #fff;
@@ -419,14 +445,30 @@
 </head>
 <body>
   <div class="contenedor">
+    <div class="registro-cabecera">
+      <h1>Actividades Públicas Institucionales</h1>
+    </div>
+
     <div class="registro-card">
       <aside class="registro-aside">
+        <div class="registro-acciones-aside">
+          <button type="button" class="btn btn-icono btn-icono-secundario" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 11.5 12 5l8 6.5"></path>
+              <path d="M7 10.5V19h10v-8.5"></path>
+            </svg>
+          </button>
+          <button type="submit" form="formRegistro" class="btn btn-icono btn-icono-primario" aria-label="Crear cuenta" title="Crear cuenta">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 4.5h8l2.5 2.5V19.5H6.5V4.5z"></path>
+              <path d="M9 4.5v5h5v-5"></path>
+              <path d="M9 15h6"></path>
+            </svg>
+          </button>
+        </div>
+
         <div class="registro-marca">
           <img src="/logoClaro.png" alt="Logo Armada">
-          <div class="registro-marca-texto">
-            <strong>Actividades Públicas Institucionales</strong>
-            <span>Armada</span>
-          </div>
         </div>
 
         <div class="registro-aside-cuerpo">
@@ -499,21 +541,6 @@
             </div>
           </div>
 
-          <div class="acciones">
-            <button type="button" class="btn btn-icono btn-icono-secundario" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 11.5 12 5l8 6.5"></path>
-                <path d="M7 10.5V19h10v-8.5"></path>
-              </svg>
-            </button>
-            <button type="submit" class="btn btn-icono btn-icono-primario" aria-label="Crear cuenta" title="Crear cuenta">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 4.5h8l2.5 2.5V19.5H6.5V4.5z"></path>
-                <path d="M9 4.5v5h5v-5"></path>
-                <path d="M9 15h6"></path>
-              </svg>
-            </button>
-          </div>
         </form>
       </main>
     </div>
