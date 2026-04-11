@@ -197,6 +197,114 @@
       font-size: 16px;
     }
 
+    .panel-documentacion {
+      display: none;
+      margin-bottom: 22px;
+    }
+
+    .panel-documentacion.activo {
+      display: block;
+    }
+
+    .panel-documentacion-head {
+      margin-bottom: 14px;
+    }
+
+    .panel-documentacion-head h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #123a63;
+    }
+
+    .panel-documentacion-head p {
+      margin: 0;
+      line-height: 1.6;
+      color: #445261;
+    }
+
+    .estado-documentacion {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .estado-documentacion.pendiente,
+    .estado-documentacion.desactualizada,
+    .estado-documentacion.rechazada {
+      background: #fff4e5;
+      color: #9a6700;
+      border: 1px solid #f3d08b;
+    }
+
+    .estado-documentacion.en_revision {
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .estado-documentacion.validada {
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .documentos-requeridos-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .documento-requerido-card {
+      border: 1px solid #dde4ea;
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .documento-requerido-card h4 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: #123a63;
+    }
+
+    .documento-requerido-card p {
+      margin: 0 0 10px;
+      line-height: 1.55;
+      color: #445261;
+      font-size: 14px;
+    }
+
+    .documento-requerido-meta {
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #5f6d7a;
+      line-height: 1.5;
+    }
+
+    .documento-requerido-meta a {
+      color: #0b5ed7;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .documento-requerido-meta a:hover {
+      text-decoration: underline;
+    }
+
+    .documento-requerido-entrega {
+      margin-top: 8px;
+    }
+
+    .documento-requerido-entrega label {
+      margin-bottom: 6px;
+    }
+
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -337,6 +445,22 @@
 
     <div id="mensaje" class="mensaje"></div>
 
+    <div id="panelDocumentacion" class="panel panel-documentacion">
+      <div class="panel-documentacion-head">
+        <h3>Documentación general requerida</h3>
+        <p id="textoDocumentacionAdmin">
+          Esta actividad requiere documentación general del administrador. Debes remitirla y esperar a su validación antes de poder completar la solicitud.
+        </p>
+        <div id="estadoDocumentacion" class="estado-documentacion pendiente" style="display:none;"></div>
+      </div>
+
+      <div id="listaDocumentosRequeridos" class="documentos-requeridos-lista"></div>
+
+      <div class="acciones">
+        <button type="button" id="btnEnviarDocumentacion">Remitir documentación</button>
+      </div>
+    </div>
+
     <div class="panel">
       <form id="formularioSolicitud">
         <div class="fila-doble">
@@ -460,6 +584,7 @@
     let envioEnCurso = false;
     let reservaCreada = null;
     let datosPendientesEnvio = null;
+    let documentacionAdminActual = null;
 
     function getActividadId() {
       const params = new URLSearchParams(window.location.search);
@@ -479,6 +604,158 @@
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensaje.textContent = "";
+    }
+
+    function etiquetaEstadoDocumentacion(estado) {
+      const e = String(estado || "").toUpperCase();
+      if (e === "VALIDADA") return "Documentación validada";
+      if (e === "EN_REVISION") return "Documentación en revisión";
+      if (e === "RECHAZADA") return "Documentación rechazada";
+      if (e === "DESACTUALIZADA") return "Documentación desactualizada";
+      if (e === "PENDIENTE") return "Documentación pendiente";
+      if (e === "NO_REQUERIDA") return "No requerida";
+      return "Documentación pendiente";
+    }
+
+    function actualizarBloqueoEnvioPorDocumentacion() {
+      const btn = document.getElementById("btnPrepararEnvio");
+
+      if (!documentacionAdminActual || !documentacionAdminActual.requiere_documentacion) {
+        btn.disabled = false;
+        btn.title = "";
+        return;
+      }
+
+      if (documentacionAdminActual.al_dia) {
+        btn.disabled = false;
+        btn.title = "";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.title = "Debes tener la documentación general validada por el administrador antes de enviar la solicitud.";
+    }
+
+    function renderPanelDocumentacion() {
+      const panel = document.getElementById("panelDocumentacion");
+      const estado = document.getElementById("estadoDocumentacion");
+      const texto = document.getElementById("textoDocumentacionAdmin");
+      const lista = document.getElementById("listaDocumentosRequeridos");
+      const btnEnviar = document.getElementById("btnEnviarDocumentacion");
+
+      if (!documentacionAdminActual || !documentacionAdminActual.requiere_documentacion) {
+        panel.classList.remove("activo");
+        lista.innerHTML = "";
+        estado.style.display = "none";
+        actualizarBloqueoEnvioPorDocumentacion();
+        return;
+      }
+
+      panel.classList.add("activo");
+      estado.style.display = "inline-flex";
+
+      const estadoEfectivo = String(documentacionAdminActual.expediente?.estado_efectivo || "PENDIENTE").toLowerCase();
+      estado.className = `estado-documentacion ${estadoEfectivo}`;
+      estado.textContent = etiquetaEstadoDocumentacion(documentacionAdminActual.expediente?.estado_efectivo);
+
+      const adminNombre = documentacionAdminActual.admin?.nombre || "el administrador";
+      const version = Number(documentacionAdminActual.version_requerida || 0);
+
+      if (documentacionAdminActual.al_dia) {
+        texto.textContent = `Tu documentación general para ${adminNombre} está validada en la versión ${version}. Ya puedes continuar con la solicitud.`;
+      } else if (estadoEfectivo === "en_revision") {
+        texto.textContent = `Ya has remitido la documentación general exigida por ${adminNombre}, pero todavía está pendiente de revisión manual. No podrás completar la solicitud hasta que quede validada.`;
+      } else if (estadoEfectivo === "desactualizada") {
+        texto.textContent = `La documentación que habías remitido anteriormente para ${adminNombre} ya no está al día. Debes enviar la nueva versión requerida antes de poder completar la solicitud.`;
+      } else if (estadoEfectivo === "rechazada") {
+        texto.textContent = `La documentación remitida para ${adminNombre} fue rechazada o necesita una nueva entrega. Debes volver a remitirla para poder completar la solicitud.`;
+      } else {
+        texto.textContent = `Esta actividad requiere documentación general de ${adminNombre}. Debes remitirla y esperar a su validación antes de poder completar la solicitud.`;
+      }
+
+      lista.innerHTML = (documentacionAdminActual.documentos || []).map((doc, index) => `
+        <div class="documento-requerido-card">
+          <h4>Documento ${index + 1}: ${doc.nombre}</h4>
+          ${doc.descripcion ? `<p>${doc.descripcion}</p>` : ""}
+          <div class="documento-requerido-meta">
+            Documento requerido:
+            <a href="${doc.archivo_url}" target="_blank" rel="noopener noreferrer">Abrir documento</a>
+            ${doc.entregado && doc.entrega_fecha_subida ? `<br>Última remisión registrada: ${doc.entrega_fecha_subida}` : ""}
+          </div>
+          <div class="documento-requerido-entrega">
+            <label for="docEntrega_${doc.id}">URL del archivo firmado remitido</label>
+            <input
+              type="text"
+              id="docEntrega_${doc.id}"
+              data-documento-id="${doc.id}"
+              value="${doc.entrega_archivo_url || ""}"
+              placeholder="https://..."
+              ${documentacionAdminActual.al_dia ? "disabled" : ""}
+            >
+          </div>
+        </div>
+      `).join("");
+
+      btnEnviar.style.display = documentacionAdminActual.al_dia ? "none" : "inline-block";
+      actualizarBloqueoEnvioPorDocumentacion();
+    }
+
+    async function comprobarDocumentacionAdministrador() {
+      documentacionAdminActual = null;
+
+      if (!actividadActual || !Number(actividadActual.admin_id || 0)) {
+        renderPanelDocumentacion();
+        return;
+      }
+
+      const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(actividadActual.admin_id)}`, {
+        credentials: "include"
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo comprobar la documentación requerida.");
+      }
+
+      documentacionAdminActual = data;
+      renderPanelDocumentacion();
+    }
+
+    async function enviarDocumentacionAdministrador() {
+      limpiarMensaje();
+
+      if (!documentacionAdminActual || !documentacionAdminActual.requiere_documentacion) {
+        return;
+      }
+
+      const entregas = (documentacionAdminActual.documentos || []).map((doc) => ({
+        documento_id: doc.id,
+        archivo_url: document.getElementById(`docEntrega_${doc.id}`)?.value.trim() || ""
+      }));
+
+      if (entregas.some((item) => !item.archivo_url)) {
+        mostrarMensaje("error", "Debes indicar la URL firmada remitida para todos los documentos requeridos.");
+        return;
+      }
+
+      const res = await fetch("/api/usuario/documentacion-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          admin_id: actividadActual.admin_id,
+          entregas
+        })
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        mostrarMensaje("error", data?.error || "No se pudo remitir la documentación.");
+        return;
+      }
+
+      mostrarMensaje("ok", data.mensaje || "Documentación remitida correctamente.");
+      await comprobarDocumentacionAdministrador();
     }
 
     function calcularMinutosConsolidacion(plazas) {
@@ -690,6 +967,10 @@
         return { ok: false, error: "Debe completar todos los datos obligatorios." };
       }
 
+      if (documentacionAdminActual && documentacionAdminActual.requiere_documentacion && !documentacionAdminActual.al_dia) {
+        return { ok: false, error: "No puedes completar la solicitud hasta que la documentación general requerida por el administrador esté validada." };
+      }
+
       if (!Number.isInteger(plazas) || plazas <= 0) {
         return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
       }
@@ -835,6 +1116,7 @@
 
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
       document.getElementById("btnCancelarEnvio").addEventListener("click", cancelarEnvioSolicitud);
+      document.getElementById("btnEnviarDocumentacion").addEventListener("click", enviarDocumentacionAdministrador);
 
       document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
       document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
@@ -846,6 +1128,7 @@
 
       try {
         await cargarActividad();
+        await comprobarDocumentacionAdministrador();
         await cargarFranjas();
       } catch (error) {
         console.error(error);
