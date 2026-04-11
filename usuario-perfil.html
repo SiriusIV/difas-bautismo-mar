@@ -41,7 +41,12 @@
     .layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; }
     .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 14px 16px; height: 100%; }
+    .bloque-documentacion-estado { margin-top: 14px; display: none; }
+    .bloque-documentacion-estado.activo { display: block; }
     .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; }
+    .bloque-head-documentacion { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+    .bloque-head-documentacion h3 { margin: 0; font-size: 18px; color: var(--brand); }
+    .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: 760px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .campo-linea { margin-bottom: 10px; }
     .acciones-admin-extra { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -63,6 +68,24 @@
     .btn-guardar-icono { width: 34px; height: 34px; border-radius: 999px; border: none; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
     .btn-guardar-icono:hover { background: var(--primary-dark); }
     .btn-guardar-icono svg { width: 18px; height: 18px; display: block; }
+    .tabla-docs-wrap { width: 100%; overflow-x: auto; }
+    .tabla-docs { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tabla-docs th, .tabla-docs td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-docs td:first-child, .tabla-docs th:first-child { padding-left: 12px; }
+    .tabla-docs td:last-child, .tabla-docs th:last-child { padding-right: 12px; }
+    .tabla-docs tr:last-child td { border-bottom: none; }
+    .estado-pill-doc { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+    .estado-pill-doc.VALIDADA { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .estado-pill-doc.EN_REVISION,
+    .estado-pill-doc.PENDIENTE,
+    .estado-pill-doc.DESACTUALIZADA { color: #8a5a00; background: #fff8eb; border-color: #f0d9a7; }
+    .estado-pill-doc.RECHAZADA { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .admin-doc-nombre { font-weight: 700; color: #243648; }
+    .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .td-centro { min-width: 220px; }
+    .td-accion .btn { white-space: nowrap; }
+    .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
     .preview-imagen-wrap { position: relative; width: 100%; }
     .preview-imagen { width: 100%; min-height: 324px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
     .acciones-overlay-imagen { position: absolute; top: 9px; right: 9px; display: none; gap: 7px; z-index: 2; }
@@ -200,6 +223,30 @@
         </form>
       </div>
     </div>
+    <div class="bloque bloque-documentacion-estado" id="bloqueEstadoDocumentacion">
+      <div class="bloque-head-documentacion">
+        <div>
+          <h3>Estado de documentación por organizador</h3>
+          <p>Aquí puedes ver qué organizadores tienen documentación común activa, el estado actual de tus remisiones y acceder directamente al trámite documental cuando necesites completarlo o actualizarlo.</p>
+        </div>
+      </div>
+      <div class="tabla-docs-wrap">
+        <table class="tabla-docs">
+          <thead>
+            <tr>
+              <th>Organizador</th>
+              <th>Versión requerida</th>
+              <th>Versión aportada</th>
+              <th>Estado</th>
+              <th>Última entrega</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaEstadoDocumentacionBody"></tbody>
+        </table>
+      </div>
+      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentación activa para mostrar.</div>
+    </div>
   </div>
 
   <div id="modalCambiosPendientes" class="modal-fondo" aria-hidden="true">
@@ -255,6 +302,7 @@
     let rolActual = "";
     let navegacionPendiente = null;
     let passwordActualValidada = "";
+    let resumenDocumentacion = [];
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
@@ -276,6 +324,29 @@
       return "Cuenta";
     }
 
+    function etiquetaEstadoDocumentacion(estado) {
+      const valor = String(estado || "").toUpperCase();
+      if (valor === "VALIDADA") return "Validada";
+      if (valor === "EN_REVISION") return "En revisión";
+      if (valor === "RECHAZADA") return "Rechazada";
+      if (valor === "DESACTUALIZADA") return "Desactualizada";
+      if (valor === "PENDIENTE") return "Pendiente";
+      return "Sin estado";
+    }
+
+    function formatearFechaCorta(valor) {
+      if (!valor) return "Sin entrega";
+      const fecha = new Date(valor);
+      if (Number.isNaN(fecha.getTime())) return valor;
+      return fecha.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
     function esAdmin() { return rolActual === "ADMIN"; }
     function esSuperadmin() { return rolActual === "SUPERADMIN"; }
     function esSolicitante() { return rolActual === "SOLICITANTE"; }
@@ -283,6 +354,49 @@
     function actualizarSubtitulo(perfil) {
       const nombreVisible = esSolicitante() ? (perfil.centro || "") : (perfil.nombre || "");
       document.getElementById("subtituloCabecera").textContent = `${etiquetaRol(perfil.rol)}: ${nombreVisible}`;
+    }
+
+    function renderizarResumenDocumentacion() {
+      const bloque = document.getElementById("bloqueEstadoDocumentacion");
+      const body = document.getElementById("tablaEstadoDocumentacionBody");
+      const vacio = document.getElementById("estadoVacioDocumentacionPerfil");
+
+      if (!esSolicitante()) {
+        bloque.classList.remove("activo");
+        body.innerHTML = "";
+        vacio.classList.add("oculto");
+        return;
+      }
+
+      bloque.classList.add("activo");
+      body.innerHTML = "";
+
+      if (!Array.isArray(resumenDocumentacion) || !resumenDocumentacion.length) {
+        vacio.classList.remove("oculto");
+        return;
+      }
+
+      vacio.classList.add("oculto");
+
+      resumenDocumentacion.forEach((item) => {
+        const tr = document.createElement("tr");
+        const estado = String(item.estado_efectivo || "").toUpperCase();
+        const versionAportada = Number(item.version_aportada || 0);
+        const textoAccion = estado === "VALIDADA" ? "Ver estado" : "Gestionar";
+
+        tr.innerHTML = `
+          <td class="td-centro">
+            <div class="admin-doc-nombre">${item.admin_nombre || item.admin_email || "Organizador"}</div>
+            <div class="admin-doc-meta">${item.admin_email || ""}</div>
+          </td>
+          <td>${Number(item.version_requerida || 0)}</td>
+          <td>${versionAportada > 0 ? versionAportada : "Sin entrega"}</td>
+          <td><span class="estado-pill-doc ${estado}">${etiquetaEstadoDocumentacion(estado)}</span></td>
+          <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
+          <td class="td-accion"><button type="button" class="btn btn-suave" data-admin-documentacion="${Number(item.admin_id || 0)}">${textoAccion}</button></td>
+        `;
+        body.appendChild(tr);
+      });
     }
 
     function actualizarPreviewImagen() {
@@ -394,6 +508,33 @@
       };
     }
 
+    async function cargarResumenDocumentacion() {
+      if (!esSolicitante()) {
+        resumenDocumentacion = [];
+        renderizarResumenDocumentacion();
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/usuario/documentacion-resumen", {
+          credentials: "include"
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          resumenDocumentacion = [];
+          renderizarResumenDocumentacion();
+          return;
+        }
+
+        resumenDocumentacion = Array.isArray(data.administradores) ? data.administradores : [];
+        renderizarResumenDocumentacion();
+      } catch (_) {
+        resumenDocumentacion = [];
+        renderizarResumenDocumentacion();
+      }
+    }
+
     async function cargarPerfil() {
       limpiarMensaje("mensajePerfil");
       limpiarMensaje("mensajePassword");
@@ -414,6 +555,7 @@
 
       if (!perfil) perfil = normalizarPerfil({}, sesion);
       rellenarFormulario(perfil);
+      await cargarResumenDocumentacion();
     }
 
     function abrirAyudaCampo(titulo, texto) {
@@ -852,6 +994,13 @@
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnDocumentacionSolicitante").addEventListener("click", function () {
       location.href = "usuario-documentacion.html?modo=registro";
+    });
+    document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
+      const btn = event.target.closest("[data-admin-documentacion]");
+      if (!btn) return;
+      const adminId = Number.parseInt(btn.dataset.adminDocumentacion || "", 10);
+      if (!Number.isInteger(adminId) || adminId <= 0) return;
+      location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(adminId)}`;
     });
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
