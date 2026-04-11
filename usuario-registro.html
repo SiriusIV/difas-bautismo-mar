@@ -153,6 +153,13 @@
       grid-column: 1 / -1;
     }
 
+    .campo-documento-inline {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
     label {
       display: block;
       margin-bottom: 6px;
@@ -161,7 +168,12 @@
       color: #334250;
     }
 
-    input {
+    .campo-obligatorio {
+      color: #c62828;
+      margin-left: 2px;
+    }
+
+    input, select {
       width: 100%;
       padding: 11px 12px;
       border: 1px solid #c9cfd6;
@@ -171,7 +183,8 @@
       color: var(--text);
     }
 
-    input:focus {
+    input:focus,
+    select:focus {
       outline: none;
       border-color: #0b5ed7;
       box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12);
@@ -182,6 +195,12 @@
       font-size: 12px;
       color: var(--muted);
       line-height: 1.45;
+    }
+
+    .nota-obligatorios {
+      margin: 0 0 16px;
+      font-size: 12px;
+      color: var(--muted);
     }
 
     .acciones {
@@ -289,34 +308,53 @@
         <p class="subtitulo">
           Introduce los datos iniciales de la cuenta. El centro quedará asociado de forma fija a este usuario.
         </p>
+        <div class="nota-obligatorios">* Campos obligatorios</div>
 
         <div id="msg" class="mensaje"></div>
 
         <form id="formRegistro">
           <div class="form-grid">
             <div class="campo-completo">
-              <label for="centro">Centro</label>
+              <label for="centro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <input type="text" id="centro" name="centro" autocomplete="organization" required>
               <div class="nota">Este dato identifica la cuenta y no podrá cambiarse después.</div>
             </div>
 
             <div class="campo-completo">
-              <label for="email">Email</label>
+              <label for="responsable_legal">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
+              <input type="text" id="responsable_legal" name="responsable_legal" autocomplete="organization-title" required>
+            </div>
+
+            <div class="campo-completo">
+              <label>Documento<span class="campo-obligatorio">*</span></label>
+              <div class="campo-documento-inline">
+                <select id="tipo_documento" name="tipo_documento" required>
+                  <option value="">Tipo</option>
+                  <option value="DNI_NIF">DNI/NIF</option>
+                  <option value="NIE">NIE</option>
+                  <option value="CIF">CIF</option>
+                </select>
+                <input type="text" id="documento_identificacion" name="documento_identificacion" maxlength="16" autocomplete="off" required>
+              </div>
+            </div>
+
+            <div class="campo-completo">
+              <label for="email">Correo electrónico del centro<span class="campo-obligatorio">*</span></label>
               <input type="email" id="email" name="email" autocomplete="email" required>
             </div>
 
             <div class="campo-completo">
-              <label for="telefono_contacto">Teléfono del centro</label>
-              <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel">
+              <label for="telefono_contacto">Teléfono del centro<span class="campo-obligatorio">*</span></label>
+              <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel" required>
             </div>
 
             <div>
-              <label for="password">Contraseña</label>
+              <label for="password">Contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password" name="password" autocomplete="new-password" required>
             </div>
 
             <div>
-              <label for="password_confirmacion">Confirmar contraseña</label>
+              <label for="password_confirmacion">Confirmar contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password_confirmacion" name="password_confirmacion" autocomplete="new-password" required>
             </div>
           </div>
@@ -347,18 +385,107 @@
       msg.textContent = "";
     }
 
+    function letraDni(numero) {
+      const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+      return letras[numero % 23];
+    }
+
+    function limpiarDocumentoSegunTipo(valor, tipo) {
+      const texto = String(valor || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      if (tipo === "DNI_NIF") {
+        return texto.replace(/[^0-9A-Z]/g, "").slice(0, 9);
+      }
+
+      if (tipo === "NIE") {
+        return texto.replace(/[^XYZ0-9A-Z]/g, "").slice(0, 9);
+      }
+
+      if (tipo === "CIF") {
+        return texto.slice(0, 9);
+      }
+
+      return texto.slice(0, 16);
+    }
+
+    function aplicarFormatoDocumento() {
+      const tipo = document.getElementById("tipo_documento").value.trim().toUpperCase();
+      const input = document.getElementById("documento_identificacion");
+
+      input.value = limpiarDocumentoSegunTipo(input.value, tipo);
+
+      if (tipo === "DNI_NIF") {
+        input.placeholder = "12345678Z";
+        input.maxLength = 9;
+      } else if (tipo === "NIE") {
+        input.placeholder = "X1234567L";
+        input.maxLength = 9;
+      } else if (tipo === "CIF") {
+        input.placeholder = "A1234567Z";
+        input.maxLength = 9;
+      } else {
+        input.placeholder = "";
+        input.maxLength = 16;
+      }
+    }
+
+    function esTelefonoValido(telefono) {
+      return /^\+?[0-9]{9,15}$/.test(String(telefono || "").replace(/\s+/g, ""));
+    }
+
+    function esDocumentoValido(tipo, documento) {
+      const t = String(tipo || "").toUpperCase();
+      const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      if (t === "DNI_NIF") {
+        if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
+        return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
+      }
+
+      if (t === "NIE") {
+        if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) return false;
+        const mapa = { X: "0", Y: "1", Z: "2" };
+        const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
+        return letraDni(numero) === d.slice(-1);
+      }
+
+      if (t === "CIF") {
+        return /^[A-Z][0-9]{7}[A-Z0-9]$/.test(d);
+      }
+
+      return false;
+    }
+
     async function registro(event) {
       event.preventDefault();
       limpiarMensaje();
 
       const centro = document.getElementById("centro").value.trim();
+      const responsable_legal = document.getElementById("responsable_legal").value.trim();
+      const tipo_documento = document.getElementById("tipo_documento").value.trim().toUpperCase();
+      const documento_identificacion = document.getElementById("documento_identificacion").value.trim().toUpperCase();
       const email = document.getElementById("email").value.trim();
       const telefono_contacto = document.getElementById("telefono_contacto").value.trim();
       const password = document.getElementById("password").value;
       const passwordConfirmacion = document.getElementById("password_confirmacion").value;
 
-      if (!centro || !email || !password || !passwordConfirmacion) {
+      if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || !password || !passwordConfirmacion) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        mostrarMensaje("error", "El correo electrónico no tiene un formato válido.");
+        return;
+      }
+
+      if (!esTelefonoValido(telefono_contacto)) {
+        mostrarMensaje("error", "El teléfono del centro no tiene un formato válido.");
+        return;
+      }
+
+      if (!esDocumentoValido(tipo_documento, documento_identificacion)) {
+        mostrarMensaje("error", "El documento no coincide con el tipo seleccionado.");
         return;
       }
 
@@ -373,6 +500,9 @@
         credentials: "include",
         body: JSON.stringify({
           centro,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
           email,
           telefono_contacto,
           password
@@ -389,6 +519,8 @@
     }
 
     document.getElementById("formRegistro").addEventListener("submit", registro);
+    document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
+    document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnVolver").addEventListener("click", function () {
       window.location.href = "portal.html";
     });
