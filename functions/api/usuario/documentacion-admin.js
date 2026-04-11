@@ -36,6 +36,8 @@ async function obtenerAdmin(env, adminId) {
     SELECT
       id,
       nombre,
+      nombre_publico,
+      localidad,
       email,
       rol
     FROM usuarios
@@ -225,6 +227,8 @@ export async function onRequestGet(context) {
       admin: {
         id: admin.id,
         nombre: admin.nombre || "",
+        nombre_publico: admin.nombre_publico || "",
+        localidad: admin.localidad || "",
         email: admin.email || ""
       },
       centro: {

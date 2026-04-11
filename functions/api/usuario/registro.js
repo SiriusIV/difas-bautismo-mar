@@ -73,6 +73,7 @@ export async function onRequestPost(context) {
   const body = await request.json();
 
   const centro = limpiarTexto(body.centro);
+  const localidad = limpiarTexto(body.localidad);
   const responsable_legal = limpiarTexto(body.responsable_legal);
   const tipo_documento = limpiarTexto(body.tipo_documento).toUpperCase();
   const documento_identificacion = limpiarTexto(body.documento_identificacion).toUpperCase();
@@ -128,6 +129,7 @@ export async function onRequestPost(context) {
       INSERT INTO usuarios (
         nombre,
         centro,
+        localidad,
         email,
         password_hash,
         rol,
@@ -138,11 +140,12 @@ export async function onRequestPost(context) {
         activo,
         fecha_alta
       )
-      VALUES (?, ?, ?, ?, 'SOLICITANTE', ?, ?, ?, ?, 1, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, 'SOLICITANTE', ?, ?, ?, ?, 1, datetime('now'))
     `)
     .bind(
       nombre,
       centro,
+      localidad,
       email,
       password_hash,
       telefono_contacto,
@@ -156,6 +159,7 @@ export async function onRequestPost(context) {
     id: result.meta.last_row_id,
     nombre,
     centro,
+    localidad,
     email,
     telefono_contacto,
     responsable_legal,

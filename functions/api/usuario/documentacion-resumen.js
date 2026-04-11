@@ -56,6 +56,8 @@ export async function onRequestGet(context) {
       SELECT
         u.id AS admin_id,
         u.nombre AS admin_nombre,
+        u.nombre_publico AS admin_nombre_publico,
+        u.localidad AS admin_localidad,
         u.email AS admin_email,
         MAX(adc.version_documental) AS version_requerida,
         COUNT(adc.id) AS total_documentos,
@@ -76,6 +78,8 @@ export async function onRequestGet(context) {
       GROUP BY
         u.id,
         u.nombre,
+        u.nombre_publico,
+        u.localidad,
         u.email,
         cad.id,
         cad.version_aportada,
@@ -84,7 +88,7 @@ export async function onRequestGet(context) {
         cad.fecha_validacion,
         cad.observaciones_admin
       HAVING COUNT(adc.id) > 0
-      ORDER BY COALESCE(u.nombre, u.email) ASC
+      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).bind(usuario.id).all();
 
     const administradores = (result?.results || []).map((row) => {
@@ -95,6 +99,8 @@ export async function onRequestGet(context) {
       return {
         admin_id: Number(row.admin_id || 0),
         admin_nombre: row.admin_nombre || "",
+        admin_nombre_publico: row.admin_nombre_publico || "",
+        admin_localidad: row.admin_localidad || "",
         admin_email: row.admin_email || "",
         version_requerida: versionRequerida,
         version_aportada: versionAportada,

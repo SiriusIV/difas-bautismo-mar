@@ -26,6 +26,8 @@ export async function onRequestGet(context) {
       SELECT
         id,
         nombre,
+        nombre_publico,
+        localidad,
         centro,
         email,
         telefono_contacto,
@@ -52,6 +54,8 @@ export async function onRequestGet(context) {
       perfil: {
         id: user.id,
         nombre: user.nombre || "",
+        nombre_publico: user.nombre_publico || "",
+        localidad: user.localidad || "",
         centro: user.centro || "",
         email: user.email || "",
         telefono_contacto: user.telefono_contacto || "",

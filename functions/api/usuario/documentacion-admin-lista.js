@@ -38,6 +38,8 @@ export async function onRequestGet(context) {
       SELECT
         u.id,
         u.nombre,
+        u.nombre_publico,
+        u.localidad,
         u.email,
         MAX(adc.version_documental) AS version_requerida,
         COUNT(adc.id) AS total_documentos
@@ -48,7 +50,7 @@ export async function onRequestGet(context) {
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
       GROUP BY u.id, u.nombre, u.email
       HAVING COUNT(adc.id) > 0
-      ORDER BY COALESCE(u.nombre, u.email) ASC
+      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).all();
 
     return json({
@@ -56,6 +58,8 @@ export async function onRequestGet(context) {
       administradores: (result?.results || []).map((row) => ({
         id: row.id,
         nombre: row.nombre || "",
+        nombre_publico: row.nombre_publico || "",
+        localidad: row.localidad || "",
         email: row.email || "",
         version_requerida: Number(row.version_requerida || 0),
         total_documentos: Number(row.total_documentos || 0)

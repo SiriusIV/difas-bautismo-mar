@@ -84,6 +84,8 @@ export async function onRequestPost(context) {
     const body = await request.json();
 
     const nombreRecibido = limpiarTexto(body.nombre);
+    const nombrePublicoRecibido = limpiarTexto(body.nombre_publico);
+    const localidadRecibida = limpiarTexto(body.localidad);
     const email = limpiarTexto(body.email).toLowerCase();
     const telefono_contacto = limpiarTexto(body.telefono_contacto);
     const webExternaRecibida = limpiarTexto(body.web_externa_url);
@@ -112,6 +114,8 @@ export async function onRequestPost(context) {
       SELECT
         id,
         nombre,
+        nombre_publico,
+        localidad,
         centro,
         email,
         rol,
@@ -149,6 +153,12 @@ export async function onRequestPost(context) {
     const nombre = esSolicitante
       ? centro
       : (nombreRecibido || user.nombre || "");
+
+    const nombre_publico = esAdmin
+      ? (nombrePublicoRecibido || "")
+      : (user.nombre_publico || "");
+
+    const localidad = localidadRecibida || "";
 
     const responsable_legal = esSolicitante
       ? responsableLegalRecibido
@@ -191,6 +201,8 @@ export async function onRequestPost(context) {
       UPDATE usuarios
       SET
         nombre = ?,
+        nombre_publico = ?,
+        localidad = ?,
         centro = ?,
         email = ?,
         telefono_contacto = ?,
@@ -202,6 +214,8 @@ export async function onRequestPost(context) {
       WHERE id = ?
     `).bind(
       nombre,
+      nombre_publico,
+      localidad,
       centro,
       email,
       telefono_contacto,
@@ -217,6 +231,8 @@ export async function onRequestPost(context) {
       SELECT
         id,
         nombre,
+        nombre_publico,
+        localidad,
         centro,
         email,
         telefono_contacto,
@@ -235,6 +251,8 @@ export async function onRequestPost(context) {
       {
         id: perfil.id,
         nombre: perfil.nombre || "",
+        nombre_publico: perfil.nombre_publico || "",
+        localidad: perfil.localidad || "",
         centro: perfil.centro || "",
         email: perfil.email || "",
         rol: perfil.rol || "",
@@ -254,6 +272,8 @@ export async function onRequestPost(context) {
         perfil: {
           id: perfil.id,
           nombre: perfil.nombre || "",
+          nombre_publico: perfil.nombre_publico || "",
+          localidad: perfil.localidad || "",
           centro: perfil.centro || "",
           email: perfil.email || "",
           telefono_contacto: perfil.telefono_contacto || "",

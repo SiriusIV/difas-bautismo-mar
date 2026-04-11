@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
     }
 
     const user = await db.prepare(`
-      SELECT id, nombre, centro, email, password_hash, rol, activo, logo_url, web_externa_url, telefono_contacto, responsable_legal, tipo_documento, documento_identificacion
+      SELECT id, nombre, nombre_publico, localidad, centro, email, password_hash, rol, activo, logo_url, web_externa_url, telefono_contacto, responsable_legal, tipo_documento, documento_identificacion
       FROM usuarios
       WHERE email = ?
       LIMIT 1
@@ -64,6 +64,8 @@ export async function onRequestPost(context) {
     const sessionUser = {
       id: user.id,
       nombre: user.nombre,
+      nombre_publico: user.nombre_publico || "",
+      localidad: user.localidad || "",
       centro: user.centro,
       email: user.email,
       rol: user.rol,
