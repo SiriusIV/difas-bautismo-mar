@@ -75,6 +75,7 @@ export async function onRequestGet(context) {
         a.usa_franjas,
         a.requiere_reserva,
         a.aforo_limitado,
+        a.admin_id,
         a.provincia,
         a.es_recurrente,
         a.patron_recurrencia,
