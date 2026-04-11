@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentación requerida</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --border: #dde4ea;
+      --text: #222;
+      --muted: #5f6d7a;
+      --brand: #123a63;
+      --primary: #0b5ed7;
+      --primary-dark: #094db1;
+      --ok-bg: #eaf7ea;
+      --ok-text: #146c2e;
+      --ok-border: #b9e0c0;
+      --err-bg: #fdeaea;
+      --err-text: #9b1c1c;
+      --err-border: #f5c2c2;
+      --warn-bg: #fff7e8;
+      --warn-text: #8a5a00;
+      --warn-border: #f0d9a7;
+      --soft-bg: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .contenedor {
+      max-width: 1108px;
+      margin: 18px auto 24px;
+      padding: 0 16px;
+    }
+
+    .cabecera {
+      background: #fff;
+      border-radius: 13px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 20px 18px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .cabecera-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      text-align: left;
+      min-width: 0;
+    }
+
+    .logo-cabecera {
+      width: 77px;
+      height: auto;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .cabecera-titulos h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    .cabecera-titulos h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
+      line-height: 1.3;
+    }
+
+    .mensaje {
+      margin-bottom: 14px;
+      padding: 11px 13px;
+      border-radius: 8px;
+      display: none;
+      border: 1px solid transparent;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
+    }
+
+    .mensaje.error {
+      display: block;
+      background: var(--err-bg);
+      color: var(--err-text);
+      border-color: var(--err-border);
+    }
+
+    .mensaje.warn {
+      display: block;
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border-color: var(--warn-border);
+    }
+
+    .bloque {
+      background: var(--card);
+      border-radius: 13px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .bloque-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .bloque-head h3 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--brand);
+    }
+
+    .bloque-head p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--muted);
+      max-width: 780px;
+    }
+
+    .acciones-superiores {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .btn-icono {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: var(--primary);
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .btn-principal {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      transition: all 0.15s ease;
+    }
+
+    .btn-principal:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-principal:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-suave {
+      border: 1px solid #c9cfd6;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+      color: #334250;
+      transition: all 0.15s ease;
+    }
+
+    .btn-suave:hover {
+      background: #f7f9fb;
+    }
+
+    .resumen-estado {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: var(--soft-bg);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      color: #445261;
+      white-space: nowrap;
+    }
+
+    .pill-estado {
+      font-weight: 700;
+    }
+
+    .pill-estado.VALIDADA {
+      color: #146c2e;
+      border-color: #b9e0c0;
+      background: #eefaf0;
+    }
+
+    .pill-estado.EN_REVISION,
+    .pill-estado.PENDIENTE,
+    .pill-estado.DESACTUALIZADA {
+      color: #8a5a00;
+      border-color: #f0d9a7;
+      background: #fff8eb;
+    }
+
+    .pill-estado.RECHAZADA {
+      color: #9b1c1c;
+      border-color: #f5c2c2;
+      background: #fdeaea;
+    }
+
+    .nota {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .admin-lista {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .admin-card {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .admin-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: #b5c4d5;
+    }
+
+    .admin-card.activo {
+      border-color: var(--primary);
+      box-shadow: 0 8px 24px rgba(11,94,215,0.12);
+    }
+
+    .admin-card h4 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--brand);
+    }
+
+    .admin-card p {
+      margin: 0;
+      font-size: 13px;
+      color: #4d5966;
+      line-height: 1.5;
+    }
+
+    .doc-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .doc-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .doc-head {
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .doc-head h4 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--brand);
+    }
+
+    .doc-body {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #334250;
+      font-size: 12px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12);
+    }
+
+    .doc-link {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      word-break: break-word;
+      font-size: 13px;
+    }
+
+    .doc-link:hover {
+      text-decoration: underline;
+    }
+
+    .doc-meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .acciones-inferiores {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .estado-vacio {
+      padding: 18px 16px;
+      border: 1px dashed #cfd8e3;
+      border-radius: 12px;
+      background: #fbfcfe;
+      color: #52606d;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .oculto {
+      display: none !important;
+    }
+
+    @media (max-width: 720px) {
+      .cabecera-inner {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .bloque-head {
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="cabecera-inner">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+        <div class="cabecera-titulos">
+          <h1>Documentación requerida</h1>
+          <h2 id="subtituloCabecera">Remisión anticipada de documentación</h2>
+        </div>
+      </div>
+    </div>
+
+    <div id="mensajePantalla" class="mensaje"></div>
+
+    <div class="bloque" id="bloqueSeleccionAdmin">
+      <div class="bloque-head">
+        <div>
+          <h3>Selecciona organizador</h3>
+          <p>
+            Puedes adelantar aquí la remisión de la documentación que exigen uno o varios organizadores.
+            Así, cuando más adelante quieras solicitar una actividad, no tendrás que esperar a preparar este trámite.
+          </p>
+        </div>
+        <div class="acciones-superiores">
+          <button type="button" class="btn-icono" id="btnVolverPortalSeleccion" title="Volver al portal" aria-label="Volver al portal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M5 9.5V21h14V9.5"></path>
+              <path d="M9 21v-6h6v6"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="listaAdministradores" class="admin-lista"></div>
+      <div id="estadoVacioAdministradores" class="estado-vacio oculto">
+        No hay administradores con documentación común activa disponible en este momento.
+      </div>
+    </div>
+
+    <div class="bloque" id="bloqueDocumentacion">
+      <div class="bloque-head">
+        <div>
+          <h3 id="tituloBloqueDocumentacion">Documentación del organizador</h3>
+          <p id="textoBloqueDocumentacion">
+            Remite aquí la documentación firmada que exige este organizador. Hasta que la documentación esté validada, no podrás solicitar sus actividades.
+          </p>
+          <div class="resumen-estado">
+            <div class="pill" id="pillVersion">Versión requerida: -</div>
+            <div class="pill pill-estado" id="pillEstado">Estado: -</div>
+          </div>
+        </div>
+        <div class="acciones-superiores">
+          <button type="button" class="btn-icono" id="btnCambiarAdmin" title="Elegir otro organizador" aria-label="Elegir otro organizador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6"></path>
+            </svg>
+          </button>
+          <button type="button" class="btn-icono" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M5 9.5V21h14V9.5"></path>
+              <path d="M9 21v-6h6v6"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="nota" id="notaEstadoAdmin"></div>
+
+      <div id="listaDocumentos" class="doc-lista"></div>
+
+      <div class="acciones-inferiores">
+        <button type="button" class="btn-suave" id="btnRecargarDocumentacion">Recargar</button>
+        <button type="button" class="btn-principal" id="btnRemitirDocumentacion">Remitir documentación</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="tplAdministrador">
+    <button type="button" class="admin-card">
+      <h4 class="admin-nombre"></h4>
+      <p class="admin-email"></p>
+      <div class="pill admin-version"></div>
+      <div class="pill admin-total"></div>
+    </button>
+  </template>
+
+  <template id="tplDocumento">
+    <div class="doc-card">
+      <div class="doc-head">
+        <h4 class="doc-nombre"></h4>
+        <div class="pill doc-entrega-pill"></div>
+      </div>
+      <div class="doc-body">
+        <div class="doc-meta doc-descripcion"></div>
+        <div>
+          <label>Documento base del organizador</label>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="doc-link doc-base-link"></a>
+        </div>
+        <div>
+          <label>URL del documento firmado remitido</label>
+          <input type="text" class="doc-url-remitida" maxlength="1000" placeholder="https://...">
+          <div class="doc-meta doc-entrega-info"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const modo = (params.get("modo") || "registro").trim().toLowerCase();
+    const adminIdInicial = Number.parseInt(params.get("admin_id") || "", 10);
+    const actividadId = Number.parseInt(params.get("actividad_id") || "", 10);
+
+    let adminSeleccionadoId = Number.isInteger(adminIdInicial) && adminIdInicial > 0 ? adminIdInicial : null;
+    let estadoDocumentacion = null;
+    let administradoresDisponibles = [];
+
+    function mostrarMensaje(tipo, texto) {
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje " + tipo;
+      box.textContent = texto;
+    }
+
+    function limpiarMensaje() {
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje";
+      box.textContent = "";
+    }
+
+    function limpiarTexto(valor) {
+      return String(valor || "").trim();
+    }
+
+    function esModoSolicitud() {
+      return modo === "solicitud";
+    }
+
+    function estadoLegible(estado) {
+      const valor = String(estado || "").toUpperCase();
+      if (!valor) return "PENDIENTE";
+      return valor.replaceAll("_", " ");
+    }
+
+    function actualizarCabecera() {
+      const subtitulo = document.getElementById("subtituloCabecera");
+      const textoBloque = document.getElementById("textoBloqueDocumentacion");
+      const tituloBloque = document.getElementById("tituloBloqueDocumentacion");
+      const bloqueSeleccion = document.getElementById("bloqueSeleccionAdmin");
+      const btnCambiarAdmin = document.getElementById("btnCambiarAdmin");
+
+      if (esModoSolicitud()) {
+        subtitulo.textContent = "Paso previo obligatorio para solicitar la actividad";
+        tituloBloque.textContent = "Paso previo: documentación del organizador";
+        textoBloque.textContent = "Antes de poder solicitar esta actividad, debes remitir la documentación firmada exigida por su organizador y esperar a que quede validada.";
+        bloqueSeleccion.classList.add("oculto");
+        btnCambiarAdmin.classList.add("oculto");
+      } else {
+        subtitulo.textContent = "Remisión anticipada de documentación";
+        tituloBloque.textContent = "Documentación del organizador";
+        textoBloque.textContent = "Puedes remitir aquí la documentación exigida por un organizador antes de solicitar sus actividades. Si ya está validada, no tendrás que repetir este paso.";
+        bloqueSeleccion.classList.remove("oculto");
+        btnCambiarAdmin.classList.remove("oculto");
+      }
+    }
+
+    async function cargarSesion() {
+      const res = await fetch("/api/usuario/session", { credentials: "include" });
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      if (!data?.ok || !data?.authenticated || !data?.user) return null;
+      return data.user;
+    }
+
+    function irPortal() {
+      location.href = "portal.html";
+    }
+
+    async function cargarListaAdministradores() {
+      const lista = document.getElementById("listaAdministradores");
+      const vacio = document.getElementById("estadoVacioAdministradores");
+      lista.innerHTML = "";
+      vacio.classList.add("oculto");
+
+      const res = await fetch("/api/usuario/documentacion-admin-lista", {
+        credentials: "include"
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        mostrarMensaje("error", data?.error || "No se pudieron cargar los organizadores disponibles.");
+        return;
+      }
+
+      administradoresDisponibles = data.administradores || [];
+
+      if (!administradoresDisponibles.length) {
+        vacio.classList.remove("oculto");
+        return;
+      }
+
+      const tpl = document.getElementById("tplAdministrador");
+
+      administradoresDisponibles.forEach((admin) => {
+        const fragment = tpl.content.cloneNode(true);
+        const card = fragment.querySelector(".admin-card");
+        card.dataset.adminId = admin.id;
+        card.querySelector(".admin-nombre").textContent = admin.nombre || admin.email || "Administrador";
+        card.querySelector(".admin-email").textContent = admin.email || "";
+        card.querySelector(".admin-version").textContent = `Versión requerida: ${Number(admin.version_requerida || 0)}`;
+        card.querySelector(".admin-total").textContent = `${Number(admin.total_documentos || 0)} documento(s) activos`;
+        if (Number(admin.id) === Number(adminSeleccionadoId)) {
+          card.classList.add("activo");
+        }
+        card.addEventListener("click", () => {
+          adminSeleccionadoId = Number(admin.id);
+          Array.from(document.querySelectorAll(".admin-card")).forEach((item) => item.classList.remove("activo"));
+          card.classList.add("activo");
+          cargarEstadoDocumentacion();
+        });
+        lista.appendChild(fragment);
+      });
+    }
+
+    function actualizarPills() {
+      const version = Number(estadoDocumentacion?.version_requerida || 0);
+      const estado = String(
+        estadoDocumentacion?.expediente?.estado_efectivo ||
+        (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")
+      ).toUpperCase();
+
+      document.getElementById("pillVersion").textContent = `Versión requerida: ${version || 0}`;
+
+      const pillEstado = document.getElementById("pillEstado");
+      pillEstado.className = "pill pill-estado";
+      pillEstado.classList.add(estado);
+      pillEstado.textContent = `Estado: ${estadoLegible(estado)}`;
+    }
+
+    function actualizarNotaEstado() {
+      const box = document.getElementById("notaEstadoAdmin");
+      const admin = estadoDocumentacion?.admin;
+      const exp = estadoDocumentacion?.expediente;
+      const estado = String(exp?.estado_efectivo || (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")).toUpperCase();
+
+      if (!admin) {
+        box.textContent = "";
+        return;
+      }
+
+      if (!estadoDocumentacion.requiere_documentacion) {
+        box.textContent = `${admin.nombre || "Este organizador"} no tiene documentación común activa en este momento.`;
+        return;
+      }
+
+      if (estado === "VALIDADA") {
+        box.textContent = `La documentación de ${admin.nombre || "este organizador"} ya está validada para la versión actual. Puedes solicitar sus actividades cuando lo necesites.`;
+        return;
+      }
+
+      if (estado === "EN_REVISION") {
+        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${admin.nombre || "el organizador"}. Hasta que se valide, no podrás solicitar sus actividades.`;
+        return;
+      }
+
+      if (estado === "RECHAZADA") {
+        box.textContent = `La documentación fue rechazada. Revisa de nuevo los documentos y remite una nueva versión firmada para ${admin.nombre || "este organizador"}.`;
+        return;
+      }
+
+      if (estado === "DESACTUALIZADA") {
+        box.textContent = `El organizador actualizó sus documentos. Debes remitir la versión vigente para volver a quedar habilitado frente a ${admin.nombre || "este organizador"}.`;
+        return;
+      }
+
+      box.textContent = `Todavía no has remitido la documentación exigida por ${admin.nombre || "este organizador"}.`;
+    }
+
+    function renderDocumentos() {
+      const lista = document.getElementById("listaDocumentos");
+      lista.innerHTML = "";
+
+      const docs = estadoDocumentacion?.documentos || [];
+      if (!docs.length) {
+        const div = document.createElement("div");
+        div.className = "estado-vacio";
+        div.textContent = "No hay documentación activa que remitir para este organizador.";
+        lista.appendChild(div);
+        return;
+      }
+
+      const tpl = document.getElementById("tplDocumento");
+      const expediente = estadoDocumentacion?.expediente || null;
+      const estado = String(expediente?.estado_efectivo || "").toUpperCase();
+      const permitirEdicion = estado !== "VALIDADA";
+
+      docs.forEach((doc) => {
+        const fragment = tpl.content.cloneNode(true);
+        const card = fragment.querySelector(".doc-card");
+        card.dataset.documentoId = doc.id;
+        const input = card.querySelector(".doc-url-remitida");
+        const entregaInfo = card.querySelector(".doc-entrega-info");
+        const pill = card.querySelector(".doc-entrega-pill");
+
+        card.querySelector(".doc-nombre").textContent = doc.nombre || "Documento";
+        card.querySelector(".doc-descripcion").textContent = doc.descripcion || "Sin descripción adicional.";
+        card.querySelector(".doc-base-link").href = doc.archivo_url || "#";
+        card.querySelector(".doc-base-link").textContent = doc.archivo_url || "Documento base";
+
+        input.value = doc.entrega_archivo_url || "";
+        input.disabled = !permitirEdicion;
+
+        if (doc.entregado) {
+          pill.textContent = "Remitido";
+          entregaInfo.textContent = doc.entrega_fecha_subida ? `Última remisión: ${doc.entrega_fecha_subida}` : "Ya existe una remisión activa para este documento.";
+        } else {
+          pill.textContent = "Pendiente";
+          entregaInfo.textContent = "Debes indicar la URL del documento firmado que vas a remitir.";
+        }
+
+        lista.appendChild(fragment);
+      });
+
+      document.getElementById("btnRemitirDocumentacion").disabled = estado === "VALIDADA";
+    }
+
+    async function cargarEstadoDocumentacion() {
+      limpiarMensaje();
+
+      if (!Number.isInteger(adminSeleccionadoId) || adminSeleccionadoId <= 0) {
+        estadoDocumentacion = null;
+        document.getElementById("listaDocumentos").innerHTML = "";
+        document.getElementById("tituloBloqueDocumentacion").textContent = esModoSolicitud()
+          ? "Paso previo: documentación del organizador"
+          : "Documentación del organizador";
+        document.getElementById("notaEstadoAdmin").textContent = esModoSolicitud()
+          ? "Debes indicar un organizador válido antes de continuar."
+          : "Selecciona un organizador para ver la documentación que exige.";
+        document.getElementById("pillVersion").textContent = "Versión requerida: -";
+        document.getElementById("pillEstado").textContent = "Estado: -";
+        return;
+      }
+
+      const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminSeleccionadoId)}`, {
+        credentials: "include"
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        estadoDocumentacion = null;
+        mostrarMensaje("error", data?.error || "No se pudo consultar la documentación exigida.");
+        return;
+      }
+
+      estadoDocumentacion = data;
+      document.getElementById("tituloBloqueDocumentacion").textContent = `Documentación de ${data.admin?.nombre || "organizador"}`;
+      actualizarPills();
+      actualizarNotaEstado();
+      renderDocumentos();
+    }
+
+    function obtenerEntregasFormulario() {
+      return Array.from(document.querySelectorAll(".doc-card")).map((card) => ({
+        documento_id: Number.parseInt(card.dataset.documentoId || "", 10),
+        archivo_url: limpiarTexto(card.querySelector(".doc-url-remitida")?.value)
+      }));
+    }
+
+    function validarEntregasFormulario() {
+      const entregas = obtenerEntregasFormulario();
+      if (!entregas.length) {
+        return "No hay documentos para remitir.";
+      }
+
+      for (let i = 0; i < entregas.length; i++) {
+        if (!Number.isInteger(entregas[i].documento_id) || entregas[i].documento_id <= 0) {
+          return "Se ha detectado un documento inválido en el formulario.";
+        }
+        if (!entregas[i].archivo_url) {
+          return `Debes indicar la URL firmada del documento ${i + 1}.`;
+        }
+      }
+
+      return null;
+    }
+
+    async function remitirDocumentacion() {
+      limpiarMensaje();
+
+      if (!Number.isInteger(adminSeleccionadoId) || adminSeleccionadoId <= 0) {
+        mostrarMensaje("error", "Debes seleccionar un organizador válido.");
+        return;
+      }
+
+      const error = validarEntregasFormulario();
+      if (error) {
+        mostrarMensaje("error", error);
+        return;
+      }
+
+      const res = await fetch("/api/usuario/documentacion-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          admin_id: adminSeleccionadoId,
+          entregas: obtenerEntregasFormulario()
+        })
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        mostrarMensaje("error", data?.error || "No se pudo remitir la documentación.");
+        return;
+      }
+
+      mostrarMensaje("ok", data?.mensaje || "Documentación remitida correctamente.");
+      await cargarEstadoDocumentacion();
+    }
+
+    async function init() {
+      const sesion = await cargarSesion();
+      if (!sesion || String(sesion.rol || "").toUpperCase() !== "SOLICITANTE") {
+        location.href = "portal.html";
+        return;
+      }
+
+      actualizarCabecera();
+
+      if (!esModoSolicitud()) {
+        await cargarListaAdministradores();
+      } else if (!adminSeleccionadoId) {
+        mostrarMensaje("error", "No se ha indicado un organizador válido para este trámite.");
+      }
+
+      await cargarEstadoDocumentacion();
+
+      if (esModoSolicitud() && Number.isInteger(actividadId) && actividadId > 0) {
+        mostrarMensaje("warn", "Antes de solicitar esta actividad, debes remitir y esperar la validación de la documentación exigida por su organizador.");
+      }
+    }
+
+    document.getElementById("btnVolverPortal").addEventListener("click", irPortal);
+    document.getElementById("btnVolverPortalSeleccion").addEventListener("click", irPortal);
+    document.getElementById("btnCambiarAdmin").addEventListener("click", function () {
+      adminSeleccionadoId = null;
+      estadoDocumentacion = null;
+      document.querySelectorAll(".admin-card").forEach((card) => card.classList.remove("activo"));
+      cargarEstadoDocumentacion();
+    });
+    document.getElementById("btnRecargarDocumentacion").addEventListener("click", cargarEstadoDocumentacion);
+    document.getElementById("btnRemitirDocumentacion").addEventListener("click", remitirDocumentacion);
+
+    init();
+  </script>
+</body>
+</html>
