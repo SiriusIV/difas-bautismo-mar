@@ -1,4 +1,10 @@
 import { getUserSession } from "./_auth.js";
+import {
+  construirEmailHtmlDocumentacionRemitida,
+  construirEmailTextoDocumentacionRemitida,
+  enviarEmail,
+  nombreVisibleAdmin
+} from "../_email.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -414,6 +420,29 @@ export async function onRequestPost(context) {
     await env.DB.batch(inserts);
 
     const archivosActivos = await obtenerArchivosActivos(env, expediente.id, versionRequerida);
+    const notificacionAdmin = await enviarEmail(env, {
+      to: admin.email || "",
+      subject: `[Documentación] Remisión pendiente de revisión - ${usuario.centro || "Centro"}`,
+      text: construirEmailTextoDocumentacionRemitida({
+        admin,
+        centro: usuario,
+        versionRequerida
+      }),
+      html: construirEmailHtmlDocumentacionRemitida({
+        admin,
+        centro: usuario,
+        versionRequerida
+      })
+    });
+
+    if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
+      console.error("No se pudo enviar el correo al administrador tras la remisión documental.", {
+        admin_id: admin.id,
+        admin_nombre: nombreVisibleAdmin(admin),
+        centro_usuario_id: usuario.id,
+        error: notificacionAdmin.error || ""
+      });
+    }
 
     return json({
       ok: true,
@@ -426,6 +455,11 @@ export async function onRequestPost(context) {
         estado: "EN_REVISION",
         fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
         archivos: archivosActivos
+      },
+      notificacion_admin: {
+        enviada: !!notificacionAdmin.ok,
+        omitida: !!notificacionAdmin.skipped,
+        error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
       }
     });
   } catch (error) {
