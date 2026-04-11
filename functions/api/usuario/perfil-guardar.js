@@ -18,6 +18,39 @@ function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function esTelefonoValido(telefono) {
+  const valor = String(telefono || "").replace(/\s+/g, "");
+  return /^\+?[0-9]{9,15}$/.test(valor);
+}
+
+function letraDni(numero) {
+  const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+  return letras[numero % 23];
+}
+
+function esDocumentoValido(tipo, documento) {
+  const t = String(tipo || "").toUpperCase();
+  const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  if (t === "DNI") {
+    if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
+    return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
+  }
+
+  if (t === "NIE") {
+    if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) return false;
+    const mapa = { X: "0", Y: "1", Z: "2" };
+    const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
+    return letraDni(numero) === d.slice(-1);
+  }
+
+  if (t === "NIF") {
+    return /^[A-Z][0-9]{8}$/.test(d);
+  }
+
+  return false;
+}
+
 function esUrlValidaOpcional(url) {
   if (!url) return true;
 
@@ -65,6 +98,10 @@ export async function onRequestPost(context) {
 
     if (!esEmailValido(email)) {
       return json({ ok: false, error: "El email no es valido" }, 400);
+    }
+
+    if (!esTelefonoValido(telefono_contacto)) {
+      return json({ ok: false, error: "El telefono no es valido" }, 400);
     }
 
     if (!esUrlValidaOpcional(webExternaRecibida)) {
@@ -140,6 +177,10 @@ export async function onRequestPost(context) {
 
       if (!documento_identificacion) {
         return json({ ok: false, error: "El documento identificativo es obligatorio" }, 400);
+      }
+
+      if (!esDocumentoValido(tipo_documento, documento_identificacion)) {
+        return json({ ok: false, error: "El documento no coincide con el tipo seleccionado" }, 400);
       }
     }
 
