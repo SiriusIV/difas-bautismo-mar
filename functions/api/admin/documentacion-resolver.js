@@ -1,5 +1,11 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
+import {
+  construirEmailHtmlDocumentacionResuelta,
+  construirEmailTextoDocumentacionResuelta,
+  enviarEmail,
+  nombreVisibleAdmin
+} from "../_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -52,6 +58,8 @@ export async function onRequestPost(context) {
       SELECT
         id,
         admin_id,
+        centro_usuario_id,
+        version_requerida,
         estado
       FROM centro_admin_documentacion
       WHERE id = ?
@@ -62,6 +70,28 @@ export async function onRequestPost(context) {
     if (!expediente) {
       return json({ ok: false, error: "Expediente documental no encontrado." }, { status: 404 });
     }
+
+    const admin = await env.DB.prepare(`
+      SELECT
+        id,
+        nombre,
+        nombre_publico,
+        localidad,
+        email
+      FROM usuarios
+      WHERE id = ?
+      LIMIT 1
+    `).bind(adminId).first();
+
+    const centro = await env.DB.prepare(`
+      SELECT
+        id,
+        centro,
+        email
+      FROM usuarios
+      WHERE id = ?
+      LIMIT 1
+    `).bind(expediente.centro_usuario_id).first();
 
     const nuevoEstado = accion === "validar" ? "VALIDADA" : "RECHAZADA";
 
@@ -82,12 +112,47 @@ export async function onRequestPost(context) {
       documentacionId
     ).run();
 
+    const notificacionCentro = await enviarEmail(env, {
+      to: centro?.email || "",
+      subject: nuevoEstado === "VALIDADA"
+        ? `[Documentación] Validada por ${nombreVisibleAdmin(admin || {})}`
+        : `[Documentación] Rechazada por ${nombreVisibleAdmin(admin || {})}`,
+      text: construirEmailTextoDocumentacionResuelta({
+        admin: admin || {},
+        centro: centro || {},
+        versionRequerida: expediente.version_requerida || 0,
+        estado: nuevoEstado,
+        observaciones
+      }),
+      html: construirEmailHtmlDocumentacionResuelta({
+        admin: admin || {},
+        centro: centro || {},
+        versionRequerida: expediente.version_requerida || 0,
+        estado: nuevoEstado,
+        observaciones
+      })
+    });
+
+    if (!notificacionCentro.ok && !notificacionCentro.skipped) {
+      console.error("No se pudo enviar el correo al centro tras resolver la documentación.", {
+        admin_id: adminId,
+        centro_usuario_id: expediente.centro_usuario_id,
+        estado: nuevoEstado,
+        error: notificacionCentro.error || ""
+      });
+    }
+
     return json({
       ok: true,
       mensaje: nuevoEstado === "VALIDADA"
         ? "Documentación validada correctamente."
         : "Documentación rechazada correctamente.",
-      estado: nuevoEstado
+      estado: nuevoEstado,
+      notificacion_centro: {
+        enviada: !!notificacionCentro.ok,
+        omitida: !!notificacionCentro.skipped,
+        error: notificacionCentro.ok ? "" : (notificacionCentro.error || "")
+      }
     });
   } catch (error) {
     return json(
