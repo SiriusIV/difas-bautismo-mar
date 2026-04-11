@@ -226,7 +226,7 @@
       color: #123a63;
     }
 
-.filtro-panel select {
+    .filtro-panel select {
   min-width: 180px;
   padding: 8px 10px;
   border: 1px solid #c9cfd6;
@@ -235,6 +235,22 @@
   background: #fff;
   color: #1e2a36;
 }
+
+    .aviso-documentacion-publica {
+      margin-bottom: 10px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #fff8eb;
+      border: 1px solid #f0d9a7;
+      color: #8a5a00;
+      font-size: 13px;
+      line-height: 1.55;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.05);
+    }
+
+    .aviso-documentacion-publica strong {
+      color: #6d4700;
+    }
     .carrusel-panel {
       background: #fff;
       border-radius: 14px;
@@ -1074,6 +1090,10 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <div class="aviso-documentacion-publica">
+        <strong>Aviso previo:</strong> la solicitud de algunas actividades puede requerir que el centro haya remitido y tenga validada previamente la documentación común exigida por el organizador.
       </div>
 
       <div class="carrusel-panel">
@@ -2178,6 +2198,44 @@ function solicitarActividadActual() {
     return;
   }
 
+  if (!usuarioAutenticado || usuarioAutenticado.rol !== "SOLICITANTE") {
+    return;
+  }
+
+  comprobarDocumentacionYRedirigir();
+}
+
+async function comprobarDocumentacionYRedirigir() {
+  const adminId = Number(actividadSeleccionada?.admin_id || 0);
+
+  if (!adminId) {
+    continuarSolicitudActividad();
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminId)}`, {
+      credentials: "include"
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) {
+      alert(data?.error || "No se pudo comprobar la documentación requerida para esta actividad.");
+      return;
+    }
+
+    if (data.requiere_documentacion && !data.al_dia) {
+      location.href = `usuario-documentacion.html?modo=solicitud&admin_id=${encodeURIComponent(adminId)}&actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+      return;
+    }
+
+    continuarSolicitudActividad();
+  } catch (error) {
+    alert("No se pudo comprobar la documentación requerida para esta actividad.");
+  }
+}
+
+function continuarSolicitudActividad() {
   if (Number(actividadSeleccionada.usa_franjas || 0) === 1) {
     const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
     if (!franja || !franja.seleccionable) return;
