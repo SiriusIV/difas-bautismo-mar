@@ -39,7 +39,7 @@
     .mensaje.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
     .layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; }
-    .layout.sin-imagen { grid-template-columns: 240px minmax(0, 1fr); }
+    .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 16px; height: 100%; }
     .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
@@ -47,14 +47,14 @@
     .oculto { display: none !important; }
     label { display: block; font-weight: bold; margin-bottom: 5px; color: #334250; font-size: 12px; }
     .campo-obligatorio { color: #c62828; margin-left: 2px; }
-    .campo-con-ayuda { position: relative; }
-    .campo-con-ayuda input { padding-right: 34px; }
-    .btn-ayuda-campo { position: absolute; right: 10px; top: 35px; width: 20px; height: 20px; border-radius: 999px; border: 1px solid #6d87a3; background: #eef4ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
+    .input-con-ayuda { position: relative; }
+    .input-con-ayuda input { padding-right: 34px; }
+    .btn-ayuda-campo { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 999px; border: 1px solid #6d87a3; background: #eef4ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
     .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
-    .nota-obligatorios { margin: 0 0 14px; font-size: 12px; color: #5f6d7a; }
+    .nota-obligatorios { margin: 0 0 10px; font-size: 11px; color: #5f6d7a; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
     .btn:hover { background: var(--primary-dark); }
     .btn-suave { background: #fff; color: #334250; border: 1px solid #c9cfd6; }
@@ -73,7 +73,7 @@
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-documento-inline { display: grid; grid-template-columns: 120px 150px; gap: 10px; align-items: end; }
-    .bloque-password-solicitante { display: flex; align-items: flex-end; height: 100%; padding: 16px; }
+    .fila-password-solicitante { display: flex; align-items: flex-end; justify-content: flex-start; margin-top: 8px; }
     .input-oculto { display: none; }
     .modal-fondo { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 9999; }
     .modal-fondo.activo { display: flex; }
@@ -114,14 +114,6 @@
         </div>
         <input type="file" id="inputImagenAdmin" class="input-oculto" accept="image/*">
       </div>
-      <div class="bloque oculto" id="bloquePasswordSolicitante">
-        <div class="bloque-password-solicitante">
-          <div class="password-linea">
-            <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-            <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
-          </div>
-        </div>
-      </div>
       <div class="bloque">
         <form id="formPerfil">
           <div class="bloque-head">
@@ -152,18 +144,22 @@
               <label for="cuentaSolicitante">Cuenta</label>
               <div id="cuentaSolicitante" class="campo-linea-valor-fijo">Usuario</div>
             </div>
-            <div class="campo-linea campo-con-ayuda">
+            <div class="campo-linea">
               <label for="centroSolicitante">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
-              <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button>
+              <div class="input-con-ayuda">
+                <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button>
+              </div>
               <div class="nota">El centro identifica la cuenta y no puede modificarse.</div>
             </div>
           </div>
           <div class="fila oculto" id="filaSolicitanteResponsableDocumento">
-            <div class="campo-linea campo-con-ayuda">
+            <div class="campo-linea">
               <label for="responsableLegalSolicitante">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
-              <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button>
+              <div class="input-con-ayuda">
+                <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button>
+              </div>
             </div>
             <div class="campo-linea">
               <label>Documento<span class="campo-obligatorio">*</span></label>
@@ -186,6 +182,12 @@
             <div class="campo-linea">
               <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
               <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
+            </div>
+          </div>
+          <div class="fila-password-solicitante oculto" id="filaSolicitantePassword">
+            <div class="password-linea">
+              <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
+              <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
             </div>
           </div>
           <input type="hidden" id="logo_url" name="logo_url">
@@ -301,7 +303,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminEmailTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -314,18 +316,16 @@
         document.getElementById("filaSolicitanteCuentaCentro").classList.remove("oculto");
         document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
-        document.getElementById("bloquePasswordSolicitante").classList.remove("oculto");
+        document.getElementById("filaSolicitantePassword").classList.remove("oculto");
         layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminEmailTelefono").classList.remove("oculto");
         document.getElementById("campoPasswordAdmin").classList.remove("oculto");
-        document.getElementById("bloquePasswordSolicitante").classList.add("oculto");
         layout.classList.remove("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
-        document.getElementById("bloquePasswordSolicitante").classList.add("oculto");
         layout.classList.add("sin-imagen");
       }
 
