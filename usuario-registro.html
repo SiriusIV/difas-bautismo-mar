@@ -78,13 +78,6 @@
       gap: 18px;
     }
 
-    .registro-acciones-aside {
-      display: flex;
-      gap: 8px;
-      align-self: flex-start;
-      margin-bottom: 10px;
-    }
-
     .registro-marca {
       display: flex;
       flex-direction: column;
@@ -132,6 +125,25 @@
       font-size: 24px;
       line-height: 1.15;
       color: var(--brand);
+    }
+
+    .registro-main-cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 6px;
+    }
+
+    .registro-main-cabecera h2 {
+      margin: 0;
+      flex: 1 1 auto;
+    }
+
+    .registro-acciones-main {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
     }
 
     .registro-main .subtitulo {
@@ -372,28 +384,6 @@
       background: #f7f9fb;
     }
 
-    .registro-aside .btn-icono {
-      border-color: #ffffff;
-      background: #ffffff;
-      color: var(--brand);
-    }
-
-    .registro-aside .btn-icono:hover {
-      background: #f2f7fd;
-      border-color: #f2f7fd;
-    }
-
-    .registro-aside .btn-icono-primario {
-      background: #ffffff;
-      border-color: #ffffff;
-      color: var(--brand);
-    }
-
-    .registro-aside .btn-icono-primario:hover {
-      background: #f2f7fd;
-      border-color: #f2f7fd;
-    }
-
     .btn-principal {
       background: var(--primary);
       color: #fff;
@@ -451,22 +441,6 @@
 
     <div class="registro-card">
       <aside class="registro-aside">
-        <div class="registro-acciones-aside">
-          <button type="button" class="btn btn-icono btn-icono-secundario" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 11.5 12 5l8 6.5"></path>
-              <path d="M7 10.5V19h10v-8.5"></path>
-            </svg>
-          </button>
-          <button type="submit" form="formRegistro" class="btn btn-icono btn-icono-primario" aria-label="Crear cuenta" title="Crear cuenta">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 4.5h8l2.5 2.5V19.5H6.5V4.5z"></path>
-              <path d="M9 4.5v5h5v-5"></path>
-              <path d="M9 15h6"></path>
-            </svg>
-          </button>
-        </div>
-
         <div class="registro-marca">
           <img src="/logoClaro.png" alt="Logo Armada">
         </div>
@@ -480,7 +454,24 @@
       </aside>
 
       <main class="registro-main">
-        <h2>Registro</h2>
+        <div class="registro-main-cabecera">
+          <h2>Registro</h2>
+          <div class="registro-acciones-main">
+            <button type="button" class="btn btn-icono btn-icono-secundario" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 11.5 12 5l8 6.5"></path>
+                <path d="M7 10.5V19h10v-8.5"></path>
+              </svg>
+            </button>
+            <button type="submit" form="formRegistro" class="btn btn-icono btn-icono-primario" aria-label="Crear cuenta" title="Crear cuenta">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 4.5h8l2.5 2.5V19.5H6.5V4.5z"></path>
+                <path d="M9 4.5v5h5v-5"></path>
+                <path d="M9 15h6"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
         <p class="subtitulo">
           Introduce los datos iniciales de la cuenta. El centro quedará asociado de forma fija a este usuario.
         </p>
