@@ -156,6 +156,16 @@
     .enlace-documento-base { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
     .enlace-documento-base:hover { color: var(--primary); }
     .estado-provisional { display: block; margin-top: 4px; font-size: 11px; color: #5f6d7a; }
+    .tabs-modal-detalle { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tab-detalle-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+    .tab-detalle-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
+    .tab-panel-detalle { display: none; }
+    .tab-panel-detalle.activo { display: block; }
+    .tabla-estados-wrap { width: 100%; overflow-x: auto; margin-top: 8px; }
+    .tabla-estados-doc { width: 100%; border-collapse: collapse; min-width: 540px; }
+    .tabla-estados-doc th, .tabla-estados-doc td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-estados-doc th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-estados-doc tr:last-child td { border-bottom: none; }
     .acciones-tabla-iconos { display: flex; align-items: center; gap: 8px; }
     .btn-icono-tabla { width: 30px; height: 30px; border-radius: 999px; border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
     .btn-icono-tabla:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
@@ -394,20 +404,60 @@
         <span class="detalle-docs-estado-etiqueta">Estado de la documentación requerida:</span>
         <span id="detalleDocumentacionResumen" class="estado-pill-doc NO_INICIADO">No iniciado</span>
       </div>
-      <div class="tabla-detalle-docs-wrap">
-        <table class="tabla-detalle-docs">
-          <thead>
-            <tr>
-              <th class="col-seleccion"></th>
-              <th>Documento (vínculo descarga)</th>
-              <th>Versión</th>
-              <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadoDocumento" aria-label="Ayuda sobre estados del documento" title="Ayuda sobre estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
-            </tr>
-          </thead>
-          <tbody id="detalleDocumentacionBody"></tbody>
-        </table>
+      <div class="tabs-modal-detalle" role="tablist" aria-label="Pestañas del detalle documental">
+        <button type="button" class="tab-detalle-btn activa" id="tabDetalleDocumentos" data-tab-detalle="documentos" role="tab" aria-selected="true">Documentos</button>
+        <button type="button" class="tab-detalle-btn" id="tabDetalleEstados" data-tab-detalle="estados" role="tab" aria-selected="false">Estados</button>
       </div>
-      <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
+      <div class="tab-panel-detalle activo" id="panelDetalleDocumentos" role="tabpanel" aria-labelledby="tabDetalleDocumentos">
+        <div class="tabla-detalle-docs-wrap">
+          <table class="tabla-detalle-docs">
+            <thead>
+              <tr>
+                <th class="col-seleccion"></th>
+                <th>Documento (vínculo descarga)</th>
+                <th>Versión</th>
+                <th>Estado del documento</th>
+              </tr>
+            </thead>
+            <tbody id="detalleDocumentacionBody"></tbody>
+          </table>
+        </div>
+        <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
+      </div>
+      <div class="tab-panel-detalle" id="panelDetalleEstados" role="tabpanel" aria-labelledby="tabDetalleEstados">
+        <div class="tabla-estados-wrap">
+          <table class="tabla-estados-doc">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="estado-pill-doc NO_INICIADO">No enviado</span></td>
+                <td>Este documento todavía no ha sido remitido a través de la plataforma.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc NO_ACTUALIZADO">No actualizado</span></td>
+                <td>Existe una remisión anterior, pero ya no coincide con la versión vigente exigida por el organizador.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc RECHAZADA">Rechazado</span></td>
+                <td>El organizador ha revisado este documento y lo ha rechazado.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc EN_REVISION">En revisión</span></td>
+                <td>El documento ya fue remitido y está pendiente de revisión manual por parte del organizador.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc VALIDADA">Validado</span></td>
+                <td>El organizador ha comprobado el documento y lo ha aceptado como válido.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <input type="file" id="inputArchivoDetalleDocumentacion" class="input-archivo-detalle" accept="application/pdf,.pdf">
     </div>
   </div>
@@ -422,6 +472,7 @@
     let detalleDocumentacionDatos = [];
     let detalleDocumentacionSeleccionId = null;
     let detalleCambiosPendientes = new Map();
+    let detalleTabActiva = "documentos";
     let temporizadorMensajePassword = null;
 
     function jsonMessage(id, tipo, texto) {
@@ -478,7 +529,8 @@
       if (valor === "NO_ACTUALIZADO") return "No actualizado";
       if (valor === "NO_COMPLETADO") return "No completado";
       if (valor === "NO_INICIADO") return "No iniciado";
-      return "Sin estado";
+      if (valor === "NO_ENVIADO") return "No enviado";
+      return "No enviado";
     }
 
     function formatearFechaCorta(valor) {
@@ -527,6 +579,17 @@
       btnSubir.disabled = !doc;
       btnEliminar.disabled = !puedeEliminar;
       btnGuardar.disabled = !tieneCambiosPendientesDetalle();
+    }
+
+    function activarTabDetalleDocumentacion(tab) {
+      detalleTabActiva = tab === "estados" ? "estados" : "documentos";
+      const esDocumentos = detalleTabActiva === "documentos";
+      document.getElementById("tabDetalleDocumentos").classList.toggle("activa", esDocumentos);
+      document.getElementById("tabDetalleEstados").classList.toggle("activa", !esDocumentos);
+      document.getElementById("tabDetalleDocumentos").setAttribute("aria-selected", esDocumentos ? "true" : "false");
+      document.getElementById("tabDetalleEstados").setAttribute("aria-selected", esDocumentos ? "false" : "true");
+      document.getElementById("panelDetalleDocumentos").classList.toggle("activo", esDocumentos);
+      document.getElementById("panelDetalleEstados").classList.toggle("activo", !esDocumentos);
     }
 
     function renderizarDetalleDocumentacion(documentos = []) {
@@ -584,6 +647,8 @@
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
+      detalleTabActiva = "documentos";
+      activarTabDetalleDocumentacion("documentos");
       limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
     }
@@ -606,6 +671,8 @@
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
+      detalleTabActiva = "documentos";
+      activarTabDetalleDocumentacion("documentos");
       limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
       document.getElementById("modalDetalleDocumentacion").classList.add("activo");
@@ -1452,6 +1519,11 @@
       }
     });
     document.getElementById("btnCerrarDetalleDocumentacion").addEventListener("click", cerrarModalDetalleDocumentacion);
+    document.querySelectorAll("[data-tab-detalle]").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        activarTabDetalleDocumentacion(this.dataset.tabDetalle || "documentos");
+      });
+    });
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
         "Nombre del centro / entidad",
@@ -1468,12 +1540,6 @@
       abrirAyudaCampo(
         "Estados del expediente",
         "No iniciado: no se ha remitido ningún documento. No completado: falta al menos un documento por remitir. No actualizado: existe al menos un documento remitido que ya no corresponde con el vigente. Rechazada: al menos un documento ha sido rechazado. En revisión: todos están enviados, pero al menos uno sigue pendiente de revisión manual. Validada: todos los documentos requeridos están validados."
-      );
-    });
-    document.getElementById("btnAyudaEstadoDocumento").addEventListener("click", () => {
-      abrirAyudaCampo(
-        "Estados del documento",
-        "No enviado: este documento aún no ha sido remitido. No actualizado: el documento remitido ya no coincide con la versión vigente del organizador. Rechazado: el organizador ha rechazado este documento. En revisión: el documento ya fue remitido y está pendiente de revisión manual. Validado: el organizador ha aceptado este documento."
       );
     });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
