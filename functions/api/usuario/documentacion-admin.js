@@ -24,6 +24,11 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+function normalizarEstadoDocumento(estado) {
+  const valor = String(estado || "").trim().toUpperCase();
+  return valor || "EN_REVISION";
+}
+
 async function obtenerUsuarioSolicitante(env, userId) {
   return await env.DB.prepare(`
     SELECT
@@ -115,6 +120,10 @@ async function obtenerArchivosActivos(env, documentacionId) {
       nombre_documento,
       archivo_url,
       version_documental,
+      estado,
+      fecha_validacion,
+      validado_por_admin_id,
+      observaciones_admin,
       fecha_subida,
       activo
     FROM centro_admin_documentacion_archivos
@@ -126,76 +135,63 @@ async function obtenerArchivosActivos(env, documentacionId) {
   return rows?.results || [];
 }
 
-function calcularEstadoEfectivo(expediente, documentosActivos, archivosActivos) {
+function calcularEstadoDocumento(doc, entrega) {
+  if (!entrega) {
+    return "NO_ENVIADO";
+  }
+
+  if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+    return "NO_ACTUALIZADO";
+  }
+
+  return normalizarEstadoDocumento(entrega.estado);
+}
+
+function calcularEstadoEfectivo(documentosActivos, archivosActivos) {
   if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
     return "NO_REQUERIDA";
   }
 
-  if (!expediente) {
-    return "PENDIENTE";
-  }
-
-  const estadoExpediente = String(expediente.estado || "").toUpperCase();
   const archivosPorNombre = new Map(
     (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
   );
 
-  let faltaAlgunoNuncaRemitido = false;
-  let hayAlgunoDesactualizado = false;
+  const estados = documentosActivos.map((doc) => {
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    return calcularEstadoDocumento(doc, entrega);
+  });
 
-  for (const doc of documentosActivos) {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre));
-
-    if (!entrega) {
-      faltaAlgunoNuncaRemitido = true;
-      continue;
-    }
-
-    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
-      hayAlgunoDesactualizado = true;
-    }
+  if (estados.every((estado) => estado === "NO_ENVIADO")) {
+    return "NO_INICIADO";
   }
 
-  if (hayAlgunoDesactualizado) {
-    return "DESACTUALIZADA";
-  }
-
-  if (faltaAlgunoNuncaRemitido) {
-    return "PENDIENTE";
-  }
-
-  if (estadoExpediente === "VALIDADA") {
-    return "VALIDADA";
-  }
-
-  if (estadoExpediente === "RECHAZADA") {
+  if (estados.some((estado) => estado === "RECHAZADO")) {
     return "RECHAZADA";
+  }
+
+  if (estados.some((estado) => estado === "NO_ACTUALIZADO")) {
+    return "NO_ACTUALIZADO";
+  }
+
+  if (estados.some((estado) => estado === "NO_ENVIADO")) {
+    return "NO_COMPLETADO";
+  }
+
+  if (estados.every((estado) => estado === "VALIDADO")) {
+    return "VALIDADA";
   }
 
   return "EN_REVISION";
 }
 
-function construirResumenDocumentos(documentos, archivosActivos, estadoExpediente) {
+function construirResumenDocumentos(documentos, archivosActivos) {
   const archivosPorNombre = new Map(
     (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
   );
-  const estadoGlobal = String(estadoExpediente || "").toUpperCase();
 
   return (documentos || []).map((doc) => {
     const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
-    let estadoDocumento = "PENDIENTE";
-
-    if (entrega) {
-      if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
-        estadoDocumento = "DESACTUALIZADA";
-      } else if (estadoGlobal === "VALIDADA") {
-        estadoDocumento = "VALIDADA";
-      } else if (estadoGlobal === "RECHAZADA") {
-        estadoDocumento = "RECHAZADA";
-      } else {
-        estadoDocumento = "EN_REVISION";
-      }
-    }
+    const estadoDocumento = calcularEstadoDocumento(doc, entrega);
 
     return {
       id: doc.id,
@@ -206,9 +202,13 @@ function construirResumenDocumentos(documentos, archivosActivos, estadoExpedient
       version_documental: Number(doc.version_documental || 0),
       estado_documento: estadoDocumento,
       entregado: !!entrega,
+      entrega_archivo_id: Number(entrega?.id || 0),
       entrega_archivo_url: entrega?.archivo_url || "",
       entrega_fecha_subida: entrega?.fecha_subida || "",
-      entrega_version_documental: Number(entrega?.version_documental || 0)
+      entrega_version_documental: Number(entrega?.version_documental || 0),
+      entrega_estado: entrega ? normalizarEstadoDocumento(entrega?.estado) : "NO_ENVIADO",
+      entrega_fecha_validacion: entrega?.fecha_validacion || "",
+      entrega_observaciones_admin: entrega?.observaciones_admin || ""
     };
   });
 }
@@ -265,7 +265,7 @@ export async function onRequestGet(context) {
     const documentos = await obtenerDocumentosActivos(env, adminId);
     const expediente = await obtenerExpediente(env, usuario.id, adminId);
     const archivosActivos = await obtenerArchivosActivos(env, expediente?.id);
-    const estadoEfectivo = calcularEstadoEfectivo(expediente, documentos, archivosActivos);
+    const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosActivos);
     const requiereDocumentacion = documentos.length > 0;
 
     return json({
@@ -295,7 +295,7 @@ export async function onRequestGet(context) {
         fecha_validacion: expediente.fecha_validacion || "",
         observaciones_admin: expediente.observaciones_admin || ""
       } : null,
-      documentos: construirResumenDocumentos(documentos, archivosActivos, expediente?.estado || "")
+      documentos: construirResumenDocumentos(documentos, archivosActivos)
     });
   } catch (error) {
     return json(
@@ -446,10 +446,14 @@ export async function onRequestPost(context) {
           nombre_documento,
           archivo_url,
           version_documental,
+          estado,
+          fecha_validacion,
+          validado_por_admin_id,
+          observaciones_admin,
           fecha_subida,
           activo
         )
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 1)
+        VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
       `).bind(
         expediente.id,
         doc.nombre,
@@ -461,6 +465,22 @@ export async function onRequestPost(context) {
     await env.DB.batch(inserts);
 
     const archivosActivos = await obtenerArchivosActivos(env, expediente.id);
+    const estadoExpediente = calcularEstadoEfectivo(documentos, archivosActivos);
+
+    await env.DB.prepare(`
+      UPDATE centro_admin_documentacion
+      SET
+        estado = ?,
+        fecha_validacion = CASE WHEN ? = 'VALIDADA' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        validado_por_admin_id = NULL,
+        observaciones_admin = NULL
+      WHERE id = ?
+    `).bind(
+      estadoExpediente,
+      estadoExpediente,
+      expediente.id
+    ).run();
+
     const notificacionAdmin = await enviarEmail(env, {
       to: admin.email || "",
       subject: `[Documentación] Remisión pendiente de revisión - ${usuario.centro || "Centro"}`,
@@ -493,7 +513,7 @@ export async function onRequestPost(context) {
         admin_id: adminId,
         version_requerida: versionRequerida,
         version_aportada: versionAportada,
-        estado: "EN_REVISION",
+        estado: estadoExpediente,
         fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
         archivos: archivosActivos
       },
