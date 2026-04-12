@@ -413,6 +413,7 @@
           <label>Nombre del documento</label>
           <input type="text" class="doc-nombre" maxlength="160">
         </div>
+        <input type="hidden" class="doc-id">
         <div>
           <label>Descripción</label>
           <textarea class="doc-descripcion" maxlength="1000"></textarea>
@@ -467,6 +468,7 @@
 
     function normalizarDocumentoLocal(doc, index) {
       return {
+        id: Number.isInteger(doc?.id) ? doc.id : parseInt(doc?.id, 10) || null,
         nombre: limpiarTexto(doc?.nombre),
         descripcion: limpiarTexto(doc?.descripcion),
         archivo_url: limpiarTexto(doc?.archivo_url),
@@ -477,6 +479,7 @@
     function obtenerDocumentosFormulario() {
       return Array.from(document.querySelectorAll(".documento-card")).map((card, index) => {
         return normalizarDocumentoLocal({
+          id: card.querySelector(".doc-id")?.value,
           nombre: card.querySelector(".doc-nombre")?.value,
           descripcion: card.querySelector(".doc-descripcion")?.value,
           archivo_url: card.querySelector(".doc-archivo-url")?.value,
@@ -495,6 +498,7 @@
       const tpl = document.getElementById("tplDocumento");
       const fragment = tpl.content.cloneNode(true);
       const card = fragment.querySelector(".documento-card");
+      const inputId = card.querySelector(".doc-id");
       const inputNombre = card.querySelector(".doc-nombre");
       const inputDescripcion = card.querySelector(".doc-descripcion");
       const inputArchivoUrl = card.querySelector(".doc-archivo-url");
@@ -503,6 +507,7 @@
       const enlaceArchivo = card.querySelector(".doc-enlace-archivo");
       const estadoArchivo = card.querySelector(".doc-archivo-estado");
 
+      inputId.value = doc.id || "";
       inputNombre.value = doc.nombre || "";
       inputDescripcion.value = doc.descripcion || "";
       inputArchivoUrl.value = doc.archivo_url || "";
@@ -579,10 +584,40 @@
         if (file) subirPdf(file);
       });
 
-      card.querySelector(".btnEliminarDocumento").addEventListener("click", function () {
-        card.remove();
-        actualizarIndicesDocumentos();
-        renderEstadoVacio();
+      card.querySelector(".btnEliminarDocumento").addEventListener("click", async function () {
+        const documentoId = parseInt(inputId.value, 10);
+
+        if (!Number.isInteger(documentoId) || documentoId <= 0) {
+          card.remove();
+          actualizarIndicesDocumentos();
+          renderEstadoVacio();
+          return;
+        }
+
+        const confirmar = window.confirm("Se eliminará este documento y su PDF del servidor. ¿Deseas continuar?");
+        if (!confirmar) return;
+
+        limpiarMensaje();
+
+        try {
+          const res = await fetch("/api/admin/documentos-eliminar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ documento_id: documentoId })
+          });
+
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            mostrarMensaje("error", data?.error || "No se pudo eliminar el documento.");
+            return;
+          }
+
+          await cargarDocumentos();
+          mostrarMensaje("ok", data?.mensaje || "Documento eliminado correctamente.");
+        } catch (error) {
+          mostrarMensaje("error", error.message || "No se pudo eliminar el documento.");
+        }
       });
 
       actualizarEstadoArchivo();
