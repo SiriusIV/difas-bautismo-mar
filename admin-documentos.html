@@ -260,6 +260,11 @@
       overflow: hidden;
     }
 
+    .documento-card.inactivo {
+      background: #fafbfd;
+      border-color: #d4dbe3;
+    }
+
     .documento-card-head {
       display: flex;
       justify-content: space-between;
@@ -270,10 +275,43 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .documento-card-head-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .documento-indice {
       font-size: 12px;
       font-weight: 700;
       color: var(--brand);
+    }
+
+    .badge-estado-doc {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      border: 1px solid #d2d8df;
+      background: #f5f7fa;
+      color: #49596a;
+      white-space: nowrap;
+    }
+
+    .badge-estado-doc.activo {
+      background: #eaf7ea;
+      border-color: #b9e0c0;
+      color: #146c2e;
+    }
+
+    .badge-estado-doc.inactivo {
+      background: #f4f6f8;
+      border-color: #d5dbe2;
+      color: #5f6d7a;
     }
 
     .documento-card-body {
@@ -406,7 +444,11 @@
     <div class="documento-card">
       <div class="documento-card-head">
         <div class="documento-indice">Documento</div>
-        <button type="button" class="btn btn-suave btnEliminarDocumento">Eliminar</button>
+        <div class="documento-card-head-right">
+          <span class="badge-estado-doc badgeEstadoDocumento">Activo</span>
+          <button type="button" class="btn btn-suave btnAlternarEstadoDocumento">Desactivar</button>
+          <button type="button" class="btn btn-suave btnEliminarDocumento">Eliminar</button>
+        </div>
       </div>
       <div class="documento-card-body">
         <div>
@@ -414,6 +456,7 @@
           <input type="text" class="doc-nombre" maxlength="160">
         </div>
         <input type="hidden" class="doc-id">
+        <input type="hidden" class="doc-activo">
         <div>
           <label>Descripción</label>
           <textarea class="doc-descripcion" maxlength="1000"></textarea>
@@ -469,6 +512,7 @@
     function normalizarDocumentoLocal(doc, index) {
       return {
         id: Number.isInteger(doc?.id) ? doc.id : parseInt(doc?.id, 10) || null,
+        activo: Number(doc?.activo || 0) === 1,
         nombre: limpiarTexto(doc?.nombre),
         descripcion: limpiarTexto(doc?.descripcion),
         archivo_url: limpiarTexto(doc?.archivo_url),
@@ -477,14 +521,19 @@
     }
 
     function obtenerDocumentosFormulario() {
-      return Array.from(document.querySelectorAll(".documento-card")).map((card, index) => {
+      let ordenActivo = 0;
+      return Array.from(document.querySelectorAll(".documento-card")).flatMap((card) => {
+        const activo = card.querySelector(".doc-activo")?.value === "1";
+        if (!activo) return [];
+
         return normalizarDocumentoLocal({
           id: card.querySelector(".doc-id")?.value,
+          activo,
           nombre: card.querySelector(".doc-nombre")?.value,
           descripcion: card.querySelector(".doc-descripcion")?.value,
           archivo_url: card.querySelector(".doc-archivo-url")?.value,
-          orden: index
-        }, index);
+          orden: ordenActivo++
+        }, ordenActivo - 1);
       });
     }
 
@@ -499,31 +548,59 @@
       const fragment = tpl.content.cloneNode(true);
       const card = fragment.querySelector(".documento-card");
       const inputId = card.querySelector(".doc-id");
+      const inputActivo = card.querySelector(".doc-activo");
       const inputNombre = card.querySelector(".doc-nombre");
       const inputDescripcion = card.querySelector(".doc-descripcion");
       const inputArchivoUrl = card.querySelector(".doc-archivo-url");
       const inputPdf = card.querySelector(".input-pdf-oculto");
       const btnSubirPdf = card.querySelector(".btnSubirPdf");
+      const btnAlternarEstado = card.querySelector(".btnAlternarEstadoDocumento");
       const enlaceArchivo = card.querySelector(".doc-enlace-archivo");
       const estadoArchivo = card.querySelector(".doc-archivo-estado");
+      const badgeEstado = card.querySelector(".badgeEstadoDocumento");
+      const body = card.querySelector(".documento-card-body");
 
       inputId.value = doc.id || "";
+      inputActivo.value = doc.activo === false ? "0" : "1";
       inputNombre.value = doc.nombre || "";
       inputDescripcion.value = doc.descripcion || "";
       inputArchivoUrl.value = doc.archivo_url || "";
 
+      function aplicarEstadoVisual() {
+        const activo = inputActivo.value === "1";
+        card.classList.toggle("inactivo", !activo);
+        badgeEstado.textContent = activo ? "Activo" : "Inactivo";
+        badgeEstado.classList.toggle("activo", activo);
+        badgeEstado.classList.toggle("inactivo", !activo);
+        btnAlternarEstado.textContent = activo ? "Desactivar" : "Activar";
+
+        [inputNombre, inputDescripcion, btnSubirPdf].forEach((elemento) => {
+          elemento.disabled = !activo;
+        });
+        inputPdf.disabled = !activo;
+        body.style.opacity = activo ? "1" : "0.72";
+        estadoArchivo.textContent = activo
+          ? estadoArchivo.textContent
+          : "Documento inactivo. Mientras no lo actives, no formará parte de la documentación obligatoria.";
+      }
+
       function actualizarEstadoArchivo() {
+        const activo = inputActivo.value === "1";
         const url = limpiarTexto(inputArchivoUrl.value);
         if (url) {
           enlaceArchivo.href = url;
           enlaceArchivo.classList.remove("oculto");
-          estadoArchivo.textContent = "PDF cargado correctamente. Si subes otro para este mismo documento, sustituirá al anterior.";
+          estadoArchivo.textContent = activo
+            ? "PDF cargado correctamente. Si subes otro para este mismo documento, sustituirá al anterior."
+            : "Documento inactivo. El PDF se conserva, pero no se exigirá mientras siga desactivado.";
           return;
         }
 
         enlaceArchivo.href = "#";
         enlaceArchivo.classList.add("oculto");
-        estadoArchivo.textContent = "Todavía no hay ningún PDF asociado a este documento.";
+        estadoArchivo.textContent = activo
+          ? "Todavía no hay ningún PDF asociado a este documento."
+          : "Documento inactivo. Mientras no lo actives, no formará parte de la documentación obligatoria.";
       }
 
       async function subirPdf(file) {
@@ -584,6 +661,50 @@
         if (file) subirPdf(file);
       });
 
+      btnAlternarEstado.addEventListener("click", async function () {
+        const documentoId = parseInt(inputId.value, 10);
+        const estabaActivo = inputActivo.value === "1";
+
+        if (!Number.isInteger(documentoId) || documentoId <= 0) {
+          inputActivo.value = estabaActivo ? "0" : "1";
+          actualizarEstadoArchivo();
+          aplicarEstadoVisual();
+          return;
+        }
+
+        const confirmar = window.confirm(
+          estabaActivo
+            ? "Este documento dejará de exigirse mientras permanezca desactivado. ¿Deseas continuar?"
+            : "Este documento volverá a formar parte de la documentación obligatoria. ¿Deseas continuar?"
+        );
+        if (!confirmar) return;
+
+        limpiarMensaje();
+
+        try {
+          const res = await fetch("/api/admin/documentos-estado", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              documento_id: documentoId,
+              activar: !estabaActivo
+            })
+          });
+
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            mostrarMensaje("error", data?.error || "No se pudo actualizar el estado del documento.");
+            return;
+          }
+
+          await cargarDocumentos();
+          mostrarMensaje("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
+        } catch (error) {
+          mostrarMensaje("error", error.message || "No se pudo actualizar el estado del documento.");
+        }
+      });
+
       card.querySelector(".btnEliminarDocumento").addEventListener("click", async function () {
         const documentoId = parseInt(inputId.value, 10);
 
@@ -621,6 +742,7 @@
       });
 
       actualizarEstadoArchivo();
+      aplicarEstadoVisual();
 
       return card;
     }
@@ -688,8 +810,9 @@
       versionActual = Number(data.version_actual || 1);
       actualizarResumenVersion();
 
-      documentosOriginales = (data.documentos || []).map((doc, index) => normalizarDocumentoLocal(doc, index));
-      renderDocumentos(documentosOriginales);
+      const documentos = (data.documentos || []).map((doc, index) => normalizarDocumentoLocal(doc, index));
+      documentosOriginales = documentos.filter((doc) => doc.activo);
+      renderDocumentos(documentos);
     }
 
     function validarDocumentos(documentos) {
@@ -730,8 +853,9 @@
 
       versionActual = Number(data.version_actual || versionActual || 1);
       actualizarResumenVersion();
-      documentosOriginales = (data.documentos || []).map((doc, index) => normalizarDocumentoLocal(doc, index));
-      renderDocumentos(documentosOriginales);
+      const documentosActualizados = (data.documentos || []).map((doc, index) => normalizarDocumentoLocal(doc, index));
+      documentosOriginales = documentosActualizados.filter((doc) => doc.activo);
+      renderDocumentos(documentosActualizados);
       mostrarMensaje("ok", data.mensaje || "Documentación requerida actualizada correctamente.");
     }
 
