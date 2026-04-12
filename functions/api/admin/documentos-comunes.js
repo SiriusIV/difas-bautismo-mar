@@ -98,6 +98,18 @@ function firmaDocumentos(documentos) {
   );
 }
 
+function claveDocumento(doc) {
+  return limpiarTexto(doc?.nombre).toUpperCase();
+}
+
+function esMismoContenidoDocumento(actual, nuevo) {
+  return (
+    limpiarTexto(actual?.nombre) === limpiarTexto(nuevo?.nombre) &&
+    normalizarDescripcion(actual?.descripcion) === normalizarDescripcion(nuevo?.descripcion) &&
+    limpiarTexto(actual?.archivo_url) === limpiarTexto(nuevo?.archivo_url)
+  );
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -161,6 +173,18 @@ export async function onRequestPost(context) {
 
     documentosNormalizados.sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
 
+    const nombresVistos = new Set();
+    for (const doc of documentosNormalizados) {
+      const clave = claveDocumento(doc);
+      if (nombresVistos.has(clave)) {
+        return json(
+          { ok: false, error: "No puede haber dos documentos activos con el mismo nombre." },
+          400
+        );
+      }
+      nombresVistos.add(clave);
+    }
+
     const actuales = await leerDocumentosActivos(env, adminId);
     const firmaActual = firmaDocumentos(actuales);
     const firmaNueva = firmaDocumentos(documentosNormalizados);
@@ -176,21 +200,77 @@ export async function onRequestPost(context) {
       });
     }
 
-    const nuevaVersion = versionAnterior + 1 || 1;
     const sentencias = [];
+    const actualesPorClave = new Map(actuales.map((doc) => [claveDocumento(doc), doc]));
+    const nuevasClaves = new Set(documentosNormalizados.map((doc) => claveDocumento(doc)));
 
-    sentencias.push(
-      env.DB.prepare(`
-        UPDATE admin_documentos_comunes
-        SET
-          activo = 0,
-          fecha_actualizacion = CURRENT_TIMESTAMP
-        WHERE admin_id = ?
-          AND activo = 1
-      `).bind(adminId)
-    );
+    for (const actual of actuales) {
+      if (!nuevasClaves.has(claveDocumento(actual))) {
+        sentencias.push(
+          env.DB.prepare(`
+            UPDATE admin_documentos_comunes
+            SET
+              activo = 0,
+              fecha_actualizacion = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).bind(actual.id)
+        );
+      }
+    }
 
     for (const doc of documentosNormalizados) {
+      const actual = actualesPorClave.get(claveDocumento(doc));
+
+      if (!actual) {
+        sentencias.push(
+          env.DB.prepare(`
+            INSERT INTO admin_documentos_comunes (
+              admin_id,
+              nombre,
+              descripcion,
+              archivo_url,
+              orden,
+              activo,
+              version_documental,
+              fecha_actualizacion
+            )
+            VALUES (?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+          `).bind(
+            adminId,
+            doc.nombre,
+            doc.descripcion,
+            doc.archivo_url,
+            doc.orden
+          )
+        );
+        continue;
+      }
+
+      if (esMismoContenidoDocumento(actual, doc)) {
+        if (Number(actual.orden || 0) !== Number(doc.orden || 0)) {
+          sentencias.push(
+            env.DB.prepare(`
+              UPDATE admin_documentos_comunes
+              SET
+                orden = ?,
+                fecha_actualizacion = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).bind(doc.orden, actual.id)
+          );
+        }
+        continue;
+      }
+
+      sentencias.push(
+        env.DB.prepare(`
+          UPDATE admin_documentos_comunes
+          SET
+            activo = 0,
+            fecha_actualizacion = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(actual.id)
+      );
+
       sentencias.push(
         env.DB.prepare(`
           INSERT INTO admin_documentos_comunes (
@@ -210,7 +290,7 @@ export async function onRequestPost(context) {
           doc.descripcion,
           doc.archivo_url,
           doc.orden,
-          nuevaVersion
+          Number(actual.version_documental || 0) + 1
         )
       );
     }
@@ -218,6 +298,7 @@ export async function onRequestPost(context) {
     await env.DB.batch(sentencias);
 
     const documentos = await leerDocumentosActivos(env, adminId);
+    const versionActual = documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
 
     return json({
       ok: true,
@@ -225,7 +306,7 @@ export async function onRequestPost(context) {
         ? "Documentos comunes actualizados correctamente."
         : "Se han desactivado los documentos comunes del administrador.",
       admin_id: adminId,
-      version_actual: documentos.length ? nuevaVersion : nuevaVersion,
+      version_actual: documentos.length ? versionActual : versionAnterior,
       documentos
     });
   } catch (error) {
