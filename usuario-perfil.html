@@ -123,6 +123,7 @@
     .modal-detalle-sublinea { display: flex; align-items: center; justify-content: flex-start; gap: 20px; margin-top: 8px; }
     .modal-detalle-subtitulo { margin: 0; font-size: 14px; color: #4a5a6a; line-height: 1.35; }
     .modal-detalle-toolbar-zona { display: flex; align-items: center; gap: 18px; flex-wrap: nowrap; }
+    .modal-detalle-toolbar-zona.oculta { display: none; }
     .modal-detalle-cierre-zona { flex: 0 0 auto; display: flex; align-items: flex-start; }
     .modal-detalle-toolbar-wrap { display: flex; align-items: flex-start; gap: 28px; flex-wrap: nowrap; justify-content: flex-end; }
     .modal-detalle-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -594,6 +595,7 @@
       document.getElementById("tabDetalleEstados").setAttribute("aria-selected", esDocumentos ? "false" : "true");
       document.getElementById("panelDetalleDocumentos").classList.toggle("activo", esDocumentos);
       document.getElementById("panelDetalleEstados").classList.toggle("activo", !esDocumentos);
+      document.querySelector(".modal-detalle-toolbar-zona")?.classList.toggle("oculta", !esDocumentos);
     }
 
     function renderizarDetalleDocumentacion(documentos = []) {
