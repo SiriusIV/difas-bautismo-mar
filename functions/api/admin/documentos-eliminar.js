@@ -1,0 +1,113 @@
+import { getAdminSession } from "./_auth.js";
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8"
+    }
+  });
+}
+
+function parsearIdPositivo(valor) {
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function extraerKeyDesdeArchivoUrl(archivoUrl) {
+  const texto = String(archivoUrl || "").trim();
+  if (!texto) return null;
+
+  try {
+    const base = texto.startsWith("http://") || texto.startsWith("https://")
+      ? texto
+      : `https://local${texto.startsWith("/") ? "" : "/"}${texto}`;
+    const url = new URL(base);
+    const key = String(url.searchParams.get("key") || "").trim();
+    return key || null;
+  } catch {
+    return null;
+  }
+}
+
+async function obtenerDocumentoObjetivo(env, session, documentoId) {
+  if (session.rol === "SUPERADMIN") {
+    return await env.DB.prepare(`
+      SELECT id, admin_id, nombre, archivo_url
+      FROM admin_documentos_comunes
+      WHERE id = ?
+        AND activo = 1
+      LIMIT 1
+    `).bind(documentoId).first();
+  }
+
+  return await env.DB.prepare(`
+    SELECT id, admin_id, nombre, archivo_url
+    FROM admin_documentos_comunes
+    WHERE id = ?
+      AND admin_id = ?
+      AND activo = 1
+    LIMIT 1
+  `).bind(documentoId, session.usuario_id).first();
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json({ ok: false, error: "No autorizado." }, 401);
+    }
+
+    if (!env.DOCS_BUCKET) {
+      return json(
+        {
+          ok: false,
+          error: "Falta configurar el binding DOCS_BUCKET en Cloudflare Pages."
+        },
+        500
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+    const documentoId = parsearIdPositivo(body?.documento_id);
+
+    if (!documentoId) {
+      return json({ ok: false, error: "Debes indicar un documento válido." }, 400);
+    }
+
+    const documento = await obtenerDocumentoObjetivo(env, session, documentoId);
+    if (!documento) {
+      return json({ ok: false, error: "No se encontró el documento solicitado." }, 404);
+    }
+
+    const key = extraerKeyDesdeArchivoUrl(documento.archivo_url);
+    if (key) {
+      await env.DOCS_BUCKET.delete(key);
+    }
+
+    await env.DB.prepare(`
+      DELETE FROM admin_documentos_comunes
+      WHERE id = ?
+    `).bind(documentoId).run();
+
+    return json({
+      ok: true,
+      mensaje: "Documento eliminado correctamente.",
+      documento_id: documentoId,
+      admin_id: documento.admin_id,
+      nombre: documento.nombre,
+      archivo_eliminado: Boolean(key)
+    });
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: "No se pudo eliminar el documento.",
+        detalle: error?.message || String(error)
+      },
+      500
+    );
+  }
+}
