@@ -36,7 +36,6 @@ async function obtenerDocumentoObjetivo(env, session, documentoId) {
       SELECT id, admin_id, nombre, archivo_url
       FROM admin_documentos_comunes
       WHERE id = ?
-        AND activo = 1
       LIMIT 1
     `).bind(documentoId).first();
   }
@@ -46,7 +45,6 @@ async function obtenerDocumentoObjetivo(env, session, documentoId) {
     FROM admin_documentos_comunes
     WHERE id = ?
       AND admin_id = ?
-      AND activo = 1
     LIMIT 1
   `).bind(documentoId, session.usuario_id).first();
 }
