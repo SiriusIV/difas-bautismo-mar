@@ -1516,7 +1516,13 @@
         mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
         await cargarResumenDocumentacion();
         detalleCambiosPendientes = new Map();
-        actualizarAccionesDetalleDocumentacion();
+        const adminIdActual = detalleDocumentacionActual;
+        if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
+          await abrirModalDetalleDocumentacion(adminIdActual);
+          mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+        } else {
+          actualizarAccionesDetalleDocumentacion();
+        }
       } catch (error) {
         mostrarMensajeDetalle("error", error.message || "No se pudieron guardar los cambios documentales.");
       } finally {
