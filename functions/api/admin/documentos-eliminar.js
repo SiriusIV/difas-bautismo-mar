@@ -51,6 +51,20 @@ async function obtenerDocumentoObjetivo(env, session, documentoId) {
   `).bind(documentoId, session.usuario_id).first();
 }
 
+async function obtenerArchivosRelacionados(env, adminId, nombreDocumento) {
+  const rows = await env.DB.prepare(`
+    SELECT
+      a.id,
+      a.archivo_url
+    FROM centro_admin_documentacion_archivos a
+    INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
+    WHERE d.admin_id = ?
+      AND TRIM(a.nombre_documento) = TRIM(?)
+  `).bind(adminId, nombreDocumento).all();
+
+  return rows?.results || [];
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -82,9 +96,30 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "No se encontró el documento solicitado." }, 404);
     }
 
+    const archivosRelacionados = await obtenerArchivosRelacionados(env, documento.admin_id, documento.nombre);
     const key = extraerKeyDesdeArchivoUrl(documento.archivo_url);
     if (key) {
       await env.DOCS_BUCKET.delete(key);
+    }
+
+    for (const archivo of archivosRelacionados) {
+      const archivoKey = extraerKeyDesdeArchivoUrl(archivo.archivo_url);
+      if (archivoKey) {
+        await env.DOCS_BUCKET.delete(archivoKey);
+      }
+    }
+
+    if (archivosRelacionados.length) {
+      await env.DB.prepare(`
+        DELETE FROM centro_admin_documentacion_archivos
+        WHERE id IN (
+          SELECT a.id
+          FROM centro_admin_documentacion_archivos a
+          INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
+          WHERE d.admin_id = ?
+            AND TRIM(a.nombre_documento) = TRIM(?)
+        )
+      `).bind(documento.admin_id, documento.nombre).run();
     }
 
     await env.DB.prepare(`
@@ -98,7 +133,8 @@ export async function onRequestPost(context) {
       documento_id: documentoId,
       admin_id: documento.admin_id,
       nombre: documento.nombre,
-      archivo_eliminado: Boolean(key)
+      archivo_eliminado: Boolean(key),
+      remisiones_eliminadas: archivosRelacionados.length
     });
   } catch (error) {
     return json(
