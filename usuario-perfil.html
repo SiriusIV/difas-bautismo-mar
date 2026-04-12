@@ -48,7 +48,7 @@
     .bloque-head-documentacion h3 { margin: 0; font-size: 18px; color: var(--brand); }
     .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: none; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    #filaSolicitanteEmailTelefono { grid-template-columns: 1.35fr 0.75fr 0.5fr; }
+    #filaSolicitanteEmailTelefono { grid-template-columns: 1.37fr 0.75fr 0.46fr; }
     #filaSolicitanteCuentaCentro { grid-template-columns: 0.7fr 1.15fr 0.9fr; align-items: end; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
     #formPerfil > .bloque-head-documentacion:first-child { margin-bottom: 18px; }
     #filaSolicitanteResponsableDocumento { grid-template-columns: 1.34fr 0.46fr; }
@@ -124,6 +124,7 @@
     .tabla-detalle-docs th, .tabla-detalle-docs td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-detalle-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-detalle-docs tr:last-child td { border-bottom: none; }
+    .tabla-detalle-docs .col-documento { line-height: 1.45; }
     .cargando { opacity: 0.7; pointer-events: none; }
     @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
@@ -347,7 +348,6 @@
       </div>
       <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
       <div class="modal-acciones">
-        <button type="button" class="btn btn-suave" id="btnCerrarDetalleDocumentacion">Cerrar</button>
         <button type="button" class="btn" id="btnGestionarDesdeDetalleDocumentacion">Gestionar documentación</button>
       </div>
     </div>
@@ -478,7 +478,7 @@
           const tr = document.createElement("tr");
           const estadoDoc = estadoDetalleDocumento(estadoExpediente, doc);
           tr.innerHTML = `
-            <td>${doc.nombre || "Documento"}</td>
+            <td class="col-documento">${doc.nombre || "Documento"}</td>
             <td>${versionRequerida > 0 ? versionRequerida : "-"}</td>
             <td><span class="estado-pill-doc ${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</span></td>
           `;
@@ -1160,7 +1160,6 @@
         abrirModalDetalleDocumentacion(adminId);
       }
     });
-    document.getElementById("btnCerrarDetalleDocumentacion").addEventListener("click", cerrarModalDetalleDocumentacion);
     document.getElementById("btnGestionarDesdeDetalleDocumentacion").addEventListener("click", function () {
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
       location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(detalleDocumentacionActual)}`;
