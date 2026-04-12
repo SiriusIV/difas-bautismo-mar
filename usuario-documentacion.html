@@ -524,6 +524,7 @@
           <div class="doc-archivo-acciones">
             <button type="button" class="btn-suave btnSubirPdfRemitido">Subir PDF firmado</button>
             <a href="#" target="_blank" rel="noopener noreferrer" class="btn-suave doc-ver-remitido oculto">Ver documento remitido</a>
+            <button type="button" class="btn-suave btnEliminarRemitido oculto">Eliminar documento remitido</button>
           </div>
           <div class="doc-meta doc-entrega-info"></div>
           <input type="file" class="input-pdf-oculto input-pdf-remitido" accept="application/pdf,.pdf">
@@ -742,6 +743,7 @@
         const inputPdf = card.querySelector(".input-pdf-remitido");
         const btnSubir = card.querySelector(".btnSubirPdfRemitido");
         const btnVer = card.querySelector(".doc-ver-remitido");
+        const btnEliminar = card.querySelector(".btnEliminarRemitido");
         const entregaInfo = card.querySelector(".doc-entrega-info");
         const pill = card.querySelector(".doc-entrega-pill");
 
@@ -760,9 +762,11 @@
           if (urlRemitida) {
             btnVer.href = urlRemitida;
             btnVer.classList.remove("oculto");
+            btnEliminar.classList.remove("oculto");
           } else {
             btnVer.href = "#";
             btnVer.classList.add("oculto");
+            btnEliminar.classList.add("oculto");
           }
         }
 
@@ -828,6 +832,33 @@
         inputPdf.addEventListener("change", function (event) {
           const file = event.target.files && event.target.files[0];
           if (file) subirPdfRemitido(file);
+        });
+
+        btnEliminar.addEventListener("click", async function () {
+          const confirmar = window.confirm("Este PDF firmado se eliminará del sistema y dejará de contar como remitido. ¿Deseas continuar?");
+          if (!confirmar) return;
+
+          limpiarMensaje();
+
+          try {
+            const res = await fetch("/api/usuario/documentacion-eliminar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ documento_id: doc.id })
+            });
+
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.ok) {
+              mostrarMensaje("error", data?.error || "No se pudo eliminar el documento remitido.");
+              return;
+            }
+
+            mostrarMensaje("ok", data?.mensaje || "Documento remitido eliminado correctamente.");
+            await cargarEstadoDocumentacion();
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo eliminar el documento remitido.");
+          }
         });
 
         actualizarEstadoEntrega();
