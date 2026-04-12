@@ -119,13 +119,22 @@
     .modal-detalle-docs { max-width: 980px; }
     .modal-detalle-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
     .modal-detalle-head h3 { margin: 0; }
+    .modal-detalle-toolbar-wrap { display: flex; align-items: flex-start; gap: 14px; flex-wrap: nowrap; justify-content: flex-end; }
     .modal-detalle-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .btn-icono-modal { width: 34px; height: 34px; border-radius: 999px; border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
     .btn-icono-modal:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
     .btn-icono-modal:disabled { opacity: 0.45; cursor: not-allowed; background: #f8fafc; color: #8090a0; }
     .btn-icono-modal.peligro:hover { color: #9b1c1c; border-color: #d9b2b2; background: #fff7f7; }
     .btn-icono-modal svg { width: 16px; height: 16px; display: block; }
-    .btn-cerrar-modal { flex: 0 0 auto; }
+    .btn-guardar-modal { background: var(--primary); color: #fff; border: none; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
+    .btn-guardar-modal:hover { background: var(--primary-dark); color: #fff; border-color: transparent; }
+    .btn-guardar-modal:disabled { background: #dbe7f9; color: #8aa4c7; box-shadow: none; }
+    .btn-cerrar-modal { flex: 0 0 auto; border: none; background: transparent; color: #607182; font-size: 18px; line-height: 1; padding: 2px 4px; cursor: pointer; }
+    .btn-cerrar-modal:hover { color: #123a63; background: transparent; }
+    .btn-cerrar-modal:disabled { opacity: 0.5; cursor: not-allowed; }
+    .mensaje-modal-detalle { margin: 0 0 10px; padding: 10px 12px; border-radius: 8px; display: none; border: 1px solid transparent; line-height: 1.5; font-size: 13px; }
+    .mensaje-modal-detalle.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
+    .mensaje-modal-detalle.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
     .detalle-docs-cabecera { margin-bottom: 12px; }
     .detalle-docs-cabecera .admin-doc-nombre { font-size: 18px; }
     .detalle-docs-cabecera .admin-doc-meta { font-size: 12px; }
@@ -354,19 +363,22 @@
         <div>
           <h3>Detalle de la documentación</h3>
         </div>
-        <div class="modal-detalle-toolbar">
-          <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
-          </button>
-          <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          </button>
-          <button type="button" class="btn" id="btnGuardarDesdeDetalleDocumentacion" disabled>Guardar</button>
-          <button type="button" class="btn-icono-modal btn-cerrar-modal" id="btnCerrarDetalleDocumentacion" title="Cerrar" aria-label="Cerrar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
-          </button>
+        <div class="modal-detalle-toolbar-wrap">
+          <div class="modal-detalle-toolbar">
+            <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
+            </button>
+            <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+            <button type="button" class="btn-icono-modal btn-guardar-modal" id="btnGuardarDesdeDetalleDocumentacion" title="Guardar cambios" aria-label="Guardar cambios" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </button>
+          </div>
+          <button type="button" class="btn-cerrar-modal" id="btnCerrarDetalleDocumentacion" title="Cerrar" aria-label="Cerrar">×</button>
         </div>
       </div>
+      <div id="mensajeDetalleDocumentacion" class="mensaje-modal-detalle"></div>
       <div class="detalle-docs-cabecera">
         <div class="admin-doc-nombre" id="detalleDocumentacionAdmin">Organizador</div>
         <div class="admin-doc-meta" id="detalleDocumentacionMeta"></div>
@@ -377,7 +389,7 @@
           <thead>
             <tr>
               <th class="col-seleccion"></th>
-              <th>Documento</th>
+              <th>Documento (vínculo descarga)</th>
               <th>Versión</th>
               <th>Estado</th>
             </tr>
@@ -426,6 +438,18 @@
         limpiarMensaje("mensajePassword");
         temporizadorMensajePassword = null;
       }, duracionMs);
+    }
+
+    function mostrarMensajeDetalle(tipo, texto) {
+      const box = document.getElementById("mensajeDetalleDocumentacion");
+      box.className = "mensaje-modal-detalle " + tipo;
+      box.textContent = texto;
+    }
+
+    function limpiarMensajeDetalle() {
+      const box = document.getElementById("mensajeDetalleDocumentacion");
+      box.className = "mensaje-modal-detalle";
+      box.textContent = "";
     }
 
     function etiquetaRol(rol) {
@@ -550,6 +574,7 @@
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
+      limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
     }
 
@@ -571,6 +596,7 @@
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
+      limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
       document.getElementById("modalDetalleDocumentacion").classList.add("activo");
 
@@ -1310,7 +1336,7 @@
 
       const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
       if (!esPdf) {
-        jsonMessage("mensajePerfil", "error", "Solo se admiten archivos PDF.");
+        mostrarMensajeDetalle("error", "Solo se admiten archivos PDF.");
         return;
       }
 
@@ -1319,7 +1345,7 @@
         file
       });
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-      limpiarMensaje("mensajePerfil");
+      limpiarMensajeDetalle();
     });
     document.getElementById("btnEliminarDesdeDetalleDocumentacion").addEventListener("click", function () {
       const doc = obtenerDocumentoSeleccionadoDetalle();
@@ -1333,7 +1359,7 @@
       if (!tieneArchivoActual && tieneArchivoPendiente) {
         detalleCambiosPendientes.delete(Number(doc.id));
         renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-        limpiarMensaje("mensajePerfil");
+        limpiarMensajeDetalle();
         return;
       }
 
@@ -1342,14 +1368,15 @@
 
       detalleCambiosPendientes.set(Number(doc.id), { tipo: "eliminar" });
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-      limpiarMensaje("mensajePerfil");
+      limpiarMensajeDetalle();
     });
     document.getElementById("btnGuardarDesdeDetalleDocumentacion").addEventListener("click", async function () {
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
       if (!tieneCambiosPendientesDetalle()) return;
 
-      limpiarMensaje("mensajePerfil");
+      limpiarMensajeDetalle();
       this.disabled = true;
+      document.getElementById("btnCerrarDetalleDocumentacion").disabled = true;
 
       try {
         const operaciones = [];
@@ -1406,13 +1433,18 @@
           throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
         }
 
-        jsonMessage("mensajePerfil", "ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+        mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
         await cargarResumenDocumentacion();
-        await abrirModalDetalleDocumentacion(detalleDocumentacionActual);
+        detalleCambiosPendientes = new Map();
+        actualizarAccionesDetalleDocumentacion();
+        setTimeout(() => {
+          cerrarModalDetalleDocumentacion();
+        }, 350);
       } catch (error) {
-        jsonMessage("mensajePerfil", "error", error.message || "No se pudieron guardar los cambios documentales.");
+        mostrarMensajeDetalle("error", error.message || "No se pudieron guardar los cambios documentales.");
       } finally {
         this.disabled = false;
+        document.getElementById("btnCerrarDetalleDocumentacion").disabled = false;
         actualizarAccionesDetalleDocumentacion();
       }
     });
