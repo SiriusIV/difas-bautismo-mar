@@ -1,7 +1,9 @@
 import { getUserSession } from "./_auth.js";
 import {
   construirEmailHtmlDocumentacionRemitida,
+  construirEmailHtmlDocumentacionRemitidaAgrupada,
   construirEmailTextoDocumentacionRemitida,
+  construirEmailTextoDocumentacionRemitidaAgrupada,
   enviarEmail,
   nombreVisibleAdmin
 } from "../_email.js";
@@ -27,6 +29,29 @@ function parsearIdPositivo(valor) {
 function normalizarEstadoDocumento(estado) {
   const valor = String(estado || "").trim().toUpperCase();
   return valor || "EN_REVISION";
+}
+
+function extraerKeyDesdeArchivoUrl(archivoUrl) {
+  const texto = limpiarTexto(archivoUrl);
+  if (!texto) return null;
+
+  try {
+    const base = texto.startsWith("http://") || texto.startsWith("https://")
+      ? texto
+      : `https://local${texto.startsWith("/") ? "" : "/"}${texto}`;
+    const url = new URL(base);
+    const key = limpiarTexto(url.searchParams.get("key"));
+    return key || null;
+  } catch {
+    return null;
+  }
+}
+
+async function borrarArchivoBucketSiExiste(env, archivoUrl) {
+  const key = extraerKeyDesdeArchivoUrl(archivoUrl);
+  if (!key || !env.DOCS_BUCKET) return false;
+  await env.DOCS_BUCKET.delete(key);
+  return true;
 }
 
 async function obtenerUsuarioSolicitante(env, userId) {
@@ -214,8 +239,8 @@ function construirResumenDocumentos(documentos, archivosActivos) {
 }
 
 function validarEntregas(entregas) {
-  if (!Array.isArray(entregas) || entregas.length === 0) {
-    return "Debes indicar la documentación a remitir.";
+  if (!Array.isArray(entregas)) {
+    return "Debes indicar la documentación a guardar.";
   }
 
   for (let i = 0; i < entregas.length; i++) {
@@ -233,6 +258,61 @@ function validarEntregas(entregas) {
   }
 
   return null;
+}
+
+function construirEntregasDesdeOperaciones(documentos, archivosExistentes, operaciones) {
+  const docsPorId = new Map((documentos || []).map((doc) => [Number(doc.id), doc]));
+  const archivosPorNombre = new Map((archivosExistentes || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+  const operacionesPorId = new Map();
+
+  (operaciones || []).forEach((item) => {
+    const documentoId = parsearIdPositivo(item?.documento_id);
+    if (!documentoId) return;
+    operacionesPorId.set(documentoId, {
+      accion: limpiarTexto(item?.accion).toLowerCase(),
+      archivo_url: limpiarTexto(item?.archivo_url)
+    });
+  });
+
+  const entregas = [];
+  for (const doc of documentos) {
+    const op = operacionesPorId.get(Number(doc.id));
+    const existente = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+
+    if (op?.accion === "eliminar") {
+      continue;
+    }
+
+    if (op?.accion === "subir") {
+      if (op.archivo_url) {
+        entregas.push({ documento_id: doc.id, archivo_url: op.archivo_url });
+      }
+      continue;
+    }
+
+    if (existente?.archivo_url) {
+      entregas.push({ documento_id: doc.id, archivo_url: existente.archivo_url });
+    }
+  }
+
+  return entregas;
+}
+
+function resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIds = []) {
+  const archivosPorNombre = new Map(
+    (archivosFinales || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+  );
+  const ids = new Set((cambiosIds || []).map((id) => Number(id)));
+
+  return (documentos || [])
+    .filter((doc) => ids.has(Number(doc.id)))
+    .map((doc) => {
+      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      return {
+        nombre: doc.nombre,
+        estado: calcularEstadoDocumento(doc, entrega)
+      };
+    });
 }
 
 export async function onRequestGet(context) {
@@ -323,16 +403,11 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const adminId = parsearIdPositivo(body?.admin_id);
-    const errorEntregas = validarEntregas(body?.entregas);
 
     if (!adminId) {
       return json({ ok: false, error: "Debes indicar un administrador válido." }, 400);
-    }
-
-    if (errorEntregas) {
-      return json({ ok: false, error: errorEntregas }, 400);
     }
 
     const admin = await obtenerAdmin(env, adminId);
@@ -350,15 +425,35 @@ export async function onRequestPost(context) {
       );
     }
 
-    const documentosPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
-    const entregas = body.entregas.map((item) => ({
-      documento_id: parsearIdPositivo(item.documento_id),
-      archivo_url: limpiarTexto(item.archivo_url)
-    }));
+    let expediente = await obtenerExpediente(env, usuario.id, adminId);
+    const archivosExistentes = await obtenerArchivosActivos(env, expediente?.id);
+    const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
+    const archivosPorNombre = new Map(archivosExistentes.map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+
+    let entregas = [];
+    let cambiosIds = [];
+
+    if (Array.isArray(body?.operaciones)) {
+      const operaciones = body.operaciones || [];
+      entregas = construirEntregasDesdeOperaciones(documentos, archivosExistentes, operaciones);
+      cambiosIds = operaciones
+        .map((item) => parsearIdPositivo(item?.documento_id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+    } else {
+      const errorEntregas = validarEntregas(body?.entregas);
+      if (errorEntregas) {
+        return json({ ok: false, error: errorEntregas }, 400);
+      }
+      entregas = (body.entregas || []).map((item) => ({
+        documento_id: parsearIdPositivo(item.documento_id),
+        archivo_url: limpiarTexto(item.archivo_url)
+      }));
+      cambiosIds = entregas.map((item) => Number(item.documento_id));
+    }
 
     const idsEntregados = new Set();
     for (const entrega of entregas) {
-      if (!documentosPorId.has(Number(entrega.documento_id))) {
+      if (!docsPorId.has(Number(entrega.documento_id))) {
         return json(
           { ok: false, error: "Se ha indicado un documento que no corresponde al administrador actual." },
           400
@@ -367,7 +462,7 @@ export async function onRequestPost(context) {
 
       if (idsEntregados.has(Number(entrega.documento_id))) {
         return json(
-          { ok: false, error: "No debes repetir documentos en la misma remisión." },
+          { ok: false, error: "No debes repetir documentos en la misma operación." },
           400
         );
       }
@@ -375,18 +470,50 @@ export async function onRequestPost(context) {
       idsEntregados.add(Number(entrega.documento_id));
     }
 
-    if (idsEntregados.size !== documentos.length) {
-      return json(
-        { ok: false, error: "Debes remitir todos los documentos exigidos por el administrador." },
-        400
-      );
+    const entregasDeseadasPorDocumento = new Map(entregas.map((item) => [Number(item.documento_id), item]));
+    const aDesactivar = [];
+    const aInsertar = [];
+    const cambiosRealesIds = new Set();
+
+    for (const doc of documentos) {
+      const existente = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      const deseada = entregasDeseadasPorDocumento.get(Number(doc.id)) || null;
+
+      if (!existente && !deseada) {
+        continue;
+      }
+
+      if (!existente && deseada) {
+        aInsertar.push({
+          documento: doc,
+          archivo_url: deseada.archivo_url
+        });
+        cambiosRealesIds.add(Number(doc.id));
+        continue;
+      }
+
+      if (existente && !deseada) {
+        aDesactivar.push(existente);
+        cambiosRealesIds.add(Number(doc.id));
+        continue;
+      }
+
+      if (existente && deseada) {
+        if (limpiarTexto(existente.archivo_url) !== limpiarTexto(deseada.archivo_url)) {
+          aDesactivar.push(existente);
+          aInsertar.push({
+            documento: doc,
+            archivo_url: deseada.archivo_url
+          });
+          cambiosRealesIds.add(Number(doc.id));
+        }
+      }
     }
 
-    const versionAportada = documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
-    let expediente = await obtenerExpediente(env, usuario.id, adminId);
+    const necesitaExpediente = !!expediente || entregas.length > 0 || aDesactivar.length > 0 || aInsertar.length > 0;
 
-    if (!expediente) {
-      const insert = await env.DB.prepare(`
+    if (!expediente && necesitaExpediente) {
+      await env.DB.prepare(`
         INSERT INTO centro_admin_documentacion (
           centro_usuario_id,
           admin_id,
@@ -397,126 +524,131 @@ export async function onRequestPost(context) {
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, 'EN_REVISION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, 0, 'NO_INICIADO', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).bind(
         usuario.id,
         adminId,
-        versionRequerida,
-        versionAportada
+        versionRequerida
       ).run();
 
       expediente = await obtenerExpediente(env, usuario.id, adminId);
+    }
 
-      if (!insert?.meta?.last_row_id || !expediente) {
-        return json({ ok: false, error: "No se pudo crear el expediente documental." }, 500);
+    if (expediente) {
+      for (const archivo of aDesactivar) {
+        await env.DB.prepare(`
+          UPDATE centro_admin_documentacion_archivos
+          SET activo = 0
+          WHERE id = ?
+        `).bind(archivo.id).run();
       }
-    } else {
+
+      for (const item of aInsertar) {
+        await env.DB.prepare(`
+          INSERT INTO centro_admin_documentacion_archivos (
+            documentacion_id,
+            nombre_documento,
+            archivo_url,
+            version_documental,
+            estado,
+            fecha_validacion,
+            validado_por_admin_id,
+            observaciones_admin,
+            fecha_subida,
+            activo
+          )
+          VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
+        `).bind(
+          expediente.id,
+          item.documento.nombre,
+          item.archivo_url,
+          Number(item.documento.version_documental || 0)
+        ).run();
+      }
+
+      for (const archivo of aDesactivar) {
+        await borrarArchivoBucketSiExiste(env, archivo.archivo_url);
+      }
+    }
+
+    const archivosFinales = expediente ? await obtenerArchivosActivos(env, expediente.id) : [];
+    const estadoExpediente = calcularEstadoEfectivo(documentos, archivosFinales);
+    const versionAportada = archivosFinales.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
+
+    if (expediente) {
       await env.DB.prepare(`
         UPDATE centro_admin_documentacion
         SET
           version_requerida = ?,
           version_aportada = ?,
-          estado = 'EN_REVISION',
-          fecha_ultima_entrega = CURRENT_TIMESTAMP,
-          fecha_validacion = NULL,
-          validado_por_admin_id = NULL,
-          observaciones_admin = NULL
+          estado = ?,
+          fecha_ultima_entrega = CASE WHEN ? > 0 THEN CURRENT_TIMESTAMP ELSE fecha_ultima_entrega END,
+          fecha_validacion = CASE WHEN ? = 'VALIDADA' THEN COALESCE(fecha_validacion, CURRENT_TIMESTAMP) ELSE NULL END,
+          validado_por_admin_id = CASE WHEN ? = 'VALIDADA' THEN validado_por_admin_id ELSE NULL END,
+          observaciones_admin = CASE WHEN ? = 'VALIDADA' THEN observaciones_admin ELSE NULL END,
+          updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
         versionRequerida,
         versionAportada,
+        estadoExpediente,
+        cambiosRealesIds.size,
+        estadoExpediente,
+        estadoExpediente,
+        estadoExpediente,
         expediente.id
       ).run();
 
       expediente = await obtenerExpediente(env, usuario.id, adminId);
     }
 
-    await env.DB.prepare(`
-      UPDATE centro_admin_documentacion_archivos
-      SET activo = 0
-      WHERE documentacion_id = ?
-    `).bind(expediente.id).run();
+    const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, Array.from(cambiosRealesIds));
+    let notificacionAdmin = { ok: false, skipped: true, error: "" };
 
-    const inserts = entregas.map((entrega) => {
-      const doc = documentosPorId.get(Number(entrega.documento_id));
-
-      return env.DB.prepare(`
-        INSERT INTO centro_admin_documentacion_archivos (
-          documentacion_id,
-          nombre_documento,
-          archivo_url,
-          version_documental,
-          estado,
-          fecha_validacion,
-          validado_por_admin_id,
-          observaciones_admin,
-          fecha_subida,
-          activo
-        )
-        VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
-      `).bind(
-        expediente.id,
-        doc.nombre,
-        entrega.archivo_url,
-        Number(doc.version_documental || 0)
-      );
-    });
-
-    await env.DB.batch(inserts);
-
-    const archivosActivos = await obtenerArchivosActivos(env, expediente.id);
-    const estadoExpediente = calcularEstadoEfectivo(documentos, archivosActivos);
-
-    await env.DB.prepare(`
-      UPDATE centro_admin_documentacion
-      SET
-        estado = ?,
-        fecha_validacion = CASE WHEN ? = 'VALIDADA' THEN CURRENT_TIMESTAMP ELSE NULL END,
-        validado_por_admin_id = NULL,
-        observaciones_admin = NULL
-      WHERE id = ?
-    `).bind(
-      estadoExpediente,
-      estadoExpediente,
-      expediente.id
-    ).run();
-
-    const notificacionAdmin = await enviarEmail(env, {
-      to: admin.email || "",
-      subject: `[Documentación] Remisión pendiente de revisión - ${usuario.centro || "Centro"}`,
-      text: construirEmailTextoDocumentacionRemitida({
+    if (cambiosCorreo.length > 0) {
+      const payloadEmail = {
         admin,
         centro: usuario,
-        versionRequerida
-      }),
-      html: construirEmailHtmlDocumentacionRemitida({
-        admin,
-        centro: usuario,
-        versionRequerida
-      })
-    });
+        versionRequerida,
+        cambios: cambiosCorreo
+      };
 
-    if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
-      console.error("No se pudo enviar el correo al administrador tras la remisión documental.", {
-        admin_id: admin.id,
-        admin_nombre: nombreVisibleAdmin(admin),
-        centro_usuario_id: usuario.id,
-        error: notificacionAdmin.error || ""
+      notificacionAdmin = await enviarEmail(env, {
+        to: admin.email || "",
+        subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
+        text: cambiosCorreo.length > 1
+          ? construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail)
+          : construirEmailTextoDocumentacionRemitida(payloadEmail),
+        html: cambiosCorreo.length > 1
+          ? construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
+          : construirEmailHtmlDocumentacionRemitida(payloadEmail)
       });
+
+      if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
+        console.error("No se pudo enviar el correo al administrador tras guardar cambios documentales.", {
+          admin_id: admin.id,
+          admin_nombre: nombreVisibleAdmin(admin),
+          centro_usuario_id: usuario.id,
+          error: notificacionAdmin.error || ""
+        });
+      }
     }
 
     return json({
       ok: true,
-      mensaje: "Documentación remitida correctamente. Queda pendiente de revisión por el administrador.",
+      mensaje: cambiosRealesIds.size > 0
+        ? "Cambios documentales guardados correctamente."
+        : "No había cambios pendientes para guardar.",
       documentacion: {
-        id: expediente.id,
+        id: expediente?.id || null,
         admin_id: adminId,
         version_requerida: versionRequerida,
         version_aportada: versionAportada,
         estado: estadoExpediente,
         fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
-        archivos: archivosActivos
+        archivos: archivosFinales
       },
+      cambios_documentales: cambiosCorreo,
       notificacion_admin: {
         enviada: !!notificacionAdmin.ok,
         omitida: !!notificacionAdmin.skipped,
@@ -527,7 +659,7 @@ export async function onRequestPost(context) {
     return json(
       {
         ok: false,
-        error: "Error al remitir la documentación al administrador.",
+        error: "Error al guardar la documentación del administrador.",
         detalle: error.message
       },
       500
