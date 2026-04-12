@@ -70,8 +70,7 @@
     .btn-guardar-icono:hover { background: var(--primary-dark); }
     .btn-guardar-icono svg { width: 18px; height: 18px; display: block; }
     .tabla-docs-wrap { width: 100%; overflow-x: auto; }
-    .tabla-docs-acciones { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .tabla-docs { width: 100%; border-collapse: collapse; min-width: 760px; }
+    .tabla-docs { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-docs th, .tabla-docs td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-docs td:first-child, .tabla-docs th:first-child { padding-left: 12px; }
@@ -86,10 +85,7 @@
     button.estado-pill-doc { cursor: pointer; }
     .admin-doc-nombre { font-weight: 700; color: #243648; }
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
-    .td-selector { width: 54px; text-align: center !important; }
     .td-centro { min-width: 220px; }
-    .fila-documentacion-seleccionada { background: #f6faff; }
-    .radio-tabla-doc { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
     .preview-imagen-wrap { position: relative; width: 100%; }
     .preview-imagen { width: 100%; min-height: 324px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
@@ -249,15 +245,12 @@
           <p>Aquí puedes ver qué organizadores tienen documentación común activa, el estado actual de tus remisiones y acceder directamente al trámite documental cuando necesites completarlo o actualizarlo.</p>
         </div>
       </div>
-      <div class="tabla-docs-acciones">
-        <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionSeleccionada" disabled>Gestionar documentación</button>
-      </div>
       <div class="tabla-docs-wrap">
         <table class="tabla-docs">
           <thead>
             <tr>
-              <th class="td-selector"></th>
               <th>Organizador</th>
+              <th>Documentos</th>
               <th>Estado</th>
               <th>Última entrega</th>
             </tr>
@@ -351,7 +344,6 @@
     let navegacionPendiente = null;
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
-    let adminDocumentacionSeleccionado = null;
     let detalleDocumentacionActual = null;
 
     function jsonMessage(id, tipo, texto) {
@@ -395,10 +387,6 @@
         hour: "2-digit",
         minute: "2-digit"
       });
-    }
-
-    function obtenerAdminSeleccionadoResumen() {
-      return (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(adminDocumentacionSeleccionado)) || null;
     }
 
     function estadoDetalleDocumento(expedienteEstado, documento) {
@@ -485,13 +473,11 @@
       const bloque = document.getElementById("bloqueEstadoDocumentacion");
       const body = document.getElementById("tablaEstadoDocumentacionBody");
       const vacio = document.getElementById("estadoVacioDocumentacionPerfil");
-      const btnGestionar = document.getElementById("btnGestionarDocumentacionSeleccionada");
 
       if (!esSolicitante()) {
         bloque.classList.remove("activo");
         body.innerHTML = "";
         vacio.classList.add("oculto");
-        btnGestionar.disabled = true;
         return;
       }
 
@@ -500,43 +486,27 @@
 
       if (!Array.isArray(resumenDocumentacion) || !resumenDocumentacion.length) {
         vacio.classList.remove("oculto");
-        adminDocumentacionSeleccionado = null;
-        btnGestionar.disabled = true;
         return;
       }
 
       vacio.classList.add("oculto");
-      const idsDisponibles = resumenDocumentacion
-        .map((item) => Number.parseInt(item.admin_id || "", 10))
-        .filter((id) => Number.isInteger(id) && id > 0);
-
-      if (!idsDisponibles.includes(adminDocumentacionSeleccionado)) {
-        adminDocumentacionSeleccionado = idsDisponibles[0] || null;
-      }
 
       resumenDocumentacion.forEach((item) => {
         const tr = document.createElement("tr");
         const estado = String(item.estado_efectivo || "").toUpperCase();
         const adminId = Number(item.admin_id || 0);
-        const seleccionado = adminId === adminDocumentacionSeleccionado;
-
-        if (seleccionado) {
-          tr.classList.add("fila-documentacion-seleccionada");
-        }
 
         tr.innerHTML = `
-          <td class="td-selector"><input type="radio" class="radio-tabla-doc" name="admin_documentacion_selector" value="${adminId}" ${seleccionado ? "checked" : ""}></td>
           <td class="td-centro">
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
+          <td>${Number(item.total_documentos || 0)}</td>
           <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
         `;
         body.appendChild(tr);
       });
-
-      btnGestionar.disabled = !Number.isInteger(adminDocumentacionSeleccionado) || adminDocumentacionSeleccionado <= 0;
     }
 
     function actualizarPreviewImagen() {
@@ -1153,25 +1123,12 @@
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
-      const selector = event.target.closest(".radio-tabla-doc");
-      if (selector) {
-        const adminId = Number.parseInt(selector.value || "", 10);
-        if (!Number.isInteger(adminId) || adminId <= 0) return;
-        adminDocumentacionSeleccionado = adminId;
-        renderizarResumenDocumentacion();
-        return;
-      }
-
       const btnEstado = event.target.closest("[data-estado-documentacion]");
       if (btnEstado) {
         const adminId = Number.parseInt(btnEstado.dataset.estadoDocumentacion || "", 10);
         if (!Number.isInteger(adminId) || adminId <= 0) return;
         abrirModalDetalleDocumentacion(adminId);
       }
-    });
-    document.getElementById("btnGestionarDocumentacionSeleccionada").addEventListener("click", function () {
-      if (!Number.isInteger(adminDocumentacionSeleccionado) || adminDocumentacionSeleccionado <= 0) return;
-      location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(adminDocumentacionSeleccionado)}`;
     });
     document.getElementById("btnCerrarDetalleDocumentacion").addEventListener("click", cerrarModalDetalleDocumentacion);
     document.getElementById("btnGestionarDesdeDetalleDocumentacion").addEventListener("click", function () {
