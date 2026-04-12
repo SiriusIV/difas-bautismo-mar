@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -49,6 +49,9 @@
     .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: 760px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     #filaSolicitanteEmailTelefono { grid-template-columns: 1.1fr 0.8fr 0.6fr; }
+    #filaSolicitanteCuentaCentro { grid-template-columns: 0.7fr 1.15fr 0.9fr; align-items: end; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+    #filaSolicitanteResponsableDocumento { grid-template-columns: 1.2fr 0.9fr; }
+    #filaSolicitantePassword { justify-content: flex-end; margin-top: 2px; }
     .campo-linea { margin-bottom: 10px; }
     .acciones-admin-extra { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
     .oculto { display: none !important; }
@@ -161,35 +164,56 @@
             <div class="campo-linea"><label for="nombre">Unidad (UCO)</label><input type="text" id="nombre" name="nombre"></div>
           </div>
           <div class="fila oculto" id="filaAdminNombrePublicoEmail">
-            <div class="campo-linea"><label for="nombrePublicoAdmin">Nombre público</label><input type="text" id="nombrePublicoAdmin" name="nombrePublicoAdmin"><div class="nota">Este nombre es el que verán los centros y usuarios cuando deban identificar al organizador de las actividades.</div></div>
-            <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"><div class="nota">Este correo se utilizará para el inicio de sesión y para las comunicaciones asociadas a la cuenta.</div></div>
+            <div class="campo-linea"><label for="nombrePublicoAdmin">Nombre pÃºblico</label><input type="text" id="nombrePublicoAdmin" name="nombrePublicoAdmin"><div class="nota">Este nombre es el que verÃ¡n los centros y usuarios cuando deban identificar al organizador de las actividades.</div></div>
+            <div class="campo-linea"><label for="emailAdmin">Correo electrÃ³nico</label><input type="email" id="emailAdmin" name="emailAdmin"><div class="nota">Este correo se utilizarÃ¡ para el inicio de sesiÃ³n y para las comunicaciones asociadas a la cuenta.</div></div>
           </div>
           <div class="fila oculto" id="filaAdminTelefono">
-            <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
+            <div class="campo-linea"><label for="telefonoAdmin">TelÃ©fono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
             <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
           </div>
           <div class="campo-linea oculto" id="campoPasswordAdmin">
             <div class="password-linea">
               <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-              <button type="button" class="btn btn-suave" id="btnCambiarPasswordAdmin">Cambiar contraseña</button>
+              <button type="button" class="btn btn-suave" id="btnCambiarPasswordAdmin">Cambiar contraseÃ±a</button>
             </div>
             <div class="acciones-admin-extra">
-              <button type="button" class="btn btn-suave" id="btnDocumentacionAdmin">Documentación requerida</button>
+              <button type="button" class="btn btn-suave" id="btnDocumentacionAdmin">DocumentaciÃ³n requerida</button>
             </div>
           </div>
           <div class="fila oculto" id="filaSuperadminNombreEmail"><div><label for="nombreSuperadmin">Nombre</label><input type="text" id="nombreSuperadmin" name="nombreSuperadmin"></div><div><label for="emailSuperadmin">Email</label><input type="email" id="emailSuperadmin" name="emailSuperadmin"></div></div>
-          <div class="fila oculto" id="filaSuperadminTelefono"><div><label for="telefonoSuperadmin">Teléfono de contacto</label><input type="tel" id="telefonoSuperadmin" name="telefonoSuperadmin"></div></div>
+          <div class="fila oculto" id="filaSuperadminTelefono"><div><label for="telefonoSuperadmin">TelÃ©fono de contacto</label><input type="tel" id="telefonoSuperadmin" name="telefonoSuperadmin"></div></div>
           <div class="fila oculto" id="filaSolicitanteCuentaCentro">
             <div class="campo-linea">
               <label for="cuentaSolicitante">Cuenta</label>
               <div id="cuentaSolicitante" class="campo-linea-valor-fijo">Usuario</div>
             </div>
             <div class="campo-linea">
+              <label for="emailSolicitante">Correo electr&oacute;nico del centro<span class="campo-obligatorio">*</span></label>
+              <input type="email" id="emailSolicitante" name="emailSolicitante">
+            </div>
+            <div class="campo-linea">
+              <label>Contrase&ntilde;a</label>
+              <div class="password-linea">
+                <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
+                <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contrase&ntilde;a</button>
+              </div>
+            </div>
+          </div>
+          <div class="fila oculto" id="filaSolicitanteEmailTelefono">
+            <div class="campo-linea">
               <label for="centroSolicitante">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
                 <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
-                <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button>
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Informaci&oacute;n sobre centro o instituci&oacute;n" title="Informaci&oacute;n">i</button>
               </div>
+            </div>
+            <div class="campo-linea">
+              <label for="localidadSolicitante">Localidad<span class="campo-obligatorio">*</span></label>
+              <input type="text" id="localidadSolicitante" name="localidadSolicitante">
+            </div>
+            <div class="campo-linea">
+              <label for="telefonoSolicitante">Tel&eacute;fono del centro<span class="campo-obligatorio">*</span></label>
+              <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
             </div>
           </div>
           <div class="fila oculto" id="filaSolicitanteResponsableDocumento">
@@ -197,7 +221,7 @@
               <label for="responsableLegalSolicitante">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
                 <input type="text" id="responsableLegalSolicitante" name="responsableLegalSolicitante">
-                <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o titular" title="Información">i</button>
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Informaci&oacute;n sobre responsable legal o titular" title="Informaci&oacute;n">i</button>
               </div>
             </div>
             <div class="campo-linea">
@@ -213,25 +237,7 @@
               </div>
             </div>
           </div>
-          <div class="fila oculto" id="filaSolicitanteEmailTelefono">
-            <div class="campo-linea">
-              <label for="emailSolicitante">Correo electrónico del centro<span class="campo-obligatorio">*</span></label>
-              <input type="email" id="emailSolicitante" name="emailSolicitante">
-            </div>
-            <div class="campo-linea">
-              <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
-              <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
-            </div>
-            <div class="campo-linea">
-              <label for="localidadSolicitante">Localidad<span class="campo-obligatorio">*</span></label>
-              <input type="text" id="localidadSolicitante" name="localidadSolicitante">
-            </div>
-          </div>
           <div class="fila-password-solicitante oculto" id="filaSolicitantePassword">
-            <div class="password-linea">
-              <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-              <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
-            </div>
             <div class="nota-obligatorios">* Campos obligatorios</div>
           </div>
           <input type="hidden" id="logo_url" name="logo_url">
@@ -241,8 +247,8 @@
     <div class="bloque bloque-documentacion-estado" id="bloqueEstadoDocumentacion">
       <div class="bloque-head-documentacion">
         <div>
-          <h3>Estado de documentación por organizador</h3>
-          <p>Aquí puedes ver qué organizadores tienen documentación común activa, el estado actual de tus remisiones y acceder directamente al trámite documental cuando necesites completarlo o actualizarlo.</p>
+          <h3>Estado de documentaciÃ³n por organizador</h3>
+          <p>AquÃ­ puedes ver quÃ© organizadores tienen documentaciÃ³n comÃºn activa, el estado actual de tus remisiones y acceder directamente al trÃ¡mite documental cuando necesites completarlo o actualizarlo.</p>
         </div>
       </div>
       <div class="tabla-docs-wrap">
@@ -252,20 +258,20 @@
               <th>Organizador</th>
               <th>Documentos</th>
               <th>Estado</th>
-              <th>Última entrega</th>
+              <th>Ãšltima entrega</th>
             </tr>
           </thead>
           <tbody id="tablaEstadoDocumentacionBody"></tbody>
         </table>
       </div>
-      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentación activa para mostrar.</div>
+      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentaciÃ³n activa para mostrar.</div>
     </div>
   </div>
 
   <div id="modalCambiosPendientes" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Cambios sin guardar</h3>
-      <p>Hay cambios pendientes. Si sales ahora, se perderán. Puedes guardar antes de continuar o salir sin guardar.</p>
+      <p>Hay cambios pendientes. Si sales ahora, se perderÃ¡n. Puedes guardar antes de continuar o salir sin guardar.</p>
       <div class="modal-acciones">
         <button type="button" class="btn btn-suave" id="btnModalSalirSinGuardar">Salir sin guardar</button>
         <button type="button" class="btn" id="btnModalGuardarYSalir">Guardar cambios</button>
@@ -275,9 +281,9 @@
 
   <div id="modalPasswordActual" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Validar contraseña actual</h3>
+      <h3>Validar contraseÃ±a actual</h3>
       <div class="campo-linea">
-        <label for="modal_password_actual">Contraseña actual</label>
+        <label for="modal_password_actual">ContraseÃ±a actual</label>
         <input type="password" id="modal_password_actual" autocomplete="current-password">
       </div>
       <div class="modal-acciones">
@@ -288,13 +294,13 @@
 
   <div id="modalPasswordNueva" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Cambiar contraseña</h3>
+      <h3>Cambiar contraseÃ±a</h3>
       <div class="campo-linea">
-        <label for="modal_password_nueva">Nueva contraseña</label>
+        <label for="modal_password_nueva">Nueva contraseÃ±a</label>
         <input type="password" id="modal_password_nueva" autocomplete="new-password">
       </div>
       <div class="campo-linea">
-        <label for="modal_password_confirmacion">Confirmar nueva contraseña</label>
+        <label for="modal_password_confirmacion">Confirmar nueva contraseÃ±a</label>
         <input type="password" id="modal_password_confirmacion" autocomplete="new-password">
       </div>
       <div class="modal-acciones">
@@ -305,14 +311,14 @@
 
   <div id="modalAyudaCampo" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3 id="tituloAyudaCampo">Información</h3>
+      <h3 id="tituloAyudaCampo">InformaciÃ³n</h3>
       <p id="textoAyudaCampo"></p>
     </div>
   </div>
 
   <div id="modalDetalleDocumentacion" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-detalle-docs">
-      <h3>Detalle de la documentación</h3>
+      <h3>Detalle de la documentaciÃ³n</h3>
       <div class="detalle-docs-cabecera">
         <div class="admin-doc-nombre" id="detalleDocumentacionAdmin">Organizador</div>
         <div class="admin-doc-meta" id="detalleDocumentacionMeta"></div>
@@ -323,7 +329,7 @@
           <thead>
             <tr>
               <th>Documento</th>
-              <th>Versión</th>
+              <th>VersiÃ³n</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -333,7 +339,7 @@
       <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
       <div class="modal-acciones">
         <button type="button" class="btn btn-suave" id="btnCerrarDetalleDocumentacion">Cerrar</button>
-        <button type="button" class="btn" id="btnGestionarDesdeDetalleDocumentacion">Gestionar documentación</button>
+        <button type="button" class="btn" id="btnGestionarDesdeDetalleDocumentacion">Gestionar documentaciÃ³n</button>
       </div>
     </div>
   </div>
@@ -369,7 +375,7 @@
     function etiquetaEstadoDocumentacion(estado) {
       const valor = String(estado || "").toUpperCase();
       if (valor === "VALIDADA") return "Validada";
-      if (valor === "EN_REVISION") return "En revisión";
+      if (valor === "EN_REVISION") return "En revisiÃ³n";
       if (valor === "RECHAZADA") return "Rechazada";
       if (valor === "DESACTUALIZADA") return "Desactualizada";
       if (valor === "PENDIENTE") return "Pendiente";
@@ -863,11 +869,11 @@
       }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return { ok: false, error: "El correo electrónico no tiene un formato válido." };
+        return { ok: false, error: "El correo electrÃ³nico no tiene un formato vÃ¡lido." };
       }
 
       if (!esTelefonoValido(telefono)) {
-        return { ok: false, error: "El teléfono del centro no tiene un formato válido." };
+        return { ok: false, error: "El telÃ©fono del centro no tiene un formato vÃ¡lido." };
       }
 
       if (!esDocumentoValido(tipoDocumento, documento)) {
@@ -1027,7 +1033,7 @@
       const passwordActual = document.getElementById("modal_password_actual").value.trim();
 
       if (!passwordActual) {
-        jsonMessage("mensajePassword", "error", "Introduce la contraseña actual.");
+        jsonMessage("mensajePassword", "error", "Introduce la contraseÃ±a actual.");
         return;
       }
 
@@ -1044,7 +1050,7 @@
 
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          jsonMessage("mensajePassword", "error", data?.error || "La contraseña actual no es correcta.");
+          jsonMessage("mensajePassword", "error", data?.error || "La contraseÃ±a actual no es correcta.");
           return;
         }
 
@@ -1055,7 +1061,7 @@
           document.getElementById("modal_password_nueva").focus();
         }, 0);
       } catch (error) {
-        jsonMessage("mensajePassword", "error", error.message || "No se pudo validar la contraseña actual.");
+        jsonMessage("mensajePassword", "error", error.message || "No se pudo validar la contraseÃ±a actual.");
       }
     }
 
@@ -1065,18 +1071,18 @@
       const confirmacion = document.getElementById("modal_password_confirmacion").value.trim();
 
       if (!passwordActualValidada) {
-        jsonMessage("mensajePassword", "error", "Debes validar antes la contraseña actual.");
+        jsonMessage("mensajePassword", "error", "Debes validar antes la contraseÃ±a actual.");
         cerrarModalPasswordNueva();
         return;
       }
 
       if (!nueva || !confirmacion) {
-        jsonMessage("mensajePassword", "error", "Completa la nueva contraseña y su confirmación.");
+        jsonMessage("mensajePassword", "error", "Completa la nueva contraseÃ±a y su confirmaciÃ³n.");
         return;
       }
 
       if (nueva !== confirmacion) {
-        jsonMessage("mensajePassword", "error", "La nueva contraseña y su confirmación no coinciden.");
+        jsonMessage("mensajePassword", "error", "La nueva contraseÃ±a y su confirmaciÃ³n no coinciden.");
         return;
       }
 
@@ -1093,14 +1099,14 @@
 
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          jsonMessage("mensajePassword", "error", data?.error || "No se pudo actualizar la contraseña.");
+          jsonMessage("mensajePassword", "error", data?.error || "No se pudo actualizar la contraseÃ±a.");
           return;
         }
 
         cerrarModalPasswordNueva();
-        jsonMessage("mensajePassword", "ok", data.mensaje || "Contraseña actualizada correctamente.");
+        jsonMessage("mensajePassword", "ok", data.mensaje || "ContraseÃ±a actualizada correctamente.");
       } catch (error) {
-        jsonMessage("mensajePassword", "error", error.message || "No se pudo actualizar la contraseña.");
+        jsonMessage("mensajePassword", "error", error.message || "No se pudo actualizar la contraseÃ±a.");
       }
     }
 
@@ -1138,13 +1144,13 @@
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
         "Nombre del centro / entidad",
-        "Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
+        "Indique el nombre oficial del centro o instituciÃ³n titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
       );
     });
     document.getElementById("btnAyudaResponsable").addEventListener("click", () => {
       abrirAyudaCampo(
         "Responsable legal / entidad titular",
-        "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
+        "Indique la persona fÃ­sica o jurÃ­dica que actÃºa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona fÃ­sica, una sociedad, una fundaciÃ³n, una empresa u otra entidad jurÃ­dica titular del centro o instituciÃ³n."
       );
     });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
@@ -1173,3 +1179,4 @@
   </script>
 </body>
 </html>
+
