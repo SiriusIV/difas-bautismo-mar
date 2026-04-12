@@ -83,6 +83,7 @@
     .estado-pill-doc.PENDIENTE,
     .estado-pill-doc.DESACTUALIZADA { color: #8a5a00; background: #fff8eb; border-color: #f0d9a7; }
     .estado-pill-doc.RECHAZADA { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    button.estado-pill-doc { cursor: pointer; }
     .admin-doc-nombre { font-weight: 700; color: #243648; }
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .td-selector { width: 54px; text-align: center !important; }
@@ -109,6 +110,15 @@
     .modal h3 { margin: 0 0 10px; font-size: 20px; color: var(--brand); }
     .modal p { margin: 0; font-size: 13px; line-height: 1.6; color: #445261; }
     .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .modal-detalle-docs { max-width: 860px; }
+    .detalle-docs-cabecera { margin-bottom: 12px; }
+    .detalle-docs-cabecera .admin-doc-nombre { font-size: 18px; }
+    .detalle-docs-cabecera .admin-doc-meta { font-size: 12px; }
+    .tabla-detalle-docs-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
+    .tabla-detalle-docs { width: 100%; border-collapse: collapse; min-width: 560px; }
+    .tabla-detalle-docs th, .tabla-detalle-docs td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-detalle-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-detalle-docs tr:last-child td { border-bottom: none; }
     .cargando { opacity: 0.7; pointer-events: none; }
     @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
@@ -248,8 +258,6 @@
             <tr>
               <th class="td-selector"></th>
               <th>Organizador</th>
-              <th>Versión requerida</th>
-              <th>Versión aportada</th>
               <th>Estado</th>
               <th>Última entrega</th>
             </tr>
@@ -309,6 +317,34 @@
     </div>
   </div>
 
+  <div id="modalDetalleDocumentacion" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-detalle-docs">
+      <h3>Detalle de la documentación</h3>
+      <div class="detalle-docs-cabecera">
+        <div class="admin-doc-nombre" id="detalleDocumentacionAdmin">Organizador</div>
+        <div class="admin-doc-meta" id="detalleDocumentacionMeta"></div>
+      </div>
+      <p id="detalleDocumentacionResumen"></p>
+      <div class="tabla-detalle-docs-wrap">
+        <table class="tabla-detalle-docs">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Versión</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="detalleDocumentacionBody"></tbody>
+        </table>
+      </div>
+      <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCerrarDetalleDocumentacion">Cerrar</button>
+        <button type="button" class="btn" id="btnGestionarDesdeDetalleDocumentacion">Gestionar documentación</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let perfilOriginal = null;
     let rolActual = "";
@@ -316,6 +352,7 @@
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
     let adminDocumentacionSeleccionado = null;
+    let detalleDocumentacionActual = null;
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
@@ -358,6 +395,81 @@
         hour: "2-digit",
         minute: "2-digit"
       });
+    }
+
+    function obtenerAdminSeleccionadoResumen() {
+      return (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(adminDocumentacionSeleccionado)) || null;
+    }
+
+    function estadoDetalleDocumento(expedienteEstado, documento) {
+      if (!documento?.entrega_archivo_url) return "PENDIENTE";
+      return String(expedienteEstado || "EN_REVISION").toUpperCase();
+    }
+
+    function cerrarModalDetalleDocumentacion() {
+      document.getElementById("modalDetalleDocumentacion").classList.remove("activo");
+    }
+
+    async function abrirModalDetalleDocumentacion(adminId) {
+      if (!Number.isInteger(adminId) || adminId <= 0) return;
+
+      const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(adminId)) || null;
+      const adminNombre = resumen?.admin_nombre_publico || resumen?.admin_nombre || "Organizador";
+      const adminMeta = resumen?.admin_localidad || "";
+      const body = document.getElementById("detalleDocumentacionBody");
+      const vacio = document.getElementById("detalleDocumentacionVacio");
+
+      document.getElementById("detalleDocumentacionAdmin").textContent = adminNombre;
+      document.getElementById("detalleDocumentacionMeta").textContent = adminMeta;
+      document.getElementById("detalleDocumentacionResumen").textContent = "Cargando detalle documental...";
+      body.innerHTML = "";
+      vacio.classList.add("oculto");
+      detalleDocumentacionActual = adminId;
+      document.getElementById("modalDetalleDocumentacion").classList.add("activo");
+
+      try {
+        const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminId)}`, {
+          credentials: "include"
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          document.getElementById("detalleDocumentacionResumen").textContent = data?.error || "No se pudo cargar el detalle documental.";
+          vacio.classList.remove("oculto");
+          return;
+        }
+
+        const adminVisible = data?.admin?.nombre_publico || data?.admin?.nombre || adminNombre;
+        const localidad = data?.admin?.localidad || "";
+        const estadoExpediente = String(data?.expediente?.estado_efectivo || "PENDIENTE").toUpperCase();
+        const versionRequerida = Number(data?.version_requerida || 0);
+        const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
+
+        document.getElementById("detalleDocumentacionAdmin").textContent = adminVisible;
+        document.getElementById("detalleDocumentacionMeta").textContent = localidad;
+        document.getElementById("detalleDocumentacionResumen").textContent = `Estado conjunto del paquete documental: ${etiquetaEstadoDocumentacion(estadoExpediente)}.`;
+        body.innerHTML = "";
+
+        if (!documentos.length) {
+          vacio.classList.remove("oculto");
+          return;
+        }
+
+        vacio.classList.add("oculto");
+        documentos.forEach((doc) => {
+          const tr = document.createElement("tr");
+          const estadoDoc = estadoDetalleDocumento(estadoExpediente, doc);
+          tr.innerHTML = `
+            <td>${doc.nombre || "Documento"}</td>
+            <td>${versionRequerida > 0 ? versionRequerida : "-"}</td>
+            <td><span class="estado-pill-doc ${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</span></td>
+          `;
+          body.appendChild(tr);
+        });
+      } catch (_) {
+        document.getElementById("detalleDocumentacionResumen").textContent = "No se pudo cargar el detalle documental.";
+        vacio.classList.remove("oculto");
+      }
     }
 
     function esAdmin() { return rolActual === "ADMIN"; }
@@ -405,7 +517,6 @@
       resumenDocumentacion.forEach((item) => {
         const tr = document.createElement("tr");
         const estado = String(item.estado_efectivo || "").toUpperCase();
-        const versionAportada = Number(item.version_aportada || 0);
         const adminId = Number(item.admin_id || 0);
         const seleccionado = adminId === adminDocumentacionSeleccionado;
 
@@ -419,9 +530,7 @@
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
-          <td>${Number(item.version_requerida || 0)}</td>
-          <td>${versionAportada > 0 ? versionAportada : "Sin entrega"}</td>
-          <td><span class="estado-pill-doc ${estado}">${etiquetaEstadoDocumentacion(estado)}</span></td>
+          <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
         `;
         body.appendChild(tr);
@@ -1045,15 +1154,29 @@
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
       const selector = event.target.closest(".radio-tabla-doc");
-      if (!selector) return;
-      const adminId = Number.parseInt(selector.value || "", 10);
-      if (!Number.isInteger(adminId) || adminId <= 0) return;
-      adminDocumentacionSeleccionado = adminId;
-      renderizarResumenDocumentacion();
+      if (selector) {
+        const adminId = Number.parseInt(selector.value || "", 10);
+        if (!Number.isInteger(adminId) || adminId <= 0) return;
+        adminDocumentacionSeleccionado = adminId;
+        renderizarResumenDocumentacion();
+        return;
+      }
+
+      const btnEstado = event.target.closest("[data-estado-documentacion]");
+      if (btnEstado) {
+        const adminId = Number.parseInt(btnEstado.dataset.estadoDocumentacion || "", 10);
+        if (!Number.isInteger(adminId) || adminId <= 0) return;
+        abrirModalDetalleDocumentacion(adminId);
+      }
     });
     document.getElementById("btnGestionarDocumentacionSeleccionada").addEventListener("click", function () {
       if (!Number.isInteger(adminDocumentacionSeleccionado) || adminDocumentacionSeleccionado <= 0) return;
       location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(adminDocumentacionSeleccionado)}`;
+    });
+    document.getElementById("btnCerrarDetalleDocumentacion").addEventListener("click", cerrarModalDetalleDocumentacion);
+    document.getElementById("btnGestionarDesdeDetalleDocumentacion").addEventListener("click", function () {
+      if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
+      location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(detalleDocumentacionActual)}`;
     });
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
@@ -1076,7 +1199,8 @@
       "modalCambiosPendientes",
       "modalPasswordActual",
       "modalPasswordNueva",
-      "modalAyudaCampo"
+      "modalAyudaCampo",
+      "modalDetalleDocumentacion"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -1084,6 +1208,7 @@
         if (id === "modalPasswordActual") cerrarModalPasswordActual();
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
+        if (id === "modalDetalleDocumentacion") cerrarModalDetalleDocumentacion();
       });
     });
 
