@@ -26,68 +26,76 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
-function calcularEstadoEfectivo(expediente, documentosActivos, archivosActivos) {
+function normalizarEstadoDocumento(estado) {
+  const valor = String(estado || "").trim().toUpperCase();
+  return valor || "EN_REVISION";
+}
+
+function calcularEstadoDocumento(doc, entrega) {
+  if (!entrega) {
+    return "NO_ENVIADO";
+  }
+
+  if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+    return "NO_ACTUALIZADO";
+  }
+
+  return normalizarEstadoDocumento(entrega.estado);
+}
+
+function calcularEstadoGlobal(documentosActivos, archivosActivos) {
   if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
     return "NO_REQUERIDA";
   }
 
-  if (!expediente) {
-    return "PENDIENTE";
-  }
-
-  const estadoExpediente = String(expediente.estado || "").toUpperCase();
   const archivosPorNombre = new Map(
     (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
   );
 
-  let faltaAlgunoNuncaRemitido = false;
-  let hayAlgunoDesactualizado = false;
+  const estados = documentosActivos.map((doc) => {
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    return calcularEstadoDocumento(doc, entrega);
+  });
 
-  for (const doc of documentosActivos) {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre));
-
-    if (!entrega) {
-      faltaAlgunoNuncaRemitido = true;
-      continue;
-    }
-
-    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
-      hayAlgunoDesactualizado = true;
-    }
+  if (estados.every((estado) => estado === "NO_ENVIADO")) {
+    return "NO_INICIADO";
   }
 
-  if (hayAlgunoDesactualizado) {
-    return "DESACTUALIZADA";
-  }
-
-  if (faltaAlgunoNuncaRemitido) {
-    return "PENDIENTE";
-  }
-
-  if (estadoExpediente === "VALIDADA") {
-    return "VALIDADA";
-  }
-
-  if (estadoExpediente === "RECHAZADA") {
+  if (estados.some((estado) => estado === "RECHAZADO")) {
     return "RECHAZADA";
+  }
+
+  if (estados.some((estado) => estado === "NO_ACTUALIZADO")) {
+    return "NO_ACTUALIZADO";
+  }
+
+  if (estados.some((estado) => estado === "NO_ENVIADO")) {
+    return "NO_COMPLETADO";
+  }
+
+  if (estados.every((estado) => estado === "VALIDADO")) {
+    return "VALIDADA";
   }
 
   return "EN_REVISION";
 }
 
-function contarDocumentosRemitidos(documentosActivos, archivosActivos) {
+function contarDocumentosValidados(documentosActivos, archivosActivos) {
   const archivosPorNombre = new Map(
     (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
   );
 
-  let remitidos = 0;
+  let validados = 0;
   for (const doc of documentosActivos || []) {
-    if (archivosPorNombre.has(limpiarTexto(doc.nombre))) {
-      remitidos += 1;
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    if (!entrega) continue;
+    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) continue;
+    if (normalizarEstadoDocumento(entrega.estado) === "VALIDADO") {
+      validados += 1;
     }
   }
 
-  return remitidos;
+  return validados;
 }
 
 export async function onRequestGet(context) {
@@ -172,7 +180,8 @@ export async function onRequestGet(context) {
         SELECT
           documentacion_id,
           nombre_documento,
-          version_documental
+          version_documental,
+          estado
         FROM centro_admin_documentacion_archivos
         WHERE activo = 1
           AND documentacion_id IN (${placeholders})
@@ -190,9 +199,9 @@ export async function onRequestGet(context) {
     const administradores = Array.from(adminsAgrupados.values()).map((admin) => {
       const expediente = expedientesPorAdmin.get(admin.admin_id) || null;
       const archivosActivos = expediente ? (archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
-      const estadoEfectivo = calcularEstadoEfectivo(expediente, admin.documentos, archivosActivos);
+      const estadoEfectivo = calcularEstadoGlobal(admin.documentos, archivosActivos);
       const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
-      const totalRemitidos = contarDocumentosRemitidos(admin.documentos, archivosActivos);
+      const totalValidados = contarDocumentosValidados(admin.documentos, archivosActivos);
 
       return {
         admin_id: admin.admin_id,
@@ -203,7 +212,7 @@ export async function onRequestGet(context) {
         version_requerida: versionRequerida,
         version_aportada: Number(expediente?.version_aportada || 0),
         total_documentos: admin.documentos.length,
-        total_documentos_remitidos: totalRemitidos,
+        total_documentos_validados: totalValidados,
         expediente_id: Number(expediente?.id || 0),
         estado: expediente?.estado || "",
         estado_efectivo: estadoEfectivo,
