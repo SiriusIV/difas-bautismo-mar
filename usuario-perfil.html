@@ -48,6 +48,7 @@
     .bloque-head-documentacion h3 { margin: 0; font-size: 18px; color: var(--brand); }
     .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: 760px; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    #filaSolicitanteEmailTelefono { grid-template-columns: 1.1fr 0.8fr 0.6fr; }
     .campo-linea { margin-bottom: 10px; }
     .acciones-admin-extra { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
     .oculto { display: none !important; }
@@ -69,7 +70,8 @@
     .btn-guardar-icono:hover { background: var(--primary-dark); }
     .btn-guardar-icono svg { width: 18px; height: 18px; display: block; }
     .tabla-docs-wrap { width: 100%; overflow-x: auto; }
-    .tabla-docs { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tabla-docs-acciones { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .tabla-docs { width: 100%; border-collapse: collapse; min-width: 760px; }
     .tabla-docs th, .tabla-docs td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-docs td:first-child, .tabla-docs th:first-child { padding-left: 12px; }
@@ -83,8 +85,10 @@
     .estado-pill-doc.RECHAZADA { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .admin-doc-nombre { font-weight: 700; color: #243648; }
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .td-selector { width: 54px; text-align: center !important; }
     .td-centro { min-width: 220px; }
-    .td-accion .btn { white-space: nowrap; }
+    .fila-documentacion-seleccionada { background: #f6faff; }
+    .radio-tabla-doc { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
     .preview-imagen-wrap { position: relative; width: 100%; }
     .preview-imagen { width: 100%; min-height: 324px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
@@ -212,21 +216,15 @@
               <label for="telefonoSolicitante">Teléfono del centro<span class="campo-obligatorio">*</span></label>
               <input type="tel" id="telefonoSolicitante" name="telefonoSolicitante">
             </div>
-          </div>
-          <div class="fila oculto" id="filaSolicitanteLocalidad">
             <div class="campo-linea">
-              <label for="localidadSolicitante">Localidad</label>
+              <label for="localidadSolicitante">Localidad<span class="campo-obligatorio">*</span></label>
               <input type="text" id="localidadSolicitante" name="localidadSolicitante">
             </div>
-            <div></div>
           </div>
           <div class="fila-password-solicitante oculto" id="filaSolicitantePassword">
             <div class="password-linea">
               <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
               <button type="button" class="btn btn-suave" id="btnCambiarPasswordSolicitante">Cambiar contraseña</button>
-            </div>
-            <div class="acciones-admin-extra">
-              <button type="button" class="btn btn-suave" id="btnDocumentacionSolicitante">Remitir documentación</button>
             </div>
             <div class="nota-obligatorios">* Campos obligatorios</div>
           </div>
@@ -241,16 +239,19 @@
           <p>Aquí puedes ver qué organizadores tienen documentación común activa, el estado actual de tus remisiones y acceder directamente al trámite documental cuando necesites completarlo o actualizarlo.</p>
         </div>
       </div>
+      <div class="tabla-docs-acciones">
+        <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionSeleccionada" disabled>Gestionar documentación</button>
+      </div>
       <div class="tabla-docs-wrap">
         <table class="tabla-docs">
           <thead>
             <tr>
+              <th class="td-selector"></th>
               <th>Organizador</th>
               <th>Versión requerida</th>
               <th>Versión aportada</th>
               <th>Estado</th>
               <th>Última entrega</th>
-              <th>Acción</th>
             </tr>
           </thead>
           <tbody id="tablaEstadoDocumentacionBody"></tbody>
@@ -314,6 +315,7 @@
     let navegacionPendiente = null;
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
+    let adminDocumentacionSeleccionado = null;
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
@@ -371,11 +373,13 @@
       const bloque = document.getElementById("bloqueEstadoDocumentacion");
       const body = document.getElementById("tablaEstadoDocumentacionBody");
       const vacio = document.getElementById("estadoVacioDocumentacionPerfil");
+      const btnGestionar = document.getElementById("btnGestionarDocumentacionSeleccionada");
 
       if (!esSolicitante()) {
         bloque.classList.remove("activo");
         body.innerHTML = "";
         vacio.classList.add("oculto");
+        btnGestionar.disabled = true;
         return;
       }
 
@@ -384,18 +388,33 @@
 
       if (!Array.isArray(resumenDocumentacion) || !resumenDocumentacion.length) {
         vacio.classList.remove("oculto");
+        adminDocumentacionSeleccionado = null;
+        btnGestionar.disabled = true;
         return;
       }
 
       vacio.classList.add("oculto");
+      const idsDisponibles = resumenDocumentacion
+        .map((item) => Number.parseInt(item.admin_id || "", 10))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      if (!idsDisponibles.includes(adminDocumentacionSeleccionado)) {
+        adminDocumentacionSeleccionado = idsDisponibles[0] || null;
+      }
 
       resumenDocumentacion.forEach((item) => {
         const tr = document.createElement("tr");
         const estado = String(item.estado_efectivo || "").toUpperCase();
         const versionAportada = Number(item.version_aportada || 0);
-        const textoAccion = estado === "VALIDADA" ? "Ver estado" : "Gestionar";
+        const adminId = Number(item.admin_id || 0);
+        const seleccionado = adminId === adminDocumentacionSeleccionado;
+
+        if (seleccionado) {
+          tr.classList.add("fila-documentacion-seleccionada");
+        }
 
         tr.innerHTML = `
+          <td class="td-selector"><input type="radio" class="radio-tabla-doc" name="admin_documentacion_selector" value="${adminId}" ${seleccionado ? "checked" : ""}></td>
           <td class="td-centro">
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
@@ -404,10 +423,11 @@
           <td>${versionAportada > 0 ? versionAportada : "Sin entrega"}</td>
           <td><span class="estado-pill-doc ${estado}">${etiquetaEstadoDocumentacion(estado)}</span></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
-          <td class="td-accion"><button type="button" class="btn btn-suave" data-admin-documentacion="${Number(item.admin_id || 0)}">${textoAccion}</button></td>
         `;
         body.appendChild(tr);
       });
+
+      btnGestionar.disabled = !Number.isInteger(adminDocumentacionSeleccionado) || adminDocumentacionSeleccionado <= 0;
     }
 
     function actualizarPreviewImagen() {
@@ -434,7 +454,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitanteLocalidad","filaSolicitantePassword"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -447,7 +467,6 @@
         document.getElementById("filaSolicitanteCuentaCentro").classList.remove("oculto");
         document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
-        document.getElementById("filaSolicitanteLocalidad").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
         layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
@@ -758,8 +777,9 @@
       const documento = document.getElementById("documentoSolicitante").value.trim().toUpperCase();
       const email = document.getElementById("emailSolicitante").value.trim();
       const telefono = document.getElementById("telefonoSolicitante").value.trim();
+      const localidad = document.getElementById("localidadSolicitante").value.trim();
 
-      if (!responsable || !tipoDocumento || !documento || !email || !telefono) {
+      if (!responsable || !tipoDocumento || !documento || !email || !telefono || !localidad) {
         return { ok: false, error: "Debes completar todos los campos obligatorios." };
       }
 
@@ -1023,15 +1043,17 @@
       location.href = "admin-documentos.html";
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
-    document.getElementById("btnDocumentacionSolicitante").addEventListener("click", function () {
-      location.href = "usuario-documentacion.html?modo=registro";
-    });
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
-      const btn = event.target.closest("[data-admin-documentacion]");
-      if (!btn) return;
-      const adminId = Number.parseInt(btn.dataset.adminDocumentacion || "", 10);
+      const selector = event.target.closest(".radio-tabla-doc");
+      if (!selector) return;
+      const adminId = Number.parseInt(selector.value || "", 10);
       if (!Number.isInteger(adminId) || adminId <= 0) return;
-      location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(adminId)}`;
+      adminDocumentacionSeleccionado = adminId;
+      renderizarResumenDocumentacion();
+    });
+    document.getElementById("btnGestionarDocumentacionSeleccionada").addEventListener("click", function () {
+      if (!Number.isInteger(adminDocumentacionSeleccionado) || adminDocumentacionSeleccionado <= 0) return;
+      location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(adminDocumentacionSeleccionado)}`;
     });
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
