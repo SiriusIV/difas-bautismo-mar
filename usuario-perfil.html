@@ -84,8 +84,9 @@
     .estado-pill-doc { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
     .estado-pill-doc.VALIDADA { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .estado-pill-doc.EN_REVISION,
-    .estado-pill-doc.PENDIENTE,
-    .estado-pill-doc.DESACTUALIZADA { color: #8a5a00; background: #fff8eb; border-color: #f0d9a7; }
+    .estado-pill-doc.NO_INICIADO,
+    .estado-pill-doc.NO_COMPLETADO,
+    .estado-pill-doc.NO_ACTUALIZADO { color: #8a5a00; background: #fff8eb; border-color: #f0d9a7; }
     .estado-pill-doc.RECHAZADA { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     button.estado-pill-doc { cursor: pointer; }
     .admin-doc-nombre { font-weight: 700; color: #243648; }
@@ -276,7 +277,7 @@
             <tr>
               <th>Organizador</th>
               <th>Documentos</th>
-              <th>Estado</th>
+              <th>Estado <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadoDocumentacion" aria-label="Ayuda sobre estados documentales" title="Ayuda sobre estados" style="position: static; transform: none; margin-left: 6px;">?</button></th>
               <th>Última entrega</th>
             </tr>
           </thead>
@@ -433,8 +434,9 @@
       if (valor === "VALIDADA") return "Validada";
       if (valor === "EN_REVISION") return "En revisión";
       if (valor === "RECHAZADA") return "Rechazada";
-      if (valor === "DESACTUALIZADA") return "Desactualizada";
-      if (valor === "PENDIENTE") return "Pendiente";
+      if (valor === "NO_ACTUALIZADO") return "No actualizado";
+      if (valor === "NO_COMPLETADO") return "No completado";
+      if (valor === "NO_INICIADO") return "No iniciado";
       return "Sin estado";
     }
 
@@ -451,9 +453,8 @@
       });
     }
 
-    function estadoDetalleDocumento(expedienteEstado, documento) {
-      if (!documento?.entrega_archivo_url) return "PENDIENTE";
-      return String(expedienteEstado || "EN_REVISION").toUpperCase();
+    function estadoDetalleDocumento(_expedienteEstado, documento) {
+      return String(documento?.estado_documento || "NO_INICIADO").toUpperCase();
     }
 
     function cerrarModalDetalleDocumentacion() {
@@ -495,7 +496,7 @@
 
         const adminVisible = data?.admin?.nombre_publico || data?.admin?.nombre || adminNombre;
         const localidad = data?.admin?.localidad || "";
-        const estadoExpediente = String(data?.expediente?.estado_efectivo || "PENDIENTE").toUpperCase();
+        const estadoExpediente = String(data?.expediente?.estado_efectivo || "NO_INICIADO").toUpperCase();
         const versionRequerida = Number(data?.version_requerida || 0);
         const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
 
@@ -567,7 +568,7 @@
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
-          <td>Requeridos: ${Number(item.total_documentos || 0)} / Remitidos: ${Number(item.total_documentos_remitidos || 0)}</td>
+          <td>Requeridos: ${Number(item.total_documentos || 0)} / Validados: ${Number(item.total_documentos_validados || 0)}</td>
           <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
         `;
@@ -1308,6 +1309,12 @@
       abrirAyudaCampo(
         "Responsable legal / entidad titular",
         "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
+      );
+    });
+    document.getElementById("btnAyudaEstadoDocumentacion").addEventListener("click", () => {
+      abrirAyudaCampo(
+        "Estados de la documentación",
+        "No iniciado: no se ha remitido ningún documento. No completado: falta al menos un documento por remitir. No actualizado: existe al menos un documento remitido que ya no corresponde con el vigente. Rechazada: al menos un documento ha sido rechazado. En revisión: todos están enviados, pero al menos uno sigue pendiente de revisión manual. Validada: todos los documentos requeridos están validados."
       );
     });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);

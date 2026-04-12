@@ -251,8 +251,9 @@
     }
 
     .pill-estado.EN_REVISION,
-    .pill-estado.PENDIENTE,
-    .pill-estado.DESACTUALIZADA {
+    .pill-estado.NO_INICIADO,
+    .pill-estado.NO_COMPLETADO,
+    .pill-estado.NO_ACTUALIZADO {
       color: #8a5a00;
       border-color: #f0d9a7;
       background: #fff8eb;
@@ -571,7 +572,10 @@
 
     function estadoLegible(estado) {
       const valor = String(estado || "").toUpperCase();
-      if (!valor) return "PENDIENTE";
+      if (!valor) return "NO_INICIADO";
+      if (valor === "NO_INICIADO") return "NO INICIADO";
+      if (valor === "NO_COMPLETADO") return "NO COMPLETADO";
+      if (valor === "NO_ACTUALIZADO") return "NO ACTUALIZADO";
       return valor.replaceAll("_", " ");
     }
 
@@ -662,7 +666,7 @@
       const version = Number(estadoDocumentacion?.version_requerida || 0);
       const estado = String(
         estadoDocumentacion?.expediente?.estado_efectivo ||
-        (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")
+        (estadoDocumentacion?.requiere_documentacion ? "NO_INICIADO" : "NO_REQUERIDA")
       ).toUpperCase();
 
       document.getElementById("pillVersion").textContent = `Versión requerida: ${version || 0}`;
@@ -679,7 +683,7 @@
       const exp = estadoDocumentacion?.expediente;
       const estado = String(
         exp?.estado_efectivo ||
-        (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")
+        (estadoDocumentacion?.requiere_documentacion ? "NO_INICIADO" : "NO_REQUERIDA")
       ).toUpperCase();
       const adminVisible = nombreVisibleOrganizador(admin);
 
@@ -698,6 +702,16 @@
         return;
       }
 
+      if (estado === "NO_INICIADO") {
+        box.textContent = `Todavía no has remitido ningún documento exigido por ${adminVisible}.`;
+        return;
+      }
+
+      if (estado === "NO_COMPLETADO") {
+        box.textContent = `Aún no has completado toda la documentación exigida por ${adminVisible}. Debes remitir los documentos que faltan para continuar.`;
+        return;
+      }
+
       if (estado === "EN_REVISION") {
         box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${adminVisible}. Hasta que se valide, no podrás solicitar sus actividades.`;
         return;
@@ -708,7 +722,7 @@
         return;
       }
 
-      if (estado === "DESACTUALIZADA") {
+      if (estado === "NO_ACTUALIZADO") {
         box.textContent = `El organizador actualizó sus documentos. Debes remitir la versión vigente para volver a quedar habilitado frente a ${adminVisible}.`;
         return;
       }
@@ -776,7 +790,7 @@
             ? `Última remisión: ${doc.entrega_fecha_subida}`
             : "Ya existe una remisión activa para este documento.";
         } else {
-          pill.textContent = "Pendiente";
+          pill.textContent = "No enviado";
           entregaInfo.textContent = "Debes subir el PDF firmado que vas a remitir para este documento.";
         }
 
@@ -813,7 +827,7 @@
 
             input.value = data.archivo_url || "";
             actualizarEstadoEntrega();
-            entregaInfo.textContent = "Documento firmado cargado correctamente. Cuando remitas el conjunto, quedará pendiente de revisión por el organizador.";
+            entregaInfo.textContent = "Documento firmado cargado correctamente. Cuando remitas el conjunto, quedará en revisión por el organizador.";
             mostrarMensaje("ok", data?.mensaje || "Documento PDF remitido correctamente.");
           } catch (error) {
             mostrarMensaje("error", error.message || "No se pudo subir el documento firmado.");
