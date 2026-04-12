@@ -114,6 +114,71 @@ export function construirEmailHtmlDocumentacionRemitida({ admin, centro, version
   `;
 }
 
+function etiquetaEstadoDocumentoEmail(estado) {
+  const valor = limpiarTexto(estado).toUpperCase();
+  if (valor === "VALIDADO") return "Validado";
+  if (valor === "EN_REVISION") return "En revisión";
+  if (valor === "RECHAZADO") return "Rechazado";
+  if (valor === "NO_ACTUALIZADO") return "No actualizado";
+  if (valor === "NO_ENVIADO") return "No enviado";
+  return valor || "Sin estado";
+}
+
+export function construirEmailTextoDocumentacionRemitidaAgrupada({ admin, centro, versionRequerida, cambios = [] }) {
+  const organizador = nombreVisibleAdmin(admin);
+  const lineas = [
+    "Se han guardado cambios en la documentación remitida por un centro.",
+    "",
+    `Organizador: ${organizador}`,
+    `Centro: ${limpiarTexto(centro?.centro)}`,
+    `Correo del centro: ${limpiarTexto(centro?.email)}`,
+    `Versión documental vigente: ${Number(versionRequerida || 0)}`
+  ];
+
+  if (Array.isArray(cambios) && cambios.length) {
+    lineas.push("", "Detalle de los documentos modificados:");
+    cambios.forEach((item) => {
+      lineas.push(`- ${limpiarTexto(item?.nombre)}: ${etiquetaEstadoDocumentoEmail(item?.estado)}`);
+    });
+  }
+
+  lineas.push("", "La situación actual puede revisarse desde la plataforma.");
+  return lineas.join("\n");
+}
+
+export function construirEmailHtmlDocumentacionRemitidaAgrupada({ admin, centro, versionRequerida, cambios = [] }) {
+  const organizador = escaparHtml(nombreVisibleAdmin(admin));
+  const filas = Array.isArray(cambios) && cambios.length
+    ? cambios.map((item) => `
+        <tr>
+          <td style="padding:8px 10px;border:1px solid #d8e0e8;">${escaparHtml(item?.nombre || "")}</td>
+          <td style="padding:8px 10px;border:1px solid #d8e0e8;">${escaparHtml(etiquetaEstadoDocumentoEmail(item?.estado))}</td>
+        </tr>
+      `).join("")
+    : "";
+
+  return `
+    <p>Se han guardado cambios en la documentación remitida por un centro.</p>
+    <p><strong>Organizador:</strong> ${organizador}</p>
+    <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
+    <p><strong>Correo del centro:</strong> ${escaparHtml(centro?.email || "")}</p>
+    <p><strong>Versión documental vigente:</strong> ${Number(versionRequerida || 0)}</p>
+    ${filas ? `
+      <p><strong>Detalle de los documentos modificados</strong></p>
+      <table style="border-collapse:collapse;width:100%;max-width:640px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento</th>
+            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    ` : ""}
+    <p>La situación actual puede revisarse desde la plataforma.</p>
+  `;
+}
+
 export function construirEmailTextoDocumentacionResuelta({ admin, centro, versionRequerida, estado, observaciones }) {
   const organizador = nombreVisibleAdmin(admin);
   const estadoTexto = estado === "VALIDADA" ? "VALIDADA" : "RECHAZADA";
