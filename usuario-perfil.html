@@ -567,7 +567,7 @@
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
-          <td>${Number(item.total_documentos || 0)}</td>
+          <td>Requeridos: ${Number(item.total_documentos || 0)} / Remitidos: ${Number(item.total_documentos_remitidos || 0)}</td>
           <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
         `;
