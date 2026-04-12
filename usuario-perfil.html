@@ -63,6 +63,7 @@
     .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
+    .input-solo-lectura { background: #f7f9fb !important; color: #495867; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
     .nota-obligatorios { margin: 0; font-size: 11px; color: #5f6d7a; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
@@ -157,6 +158,12 @@
       </div>
       <div class="bloque">
         <form id="formPerfil">
+          <div class="bloque-head-documentacion">
+            <div>
+              <h3>Datos de usuario</h3>
+              <p>Consulta y actualiza aquí la información principal asociada a tu cuenta y a tu centro.</p>
+            </div>
+          </div>
           <div class="bloque-head">
             <div class="acciones-superiores">
               <button type="submit" class="btn-guardar-icono" id="btnGuardar" title="Guardar cambios" aria-label="Guardar cambios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg></button>
@@ -206,7 +213,7 @@
             <div class="campo-linea">
               <label for="centroSolicitante">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
-                <input type="text" id="centroSolicitante" name="centroSolicitante" readonly>
+                <input type="text" id="centroSolicitante" name="centroSolicitante" class="input-solo-lectura" readonly>
                 <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o institución" title="Información">i</button>
               </div>
             </div>
@@ -354,6 +361,7 @@
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
     let detalleDocumentacionActual = null;
+    let temporizadorMensajePassword = null;
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
@@ -365,6 +373,20 @@
       const box = document.getElementById(id);
       box.className = "mensaje";
       box.textContent = "";
+    }
+
+    function mostrarMensajePasswordTemporal(tipo, texto, duracionMs = 3500) {
+      if (temporizadorMensajePassword) {
+        clearTimeout(temporizadorMensajePassword);
+        temporizadorMensajePassword = null;
+      }
+
+      jsonMessage("mensajePassword", tipo, texto);
+
+      temporizadorMensajePassword = setTimeout(() => {
+        limpiarMensaje("mensajePassword");
+        temporizadorMensajePassword = null;
+      }, duracionMs);
     }
 
     function etiquetaRol(rol) {
@@ -1036,7 +1058,7 @@
       const passwordActual = document.getElementById("modal_password_actual").value.trim();
 
       if (!passwordActual) {
-        jsonMessage("mensajePassword", "error", "Introduce la contraseña actual.");
+        mostrarMensajePasswordTemporal("error", "Introduce la contraseña actual.");
         return;
       }
 
@@ -1053,7 +1075,7 @@
 
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          jsonMessage("mensajePassword", "error", data?.error || "La contraseña actual no es correcta.");
+          mostrarMensajePasswordTemporal("error", data?.error || "La contraseña actual no es correcta.");
           return;
         }
 
@@ -1064,7 +1086,7 @@
           document.getElementById("modal_password_nueva").focus();
         }, 0);
       } catch (error) {
-        jsonMessage("mensajePassword", "error", error.message || "No se pudo validar la contraseña actual.");
+        mostrarMensajePasswordTemporal("error", error.message || "No se pudo validar la contraseña actual.");
       }
     }
 
@@ -1074,18 +1096,18 @@
       const confirmacion = document.getElementById("modal_password_confirmacion").value.trim();
 
       if (!passwordActualValidada) {
-        jsonMessage("mensajePassword", "error", "Debes validar antes la contraseña actual.");
+        mostrarMensajePasswordTemporal("error", "Debes validar antes la contraseña actual.");
         cerrarModalPasswordNueva();
         return;
       }
 
       if (!nueva || !confirmacion) {
-        jsonMessage("mensajePassword", "error", "Completa la nueva contraseña y su confirmación.");
+        mostrarMensajePasswordTemporal("error", "Completa la nueva contraseña y su confirmación.");
         return;
       }
 
       if (nueva !== confirmacion) {
-        jsonMessage("mensajePassword", "error", "La nueva contraseña y su confirmación no coinciden.");
+        mostrarMensajePasswordTemporal("error", "La nueva contraseña y su confirmación no coinciden.");
         return;
       }
 
@@ -1102,14 +1124,14 @@
 
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          jsonMessage("mensajePassword", "error", data?.error || "No se pudo actualizar la contraseña.");
+          mostrarMensajePasswordTemporal("error", data?.error || "No se pudo actualizar la contraseña.");
           return;
         }
 
         cerrarModalPasswordNueva();
-        jsonMessage("mensajePassword", "ok", data.mensaje || "Contraseña actualizada correctamente.");
+        mostrarMensajePasswordTemporal("ok", data.mensaje || "Contraseña actualizada correctamente.");
       } catch (error) {
-        jsonMessage("mensajePassword", "error", error.message || "No se pudo actualizar la contraseña.");
+        mostrarMensajePasswordTemporal("error", error.message || "No se pudo actualizar la contraseña.");
       }
     }
 
