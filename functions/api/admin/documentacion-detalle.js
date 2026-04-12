@@ -71,6 +71,10 @@ export async function onRequestGet(context) {
         nombre_documento,
         archivo_url,
         version_documental,
+        estado,
+        fecha_validacion,
+        validado_por_admin_id,
+        observaciones_admin,
         fecha_subida,
         activo
       FROM centro_admin_documentacion_archivos
@@ -101,6 +105,10 @@ export async function onRequestGet(context) {
         nombre_documento: row.nombre_documento || "",
         archivo_url: row.archivo_url || "",
         version_documental: Number(row.version_documental || 0),
+        estado: String(row.estado || "").trim().toUpperCase() || "EN_REVISION",
+        fecha_validacion: row.fecha_validacion || "",
+        validado_por_admin_id: Number(row.validado_por_admin_id || 0),
+        observaciones_admin: row.observaciones_admin || "",
         fecha_subida: row.fecha_subida || "",
         activo: Number(row.activo || 0) === 1
       }))
