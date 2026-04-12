@@ -337,8 +337,17 @@
       padding: 12px;
     }
 
+    .documento-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
     .documento-card h4 {
-      margin: 0 0 8px;
+      margin: 0;
       font-size: 14px;
       color: var(--brand);
     }
@@ -362,6 +371,14 @@
       text-decoration: underline;
     }
 
+    .documento-acciones {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
     textarea {
       width: 100%;
       min-height: 86px;
@@ -379,14 +396,6 @@
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12);
-    }
-
-    .acciones-detalle {
-      margin-top: 14px;
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
     }
 
     .oculto {
@@ -521,10 +530,6 @@
 
           <div class="documentos-lista" id="detalleDocumentos"></div>
 
-          <div class="acciones-detalle">
-            <button type="button" class="btn btn-suave" id="btnRechazar">Rechazar</button>
-            <button type="button" class="btn" id="btnValidar">Validar</button>
-          </div>
         </div>
       </div>
     </div>
@@ -542,9 +547,16 @@
 
   <template id="tplDocumento">
     <div class="documento-card">
-      <h4 class="doc-nombre"></h4>
+      <div class="documento-cabecera">
+        <h4 class="doc-nombre"></h4>
+        <div class="pill pill-estado doc-estado"></div>
+      </div>
       <div class="documento-meta doc-meta"></div>
       <a href="#" target="_blank" rel="noopener noreferrer" class="documento-link">Ver documento</a>
+      <div class="documento-acciones">
+        <button type="button" class="btn btn-suave btnRechazarDocumento">Rechazar</button>
+        <button type="button" class="btn btnValidarDocumento">Validar</button>
+      </div>
     </div>
   </template>
 
@@ -552,6 +564,7 @@
     let filtroActual = "pendientes";
     let expedientesActuales = [];
     let expedienteSeleccionado = null;
+    let detalleActual = null;
 
     function mostrarMensaje(tipo, texto) {
       const box = document.getElementById("mensajePantalla");
@@ -651,13 +664,13 @@
       document.getElementById("detalleExpediente").classList.add("oculto");
       document.getElementById("detalleDocumentos").innerHTML = "";
       document.getElementById("detalleObservaciones").value = "";
-      document.getElementById("btnValidar").disabled = true;
-      document.getElementById("btnRechazar").disabled = true;
+      detalleActual = null;
     }
 
     function renderDetalle(data) {
       const exp = data?.expediente;
       const docs = data?.documentos || [];
+      detalleActual = data || null;
 
       if (!exp) {
         limpiarDetalle();
@@ -692,13 +705,18 @@
           fragment.querySelector(".doc-nombre").textContent = doc.nombre_documento || "Documento";
           fragment.querySelector(".doc-meta").textContent = `Versión ${doc.version_documental || 0} · Subido ${doc.fecha_subida || ""}`;
           fragment.querySelector(".documento-link").href = doc.archivo_url || "#";
+          pintarEstado(fragment.querySelector(".doc-estado"), doc.estado || "EN_REVISION");
+
+          const estadoDoc = String(doc.estado || "").toUpperCase();
+          const btnValidar = fragment.querySelector(".btnValidarDocumento");
+          const btnRechazar = fragment.querySelector(".btnRechazarDocumento");
+          btnValidar.dataset.archivoId = doc.id;
+          btnRechazar.dataset.archivoId = doc.id;
+          btnValidar.disabled = estadoDoc === "VALIDADO";
+
           listaDocs.appendChild(fragment);
         });
       }
-
-      const bloqueado = String(exp.estado || "").toUpperCase() !== "EN_REVISION";
-      document.getElementById("btnValidar").disabled = bloqueado;
-      document.getElementById("btnRechazar").disabled = bloqueado;
     }
 
     async function cargarExpedientes() {
@@ -751,13 +769,13 @@
       renderDetalle(data);
     }
 
-    async function resolverExpediente(accion) {
-      if (!expedienteSeleccionado) return;
+    async function resolverDocumento(archivoId, accion) {
+      if (!expedienteSeleccionado || !archivoId) return;
 
       const observaciones = document.getElementById("detalleObservaciones").value.trim();
       const texto = accion === "validar"
-        ? "¿Deseas validar la documentación de este centro?"
-        : "¿Deseas rechazar la documentación de este centro?";
+        ? "¿Deseas validar este documento?"
+        : "¿Deseas rechazar este documento?";
 
       if (!window.confirm(texto)) return;
 
@@ -769,6 +787,7 @@
         credentials: "include",
         body: JSON.stringify({
           documentacion_id: expedienteSeleccionado.id,
+          archivo_id: archivoId,
           accion,
           observaciones_admin: observaciones
         })
@@ -780,9 +799,11 @@
         return;
       }
 
-      mostrarMensaje("ok", data?.mensaje || "Expediente actualizado correctamente.");
-      expedienteSeleccionado = null;
+      mostrarMensaje("ok", data?.mensaje || "Documento actualizado correctamente.");
       await cargarExpedientes();
+      if (expedienteSeleccionado) {
+        await cargarDetalleExpediente(expedienteSeleccionado.centro_usuario_id);
+      }
     }
 
     function volverPerfil() {
@@ -812,12 +833,22 @@
       await cargarExpedientes();
     });
 
-    document.getElementById("btnValidar").addEventListener("click", function () {
-      resolverExpediente("validar");
-    });
+    document.getElementById("detalleDocumentos").addEventListener("click", function (event) {
+      const btnValidar = event.target.closest(".btnValidarDocumento");
+      const btnRechazar = event.target.closest(".btnRechazarDocumento");
 
-    document.getElementById("btnRechazar").addEventListener("click", function () {
-      resolverExpediente("rechazar");
+      if (btnValidar) {
+        const archivoId = Number.parseInt(btnValidar.dataset.archivoId || "", 10);
+        if (!Number.isInteger(archivoId) || archivoId <= 0) return;
+        resolverDocumento(archivoId, "validar");
+        return;
+      }
+
+      if (btnRechazar) {
+        const archivoId = Number.parseInt(btnRechazar.dataset.archivoId || "", 10);
+        if (!Number.isInteger(archivoId) || archivoId <= 0) return;
+        resolverDocumento(archivoId, "rechazar");
+      }
     });
 
     document.getElementById("btnVolverPerfil").addEventListener("click", volverPerfil);
