@@ -215,6 +215,11 @@
       background: #f7f9fb;
     }
 
+    .btn-suave:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .resumen-estado {
       display: flex;
       flex-wrap: wrap;
@@ -362,23 +367,6 @@
       font-size: 12px;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 10px 11px;
-      border: 1px solid #c9cfd6;
-      border-radius: 8px;
-      font-size: 13px;
-      background: #fff;
-      color: var(--text);
-      font-family: Arial, sans-serif;
-    }
-
-    input[type="text"]:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12);
-    }
-
     .doc-link {
       color: var(--primary);
       font-weight: 600;
@@ -501,7 +489,6 @@
       </div>
 
       <div class="nota" id="notaEstadoAdmin"></div>
-
       <div id="listaDocumentos" class="doc-lista"></div>
 
       <div class="acciones-inferiores">
@@ -514,7 +501,7 @@
   <template id="tplAdministrador">
     <button type="button" class="admin-card">
       <h4 class="admin-nombre"></h4>
-      <p class="admin-email"></p>
+      <p class="admin-localidad"></p>
       <div class="pill admin-version"></div>
       <div class="pill admin-total"></div>
     </button>
@@ -570,6 +557,11 @@
 
     function limpiarTexto(valor) {
       return String(valor || "").trim();
+    }
+
+    function nombreVisibleOrganizador(admin) {
+      if (!admin) return "este organizador";
+      return limpiarTexto(admin.nombre_publico) || limpiarTexto(admin.nombre) || "este organizador";
     }
 
     function esModoSolicitud() {
@@ -645,19 +637,22 @@
         const fragment = tpl.content.cloneNode(true);
         const card = fragment.querySelector(".admin-card");
         card.dataset.adminId = admin.id;
-        card.querySelector(".admin-nombre").textContent = admin.nombre_publico || admin.nombre || "Administrador";
-        card.querySelector(".admin-email").textContent = admin.localidad || "";
+        card.querySelector(".admin-nombre").textContent = nombreVisibleOrganizador(admin);
+        card.querySelector(".admin-localidad").textContent = admin.localidad || "";
         card.querySelector(".admin-version").textContent = `Versión requerida: ${Number(admin.version_requerida || 0)}`;
         card.querySelector(".admin-total").textContent = `${Number(admin.total_documentos || 0)} documento(s) activos`;
+
         if (Number(admin.id) === Number(adminSeleccionadoId)) {
           card.classList.add("activo");
         }
+
         card.addEventListener("click", () => {
           adminSeleccionadoId = Number(admin.id);
           Array.from(document.querySelectorAll(".admin-card")).forEach((item) => item.classList.remove("activo"));
           card.classList.add("activo");
           cargarEstadoDocumentacion();
         });
+
         lista.appendChild(fragment);
       });
     }
@@ -681,7 +676,11 @@
       const box = document.getElementById("notaEstadoAdmin");
       const admin = estadoDocumentacion?.admin;
       const exp = estadoDocumentacion?.expediente;
-      const estado = String(exp?.estado_efectivo || (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")).toUpperCase();
+      const estado = String(
+        exp?.estado_efectivo ||
+        (estadoDocumentacion?.requiere_documentacion ? "PENDIENTE" : "NO_REQUERIDA")
+      ).toUpperCase();
+      const adminVisible = nombreVisibleOrganizador(admin);
 
       if (!admin) {
         box.textContent = "";
@@ -689,31 +688,31 @@
       }
 
       if (!estadoDocumentacion.requiere_documentacion) {
-        box.textContent = `${admin.nombre || "Este organizador"} no tiene documentación común activa en este momento.`;
+        box.textContent = `${adminVisible} no tiene documentación común activa en este momento.`;
         return;
       }
 
       if (estado === "VALIDADA") {
-        box.textContent = `La documentación de ${admin.nombre || "este organizador"} ya está validada para la versión actual. Puedes solicitar sus actividades cuando lo necesites.`;
+        box.textContent = `La documentación de ${adminVisible} ya está validada para la versión actual. Puedes solicitar sus actividades cuando lo necesites.`;
         return;
       }
 
       if (estado === "EN_REVISION") {
-        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${admin.nombre || "el organizador"}. Hasta que se valide, no podrás solicitar sus actividades.`;
+        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${adminVisible}. Hasta que se valide, no podrás solicitar sus actividades.`;
         return;
       }
 
       if (estado === "RECHAZADA") {
-        box.textContent = `La documentación fue rechazada. Revisa de nuevo los documentos y remite una nueva versión firmada para ${admin.nombre || "este organizador"}.`;
+        box.textContent = `La documentación fue rechazada. Revisa de nuevo los documentos y remite una nueva versión firmada para ${adminVisible}.`;
         return;
       }
 
       if (estado === "DESACTUALIZADA") {
-        box.textContent = `El organizador actualizó sus documentos. Debes remitir la versión vigente para volver a quedar habilitado frente a ${admin.nombre || "este organizador"}.`;
+        box.textContent = `El organizador actualizó sus documentos. Debes remitir la versión vigente para volver a quedar habilitado frente a ${adminVisible}.`;
         return;
       }
 
-      box.textContent = `Todavía no has remitido la documentación exigida por ${admin.nombre || "este organizador"}.`;
+      box.textContent = `Todavía no has remitido la documentación exigida por ${adminVisible}.`;
     }
 
     function renderDocumentos() {
@@ -732,12 +731,13 @@
       const tpl = document.getElementById("tplDocumento");
       const expediente = estadoDocumentacion?.expediente || null;
       const estado = String(expediente?.estado_efectivo || "").toUpperCase();
-      const permitirEdicion = estado !== "VALIDADA";
+      const permitirEdicion = estado !== "VALIDADA" && estado !== "EN_REVISION";
 
       docs.forEach((doc) => {
         const fragment = tpl.content.cloneNode(true);
         const card = fragment.querySelector(".doc-card");
         card.dataset.documentoId = doc.id;
+
         const input = card.querySelector(".doc-url-remitida");
         const inputPdf = card.querySelector(".input-pdf-remitido");
         const btnSubir = card.querySelector(".btnSubirPdfRemitido");
@@ -768,7 +768,9 @@
 
         if (doc.entregado) {
           pill.textContent = "Remitido";
-          entregaInfo.textContent = doc.entrega_fecha_subida ? `Última remisión: ${doc.entrega_fecha_subida}` : "Ya existe una remisión activa para este documento.";
+          entregaInfo.textContent = doc.entrega_fecha_subida
+            ? `Última remisión: ${doc.entrega_fecha_subida}`
+            : "Ya existe una remisión activa para este documento.";
         } else {
           pill.textContent = "Pendiente";
           entregaInfo.textContent = "Debes subir el PDF firmado que vas a remitir para este documento.";
@@ -819,6 +821,7 @@
         }
 
         btnSubir.addEventListener("click", function () {
+          if (!permitirEdicion) return;
           inputPdf.click();
         });
 
@@ -831,7 +834,7 @@
         lista.appendChild(fragment);
       });
 
-      document.getElementById("btnRemitirDocumentacion").disabled = estado === "VALIDADA";
+      document.getElementById("btnRemitirDocumentacion").disabled = estado === "VALIDADA" || estado === "EN_REVISION";
     }
 
     async function cargarEstadoDocumentacion() {
@@ -863,7 +866,7 @@
       }
 
       estadoDocumentacion = data;
-      document.getElementById("tituloBloqueDocumentacion").textContent = `Documentación de ${data.admin?.nombre || "organizador"}`;
+      document.getElementById("tituloBloqueDocumentacion").textContent = `Documentación de ${nombreVisibleOrganizador(data.admin)}`;
       actualizarPills();
       actualizarNotaEstado();
       renderDocumentos();
@@ -899,6 +902,17 @@
 
       if (!Number.isInteger(adminSeleccionadoId) || adminSeleccionadoId <= 0) {
         mostrarMensaje("error", "Debes seleccionar un organizador válido.");
+        return;
+      }
+
+      const estadoActual = String(estadoDocumentacion?.expediente?.estado_efectivo || "").toUpperCase();
+      if (estadoActual === "EN_REVISION") {
+        mostrarMensaje("warn", "Tu documentación ya fue remitida y está pendiente de validación manual. No es necesario volver a enviarla.");
+        return;
+      }
+
+      if (estadoActual === "VALIDADA") {
+        mostrarMensaje("warn", "La documentación ya está validada para este organizador. No es necesario volver a remitirla.");
         return;
       }
 
