@@ -75,6 +75,21 @@ function calcularEstadoEfectivo(expediente, documentosActivos, archivosActivos) 
   return "EN_REVISION";
 }
 
+function contarDocumentosRemitidos(documentosActivos, archivosActivos) {
+  const archivosPorNombre = new Map(
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+  );
+
+  let remitidos = 0;
+  for (const doc of documentosActivos || []) {
+    if (archivosPorNombre.has(limpiarTexto(doc.nombre))) {
+      remitidos += 1;
+    }
+  }
+
+  return remitidos;
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -177,6 +192,7 @@ export async function onRequestGet(context) {
       const archivosActivos = expediente ? (archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
       const estadoEfectivo = calcularEstadoEfectivo(expediente, admin.documentos, archivosActivos);
       const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
+      const totalRemitidos = contarDocumentosRemitidos(admin.documentos, archivosActivos);
 
       return {
         admin_id: admin.admin_id,
@@ -187,6 +203,7 @@ export async function onRequestGet(context) {
         version_requerida: versionRequerida,
         version_aportada: Number(expediente?.version_aportada || 0),
         total_documentos: admin.documentos.length,
+        total_documentos_remitidos: totalRemitidos,
         expediente_id: Number(expediente?.id || 0),
         estado: expediente?.estado || "",
         estado_efectivo: estadoEfectivo,
