@@ -64,9 +64,7 @@ async function obtenerVersionRequerida(env, adminId) {
   return Number(row?.version_actual || 0);
 }
 
-async function obtenerDocumentosActivos(env, adminId, versionRequerida) {
-  if (!versionRequerida) return [];
-
+async function obtenerDocumentosActivos(env, adminId) {
   const rows = await env.DB.prepare(`
     SELECT
       id,
@@ -79,9 +77,8 @@ async function obtenerDocumentosActivos(env, adminId, versionRequerida) {
     FROM admin_documentos_comunes
     WHERE admin_id = ?
       AND activo = 1
-      AND version_documental = ?
     ORDER BY orden ASC, id ASC
-  `).bind(adminId, versionRequerida).all();
+  `).bind(adminId).all();
 
   return rows?.results || [];
 }
@@ -108,8 +105,8 @@ async function obtenerExpediente(env, centroUsuarioId, adminId) {
   `).bind(centroUsuarioId, adminId).first();
 }
 
-async function obtenerArchivosActivos(env, documentacionId, versionRequerida) {
-  if (!documentacionId || !versionRequerida) return [];
+async function obtenerArchivosActivos(env, documentacionId) {
+  if (!documentacionId) return [];
 
   const rows = await env.DB.prepare(`
     SELECT
@@ -123,15 +120,14 @@ async function obtenerArchivosActivos(env, documentacionId, versionRequerida) {
     FROM centro_admin_documentacion_archivos
     WHERE documentacion_id = ?
       AND activo = 1
-      AND version_documental = ?
     ORDER BY id ASC
-  `).bind(documentacionId, versionRequerida).all();
+  `).bind(documentacionId).all();
 
   return rows?.results || [];
 }
 
-function calcularEstadoEfectivo(expediente, versionRequerida) {
-  if (!versionRequerida) {
+function calcularEstadoEfectivo(expediente, documentosActivos, archivosActivos) {
+  if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
     return "NO_REQUERIDA";
   }
 
@@ -139,36 +135,80 @@ function calcularEstadoEfectivo(expediente, versionRequerida) {
     return "PENDIENTE";
   }
 
-  const estado = String(expediente.estado || "").toUpperCase();
-  const versionAportada = Number(expediente.version_aportada || 0);
+  const estadoExpediente = String(expediente.estado || "").toUpperCase();
+  const archivosPorNombre = new Map(
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+  );
 
-  if (versionAportada !== Number(versionRequerida || 0)) {
+  let faltaAlgunoNuncaRemitido = false;
+  let hayAlgunoDesactualizado = false;
+
+  for (const doc of documentosActivos) {
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre));
+
+    if (!entrega) {
+      faltaAlgunoNuncaRemitido = true;
+      continue;
+    }
+
+    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+      hayAlgunoDesactualizado = true;
+    }
+  }
+
+  if (hayAlgunoDesactualizado) {
     return "DESACTUALIZADA";
   }
 
-  if (["VALIDADA", "EN_REVISION", "RECHAZADA", "PENDIENTE"].includes(estado)) {
-    return estado;
+  if (faltaAlgunoNuncaRemitido) {
+    return "PENDIENTE";
   }
 
-  return "PENDIENTE";
+  if (estadoExpediente === "VALIDADA") {
+    return "VALIDADA";
+  }
+
+  if (estadoExpediente === "RECHAZADA") {
+    return "RECHAZADA";
+  }
+
+  return "EN_REVISION";
 }
 
-function construirResumenDocumentos(documentos, archivosActivos) {
+function construirResumenDocumentos(documentos, archivosActivos, estadoExpediente) {
   const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [archivo.nombre_documento, archivo])
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
   );
+  const estadoGlobal = String(estadoExpediente || "").toUpperCase();
 
   return (documentos || []).map((doc) => {
-    const entrega = archivosPorNombre.get(doc.nombre) || null;
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    let estadoDocumento = "PENDIENTE";
+
+    if (entrega) {
+      if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+        estadoDocumento = "DESACTUALIZADA";
+      } else if (estadoGlobal === "VALIDADA") {
+        estadoDocumento = "VALIDADA";
+      } else if (estadoGlobal === "RECHAZADA") {
+        estadoDocumento = "RECHAZADA";
+      } else {
+        estadoDocumento = "EN_REVISION";
+      }
+    }
+
     return {
       id: doc.id,
       nombre: doc.nombre,
       descripcion: doc.descripcion || "",
       archivo_url: doc.archivo_url,
       orden: Number(doc.orden || 0),
+      version_documental: Number(doc.version_documental || 0),
+      estado_documento: estadoDocumento,
       entregado: !!entrega,
       entrega_archivo_url: entrega?.archivo_url || "",
-      entrega_fecha_subida: entrega?.fecha_subida || ""
+      entrega_fecha_subida: entrega?.fecha_subida || "",
+      entrega_version_documental: Number(entrega?.version_documental || 0)
     };
   });
 }
@@ -222,11 +262,11 @@ export async function onRequestGet(context) {
     }
 
     const versionRequerida = await obtenerVersionRequerida(env, adminId);
-    const documentos = await obtenerDocumentosActivos(env, adminId, versionRequerida);
+    const documentos = await obtenerDocumentosActivos(env, adminId);
     const expediente = await obtenerExpediente(env, usuario.id, adminId);
-    const archivosActivos = await obtenerArchivosActivos(env, expediente?.id, versionRequerida);
-    const estadoEfectivo = calcularEstadoEfectivo(expediente, versionRequerida);
-    const requiereDocumentacion = versionRequerida > 0 && documentos.length > 0;
+    const archivosActivos = await obtenerArchivosActivos(env, expediente?.id);
+    const estadoEfectivo = calcularEstadoEfectivo(expediente, documentos, archivosActivos);
+    const requiereDocumentacion = documentos.length > 0;
 
     return json({
       ok: true,
@@ -255,7 +295,7 @@ export async function onRequestGet(context) {
         fecha_validacion: expediente.fecha_validacion || "",
         observaciones_admin: expediente.observaciones_admin || ""
       } : null,
-      documentos: construirResumenDocumentos(documentos, archivosActivos)
+      documentos: construirResumenDocumentos(documentos, archivosActivos, expediente?.estado || "")
     });
   } catch (error) {
     return json(
@@ -301,7 +341,7 @@ export async function onRequestPost(context) {
     }
 
     const versionRequerida = await obtenerVersionRequerida(env, adminId);
-    const documentos = await obtenerDocumentosActivos(env, adminId, versionRequerida);
+    const documentos = await obtenerDocumentosActivos(env, adminId);
 
     if (!versionRequerida || documentos.length === 0) {
       return json(
@@ -342,6 +382,7 @@ export async function onRequestPost(context) {
       );
     }
 
+    const versionAportada = documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
     let expediente = await obtenerExpediente(env, usuario.id, adminId);
 
     if (!expediente) {
@@ -361,7 +402,7 @@ export async function onRequestPost(context) {
         usuario.id,
         adminId,
         versionRequerida,
-        versionRequerida
+        versionAportada
       ).run();
 
       expediente = await obtenerExpediente(env, usuario.id, adminId);
@@ -383,7 +424,7 @@ export async function onRequestPost(context) {
         WHERE id = ?
       `).bind(
         versionRequerida,
-        versionRequerida,
+        versionAportada,
         expediente.id
       ).run();
 
@@ -413,13 +454,13 @@ export async function onRequestPost(context) {
         expediente.id,
         doc.nombre,
         entrega.archivo_url,
-        versionRequerida
+        Number(doc.version_documental || 0)
       );
     });
 
     await env.DB.batch(inserts);
 
-    const archivosActivos = await obtenerArchivosActivos(env, expediente.id, versionRequerida);
+    const archivosActivos = await obtenerArchivosActivos(env, expediente.id);
     const notificacionAdmin = await enviarEmail(env, {
       to: admin.email || "",
       subject: `[Documentación] Remisión pendiente de revisión - ${usuario.centro || "Centro"}`,
@@ -451,7 +492,7 @@ export async function onRequestPost(context) {
         id: expediente.id,
         admin_id: adminId,
         version_requerida: versionRequerida,
-        version_aportada: versionRequerida,
+        version_aportada: versionAportada,
         estado: "EN_REVISION",
         fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
         archivos: archivosActivos

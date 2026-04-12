@@ -22,20 +22,57 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
-function calcularEstadoEfectivo(row) {
-  const versionRequerida = Number(row?.version_requerida || 0);
-  const versionAportada = Number(row?.version_aportada || 0);
-  const estado = String(row?.estado || "").toUpperCase();
+function limpiarTexto(valor) {
+  return String(valor || "").trim();
+}
 
-  if (!versionRequerida) return "NO_REQUERIDA";
-  if (!row?.expediente_id) return "PENDIENTE";
-  if (versionAportada !== versionRequerida) return "DESACTUALIZADA";
-
-  if (["VALIDADA", "EN_REVISION", "RECHAZADA", "PENDIENTE"].includes(estado)) {
-    return estado;
+function calcularEstadoEfectivo(expediente, documentosActivos, archivosActivos) {
+  if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
+    return "NO_REQUERIDA";
   }
 
-  return "PENDIENTE";
+  if (!expediente) {
+    return "PENDIENTE";
+  }
+
+  const estadoExpediente = String(expediente.estado || "").toUpperCase();
+  const archivosPorNombre = new Map(
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+  );
+
+  let faltaAlgunoNuncaRemitido = false;
+  let hayAlgunoDesactualizado = false;
+
+  for (const doc of documentosActivos) {
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre));
+
+    if (!entrega) {
+      faltaAlgunoNuncaRemitido = true;
+      continue;
+    }
+
+    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+      hayAlgunoDesactualizado = true;
+    }
+  }
+
+  if (hayAlgunoDesactualizado) {
+    return "DESACTUALIZADA";
+  }
+
+  if (faltaAlgunoNuncaRemitido) {
+    return "PENDIENTE";
+  }
+
+  if (estadoExpediente === "VALIDADA") {
+    return "VALIDADA";
+  }
+
+  if (estadoExpediente === "RECHAZADA") {
+    return "RECHAZADA";
+  }
+
+  return "EN_REVISION";
 }
 
 export async function onRequestGet(context) {
@@ -52,65 +89,110 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
-    const result = await env.DB.prepare(`
+    const adminsRows = await env.DB.prepare(`
       SELECT
         u.id AS admin_id,
         u.nombre AS admin_nombre,
         u.nombre_publico AS admin_nombre_publico,
         u.localidad AS admin_localidad,
         u.email AS admin_email,
-        MAX(adc.version_documental) AS version_requerida,
-        COUNT(adc.id) AS total_documentos,
-        cad.id AS expediente_id,
-        cad.version_aportada,
-        cad.estado,
-        cad.fecha_ultima_entrega,
-        cad.fecha_validacion,
-        cad.observaciones_admin
+        adc.id AS documento_id,
+        adc.nombre AS documento_nombre,
+        adc.version_documental
       FROM admin_documentos_comunes adc
       INNER JOIN usuarios u
         ON u.id = adc.admin_id
-      LEFT JOIN centro_admin_documentacion cad
-        ON cad.admin_id = u.id
-       AND cad.centro_usuario_id = ?
       WHERE adc.activo = 1
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
-      GROUP BY
-        u.id,
-        u.nombre,
-        u.nombre_publico,
-        u.localidad,
-        u.email,
-        cad.id,
-        cad.version_aportada,
-        cad.estado,
-        cad.fecha_ultima_entrega,
-        cad.fecha_validacion,
-        cad.observaciones_admin
-      HAVING COUNT(adc.id) > 0
-      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
+      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC, adc.orden ASC, adc.id ASC
+    `).all();
+
+    const adminsAgrupados = new Map();
+    for (const row of adminsRows?.results || []) {
+      const adminId = Number(row.admin_id || 0);
+      if (!adminsAgrupados.has(adminId)) {
+        adminsAgrupados.set(adminId, {
+          admin_id: adminId,
+          admin_nombre: row.admin_nombre || "",
+          admin_nombre_publico: row.admin_nombre_publico || "",
+          admin_localidad: row.admin_localidad || "",
+          admin_email: row.admin_email || "",
+          documentos: []
+        });
+      }
+
+      adminsAgrupados.get(adminId).documentos.push({
+        id: Number(row.documento_id || 0),
+        nombre: row.documento_nombre || "",
+        version_documental: Number(row.version_documental || 0)
+      });
+    }
+
+    const expedientesRows = await env.DB.prepare(`
+      SELECT
+        id,
+        admin_id,
+        version_requerida,
+        version_aportada,
+        estado,
+        fecha_ultima_entrega,
+        fecha_validacion,
+        observaciones_admin
+      FROM centro_admin_documentacion
+      WHERE centro_usuario_id = ?
     `).bind(usuario.id).all();
 
-    const administradores = (result?.results || []).map((row) => {
-      const estadoEfectivo = calcularEstadoEfectivo(row);
-      const versionRequerida = Number(row.version_requerida || 0);
-      const versionAportada = Number(row.version_aportada || 0);
+    const expedientesPorAdmin = new Map(
+      (expedientesRows?.results || []).map((row) => [Number(row.admin_id || 0), row])
+    );
+
+    const expedientesIds = (expedientesRows?.results || [])
+      .map((row) => Number(row.id || 0))
+      .filter((id) => id > 0);
+
+    const archivosPorExpediente = new Map();
+    if (expedientesIds.length) {
+      const placeholders = expedientesIds.map(() => "?").join(", ");
+      const archivosRows = await env.DB.prepare(`
+        SELECT
+          documentacion_id,
+          nombre_documento,
+          version_documental
+        FROM centro_admin_documentacion_archivos
+        WHERE activo = 1
+          AND documentacion_id IN (${placeholders})
+      `).bind(...expedientesIds).all();
+
+      for (const row of archivosRows?.results || []) {
+        const docId = Number(row.documentacion_id || 0);
+        if (!archivosPorExpediente.has(docId)) {
+          archivosPorExpediente.set(docId, []);
+        }
+        archivosPorExpediente.get(docId).push(row);
+      }
+    }
+
+    const administradores = Array.from(adminsAgrupados.values()).map((admin) => {
+      const expediente = expedientesPorAdmin.get(admin.admin_id) || null;
+      const archivosActivos = expediente ? (archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
+      const estadoEfectivo = calcularEstadoEfectivo(expediente, admin.documentos, archivosActivos);
+      const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
 
       return {
-        admin_id: Number(row.admin_id || 0),
-        admin_nombre: row.admin_nombre || "",
-        admin_nombre_publico: row.admin_nombre_publico || "",
-        admin_localidad: row.admin_localidad || "",
-        admin_email: row.admin_email || "",
+        admin_id: admin.admin_id,
+        admin_nombre: admin.admin_nombre,
+        admin_nombre_publico: admin.admin_nombre_publico,
+        admin_localidad: admin.admin_localidad,
+        admin_email: admin.admin_email,
         version_requerida: versionRequerida,
-        version_aportada: versionAportada,
-        total_documentos: Number(row.total_documentos || 0),
-        expediente_id: Number(row.expediente_id || 0),
-        estado: row.estado || "",
+        version_aportada: Number(expediente?.version_aportada || 0),
+        total_documentos: admin.documentos.length,
+        expediente_id: Number(expediente?.id || 0),
+        estado: expediente?.estado || "",
         estado_efectivo: estadoEfectivo,
-        fecha_ultima_entrega: row.fecha_ultima_entrega || "",
-        fecha_validacion: row.fecha_validacion || "",
-        observaciones_admin: row.observaciones_admin || "",
+        fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
+        fecha_validacion: expediente?.fecha_validacion || "",
+        observaciones_admin: expediente?.observaciones_admin || "",
         al_dia: estadoEfectivo === "VALIDADA"
       };
     });
