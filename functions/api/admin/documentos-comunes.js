@@ -66,7 +66,7 @@ async function obtenerVersionActual(env, adminId) {
   return Number(row?.version_actual || 0);
 }
 
-async function leerDocumentosActivos(env, adminId) {
+async function leerDocumentosAdmin(env, adminId, soloActivos = false) {
   const rows = await env.DB.prepare(`
     SELECT
       id,
@@ -80,8 +80,8 @@ async function leerDocumentosActivos(env, adminId) {
       fecha_actualizacion
     FROM admin_documentos_comunes
     WHERE admin_id = ?
-      AND activo = 1
-    ORDER BY orden ASC, id ASC
+      ${soloActivos ? "AND activo = 1" : ""}
+    ORDER BY activo DESC, orden ASC, id ASC
   `).bind(adminId).all();
 
   return rows?.results || [];
@@ -122,7 +122,7 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
     const adminId = await obtenerAdminObjetivo(session, url.searchParams.get("admin_id"));
     const version_actual = await obtenerVersionActual(env, adminId);
-    const documentos = await leerDocumentosActivos(env, adminId);
+    const documentos = await leerDocumentosAdmin(env, adminId, false);
 
     return json({
       ok: true,
@@ -185,7 +185,7 @@ export async function onRequestPost(context) {
       nombresVistos.add(clave);
     }
 
-    const actuales = await leerDocumentosActivos(env, adminId);
+    const actuales = await leerDocumentosAdmin(env, adminId, true);
     const firmaActual = firmaDocumentos(actuales);
     const firmaNueva = firmaDocumentos(documentosNormalizados);
     const versionAnterior = await obtenerVersionActual(env, adminId);
@@ -297,8 +297,10 @@ export async function onRequestPost(context) {
 
     await env.DB.batch(sentencias);
 
-    const documentos = await leerDocumentosActivos(env, adminId);
-    const versionActual = documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
+    const documentos = await leerDocumentosAdmin(env, adminId, false);
+    const versionActual = documentos
+      .filter((doc) => Number(doc.activo || 0) === 1)
+      .reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
 
     return json({
       ok: true,
