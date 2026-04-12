@@ -39,7 +39,7 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
-async function obtenerArchivoObjetivo(env, centroUsuarioId, documentoId) {
+async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId) {
   return await env.DB.prepare(`
     SELECT
       a.id,
@@ -56,6 +56,21 @@ async function obtenerArchivoObjetivo(env, centroUsuarioId, documentoId) {
       AND a.activo = 1
     LIMIT 1
   `).bind(documentoId, centroUsuarioId).first();
+}
+
+async function obtenerArchivoPorId(env, centroUsuarioId, archivoId) {
+  return await env.DB.prepare(`
+    SELECT
+      a.id,
+      a.documentacion_id,
+      a.nombre_documento,
+      a.archivo_url
+    FROM centro_admin_documentacion_archivos a
+    INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
+    WHERE a.id = ?
+      AND d.centro_usuario_id = ?
+    LIMIT 1
+  `).bind(archivoId, centroUsuarioId).first();
 }
 
 export async function onRequestPost(context) {
@@ -84,12 +99,15 @@ export async function onRequestPost(context) {
 
     const body = await request.json().catch(() => null);
     const documentoId = parsearIdPositivo(body?.documento_id);
+    const archivoId = parsearIdPositivo(body?.archivo_id);
 
-    if (!documentoId) {
+    if (!documentoId && !archivoId) {
       return json({ ok: false, error: "Debes indicar un documento válido." }, 400);
     }
 
-    const archivo = await obtenerArchivoObjetivo(env, usuario.id, documentoId);
+    const archivo = archivoId
+      ? await obtenerArchivoPorId(env, usuario.id, archivoId)
+      : await obtenerArchivoPorDocumento(env, usuario.id, documentoId);
     if (!archivo) {
       return json({ ok: false, error: "No se encontró un documento remitido para eliminar." }, 404);
     }
@@ -107,7 +125,7 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       mensaje: "Documento remitido eliminado correctamente.",
-      documento_id: documentoId,
+      documento_id: documentoId || null,
       archivo_id: archivo.id,
       archivo_eliminado: Boolean(key)
     });
