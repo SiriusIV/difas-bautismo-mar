@@ -162,6 +162,9 @@
     .tabs-modal-detalle { display: flex; gap: 8px; }
     .tab-detalle-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-detalle-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
+    .tab-detalle-btn-estados { padding-right: 10px; }
+    .tab-etiqueta-con-icono { display: inline-flex; align-items: center; gap: 7px; }
+    .icono-tab-ayuda { width: 16px; height: 16px; border-radius: 999px; border: 1px solid #8aa3c2; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; line-height: 1; background: #f4f8ff; }
     .tab-panel-detalle { display: none; }
     .tab-panel-detalle.activo { display: block; }
     .tabla-estados-wrap { width: 100%; overflow-x: auto; margin-top: 8px; }
@@ -169,6 +172,8 @@
     .tabla-estados-doc th, .tabla-estados-doc td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-estados-doc th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-estados-doc tr:last-child td { border-bottom: none; }
+    .cabecera-columna-icono { display: inline-flex; align-items: center; gap: 7px; }
+    .icono-columna-link { width: 14px; height: 14px; display: inline-block; color: #5f6d7a; }
     .acciones-tabla-iconos { display: flex; align-items: center; gap: 8px; }
     .btn-icono-tabla { width: 30px; height: 30px; border-radius: 999px; border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
     .btn-icono-tabla:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
@@ -397,7 +402,9 @@
       <div class="tabs-modal-detalle-linea">
         <div class="tabs-modal-detalle" role="tablist" aria-label="Pestañas del detalle documental">
           <button type="button" class="tab-detalle-btn activa" id="tabDetalleDocumentos" data-tab-detalle="documentos" role="tab" aria-selected="true">Documentos</button>
-          <button type="button" class="tab-detalle-btn" id="tabDetalleEstados" data-tab-detalle="estados" role="tab" aria-selected="false">Estados</button>
+          <button type="button" class="tab-detalle-btn tab-detalle-btn-estados" id="tabDetalleEstados" data-tab-detalle="estados" role="tab" aria-selected="false">
+            <span class="tab-etiqueta-con-icono">Estados <span class="icono-tab-ayuda">?</span></span>
+          </button>
         </div>
         <div class="modal-detalle-toolbar-zona">
           <div class="modal-detalle-toolbar">
@@ -419,7 +426,7 @@
             <thead>
               <tr>
                 <th class="col-seleccion"></th>
-                <th>Documento (vínculo descarga)</th>
+                <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
                 <th>Versión</th>
                 <th>Estado del documento</th>
               </tr>
