@@ -1,8 +1,6 @@
 import { getUserSession } from "./_auth.js";
 import {
-  construirEmailHtmlDocumentacionRemitida,
   construirEmailHtmlDocumentacionRemitidaAgrupada,
-  construirEmailTextoDocumentacionRemitida,
   construirEmailTextoDocumentacionRemitidaAgrupada,
   enviarEmail,
   nombreVisibleAdmin
@@ -616,12 +614,8 @@ export async function onRequestPost(context) {
       notificacionAdmin = await enviarEmail(env, {
         to: admin.email || "",
         subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
-        text: cambiosCorreo.length > 1
-          ? construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail)
-          : construirEmailTextoDocumentacionRemitida(payloadEmail),
-        html: cambiosCorreo.length > 1
-          ? construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
-          : construirEmailHtmlDocumentacionRemitida(payloadEmail)
+        text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
+        html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
       });
 
       if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
