@@ -116,8 +116,7 @@
     .modal h3 { margin: 0 0 10px; font-size: 20px; color: var(--brand); }
     .modal p { margin: 0; font-size: 13px; line-height: 1.6; color: #445261; }
     .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .modal-detalle-docs { max-width: 860px; }
-    .modal-documentos-enviados { max-width: 980px; }
+    .modal-detalle-docs { max-width: 980px; }
     .detalle-docs-cabecera { margin-bottom: 12px; }
     .detalle-docs-cabecera .admin-doc-nombre { font-size: 18px; }
     .detalle-docs-cabecera .admin-doc-meta { font-size: 12px; }
@@ -267,9 +266,6 @@
           <h3>Actividades · Documentación obligatoria</h3>
           <p>Determinadas actividades exigen que el organizador revise previamente la documentación obligatoria asociada a tu centro. A continuación puedes consultar qué organizadores tienen documentación activa, el estado actual de tus remisiones y acceder al trámite documental cuando necesites completarlo o actualizarlo.</p>
         </div>
-        <div class="acciones-superiores">
-          <button type="button" class="btn btn-suave" id="btnMisDocumentosEnviados">Mis documentos enviados</button>
-        </div>
       </div>
       <div class="tabla-docs-wrap">
         <table class="tabla-docs">
@@ -351,6 +347,7 @@
               <th>Documento</th>
               <th>Versión</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="detalleDocumentacionBody"></tbody>
@@ -363,28 +360,6 @@
     </div>
   </div>
 
-  <div id="modalDocumentosEnviados" class="modal-fondo" aria-hidden="true">
-    <div class="modal modal-documentos-enviados">
-      <h3>Mis documentos enviados</h3>
-      <p>Aquí puedes consultar los documentos firmados que has subido al sistema y eliminar los que ya no quieras conservar.</p>
-      <div class="tabla-detalle-docs-wrap" style="margin-top: 14px;">
-        <table class="tabla-detalle-docs">
-          <thead>
-            <tr>
-              <th>Organizador</th>
-              <th>Documento enviado</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="documentosEnviadosBody"></tbody>
-        </table>
-      </div>
-      <div class="estado-vacio-docs oculto" id="documentosEnviadosVacio">No hay documentos enviados para mostrar.</div>
-    </div>
-  </div>
-
   <script>
     let perfilOriginal = null;
     let rolActual = "";
@@ -392,7 +367,6 @@
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
     let detalleDocumentacionActual = null;
-    let documentosEnviados = [];
     let temporizadorMensajePassword = null;
 
     function jsonMessage(id, tipo, texto) {
@@ -461,10 +435,6 @@
       document.getElementById("modalDetalleDocumentacion").classList.remove("activo");
     }
 
-    function cerrarModalDocumentosEnviados() {
-      document.getElementById("modalDocumentosEnviados").classList.remove("activo");
-    }
-
     async function abrirModalDetalleDocumentacion(adminId) {
       if (!Number.isInteger(adminId) || adminId <= 0) return;
 
@@ -514,10 +484,23 @@
         documentos.forEach((doc) => {
           const tr = document.createElement("tr");
           const estadoDoc = estadoDetalleDocumento(estadoExpediente, doc);
+          const acciones = doc.entrega_archivo_url
+            ? `
+              <div class="acciones-tabla-iconos">
+                <a href="${doc.entrega_archivo_url}" target="_blank" rel="noopener noreferrer" class="btn-icono-tabla" title="Ver documento" aria-label="Ver documento">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </a>
+                <button type="button" class="btn-icono-tabla peligro" data-eliminar-desde-detalle="${Number(doc.entrega_archivo_id || 0)}" title="Eliminar documento" aria-label="Eliminar documento">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+              </div>
+            `
+            : "";
           tr.innerHTML = `
             <td class="col-documento">${doc.nombre || "Documento"}</td>
             <td>${versionRequerida > 0 ? versionRequerida : "-"}</td>
             <td><span class="estado-pill-doc ${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</span></td>
+            <td>${acciones}</td>
           `;
           body.appendChild(tr);
         });
@@ -571,45 +554,6 @@
           <td>Requeridos: ${Number(item.total_documentos || 0)} / Validados: ${Number(item.total_documentos_validados || 0)}</td>
           <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
-        `;
-        body.appendChild(tr);
-      });
-    }
-
-    function renderizarDocumentosEnviados() {
-      const body = document.getElementById("documentosEnviadosBody");
-      const vacio = document.getElementById("documentosEnviadosVacio");
-      body.innerHTML = "";
-
-      if (!Array.isArray(documentosEnviados) || !documentosEnviados.length) {
-        vacio.classList.remove("oculto");
-        return;
-      }
-
-      vacio.classList.add("oculto");
-      documentosEnviados.forEach((item) => {
-        const tr = document.createElement("tr");
-        const nombreAdmin = item.admin_nombre_publico || item.admin_nombre || "Organizador";
-        const localidad = item.admin_localidad || "";
-        const estado = String(item.estado_documento || "EN_REVISION").toUpperCase();
-        tr.innerHTML = `
-          <td class="td-centro">
-            <div class="admin-doc-nombre">${nombreAdmin}</div>
-            <div class="admin-doc-meta">${localidad}</div>
-          </td>
-          <td>${item.nombre_documento || "Documento"}</td>
-          <td>${formatearFechaCorta(item.fecha_subida || "")}</td>
-          <td><span class="estado-pill-doc ${estado}">${etiquetaEstadoDocumentacion(estado)}</span></td>
-          <td>
-            <div class="acciones-tabla-iconos">
-              <a href="${item.archivo_url || "#"}" target="_blank" rel="noopener noreferrer" class="btn-icono-tabla" title="Ver documento" aria-label="Ver documento">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              </a>
-              <button type="button" class="btn-icono-tabla peligro" data-eliminar-documento-enviado="${Number(item.archivo_id || 0)}" title="Eliminar documento" aria-label="Eliminar documento">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-              </button>
-            </div>
-          </td>
         `;
         body.appendChild(tr);
       });
@@ -759,29 +703,6 @@
       }
     }
 
-    async function cargarDocumentosEnviados() {
-      if (!esSolicitante()) {
-        documentosEnviados = [];
-        return;
-      }
-
-      try {
-        const res = await fetch("/api/usuario/documentos-enviados", {
-          credentials: "include"
-        });
-        const data = await res.json().catch(() => null);
-        documentosEnviados = (res.ok && data?.ok && Array.isArray(data.documentos)) ? data.documentos : [];
-      } catch (_) {
-        documentosEnviados = [];
-      }
-    }
-
-    async function abrirModalDocumentosEnviados() {
-      await cargarDocumentosEnviados();
-      renderizarDocumentosEnviados();
-      document.getElementById("modalDocumentosEnviados").classList.add("activo");
-    }
-
     async function cargarPerfil() {
       limpiarMensaje("mensajePerfil");
       limpiarMensaje("mensajePassword");
@@ -803,7 +724,6 @@
       if (!perfil) perfil = normalizarPerfil({}, sesion);
       rellenarFormulario(perfil);
       await cargarResumenDocumentacion();
-      await cargarDocumentosEnviados();
     }
 
     function abrirAyudaCampo(titulo, texto) {
@@ -1252,7 +1172,6 @@
       location.href = "admin-documentos.html";
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
-    document.getElementById("btnMisDocumentosEnviados").addEventListener("click", abrirModalDocumentosEnviados);
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
       const btnEstado = event.target.closest("[data-estado-documentacion]");
       if (btnEstado) {
@@ -1265,11 +1184,11 @@
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
       location.href = `usuario-documentacion.html?modo=registro&admin_id=${encodeURIComponent(detalleDocumentacionActual)}`;
     });
-    document.getElementById("documentosEnviadosBody").addEventListener("click", async function (event) {
-      const btnEliminar = event.target.closest("[data-eliminar-documento-enviado]");
+    document.getElementById("detalleDocumentacionBody").addEventListener("click", async function (event) {
+      const btnEliminar = event.target.closest("[data-eliminar-desde-detalle]");
       if (!btnEliminar) return;
 
-      const archivoId = Number.parseInt(btnEliminar.dataset.eliminarDocumentoEnviado || "", 10);
+      const archivoId = Number.parseInt(btnEliminar.dataset.eliminarDesdeDetalle || "", 10);
       if (!Number.isInteger(archivoId) || archivoId <= 0) return;
 
       const confirmar = window.confirm("Este documento enviado se eliminará definitivamente del sistema. ¿Deseas continuar?");
@@ -1292,8 +1211,9 @@
         }
 
         jsonMessage("mensajePerfil", "ok", data?.mensaje || "Documento enviado eliminado correctamente.");
-        await cargarDocumentosEnviados();
-        renderizarDocumentosEnviados();
+        if (Number.isInteger(detalleDocumentacionActual) && detalleDocumentacionActual > 0) {
+          await abrirModalDetalleDocumentacion(detalleDocumentacionActual);
+        }
         await cargarResumenDocumentacion();
       } catch (error) {
         jsonMessage("mensajePerfil", "error", error.message || "No se pudo eliminar el documento enviado.");
@@ -1327,8 +1247,7 @@
       "modalPasswordActual",
       "modalPasswordNueva",
       "modalAyudaCampo",
-      "modalDetalleDocumentacion",
-      "modalDocumentosEnviados"
+      "modalDetalleDocumentacion"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -1337,7 +1256,6 @@
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
         if (id === "modalDetalleDocumentacion") cerrarModalDetalleDocumentacion();
-        if (id === "modalDocumentosEnviados") cerrarModalDocumentosEnviados();
       });
     });
 
