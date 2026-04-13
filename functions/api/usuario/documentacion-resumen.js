@@ -216,7 +216,7 @@ export async function onRequestGet(context) {
         expediente_id: Number(expediente?.id || 0),
         estado: expediente?.estado || "",
         estado_efectivo: estadoEfectivo,
-        fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
+        fecha_ultima_entrega: archivosActivos.length ? (expediente?.fecha_ultima_entrega || "") : "",
         fecha_validacion: expediente?.fecha_validacion || "",
         observaciones_admin: expediente?.observaciones_admin || "",
         al_dia: estadoEfectivo === "VALIDADA"
