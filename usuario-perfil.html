@@ -505,7 +505,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><span class="estado-pill-doc NO_INICIADO">No enviado</span></td>
+              <td><span class="estado-pill-doc NO_INICIADO">No presentado</span></td>
               <td>Este documento todavía no ha sido remitido a través de la plataforma.</td>
             </tr>
             <tr>
@@ -616,8 +616,8 @@
       if (valor === "NO_ACTUALIZADO") return "No actualizado";
       if (valor === "NO_COMPLETADO") return "No completado";
       if (valor === "NO_INICIADO") return "No iniciado";
-      if (valor === "NO_ENVIADO") return "No enviado";
-      return "No enviado";
+      if (valor === "NO_ENVIADO") return "No presentado";
+      return "No presentado";
     }
 
     function obtenerIndicadorEstadoExpediente(estado) {
@@ -690,8 +690,8 @@
 
       if (noEnviados > 0) {
         return noEnviados === 1
-          ? "Falta un documento requerido por enviar."
-          : `Faltan ${noEnviados} documentos requeridos por enviar.`;
+          ? "Falta un documento requerido por presentar."
+          : `Faltan ${noEnviados} documentos requeridos por presentar.`;
       }
 
       if (enRevision > 0) {
@@ -1036,6 +1036,18 @@
       btnEliminar.disabled = !Number.isInteger(Number(organizadorSeleccionadoId || 0)) || Number(organizadorSeleccionadoId || 0) <= 0;
     }
 
+    function actualizarTituloTabDocumentos() {
+      const btn = document.getElementById("tabBloqueDocumentos");
+      const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0)) || null;
+      if (!resumen) {
+        btn.textContent = "Documentos";
+        return;
+      }
+
+      const nombre = resumen.admin_nombre_publico || resumen.admin_nombre || "Organizador";
+      btn.textContent = `Documentos de ${nombre}`;
+    }
+
     function seleccionarOrganizador(adminId) {
       const id = Number(adminId || 0);
       if (
@@ -1052,6 +1064,7 @@
       organizadorSeleccionadoId = Number.isInteger(id) && id > 0 ? id : null;
       renderizarResumenDocumentacion();
       actualizarAccionesOrganizadores();
+      actualizarTituloTabDocumentos();
       if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
         cargarDetalleSeleccionado();
       }
@@ -1076,6 +1089,7 @@
         organizadorSeleccionadoId = null;
         vacio.classList.remove("oculto");
         actualizarAccionesOrganizadores();
+        actualizarTituloTabDocumentos();
         renderizarPanelDocumentosVacio("Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.");
         return;
       }
@@ -1110,6 +1124,7 @@
       });
 
       actualizarAccionesOrganizadores();
+      actualizarTituloTabDocumentos();
       if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
         cargarDetalleSeleccionado();
       }
