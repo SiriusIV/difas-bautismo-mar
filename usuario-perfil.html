@@ -601,15 +601,15 @@
     }
 
     function formatearFechaCorta(valor) {
-      if (!valor) return "Sin entrega";
+      if (!valor) return "-";
       const fecha = new Date(valor);
       if (Number.isNaN(fecha.getTime())) return valor;
       return fecha.toLocaleString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
+        year: "numeric"
       });
     }
 
