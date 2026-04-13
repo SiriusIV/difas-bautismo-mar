@@ -22,6 +22,18 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
+async function asegurarTablaSeleccion(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS usuario_documentacion_organizadores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      centro_usuario_id INTEGER NOT NULL,
+      admin_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(centro_usuario_id, admin_id)
+    )
+  `).run();
+}
+
 function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
@@ -112,6 +124,8 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
+    await asegurarTablaSeleccion(env);
+
     const adminsRows = await env.DB.prepare(`
       SELECT
         u.id AS admin_id,
@@ -122,13 +136,16 @@ export async function onRequestGet(context) {
         adc.id AS documento_id,
         adc.nombre AS documento_nombre,
         adc.version_documental
-      FROM admin_documentos_comunes adc
+      FROM usuario_documentacion_organizadores sel
       INNER JOIN usuarios u
-        ON u.id = adc.admin_id
-      WHERE adc.activo = 1
+        ON u.id = sel.admin_id
+      LEFT JOIN admin_documentos_comunes adc
+        ON adc.admin_id = u.id
+       AND adc.activo = 1
+      WHERE sel.centro_usuario_id = ?
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC, adc.orden ASC, adc.id ASC
-    `).all();
+    `).bind(usuario.id).all();
 
     const adminsAgrupados = new Map();
     for (const row of adminsRows?.results || []) {
@@ -144,11 +161,13 @@ export async function onRequestGet(context) {
         });
       }
 
-      adminsAgrupados.get(adminId).documentos.push({
-        id: Number(row.documento_id || 0),
-        nombre: row.documento_nombre || "",
-        version_documental: Number(row.version_documental || 0)
-      });
+      if (Number(row.documento_id || 0) > 0) {
+        adminsAgrupados.get(adminId).documentos.push({
+          id: Number(row.documento_id || 0),
+          nombre: row.documento_nombre || "",
+          version_documental: Number(row.version_documental || 0)
+        });
+      }
     }
 
     const expedientesRows = await env.DB.prepare(`
