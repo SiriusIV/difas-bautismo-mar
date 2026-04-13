@@ -609,12 +609,18 @@
       if (!valor) return "-";
       const fecha = new Date(valor);
       if (Number.isNaN(fecha.getTime())) return valor;
-      const hh = String(fecha.getHours()).padStart(2, "0");
-      const mm = String(fecha.getMinutes()).padStart(2, "0");
-      const dd = String(fecha.getDate()).padStart(2, "0");
-      const MM = String(fecha.getMonth() + 1).padStart(2, "0");
-      const yyyy = String(fecha.getFullYear());
-      return `${hh}:${mm}, ${dd}/${MM}/${yyyy}`;
+      const formatter = new Intl.DateTimeFormat("es-ES", {
+        timeZone: "Europe/Madrid",
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      const partes = formatter.formatToParts(fecha);
+      const mapa = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
+      return `${mapa.hour || "00"}:${mapa.minute || "00"}, ${mapa.day || "00"}/${mapa.month || "00"}/${mapa.year || "0000"}`;
     }
 
     function estadoDetalleDocumento(_expedienteEstado, documento) {
