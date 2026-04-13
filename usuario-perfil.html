@@ -96,10 +96,33 @@
     .td-centro { min-width: 220px; }
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
     .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
     .tab-bloque-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-bloque-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
     .panel-bloque-documentacion { display: none; }
     .panel-bloque-documentacion.activo { display: block; }
+    .acciones-bloque-documentacion { display: flex; align-items: center; gap: 8px; }
+    .btn-icono.peligro:hover { color: #9b1c1c; border-color: #d9b2b2; background: #fff7f7; }
+    .tabla-organizadores-wrap { width: 100%; overflow-x: auto; }
+    .tabla-organizadores { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tabla-organizadores th, .tabla-organizadores td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-organizadores th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-organizadores tr:last-child td { border-bottom: none; }
+    .tabla-organizadores tr.fila-seleccionada td { background: #f5f9ff; }
+    .indicador-expediente { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; }
+    .indicador-expediente.circulo { border-radius: 999px; border: 1px solid transparent; }
+    .indicador-expediente.verde { background: #eefaf0; border-color: #b9e0c0; }
+    .indicador-expediente.amarillo { background: #fff8eb; border-color: #f0d9a7; }
+    .indicador-expediente.rojo { background: #fdeaea; border-color: #f5c2c2; }
+    .indicador-expediente.neutro { background: #f0f4f8; border-color: #d5dfe8; }
+    .indicador-expediente svg { width: 12px; height: 12px; display: block; }
+    .indicador-expediente.advertencia { width: 18px; height: 18px; color: #c88700; }
+    .panel-documentos-estado-vacio { padding: 18px 2px 4px; font-size: 13px; color: var(--muted); }
+    .detalle-documentacion-panel { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .detalle-documentacion-panel.oculto { display: none !important; }
+    .detalle-documentacion-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 10px; flex-wrap: wrap; }
+    .detalle-documentacion-header h4 { margin: 0; font-size: 28px; color: var(--brand); }
+    .detalle-documentacion-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .tabla-estados-expediente-wrap { width: 100%; overflow-x: auto; }
     .tabla-estados-expediente { width: 100%; border-collapse: collapse; min-width: 560px; }
     .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -325,65 +348,85 @@
       <div class="bloque-head-documentacion">
         <div>
           <h3>Actividades · Documentación obligatoria</h3>
-          <p>Determinadas actividades exigen que el organizador revise previamente la documentación obligatoria asociada a tu centro. A continuación puedes consultar qué organizadores tienen documentación activa, el estado actual de tus remisiones y acceder al trámite documental cuando necesites completarlo o actualizarlo.</p>
+          <p>Gestiona aquí los organizadores que quieres mantener en seguimiento documental y consulta, para cada uno de ellos, la situación general del expediente y el detalle de sus documentos obligatorios.</p>
         </div>
       </div>
-      <div class="tabs-bloque-documentacion" role="tablist" aria-label="Pestañas del estado documental">
-        <button type="button" class="tab-bloque-btn activa" id="tabBloqueDocumentacion" data-tab-bloque="documentacion" role="tab" aria-selected="true">Documentación</button>
-        <button type="button" class="tab-bloque-btn" id="tabBloqueEstadosExpediente" data-tab-bloque="estados" role="tab" aria-selected="false">Estados del expediente</button>
+      <div class="tabs-bloque-linea">
+        <div class="tabs-bloque-documentacion" role="tablist" aria-label="Pestañas del seguimiento documental">
+          <button type="button" class="tab-bloque-btn activa" id="tabBloqueOrganizadores" data-tab-bloque="organizadores" role="tab" aria-selected="true">Organizadores</button>
+          <button type="button" class="tab-bloque-btn" id="tabBloqueDocumentos" data-tab-bloque="documentos" role="tab" aria-selected="false">Documentos</button>
+        </div>
+        <div class="acciones-bloque-documentacion">
+          <button type="button" class="btn-icono" id="btnAgregarOrganizador" title="Añadir organizador" aria-label="Añadir organizador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+          </button>
+          <button type="button" class="btn-icono peligro" id="btnEliminarOrganizador" title="Eliminar organizador" aria-label="Eliminar organizador" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+        </div>
       </div>
-      <div class="panel-bloque-documentacion activo" id="panelBloqueDocumentacion" role="tabpanel" aria-labelledby="tabBloqueDocumentacion">
-        <div class="tabla-docs-wrap">
-          <table class="tabla-docs">
+      <div class="panel-bloque-documentacion activo" id="panelBloqueOrganizadores" role="tabpanel" aria-labelledby="tabBloqueOrganizadores">
+        <div class="tabla-organizadores-wrap">
+          <table class="tabla-organizadores">
             <thead>
               <tr>
+                <th class="col-seleccion"></th>
                 <th>Organizador</th>
                 <th>Documentos</th>
-                <th>Estado del expediente <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadoDocumentacion" aria-label="Ayuda sobre el expediente documental" title="Ayuda sobre el expediente" style="position: static; transform: none; margin-left: 6px;">?</button></th>
-                <th>Última entrega</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody id="tablaEstadoDocumentacionBody"></tbody>
           </table>
         </div>
-        <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentación activa para mostrar.</div>
+        <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Aún no has añadido ningún organizador a tu seguimiento documental.</div>
       </div>
-      <div class="panel-bloque-documentacion" id="panelBloqueEstadosExpediente" role="tabpanel" aria-labelledby="tabBloqueEstadosExpediente">
-        <div class="tabla-estados-expediente-wrap">
-          <table class="tabla-estados-expediente">
-            <thead>
-              <tr>
-                <th>Estado</th>
-                <th>Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="estado-pill-doc NO_INICIADO">No iniciado</span></td>
-                <td>No se ha remitido todavía ningún documento del expediente requerido por el organizador.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc NO_COMPLETADO">No completado</span></td>
-                <td>Se ha iniciado la remisión, pero todavía falta al menos un documento obligatorio por enviar.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc NO_ACTUALIZADO">No actualizado</span></td>
-                <td>Existe al menos un documento remitido que ya no coincide con la versión vigente exigida por el organizador.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc RECHAZADA">Rechazada</span></td>
-                <td>Al menos uno de los documentos del expediente ha sido rechazado por el organizador.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc EN_REVISION">En revisión</span></td>
-                <td>Todos los documentos están remitidos, pero al menos uno sigue pendiente de revisión manual.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc VALIDADA">Validada</span></td>
-                <td>Todos los documentos exigidos por el organizador han sido revisados y validados correctamente.</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="panel-bloque-documentacion" id="panelBloqueDocumentos" role="tabpanel" aria-labelledby="tabBloqueDocumentos">
+        <div id="detalleDocumentacionSinSeleccion" class="panel-documentos-estado-vacio">Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.</div>
+        <div class="detalle-documentacion-panel oculto" id="detalleDocumentacionPanel">
+          <div class="detalle-documentacion-header">
+            <div>
+              <h4 id="detalleDocumentacionAdmin">Organizador</h4>
+              <div class="modal-detalle-sublinea">
+                <p class="modal-detalle-subtitulo">Documentación obligatoria para la solicitud de actividades</p>
+              </div>
+            </div>
+            <div class="detalle-documentacion-toolbar">
+              <button type="button" class="btn-icono-modal" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+              <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
+              </button>
+              <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              </button>
+              <button type="button" class="btn-icono-modal btn-guardar-modal" id="btnGuardarDesdeDetalleDocumentacion" title="Guardar cambios" aria-label="Guardar cambios" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              </button>
+            </div>
+          </div>
+          <div id="mensajeDetalleDocumentacion" class="mensaje-modal-detalle"></div>
+          <div class="detalle-docs-estado-linea">
+            <span class="detalle-docs-estado-etiqueta">Estado de la documentación requerida:</span>
+            <span id="detalleDocumentacionResumen" class="estado-pill-doc NO_INICIADO">No iniciado</span>
+          </div>
+          <div class="tabla-detalle-docs-wrap">
+            <table class="tabla-detalle-docs">
+              <thead>
+                <tr>
+                  <th class="col-seleccion"></th>
+                  <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
+                  <th>Versión</th>
+                  <th>Última entrega</th>
+                  <th>Estado del documento</th>
+                </tr>
+              </thead>
+              <tbody id="detalleDocumentacionBody"></tbody>
+            </table>
+          </div>
+          <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
+          <input type="file" id="inputArchivoDetalleDocumentacion" class="input-archivo-detalle" accept="application/pdf,.pdf">
         </div>
       </div>
     </div>
@@ -436,101 +479,18 @@
       <p id="textoAyudaCampo"></p>
     </div>
   </div>
-
-  <div id="modalDetalleDocumentacion" class="modal-fondo" aria-hidden="true">
-    <div class="modal modal-detalle-docs">
-      <div class="modal-detalle-head">
-        <div>
-          <h3 id="detalleDocumentacionAdmin">Organizador</h3>
-          <div class="modal-detalle-sublinea">
-            <p class="modal-detalle-subtitulo">Documentación obligatoria para la solicitud de actividades</p>
-          </div>
-        </div>
-        <div class="modal-detalle-cierre-zona">
-          <button type="button" class="btn-cerrar-modal" id="btnCerrarDetalleDocumentacion" title="Cerrar" aria-label="Cerrar">×</button>
-        </div>
+  <div id="modalAgregarOrganizador" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Añadir organizador</h3>
+      <div class="campo-linea">
+        <label for="selectAgregarOrganizador">Organizador</label>
+        <select id="selectAgregarOrganizador"></select>
       </div>
-      <div id="mensajeDetalleDocumentacion" class="mensaje-modal-detalle"></div>
-      <div class="detalle-docs-estado-linea">
-        <span class="detalle-docs-estado-etiqueta">Estado de la documentación requerida:</span>
-        <span id="detalleDocumentacionResumen" class="estado-pill-doc NO_INICIADO">No iniciado</span>
+      <div id="mensajeAgregarOrganizador" class="mensaje"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCancelarAgregarOrganizador">Cancelar</button>
+        <button type="button" class="btn" id="btnConfirmarAgregarOrganizador">Añadir</button>
       </div>
-      <div class="tabs-modal-detalle-linea">
-        <div class="tabs-modal-detalle" role="tablist" aria-label="Pestañas del detalle documental">
-          <button type="button" class="tab-detalle-btn activa" id="tabDetalleDocumentos" data-tab-detalle="documentos" role="tab" aria-selected="true">Documentos</button>
-          <button type="button" class="tab-detalle-btn tab-detalle-btn-estados" id="tabDetalleEstados" data-tab-detalle="estados" role="tab" aria-selected="false">
-            <span class="tab-etiqueta-con-icono">Estados <span class="icono-tab-ayuda">?</span></span>
-          </button>
-        </div>
-        <div class="modal-detalle-toolbar-zona">
-          <div class="modal-detalle-toolbar">
-            <button type="button" class="btn-icono-modal" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-            <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
-            </button>
-            <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            </button>
-            <button type="button" class="btn-icono-modal btn-guardar-modal" id="btnGuardarDesdeDetalleDocumentacion" title="Guardar cambios" aria-label="Guardar cambios" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="tab-panel-detalle activo" id="panelDetalleDocumentos" role="tabpanel" aria-labelledby="tabDetalleDocumentos">
-        <div class="tabla-detalle-docs-wrap">
-          <table class="tabla-detalle-docs">
-            <thead>
-              <tr>
-                <th class="col-seleccion"></th>
-                <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
-                <th>Versión</th>
-                <th>Última entrega</th>
-                <th>Estado del documento</th>
-              </tr>
-            </thead>
-            <tbody id="detalleDocumentacionBody"></tbody>
-          </table>
-        </div>
-        <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
-      </div>
-      <div class="tab-panel-detalle" id="panelDetalleEstados" role="tabpanel" aria-labelledby="tabDetalleEstados">
-        <div class="tabla-estados-wrap">
-          <table class="tabla-estados-doc">
-            <thead>
-              <tr>
-                <th>Estado</th>
-                <th>Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="estado-pill-doc NO_INICIADO">No enviado</span></td>
-                <td>Este documento todavía no ha sido remitido a través de la plataforma.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc NO_ACTUALIZADO">No actualizado</span></td>
-                <td>Existe una remisión anterior, pero ya no coincide con la versión vigente exigida por el organizador.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc RECHAZADA">Rechazado</span></td>
-                <td>El organizador ha revisado este documento y lo ha rechazado.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc EN_REVISION">En revisión</span></td>
-                <td>El documento ya fue remitido y está pendiente de revisión manual por parte del organizador.</td>
-              </tr>
-              <tr>
-                <td><span class="estado-pill-doc VALIDADA">Validado</span></td>
-                <td>El organizador ha comprobado el documento y lo ha aceptado como válido.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <input type="file" id="inputArchivoDetalleDocumentacion" class="input-archivo-detalle" accept="application/pdf,.pdf">
     </div>
   </div>
 
@@ -540,11 +500,12 @@
     let navegacionPendiente = null;
     let passwordActualValidada = "";
     let resumenDocumentacion = [];
+    let organizadoresDisponibles = [];
+    let organizadorSeleccionadoId = null;
     let detalleDocumentacionActual = null;
     let detalleDocumentacionDatos = [];
     let detalleDocumentacionSeleccionId = null;
     let detalleCambiosPendientes = new Map();
-    let detalleTabActiva = "documentos";
     let temporizadorMensajePassword = null;
 
     function jsonMessage(id, tipo, texto) {
@@ -605,6 +566,43 @@
       return "No enviado";
     }
 
+    function obtenerIndicadorEstadoExpediente(estado) {
+      const valor = String(estado || "").toUpperCase();
+
+      if (valor === "VALIDADA") {
+        return {
+          html: `<span class="indicador-expediente circulo verde" title="Validado" aria-label="Validado"></span>`,
+          titulo: "Validado"
+        };
+      }
+
+      if (valor === "RECHAZADA" || valor === "NO_ACTUALIZADO") {
+        return {
+          html: `<span class="indicador-expediente advertencia" title="Necesita acción" aria-label="Necesita acción"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 1.8 20.5h20.4L12 3zm0 5.2c.5 0 .9.4.9.9v5.5a.9.9 0 0 1-1.8 0V9.1c0-.5.4-.9.9-.9zm0 10.1a1.15 1.15 0 1 1 0-2.3 1.15 1.15 0 0 1 0 2.3z"></path></svg></span>`,
+          titulo: "Necesita acción"
+        };
+      }
+
+      if (valor === "NO_INICIADO" || valor === "NO_COMPLETADO" || valor === "NO_ENVIADO") {
+        return {
+          html: `<span class="indicador-expediente circulo rojo" title="No enviado" aria-label="No enviado"></span>`,
+          titulo: "No enviado"
+        };
+      }
+
+      if (valor === "EN_REVISION") {
+        return {
+          html: `<span class="indicador-expediente circulo amarillo" title="En trámite" aria-label="En trámite"></span>`,
+          titulo: "En trámite"
+        };
+      }
+
+      return {
+        html: `<span class="indicador-expediente circulo neutro" title="Sin documentación activa" aria-label="Sin documentación activa"></span>`,
+        titulo: "Sin documentación activa"
+      };
+    }
+
     function formatearFechaCorta(valor) {
       if (!valor) return "-";
       const fecha = new Date(valor);
@@ -662,25 +660,17 @@
     }
 
     function activarTabBloqueDocumentacion(tab) {
-      const esDocumentacion = tab !== "estados";
-      document.getElementById("tabBloqueDocumentacion").classList.toggle("activa", esDocumentacion);
-      document.getElementById("tabBloqueEstadosExpediente").classList.toggle("activa", !esDocumentacion);
-      document.getElementById("tabBloqueDocumentacion").setAttribute("aria-selected", esDocumentacion ? "true" : "false");
-      document.getElementById("tabBloqueEstadosExpediente").setAttribute("aria-selected", esDocumentacion ? "false" : "true");
-      document.getElementById("panelBloqueDocumentacion").classList.toggle("activo", esDocumentacion);
-      document.getElementById("panelBloqueEstadosExpediente").classList.toggle("activo", !esDocumentacion);
-    }
+      const esOrganizadores = tab !== "documentos";
+      document.getElementById("tabBloqueOrganizadores").classList.toggle("activa", esOrganizadores);
+      document.getElementById("tabBloqueDocumentos").classList.toggle("activa", !esOrganizadores);
+      document.getElementById("tabBloqueOrganizadores").setAttribute("aria-selected", esOrganizadores ? "true" : "false");
+      document.getElementById("tabBloqueDocumentos").setAttribute("aria-selected", esOrganizadores ? "false" : "true");
+      document.getElementById("panelBloqueOrganizadores").classList.toggle("activo", esOrganizadores);
+      document.getElementById("panelBloqueDocumentos").classList.toggle("activo", !esOrganizadores);
 
-    function activarTabDetalleDocumentacion(tab) {
-      detalleTabActiva = tab === "estados" ? "estados" : "documentos";
-      const esDocumentos = detalleTabActiva === "documentos";
-      document.getElementById("tabDetalleDocumentos").classList.toggle("activa", esDocumentos);
-      document.getElementById("tabDetalleEstados").classList.toggle("activa", !esDocumentos);
-      document.getElementById("tabDetalleDocumentos").setAttribute("aria-selected", esDocumentos ? "true" : "false");
-      document.getElementById("tabDetalleEstados").setAttribute("aria-selected", esDocumentos ? "false" : "true");
-      document.getElementById("panelDetalleDocumentos").classList.toggle("activo", esDocumentos);
-      document.getElementById("panelDetalleEstados").classList.toggle("activo", !esDocumentos);
-      document.querySelector(".modal-detalle-toolbar-zona")?.classList.toggle("oculta", !esDocumentos);
+      if (!esOrganizadores) {
+        cargarDetalleSeleccionado();
+      }
     }
 
     function renderizarDetalleDocumentacion(documentos = []) {
@@ -728,24 +718,32 @@
       actualizarAccionesDetalleDocumentacion();
     }
 
-    function cerrarModalDetalleDocumentacion() {
-      if (tieneCambiosPendientesDetalle()) {
-        const confirmar = window.confirm("Se perderán los cambios realizados si no los guardas antes. ¿Deseas cerrar igualmente?");
-        if (!confirmar) return;
-      }
-
-      document.getElementById("modalDetalleDocumentacion").classList.remove("activo");
+    function renderizarPanelDocumentosVacio(mensaje) {
+      const panel = document.getElementById("detalleDocumentacionPanel");
+      const vacio = document.getElementById("detalleDocumentacionSinSeleccion");
+      panel.classList.add("oculto");
+      vacio.textContent = mensaje;
+      vacio.classList.remove("oculto");
       detalleDocumentacionActual = null;
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
-      detalleTabActiva = "documentos";
-      activarTabDetalleDocumentacion("documentos");
       limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
     }
 
-    async function abrirModalDetalleDocumentacion(adminId) {
+    async function cargarDetalleSeleccionado(adminIdParam = null) {
+      const adminId = Number.isInteger(adminIdParam) && adminIdParam > 0
+        ? adminIdParam
+        : Number(organizadorSeleccionadoId || 0);
+
+      if (!Number.isInteger(adminId) || adminId <= 0) {
+        renderizarPanelDocumentosVacio("Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.");
+        return;
+      }
+
+      const panel = document.getElementById("detalleDocumentacionPanel");
+      const vacioSuperior = document.getElementById("detalleDocumentacionSinSeleccion");
       if (!Number.isInteger(adminId) || adminId <= 0) return;
 
       const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(adminId)) || null;
@@ -753,6 +751,8 @@
       const body = document.getElementById("detalleDocumentacionBody");
       const vacio = document.getElementById("detalleDocumentacionVacio");
 
+      panel.classList.remove("oculto");
+      vacioSuperior.classList.add("oculto");
       document.getElementById("detalleDocumentacionAdmin").textContent = adminNombre;
       const resumenEstado = document.getElementById("detalleDocumentacionResumen");
       resumenEstado.className = "estado-pill-doc NO_INICIADO";
@@ -763,11 +763,8 @@
       detalleDocumentacionDatos = [];
       detalleDocumentacionSeleccionId = null;
       detalleCambiosPendientes = new Map();
-      detalleTabActiva = "documentos";
-      activarTabDetalleDocumentacion("documentos");
       limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
-      document.getElementById("modalDetalleDocumentacion").classList.add("activo");
 
       try {
         const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminId)}`, {
@@ -824,6 +821,32 @@
       document.getElementById("subtituloCabecera").textContent = `${etiquetaRol(perfil.rol)}: ${nombreVisible}`;
     }
 
+    function actualizarAccionesOrganizadores() {
+      const btnEliminar = document.getElementById("btnEliminarOrganizador");
+      btnEliminar.disabled = !Number.isInteger(Number(organizadorSeleccionadoId || 0)) || Number(organizadorSeleccionadoId || 0) <= 0;
+    }
+
+    function seleccionarOrganizador(adminId) {
+      const id = Number(adminId || 0);
+      if (
+        Number(organizadorSeleccionadoId || 0) > 0 &&
+        Number(organizadorSeleccionadoId || 0) !== id &&
+        tieneCambiosPendientesDetalle()
+      ) {
+        const confirmar = window.confirm("Hay cambios pendientes sin guardar en los documentos del organizador actual. Si continúas, se perderán. ¿Deseas cambiar de organizador igualmente?");
+        if (!confirmar) {
+          renderizarResumenDocumentacion();
+          return;
+        }
+      }
+      organizadorSeleccionadoId = Number.isInteger(id) && id > 0 ? id : null;
+      renderizarResumenDocumentacion();
+      actualizarAccionesOrganizadores();
+      if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
+        cargarDetalleSeleccionado();
+      }
+    }
+
     function renderizarResumenDocumentacion() {
       const bloque = document.getElementById("bloqueEstadoDocumentacion");
       const body = document.getElementById("tablaEstadoDocumentacionBody");
@@ -840,8 +863,16 @@
       body.innerHTML = "";
 
       if (!Array.isArray(resumenDocumentacion) || !resumenDocumentacion.length) {
+        organizadorSeleccionadoId = null;
         vacio.classList.remove("oculto");
+        actualizarAccionesOrganizadores();
+        renderizarPanelDocumentosVacio("Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.");
         return;
+      }
+
+      const existeSeleccion = resumenDocumentacion.some((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0));
+      if (!existeSeleccion) {
+        organizadorSeleccionadoId = Number(resumenDocumentacion[0]?.admin_id || 0) || null;
       }
 
       vacio.classList.add("oculto");
@@ -850,18 +881,28 @@
         const tr = document.createElement("tr");
         const estado = String(item.estado_efectivo || "").toUpperCase();
         const adminId = Number(item.admin_id || 0);
+        const seleccionado = adminId === Number(organizadorSeleccionadoId || 0);
+        const indicador = obtenerIndicadorEstadoExpediente(estado);
 
+        tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
+          <td class="col-seleccion">
+            <input type="radio" name="organizador_documentacion_seleccion" class="selector-doc" value="${adminId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar organizador">
+          </td>
           <td class="td-centro">
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
           <td>Requeridos: ${Number(item.total_documentos || 0)} / Validados: ${Number(item.total_documentos_validados || 0)}</td>
-          <td><button type="button" class="estado-pill-doc ${estado}" data-estado-documentacion="${adminId}">${etiquetaEstadoDocumentacion(estado)}</button></td>
-          <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
+          <td>${indicador.html}</td>
         `;
         body.appendChild(tr);
       });
+
+      actualizarAccionesOrganizadores();
+      if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
+        cargarDetalleSeleccionado();
+      }
     }
 
     function actualizarPreviewImagen() {
@@ -1005,6 +1046,132 @@
       } catch (_) {
         resumenDocumentacion = [];
         renderizarResumenDocumentacion();
+      }
+    }
+
+    async function cargarOrganizadoresDisponibles() {
+      const res = await fetch("/api/usuario/documentacion-admin-lista", {
+        credentials: "include"
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo obtener la lista de organizadores disponibles.");
+      }
+
+      organizadoresDisponibles = Array.isArray(data.administradores) ? data.administradores : [];
+      return organizadoresDisponibles;
+    }
+
+    function limpiarMensajeAgregarOrganizador() {
+      const box = document.getElementById("mensajeAgregarOrganizador");
+      box.className = "mensaje";
+      box.textContent = "";
+    }
+
+    function mostrarMensajeAgregarOrganizador(tipo, texto) {
+      const box = document.getElementById("mensajeAgregarOrganizador");
+      box.className = `mensaje ${tipo}`;
+      box.textContent = texto;
+    }
+
+    async function abrirModalAgregarOrganizador() {
+      limpiarMensajeAgregarOrganizador();
+      const select = document.getElementById("selectAgregarOrganizador");
+      select.innerHTML = `<option value="">Cargando...</option>`;
+      document.getElementById("modalAgregarOrganizador").classList.add("activo");
+
+      try {
+        const disponibles = await cargarOrganizadoresDisponibles();
+        const idsActuales = new Set((resumenDocumentacion || []).map((item) => Number(item.admin_id || 0)));
+        const candidatos = disponibles.filter((item) => !idsActuales.has(Number(item.id || 0)));
+
+        if (!candidatos.length) {
+          select.innerHTML = `<option value="">No hay organizadores disponibles para añadir</option>`;
+          return;
+        }
+
+        select.innerHTML = `<option value="">Selecciona un organizador</option>` + candidatos.map((item) => {
+          const nombre = item.nombre_publico || item.nombre || "Organizador";
+          const localidad = item.localidad ? ` · ${item.localidad}` : "";
+          return `<option value="${Number(item.id || 0)}">${nombre}${localidad}</option>`;
+        }).join("");
+      } catch (error) {
+        select.innerHTML = `<option value="">No disponible</option>`;
+        mostrarMensajeAgregarOrganizador("error", error.message || "No se pudo cargar la lista de organizadores.");
+      }
+    }
+
+    function cerrarModalAgregarOrganizador() {
+      document.getElementById("modalAgregarOrganizador").classList.remove("activo");
+      document.getElementById("selectAgregarOrganizador").innerHTML = "";
+      limpiarMensajeAgregarOrganizador();
+    }
+
+    async function confirmarAgregarOrganizador() {
+      const select = document.getElementById("selectAgregarOrganizador");
+      const adminId = Number.parseInt(select.value || "", 10);
+      if (!Number.isInteger(adminId) || adminId <= 0) {
+        mostrarMensajeAgregarOrganizador("error", "Selecciona un organizador válido.");
+        return;
+      }
+
+      limpiarMensajeAgregarOrganizador();
+      try {
+        const res = await fetch("/api/usuario/documentacion-organizadores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            accion: "agregar",
+            admin_id: adminId
+          })
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo añadir el organizador.");
+        }
+
+        await cargarResumenDocumentacion();
+        seleccionarOrganizador(adminId);
+        cerrarModalAgregarOrganizador();
+        activarTabBloqueDocumentacion("organizadores");
+        jsonMessage("mensajePerfil", "ok", data?.mensaje || "Organizador añadido correctamente.");
+      } catch (error) {
+        mostrarMensajeAgregarOrganizador("error", error.message || "No se pudo añadir el organizador.");
+      }
+    }
+
+    async function eliminarOrganizadorSeleccionado() {
+      const adminId = Number(organizadorSeleccionadoId || 0);
+      if (!Number.isInteger(adminId) || adminId <= 0) return;
+
+      const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === adminId) || null;
+      const nombre = resumen?.admin_nombre_publico || resumen?.admin_nombre || "este organizador";
+      const confirmar = window.confirm(`El organizador ${nombre} se borrará de la lista y se eliminarán todos los documentos relacionados que hayas enviado para él. Si lo vuelves a añadir más adelante, tendrás que remitirlos de nuevo como si fuera la primera vez. ¿Deseas continuar?`);
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch("/api/usuario/documentacion-organizadores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            accion: "eliminar",
+            admin_id: adminId
+          })
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo eliminar el organizador.");
+        }
+
+        await cargarResumenDocumentacion();
+        jsonMessage("mensajePerfil", "ok", data?.mensaje || "Organizador eliminado correctamente.");
+      } catch (error) {
+        jsonMessage("mensajePerfil", "error", error.message || "No se pudo eliminar el organizador.");
       }
     }
 
@@ -1480,13 +1647,14 @@
       location.href = "admin-documentos.html";
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
+    document.getElementById("btnAgregarOrganizador").addEventListener("click", abrirModalAgregarOrganizador);
+    document.getElementById("btnEliminarOrganizador").addEventListener("click", eliminarOrganizadorSeleccionado);
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
-      const btnEstado = event.target.closest("[data-estado-documentacion]");
-      if (btnEstado) {
-        const adminId = Number.parseInt(btnEstado.dataset.estadoDocumentacion || "", 10);
-        if (!Number.isInteger(adminId) || adminId <= 0) return;
-        abrirModalDetalleDocumentacion(adminId);
-      }
+      const selector = event.target.closest(".selector-doc");
+      if (!selector) return;
+      const adminId = Number.parseInt(selector.value || "", 10);
+      if (!Number.isInteger(adminId) || adminId <= 0) return;
+      seleccionarOrganizador(adminId);
     });
     document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
       const selector = event.target.closest(".selector-doc");
@@ -1613,7 +1781,7 @@
         detalleCambiosPendientes = new Map();
         const adminIdActual = detalleDocumentacionActual;
         if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
-          await abrirModalDetalleDocumentacion(adminIdActual);
+          await cargarDetalleSeleccionado(adminIdActual);
           mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
         } else {
           actualizarAccionesDetalleDocumentacion();
@@ -1624,12 +1792,6 @@
         this.disabled = false;
         actualizarAccionesDetalleDocumentacion();
       }
-    });
-    document.getElementById("btnCerrarDetalleDocumentacion").addEventListener("click", cerrarModalDetalleDocumentacion);
-    document.querySelectorAll("[data-tab-detalle]").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        activarTabDetalleDocumentacion(this.dataset.tabDetalle || "documentos");
-      });
     });
     document.getElementById("btnAyudaCentro").addEventListener("click", () => {
       abrirAyudaCampo(
@@ -1643,17 +1805,13 @@
         "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
       );
     });
-    document.getElementById("btnAyudaEstadoDocumentacion").addEventListener("click", () => {
-      abrirAyudaCampo(
-        "Estado del expediente documental",
-        "La columna Estado del expediente refleja la situación global de todos los documentos obligatorios exigidos por el organizador para poder solicitar sus actividades."
-      );
-    });
     document.querySelectorAll("[data-tab-bloque]").forEach((btn) => {
       btn.addEventListener("click", function () {
-        activarTabBloqueDocumentacion(this.dataset.tabBloque || "documentacion");
+        activarTabBloqueDocumentacion(this.dataset.tabBloque || "organizadores");
       });
     });
+    document.getElementById("btnCancelarAgregarOrganizador").addEventListener("click", cerrarModalAgregarOrganizador);
+    document.getElementById("btnConfirmarAgregarOrganizador").addEventListener("click", confirmarAgregarOrganizador);
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -1663,7 +1821,8 @@
       "modalCambiosPendientes",
       "modalPasswordActual",
       "modalPasswordNueva",
-      "modalAyudaCampo"
+      "modalAyudaCampo",
+      "modalAgregarOrganizador"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -1671,6 +1830,7 @@
         if (id === "modalPasswordActual") cerrarModalPasswordActual();
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
+        if (id === "modalAgregarOrganizador") cerrarModalAgregarOrganizador();
       });
     });
 
