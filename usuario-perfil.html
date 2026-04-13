@@ -187,6 +187,9 @@
     .tabla-detalle-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-detalle-docs tr:last-child td { border-bottom: none; }
     .tabla-detalle-docs .col-documento { line-height: 1.45; }
+    .tabla-detalle-docs th:nth-child(3), .tabla-detalle-docs td:nth-child(3),
+    .tabla-detalle-docs th:nth-child(4), .tabla-detalle-docs td:nth-child(4),
+    .tabla-detalle-docs th:nth-child(5), .tabla-detalle-docs td:nth-child(5) { text-align: center; }
     .tabla-detalle-docs tr.fila-seleccionada td { background: #f5f9ff; }
     .col-seleccion { width: 42px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
@@ -561,6 +564,8 @@
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let temporizadorMensajePassword = null;
+    let temporizadorMensajePerfil = null;
+    let temporizadorMensajeDetalle = null;
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
@@ -588,10 +593,38 @@
       }, duracionMs);
     }
 
+    function mostrarMensajePerfilTemporal(tipo, texto, duracionMs = 4000) {
+      if (temporizadorMensajePerfil) {
+        clearTimeout(temporizadorMensajePerfil);
+        temporizadorMensajePerfil = null;
+      }
+
+      jsonMessage("mensajePerfil", tipo, texto);
+
+      temporizadorMensajePerfil = setTimeout(() => {
+        limpiarMensaje("mensajePerfil");
+        temporizadorMensajePerfil = null;
+      }, duracionMs);
+    }
+
     function mostrarMensajeDetalle(tipo, texto) {
       const box = document.getElementById("mensajeDetalleDocumentacion");
       box.className = "mensaje-modal-detalle " + tipo;
       box.textContent = texto;
+    }
+
+    function mostrarMensajeDetalleTemporal(tipo, texto, duracionMs = 4000) {
+      if (temporizadorMensajeDetalle) {
+        clearTimeout(temporizadorMensajeDetalle);
+        temporizadorMensajeDetalle = null;
+      }
+
+      mostrarMensajeDetalle(tipo, texto);
+
+      temporizadorMensajeDetalle = setTimeout(() => {
+        limpiarMensajeDetalle();
+        temporizadorMensajeDetalle = null;
+      }, duracionMs);
     }
 
     function limpiarMensajeDetalle() {
@@ -869,19 +902,19 @@
           throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
         }
 
-        mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+        mostrarMensajeDetalleTemporal("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
         await cargarResumenDocumentacion();
         detalleCambiosPendientes = new Map();
         const adminIdActual = detalleDocumentacionActual;
         if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
           await cargarDetalleSeleccionado(adminIdActual);
-          mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+          mostrarMensajeDetalleTemporal("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
         } else {
           actualizarAccionesDetalleDocumentacion();
         }
         return true;
       } catch (error) {
-        mostrarMensajeDetalle("error", error.message || "No se pudieron guardar los cambios documentales.");
+        mostrarMensajeDetalleTemporal("error", error.message || "No se pudieron guardar los cambios documentales.");
         return false;
       } finally {
         actualizarAccionesDetalleDocumentacion();
@@ -1362,7 +1395,7 @@
         seleccionarOrganizador(adminId);
         cerrarModalAgregarOrganizador();
         activarTabBloqueDocumentacion("organizadores");
-        jsonMessage("mensajePerfil", "ok", data?.mensaje || "Organizador añadido correctamente.");
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Organizador añadido correctamente.");
       } catch (error) {
         mostrarMensajeAgregarOrganizador("error", error.message || "No se pudo añadir el organizador.");
       }
@@ -1394,9 +1427,9 @@
         }
 
         await cargarResumenDocumentacion();
-        jsonMessage("mensajePerfil", "ok", data?.mensaje || "Organizador eliminado correctamente.");
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Organizador eliminado correctamente.");
       } catch (error) {
-        jsonMessage("mensajePerfil", "error", error.message || "No se pudo eliminar el organizador.");
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el organizador.");
       }
     }
 
@@ -1931,13 +1964,13 @@
       if (!tieneArchivoActual && tieneArchivoPendiente) {
         detalleCambiosPendientes.delete(Number(doc.id));
         renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-        mostrarMensajeDetalle("ok", "Se ha cancelado la nueva subida pendiente para este documento.");
+        mostrarMensajeDetalleTemporal("ok", "Se ha cancelado la nueva subida pendiente para este documento.");
         return;
       }
 
       detalleCambiosPendientes.set(Number(doc.id), { tipo: "eliminar" });
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-      mostrarMensajeDetalle("ok", "El documento ha quedado marcado para eliminarse cuando guardes los cambios.");
+      mostrarMensajeDetalleTemporal("ok", "El documento ha quedado marcado para eliminarse cuando guardes los cambios.");
     });
     document.getElementById("btnGuardarDesdeDetalleDocumentacion").addEventListener("click", async function () {
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
