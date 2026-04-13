@@ -185,6 +185,7 @@
     .tabla-estados-doc tr:last-child td { border-bottom: none; }
     .cabecera-columna-icono { display: inline-flex; align-items: center; gap: 7px; }
     .icono-columna-link { width: 14px; height: 14px; display: inline-block; color: #5f6d7a; }
+    .td-fecha-entrega { white-space: nowrap; }
     .acciones-tabla-iconos { display: flex; align-items: center; gap: 8px; }
     .btn-icono-tabla { width: 30px; height: 30px; border-radius: 999px; border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
     .btn-icono-tabla:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
@@ -463,6 +464,9 @@
         </div>
         <div class="modal-detalle-toolbar-zona">
           <div class="modal-detalle-toolbar">
+            <button type="button" class="btn-icono-modal" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
             <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
             </button>
@@ -483,6 +487,7 @@
                 <th class="col-seleccion"></th>
                 <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
                 <th>Versión</th>
+                <th>Última entrega</th>
                 <th>Estado del documento</th>
               </tr>
             </thead>
@@ -604,13 +609,12 @@
       if (!valor) return "-";
       const fecha = new Date(valor);
       if (Number.isNaN(fecha.getTime())) return valor;
-      return fecha.toLocaleString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      });
+      const hh = String(fecha.getHours()).padStart(2, "0");
+      const mm = String(fecha.getMinutes()).padStart(2, "0");
+      const dd = String(fecha.getDate()).padStart(2, "0");
+      const MM = String(fecha.getMonth() + 1).padStart(2, "0");
+      const yyyy = String(fecha.getFullYear());
+      return `${hh}:${mm}, ${dd}/${MM}/${yyyy}`;
     }
 
     function estadoDetalleDocumento(_expedienteEstado, documento) {
@@ -634,6 +638,7 @@
 
     function actualizarAccionesDetalleDocumentacion() {
       const doc = obtenerDocumentoSeleccionadoDetalle();
+      const btnVer = document.getElementById("btnVerDesdeDetalleDocumentacion");
       const btnSubir = document.getElementById("btnSubirDesdeDetalleDocumentacion");
       const btnEliminar = document.getElementById("btnEliminarDesdeDetalleDocumentacion");
       const btnGuardar = document.getElementById("btnGuardarDesdeDetalleDocumentacion");
@@ -642,7 +647,9 @@
       const tieneArchivoActual = !!(doc && doc.entrega_archivo_url);
       const tieneArchivoPendiente = cambio?.tipo === "subir";
       const puedeEliminar = !!doc && (tieneArchivoActual || tieneArchivoPendiente) && cambio?.tipo !== "eliminar";
+      const puedeVer = !!doc && tieneArchivoActual && cambio?.tipo !== "eliminar";
 
+      btnVer.disabled = !puedeVer;
       btnSubir.disabled = !doc;
       btnEliminar.disabled = !puedeEliminar;
       btnGuardar.disabled = !tieneCambiosPendientesDetalle();
@@ -706,6 +713,7 @@
             ${pendiente ? `<span class="estado-provisional">${pendiente}</span>` : ""}
           </td>
           <td>${Number(doc.version_documental || 0) > 0 ? Number(doc.version_documental || 0) : "-"}</td>
+          <td class="td-fecha-entrega">${formatearFechaCorta(doc.entrega_fecha_subida || "")}</td>
           <td><span class="estado-pill-doc ${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</span></td>
         `;
         body.appendChild(tr);
@@ -1481,6 +1489,12 @@
       if (!Number.isInteger(docId) || docId <= 0) return;
       detalleDocumentacionSeleccionId = docId;
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
+    });
+    document.getElementById("btnVerDesdeDetalleDocumentacion").addEventListener("click", function () {
+      const doc = obtenerDocumentoSeleccionadoDetalle();
+      const cambio = doc ? detalleCambiosPendientes.get(Number(doc.id || 0)) || null : null;
+      if (!doc || !doc.entrega_archivo_url || cambio?.tipo === "eliminar") return;
+      window.open(doc.entrega_archivo_url, "_blank", "noopener");
     });
     document.getElementById("btnSubirDesdeDetalleDocumentacion").addEventListener("click", function () {
       if (!obtenerDocumentoSeleccionadoDetalle()) return;
