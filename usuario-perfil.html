@@ -102,6 +102,7 @@
     .panel-bloque-documentacion { display: none; }
     .panel-bloque-documentacion.activo { display: block; }
     .acciones-bloque-documentacion { display: flex; align-items: center; gap: 8px; }
+    .acciones-bloque-documentacion.ocultas { display: none; }
     .btn-icono.peligro:hover { color: #9b1c1c; border-color: #d9b2b2; background: #fff7f7; }
     .tabla-organizadores-wrap { width: 100%; overflow-x: auto; }
     .tabla-organizadores { width: 100%; border-collapse: collapse; min-width: 720px; }
@@ -143,7 +144,7 @@
     .btn-password-acceso { background: var(--primary); color: #fff; border: none; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
     .btn-password-acceso:hover { background: var(--primary-dark); }
     .btn-password-acceso .password-icono { color: #fff; order: 2; }
-    .campo-documento-inline { display: grid; grid-template-columns: 108px 132px; gap: 8px; align-items: end; max-width: 260px; }
+    .campo-documento-inline { display: grid; grid-template-columns: 104px 140px; gap: 8px; align-items: end; max-width: 264px; }
     .fila-password-solicitante { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 4px; }
     .input-oculto { display: none; }
     .modal-fondo { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 9999; }
@@ -811,6 +812,7 @@
       document.getElementById("tabBloqueDocumentos").setAttribute("aria-selected", esOrganizadores ? "false" : "true");
       document.getElementById("panelBloqueOrganizadores").classList.toggle("activo", esOrganizadores);
       document.getElementById("panelBloqueDocumentos").classList.toggle("activo", !esOrganizadores);
+      document.querySelector(".acciones-bloque-documentacion")?.classList.toggle("ocultas", !esOrganizadores);
 
       if (!esOrganizadores) {
         cargarDetalleSeleccionado();
