@@ -564,6 +564,7 @@
     let detalleDocumentacionSeleccionId = null;
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
+    let adminIdPreferentePerfil = null;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
@@ -1071,6 +1072,12 @@
       btnEliminar.disabled = !Number.isInteger(Number(organizadorSeleccionadoId || 0)) || Number(organizadorSeleccionadoId || 0) <= 0;
     }
 
+    function leerAdminPreferenteDesdeUrl() {
+      const url = new URL(window.location.href);
+      const adminId = Number.parseInt(url.searchParams.get("admin_id") || "", 10);
+      adminIdPreferentePerfil = Number.isInteger(adminId) && adminId > 0 ? adminId : null;
+    }
+
     function actualizarTituloTabDocumentos() {
       const btn = document.getElementById("tabBloqueDocumentos");
       const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0)) || null;
@@ -1131,7 +1138,10 @@
 
       const existeSeleccion = resumenDocumentacion.some((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0));
       if (!existeSeleccion) {
-        organizadorSeleccionadoId = Number(resumenDocumentacion[0]?.admin_id || 0) || null;
+        const preferenteExiste = resumenDocumentacion.some((item) => Number(item.admin_id || 0) === Number(adminIdPreferentePerfil || 0));
+        organizadorSeleccionadoId = preferenteExiste
+          ? Number(adminIdPreferentePerfil || 0)
+          : (Number(resumenDocumentacion[0]?.admin_id || 0) || null);
       }
 
       vacio.classList.add("oculto");
@@ -1458,6 +1468,9 @@
       if (!perfil) perfil = normalizarPerfil({}, sesion);
       rellenarFormulario(perfil);
       await cargarResumenDocumentacion();
+      if (esSolicitante() && Number(adminIdPreferentePerfil || 0) > 0) {
+        activarTabBloqueDocumentacion("documentos");
+      }
       appPerfil.classList.remove("app-perfil-cargando");
     }
 
@@ -2039,6 +2052,7 @@
       });
     });
 
+    leerAdminPreferenteDesdeUrl();
     cargarPerfil();
   </script>
 </body>

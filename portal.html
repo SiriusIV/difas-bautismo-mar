@@ -1201,6 +1201,17 @@
     </div>
   </div>
 
+  <div id="modalDocumentacionPendiente" class="modal-fondo" aria-hidden="true">
+    <div class="modal-login" style="max-width: 640px;">
+      <h3>Documentación obligatoria pendiente</h3>
+      <p id="textoModalDocumentacionPendiente" style="margin: 0 0 18px; color: #4a5a6a; line-height: 1.6;"></p>
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-admin" id="btnCancelarModalDocumentacionPendiente">Cancelar solicitud</button>
+        <button class="btn" id="btnIrPerfilDesdeModalDocumentacion">Ir a mi perfil de usuario</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let actividadesCache = [];
     let usuarioAutenticado = null;
@@ -2189,6 +2200,32 @@ function solicitarActividadActual() {
   comprobarDocumentacionYRedirigir();
 }
 
+function cerrarModalDocumentacionPendiente() {
+  document.getElementById("modalDocumentacionPendiente").classList.remove("activo");
+  document.getElementById("modalDocumentacionPendiente").setAttribute("aria-hidden", "true");
+}
+
+function abrirModalDocumentacionPendiente(data) {
+  const adminNombre = data?.admin?.nombre_publico || data?.admin?.nombre || "el organizador de esta actividad";
+  const estado = String(data?.estado_efectivo || "").toUpperCase();
+  let texto = `Antes de solicitar esta actividad, debes regularizar la documentación preceptiva exigida por ${adminNombre}.`;
+
+  if (estado === "NO_INICIADO" || estado === "NO_COMPLETADO" || estado === "NO_ENVIADO") {
+    texto = `No has remitido toda la documentación preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
+  } else if (estado === "NO_ACTUALIZADO") {
+    texto = `La documentación exigida por ${adminNombre} no está actualizada y debes volver a presentarla antes de poder solicitar esta actividad.`;
+  } else if (estado === "RECHAZADA") {
+    texto = `La documentación presentada para ${adminNombre} ha sido rechazada y debes corregirla antes de poder solicitar esta actividad.`;
+  } else if (estado === "EN_REVISION") {
+    texto = `La documentación exigida por ${adminNombre} ya ha sido presentada, pero todavía está pendiente de revisión y validación manual.`;
+  }
+
+  document.getElementById("textoModalDocumentacionPendiente").textContent = texto;
+  document.getElementById("btnIrPerfilDesdeModalDocumentacion").dataset.adminId = String(data?.admin?.id || actividadSeleccionada?.admin_id || "");
+  document.getElementById("modalDocumentacionPendiente").classList.add("activo");
+  document.getElementById("modalDocumentacionPendiente").setAttribute("aria-hidden", "false");
+}
+
 async function comprobarDocumentacionYRedirigir() {
   const adminId = Number(actividadSeleccionada?.admin_id || 0);
 
@@ -2209,7 +2246,7 @@ async function comprobarDocumentacionYRedirigir() {
     }
 
     if (data.requiere_documentacion && !data.al_dia) {
-      location.href = `usuario-documentacion.html?modo=solicitud&admin_id=${encodeURIComponent(adminId)}&actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+      abrirModalDocumentacionPendiente(data);
       return;
     }
 
@@ -2306,12 +2343,24 @@ function continuarSolicitudActividad() {
     }
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
+    document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
+    document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
+      const adminId = Number.parseInt(this.dataset.adminId || "", 10);
+      if (Number.isInteger(adminId) && adminId > 0) {
+        location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(adminId)}&tab=documentos`;
+        return;
+      }
+      location.href = "usuario-perfil.html";
+    });
     document.getElementById("btnEditarActividad").addEventListener("click", editarActividadActual);
     document.getElementById("btnVerReservasActividad").addEventListener("click", verReservasActividadActual);
     document.getElementById("btnVerPassword").addEventListener("click", alternarPassword);
 
     document.getElementById("modalLogin").addEventListener("click", function (e) {
       if (e.target.id === "modalLogin") cerrarModalLogin();
+    });
+    document.getElementById("modalDocumentacionPendiente").addEventListener("click", function (e) {
+      if (e.target.id === "modalDocumentacionPendiente") cerrarModalDocumentacionPendiente();
     });
 
     window.seleccionarActividad = seleccionarActividad;
