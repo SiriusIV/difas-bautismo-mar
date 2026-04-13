@@ -120,7 +120,7 @@ function etiquetaEstadoDocumentoEmail(estado) {
   if (valor === "EN_REVISION") return "En revisión";
   if (valor === "RECHAZADO") return "Rechazado";
   if (valor === "NO_ACTUALIZADO") return "No actualizado";
-  if (valor === "NO_ENVIADO") return "No enviado";
+  if (valor === "NO_ENVIADO") return "No presentado";
   return valor || "Sin estado";
 }
 
