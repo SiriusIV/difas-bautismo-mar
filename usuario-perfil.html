@@ -95,6 +95,16 @@
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .td-centro { min-width: 220px; }
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
+    .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tab-bloque-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+    .tab-bloque-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
+    .panel-bloque-documentacion { display: none; }
+    .panel-bloque-documentacion.activo { display: block; }
+    .tabla-estados-expediente-wrap { width: 100%; overflow-x: auto; }
+    .tabla-estados-expediente { width: 100%; border-collapse: collapse; min-width: 560px; }
+    .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-estados-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-estados-expediente tr:last-child td { border-bottom: none; }
     .preview-imagen-wrap { position: relative; width: 100%; }
     .preview-imagen { width: 100%; min-height: 324px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
     .acciones-overlay-imagen { position: absolute; top: 9px; right: 9px; display: none; gap: 7px; z-index: 2; }
@@ -317,20 +327,64 @@
           <p>Determinadas actividades exigen que el organizador revise previamente la documentación obligatoria asociada a tu centro. A continuación puedes consultar qué organizadores tienen documentación activa, el estado actual de tus remisiones y acceder al trámite documental cuando necesites completarlo o actualizarlo.</p>
         </div>
       </div>
-      <div class="tabla-docs-wrap">
-        <table class="tabla-docs">
-          <thead>
-            <tr>
-              <th>Organizador</th>
-              <th>Documentos</th>
-              <th>Estado del expediente <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadoDocumentacion" aria-label="Ayuda sobre estados documentales" title="Ayuda sobre estados" style="position: static; transform: none; margin-left: 6px;">?</button></th>
-              <th>Última entrega</th>
-            </tr>
-          </thead>
-          <tbody id="tablaEstadoDocumentacionBody"></tbody>
-        </table>
+      <div class="tabs-bloque-documentacion" role="tablist" aria-label="Pestañas del estado documental">
+        <button type="button" class="tab-bloque-btn activa" id="tabBloqueDocumentacion" data-tab-bloque="documentacion" role="tab" aria-selected="true">Documentación</button>
+        <button type="button" class="tab-bloque-btn" id="tabBloqueEstadosExpediente" data-tab-bloque="estados" role="tab" aria-selected="false">Estados del expediente</button>
       </div>
-      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentación activa para mostrar.</div>
+      <div class="panel-bloque-documentacion activo" id="panelBloqueDocumentacion" role="tabpanel" aria-labelledby="tabBloqueDocumentacion">
+        <div class="tabla-docs-wrap">
+          <table class="tabla-docs">
+            <thead>
+              <tr>
+                <th>Organizador</th>
+                <th>Documentos</th>
+                <th>Estado del expediente <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadoDocumentacion" aria-label="Ayuda sobre el expediente documental" title="Ayuda sobre el expediente" style="position: static; transform: none; margin-left: 6px;">?</button></th>
+                <th>Última entrega</th>
+              </tr>
+            </thead>
+            <tbody id="tablaEstadoDocumentacionBody"></tbody>
+          </table>
+        </div>
+        <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Ahora mismo no hay organizadores con documentación activa para mostrar.</div>
+      </div>
+      <div class="panel-bloque-documentacion" id="panelBloqueEstadosExpediente" role="tabpanel" aria-labelledby="tabBloqueEstadosExpediente">
+        <div class="tabla-estados-expediente-wrap">
+          <table class="tabla-estados-expediente">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="estado-pill-doc NO_INICIADO">No iniciado</span></td>
+                <td>No se ha remitido todavía ningún documento del expediente requerido por el organizador.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc NO_COMPLETADO">No completado</span></td>
+                <td>Se ha iniciado la remisión, pero todavía falta al menos un documento obligatorio por enviar.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc NO_ACTUALIZADO">No actualizado</span></td>
+                <td>Existe al menos un documento remitido que ya no coincide con la versión vigente exigida por el organizador.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc RECHAZADA">Rechazada</span></td>
+                <td>Al menos uno de los documentos del expediente ha sido rechazado por el organizador.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc EN_REVISION">En revisión</span></td>
+                <td>Todos los documentos están remitidos, pero al menos uno sigue pendiente de revisión manual.</td>
+              </tr>
+              <tr>
+                <td><span class="estado-pill-doc VALIDADA">Validada</span></td>
+                <td>Todos los documentos exigidos por el organizador han sido revisados y validados correctamente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -592,6 +646,16 @@
       btnSubir.disabled = !doc;
       btnEliminar.disabled = !puedeEliminar;
       btnGuardar.disabled = !tieneCambiosPendientesDetalle();
+    }
+
+    function activarTabBloqueDocumentacion(tab) {
+      const esDocumentacion = tab !== "estados";
+      document.getElementById("tabBloqueDocumentacion").classList.toggle("activa", esDocumentacion);
+      document.getElementById("tabBloqueEstadosExpediente").classList.toggle("activa", !esDocumentacion);
+      document.getElementById("tabBloqueDocumentacion").setAttribute("aria-selected", esDocumentacion ? "true" : "false");
+      document.getElementById("tabBloqueEstadosExpediente").setAttribute("aria-selected", esDocumentacion ? "false" : "true");
+      document.getElementById("panelBloqueDocumentacion").classList.toggle("activo", esDocumentacion);
+      document.getElementById("panelBloqueEstadosExpediente").classList.toggle("activo", !esDocumentacion);
     }
 
     function activarTabDetalleDocumentacion(tab) {
@@ -1561,9 +1625,14 @@
     });
     document.getElementById("btnAyudaEstadoDocumentacion").addEventListener("click", () => {
       abrirAyudaCampo(
-        "Estados del expediente",
-        "No iniciado: no se ha remitido ningún documento. No completado: falta al menos un documento por remitir. No actualizado: existe al menos un documento remitido que ya no corresponde con el vigente. Rechazada: al menos un documento ha sido rechazado. En revisión: todos están enviados, pero al menos uno sigue pendiente de revisión manual. Validada: todos los documentos requeridos están validados."
+        "Estado del expediente documental",
+        "La columna Estado del expediente refleja la situación global de todos los documentos obligatorios exigidos por el organizador para poder solicitar sus actividades."
       );
+    });
+    document.querySelectorAll("[data-tab-bloque]").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        activarTabBloqueDocumentacion(this.dataset.tabBloque || "documentacion");
+      });
     });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
