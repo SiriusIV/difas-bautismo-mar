@@ -85,6 +85,9 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
+    .app-scroll.portal-cargando {
+      visibility: hidden;
+    }
 
     .accionesPublicas,
     .barra-admin,
@@ -998,7 +1001,7 @@
     </div>
   </div>
 
-  <div class="app-scroll">
+  <div class="app-scroll portal-cargando" id="appScrollPortal">
     <div id="franjaSesion" class="franja-sesion">
       <div class="franja-sesion-inner">
         <button
@@ -2314,6 +2317,9 @@ function continuarSolicitudActividad() {
     window.seleccionarActividad = seleccionarActividad;
 
     (async function init() {
+      const appScrollPortal = document.getElementById("appScrollPortal");
+      appScrollPortal.classList.add("portal-cargando");
+      try {
       await comprobarSesionUsuario();
       await cargarActividades();
 
@@ -2347,6 +2353,9 @@ if (filtroProvincia) {
     renderizarActividades();
   });
 }
+      } finally {
+        appScrollPortal.classList.remove("portal-cargando");
+      }
 
 const filtroPrograma = document.getElementById("filtroPrograma");
 if (filtroPrograma) {
