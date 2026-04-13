@@ -67,7 +67,7 @@
     .campo-linea-valor-fijo { min-height: 42px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .input-solo-lectura { background: #f7f9fb !important; color: #495867; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
-    .nota-obligatorios { margin: 0; font-size: 11px; color: #5f6d7a; }
+    .nota-obligatorios { margin: 0; font-size: 11px; color: #c62828; }
     .btn { border: none; border-radius: 999px; padding: 9px 15px; font-size: 13px; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.15s ease; }
     .btn:hover { background: var(--primary-dark); }
     .btn-suave { background: #fff; color: #334250; border: 1px solid #c9cfd6; }
@@ -189,8 +189,8 @@
     .tabla-detalle-docs tr.fila-seleccionada td { background: #f5f9ff; }
     .col-seleccion { width: 42px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
-    .enlace-documento-base { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
-    .enlace-documento-base:hover { color: var(--primary); }
+    .enlace-documento-base { color: #0b5ed7; text-decoration: none; text-underline-offset: 2px; }
+    .enlace-documento-base:hover { color: #084298; text-decoration: underline; }
     .estado-provisional { display: block; margin-top: 4px; font-size: 11px; color: #5f6d7a; }
     .tabs-modal-detalle-linea { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-modal-detalle { display: flex; gap: 8px; }
@@ -407,24 +407,24 @@
             </div>
           </div>
           <div id="mensajeDetalleDocumentacion" class="mensaje-modal-detalle"></div>
-          <div class="detalle-docs-estado-linea">
-            <span class="detalle-docs-estado-etiqueta">Estado de la documentación requerida:</span>
-            <span id="detalleDocumentacionResumen" class="estado-pill-doc NO_INICIADO">No iniciado</span>
-          </div>
-          <div class="tabla-detalle-docs-wrap">
-            <table class="tabla-detalle-docs">
-              <thead>
-                <tr>
-                  <th class="col-seleccion"></th>
-                  <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
-                  <th>Versión</th>
-                  <th>Última entrega</th>
-                  <th>Estado del documento</th>
-                </tr>
-              </thead>
-              <tbody id="detalleDocumentacionBody"></tbody>
-            </table>
-          </div>
+      <div class="detalle-docs-estado-linea">
+        <span class="detalle-docs-estado-etiqueta">Estado de la documentación requerida:</span>
+        <span id="detalleDocumentacionResumenTexto">Pendiente de cargar</span>
+      </div>
+      <div class="tabla-detalle-docs-wrap">
+          <table class="tabla-detalle-docs">
+            <thead>
+              <tr>
+                <th class="col-seleccion"></th>
+                <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
+                <th>Versión</th>
+                <th>Última entrega</th>
+                <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadosDocumento" aria-label="Ayuda sobre los estados de documento" title="Ayuda sobre los estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
+              </tr>
+            </thead>
+            <tbody id="detalleDocumentacionBody"></tbody>
+          </table>
+        </div>
           <div class="estado-vacio-docs oculto" id="detalleDocumentacionVacio">No hay documentos para mostrar en este organizador.</div>
           <input type="file" id="inputArchivoDetalleDocumentacion" class="input-archivo-detalle" accept="application/pdf,.pdf">
         </div>
@@ -488,6 +488,47 @@
     <div class="modal">
       <h3 id="tituloAyudaCampo">Información</h3>
       <p id="textoAyudaCampo"></p>
+    </div>
+  </div>
+
+  <div id="modalEstadosDocumento" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 720px;">
+      <h3>Estados del documento</h3>
+      <div class="tabla-estados-wrap">
+        <table class="tabla-estados-doc">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="estado-pill-doc NO_INICIADO">No enviado</span></td>
+              <td>Este documento todavía no ha sido remitido a través de la plataforma.</td>
+            </tr>
+            <tr>
+              <td><span class="estado-pill-doc NO_ACTUALIZADO">No actualizado</span></td>
+              <td>Existe una remisión anterior, pero ya no coincide con la versión vigente exigida por el organizador.</td>
+            </tr>
+            <tr>
+              <td><span class="estado-pill-doc RECHAZADA">Rechazado</span></td>
+              <td>El organizador ha revisado este documento y lo ha rechazado.</td>
+            </tr>
+            <tr>
+              <td><span class="estado-pill-doc EN_REVISION">En revisión</span></td>
+              <td>El documento ya fue remitido y está pendiente de revisión manual por parte del organizador.</td>
+            </tr>
+            <tr>
+              <td><span class="estado-pill-doc VALIDADA">Validado</span></td>
+              <td>El organizador ha comprobado el documento y lo ha aceptado como válido.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCerrarEstadosDocumento">Cerrar</button>
+      </div>
     </div>
   </div>
   <div id="modalAgregarOrganizador" class="modal-fondo" aria-hidden="true">
@@ -613,6 +654,56 @@
         html: `<span class="indicador-expediente circulo neutro" title="Sin documentación activa" aria-label="Sin documentación activa"></span>`,
         titulo: "Sin documentación activa"
       };
+    }
+
+    function construirResumenTextoDocumentacion(documentos = []) {
+      const lista = Array.isArray(documentos) ? documentos : [];
+      if (!lista.length) return "No hay documentos obligatorios activos para este organizador.";
+
+      let noEnviados = 0;
+      let noActualizados = 0;
+      let rechazados = 0;
+      let enRevision = 0;
+      let validados = 0;
+
+      for (const doc of lista) {
+        const estado = String(doc?.estado_documento || "NO_ENVIADO").toUpperCase();
+        if (estado === "NO_ENVIADO") noEnviados += 1;
+        else if (estado === "NO_ACTUALIZADO") noActualizados += 1;
+        else if (estado === "RECHAZADO") rechazados += 1;
+        else if (estado === "VALIDADO") validados += 1;
+        else enRevision += 1;
+      }
+
+      if (rechazados > 0) {
+        return rechazados === 1
+          ? "Existe un documento rechazado que requiere una nueva actuación por tu parte."
+          : `Existen ${rechazados} documentos rechazados que requieren una nueva actuación por tu parte.`;
+      }
+
+      if (noActualizados > 0) {
+        return noActualizados === 1
+          ? "Existe un documento desactualizado que debes volver a remitir."
+          : `Existen ${noActualizados} documentos desactualizados que debes volver a remitir.`;
+      }
+
+      if (noEnviados > 0) {
+        return noEnviados === 1
+          ? "Falta un documento requerido por enviar."
+          : `Faltan ${noEnviados} documentos requeridos por enviar.`;
+      }
+
+      if (enRevision > 0) {
+        return enRevision === 1
+          ? "Existe un documento pendiente de revisión por parte del organizador."
+          : `Existen ${enRevision} documentos pendientes de revisión por parte del organizador.`;
+      }
+
+      if (validados === lista.length) {
+        return "Todos los documentos requeridos han sido validados correctamente.";
+      }
+
+      return "La documentación requerida se encuentra en seguimiento.";
     }
 
     function formatearFechaCorta(valor) {
@@ -877,8 +968,7 @@
       panel.classList.remove("oculto");
       vacioSuperior.classList.add("oculto");
       document.getElementById("detalleDocumentacionAdmin").textContent = adminNombre;
-      const resumenEstado = document.getElementById("detalleDocumentacionResumen");
-      resumenEstado.className = "estado-pill-doc NO_INICIADO";
+      const resumenEstado = document.getElementById("detalleDocumentacionResumenTexto");
       resumenEstado.textContent = "Cargando...";
       body.innerHTML = "";
       vacio.classList.add("oculto");
@@ -896,20 +986,17 @@
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data?.ok) {
-          resumenEstado.className = "estado-pill-doc RECHAZADA";
           resumenEstado.textContent = data?.error || "No disponible";
           vacio.classList.remove("oculto");
           return;
         }
 
         const adminVisible = data?.admin?.nombre_publico || data?.admin?.nombre || adminNombre;
-        const estadoExpediente = String(data?.expediente?.estado_efectivo || "NO_INICIADO").toUpperCase();
         const versionRequerida = Number(data?.version_requerida || 0);
         const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
 
         document.getElementById("detalleDocumentacionAdmin").textContent = adminVisible;
-        resumenEstado.className = `estado-pill-doc ${estadoExpediente}`;
-        resumenEstado.textContent = etiquetaEstadoDocumentacion(estadoExpediente);
+        resumenEstado.textContent = construirResumenTextoDocumentacion(documentos);
 
         if (!documentos.length) {
           detalleDocumentacionDatos = [];
@@ -925,7 +1012,6 @@
         detalleDocumentacionSeleccionId = Number(detalleDocumentacionDatos[0]?.id || 0) || null;
         renderizarDetalleDocumentacion(detalleDocumentacionDatos);
       } catch (_) {
-        resumenEstado.className = "estado-pill-doc RECHAZADA";
         resumenEstado.textContent = "No disponible";
         vacio.classList.remove("oculto");
         detalleDocumentacionDatos = [];
@@ -1870,6 +1956,12 @@
     document.getElementById("btnConfirmarAgregarOrganizador").addEventListener("click", confirmarAgregarOrganizador);
     document.getElementById("btnModalDocumentosSalirSinGuardar").addEventListener("click", salirDeDocumentosSinGuardar);
     document.getElementById("btnModalDocumentosGuardar").addEventListener("click", guardarDocumentosPendientes);
+    document.getElementById("btnAyudaEstadosDocumento").addEventListener("click", () => {
+      document.getElementById("modalEstadosDocumento").classList.add("activo");
+    });
+    document.getElementById("btnCerrarEstadosDocumento").addEventListener("click", () => {
+      document.getElementById("modalEstadosDocumento").classList.remove("activo");
+    });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -1881,7 +1973,8 @@
       "modalPasswordNueva",
       "modalAyudaCampo",
       "modalAgregarOrganizador",
-      "modalCambiosPendientesDocumentos"
+      "modalCambiosPendientesDocumentos",
+      "modalEstadosDocumento"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -1891,6 +1984,7 @@
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
         if (id === "modalAgregarOrganizador") cerrarModalAgregarOrganizador();
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
+        if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
       });
     });
 
