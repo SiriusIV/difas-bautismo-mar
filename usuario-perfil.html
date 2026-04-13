@@ -41,6 +41,7 @@
     .layout { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; }
     .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 14px 16px; height: 100%; }
+    .app-perfil-cargando { visibility: hidden; }
     .bloque-documentacion-estado { margin-top: 14px; display: none; }
     .bloque-documentacion-estado.activo { display: block; }
     .bloque-head { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; }
@@ -202,7 +203,7 @@
     </div>
     <div id="mensajePerfil" class="mensaje"></div>
     <div id="mensajePassword" class="mensaje"></div>
-    <div class="layout" id="appPerfil">
+    <div class="layout app-perfil-cargando" id="appPerfil">
       <div class="bloque oculto" id="bloqueImagenAdmin">
         <div class="preview-imagen-wrap">
           <div id="accionesOverlayImagen" class="acciones-overlay-imagen">
@@ -932,6 +933,8 @@
     async function cargarPerfil() {
       limpiarMensaje("mensajePerfil");
       limpiarMensaje("mensajePassword");
+      const appPerfil = document.getElementById("appPerfil");
+      appPerfil.classList.add("app-perfil-cargando");
       const sesion = await cargarSesionUsuario();
       if (!sesion) {
         location.href = "portal.html";
@@ -950,6 +953,7 @@
       if (!perfil) perfil = normalizarPerfil({}, sesion);
       rellenarFormulario(perfil);
       await cargarResumenDocumentacion();
+      appPerfil.classList.remove("app-perfil-cargando");
     }
 
     function abrirAyudaCampo(titulo, texto) {
