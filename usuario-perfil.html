@@ -111,12 +111,12 @@
     .tabla-organizadores tr.fila-seleccionada td { background: #f5f9ff; }
     .indicador-expediente { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; }
     .indicador-expediente.circulo { border-radius: 999px; border: 1px solid transparent; }
-    .indicador-expediente.verde { background: #eefaf0; border-color: #b9e0c0; }
-    .indicador-expediente.amarillo { background: #fff8eb; border-color: #f0d9a7; }
-    .indicador-expediente.rojo { background: #fdeaea; border-color: #f5c2c2; }
+    .indicador-expediente.verde { background: #1f9d4d; border-color: #15783a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18); }
+    .indicador-expediente.amarillo { background: #f2b300; border-color: #c88d00; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+    .indicador-expediente.rojo { background: #d92d20; border-color: #b42318; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16); }
     .indicador-expediente.neutro { background: #f0f4f8; border-color: #d5dfe8; }
     .indicador-expediente svg { width: 12px; height: 12px; display: block; }
-    .indicador-expediente.advertencia { width: 18px; height: 18px; color: #c88700; }
+    .indicador-expediente.advertencia { width: 18px; height: 18px; color: #d99a00; }
     .panel-documentos-estado-vacio { padding: 18px 2px 4px; font-size: 13px; color: var(--muted); }
     .detalle-documentacion-panel { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
     .detalle-documentacion-panel.oculto { display: none !important; }
@@ -443,6 +443,17 @@
     </div>
   </div>
 
+  <div id="modalCambiosPendientesDocumentos" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Cambios documentales sin guardar</h3>
+      <p>Si cambias ahora a la pestaña Organizadores, se perderán los cambios realizados en los documentos si no los guardas antes.</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnModalDocumentosSalirSinGuardar">Salir sin guardar</button>
+        <button type="button" class="btn" id="btnModalDocumentosGuardar">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalPasswordActual" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Validar contraseña actual</h3>
@@ -506,6 +517,7 @@
     let detalleDocumentacionDatos = [];
     let detalleDocumentacionSeleccionId = null;
     let detalleCambiosPendientes = new Map();
+    let cambioTabBloquePendiente = null;
     let temporizadorMensajePassword = null;
 
     function jsonMessage(id, tipo, texto) {
@@ -661,6 +673,13 @@
 
     function activarTabBloqueDocumentacion(tab) {
       const esOrganizadores = tab !== "documentos";
+
+      if (esOrganizadores && document.getElementById("panelBloqueDocumentos").classList.contains("activo") && tieneCambiosPendientesDetalle()) {
+        cambioTabBloquePendiente = "organizadores";
+        document.getElementById("modalCambiosPendientesDocumentos").classList.add("activo");
+        return;
+      }
+
       document.getElementById("tabBloqueOrganizadores").classList.toggle("activa", esOrganizadores);
       document.getElementById("tabBloqueDocumentos").classList.toggle("activa", !esOrganizadores);
       document.getElementById("tabBloqueOrganizadores").setAttribute("aria-selected", esOrganizadores ? "true" : "false");
@@ -670,6 +689,110 @@
 
       if (!esOrganizadores) {
         cargarDetalleSeleccionado();
+      }
+    }
+
+    function cerrarModalCambiosPendientesDocumentos() {
+      document.getElementById("modalCambiosPendientesDocumentos").classList.remove("activo");
+    }
+
+    function salirDeDocumentosSinGuardar() {
+      detalleCambiosPendientes = new Map();
+      limpiarMensajeDetalle();
+      actualizarAccionesDetalleDocumentacion();
+      cerrarModalCambiosPendientesDocumentos();
+      const destino = cambioTabBloquePendiente || "organizadores";
+      cambioTabBloquePendiente = null;
+      activarTabBloqueDocumentacion(destino);
+    }
+
+    async function guardarDocumentosPendientes() {
+      const ok = await guardarCambiosDetalleDocumentacion();
+      if (ok && !tieneCambiosPendientesDetalle()) {
+        cerrarModalCambiosPendientesDocumentos();
+        const destino = cambioTabBloquePendiente || "organizadores";
+        cambioTabBloquePendiente = null;
+        activarTabBloqueDocumentacion(destino);
+      }
+    }
+
+    async function guardarCambiosDetalleDocumentacion() {
+      if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return false;
+      if (!tieneCambiosPendientesDetalle()) return true;
+
+      limpiarMensajeDetalle();
+
+      try {
+        const operaciones = [];
+
+        for (const doc of detalleDocumentacionDatos) {
+          const cambio = detalleCambiosPendientes.get(Number(doc.id || 0));
+          if (!cambio) continue;
+
+          if (cambio.tipo === "eliminar") {
+            operaciones.push({
+              documento_id: Number(doc.id),
+              accion: "eliminar"
+            });
+            continue;
+          }
+
+          if (cambio.tipo === "subir" && cambio.file) {
+            const formData = new FormData();
+            formData.append("file", cambio.file);
+            formData.append("admin_id", String(detalleDocumentacionActual));
+            formData.append("nombre_documento", String(doc.nombre || ""));
+
+            const uploadRes = await fetch("/api/usuario/documentacion-upload", {
+              method: "POST",
+              credentials: "include",
+              body: formData
+            });
+            const uploadData = await uploadRes.json().catch(() => null);
+
+            if (!uploadRes.ok || !uploadData?.ok) {
+              throw new Error(uploadData?.error || `No se pudo subir el PDF firmado para "${doc.nombre || "el documento"}".`);
+            }
+
+            operaciones.push({
+              documento_id: Number(doc.id),
+              accion: "subir",
+              archivo_url: String(uploadData.archivo_url || "")
+            });
+          }
+        }
+
+        const res = await fetch("/api/usuario/documentacion-admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            admin_id: detalleDocumentacionActual,
+            operaciones
+          })
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
+        }
+
+        mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+        await cargarResumenDocumentacion();
+        detalleCambiosPendientes = new Map();
+        const adminIdActual = detalleDocumentacionActual;
+        if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
+          await cargarDetalleSeleccionado(adminIdActual);
+          mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
+        } else {
+          actualizarAccionesDetalleDocumentacion();
+        }
+        return true;
+      } catch (error) {
+        mostrarMensajeDetalle("error", error.message || "No se pudieron guardar los cambios documentales.");
+        return false;
+      } finally {
+        actualizarAccionesDetalleDocumentacion();
       }
     }
 
@@ -1718,76 +1841,9 @@
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
       if (!tieneCambiosPendientesDetalle()) return;
 
-      limpiarMensajeDetalle();
       this.disabled = true;
-
       try {
-        const operaciones = [];
-
-        for (const doc of detalleDocumentacionDatos) {
-          const cambio = detalleCambiosPendientes.get(Number(doc.id || 0));
-          if (!cambio) continue;
-
-          if (cambio.tipo === "eliminar") {
-            operaciones.push({
-              documento_id: Number(doc.id),
-              accion: "eliminar"
-            });
-            continue;
-          }
-
-          if (cambio.tipo === "subir" && cambio.file) {
-            const formData = new FormData();
-            formData.append("file", cambio.file);
-            formData.append("admin_id", String(detalleDocumentacionActual));
-            formData.append("nombre_documento", String(doc.nombre || ""));
-
-            const uploadRes = await fetch("/api/usuario/documentacion-upload", {
-              method: "POST",
-              credentials: "include",
-              body: formData
-            });
-            const uploadData = await uploadRes.json().catch(() => null);
-
-            if (!uploadRes.ok || !uploadData?.ok) {
-              throw new Error(uploadData?.error || `No se pudo subir el PDF firmado para "${doc.nombre || "el documento"}".`);
-            }
-
-            operaciones.push({
-              documento_id: Number(doc.id),
-              accion: "subir",
-              archivo_url: String(uploadData.archivo_url || "")
-            });
-          }
-        }
-
-        const res = await fetch("/api/usuario/documentacion-admin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            admin_id: detalleDocumentacionActual,
-            operaciones
-          })
-        });
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
-        }
-
-        mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
-        await cargarResumenDocumentacion();
-        detalleCambiosPendientes = new Map();
-        const adminIdActual = detalleDocumentacionActual;
-        if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
-          await cargarDetalleSeleccionado(adminIdActual);
-          mostrarMensajeDetalle("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
-        } else {
-          actualizarAccionesDetalleDocumentacion();
-        }
-      } catch (error) {
-        mostrarMensajeDetalle("error", error.message || "No se pudieron guardar los cambios documentales.");
+        await guardarCambiosDetalleDocumentacion();
       } finally {
         this.disabled = false;
         actualizarAccionesDetalleDocumentacion();
@@ -1812,6 +1868,8 @@
     });
     document.getElementById("btnCancelarAgregarOrganizador").addEventListener("click", cerrarModalAgregarOrganizador);
     document.getElementById("btnConfirmarAgregarOrganizador").addEventListener("click", confirmarAgregarOrganizador);
+    document.getElementById("btnModalDocumentosSalirSinGuardar").addEventListener("click", salirDeDocumentosSinGuardar);
+    document.getElementById("btnModalDocumentosGuardar").addEventListener("click", guardarDocumentosPendientes);
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -1822,7 +1880,8 @@
       "modalPasswordActual",
       "modalPasswordNueva",
       "modalAyudaCampo",
-      "modalAgregarOrganizador"
+      "modalAgregarOrganizador",
+      "modalCambiosPendientesDocumentos"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -1831,6 +1890,7 @@
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
         if (id === "modalAgregarOrganizador") cerrarModalAgregarOrganizador();
+        if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
       });
     });
 
