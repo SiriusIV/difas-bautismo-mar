@@ -95,6 +95,24 @@
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .td-centro { min-width: 220px; }
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
+    .bloque-documentacion-admin { margin-top: 14px; display: none; }
+    .bloque-documentacion-admin.activo { display: block; }
+    .documentacion-admin-contexto { margin: 0 0 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #445261; }
+    .documentacion-admin-contexto strong { color: #334250; }
+    .documentacion-admin-nota { margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; }
+    .tabla-documentacion-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tabla-documentacion-admin th, .tabla-documentacion-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
+    .tabla-documentacion-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-documentacion-admin tr:last-child td { border-bottom: none; }
+    .tabla-documentacion-admin tr.fila-seleccionada td { background: #f5f9ff; }
+    .tabla-documentacion-admin th:nth-child(3), .tabla-documentacion-admin td:nth-child(3),
+    .tabla-documentacion-admin th:nth-child(4), .tabla-documentacion-admin td:nth-child(4),
+    .tabla-documentacion-admin th:nth-child(5), .tabla-documentacion-admin td:nth-child(5) { text-align: center; }
+    .estado-pill-base { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+    .estado-pill-base.activo { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .estado-pill-base.inactivo { color: #5f6d7a; background: #f3f6f8; border-color: #d7e0e8; }
+    .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
     .tab-bloque-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
@@ -349,6 +367,40 @@
         </form>
       </div>
     </div>
+    <div class="bloque bloque-documentacion-admin" id="bloqueDocumentacionAdmin">
+      <div class="bloque-head-documentacion">
+        <div>
+          <h3>Documentación obligatoria</h3>
+          <p>Consulta aquí la documentación base exigida para tus actividades. Si tu cuenta se autogestiona, también podrás acceder a su edición y mantenimiento.</p>
+        </div>
+        <div class="documentacion-admin-toolbar">
+          <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+          <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionAdminPerfil">Gestionar documentación</button>
+        </div>
+      </div>
+      <p class="documentacion-admin-contexto">
+        <strong>Modo documental:</strong>
+        <span id="documentacionAdminModo">Cargando...</span>
+      </p>
+      <p class="documentacion-admin-nota" id="documentacionAdminNota">Cargando documentación base...</p>
+      <div class="tabla-documentacion-admin-wrap">
+        <table class="tabla-documentacion-admin">
+          <thead>
+            <tr>
+              <th class="col-seleccion"></th>
+              <th>Título</th>
+              <th>Versión</th>
+              <th>Última actualización</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tablaDocumentacionAdminBody"></tbody>
+        </table>
+      </div>
+      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionAdmin">No hay documentos base disponibles actualmente para este administrador.</div>
+    </div>
     <div class="bloque bloque-documentacion-estado" id="bloqueEstadoDocumentacion">
       <div class="bloque-head-documentacion">
         <div>
@@ -562,6 +614,8 @@
     let detalleDocumentacionActual = null;
     let detalleDocumentacionDatos = [];
     let detalleDocumentacionSeleccionId = null;
+    let documentacionAdminContexto = null;
+    let documentacionAdminSeleccionId = null;
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let adminIdPreferentePerfil = null;
@@ -1175,6 +1229,127 @@
       }
     }
 
+    function obtenerDocumentoBaseAdminSeleccionado() {
+      const lista = Array.isArray(documentacionAdminContexto?.documentos)
+        ? documentacionAdminContexto.documentos
+        : [];
+      return lista.find((doc) => Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0)) || null;
+    }
+
+    function actualizarAccionesDocumentacionAdmin() {
+      const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
+      const btnGestion = document.getElementById("btnGestionarDocumentacionAdminPerfil");
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      const editable = !!documentacionAdminContexto?.editable;
+
+      btnVer.disabled = !doc || !doc.archivo_url;
+      btnGestion.disabled = !editable;
+      btnGestion.classList.toggle("oculto", !esAdmin());
+    }
+
+    function renderizarBloqueDocumentacionAdmin() {
+      const bloque = document.getElementById("bloqueDocumentacionAdmin");
+      const body = document.getElementById("tablaDocumentacionAdminBody");
+      const vacio = document.getElementById("estadoVacioDocumentacionAdmin");
+      const modo = document.getElementById("documentacionAdminModo");
+      const nota = document.getElementById("documentacionAdminNota");
+
+      if (!esAdmin()) {
+        bloque.classList.remove("activo");
+        body.innerHTML = "";
+        vacio.classList.add("oculto");
+        documentacionAdminSeleccionId = null;
+        return;
+      }
+
+      bloque.classList.add("activo");
+      body.innerHTML = "";
+      const contexto = documentacionAdminContexto || null;
+      const documentos = Array.isArray(contexto?.documentos) ? contexto.documentos : [];
+
+      modo.textContent = contexto?.modo_documental_etiqueta || "No disponible";
+      if (contexto?.modo_documental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
+        const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
+        nota.textContent = `Esta documentación está gestionada por ${nombre}. Puedes consultarla aquí en modo lectura. ${contexto?.resumen || ""}`.trim();
+      } else if (contexto?.modo_documental === "AUTOGESTION") {
+        nota.textContent = contexto?.resumen || "Gestiona aquí la documentación base exigida para tus actividades.";
+      } else {
+        nota.textContent = contexto?.observacion || "La configuración documental de esta cuenta no está disponible actualmente.";
+      }
+
+      if (!documentos.length) {
+        documentacionAdminSeleccionId = null;
+        vacio.classList.remove("oculto");
+        actualizarAccionesDocumentacionAdmin();
+        return;
+      }
+
+      vacio.classList.add("oculto");
+      const existeSeleccion = documentos.some((doc) => Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0));
+      if (!existeSeleccion) {
+        documentacionAdminSeleccionId = Number(documentos[0]?.id || 0) || null;
+      }
+
+      documentos.forEach((doc) => {
+        const seleccionado = Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0);
+        const estadoClase = Number(doc.activo || 0) === 1 ? "activo" : "inactivo";
+        const estadoTexto = Number(doc.activo || 0) === 1 ? "Activo" : "Inactivo";
+        const tr = document.createElement("tr");
+        tr.classList.toggle("fila-seleccionada", seleccionado);
+        tr.innerHTML = `
+          <td class="col-seleccion">
+            <input type="radio" name="documentacion_admin_seleccion" class="selector-doc selector-doc-admin" value="${Number(doc.id || 0)}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento base">
+          </td>
+          <td>
+            <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
+            <div class="admin-doc-meta">${doc.descripcion || ""}</div>
+          </td>
+          <td>${Number(doc.version_documental || 0)}</td>
+          <td>${formatearFechaCorta(doc.fecha_actualizacion || "")}</td>
+          <td><span class="estado-pill-base ${estadoClase}">${estadoTexto}</span></td>
+        `;
+        body.appendChild(tr);
+      });
+
+      actualizarAccionesDocumentacionAdmin();
+    }
+
+    async function cargarDocumentacionAdmin() {
+      if (!esAdmin()) {
+        documentacionAdminContexto = null;
+        renderizarBloqueDocumentacionAdmin();
+        return;
+      }
+
+      documentacionAdminContexto = null;
+      renderizarBloqueDocumentacionAdmin();
+
+      try {
+        const res = await fetch("/api/admin/documentacion-contexto", {
+          credentials: "include"
+        });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo cargar la documentación base del administrador.");
+        }
+
+        documentacionAdminContexto = data;
+        renderizarBloqueDocumentacionAdmin();
+      } catch (error) {
+        documentacionAdminContexto = {
+          modo_documental: "",
+          modo_documental_etiqueta: "No disponible",
+          resumen: "",
+          observacion: error.message || "No se pudo cargar la documentación base del administrador.",
+          responsable_documental: null,
+          documentos: [],
+          editable: false
+        };
+        renderizarBloqueDocumentacionAdmin();
+      }
+    }
+
     function actualizarPreviewImagen() {
       const logoUrl = document.getElementById("logo_url").value.trim();
       const preview = document.getElementById("previewImagen");
@@ -1468,6 +1643,7 @@
       if (!perfil) perfil = normalizarPerfil({}, sesion);
       rellenarFormulario(perfil);
       await cargarResumenDocumentacion();
+      await cargarDocumentacionAdmin();
       if (esSolicitante() && Number(adminIdPreferentePerfil || 0) > 0) {
         activarTabBloqueDocumentacion("documentos");
       }
@@ -1917,6 +2093,25 @@
     });
     document.getElementById("btnCambiarPasswordAdmin").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnDocumentacionAdmin").addEventListener("click", function () {
+      const bloque = document.getElementById("bloqueDocumentacionAdmin");
+      if (!bloque.classList.contains("activo")) return;
+      bloque.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    document.getElementById("tablaDocumentacionAdminBody").addEventListener("click", function (event) {
+      const selector = event.target.closest(".selector-doc-admin");
+      if (!selector) return;
+      const docId = Number.parseInt(selector.value || "", 10);
+      if (!Number.isInteger(docId) || docId <= 0) return;
+      documentacionAdminSeleccionId = docId;
+      renderizarBloqueDocumentacionAdmin();
+    });
+    document.getElementById("btnVerDocumentoBaseAdmin").addEventListener("click", function () {
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      if (!doc || !doc.archivo_url) return;
+      window.open(doc.archivo_url, "_blank", "noopener");
+    });
+    document.getElementById("btnGestionarDocumentacionAdminPerfil").addEventListener("click", function () {
+      if (!documentacionAdminContexto?.editable) return;
       location.href = "admin-documentos.html";
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
