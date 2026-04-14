@@ -216,3 +216,53 @@ export function construirEmailHtmlDocumentacionResuelta({ admin, centro, version
     <p>Puedes consultar el estado actualizado desde la plataforma.</p>
   `;
 }
+
+export function construirEmailTextoCambioMarcoDocumental({
+  admin,
+  secretaria,
+  centro,
+  totalDocumentos = 0
+}) {
+  const organizador = nombreVisibleAdmin(admin);
+  const secretariaNombre = limpiarTexto(secretaria?.nombre_publico || secretaria?.nombre || "la secretaría responsable");
+  const cantidad = Number(totalDocumentos || 0);
+
+  return [
+    "La documentación obligatoria asociada a este organizador ha cambiado.",
+    "",
+    `Organizador: ${organizador}`,
+    `Centro: ${limpiarTexto(centro?.centro)}`,
+    `Nueva gestión documental: ${secretariaNombre}`,
+    cantidad > 0
+      ? `Ahora debes presentar ${cantidad} documento(s) del nuevo marco documental.`
+      : "Actualmente no hay documentos base activos en el nuevo marco documental.",
+    "",
+    "La documentación anterior deja de ser aplicable para este organizador.",
+    "Accede a tu perfil de usuario para revisar la nueva documentación obligatoria y remitirla de nuevo si procede."
+  ].join("\n");
+}
+
+export function construirEmailHtmlCambioMarcoDocumental({
+  admin,
+  secretaria,
+  centro,
+  totalDocumentos = 0
+}) {
+  const organizador = escaparHtml(nombreVisibleAdmin(admin));
+  const secretariaNombre = escaparHtml(secretaria?.nombre_publico || secretaria?.nombre || "la secretaría responsable");
+  const cantidad = Number(totalDocumentos || 0);
+
+  return `
+    <p>La documentación obligatoria asociada a este organizador ha cambiado.</p>
+    <p><strong>Organizador:</strong> ${organizador}</p>
+    <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
+    <p><strong>Nueva gestión documental:</strong> ${secretariaNombre}</p>
+    <p>${
+      cantidad > 0
+        ? `Ahora debes presentar <strong>${cantidad}</strong> documento(s) del nuevo marco documental.`
+        : "Actualmente no hay documentos base activos en el nuevo marco documental."
+    }</p>
+    <p>La documentación anterior deja de ser aplicable para este organizador.</p>
+    <p>Accede a tu perfil de usuario para revisar la nueva documentación obligatoria y remitirla de nuevo si procede.</p>
+  `;
+}
