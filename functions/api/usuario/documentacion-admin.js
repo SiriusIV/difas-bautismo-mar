@@ -5,6 +5,7 @@ import {
   enviarEmail,
   nombreVisibleAdmin
 } from "../_email.js";
+import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -66,19 +67,8 @@ async function obtenerUsuarioSolicitante(env, userId) {
 }
 
 async function obtenerAdmin(env, adminId) {
-  return await env.DB.prepare(`
-    SELECT
-      id,
-      nombre,
-      nombre_publico,
-      localidad,
-      email,
-      rol
-    FROM usuarios
-    WHERE id = ?
-      AND rol IN ('ADMIN', 'SUPERADMIN')
-    LIMIT 1
-  `).bind(adminId).first();
+  const resolucion = await resolverResponsableDocumental(env, adminId);
+  return resolucion?.admin || null;
 }
 
 async function obtenerVersionRequerida(env, adminId) {
@@ -601,9 +591,11 @@ export async function onRequestPost(context) {
     }
 
     const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, Array.from(cambiosRealesIds));
-    let notificacionAdmin = { ok: false, skipped: true, error: "" };
+    let notificacionAdmin = { ok: false, skipped: true, error: "", destinatario: "" };
 
     if (cambiosCorreo.length > 0) {
+      const responsableDocumental = await resolverResponsableDocumental(env, adminId);
+      const destinatarioResponsable = responsableDocumental?.responsable?.email || admin.email || "";
       const payloadEmail = {
         admin,
         centro: usuario,
@@ -612,16 +604,20 @@ export async function onRequestPost(context) {
       };
 
       notificacionAdmin = await enviarEmail(env, {
-        to: admin.email || "",
+        to: destinatarioResponsable,
         subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
         text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
         html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
       });
+      notificacionAdmin.destinatario = destinatarioResponsable;
 
       if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
-        console.error("No se pudo enviar el correo al administrador tras guardar cambios documentales.", {
+        console.error("No se pudo enviar el correo al responsable documental tras guardar cambios documentales.", {
           admin_id: admin.id,
           admin_nombre: nombreVisibleAdmin(admin),
+          responsable_documental_id: responsableDocumental?.responsable?.id || null,
+          responsable_documental_email: destinatarioResponsable,
+          modo_responsable_documental: responsableDocumental?.modo || "",
           centro_usuario_id: usuario.id,
           error: notificacionAdmin.error || ""
         });
@@ -646,7 +642,8 @@ export async function onRequestPost(context) {
       notificacion_admin: {
         enviada: !!notificacionAdmin.ok,
         omitida: !!notificacionAdmin.skipped,
-        error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
+        error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || ""),
+        destinatario: notificacionAdmin.destinatario || ""
       }
     });
   } catch (error) {
