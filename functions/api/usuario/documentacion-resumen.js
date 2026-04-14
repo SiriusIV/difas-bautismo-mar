@@ -1,4 +1,5 @@
 import { getUserSession } from "./_auth.js";
+import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -132,19 +133,13 @@ export async function onRequestGet(context) {
         u.nombre AS admin_nombre,
         u.nombre_publico AS admin_nombre_publico,
         u.localidad AS admin_localidad,
-        u.email AS admin_email,
-        adc.id AS documento_id,
-        adc.nombre AS documento_nombre,
-        adc.version_documental
+        u.email AS admin_email
       FROM usuario_documentacion_organizadores sel
       INNER JOIN usuarios u
         ON u.id = sel.admin_id
-      LEFT JOIN admin_documentos_comunes adc
-        ON adc.admin_id = u.id
-       AND adc.activo = 1
       WHERE sel.centro_usuario_id = ?
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
-      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC, adc.orden ASC, adc.id ASC
+      ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).bind(usuario.id).all();
 
     const adminsAgrupados = new Map();
@@ -157,17 +152,38 @@ export async function onRequestGet(context) {
           admin_nombre_publico: row.admin_nombre_publico || "",
           admin_localidad: row.admin_localidad || "",
           admin_email: row.admin_email || "",
+          propietario_documental_id: null,
           documentos: []
         });
       }
+    }
 
-      if (Number(row.documento_id || 0) > 0) {
-        adminsAgrupados.get(adminId).documentos.push({
-          id: Number(row.documento_id || 0),
-          nombre: row.documento_nombre || "",
-          version_documental: Number(row.version_documental || 0)
-        });
-      }
+    for (const admin of adminsAgrupados.values()) {
+      const resolucion = await resolverResponsableDocumental(env, admin.admin_id);
+      const propietarioDocumentalId = Number(
+        String(resolucion?.modo || "").toUpperCase() === "SECRETARIA_EXTERNA"
+          ? resolucion?.responsable?.id || 0
+          : resolucion?.admin?.id || 0
+      );
+
+      admin.propietario_documental_id = propietarioDocumentalId || admin.admin_id;
+
+      const documentosRows = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          version_documental
+        FROM admin_documentos_comunes
+        WHERE admin_id = ?
+          AND activo = 1
+        ORDER BY orden ASC, id ASC
+      `).bind(admin.propietario_documental_id).all();
+
+      admin.documentos = (documentosRows?.results || []).map((row) => ({
+        id: Number(row.id || 0),
+        nombre: row.nombre || "",
+        version_documental: Number(row.version_documental || 0)
+      }));
     }
 
     const expedientesRows = await env.DB.prepare(`

@@ -71,18 +71,35 @@ async function obtenerAdmin(env, adminId) {
   return resolucion?.admin || null;
 }
 
+async function obtenerPropietarioDocumentalId(env, adminId) {
+  const resolucion = await resolverResponsableDocumental(env, adminId);
+  if (!resolucion) return null;
+
+  if (String(resolucion.modo || "").toUpperCase() === "SECRETARIA_EXTERNA") {
+    return Number(resolucion.responsable?.id || 0) || null;
+  }
+
+  return Number(resolucion.admin?.id || 0) || null;
+}
+
 async function obtenerVersionRequerida(env, adminId) {
+  const propietarioDocumentalId = await obtenerPropietarioDocumentalId(env, adminId);
+  if (!propietarioDocumentalId) return 0;
+
   const row = await env.DB.prepare(`
     SELECT COALESCE(MAX(version_documental), 0) AS version_actual
     FROM admin_documentos_comunes
     WHERE admin_id = ?
       AND activo = 1
-  `).bind(adminId).first();
+  `).bind(propietarioDocumentalId).first();
 
   return Number(row?.version_actual || 0);
 }
 
 async function obtenerDocumentosActivos(env, adminId) {
+  const propietarioDocumentalId = await obtenerPropietarioDocumentalId(env, adminId);
+  if (!propietarioDocumentalId) return [];
+
   const rows = await env.DB.prepare(`
     SELECT
       id,
@@ -96,7 +113,7 @@ async function obtenerDocumentosActivos(env, adminId) {
     WHERE admin_id = ?
       AND activo = 1
     ORDER BY orden ASC, id ASC
-  `).bind(adminId).all();
+  `).bind(propietarioDocumentalId).all();
 
   return rows?.results || [];
 }
