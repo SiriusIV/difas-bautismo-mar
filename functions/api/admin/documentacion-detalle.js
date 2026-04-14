@@ -1,5 +1,6 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
+import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -31,8 +32,25 @@ export async function onRequestGet(context) {
     }
 
     const url = new URL(request.url);
+    const rolSesion = await getRolUsuario(env, session.usuario_id);
     const adminId = await resolverAdminObjetivo(env, session, url.searchParams.get("admin_id"));
+    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
     const centroUsuarioId = parsearIdPositivo(url.searchParams.get("centro_usuario_id"));
+
+    if (!permiso.permitido) {
+      const mensaje = permiso.motivo === "RESPONSABLE_DISTINTO"
+        ? "La documentación de este administrador está gestionada por una secretaría externa."
+        : "Este administrador no tiene la gestión documental operativa habilitada.";
+      return json(
+        {
+          ok: false,
+          error: mensaje,
+          modo_documental: permiso.resolucion?.modo || "",
+          responsable_documental_id: Number(permiso.resolucion?.responsable?.id || 0)
+        },
+        { status: 403 }
+      );
+    }
 
     if (!centroUsuarioId) {
       return json({ ok: false, error: "Debes indicar un centro válido." }, { status: 400 });
