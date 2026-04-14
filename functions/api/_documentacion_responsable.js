@@ -88,3 +88,26 @@ export async function resolverResponsableDocumental(env, adminId) {
     observacion: limpiarTexto("El administrador no tiene módulo de secretaría activado ni una secretaría externa válida asignada.")
   };
 }
+
+export async function puedeGestionarDocumentacionAdmin(env, sessionUserId, adminId, rolSesion = "") {
+  const rol = limpiarTexto(rolSesion).toUpperCase();
+  if (rol === "SUPERADMIN") {
+    return { permitido: true, motivo: "SUPERADMIN" };
+  }
+
+  const resolucion = await resolverResponsableDocumental(env, adminId);
+  if (!resolucion) {
+    return { permitido: false, motivo: "ADMIN_NO_ENCONTRADO", resolucion: null };
+  }
+
+  if (!resolucion.puede_gestionar_documentacion) {
+    return { permitido: false, motivo: "SIN_RESPONSABLE_DOCUMENTAL", resolucion };
+  }
+
+  const permitido = Number(resolucion.responsable?.id || 0) === Number(sessionUserId || 0);
+  return {
+    permitido,
+    motivo: permitido ? "RESPONSABLE_DOCUMENTAL" : "RESPONSABLE_DISTINTO",
+    resolucion
+  };
+}
