@@ -20,6 +20,14 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, { status: 403 });
     }
 
+    const adminsResult = await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM usuarios
+      WHERE secretaria_usuario_id = ?
+        AND COALESCE(modulo_secretaria, 0) = 0
+        AND rol = 'ADMIN'
+    `).bind(session.id).first();
+
     const result = await env.DB.prepare(`
       WITH admins_secretaria AS (
         SELECT id
@@ -132,6 +140,7 @@ export async function onRequestGet(context) {
 
     return json({
       ok: true,
+      admins_asociados: Number(adminsResult?.total || 0),
       actividades: (result.results || []).map((a) => ({
         ...a,
         plazas_totales: Number(a.plazas_totales || 0),
