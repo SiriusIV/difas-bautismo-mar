@@ -104,6 +104,103 @@ async function obtenerArchivosActivosPorExpediente(env, documentacionId) {
   return rows?.results || [];
 }
 
+async function desactivarArchivosActivosExpediente(env, documentacionId) {
+  const archivosActivos = await obtenerArchivosActivosPorExpediente(env, documentacionId);
+  if (!archivosActivos.length) return archivosActivos;
+
+  const sentencias = archivosActivos.map((archivo) => env.DB.prepare(`
+    UPDATE centro_admin_documentacion_archivos
+    SET activo = 0
+    WHERE id = ?
+  `).bind(archivo.id));
+
+  await env.DB.batch(sentencias);
+  return archivosActivos;
+}
+
+async function recalcularExpedientesPorCambioDeMarco(env, adminId, documentosNuevoMarco) {
+  const expedientes = await obtenerExpedientesAfectados(env, adminId);
+  const afectadosConRemision = [];
+  const versionNueva = (documentosNuevoMarco || []).reduce(
+    (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+    0
+  );
+
+  for (const expediente of expedientes) {
+    const archivosActivos = await desactivarArchivosActivosExpediente(env, expediente.id);
+    if (archivosActivos.length > 0) {
+      afectadosConRemision.push({
+        ...expediente,
+        archivos_activos: archivosActivos
+      });
+    }
+
+    await env.DB.prepare(`
+      UPDATE centro_admin_documentacion
+      SET
+        version_requerida = ?,
+        version_aportada = 0,
+        estado = ?,
+        fecha_ultima_entrega = NULL,
+        fecha_validacion = NULL,
+        validado_por_admin_id = NULL,
+        observaciones_admin = NULL,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      versionNueva,
+      (documentosNuevoMarco || []).length > 0 ? "NO_INICIADO" : "NO_REQUERIDA",
+      expediente.id
+    ).run();
+  }
+
+  return {
+    expedientes,
+    afectadosConRemision,
+    versionNueva
+  };
+}
+
+async function notificarAfectadosCambioMarco(env, admin, secretaria, afectados, totalDocumentos) {
+  const notificaciones = [];
+
+  for (const afectado of afectados || []) {
+    const payload = {
+      admin,
+      secretaria,
+      centro: {
+        centro: afectado.centro || "",
+        email: afectado.email || ""
+      },
+      totalDocumentos
+    };
+
+    const resultado = await enviarEmail(env, {
+      to: afectado.email || "",
+      subject: `[Documentación] Nuevo marco documental para ${nombreVisibleAdmin(admin)}`,
+      text: construirEmailTextoCambioMarcoDocumental(payload),
+      html: construirEmailHtmlCambioMarcoDocumental(payload)
+    });
+
+    notificaciones.push({
+      centro_usuario_id: Number(afectado.centro_usuario_id || 0),
+      email: afectado.email || "",
+      enviada: !!resultado.ok,
+      omitida: !!resultado.skipped,
+      error: resultado.ok ? "" : (resultado.error || "")
+    });
+  }
+
+  return notificaciones;
+}
+
+async function eliminarDocumentosBasePropiosAdmin(env, adminId) {
+  await env.DB.prepare(`
+    DELETE FROM admin_documentos_comunes
+    WHERE admin_id = ?
+  `).bind(adminId).run();
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -118,12 +215,8 @@ export async function onRequestPost(context) {
     const secretariaUsuarioId = parsearIdPositivo(body?.secretaria_usuario_id);
     const accion = String(body?.accion || "").trim().toLowerCase();
 
-    if (accion !== "adscribir_secretaria") {
+    if (!["adscribir_secretaria", "activar_autogestion"].includes(accion)) {
       return json({ ok: false, error: "La acción solicitada no es válida." }, 400);
-    }
-
-    if (!secretariaUsuarioId) {
-      return json({ ok: false, error: "Debes indicar una secretaría válida." }, 400);
     }
 
     const resolucionActual = await resolverResponsableDocumental(env, adminId);
@@ -131,113 +224,95 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Administrador no encontrado." }, 404);
     }
 
-    if (String(resolucionActual.modo || "").toUpperCase() !== "AUTOGESTION") {
+    const admin = resolucionActual.admin;
+
+    if (accion === "adscribir_secretaria") {
+      if (!secretariaUsuarioId) {
+        return json({ ok: false, error: "Debes indicar una secretaría válida." }, 400);
+      }
+
+      if (String(resolucionActual.modo || "").toUpperCase() !== "AUTOGESTION") {
+        return json(
+          { ok: false, error: "Solo puede adscribirse a una secretaría un administrador que esté actualmente en autogestión." },
+          400
+        );
+      }
+
+      const secretaria = await obtenerSecretaria(env, secretariaUsuarioId);
+      if (!secretaria) {
+        return json({ ok: false, error: "La secretaría indicada no existe o no es válida." }, 404);
+      }
+
+      if (Number(secretaria.id || 0) === Number(adminId || 0)) {
+        return json({ ok: false, error: "La secretaría indicada no puede coincidir con el propio administrador." }, 400);
+      }
+
+      const documentosSecretaria = await obtenerDocumentosActivosDeUsuario(env, secretariaUsuarioId);
+      const recalculo = await recalcularExpedientesPorCambioDeMarco(env, adminId, documentosSecretaria);
+
+      await env.DB.prepare(`
+        UPDATE usuarios
+        SET
+          modulo_secretaria = 0,
+          secretaria_usuario_id = ?
+        WHERE id = ?
+      `).bind(secretariaUsuarioId, adminId).run();
+
+      await eliminarDocumentosBasePropiosAdmin(env, adminId);
+
+      const notificaciones = await notificarAfectadosCambioMarco(
+        env,
+        admin,
+        secretaria,
+        recalculo.afectadosConRemision,
+        documentosSecretaria.length
+      );
+
+      return json({
+        ok: true,
+        mensaje: "El administrador ha pasado a depender de la secretaría indicada y se ha actualizado el marco documental de los usuarios afectados.",
+        admin_id: adminId,
+        secretaria_usuario_id: secretariaUsuarioId,
+        documentos_nuevo_marco: documentosSecretaria.length,
+        expedientes_actualizados: recalculo.expedientes.length,
+        usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
+        notificaciones
+      });
+    }
+
+    if (String(resolucionActual.modo || "").toUpperCase() !== "SECRETARIA_EXTERNA") {
       return json(
-        { ok: false, error: "Solo puede adscribirse a una secretaría un administrador que esté actualmente en autogestión." },
+        { ok: false, error: "Solo puede activarse la autogestión cuando el administrador está actualmente adscrito a una secretaría." },
         400
       );
     }
 
-    const secretaria = await obtenerSecretaria(env, secretariaUsuarioId);
-    if (!secretaria) {
-      return json({ ok: false, error: "La secretaría indicada no existe o no es válida." }, 404);
-    }
-
-    if (Number(secretaria.id || 0) === Number(adminId || 0)) {
-      return json({ ok: false, error: "La secretaría indicada no puede coincidir con el propio administrador." }, 400);
-    }
-
-    const documentosSecretaria = await obtenerDocumentosActivosDeUsuario(env, secretariaUsuarioId);
-    const versionNueva = documentosSecretaria.reduce(
-      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
-      0
-    );
-
-    const expedientes = await obtenerExpedientesAfectados(env, adminId);
-    const afectadosConRemision = [];
-
-    for (const expediente of expedientes) {
-      const archivosActivos = await obtenerArchivosActivosPorExpediente(env, expediente.id);
-      if (archivosActivos.length > 0) {
-        afectadosConRemision.push({
-          ...expediente,
-          archivos_activos: archivosActivos
-        });
-      }
-
-      if (archivosActivos.length > 0) {
-        const sentenciasDesactivar = archivosActivos.map((archivo) => env.DB.prepare(`
-          UPDATE centro_admin_documentacion_archivos
-          SET activo = 0
-          WHERE id = ?
-        `).bind(archivo.id));
-        await env.DB.batch(sentenciasDesactivar);
-      }
-
-      await env.DB.prepare(`
-        UPDATE centro_admin_documentacion
-        SET
-          version_requerida = ?,
-          version_aportada = 0,
-          estado = ?,
-          fecha_ultima_entrega = NULL,
-          fecha_validacion = NULL,
-          validado_por_admin_id = NULL,
-          observaciones_admin = NULL,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).bind(
-        versionNueva,
-        documentosSecretaria.length > 0 ? "NO_INICIADO" : "NO_REQUERIDA",
-        expediente.id
-      ).run();
-    }
+    const recalculo = await recalcularExpedientesPorCambioDeMarco(env, adminId, []);
 
     await env.DB.prepare(`
       UPDATE usuarios
       SET
-        modulo_secretaria = 0,
-        secretaria_usuario_id = ?
+        modulo_secretaria = 1,
+        secretaria_usuario_id = NULL
       WHERE id = ?
-    `).bind(secretariaUsuarioId, adminId).run();
+    `).bind(adminId).run();
 
-    const admin = resolucionActual.admin;
-    const notificaciones = [];
-
-    for (const afectado of afectadosConRemision) {
-      const payload = {
-        admin,
-        secretaria,
-        centro: {
-          centro: afectado.centro || "",
-          email: afectado.email || ""
-        },
-        totalDocumentos: documentosSecretaria.length
-      };
-
-      const resultado = await enviarEmail(env, {
-        to: afectado.email || "",
-        subject: `[Documentación] Nuevo marco documental para ${nombreVisibleAdmin(admin)}`,
-        text: construirEmailTextoCambioMarcoDocumental(payload),
-        html: construirEmailHtmlCambioMarcoDocumental(payload)
-      });
-
-      notificaciones.push({
-        centro_usuario_id: Number(afectado.centro_usuario_id || 0),
-        email: afectado.email || "",
-        enviada: !!resultado.ok,
-        omitida: !!resultado.skipped,
-        error: resultado.ok ? "" : (resultado.error || "")
-      });
-    }
+    const secretariaActual = resolucionActual.responsable || null;
+    const notificaciones = await notificarAfectadosCambioMarco(
+      env,
+      admin,
+      secretariaActual,
+      recalculo.afectadosConRemision,
+      0
+    );
 
     return json({
       ok: true,
-      mensaje: "El administrador ha pasado a depender de la secretaría indicada y se ha actualizado el marco documental de los usuarios afectados.",
+      mensaje: "El administrador ha pasado a autogestión y se ha reiniciado su marco documental para los usuarios afectados.",
       admin_id: adminId,
-      secretaria_usuario_id: secretariaUsuarioId,
-      documentos_nuevo_marco: documentosSecretaria.length,
-      expedientes_actualizados: expedientes.length,
+      secretaria_usuario_id: null,
+      documentos_nuevo_marco: 0,
+      expedientes_actualizados: recalculo.expedientes.length,
       usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
       notificaciones
     });
