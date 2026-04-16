@@ -1461,18 +1461,23 @@
         if (!res.ok || !data?.ok) {
           throw new Error(data?.error || "No se pudo cargar la documentación base del administrador.");
         }
-
-        documentacionAdminContexto = data;
+        const modoDocumentalAdmin = String(data?.modo_documental || "").toUpperCase();
+        documentacionAdminContexto = {
+          ...data,
+          modo_documental: modoDocumentalAdmin || "AUTOGESTION",
+          modo_documental_etiqueta: data?.modo_documental_etiqueta || "Autogesti\u00f3n",
+          editable: modoDocumentalAdmin === "SECRETARIA_EXTERNA" ? false : true
+        };
         renderizarBloqueDocumentacionAdmin();
       } catch (error) {
         documentacionAdminContexto = {
-          modo_documental: "",
-          modo_documental_etiqueta: "No disponible",
+          modo_documental: "AUTOGESTION",
+          modo_documental_etiqueta: "Autogestión",
           resumen: "",
           observacion: error.message || "No se pudo cargar la documentación base del administrador.",
           responsable_documental: null,
           documentos: [],
-          editable: false
+          editable: true
         };
         renderizarBloqueDocumentacionAdmin();
       }
