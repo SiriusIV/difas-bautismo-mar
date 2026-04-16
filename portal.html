@@ -418,6 +418,10 @@
       display: block;
     }
 
+    .detalle-img.oculta {
+      opacity: 0;
+    }
+
     .mapa-info-wrap {
       display: flex;
       flex-direction: column;
@@ -1188,7 +1192,7 @@
       <div class="detalle" id="detalleActividad">
         <div class="detalle-grid">
           <div class="detalle-col-izq">
-            <img id="detalleImagen" class="detalle-img" src="" alt="Imagen actividad">
+            <img id="detalleImagen" class="detalle-img oculta" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Imagen actividad">
 
             <div class="mapa-info-wrap">
               <div id="direccionActividad" class="direccion-actividad"></div>
@@ -1318,6 +1322,9 @@
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
     let carruselResetTimeout = null;
+    const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    const IMAGEN_SIN_ACTIVIDADES = new Image();
+    IMAGEN_SIN_ACTIVIDADES.src = "sin-actividades.png";
 
     function mensaje(id, tipo, texto) {
       const el = document.getElementById(id);
@@ -2000,7 +2007,16 @@ function obtenerActividadesFiltradas() {
           <div class="estado-vacio-portal-texto">${mensaje}</div>
         </div>
       `;
-      detalleImagen.src = "sin-actividades.png";
+      detalleImagen.classList.add("oculta");
+      if (IMAGEN_SIN_ACTIVIDADES.complete) {
+        detalleImagen.src = IMAGEN_SIN_ACTIVIDADES.src;
+        detalleImagen.classList.remove("oculta");
+      } else {
+        IMAGEN_SIN_ACTIVIDADES.onload = function () {
+          detalleImagen.src = IMAGEN_SIN_ACTIVIDADES.src;
+          detalleImagen.classList.remove("oculta");
+        };
+      }
       detalleImagen.alt = "Buque alejándose en el horizonte";
       btnSolicitar.style.display = "none";
       btnEditar.style.display = "none";
@@ -2208,7 +2224,8 @@ function renderMapaActividad(a) {
         document.getElementById("detalleSubtitulo").textContent = "";
         document.getElementById("detalleMeta").innerHTML = "";
         document.getElementById("detalleTexto").textContent = "";
-        document.getElementById("detalleImagen").src = "logo.png";
+        document.getElementById("detalleImagen").src = IMAGEN_PLACEHOLDER_TRANSPARENTE;
+        document.getElementById("detalleImagen").classList.add("oculta");
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
@@ -2235,6 +2252,7 @@ function renderMapaActividad(a) {
 
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
+      document.getElementById("detalleImagen").classList.remove("oculta");
 
 
       const organizadorHTML = a.organizador_publico
