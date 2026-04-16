@@ -618,9 +618,9 @@
 }
 
 .detalle-vacio .detalle-img {
-  object-fit: contain;
-  background: linear-gradient(180deg, #f6faff 0%, #edf3fb 100%);
-  padding: 10px;
+  object-fit: cover;
+  background: #edf3fb;
+  padding: 0;
   height: 220px;
 }
 
@@ -2000,32 +2000,7 @@ function obtenerActividadesFiltradas() {
           <div class="estado-vacio-portal-texto">${mensaje}</div>
         </div>
       `;
-      detalleImagen.src = "data:image/svg+xml;utf8," + encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220">
-          <defs>
-            <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#f7fbff"/>
-              <stop offset="100%" stop-color="#dbe9fb"/>
-            </linearGradient>
-            <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#7aa7f8"/>
-              <stop offset="100%" stop-color="#1f5ec9"/>
-            </linearGradient>
-          </defs>
-          <rect width="320" height="220" rx="28" fill="url(#sky)"/>
-          <path d="M0 148c36-12 72-16 108-12 27 3 53 12 81 14 48 4 87-8 131-20v90H0z" fill="url(#sea)"/>
-          <path d="M0 165c32-10 66-14 99-12 24 2 46 8 69 10 45 4 87-6 152-22" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
-          <path d="M158 112l26 8 24 13-3 9-46-8z" fill="#123a63"/>
-          <path d="M170 101l8 19" stroke="#123a63" stroke-width="4" stroke-linecap="round"/>
-          <path d="M177 102l12 11" stroke="#123a63" stroke-width="3" stroke-linecap="round"/>
-          <path d="M162 109l6 10" stroke="#123a63" stroke-width="2.6" stroke-linecap="round"/>
-          <path d="M138 140c20 6 36 16 50 31" fill="none" stroke="#ffffff" stroke-width="4.4" stroke-linecap="round" opacity="0.98"/>
-          <path d="M126 146c28 9 50 23 69 45" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" opacity="0.9"/>
-          <path d="M116 154c36 12 63 31 86 61" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" opacity="0.84"/>
-          <path d="M40 58c10-5 19-5 29 0" stroke="#bcd4f9" stroke-width="3" stroke-linecap="round"/>
-          <path d="M234 49c10-5 18-5 27 0" stroke="#c7dcfb" stroke-width="3" stroke-linecap="round"/>
-        </svg>
-      `);
+      detalleImagen.src = "sin-actividades.svg";
       detalleImagen.alt = "Barco alejándose en el horizonte";
       btnSolicitar.style.display = "none";
       btnEditar.style.display = "none";
