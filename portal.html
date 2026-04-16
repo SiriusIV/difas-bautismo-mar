@@ -1,8 +1,8 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Actividades PÃºblicas Institucionales</title>
+  <title>Actividades Públicas Institucionales</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link
@@ -578,46 +578,35 @@
 .estado-vacio-portal {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 14px;
-  min-height: 320px;
-  text-align: center;
-  padding: 28px 16px;
+  gap: 12px;
+  min-height: 260px;
+  text-align: left;
+  padding: 24px 8px 24px 0;
 }
 
-.estado-vacio-portal-figura {
-  width: 108px;
-  height: 108px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #eef4fb 0%, #dfe9f5 100%);
-  border: 1px solid #cfdbe7;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #45627f;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-}
-
-.estado-vacio-portal-figura svg {
-  width: 52px;
-  height: 52px;
-  display: block;
-}
-
-.estado-vacio-portal h3 {
+.estado-vacio-portal-titulo {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 700;
   color: #123a63;
 }
 
-.estado-vacio-portal p {
+.estado-vacio-portal-texto {
   margin: 0;
   max-width: 620px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #4a5a6a;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #42566c;
   white-space: normal;
+}
+
+.detalle-vacio .detalle-img {
+  object-fit: contain;
+  background: linear-gradient(180deg, #f6faff 0%, #edf3fb 100%);
+  padding: 12px;
 }
 
 
@@ -1050,7 +1039,7 @@
       <div class="bloque-marca">
         <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabeceraPortal">
         <div class="titulos-cabecera">
-          <h1>Actividades PÃºblicas Institucionales</h1>
+          <h1>Actividades Públicas Institucionales</h1>
           <h2 id="subtituloCabecera">Armada</h2>
         </div>
       </div>
@@ -1103,7 +1092,7 @@
         <div class="filtro-panel-der">
           <div id="accionesPublicas" class="accionesPublicas">
             <div id="franjaAvisoPortal" class="aviso-login">
-              Iniciar sesiÃ³n para solicitar una actividad.
+              Iniciar sesión para solicitar una actividad.
             </div>
             <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
           </div>
@@ -1114,8 +1103,8 @@
     class="nav-btn-icon"
     type="button"
     onclick="logoutActual()"
-    title="Cerrar sesiÃ³n"
-    aria-label="Cerrar sesiÃ³n"
+    title="Cerrar sesión"
+    aria-label="Cerrar sesión"
   >
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1130,8 +1119,8 @@
     class="nav-btn-icon"
     type="button"
     onclick="logoutActual()"
-    title="Cerrar sesiÃ³n"
-    aria-label="Cerrar sesiÃ³n"
+    title="Cerrar sesión"
+    aria-label="Cerrar sesión"
   >
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1148,8 +1137,8 @@
               class="nav-btn-icon"
               type="button"
               onclick="logoutActual()"
-              title="Cerrar sesiÃ³n"
-              aria-label="Cerrar sesiÃ³n"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1218,7 +1207,7 @@
 
 <div class="bloque-programacion">
   <div id="tablaFranjasWrap" class="tabla-franjas">
-    <h4>ProgramaciÃ³n</h4>
+    <h4>Programación</h4>
     <table>
       <thead>
         <tr>
@@ -1226,7 +1215,7 @@
           <th>Fecha</th>
           <th>Inicio</th>
           <th>Fin</th>
-          <th>SituaciÃ³n (plazas disponibles)</th>
+          <th>Situación (plazas disponibles)</th>
         </tr>
       </thead>
       <tbody id="tablaFranjasBody"></tbody>
@@ -1259,14 +1248,14 @@
       </div>
 
       <div class="campo">
-        <label for="passwordLogin">ContraseÃ±a</label>
+        <label for="passwordLogin">Contraseña</label>
         <div class="campo-password-wrap">
           <input type="password" id="passwordLogin" autocomplete="new-password">
           <button type="button" class="btn-ver-password" id="btnVerPassword">Ver</button>
         </div>
       </div>
 
-      <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">Â¿Has olvidado tu contraseÃ±a?</a>
+      <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">¿Has olvidado tu contraseña?</a>
 
       <div class="acciones-acceso">
         <button class="btn" onclick="loginUsuario()">Entrar</button>
@@ -1276,7 +1265,7 @@
       <div id="mensajeLogin" class="mensaje"></div>
 
       <div class="texto-final">
-        Â¿AÃºn no tienes usuario?
+        ¿Aún no tienes usuario?
         <a href="#" onclick="irRegistro()">Crear cuenta</a>
       </div>
     </div>
@@ -1284,7 +1273,7 @@
 
   <div id="modalDocumentacionPendiente" class="modal-fondo" aria-hidden="true">
     <div class="modal-login" style="max-width: 640px;">
-      <h3>DocumentaciÃ³n obligatoria pendiente</h3>
+      <h3>Documentación obligatoria pendiente</h3>
       <p id="textoModalDocumentacionPendiente" style="margin: 0 0 18px; color: #4a5a6a; line-height: 1.6;"></p>
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-admin" id="btnCancelarModalDocumentacionPendiente">Cancelar solicitud</button>
@@ -1388,8 +1377,8 @@
       if (Number.isNaN(fecha.getTime())) return fechaISO;
 
       const dias = [
-        "domingo", "lunes", "martes", "miÃ©rcoles",
-        "jueves", "viernes", "sÃ¡bado"
+        "domingo", "lunes", "martes", "miércoles",
+        "jueves", "viernes", "sábado"
       ];
 
       const meses = [
@@ -1471,7 +1460,7 @@ async function cargarFranjasActividad(actividad) {
       });
 
     const filas = franjasActividadActual.map(f => {
-      let estadoTexto = "â€”";
+      let estadoTexto = "�";
       let estadoClase = "";
 
       if (f.finalizada) {
@@ -1521,7 +1510,7 @@ async function cargarFranjasActividad(actividad) {
     });
 
     if (nota) {
-      nota.textContent = "Las plazas disponibles estÃ¡n sujetas a variaciones por cancelaciÃ³n de reservas confirmadas.";
+      nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas.";
       nota.style.display = "block";
     }
 
@@ -1576,7 +1565,7 @@ function actualizarBotonSolicitarSegunFranja() {
 
   if (!franja || !franja.seleccionable) {
     btnSolicitar.disabled = true;
-    btnSolicitar.title = "La franja seleccionada no estÃ¡ disponible.";
+    btnSolicitar.title = "La franja seleccionada no está disponible.";
     return;
   }
 
@@ -1621,7 +1610,7 @@ function actualizarBotonSolicitarSegunFranja() {
       } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
         texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
       } else if (rol === "SECRETARIA") {
-        texto.textContent = `SecretarÃ­a: ${(nombre || centro || "").toUpperCase()}`;
+        texto.textContent = `Secretaría: ${(nombre || centro || "").toUpperCase()}`;
       } else {
         texto.textContent = "";
       }
@@ -1948,45 +1937,19 @@ function obtenerActividadesFiltradas() {
       const hayActividades = Array.isArray(actividadesCache) && actividadesCache.length > 0;
 
       if (esSecretaria()) {
-        if (!hayActividades) {
-          return "TodavÃ­a no hay actividades activas y visibles asociadas a administradores adscritos a esta secretarÃ­a.";
-        }
-
-        if (adminSecretariaSeleccionado || programaSeleccionado) {
-          return "No hay actividades disponibles con los filtros seleccionados para esta secretarÃ­a.";
-        }
-
-        return "No hay actividades disponibles actualmente para esta secretarÃ­a.";
-      }
-
-      if (esAdmin()) {
-        return "Este administrador no tiene actividades activas y visibles en este momento.";
-      }
-
-      if (provinciaSeleccionada || programaSeleccionado) {
-        return "No hay actividades disponibles con los filtros seleccionados.";
-      }
-
-      return "No hay actividades pÃºblicas disponibles en este momento.";
-    }
-
-    function obtenerMensajeEstadoVacioPortal() {
-      const hayActividades = Array.isArray(actividadesCache) && actividadesCache.length > 0;
-
-      if (esSecretaria()) {
         if (!adminsSecretariaAsociados) {
-          return "Esta secretarÃ­a todavÃ­a no tiene administradores adscritos. En cuanto los tenga, aquÃ­ podrÃ¡s consultar sus actividades activas y visibles.";
+          return "Esta secretaría todavía no tiene administradores adscritos. En cuanto los tenga, aquí podrás consultar sus actividades activas y visibles.";
         }
 
         if (!hayActividades) {
-          return "No hay actividades activas y visibles asociadas actualmente a los administradores adscritos a esta secretarÃ­a.";
+          return "No hay actividades activas y visibles asociadas actualmente a los administradores adscritos a esta secretaría.";
         }
 
         if (adminSecretariaSeleccionado || programaSeleccionado) {
-          return "No hay actividades disponibles con los filtros seleccionados para esta secretarÃ­a.";
+          return "No hay actividades disponibles con los filtros seleccionados para esta secretaría.";
         }
 
-        return "No hay actividades disponibles actualmente para esta secretarÃ­a.";
+        return "No hay actividades disponibles actualmente para esta secretaría.";
       }
 
       if (esAdmin()) {
@@ -1997,7 +1960,7 @@ function obtenerActividadesFiltradas() {
         return "No hay actividades disponibles con los filtros seleccionados.";
       }
 
-      return "No hay actividades pÃºblicas disponibles en este momento.";
+      return "No hay actividades públicas disponibles en este momento.";
     }
 
     function renderizarEstadoVacioPortal() {
@@ -2015,37 +1978,39 @@ function obtenerActividadesFiltradas() {
       detalleTitulo.textContent = "No hay actividades disponibles";
       detalleSubtitulo.textContent = "";
       detalleMeta.innerHTML = "";
+      document.getElementById("detalleActividad").classList.add("detalle-vacio");
       detalleTexto.innerHTML = `
         <div class="estado-vacio-portal">
-          <div class="estado-vacio-portal-figura" aria-hidden="true">
-            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="32" cy="32" r="30" fill="#eaf2ff"></circle>
-              <path d="M20 41.5h24" stroke="#1e63d5" stroke-width="3" stroke-linecap="round"></path>
-              <path d="M24 41.5V27.5c0-2.2 1.8-4 4-4h8c2.2 0 4 1.8 4 4v14" stroke="#1e63d5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-              <path d="M28.5 19.5l7 4" stroke="#7aa7f8" stroke-width="3" stroke-linecap="round"></path>
-              <circle cx="46.5" cy="20.5" r="6.5" fill="#fff3cd" stroke="#f0b429" stroke-width="2"></circle>
-              <path d="M46.5 17.5v4" stroke="#b7791f" stroke-width="2.5" stroke-linecap="round"></path>
-              <circle cx="46.5" cy="24.5" r="1.2" fill="#b7791f"></circle>
-            </svg>
-          </div>
           <div class="estado-vacio-portal-titulo">No hay actividades para mostrar</div>
           <div class="estado-vacio-portal-texto">${mensaje}</div>
         </div>
       `;
       detalleImagen.src = "data:image/svg+xml;utf8," + encodeURIComponent(`
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220">
-          <rect width="320" height="220" rx="28" fill="#f3f7ff"/>
-          <circle cx="160" cy="110" r="70" fill="#e6efff"/>
-          <rect x="102" y="82" width="116" height="74" rx="16" fill="#ffffff" stroke="#1e63d5" stroke-width="8"/>
-          <path d="M125 67h70" stroke="#1e63d5" stroke-width="10" stroke-linecap="round"/>
-          <path d="M125 98h70" stroke="#7aa7f8" stroke-width="8" stroke-linecap="round"/>
-          <path d="M125 118h50" stroke="#7aa7f8" stroke-width="8" stroke-linecap="round"/>
-          <circle cx="220" cy="72" r="28" fill="#fff4cc" stroke="#f0b429" stroke-width="6"/>
-          <path d="M220 58v18" stroke="#b7791f" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="220" cy="84" r="3.5" fill="#b7791f"/>
+          <defs>
+            <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#f7fbff"/>
+              <stop offset="100%" stop-color="#dbe9fb"/>
+            </linearGradient>
+            <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#7aa7f8"/>
+              <stop offset="100%" stop-color="#1f5ec9"/>
+            </linearGradient>
+          </defs>
+          <rect width="320" height="220" rx="28" fill="url(#sky)"/>
+          <ellipse cx="160" cy="164" rx="136" ry="18" fill="#d9e6f8" opacity="0.55"/>
+          <path d="M0 146c34-10 69-16 110-12 33 4 54 14 82 16 44 4 85-7 128-20v90H0z" fill="url(#sea)"/>
+          <path d="M146 121l24 5 20 10-2 7-42-7z" fill="#123a63"/>
+          <path d="M157 108l9 19" stroke="#123a63" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M165 111l10 10" stroke="#123a63" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M136 140c16 4 28 10 37 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.95"/>
+          <path d="M126 145c22 6 38 15 50 27" stroke="#d8e8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+          <path d="M118 151c25 8 45 22 59 39" stroke="#c3dafd" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+          <path d="M38 65c10-6 18-6 28 0" stroke="#bcd4f9" stroke-width="3" stroke-linecap="round"/>
+          <path d="M238 52c9-5 16-5 24 0" stroke="#c7dcfb" stroke-width="3" stroke-linecap="round"/>
         </svg>
       `);
-      detalleImagen.alt = "Sin actividades disponibles";
+      detalleImagen.alt = "Barco alejándose en el horizonte";
       btnSolicitar.style.display = "none";
       btnEditar.style.display = "none";
       btnReservas.style.display = "none";
@@ -2076,6 +2041,7 @@ function obtenerActividadesFiltradas() {
       }
 
       if (carruselPanel) carruselPanel.classList.remove("oculto");
+      document.getElementById("detalleActividad").classList.remove("detalle-vacio");
 
       if (
         !actividadSeleccionada ||
@@ -2216,7 +2182,7 @@ function renderMapaActividad(a) {
     attribution: "&copy; OpenStreetMap"
   }).addTo(mapaActividad);
 
-  const lugar = a.lugar || "UbicaciÃ³n";
+  const lugar = a.lugar || "Ubicación";
 
   marcadorActividad = L.marker([lat, lng], {
     icon: obtenerIconoMarcadorLeaflet()
@@ -2296,7 +2262,7 @@ function renderMapaActividad(a) {
 
 if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
   textoDetalle += (textoDetalle ? "\n\n" : "") +
-    "No hay plazas disponibles actualmente. La disponibilidad puede variar en funciÃ³n de la asignaciÃ³n o liberaciÃ³n de las reservas existentes.";
+    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
 }
 
       document.getElementById("detalleTexto").textContent = textoDetalle;
@@ -2504,16 +2470,16 @@ function cerrarModalDocumentacionPendiente() {
 function abrirModalDocumentacionPendiente(data) {
   const adminNombre = data?.admin?.nombre_publico || data?.admin?.nombre || "el organizador de esta actividad";
   const estado = String(data?.estado_efectivo || "").toUpperCase();
-  let texto = `Antes de solicitar esta actividad, debes regularizar la documentaciÃ³n preceptiva exigida por ${adminNombre}.`;
+  let texto = `Antes de solicitar esta actividad, debes regularizar la documentación preceptiva exigida por ${adminNombre}.`;
 
   if (estado === "NO_INICIADO" || estado === "NO_COMPLETADO" || estado === "NO_ENVIADO") {
-    texto = `No has remitido toda la documentaciÃ³n preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
+    texto = `No has remitido toda la documentación preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
   } else if (estado === "NO_ACTUALIZADO") {
-    texto = `La documentaciÃ³n exigida por ${adminNombre} no estÃ¡ actualizada y debes volver a presentarla antes de poder solicitar esta actividad.`;
+    texto = `La documentación exigida por ${adminNombre} no está actualizada y debes volver a presentarla antes de poder solicitar esta actividad.`;
   } else if (estado === "RECHAZADA") {
-    texto = `La documentaciÃ³n presentada para ${adminNombre} ha sido rechazada y debes corregirla antes de poder solicitar esta actividad.`;
+    texto = `La documentación presentada para ${adminNombre} ha sido rechazada y debes corregirla antes de poder solicitar esta actividad.`;
   } else if (estado === "EN_REVISION") {
-    texto = `La documentaciÃ³n exigida por ${adminNombre} ya ha sido presentada, pero todavÃ­a estÃ¡ pendiente de revisiÃ³n y validaciÃ³n manual.`;
+    texto = `La documentación exigida por ${adminNombre} ya ha sido presentada, pero todavía está pendiente de revisión y validación manual.`;
   }
 
   document.getElementById("textoModalDocumentacionPendiente").textContent = texto;
@@ -2537,7 +2503,7 @@ async function comprobarDocumentacionYRedirigir() {
 
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.ok) {
-      alert(data?.error || "No se pudo comprobar la documentaciÃ³n requerida para esta actividad.");
+      alert(data?.error || "No se pudo comprobar la documentación requerida para esta actividad.");
       return;
     }
 
@@ -2548,7 +2514,7 @@ async function comprobarDocumentacionYRedirigir() {
 
     continuarSolicitudActividad();
   } catch (error) {
-    alert("No se pudo comprobar la documentaciÃ³n requerida para esta actividad.");
+    alert("No se pudo comprobar la documentación requerida para esta actividad.");
   }
 }
 
@@ -2594,7 +2560,7 @@ function continuarSolicitudActividad() {
         await comprobarSesionUsuario();
         await cargarActividades();
       } else {
-        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesiÃ³n.");
+        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
       }
     }
 
@@ -2623,7 +2589,7 @@ function continuarSolicitudActividad() {
 
     function recuperarPassword(event) {
       event.preventDefault();
-      alert("RecuperaciÃ³n de contraseÃ±a pendiente de implementar.");
+      alert("Recuperación de contraseña pendiente de implementar.");
     }
 
     function irRegistro() {
