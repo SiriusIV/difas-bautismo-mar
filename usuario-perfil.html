@@ -438,10 +438,13 @@
           <p>Consulta aquí la documentación base exigida para tus actividades y actúa sobre ella si tu cuenta se autogestiona.</p>
         </div>
         <div class="documentacion-admin-toolbar">
+          <button type="button" class="btn btn-suave" id="btnNuevoDocumentoBaseAdmin">Nuevo</button>
+          <button type="button" class="btn btn-suave" id="btnEditarDocumentoBaseAdmin" disabled>Editar</button>
+          <button type="button" class="btn btn-suave" id="btnAlternarEstadoDocumentoBaseAdmin" disabled>Desactivar</button>
+          <button type="button" class="btn btn-suave" id="btnEliminarDocumentoBaseAdmin" disabled>Eliminar</button>
           <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
-          <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionAdminPerfil">Editar documentos base</button>
         </div>
       </div>
       <div class="documentacion-admin-shell">
@@ -1324,7 +1327,10 @@
 
     function actualizarAccionesDocumentacionAdmin() {
       const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
-      const btnGestion = document.getElementById("btnGestionarDocumentacionAdminPerfil");
+      const btnNuevo = document.getElementById("btnNuevoDocumentoBaseAdmin");
+      const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
+      const btnAlternar = document.getElementById("btnAlternarEstadoDocumentoBaseAdmin");
+      const btnEliminar = document.getElementById("btnEliminarDocumentoBaseAdmin");
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
       const btnPasarSecretaria = document.getElementById("btnPasarSecretariaAdmin");
       const btnVolverAutogestion = document.getElementById("btnVolverAutogestionAdmin");
@@ -1334,8 +1340,15 @@
       const modo = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
 
       btnVer.disabled = !doc || !doc.archivo_url;
-      btnGestion.disabled = !editable;
-      btnGestion.classList.toggle("oculto", !esAdmin());
+      btnNuevo.disabled = !editable;
+      btnEditar.disabled = !editable || !doc;
+      btnAlternar.disabled = !editable || !doc;
+      btnEliminar.disabled = !editable || !doc;
+      btnNuevo.classList.toggle("oculto", !editable);
+      btnEditar.classList.toggle("oculto", !editable);
+      btnAlternar.classList.toggle("oculto", !editable);
+      btnEliminar.classList.toggle("oculto", !editable);
+      btnAlternar.textContent = Number(doc?.activo || 0) === 1 ? "Desactivar" : "Activar";
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnPasarSecretaria.style.display = modo === "AUTOGESTION" ? "inline-flex" : "none";
       btnVolverAutogestion.style.display = modo === "SECRETARIA_EXTERNA" ? "inline-flex" : "none";
@@ -2225,9 +2238,73 @@
       if (!doc || !doc.archivo_url) return;
       window.open(doc.archivo_url, "_blank", "noopener");
     });
-    document.getElementById("btnGestionarDocumentacionAdminPerfil").addEventListener("click", function () {
+    document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
       location.href = "admin-documentos.html";
+    });
+    document.getElementById("btnEditarDocumentoBaseAdmin").addEventListener("click", function () {
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      if (!documentacionAdminContexto?.editable || !doc) return;
+      location.href = "admin-documentos.html";
+    });
+    document.getElementById("btnAlternarEstadoDocumentoBaseAdmin").addEventListener("click", async function () {
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      if (!documentacionAdminContexto?.editable || !doc) return;
+
+      const activar = Number(doc.activo || 0) !== 1;
+      const pregunta = activar
+        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
+        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
+
+      if (!window.confirm(pregunta)) return;
+
+      try {
+        const res = await fetch("/api/admin/documentos-estado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            documento_id: Number(doc.id || 0),
+            activar
+          })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
+        }
+
+        await cargarDocumentacionAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
+      }
+    });
+    document.getElementById("btnEliminarDocumentoBaseAdmin").addEventListener("click", async function () {
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      if (!documentacionAdminContexto?.editable || !doc) return;
+
+      const confirmar = window.confirm(`Se eliminará el documento \"${doc.nombre || "Documento"}\" y su PDF del servidor. ¿Deseas continuar?`);
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch("/api/admin/documentos-eliminar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ documento_id: Number(doc.id || 0) })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo eliminar el documento.");
+        }
+
+        await cargarDocumentacionAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Documento eliminado correctamente.");
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el documento.");
+      }
     });
     document.getElementById("btnPasarSecretariaAdmin").addEventListener("click", function () {
       alert("En la siguiente fase podrás elegir aquí una secretaría disponible y migrar tu documentación a su gestión.");
