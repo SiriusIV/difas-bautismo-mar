@@ -149,6 +149,10 @@
     .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
+    .tabla-documentacion-admin th.th-titulo-con-info { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
+    .btn-info-columna { width: 22px; height: 22px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 12px; line-height: 1; }
+    .btn-info-columna:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-info-columna:hover:not(:disabled) { background: #e9f1ff; border-color: #8ea8c6; }
     .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; }
     .tabla-documentacion-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-documentacion-admin th, .tabla-documentacion-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -168,6 +172,9 @@
       flex-wrap: wrap;
       padding: 10px 2px 0;
     }
+    .modal-doc-base textarea { min-height: 120px; resize: vertical; }
+    .modal-doc-base .mensaje { margin-top: 10px; }
+    .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
     .documentacion-admin-migracion label {
       font-size: 13px;
       font-weight: 700;
@@ -478,7 +485,10 @@
             <thead>
               <tr>
                 <th class="col-seleccion"></th>
-                <th>Documento</th>
+                <th class="th-titulo-con-info">
+                  <button type="button" class="btn-info-columna" id="btnInfoDocumentoBaseAdmin" title="Información del documento seleccionado" aria-label="Información del documento seleccionado" disabled>i</button>
+                  <span>Título</span>
+                </th>
                 <th>Versión</th>
                 <th>Última actualización</th>
                 <th>Estado</th>
@@ -691,6 +701,38 @@
       </div>
     </div>
   </div>
+  <div id="modalDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-doc-base">
+      <h3 id="modalDocumentoBaseAdminTitulo">Nuevo documento</h3>
+      <div class="campo-linea">
+        <label for="documentoBaseAdminNombre">Título</label>
+        <input type="text" id="documentoBaseAdminNombre" maxlength="120">
+      </div>
+      <div class="campo-linea">
+        <label for="documentoBaseAdminVersion">Versión</label>
+        <input type="number" id="documentoBaseAdminVersion" min="1" step="1">
+      </div>
+      <div class="campo-linea">
+        <label for="documentoBaseAdminDescripcion">Descripción</label>
+        <textarea id="documentoBaseAdminDescripcion"></textarea>
+      </div>
+      <input type="hidden" id="documentoBaseAdminId">
+      <div id="mensajeDocumentoBaseAdmin" class="mensaje"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCancelarDocumentoBaseAdmin">Cancelar</button>
+        <button type="button" class="btn" id="btnGuardarDocumentoBaseAdmin">Guardar</button>
+      </div>
+    </div>
+  </div>
+  <div id="modalInfoDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-doc-base-info">
+      <h3 id="modalInfoDocumentoBaseAdminTitulo">Descripción del documento</h3>
+      <p id="modalInfoDocumentoBaseAdminTexto">Selecciona un documento para consultar su descripción.</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCerrarInfoDocumentoBaseAdmin">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let perfilOriginal = null;
@@ -705,6 +747,7 @@
     let detalleDocumentacionSeleccionId = null;
     let documentacionAdminContexto = null;
     let documentacionAdminSeleccionId = null;
+    let modoEdicionDocumentoBaseAdmin = "nuevo";
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let adminIdPreferentePerfil = null;
@@ -1325,8 +1368,92 @@
       return lista.find((doc) => Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0)) || null;
     }
 
+    function limpiarMensajeDocumentoBaseAdmin() {
+      limpiarMensaje("mensajeDocumentoBaseAdmin");
+    }
+
+    function cerrarModalDocumentoBaseAdmin() {
+      document.getElementById("modalDocumentoBaseAdmin").classList.remove("activo");
+      document.getElementById("documentoBaseAdminId").value = "";
+      document.getElementById("documentoBaseAdminNombre").value = "";
+      document.getElementById("documentoBaseAdminVersion").value = "1";
+      document.getElementById("documentoBaseAdminDescripcion").value = "";
+      limpiarMensajeDocumentoBaseAdmin();
+    }
+
+    function abrirModalDocumentoBaseAdmin(doc = null) {
+      modoEdicionDocumentoBaseAdmin = doc ? "editar" : "nuevo";
+      document.getElementById("modalDocumentoBaseAdminTitulo").textContent = doc ? "Editar documento" : "Nuevo documento";
+      document.getElementById("documentoBaseAdminId").value = doc ? String(doc.id || "") : "";
+      document.getElementById("documentoBaseAdminNombre").value = doc?.nombre || "";
+      document.getElementById("documentoBaseAdminVersion").value = String(Number(doc?.version_documental || 1));
+      document.getElementById("documentoBaseAdminDescripcion").value = doc?.descripcion || "";
+      limpiarMensajeDocumentoBaseAdmin();
+      document.getElementById("modalDocumentoBaseAdmin").classList.add("activo");
+      setTimeout(() => {
+        document.getElementById("documentoBaseAdminNombre").focus();
+      }, 0);
+    }
+
+    function cerrarModalInfoDocumentoBaseAdmin() {
+      document.getElementById("modalInfoDocumentoBaseAdmin").classList.remove("activo");
+      document.getElementById("modalInfoDocumentoBaseAdminTitulo").textContent = "Descripción del documento";
+      document.getElementById("modalInfoDocumentoBaseAdminTexto").textContent = "";
+    }
+
+    function abrirModalInfoDocumentoBaseAdmin() {
+      const doc = obtenerDocumentoBaseAdminSeleccionado();
+      if (!doc) return;
+      document.getElementById("modalInfoDocumentoBaseAdminTitulo").textContent = doc.nombre || "Documento";
+      document.getElementById("modalInfoDocumentoBaseAdminTexto").textContent = doc.descripcion || "Este documento no tiene descripción informativa disponible todavía.";
+      document.getElementById("modalInfoDocumentoBaseAdmin").classList.add("activo");
+    }
+
+    async function guardarDocumentoBaseAdmin() {
+      const nombre = String(document.getElementById("documentoBaseAdminNombre").value || "").trim();
+      const version = Number.parseInt(document.getElementById("documentoBaseAdminVersion").value || "", 10);
+      const descripcion = String(document.getElementById("documentoBaseAdminDescripcion").value || "").trim();
+      const documentoId = Number.parseInt(document.getElementById("documentoBaseAdminId").value || "", 10);
+
+      if (!nombre) {
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar el título del documento.");
+        return;
+      }
+      if (!Number.isInteger(version) || version <= 0) {
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar una versión válida.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/documentos-metadata", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            documento_id: Number.isInteger(documentoId) && documentoId > 0 ? documentoId : null,
+            nombre,
+            version_documental: version,
+            descripcion
+          })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo guardar el documento.");
+        }
+
+        documentacionAdminSeleccionId = Number(data?.documento_id || 0) || documentacionAdminSeleccionId;
+        await cargarDocumentacionAdmin();
+        cerrarModalDocumentoBaseAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || (modoEdicionDocumentoBaseAdmin === "editar" ? "Documento actualizado correctamente." : "Documento creado correctamente."));
+      } catch (error) {
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", error.message || "No se pudo guardar el documento.");
+      }
+    }
+
     function actualizarAccionesDocumentacionAdmin() {
       const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
+      const btnInfo = document.getElementById("btnInfoDocumentoBaseAdmin");
       const btnNuevo = document.getElementById("btnNuevoDocumentoBaseAdmin");
       const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
       const btnAlternar = document.getElementById("btnAlternarEstadoDocumentoBaseAdmin");
@@ -1340,6 +1467,7 @@
       const modo = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
 
       btnVer.disabled = !doc || !doc.archivo_url;
+      btnInfo.disabled = !doc;
       btnNuevo.disabled = !editable;
       btnEditar.disabled = !editable || !doc;
       btnAlternar.disabled = !editable || !doc;
@@ -2243,14 +2371,15 @@
       if (!doc || !doc.archivo_url) return;
       window.open(doc.archivo_url, "_blank", "noopener");
     });
+    document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
     document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
-      location.href = "admin-documentos.html";
+      abrirModalDocumentoBaseAdmin(null);
     });
     document.getElementById("btnEditarDocumentoBaseAdmin").addEventListener("click", function () {
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       if (!documentacionAdminContexto?.editable || !doc) return;
-      location.href = "admin-documentos.html";
+      abrirModalDocumentoBaseAdmin(doc);
     });
     document.getElementById("btnAlternarEstadoDocumentoBaseAdmin").addEventListener("click", async function () {
       const doc = obtenerDocumentoBaseAdminSeleccionado();
@@ -2317,6 +2446,9 @@
     document.getElementById("btnVolverAutogestionAdmin").addEventListener("click", function () {
       alert("En la siguiente fase podrás volver a la autogestión desde este mismo bloque.");
     });
+    document.getElementById("btnCancelarDocumentoBaseAdmin").addEventListener("click", cerrarModalDocumentoBaseAdmin);
+    document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
+    document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnAgregarOrganizador").addEventListener("click", abrirModalAgregarOrganizador);
     document.getElementById("btnEliminarOrganizador").addEventListener("click", eliminarOrganizadorSeleccionado);
@@ -2435,6 +2567,8 @@
       "modalPasswordNueva",
       "modalAyudaCampo",
       "modalAgregarOrganizador",
+      "modalDocumentoBaseAdmin",
+      "modalInfoDocumentoBaseAdmin",
       "modalCambiosPendientesDocumentos",
       "modalEstadosDocumento"
     ].forEach((id) => {
@@ -2445,6 +2579,8 @@
         if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
         if (id === "modalAgregarOrganizador") cerrarModalAgregarOrganizador();
+        if (id === "modalDocumentoBaseAdmin") cerrarModalDocumentoBaseAdmin();
+        if (id === "modalInfoDocumentoBaseAdmin") cerrarModalInfoDocumentoBaseAdmin();
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
         if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
       });
