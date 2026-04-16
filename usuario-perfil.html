@@ -97,9 +97,82 @@
     .estado-vacio-docs { padding: 14px 2px 2px; font-size: 13px; color: var(--muted); }
     .bloque-documentacion-admin { margin-top: 14px; display: none; }
     .bloque-documentacion-admin.activo { display: block; }
-    .documentacion-admin-contexto { margin: 0 0 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #445261; }
-    .documentacion-admin-contexto strong { color: #334250; }
-    .documentacion-admin-nota { margin: 0 0 12px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .documentacion-admin-shell { display: grid; gap: 14px; }
+    .documentacion-admin-contexto { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 14px; align-items: stretch; }
+    .documentacion-admin-modo-card,
+    .documentacion-admin-nota-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #f8fbff;
+      padding: 14px 16px;
+    }
+    .documentacion-admin-modo-card {
+      background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    }
+    .documentacion-admin-label {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #5a6a7a;
+    }
+    .documentacion-admin-modo-valor {
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 700;
+      color: #123a63;
+    }
+    .documentacion-admin-modo-meta {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #4a5a6a;
+    }
+    .documentacion-admin-nota { margin: 0; font-size: 14px; color: #42566c; line-height: 1.65; }
+    .documentacion-admin-resumen {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #123a63;
+    }
+    .documentacion-admin-meta-linea {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0 0 10px;
+    }
+    .documentacion-admin-meta-items {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .documentacion-admin-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .documentacion-admin-pill.modo-autogestion { color: #14532d; background: #eefaf0; border-color: #b9e0c0; }
+    .documentacion-admin-pill.modo-secretaria { color: #8a5a00; background: #fff7e8; border-color: #f0d9a7; }
+    .documentacion-admin-pill.version { color: #123a63; background: #eef4ff; border-color: #c6d8f0; }
+    .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .documentacion-admin-acciones-modo.ocultas { display: none; }
+    .documentacion-admin-aviso-modo {
+      margin: 0;
+      font-size: 12px;
+      color: #5a6a7a;
+      line-height: 1.5;
+    }
     .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; }
     .tabla-documentacion-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-documentacion-admin th, .tabla-documentacion-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -112,7 +185,9 @@
     .estado-pill-base { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
     .estado-pill-base.activo { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .estado-pill-base.inactivo { color: #5f6d7a; background: #f3f6f8; border-color: #d7e0e8; }
-    .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    @media (max-width: 900px) {
+      .documentacion-admin-contexto { grid-template-columns: 1fr; }
+    }
     .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
     .tab-bloque-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
@@ -371,35 +446,55 @@
       <div class="bloque-head-documentacion">
         <div>
           <h3>Documentación obligatoria</h3>
-          <p>Consulta aquí la documentación base exigida para tus actividades. Si tu cuenta se autogestiona, también podrás acceder a su edición y mantenimiento.</p>
+          <p>Consulta aquí la documentación base exigida para tus actividades y, si tu cuenta se autogestiona, accede también a su edición y mantenimiento.</p>
         </div>
         <div class="documentacion-admin-toolbar">
           <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
-          <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionAdminPerfil">Gestionar documentación</button>
+          <button type="button" class="btn btn-suave" id="btnGestionarDocumentacionAdminPerfil">Editar documentos base</button>
         </div>
       </div>
-      <p class="documentacion-admin-contexto">
-        <strong>Modo documental:</strong>
-        <span id="documentacionAdminModo">Cargando...</span>
-      </p>
-      <p class="documentacion-admin-nota" id="documentacionAdminNota">Cargando documentación base...</p>
-      <div class="tabla-documentacion-admin-wrap">
-        <table class="tabla-documentacion-admin">
-          <thead>
-            <tr>
-              <th class="col-seleccion"></th>
-              <th>Título</th>
-              <th>Versión</th>
-              <th>Última actualización</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody id="tablaDocumentacionAdminBody"></tbody>
-        </table>
+      <div class="documentacion-admin-shell">
+        <div class="documentacion-admin-contexto">
+          <div class="documentacion-admin-modo-card">
+            <p class="documentacion-admin-label">Modo documental</p>
+            <div class="documentacion-admin-modo-valor" id="documentacionAdminModo">Cargando...</div>
+            <div class="documentacion-admin-modo-meta" id="documentacionAdminModoMeta">Cargando configuración documental...</div>
+          </div>
+          <div class="documentacion-admin-nota-card">
+            <p class="documentacion-admin-label">Situación actual</p>
+            <p class="documentacion-admin-resumen" id="documentacionAdminResumen">Cargando documentación base...</p>
+            <p class="documentacion-admin-nota" id="documentacionAdminNota">Cargando documentación base...</p>
+            <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo">
+              <button type="button" class="btn btn-suave" id="btnPasarSecretariaAdmin">Pasar a secretaría</button>
+              <button type="button" class="btn btn-suave" id="btnVolverAutogestionAdmin">Volver a autogestión</button>
+            </div>
+            <p class="documentacion-admin-aviso-modo" id="documentacionAdminAvisoModo">Los cambios de modo documental actualizarán el marco documental aplicable a tus actividades.</p>
+          </div>
+        </div>
+        <div class="documentacion-admin-meta-linea">
+          <div class="documentacion-admin-meta-items">
+            <span class="documentacion-admin-pill version" id="documentacionAdminVersionGlobal">Versión global: —</span>
+            <span class="documentacion-admin-pill" id="documentacionAdminModoPill">Cargando...</span>
+          </div>
+        </div>
+        <div class="tabla-documentacion-admin-wrap">
+          <table class="tabla-documentacion-admin">
+            <thead>
+              <tr>
+                <th class="col-seleccion"></th>
+                <th>Documento</th>
+                <th>Versión</th>
+                <th>Última actualización</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tablaDocumentacionAdminBody"></tbody>
+          </table>
+        </div>
+        <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionAdmin">No hay documentos base disponibles actualmente para este administrador.</div>
       </div>
-      <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionAdmin">No hay documentos base disponibles actualmente para este administrador.</div>
     </div>
     <div class="bloque bloque-documentacion-estado" id="bloqueEstadoDocumentacion">
       <div class="bloque-head-documentacion">
@@ -1239,12 +1334,19 @@
     function actualizarAccionesDocumentacionAdmin() {
       const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
       const btnGestion = document.getElementById("btnGestionarDocumentacionAdminPerfil");
+      const accionesModo = document.getElementById("documentacionAdminAccionesModo");
+      const btnPasarSecretaria = document.getElementById("btnPasarSecretariaAdmin");
+      const btnVolverAutogestion = document.getElementById("btnVolverAutogestionAdmin");
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       const editable = !!documentacionAdminContexto?.editable;
+      const modo = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
 
       btnVer.disabled = !doc || !doc.archivo_url;
       btnGestion.disabled = !editable;
       btnGestion.classList.toggle("oculto", !esAdmin());
+      accionesModo.classList.toggle("ocultas", !esAdmin());
+      btnPasarSecretaria.style.display = modo === "AUTOGESTION" ? "inline-flex" : "none";
+      btnVolverAutogestion.style.display = modo === "SECRETARIA_EXTERNA" ? "inline-flex" : "none";
     }
 
     function renderizarBloqueDocumentacionAdmin() {
@@ -1252,7 +1354,12 @@
       const body = document.getElementById("tablaDocumentacionAdminBody");
       const vacio = document.getElementById("estadoVacioDocumentacionAdmin");
       const modo = document.getElementById("documentacionAdminModo");
+      const modoMeta = document.getElementById("documentacionAdminModoMeta");
+      const resumen = document.getElementById("documentacionAdminResumen");
       const nota = document.getElementById("documentacionAdminNota");
+      const pillModo = document.getElementById("documentacionAdminModoPill");
+      const versionGlobal = document.getElementById("documentacionAdminVersionGlobal");
+      const avisoModo = document.getElementById("documentacionAdminAvisoModo");
 
       if (!esAdmin()) {
         bloque.classList.remove("activo");
@@ -1266,20 +1373,42 @@
       body.innerHTML = "";
       const contexto = documentacionAdminContexto || null;
       const documentos = Array.isArray(contexto?.documentos) ? contexto.documentos : [];
+      const modoDocumental = String(contexto?.modo_documental || "").toUpperCase();
+      const editable = !!contexto?.editable;
 
       modo.textContent = contexto?.modo_documental_etiqueta || "No disponible";
-      if (contexto?.modo_documental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
+      versionGlobal.textContent = `Versión global: ${Number(contexto?.version_actual || 1)}`;
+      resumen.textContent = contexto?.resumen || "No hay información documental disponible actualmente.";
+
+      if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
         const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
-        nota.textContent = `Esta documentación está gestionada por ${nombre}. Puedes consultarla aquí en modo lectura. ${contexto?.resumen || ""}`.trim();
-      } else if (contexto?.modo_documental === "AUTOGESTION") {
-        nota.textContent = contexto?.resumen || "Gestiona aquí la documentación base exigida para tus actividades.";
+        modoMeta.textContent = `La gestión documental de tus actividades depende actualmente de ${nombre}.`;
+        nota.textContent = `Esta documentación está gestionada por ${nombre} y aquí se muestra en modo consulta. Puedes revisar su contenido, versión y estado vigente.`;
+        avisoModo.textContent = "Si más adelante vuelves a la autogestión, se aplicará un nuevo marco documental para tus actividades.";
+        pillModo.textContent = "Gestionado por secretaría";
+        pillModo.className = "documentacion-admin-pill modo-secretaria";
+      } else if (modoDocumental === "AUTOGESTION") {
+        modoMeta.textContent = "Tu cuenta gestiona directamente su propia documentación obligatoria.";
+        nota.textContent = "Puedes crear, actualizar y mantener aquí los documentos base aplicables a tus actividades.";
+        avisoModo.textContent = "Si pasas a una secretaría, tu marco documental actual dejará de aplicarse y se adoptará el de la secretaría responsable.";
+        pillModo.textContent = "Autogestión";
+        pillModo.className = "documentacion-admin-pill modo-autogestion";
       } else {
+        modoMeta.textContent = "La configuración documental de esta cuenta no está disponible actualmente.";
         nota.textContent = contexto?.observacion || "La configuración documental de esta cuenta no está disponible actualmente.";
+        avisoModo.textContent = "Todavía no es posible operar cambios de modo documental desde este perfil.";
+        pillModo.textContent = "No disponible";
+        pillModo.className = "documentacion-admin-pill version";
       }
 
       if (!documentos.length) {
         documentacionAdminSeleccionId = null;
         vacio.classList.remove("oculto");
+        if (editable) {
+          vacio.textContent = "Todavía no has definido documentos base para tus actividades.";
+        } else {
+          vacio.textContent = "No hay documentos base disponibles actualmente para este administrador.";
+        }
         actualizarAccionesDocumentacionAdmin();
         return;
       }
@@ -2113,6 +2242,12 @@
     document.getElementById("btnGestionarDocumentacionAdminPerfil").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
       location.href = "admin-documentos.html";
+    });
+    document.getElementById("btnPasarSecretariaAdmin").addEventListener("click", function () {
+      alert("El cambio de modo a secretaría se conectará en la siguiente fase, junto con la selección de la secretaría responsable.");
+    });
+    document.getElementById("btnVolverAutogestionAdmin").addEventListener("click", function () {
+      alert("La vuelta a autogestión se conectará en la siguiente fase para aplicar correctamente el nuevo marco documental.");
     });
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnAgregarOrganizador").addEventListener("click", abrirModalAgregarOrganizador);
