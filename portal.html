@@ -579,16 +579,16 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
-  gap: 12px;
-  min-height: 260px;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 0;
   text-align: left;
-  padding: 24px 8px 24px 0;
+  padding: 2px 8px 0 0;
 }
 
 .estado-vacio-portal-titulo {
   margin: 0;
-  font-size: 26px;
+  font-size: 28px;
   line-height: 1.2;
   font-weight: 700;
   color: #123a63;
@@ -598,15 +598,29 @@
   margin: 0;
   max-width: 620px;
   font-size: 17px;
-  line-height: 1.7;
+  line-height: 1.65;
   color: #42566c;
   white-space: normal;
+}
+
+.detalle-vacio .detalle-grid {
+  grid-template-columns: 300px 1fr;
+  align-items: start;
+}
+
+.detalle-vacio #detalleTitulo,
+.detalle-vacio .detalle-subtitulo,
+.detalle-vacio .detalle-meta,
+.detalle-vacio .detalle-acciones,
+.detalle-vacio .bloque-programacion {
+  display: none;
 }
 
 .detalle-vacio .detalle-img {
   object-fit: contain;
   background: linear-gradient(180deg, #f6faff 0%, #edf3fb 100%);
-  padding: 12px;
+  padding: 10px;
+  height: 180px;
 }
 
 
@@ -1975,7 +1989,7 @@ function obtenerActividadesFiltradas() {
       const direccionDiv = document.getElementById("direccionActividad");
       const mensaje = obtenerMensajeEstadoVacioPortal();
 
-      detalleTitulo.textContent = "No hay actividades disponibles";
+      detalleTitulo.textContent = "";
       detalleSubtitulo.textContent = "";
       detalleMeta.innerHTML = "";
       document.getElementById("detalleActividad").classList.add("detalle-vacio");
@@ -1998,16 +2012,17 @@ function obtenerActividadesFiltradas() {
             </linearGradient>
           </defs>
           <rect width="320" height="220" rx="28" fill="url(#sky)"/>
-          <ellipse cx="160" cy="164" rx="136" ry="18" fill="#d9e6f8" opacity="0.55"/>
-          <path d="M0 146c34-10 69-16 110-12 33 4 54 14 82 16 44 4 85-7 128-20v90H0z" fill="url(#sea)"/>
-          <path d="M146 121l24 5 20 10-2 7-42-7z" fill="#123a63"/>
-          <path d="M157 108l9 19" stroke="#123a63" stroke-width="3.5" stroke-linecap="round"/>
-          <path d="M165 111l10 10" stroke="#123a63" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M136 140c16 4 28 10 37 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.95"/>
-          <path d="M126 145c22 6 38 15 50 27" stroke="#d8e8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
-          <path d="M118 151c25 8 45 22 59 39" stroke="#c3dafd" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
-          <path d="M38 65c10-6 18-6 28 0" stroke="#bcd4f9" stroke-width="3" stroke-linecap="round"/>
-          <path d="M238 52c9-5 16-5 24 0" stroke="#c7dcfb" stroke-width="3" stroke-linecap="round"/>
+          <path d="M0 148c36-12 72-16 108-12 27 3 53 12 81 14 48 4 87-8 131-20v90H0z" fill="url(#sea)"/>
+          <path d="M0 165c32-10 66-14 99-12 24 2 46 8 69 10 45 4 87-6 152-22" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+          <path d="M158 112l26 8 24 13-3 9-46-8z" fill="#123a63"/>
+          <path d="M170 101l8 19" stroke="#123a63" stroke-width="4" stroke-linecap="round"/>
+          <path d="M177 102l12 11" stroke="#123a63" stroke-width="3" stroke-linecap="round"/>
+          <path d="M162 109l6 10" stroke="#123a63" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M138 140c20 6 36 16 50 31" fill="none" stroke="#ffffff" stroke-width="4.4" stroke-linecap="round" opacity="0.98"/>
+          <path d="M126 146c28 9 50 23 69 45" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" opacity="0.9"/>
+          <path d="M116 154c36 12 63 31 86 61" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" opacity="0.84"/>
+          <path d="M40 58c10-5 19-5 29 0" stroke="#bcd4f9" stroke-width="3" stroke-linecap="round"/>
+          <path d="M234 49c10-5 18-5 27 0" stroke="#c7dcfb" stroke-width="3" stroke-linecap="round"/>
         </svg>
       `);
       detalleImagen.alt = "Barco alejándose en el horizonte";
