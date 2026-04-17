@@ -71,7 +71,21 @@ export async function onRequestGet(context) {
         cad.observaciones_admin,
         u.centro,
         u.email,
-        u.telefono_contacto
+        u.telefono_contacto,
+        COALESCE((
+          SELECT COUNT(*)
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = cad.id
+            AND a.activo = 1
+            AND UPPER(TRIM(a.estado)) = 'EN_REVISION'
+        ), 0) AS total_documentos_pendientes,
+        COALESCE((
+          SELECT GROUP_CONCAT(a.nombre_documento, ' · ')
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = cad.id
+            AND a.activo = 1
+            AND UPPER(TRIM(a.estado)) = 'EN_REVISION'
+        ), '') AS documentos_pendientes_resumen
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios u
         ON u.id = cad.centro_usuario_id
@@ -96,6 +110,8 @@ export async function onRequestGet(context) {
       centro: row.centro || "",
       email: row.email || "",
       telefono_contacto: row.telefono_contacto || "",
+      total_documentos_pendientes: Number(row.total_documentos_pendientes || 0),
+      documentos_pendientes_resumen: row.documentos_pendientes_resumen || "",
       version_requerida: Number(row.version_requerida || 0),
       version_aportada: Number(row.version_aportada || 0),
       estado: row.estado || "",
