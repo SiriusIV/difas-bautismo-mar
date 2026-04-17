@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Perfil de usuario</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <style>
     :root {
       --bg: #f4f6f8;
@@ -154,7 +157,7 @@
     .btn-info-columna { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 10px; line-height: 1; margin-right: 4px; flex: 0 0 auto; }
     .btn-info-columna:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-info-columna:hover:not(:disabled) { background: #e9f1ff; border-color: #8ea8c6; }
-    .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; overflow-y: auto; max-height: 252px; }
+    .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; overflow-y: auto; max-height: 220px; }
     .tabla-documentacion-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-documentacion-admin th, .tabla-documentacion-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-documentacion-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
@@ -240,6 +243,10 @@
     .btn-icono-imagen.peligro { color: #9b1c1c; }
     .btn-icono-imagen svg { width: 14px; height: 14px; display: block; }
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
+    .fila-admin-telefono-password { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+    .campos-inline-admin { display: grid; grid-template-columns: minmax(0, 0.56fr) minmax(0, 0.44fr); gap: 9px; }
+    .campo-password-admin-inline { display: flex; align-items: end; justify-content: flex-end; }
+    .campo-password-admin-inline .password-linea { justify-content: flex-end; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-password-acceso { display: flex; align-items: flex-end; }
@@ -375,14 +382,16 @@
             <div class="campo-linea"><label for="nombrePublicoAdmin">Nombre público</label><input type="text" id="nombrePublicoAdmin" name="nombrePublicoAdmin"><div class="nota">Este nombre es el que verán los centros y usuarios cuando deban identificar al organizador de las actividades.</div></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"><div class="nota">Este correo se utilizará para el inicio de sesión y para las comunicaciones asociadas a la cuenta.</div></div>
           </div>
-          <div class="fila oculto" id="filaAdminTelefono">
-            <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
-            <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
-          </div>
-          <div class="campo-linea oculto" id="campoPasswordAdmin">
-            <div class="password-linea">
-              <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-              <button type="button" class="btn btn-suave" id="btnCambiarPasswordAdmin">Cambiar contraseña</button>
+          <div class="fila oculto fila-admin-telefono-password" id="filaAdminTelefonoPassword">
+            <div class="campos-inline-admin">
+              <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
+              <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
+            </div>
+            <div class="campo-password-admin-inline">
+              <div class="password-linea">
+                <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
+                <button type="button" class="btn btn-suave" id="btnCambiarPasswordAdmin">Cambiar contraseña</button>
+              </div>
             </div>
           </div>
           <div class="fila oculto" id="filaSuperadminNombreEmail"><div><label for="nombreSuperadmin">Nombre</label><input type="text" id="nombreSuperadmin" name="nombreSuperadmin"></div><div><label for="emailSuperadmin">Email</label><input type="email" id="emailSuperadmin" name="emailSuperadmin"></div></div>
@@ -1470,15 +1479,6 @@
     }
 
     async function cambiarEstadoDocumentoBaseAdmin(doc, activar, inputControl = null) {
-      const pregunta = activar
-        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
-        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
-
-      if (!window.confirm(pregunta)) {
-        if (inputControl) inputControl.checked = !activar;
-        return;
-      }
-
       try {
         const res = await fetch("/api/admin/documentos-estado", {
           method: "POST",
@@ -1687,7 +1687,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefono","campoPasswordAdmin","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefonoPassword","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -1705,8 +1705,7 @@
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
-        document.getElementById("filaAdminTelefono").classList.remove("oculto");
-        document.getElementById("campoPasswordAdmin").classList.remove("oculto");
+        document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
         layout.classList.remove("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
