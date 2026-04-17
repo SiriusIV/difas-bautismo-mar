@@ -117,11 +117,29 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .documentacion-admin-responsable-linea {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .documentacion-admin-responsable-etiqueta {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334250;
+    }
+    .documentacion-admin-responsable-valor {
+      font-size: 13px;
+      color: #123a63;
+      font-weight: 600;
+    }
     .documentacion-admin-barra-acciones {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-left: auto;
     }
     .documentacion-admin-ayuda {
       display: none;
@@ -132,8 +150,11 @@
     }
     .documentacion-admin-resumen {
       margin: 0;
-      font-size: 13px;
-      color: #4a5a6a;
+      font-size: 12px;
+      color: #5b6978;
+      line-height: 1.45;
+      text-align: right;
+      max-width: 430px;
     }
     .documentacion-admin-pill {
       display: inline-flex;
@@ -154,20 +175,20 @@
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
     .btn-modo-documental-admin {
-      min-height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 999px;
-      padding: 0 18px;
+      padding: 0;
       display: inline-flex;
       align-items: center;
-      gap: 11px;
+      justify-content: center;
       border: 1px solid #9eb8d6;
       background: linear-gradient(180deg, #ffffff 0%, #e9f1ff 100%);
       color: #123a63;
       box-shadow: 0 6px 18px rgba(18, 58, 99, 0.11);
-      font-weight: 700;
-      font-size: 13px;
       cursor: pointer;
       transition: all 0.15s ease;
+      flex: 0 0 auto;
     }
     .btn-modo-documental-admin:hover {
       background: linear-gradient(180deg, #ffffff 0%, #dfeafe 100%);
@@ -513,17 +534,17 @@
       <div class="documentacion-admin-shell">
         <div class="documentacion-admin-barra">
           <div class="documentacion-admin-barra-info">
-            <span class="documentacion-admin-pill version" id="documentacionAdminVersionGlobal">Responsable:</span>
-            <span class="documentacion-admin-pill" id="documentacionAdminModoPill">Cargando...</span>
-            <p class="documentacion-admin-resumen oculto" id="documentacionAdminResumen"></p>
+            <div class="documentacion-admin-responsable-linea">
+              <button type="button" class="btn-modo-documental-admin" id="btnCambiarModoDocumentalAdmin" title="Cambiar responsable" aria-label="Cambiar responsable">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.96 8.96 0 0 1-2.64 6.36A9 9 0 1 1 20 9"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M3 12a8.96 8.96 0 0 0 2.64 6.36A9 9 0 0 0 20 15"></path><polyline points="3 21 3 15 9 15"></polyline></svg>
+              </button>
+              <span class="documentacion-admin-responsable-etiqueta">Responsable:</span>
+              <span class="documentacion-admin-responsable-valor" id="documentacionAdminResponsableValor">Cargando...</span>
+            </div>
           </div>
           <div class="documentacion-admin-barra-acciones">
-            <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo">
-              <button type="button" class="btn-modo-documental-admin" id="btnCambiarModoDocumentalAdmin">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.96 8.96 0 0 1-2.64 6.36A9 9 0 1 1 20 9"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M3 12a8.96 8.96 0 0 0 2.64 6.36A9 9 0 0 0 20 15"></path><polyline points="3 21 3 15 9 15"></polyline></svg>
-                <span>Cambiar responsable</span>
-              </button>
-            </div>
+            <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo"></div>
+            <p class="documentacion-admin-resumen" id="documentacionAdminResumen">Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.</p>
           </div>
         </div>
         <p class="documentacion-admin-ayuda" id="documentacionAdminNota">Cargando documentación base...</p>
@@ -1338,7 +1359,7 @@
     function actualizarResumenDocumentacionAdminLocal() {
       const resumen = document.getElementById("documentacionAdminResumen");
       if (!resumen) return;
-      resumen.textContent = "";
+      resumen.textContent = "Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.";
     }
 
     function obtenerTextoResponsableDocumentalAdmin(contexto = documentacionAdminContexto) {
@@ -1793,8 +1814,7 @@
       const modo = document.getElementById("documentacionAdminModo");
       const resumen = document.getElementById("documentacionAdminResumen");
       const nota = document.getElementById("documentacionAdminNota");
-      const pillModo = document.getElementById("documentacionAdminModoPill");
-      const versionGlobal = document.getElementById("documentacionAdminVersionGlobal");
+      const responsableValor = document.getElementById("documentacionAdminResponsableValor");
 
       if (!esAdmin()) {
         bloque.classList.remove("activo");
@@ -1812,21 +1832,17 @@
       const editable = !!contexto?.editable;
 
       modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
-      versionGlobal.textContent = "Responsable:";
-      pillModo.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
-      resumen.textContent = "";
+      responsableValor.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
+      resumen.textContent = "Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.";
 
       if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
         const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
         nota.textContent = `La documentación obligatoria de tus actividades depende de ${nombre}. Aquí puedes consultarla, pero su edición y mantenimiento corresponden a esa secretaría.`;
-        pillModo.className = "documentacion-admin-pill modo-secretaria";
       } else if (modoDocumental === "AUTOGESTION") {
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar, editar y mantener los documentos base aplicables a tus actividades.";
-        pillModo.className = "documentacion-admin-pill modo-autogestion";
       } else {
         modo.textContent = "Autogestión";
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar y mantener los documentos base de tus actividades.";
-        pillModo.className = "documentacion-admin-pill modo-autogestion";
       }
 
       if (!documentos.length) {
