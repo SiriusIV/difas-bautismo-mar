@@ -102,9 +102,9 @@
     .documentacion-admin-shell { display: grid; gap: 12px; }
     .documentacion-admin-barra {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
       flex-wrap: wrap;
       padding: 12px 14px;
       border: 1px solid var(--border);
@@ -116,12 +116,16 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+      flex: 1 1 360px;
+      min-width: 260px;
     }
     .documentacion-admin-responsable-linea {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      min-width: 0;
+      width: 100%;
     }
     .documentacion-admin-responsable-etiqueta {
       font-size: 13px;
@@ -132,14 +136,18 @@
       font-size: 13px;
       color: #123a63;
       font-weight: 600;
+      min-width: 0;
+      word-break: break-word;
     }
     .documentacion-admin-barra-acciones {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
       margin-left: auto;
+      flex: 0 1 520px;
+      min-width: 300px;
     }
     .documentacion-admin-ayuda {
       display: none;
@@ -151,10 +159,15 @@
     .documentacion-admin-resumen {
       margin: 0;
       font-size: 12px;
-      color: #5b6978;
+      color: #7a5412;
       line-height: 1.45;
       text-align: left;
-      max-width: 760px;
+      width: 100%;
+      max-width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #e5d1a2;
+      background: #fff8e8;
     }
     .documentacion-admin-pill {
       display: inline-flex;
@@ -388,6 +401,11 @@
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
       .preview-imagen { min-height: 252px; }
+      .documentacion-admin-barra-info,
+      .documentacion-admin-barra-acciones {
+        flex-basis: 100%;
+        min-width: 0;
+      }
     }
   </style>
 </head>
