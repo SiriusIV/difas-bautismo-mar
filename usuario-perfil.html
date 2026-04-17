@@ -153,8 +153,8 @@
       font-size: 12px;
       color: #5b6978;
       line-height: 1.45;
-      text-align: right;
-      max-width: 430px;
+      text-align: left;
+      max-width: 760px;
     }
     .documentacion-admin-pill {
       display: inline-flex;
@@ -1359,7 +1359,7 @@
     function actualizarResumenDocumentacionAdminLocal() {
       const resumen = document.getElementById("documentacionAdminResumen");
       if (!resumen) return;
-      resumen.textContent = "Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.";
+      resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
     }
 
     function obtenerTextoResponsableDocumentalAdmin(contexto = documentacionAdminContexto) {
@@ -1833,7 +1833,7 @@
 
       modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
       responsableValor.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
-      resumen.textContent = "Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.";
+      resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
 
       if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
         const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
