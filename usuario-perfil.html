@@ -1321,6 +1321,24 @@
       document.title = titulo;
     }
 
+    function actualizarResumenDocumentacionAdminLocal() {
+      const resumen = document.getElementById("documentacionAdminResumen");
+      const docs = Array.isArray(documentacionAdminContexto?.documentos) ? documentacionAdminContexto.documentos : [];
+      const activos = docs.filter((doc) => Number(doc?.activo || 0) === 1).length;
+      const total = docs.length;
+
+      if (!resumen) return;
+
+      if (!total) {
+        resumen.textContent = "No hay documentos base disponibles actualmente para este administrador.";
+        return;
+      }
+
+      resumen.textContent = activos === total
+        ? `${activos} documento(s) activo(s).`
+        : `${activos} documento(s) activo(s) de ${total}.`;
+    }
+
     async function cargarSecretariasDisponiblesAdmin() {
       const res = await fetch("/api/admin/secretarias-disponibles", { credentials: "include" });
       const data = await res.json().catch(() => null);
@@ -1676,7 +1694,14 @@
     }
 
     async function cambiarEstadoDocumentoBaseAdmin(doc, activar, inputControl = null) {
+      const controlVisual = inputControl?.nextElementSibling || null;
+      const etiqueta = inputControl?.closest(".toggle-estado-doc-base") || null;
+
       try {
+        if (inputControl) {
+          inputControl.disabled = true;
+        }
+
         const res = await fetch("/api/admin/documentos-estado", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1692,10 +1717,26 @@
           throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
         }
 
-        await cargarDocumentacionAdmin();
+        if (doc) {
+          doc.activo = activar ? 1 : 0;
+        }
+
+        if (etiqueta) {
+          etiqueta.title = activar ? "Documento activo" : "Documento inactivo";
+        }
+
+        if (controlVisual) {
+          controlVisual.setAttribute("aria-label", activar ? "Documento activo" : "Documento inactivo");
+        }
+
+        actualizarResumenDocumentacionAdminLocal();
       } catch (error) {
         if (inputControl) inputControl.checked = !activar;
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
+      } finally {
+        if (inputControl) {
+          inputControl.disabled = !documentacionAdminContexto?.editable;
+        }
       }
     }
 
