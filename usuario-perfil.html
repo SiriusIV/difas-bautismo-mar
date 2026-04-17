@@ -152,7 +152,7 @@
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
     .tabla-documentacion-admin th.th-titulo-con-info { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
-    .btn-info-columna { width: 22px; height: 22px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 12px; line-height: 1; }
+    .btn-info-columna { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 10px; line-height: 1; margin-right: 4px; flex: 0 0 auto; }
     .btn-info-columna:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-info-columna:hover:not(:disabled) { background: #e9f1ff; border-color: #8ea8c6; }
     .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; }
@@ -164,9 +164,13 @@
     .tabla-documentacion-admin th:nth-child(3), .tabla-documentacion-admin td:nth-child(3),
     .tabla-documentacion-admin th:nth-child(4), .tabla-documentacion-admin td:nth-child(4),
     .tabla-documentacion-admin th:nth-child(5), .tabla-documentacion-admin td:nth-child(5) { text-align: center; }
-    .estado-pill-base { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
-    .estado-pill-base.activo { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
-    .estado-pill-base.inactivo { color: #5f6d7a; background: #f3f6f8; border-color: #d7e0e8; }
+    .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 50px; height: 28px; }
+    .toggle-estado-doc-base input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+    .toggle-estado-doc-base-control { position: relative; width: 50px; height: 28px; border-radius: 999px; background: linear-gradient(180deg, #eb6f6f 0%, #d95353 100%); border: 1px solid #c94f4f; transition: all 0.18s ease; box-shadow: inset 0 1px 2px rgba(255,255,255,0.18), 0 1px 2px rgba(17,24,39,0.08); }
+    .toggle-estado-doc-base-control::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 999px; background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%); border: 1px solid rgba(120, 132, 148, 0.4); box-shadow: 0 2px 5px rgba(0,0,0,0.18); transition: transform 0.18s ease; }
+    .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control { background: linear-gradient(180deg, #28c95a 0%, #15b347 100%); border-color: #12a640; }
+    .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(22px); }
+    .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-migracion {
       display: flex;
       align-items: center;
@@ -459,9 +463,6 @@
           </button>
           <button type="button" class="btn-icono" id="btnEditarDocumentoBaseAdmin" title="Editar documento" aria-label="Editar documento" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
-          </button>
-          <button type="button" class="btn-icono" id="btnAlternarEstadoDocumentoBaseAdmin" title="Activar o desactivar documento" aria-label="Activar o desactivar documento" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="5"></rect><circle cx="9" cy="12" r="3"></circle></svg>
           </button>
           <button type="button" class="btn-icono peligro" id="btnEliminarDocumentoBaseAdmin" title="Eliminar documento" aria-label="Eliminar documento" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -1476,7 +1477,6 @@
       const btnInfo = document.getElementById("btnInfoDocumentoBaseAdmin");
       const btnNuevo = document.getElementById("btnNuevoDocumentoBaseAdmin");
       const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
-      const btnAlternar = document.getElementById("btnAlternarEstadoDocumentoBaseAdmin");
       const btnEliminar = document.getElementById("btnEliminarDocumentoBaseAdmin");
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
       const btnPasarSecretaria = document.getElementById("btnPasarSecretariaAdmin");
@@ -1490,13 +1490,10 @@
       btnInfo.disabled = !doc;
       btnNuevo.disabled = !editable;
       btnEditar.disabled = !editable || !doc;
-      btnAlternar.disabled = !editable || !doc;
       btnEliminar.disabled = !editable || !doc;
       btnNuevo.classList.toggle("oculto", !editable);
       btnEditar.classList.toggle("oculto", !editable);
-      btnAlternar.classList.toggle("oculto", !editable);
       btnEliminar.classList.toggle("oculto", !editable);
-      btnAlternar.textContent = Number(doc?.activo || 0) === 1 ? "Desactivar" : "Activar";
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnPasarSecretaria.style.display = modo === "AUTOGESTION" ? "inline-flex" : "none";
       btnVolverAutogestion.style.display = modo === "SECRETARIA_EXTERNA" ? "inline-flex" : "none";
@@ -1568,8 +1565,7 @@
 
       documentos.forEach((doc) => {
         const seleccionado = Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0);
-        const estadoClase = Number(doc.activo || 0) === 1 ? "activo" : "inactivo";
-        const estadoTexto = Number(doc.activo || 0) === 1 ? "Activo" : "Inactivo";
+        const activo = Number(doc.activo || 0) === 1;
         const tr = document.createElement("tr");
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
@@ -1582,7 +1578,12 @@
           </td>
           <td>${Number(doc.version_documental || 0)}</td>
           <td>${formatearFechaCorta(doc.fecha_actualizacion || "")}</td>
-          <td><span class="estado-pill-base ${estadoClase}">${estadoTexto}</span></td>
+          <td>
+            <label class="toggle-estado-doc-base" title="${activo ? "Documento activo" : "Documento inactivo"}">
+              <input type="checkbox" class="toggle-estado-doc-base-input" data-doc-id="${Number(doc.id || 0)}" ${activo ? "checked" : ""} ${editable ? "" : "disabled"}>
+              <span class="toggle-estado-doc-base-control" aria-hidden="true"></span>
+            </label>
+          </td>
         `;
         body.appendChild(tr);
       });
@@ -2386,6 +2387,18 @@
       documentacionAdminSeleccionId = docId;
       renderizarBloqueDocumentacionAdmin();
     });
+    document.getElementById("tablaDocumentacionAdminBody").addEventListener("change", async function (event) {
+      const toggle = event.target.closest(".toggle-estado-doc-base-input");
+      if (!toggle) return;
+      const docId = Number.parseInt(toggle.dataset.docId || "", 10);
+      if (!Number.isInteger(docId) || docId <= 0) return;
+      const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+      if (!documentacionAdminContexto?.editable || !doc) {
+        toggle.checked = Number(doc?.activo || 0) === 1;
+        return;
+      }
+      await cambiarEstadoDocumentoBaseAdmin(doc, toggle.checked, toggle);
+    });
     document.getElementById("btnVerDocumentoBaseAdmin").addEventListener("click", function () {
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       if (!doc || !doc.archivo_url) return;
@@ -2400,39 +2413,6 @@
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       if (!documentacionAdminContexto?.editable || !doc) return;
       abrirModalDocumentoBaseAdmin(doc);
-    });
-    document.getElementById("btnAlternarEstadoDocumentoBaseAdmin").addEventListener("click", async function () {
-      const doc = obtenerDocumentoBaseAdminSeleccionado();
-      if (!documentacionAdminContexto?.editable || !doc) return;
-
-      const activar = Number(doc.activo || 0) !== 1;
-      const pregunta = activar
-        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
-        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
-
-      if (!window.confirm(pregunta)) return;
-
-      try {
-        const res = await fetch("/api/admin/documentos-estado", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            documento_id: Number(doc.id || 0),
-            activar
-          })
-        });
-
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
-        }
-
-        await cargarDocumentacionAdmin();
-        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
-      } catch (error) {
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
-      }
     });
     document.getElementById("btnEliminarDocumentoBaseAdmin").addEventListener("click", async function () {
       const doc = obtenerDocumentoBaseAdminSeleccionado();
@@ -2612,3 +2592,36 @@
 </body>
 </html>
 
+    async function cambiarEstadoDocumentoBaseAdmin(doc, activar, inputControl = null) {
+      const pregunta = activar
+        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
+        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
+
+      if (!window.confirm(pregunta)) {
+        if (inputControl) inputControl.checked = !activar;
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/documentos-estado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            documento_id: Number(doc.id || 0),
+            activar
+          })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
+        }
+
+        await cargarDocumentacionAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
+      } catch (error) {
+        if (inputControl) inputControl.checked = !activar;
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
+      }
+    }
