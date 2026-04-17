@@ -19,8 +19,9 @@ function parsearIdPositivo(valor) {
 }
 
 function parsearVersionPositiva(valor) {
-  const n = parseInt(valor, 10);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  const texto = limpiarTexto(valor).replace(",", ".");
+  const n = Number.parseFloat(texto);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 async function obtenerDocumentoObjetivo(env, session, documentoId) {
