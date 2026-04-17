@@ -395,6 +395,7 @@
 
     .estado-badge.pendiente { background: #d39e00; }
     .estado-badge.confirmada { background: #198754; }
+    .estado-badge.condicionada-documentacion { background: #b7791f; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
 
@@ -768,6 +769,7 @@
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
+      if (e === "condicionada_documentacion") return "condicionada-documentacion";
       if (e === "rechazada") return "rechazada";
       if (e === "cancelada") return "cancelada";
       return "";
@@ -776,6 +778,7 @@
     function textoEstadoModal(estado) {
       if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
+      if (estado === "CONDICIONADA_DOCUMENTACION") return "CONDICIONADA POR DOCUMENTACION";
       if (estado === "RECHAZADA") return "RECHAZADA";
       if (estado === "CANCELADA") return "CANCELADA";
       return estado || "";
