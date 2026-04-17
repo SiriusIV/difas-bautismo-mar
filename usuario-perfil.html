@@ -153,6 +153,34 @@
     .documentacion-admin-toolbar .btn-icono:disabled { opacity: 0.45; cursor: not-allowed; background: #f8fafc; color: #8090a0; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
+    .btn-modo-documental-admin {
+      min-height: 36px;
+      border-radius: 999px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #c6d4e4;
+      background: linear-gradient(180deg, #f9fbff 0%, #eef4ff 100%);
+      color: #123a63;
+      box-shadow: 0 4px 14px rgba(18, 58, 99, 0.08);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-modo-documental-admin:hover {
+      background: linear-gradient(180deg, #ffffff 0%, #e8f0ff 100%);
+      border-color: #9fb7d3;
+      color: #0f3153;
+      transform: translateY(-1px);
+    }
+    .btn-modo-documental-admin svg { width: 16px; height: 16px; display: block; }
+    .btn-modo-documental-admin:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
     .tabla-documentacion-admin th.th-titulo-con-info { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
     .btn-info-columna { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 10px; line-height: 1; margin-right: 4px; flex: 0 0 auto; }
     .btn-info-columna:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -173,13 +201,6 @@
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control { background: linear-gradient(180deg, #28c95a 0%, #15b347 100%); border-color: #12a640; }
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
-    .documentacion-admin-migracion {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      padding: 10px 2px 0;
-    }
     .documentacion-admin-meta-linea { display: none; }
     .modal-doc-base { max-width: 440px; padding: 18px; }
     .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 12px; align-items: start; }
@@ -190,14 +211,14 @@
     @media (max-width: 720px) {
       .modal-doc-base-campos { grid-template-columns: 1fr; }
     }
-    .documentacion-admin-migracion label {
+    .modal-cambio-modo-admin { max-width: 500px; }
+    .modal-cambio-modo-admin .campo-linea { margin-top: 14px; }
+    .modal-cambio-modo-admin select { width: 100%; }
+    .modal-cambio-modo-admin-ayuda {
+      margin-top: 10px;
       font-size: 13px;
-      font-weight: 700;
-      color: #334250;
-    }
-    .documentacion-admin-migracion select {
-      min-width: 220px;
-      max-width: 320px;
+      line-height: 1.55;
+      color: #445261;
     }
     .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
@@ -245,8 +266,8 @@
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
     .fila-admin-telefono-password { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
     .campos-inline-admin { display: grid; grid-template-columns: minmax(0, 0.56fr) minmax(0, 0.44fr); gap: 9px; }
-    .campo-password-admin-inline { display: flex; align-items: end; justify-content: flex-end; }
-    .campo-password-admin-inline .password-linea { justify-content: flex-end; }
+    .campo-password-admin-inline { display: flex; align-items: flex-start; justify-content: flex-end; align-self: start; padding-top: 22px; }
+    .campo-password-admin-inline .password-linea { justify-content: flex-end; align-items: center; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-password-acceso { display: flex; align-items: flex-end; }
@@ -487,18 +508,14 @@
           </div>
           <div class="documentacion-admin-barra-acciones">
             <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo">
-              <button type="button" class="btn btn-suave" id="btnVolverAutogestionAdmin">Autogestión</button>
-              <button type="button" class="btn btn-suave" id="btnPasarSecretariaAdmin">Secretaría externa</button>
+              <button type="button" class="btn-modo-documental-admin" id="btnCambiarModoDocumentalAdmin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.96 8.96 0 0 1-2.64 6.36A9 9 0 1 1 20 9"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M3 12a8.96 8.96 0 0 0 2.64 6.36A9 9 0 0 0 20 15"></path><polyline points="3 21 3 15 9 15"></polyline></svg>
+                <span>Cambiar modo documental</span>
+              </button>
             </div>
           </div>
         </div>
         <p class="documentacion-admin-ayuda" id="documentacionAdminNota">Cargando documentación base...</p>
-        <div class="documentacion-admin-migracion oculto" id="documentacionAdminMigracionWrap">
-          <label for="documentacionAdminSecretariaSelect">Secretaría</label>
-          <select id="documentacionAdminSecretariaSelect">
-            <option value="">Selecciona una secretaría</option>
-          </select>
-        </div>
         <div class="documentacion-admin-meta-linea">
           <div class="documentacion-admin-meta-items">
             <strong id="documentacionAdminModo">Autogestión</strong>
@@ -759,6 +776,22 @@
       </div>
     </div>
   </div>
+  <div id="modalCambioModoDocumentalAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-cambio-modo-admin">
+      <h3>Cambiar modo documental</h3>
+      <p>Elige si este administrador seguirá en autogestión o pasará a depender de una secretaría disponible.</p>
+      <div class="campo-linea">
+        <label for="selectCambioModoDocumentalAdmin">Modo documental</label>
+        <select id="selectCambioModoDocumentalAdmin"></select>
+      </div>
+      <p class="modal-cambio-modo-admin-ayuda" id="textoCambioModoDocumentalAdmin">Selecciona una opción para continuar.</p>
+      <div id="mensajeCambioModoDocumentalAdmin" class="mensaje"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCancelarCambioModoDocumentalAdmin">Cancelar</button>
+        <button type="button" class="btn" id="btnConfirmarCambioModoDocumentalAdmin">Aplicar cambio</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let perfilOriginal = null;
@@ -774,6 +807,7 @@
     let documentacionAdminContexto = null;
     let documentacionAdminSeleccionId = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
+    let secretariasDisponiblesAdmin = [];
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let adminIdPreferentePerfil = null;
@@ -1287,6 +1321,161 @@
       document.title = titulo;
     }
 
+    async function cargarSecretariasDisponiblesAdmin() {
+      const res = await fetch("/api/admin/secretarias-disponibles", { credentials: "include" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudieron cargar las secretarías disponibles.");
+      }
+      secretariasDisponiblesAdmin = Array.isArray(data?.secretarias) ? data.secretarias : [];
+      return secretariasDisponiblesAdmin;
+    }
+
+    function obtenerValorModoDocumentalActualAdmin() {
+      const modo = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
+      if (modo === "SECRETARIA_EXTERNA") {
+        const secretariaId = Number(documentacionAdminContexto?.responsable_documental?.id || 0);
+        if (secretariaId > 0) return String(secretariaId);
+      }
+      return "AUTOGESTION";
+    }
+
+    function actualizarEstadoModalCambioModoDocumentalAdmin() {
+      const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const texto = document.getElementById("textoCambioModoDocumentalAdmin");
+      const btn = document.getElementById("btnConfirmarCambioModoDocumentalAdmin");
+      const valorActual = obtenerValorModoDocumentalActualAdmin();
+      const valorDestino = String(select.value || "");
+      const modoActual = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
+
+      if (!valorDestino) {
+        texto.textContent = "Selecciona una opción para continuar.";
+        btn.disabled = true;
+        return;
+      }
+
+      if (valorDestino === valorActual) {
+        texto.textContent = "Ese modo documental ya está activo actualmente para este administrador.";
+        btn.disabled = true;
+        return;
+      }
+
+      if (modoActual === "AUTOGESTION" && valorDestino === "AUTOGESTION") {
+        texto.textContent = "Este administrador ya se autogestiona.";
+        btn.disabled = true;
+        return;
+      }
+
+      if (modoActual === "AUTOGESTION") {
+        const secretaria = secretariasDisponiblesAdmin.find((item) => String(item.id) === valorDestino);
+        texto.textContent = secretaria
+          ? `Se migrará este administrador para que su documentación dependa de ${secretaria.nombre_publico || secretaria.nombre || "la secretaría seleccionada"}. Sus documentos base propios dejarán de aplicarse.`
+          : "Selecciona una secretaría válida para continuar.";
+        btn.disabled = !secretaria;
+        return;
+      }
+
+      if (modoActual === "SECRETARIA_EXTERNA" && valorDestino === "AUTOGESTION") {
+        texto.textContent = "Este administrador dejará de depender de la secretaría actual y volverá a autogestionar su documentación.";
+        btn.disabled = false;
+        return;
+      }
+
+      if (modoActual === "SECRETARIA_EXTERNA" && valorDestino !== valorActual) {
+        texto.textContent = "El cambio directo entre dos secretarías todavía no está disponible. Primero debes pasar a autogestión y después elegir la nueva secretaría.";
+        btn.disabled = true;
+        return;
+      }
+
+      texto.textContent = "Selecciona una opción para continuar.";
+      btn.disabled = true;
+    }
+
+    function rellenarSelectCambioModoDocumentalAdmin() {
+      const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const valorActual = obtenerValorModoDocumentalActualAdmin();
+      const actualSecretariaId = Number(documentacionAdminContexto?.responsable_documental?.id || 0);
+
+      select.innerHTML = "";
+
+      const opcionAutogestion = document.createElement("option");
+      opcionAutogestion.value = "AUTOGESTION";
+      opcionAutogestion.textContent = "Autogestión";
+      select.appendChild(opcionAutogestion);
+
+      secretariasDisponiblesAdmin.forEach((secretaria) => {
+        const option = document.createElement("option");
+        option.value = String(secretaria.id);
+        option.textContent = secretaria.nombre_publico || secretaria.nombre || `Secretaría ${secretaria.id}`;
+        if (Number(secretaria.id) === actualSecretariaId) {
+          option.textContent += " (actual)";
+        }
+        select.appendChild(option);
+      });
+
+      select.value = valorActual;
+      actualizarEstadoModalCambioModoDocumentalAdmin();
+    }
+
+    async function abrirModalCambioModoDocumentalAdmin() {
+      limpiarMensaje("mensajeCambioModoDocumentalAdmin");
+      try {
+        await cargarSecretariasDisponiblesAdmin();
+        rellenarSelectCambioModoDocumentalAdmin();
+        document.getElementById("modalCambioModoDocumentalAdmin").classList.add("activo");
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron cargar las opciones de modo documental.");
+      }
+    }
+
+    function cerrarModalCambioModoDocumentalAdmin() {
+      document.getElementById("modalCambioModoDocumentalAdmin").classList.remove("activo");
+      limpiarMensaje("mensajeCambioModoDocumentalAdmin");
+    }
+
+    async function confirmarCambioModoDocumentalAdmin() {
+      const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const btn = document.getElementById("btnConfirmarCambioModoDocumentalAdmin");
+      const valorDestino = String(select.value || "");
+      const valorActual = obtenerValorModoDocumentalActualAdmin();
+      const modoActual = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
+
+      if (!valorDestino || valorDestino === valorActual) {
+        return;
+      }
+
+      const payload = valorDestino === "AUTOGESTION"
+        ? { accion: "activar_autogestion" }
+        : { accion: "adscribir_secretaria", secretaria_usuario_id: Number(valorDestino) };
+
+      if (modoActual === "SECRETARIA_EXTERNA" && valorDestino !== "AUTOGESTION") {
+        jsonMessage("mensajeCambioModoDocumentalAdmin", "error", "El cambio directo entre secretarías todavía no está disponible. Primero debes pasar a autogestión.");
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        const res = await fetch("/api/admin/documentacion-modo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo cambiar el modo documental.");
+        }
+
+        cerrarModalCambioModoDocumentalAdmin();
+        await cargarDocumentacionAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Modo documental actualizado correctamente.");
+      } catch (error) {
+        jsonMessage("mensajeCambioModoDocumentalAdmin", "error", error.message || "No se pudo cambiar el modo documental.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     function actualizarAccionesOrganizadores() {
       const btnEliminar = document.getElementById("btnEliminarOrganizador");
       btnEliminar.disabled = !Number.isInteger(Number(organizadorSeleccionadoId || 0)) || Number(organizadorSeleccionadoId || 0) <= 0;
@@ -1517,12 +1706,9 @@
       const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
       const btnEliminar = document.getElementById("btnEliminarDocumentoBaseAdmin");
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
-      const btnPasarSecretaria = document.getElementById("btnPasarSecretariaAdmin");
-      const btnVolverAutogestion = document.getElementById("btnVolverAutogestionAdmin");
-      const wrapMigracion = document.getElementById("documentacionAdminMigracionWrap");
+      const btnCambioModo = document.getElementById("btnCambiarModoDocumentalAdmin");
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       const editable = !!documentacionAdminContexto?.editable;
-      const modo = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
 
       btnVer.disabled = !doc || !doc.archivo_url;
       btnInfo.disabled = !doc;
@@ -1533,9 +1719,7 @@
       btnEditar.classList.toggle("oculto", !editable);
       btnEliminar.classList.toggle("oculto", !editable);
       accionesModo.classList.toggle("ocultas", !esAdmin());
-      btnPasarSecretaria.style.display = modo === "AUTOGESTION" ? "inline-flex" : "none";
-      btnVolverAutogestion.style.display = modo === "SECRETARIA_EXTERNA" ? "inline-flex" : "none";
-      wrapMigracion.classList.add("oculto");
+      btnCambioModo.disabled = !esAdmin();
     }
 
     function renderizarBloqueDocumentacionAdmin() {
@@ -2472,12 +2656,10 @@
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el documento.");
       }
     });
-    document.getElementById("btnPasarSecretariaAdmin").addEventListener("click", function () {
-      alert("En la siguiente fase podrás elegir aquí una secretaría disponible y migrar tu documentación a su gestión.");
-    });
-    document.getElementById("btnVolverAutogestionAdmin").addEventListener("click", function () {
-      alert("En la siguiente fase podrás volver a la autogestión desde este mismo bloque.");
-    });
+    document.getElementById("btnCambiarModoDocumentalAdmin").addEventListener("click", abrirModalCambioModoDocumentalAdmin);
+    document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
+    document.getElementById("btnCancelarCambioModoDocumentalAdmin").addEventListener("click", cerrarModalCambioModoDocumentalAdmin);
+    document.getElementById("btnConfirmarCambioModoDocumentalAdmin").addEventListener("click", confirmarCambioModoDocumentalAdmin);
     document.getElementById("btnCancelarDocumentoBaseAdmin").addEventListener("click", cerrarModalDocumentoBaseAdmin);
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
     document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
