@@ -2139,7 +2139,16 @@
       } catch (error) {
         pendientesRevisionAdmin = [];
         renderizarPendientesRevisionAdmin();
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudo cargar la bandeja de pendientes.");
+        const mensaje = String(error?.message || "").trim();
+        const esMensajeDePermisoDocumental =
+          mensaje.includes("gestión documental") ||
+          mensaje.includes("gestion documental") ||
+          mensaje.includes("secretaría externa") ||
+          mensaje.includes("secretaria externa");
+
+        if (!esMensajeDePermisoDocumental) {
+          mostrarMensajePerfilTemporal("error", mensaje || "No se pudo cargar la bandeja de pendientes.");
+        }
       }
     }
 
