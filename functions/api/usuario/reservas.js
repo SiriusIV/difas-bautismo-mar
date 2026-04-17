@@ -8,7 +8,7 @@ function json(data, status = 200) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(row) {
