@@ -239,6 +239,7 @@
     .tabla-pendientes-admin th, .tabla-pendientes-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-pendientes-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-pendientes-admin tr:last-child td { border-bottom: none; }
+    .tabla-pendientes-admin tr:hover td { background: #f9fbff; }
     .pendiente-admin-solicitante { font-weight: 700; color: #243648; }
     .pendiente-admin-sublinea { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .btn-revision-expediente { border: 1px solid #c9cfd6; background: #fff; color: #123a63; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -246,17 +247,25 @@
     .mensaje-modal-revision { margin-top: 10px; padding: 10px 12px; border-radius: 8px; display: none; border: 1px solid transparent; font-size: 13px; line-height: 1.5; }
     .mensaje-modal-revision.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje-modal-revision.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
-    .modal-revision-expediente { max-width: 980px; }
+    .modal-revision-expediente { max-width: 1040px; padding: 24px; }
     .modal-revision-expediente .modal-acciones { margin-top: 14px; }
-    .modal-revision-resumen { margin-top: 6px; font-size: 13px; color: #4a5a6a; line-height: 1.55; }
-    .tabla-revision-expediente-wrap { width: 100%; overflow-x: auto; max-height: 420px; overflow-y: auto; margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; }
+    .modal-revision-resumen { margin-top: 10px; font-size: 13px; color: #4a5a6a; line-height: 1.6; padding: 12px 14px; border-radius: 12px; border: 1px solid #d7e4f3; background: #f7fbff; }
+    .tabla-revision-expediente-wrap { width: 100%; overflow-x: auto; max-height: 420px; overflow-y: auto; margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
     .tabla-revision-expediente { width: 100%; border-collapse: collapse; min-width: 860px; }
     .tabla-revision-expediente th, .tabla-revision-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; }
     .tabla-revision-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-revision-expediente tr:last-child td { border-bottom: none; }
+    .tabla-revision-expediente tr:hover td { background: #fbfdff; }
     .tabla-revision-expediente textarea { width: 100%; min-height: 74px; resize: vertical; padding: 9px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; }
-    .tabla-revision-expediente select { width: 100%; height: 38px; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #fff; font-size: 13px; }
+    .tabla-revision-expediente textarea:focus,
+    .tabla-revision-expediente select:focus { outline: none; border-color: #7fa3cb; box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12); }
+    .tabla-revision-expediente select { width: 100%; height: 38px; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #fff; font-size: 13px; font-weight: 600; }
+    .select-estado-revision.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .select-estado-revision.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .select-estado-revision.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .tabla-revision-expediente .btn-icono-modal { width: 32px; height: 32px; }
+    .revision-doc-titulo { font-weight: 700; color: #243648; }
+    .revision-doc-meta { margin-top: 4px; font-size: 11px; color: var(--muted); line-height: 1.45; }
     .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 42px; height: 24px; }
     .toggle-estado-doc-base input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
     .toggle-estado-doc-base-control { position: relative; width: 42px; height: 24px; border-radius: 999px; background: linear-gradient(180deg, #d7dbe0 0%, #c8ced6 100%); border: 1px solid #b9c2cc; transition: all 0.18s ease; box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), 0 1px 2px rgba(17,24,39,0.06); }
@@ -2153,13 +2162,18 @@
       document.getElementById("modalRevisionExpedienteAdminResumen").textContent = "Revisa los documentos recibidos, establece su estado final y añade observaciones individuales si procede. Al guardar se enviará un único correo agrupado para este expediente.";
 
       (expediente.documentos || []).forEach((doc) => {
+        const estado = String(doc.estado || "EN_REVISION").toUpperCase();
+        const claseEstado = estado === "VALIDADO"
+          ? "estado-validado"
+          : estado === "RECHAZADO"
+            ? "estado-rechazado"
+            : "estado-revision";
         const tr = document.createElement("tr");
         const observaciones = doc.observaciones_admin || "";
-        const estado = String(doc.estado || "EN_REVISION").toUpperCase();
         tr.innerHTML = `
           <td>
-            <div class="admin-doc-nombre">${doc.nombre_documento || "Documento"}</div>
-            <div class="pendiente-admin-sublinea">Versión ${Number(doc.version_documental || 0)} · Última entrega ${formatearFechaCorta(doc.fecha_subida || "")}</div>
+            <div class="revision-doc-titulo">${doc.nombre_documento || "Documento"}</div>
+            <div class="revision-doc-meta">Versión ${Number(doc.version_documental || 0)} · Última entrega ${formatearFechaCorta(doc.fecha_subida || "")}</div>
           </td>
           <td>
             <button type="button" class="btn-icono-modal" data-ver-documento-revision="${Number(doc.id || 0)}" title="Ver documento">
@@ -2167,7 +2181,7 @@
             </button>
           </td>
           <td>
-            <select data-estado-revision="${Number(doc.id || 0)}">
+            <select class="select-estado-revision ${claseEstado}" data-estado-revision="${Number(doc.id || 0)}">
               <option value="EN_REVISION" ${estado === "EN_REVISION" ? "selected" : ""}>En revisión</option>
               <option value="VALIDADO" ${estado === "VALIDADO" ? "selected" : ""}>Validado</option>
               <option value="RECHAZADO" ${estado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
@@ -2179,6 +2193,19 @@
         `;
         body.appendChild(tr);
       });
+    }
+
+    function refrescarClaseSelectRevision(select) {
+      if (!select) return;
+      const estado = String(select.value || "").toUpperCase();
+      select.classList.remove("estado-validado", "estado-rechazado", "estado-revision");
+      if (estado === "VALIDADO") {
+        select.classList.add("estado-validado");
+      } else if (estado === "RECHAZADO") {
+        select.classList.add("estado-rechazado");
+      } else {
+        select.classList.add("estado-revision");
+      }
     }
 
     async function abrirRevisionExpedienteAdmin(expedienteId, centroUsuarioId) {
@@ -3073,6 +3100,11 @@
       const doc = (expedienteRevisionAdminActual?.documentos || []).find((item) => Number(item.id || 0) === docId);
       if (!doc?.archivo_url) return;
       window.open(doc.archivo_url, "_blank", "noopener");
+    });
+    document.getElementById("tablaRevisionExpedienteAdminBody").addEventListener("change", function (event) {
+      const select = event.target.closest("[data-estado-revision]");
+      if (!select) return;
+      refrescarClaseSelectRevision(select);
     });
     document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
     document.getElementById("btnCancelarCambioModoDocumentalAdmin").addEventListener("click", cerrarModalCambioModoDocumentalAdmin);
