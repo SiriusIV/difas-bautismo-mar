@@ -18,74 +18,12 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-function prioridadPendienteExpediente(item) {
-  if (Number(item.total_documentos_en_revision || 0) > 0) return 0;
-  return 1;
-}
-
 async function resolverAdminObjetivo(env, session, adminIdParam) {
   const rol = await getRolUsuario(env, session.usuario_id);
   if (rol === "SUPERADMIN") {
     return parsearIdPositivo(adminIdParam) || session.usuario_id;
   }
   return session.usuario_id;
-}
-
-async function obtenerExpedientesDocumentales(env, adminId) {
-  const rows = await env.DB.prepare(`
-    SELECT
-      cad.id,
-      cad.centro_usuario_id,
-      cad.admin_id,
-      cad.version_requerida,
-      cad.version_aportada,
-      cad.estado,
-      cad.fecha_ultima_entrega,
-      cad.fecha_validacion,
-      cad.observaciones_admin,
-      u.centro,
-      u.email,
-      u.telefono_contacto
-    FROM centro_admin_documentacion cad
-    INNER JOIN usuarios u
-      ON u.id = cad.centro_usuario_id
-    WHERE cad.admin_id = ?
-      ORDER BY datetime(cad.fecha_ultima_entrega) DESC, u.centro ASC
-  `).bind(adminId).all();
-
-  return rows?.results || [];
-}
-
-async function obtenerArchivosActivosPorExpediente(env, expedientesIds) {
-  if (!Array.isArray(expedientesIds) || expedientesIds.length === 0) {
-    return new Map();
-  }
-
-  const placeholders = expedientesIds.map(() => "?").join(", ");
-  const rows = await env.DB.prepare(`
-    SELECT
-      documentacion_id,
-      nombre_documento,
-      version_documental,
-      estado,
-      fecha_subida,
-      archivo_url
-    FROM centro_admin_documentacion_archivos
-    WHERE activo = 1
-      AND documentacion_id IN (${placeholders})
-    ORDER BY documentacion_id ASC, id ASC
-  `).bind(...expedientesIds).all();
-
-  const archivosPorExpediente = new Map();
-  for (const row of rows?.results || []) {
-    const expedienteId = Number(row.documentacion_id || 0);
-    if (!archivosPorExpediente.has(expedienteId)) {
-      archivosPorExpediente.set(expedienteId, []);
-    }
-    archivosPorExpediente.get(expedienteId).push(row);
-  }
-
-  return archivosPorExpediente;
 }
 
 export async function onRequestGet(context) {
@@ -119,65 +57,102 @@ export async function onRequestGet(context) {
       );
     }
 
-    const expedientes = await obtenerExpedientesDocumentales(env, adminId);
+    const condicionPendientes = soloPendientes
+      ? `
+        HAVING COALESCE(SUM(
+          CASE
+            WHEN a.activo = 1
+             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
+            THEN 1
+            ELSE 0
+          END
+        ), 0) > 0
+      `
+      : "";
 
-    const archivosPorExpediente = await obtenerArchivosActivosPorExpediente(
-      env,
-      expedientes.map((row) => Number(row.id || 0)).filter((id) => id > 0)
-    );
+    const rows = await env.DB.prepare(`
+      SELECT
+        cad.id,
+        cad.centro_usuario_id,
+        cad.admin_id,
+        cad.version_requerida,
+        cad.version_aportada,
+        cad.estado,
+        cad.fecha_ultima_entrega,
+        cad.fecha_validacion,
+        cad.observaciones_admin,
+        u.centro,
+        u.email,
+        u.telefono_contacto,
+        COALESCE(SUM(
+          CASE
+            WHEN a.activo = 1
+             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
+            THEN 1
+            ELSE 0
+          END
+        ), 0) AS total_documentos_pendientes,
+        COALESCE(GROUP_CONCAT(
+          CASE
+            WHEN a.activo = 1
+             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
+            THEN a.nombre_documento
+            ELSE NULL
+          END,
+          ' · '
+        ), '') AS documentos_pendientes_resumen
+      FROM centro_admin_documentacion cad
+      INNER JOIN usuarios u
+        ON u.id = cad.centro_usuario_id
+      LEFT JOIN centro_admin_documentacion_archivos a
+        ON a.documentacion_id = cad.id
+      WHERE cad.admin_id = ?
+      GROUP BY
+        cad.id,
+        cad.centro_usuario_id,
+        cad.admin_id,
+        cad.version_requerida,
+        cad.version_aportada,
+        cad.estado,
+        cad.fecha_ultima_entrega,
+        cad.fecha_validacion,
+        cad.observaciones_admin,
+        u.centro,
+        u.email,
+        u.telefono_contacto
+      ${condicionPendientes}
+      ORDER BY
+        datetime(cad.fecha_ultima_entrega) DESC,
+        u.centro ASC
+    `).bind(adminId).all();
 
-    const pendientes = expedientes.map((row) => {
-      const expedienteId = Number(row.id || 0);
-      const archivosActivos = archivosPorExpediente.get(expedienteId) || [];
-      const documentosEnRevision = archivosActivos.filter(
-        (archivo) => limpiarTexto(archivo.estado).toUpperCase() === "EN_REVISION"
-      ).map((archivo) => ({
-        nombre: limpiarTexto(archivo.nombre_documento),
-        estado: "EN_REVISION"
-      }));
-
-      return {
-        id: expedienteId,
-        centro_usuario_id: Number(row.centro_usuario_id || 0),
-        admin_id: Number(row.admin_id || 0),
-        centro: row.centro || "",
-        email: row.email || "",
-        telefono_contacto: row.telefono_contacto || "",
-        total_documentos_pendientes: documentosEnRevision.length,
-        total_documentos_en_revision: documentosEnRevision.length,
-        total_documentos_no_enviados: 0,
-        total_documentos_no_actualizados: 0,
-        total_documentos_rechazados: 0,
-        documentos_pendientes_resumen: documentosEnRevision.map((doc) => doc.nombre).join(" · "),
-        documentos_bloqueantes: documentosEnRevision,
-        version_requerida: Number(row.version_requerida || 0),
-        version_aportada: Number(row.version_aportada || 0),
-        estado: row.estado || "",
-        fecha_ultima_entrega: row.fecha_ultima_entrega || "",
-        fecha_validacion: row.fecha_validacion || "",
-        observaciones_admin: row.observaciones_admin || ""
-      };
-    }).filter((item) => {
-      if (!soloPendientes) return true;
-      return item.total_documentos_en_revision > 0;
-    }).sort((a, b) => {
-      const prioridadA = prioridadPendienteExpediente(a);
-      const prioridadB = prioridadPendienteExpediente(b);
-      if (prioridadA !== prioridadB) return prioridadA - prioridadB;
-
-      const fechaA = limpiarTexto(a.fecha_ultima_entrega);
-      const fechaB = limpiarTexto(b.fecha_ultima_entrega);
-      if (fechaA !== fechaB) return fechaA < fechaB ? 1 : -1;
-
-      return limpiarTexto(a.centro).localeCompare(limpiarTexto(b.centro), "es");
-    });
+    const expedientes = (rows?.results || []).map((row) => ({
+      id: Number(row.id || 0),
+      centro_usuario_id: Number(row.centro_usuario_id || 0),
+      admin_id: Number(row.admin_id || 0),
+      centro: row.centro || "",
+      email: row.email || "",
+      telefono_contacto: row.telefono_contacto || "",
+      total_documentos_pendientes: Number(row.total_documentos_pendientes || 0),
+      total_documentos_en_revision: Number(row.total_documentos_pendientes || 0),
+      total_documentos_no_enviados: 0,
+      total_documentos_no_actualizados: 0,
+      total_documentos_rechazados: 0,
+      documentos_pendientes_resumen: row.documentos_pendientes_resumen || "",
+      version_requerida: Number(row.version_requerida || 0),
+      version_aportada: Number(row.version_aportada || 0),
+      estado: row.estado || "",
+      fecha_ultima_entrega: row.fecha_ultima_entrega || "",
+      fecha_validacion: row.fecha_validacion || "",
+      observaciones_admin: row.observaciones_admin || ""
+    }));
 
     return json({
       ok: true,
       admin_id: adminId,
       filtro: soloPendientes ? "pendientes" : "todos",
-      total: pendientes.length,
-      expedientes: pendientes
+      total: expedientes.length,
+      expedientes
     });
   } catch (error) {
     return json(
