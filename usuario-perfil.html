@@ -55,7 +55,6 @@
     #filaSolicitanteResponsableDocumento { grid-template-columns: 1.36fr 0.44fr; }
     #filaSolicitantePassword { justify-content: flex-end; margin-top: 2px; }
     .campo-linea { margin-bottom: 8px; }
-    .acciones-admin-extra { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
     .oculto { display: none !important; }
     label { display: block; font-weight: bold; margin-bottom: 4px; color: #334250; font-size: 12px; }
     .campo-obligatorio { color: #c62828; margin-left: 2px; }
@@ -155,21 +154,21 @@
     .btn-info-columna { width: 18px; height: 18px; border-radius: 999px; border: 1px solid #b7c8da; background: #f4f8ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 10px; line-height: 1; margin-right: 4px; flex: 0 0 auto; }
     .btn-info-columna:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-info-columna:hover:not(:disabled) { background: #e9f1ff; border-color: #8ea8c6; }
-    .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; }
+    .tabla-documentacion-admin-wrap { width: 100%; overflow-x: auto; overflow-y: auto; max-height: 252px; }
     .tabla-documentacion-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-documentacion-admin th, .tabla-documentacion-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
-    .tabla-documentacion-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
+    .tabla-documentacion-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-documentacion-admin tr:last-child td { border-bottom: none; }
     .tabla-documentacion-admin tr.fila-seleccionada td { background: #f5f9ff; }
     .tabla-documentacion-admin th:nth-child(3), .tabla-documentacion-admin td:nth-child(3),
     .tabla-documentacion-admin th:nth-child(4), .tabla-documentacion-admin td:nth-child(4),
     .tabla-documentacion-admin th:nth-child(5), .tabla-documentacion-admin td:nth-child(5) { text-align: center; }
-    .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 50px; height: 28px; }
+    .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 42px; height: 24px; }
     .toggle-estado-doc-base input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
-    .toggle-estado-doc-base-control { position: relative; width: 50px; height: 28px; border-radius: 999px; background: linear-gradient(180deg, #eb6f6f 0%, #d95353 100%); border: 1px solid #c94f4f; transition: all 0.18s ease; box-shadow: inset 0 1px 2px rgba(255,255,255,0.18), 0 1px 2px rgba(17,24,39,0.08); }
-    .toggle-estado-doc-base-control::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 999px; background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%); border: 1px solid rgba(120, 132, 148, 0.4); box-shadow: 0 2px 5px rgba(0,0,0,0.18); transition: transform 0.18s ease; }
+    .toggle-estado-doc-base-control { position: relative; width: 42px; height: 24px; border-radius: 999px; background: linear-gradient(180deg, #d7dbe0 0%, #c8ced6 100%); border: 1px solid #b9c2cc; transition: all 0.18s ease; box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), 0 1px 2px rgba(17,24,39,0.06); }
+    .toggle-estado-doc-base-control::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%); border: 1px solid rgba(120, 132, 148, 0.35); box-shadow: 0 1px 4px rgba(0,0,0,0.16); transition: transform 0.18s ease; }
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control { background: linear-gradient(180deg, #28c95a 0%, #15b347 100%); border-color: #12a640; }
-    .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(22px); }
+    .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-migracion {
       display: flex;
@@ -232,8 +231,9 @@
     .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-estados-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-estados-expediente tr:last-child td { border-bottom: none; }
+    #bloqueImagenAdmin { align-self: start; height: auto; }
     .preview-imagen-wrap { position: relative; width: 100%; }
-    .preview-imagen { width: 100%; min-height: 324px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
+    .preview-imagen { width: 100%; min-height: 286px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
     .acciones-overlay-imagen { position: absolute; top: 9px; right: 9px; display: none; gap: 7px; z-index: 2; }
     .acciones-overlay-imagen.activo { display: flex; }
     .btn-icono-imagen { width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(18, 58, 99, 0.18); background: rgba(255, 255, 255, 0.96); color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
@@ -383,9 +383,6 @@
             <div class="password-linea">
               <span class="password-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
               <button type="button" class="btn btn-suave" id="btnCambiarPasswordAdmin">Cambiar contraseña</button>
-            </div>
-            <div class="acciones-admin-extra">
-              <button type="button" class="btn btn-suave" id="btnDocumentacionAdmin">Documentación requerida</button>
             </div>
           </div>
           <div class="fila oculto" id="filaSuperadminNombreEmail"><div><label for="nombreSuperadmin">Nombre</label><input type="text" id="nombreSuperadmin" name="nombreSuperadmin"></div><div><label for="emailSuperadmin">Email</label><input type="email" id="emailSuperadmin" name="emailSuperadmin"></div></div>
@@ -1472,6 +1469,40 @@
       }
     }
 
+    async function cambiarEstadoDocumentoBaseAdmin(doc, activar, inputControl = null) {
+      const pregunta = activar
+        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
+        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
+
+      if (!window.confirm(pregunta)) {
+        if (inputControl) inputControl.checked = !activar;
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/documentos-estado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            documento_id: Number(doc.id || 0),
+            activar
+          })
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
+        }
+
+        await cargarDocumentacionAdmin();
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
+      } catch (error) {
+        if (inputControl) inputControl.checked = !activar;
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
+      }
+    }
+
     function actualizarAccionesDocumentacionAdmin() {
       const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
       const btnInfo = document.getElementById("btnInfoDocumentoBaseAdmin");
@@ -2374,11 +2405,6 @@
       event.target.value = "";
     });
     document.getElementById("btnCambiarPasswordAdmin").addEventListener("click", abrirModalPasswordActual);
-    document.getElementById("btnDocumentacionAdmin").addEventListener("click", function () {
-      const bloque = document.getElementById("bloqueDocumentacionAdmin");
-      if (!bloque.classList.contains("activo")) return;
-      bloque.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
     document.getElementById("tablaDocumentacionAdminBody").addEventListener("click", function (event) {
       const selector = event.target.closest(".selector-doc-admin");
       if (!selector) return;
@@ -2591,37 +2617,3 @@
   </script>
 </body>
 </html>
-
-    async function cambiarEstadoDocumentoBaseAdmin(doc, activar, inputControl = null) {
-      const pregunta = activar
-        ? `Se activará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`
-        : `Se desactivará el documento \"${doc.nombre || "Documento"}\". ¿Deseas continuar?`;
-
-      if (!window.confirm(pregunta)) {
-        if (inputControl) inputControl.checked = !activar;
-        return;
-      }
-
-      try {
-        const res = await fetch("/api/admin/documentos-estado", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            documento_id: Number(doc.id || 0),
-            activar
-          })
-        });
-
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo actualizar el estado del documento.");
-        }
-
-        await cargarDocumentacionAdmin();
-        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
-      } catch (error) {
-        if (inputControl) inputControl.checked = !activar;
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
-      }
-    }
