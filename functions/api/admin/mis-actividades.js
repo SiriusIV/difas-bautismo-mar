@@ -74,7 +74,7 @@ export async function onRequestGet(context) {
           ), 0)
           FROM reservas r
           WHERE r.actividad_id = a.id
-            AND r.estado IN ('PENDIENTE', 'CONFIRMADA')
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
         ) AS plazas_ocupadas,
 
         /* plazas disponibles */
@@ -99,7 +99,7 @@ export async function onRequestGet(context) {
             ), 0)
             FROM reservas r
             WHERE r.actividad_id = a.id
-              AND r.estado IN ('PENDIENTE', 'CONFIRMADA')
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
           )
         ) AS plazas_disponibles
 

@@ -132,7 +132,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -175,10 +175,10 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.actividad_id,
       f.es_recurrente,
       f.patron_recurrencia,
-      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id END) AS numero_reservas,
+      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)

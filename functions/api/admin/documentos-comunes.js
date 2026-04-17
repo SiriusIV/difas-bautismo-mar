@@ -1,4 +1,5 @@
 import { getAdminSession } from "./_auth.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -152,6 +153,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
+    const baseUrl = new URL(request.url).origin;
     const adminId = await obtenerAdminObjetivo(session, body?.admin_id);
     const documentosEntrada = Array.isArray(body?.documentos) ? body.documentos : null;
 
@@ -301,6 +303,11 @@ export async function onRequestPost(context) {
     const versionActual = documentos
       .filter((doc) => Number(doc.activo || 0) === 1)
       .reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
+    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+      adminId,
+      baseUrl,
+      motivo: "documentos_actualizados"
+    });
 
     return json({
       ok: true,
@@ -309,7 +316,8 @@ export async function onRequestPost(context) {
         : "Se han desactivado los documentos comunes del administrador.",
       admin_id: adminId,
       version_actual: documentos.length ? versionActual : versionAnterior,
-      documentos
+      documentos,
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

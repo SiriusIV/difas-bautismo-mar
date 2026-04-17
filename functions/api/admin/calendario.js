@@ -13,13 +13,14 @@ function colorEstado(estado) {
   const e = String(estado || "").toUpperCase();
   if (e === "PENDIENTE") return "#d39e00";
   if (e === "CONFIRMADA") return "#198754";
+  if (e === "CONDICIONADA_DOCUMENTACION") return "#b7791f";
   if (e === "RECHAZADA") return "#dc3545";
   if (e === "CANCELADA") return "#6c757d";
   return "#0b5ed7";
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(expira) {
@@ -74,7 +75,7 @@ async function obtenerReservasCalendario(env, filtros) {
     where.push("r.estado = ?");
     binds.push(filtros.estado);
   } else {
-    const estados = ["PENDIENTE", "CONFIRMADA"];
+    const estados = ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"];
     if (filtros.incluirRechazadas) estados.push("RECHAZADA");
     if (filtros.incluirCanceladas) estados.push("CANCELADA");
 

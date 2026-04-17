@@ -46,7 +46,7 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
       CASE
-        WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
           CASE
             WHEN r.prereserva_expira_en IS NOT NULL
                  AND datetime('now') <= datetime(r.prereserva_expira_en)

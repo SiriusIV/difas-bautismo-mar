@@ -6,6 +6,7 @@ import {
   enviarEmail,
   nombreVisibleAdmin
 } from "../_email.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, status = 200) {
@@ -165,6 +166,28 @@ async function notificarAfectadosCambioMarco(env, admin, secretaria, afectados, 
   const notificaciones = [];
 
   for (const afectado of afectados || []) {
+    const tieneReservas = await env.DB.prepare(`
+      SELECT r.id
+      FROM reservas r
+      INNER JOIN actividades a ON a.id = r.actividad_id
+      WHERE a.admin_id = ?
+        AND r.usuario_id = ?
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+      LIMIT 1
+    `).bind(admin?.id || 0, Number(afectado.centro_usuario_id || 0)).first();
+
+    if (tieneReservas?.id) {
+      notificaciones.push({
+        centro_usuario_id: Number(afectado.centro_usuario_id || 0),
+        email: afectado.email || "",
+        enviada: false,
+        omitida: true,
+        error: "",
+        motivo: "GESTIONADA_POR_NOTIFICACION_DE_RESERVA"
+      });
+      continue;
+    }
+
     const payload = {
       admin,
       secretaria,
@@ -211,6 +234,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => ({}));
+    const baseUrl = new URL(request.url).origin;
     const adminId = await resolverAdminObjetivo(env, session, body?.admin_id);
     const secretariaUsuarioId = parsearIdPositivo(body?.secretaria_usuario_id);
     const accion = String(body?.accion || "").trim().toLowerCase();
@@ -267,6 +291,11 @@ export async function onRequestPost(context) {
         recalculo.afectadosConRemision,
         documentosSecretaria.length
       );
+      const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+        adminId,
+        baseUrl,
+        motivo: "cambio_responsable"
+      });
 
       return json({
         ok: true,
@@ -276,7 +305,8 @@ export async function onRequestPost(context) {
         documentos_nuevo_marco: documentosSecretaria.length,
         expedientes_actualizados: recalculo.expedientes.length,
         usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
-        notificaciones
+        notificaciones,
+        impacto_reservas: impactoReservas
       });
     }
 
@@ -305,6 +335,11 @@ export async function onRequestPost(context) {
       recalculo.afectadosConRemision,
       0
     );
+    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+      adminId,
+      baseUrl,
+      motivo: "cambio_responsable"
+    });
 
     return json({
       ok: true,
@@ -314,7 +349,8 @@ export async function onRequestPost(context) {
       documentos_nuevo_marco: 0,
       expedientes_actualizados: recalculo.expedientes.length,
       usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
-      notificaciones
+      notificaciones,
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

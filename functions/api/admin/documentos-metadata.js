@@ -1,4 +1,5 @@
 import { getAdminSession } from "./_auth.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -77,6 +78,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => null);
+    const baseUrl = new URL(request.url).origin;
     const documentoId = parsearIdPositivo(body?.documento_id);
     const titulo = limpiarTexto(body?.nombre);
     const descripcion = limpiarTexto(body?.descripcion);
@@ -115,10 +117,17 @@ export async function onRequestPost(context) {
         documentoId
       ).run();
 
+      const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+        adminId: Number(actual.admin_id || 0),
+        baseUrl,
+        motivo: "documentos_actualizados"
+      });
+
       return json({
         ok: true,
         mensaje: "Documento actualizado correctamente.",
-        documento_id: documentoId
+        documento_id: documentoId,
+        impacto_reservas: impactoReservas
       });
     }
 
@@ -147,10 +156,17 @@ export async function onRequestPost(context) {
       version
     ).run();
 
+    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+      adminId: Number(session.usuario_id || 0),
+      baseUrl,
+      motivo: "documento_creado"
+    });
+
     return json({
       ok: true,
       mensaje: "Documento creado correctamente.",
-      documento_id: Number(result?.meta?.last_row_id || 0)
+      documento_id: Number(result?.meta?.last_row_id || 0),
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

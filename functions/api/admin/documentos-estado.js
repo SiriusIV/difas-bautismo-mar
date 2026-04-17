@@ -1,4 +1,5 @@
 import { getAdminSession } from "./_auth.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -43,6 +44,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => null);
+    const baseUrl = new URL(request.url).origin;
     const documentoId = parsearIdPositivo(body?.documento_id);
     const activar = body?.activar === true;
 
@@ -95,11 +97,18 @@ export async function onRequestPost(context) {
       WHERE id = ?
     `).bind(activar ? 1 : 0, documentoId).run();
 
+    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+      adminId: Number(documento.admin_id || 0),
+      baseUrl,
+      motivo: activar ? "documento_activado" : "documentos_actualizados"
+    });
+
     return json({
       ok: true,
       mensaje: activar ? "Documento activado correctamente." : "Documento desactivado correctamente.",
       documento_id: documentoId,
-      activo: activar
+      activo: activar,
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

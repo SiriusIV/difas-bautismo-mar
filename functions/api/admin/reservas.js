@@ -30,7 +30,7 @@ function fechaComparableISO(fechaDdMmAaaa) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
 }
 
 function calcularPlazasReservadasPendientes(row) {
@@ -162,6 +162,7 @@ function resumirReservas(rows) {
     total_solicitudes: rows.length,
     pendientes: 0,
     confirmadas: 0,
+    condicionadas_documentacion: 0,
     rechazadas: 0,
     canceladas: 0
   };
@@ -171,6 +172,7 @@ function resumirReservas(rows) {
 
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
+    if (estado === "CONDICIONADA_DOCUMENTACION") resumen.condicionadas_documentacion += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
     if (estado === "CANCELADA") resumen.canceladas += 1;
   }
