@@ -1496,7 +1496,6 @@
         }
 
         await cargarDocumentacionAdmin();
-        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Estado del documento actualizado correctamente.");
       } catch (error) {
         if (inputControl) inputControl.checked = !activar;
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado del documento.");
