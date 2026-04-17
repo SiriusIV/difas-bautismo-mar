@@ -18,22 +18,6 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-function normalizarEstadoDocumento(estado) {
-  return limpiarTexto(estado).toUpperCase() || "EN_REVISION";
-}
-
-function calcularEstadoDocumento(baseDoc, entrega) {
-  if (!entrega) {
-    return "NO_ENVIADO";
-  }
-
-  if (Number(entrega.version_documental || 0) !== Number(baseDoc.version_documental || 0)) {
-    return "NO_ACTUALIZADO";
-  }
-
-  return normalizarEstadoDocumento(entrega.estado);
-}
-
 function prioridadPendienteExpediente(item) {
   if (Number(item.total_documentos_en_revision || 0) > 0) return 0;
   return 1;
@@ -45,21 +29,6 @@ async function resolverAdminObjetivo(env, session, adminIdParam) {
     return parsearIdPositivo(adminIdParam) || session.usuario_id;
   }
   return session.usuario_id;
-}
-
-async function obtenerDocumentosBaseActivos(env, adminId) {
-  const rows = await env.DB.prepare(`
-    SELECT
-      id,
-      nombre,
-      version_documental
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-    ORDER BY orden ASC, id ASC
-  `).bind(adminId).all();
-
-  return rows?.results || [];
 }
 
 async function obtenerExpedientesDocumentales(env, adminId) {
@@ -150,10 +119,7 @@ export async function onRequestGet(context) {
       );
     }
 
-    const [documentosBaseActivos, expedientes] = await Promise.all([
-      obtenerDocumentosBaseActivos(env, adminId),
-      obtenerExpedientesDocumentales(env, adminId)
-    ]);
+    const expedientes = await obtenerExpedientesDocumentales(env, adminId);
 
     const archivosPorExpediente = await obtenerArchivosActivosPorExpediente(
       env,
@@ -163,23 +129,12 @@ export async function onRequestGet(context) {
     const pendientes = expedientes.map((row) => {
       const expedienteId = Number(row.id || 0);
       const archivosActivos = archivosPorExpediente.get(expedienteId) || [];
-      const archivosPorNombre = new Map(
-        archivosActivos.map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-      );
-
-      const documentosBloqueantes = documentosBaseActivos.map((doc) => {
-        const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
-        return {
-          nombre: limpiarTexto(doc.nombre),
-          estado: calcularEstadoDocumento(doc, entrega)
-        };
-      }).filter((doc) => doc.estado !== "VALIDADO");
-
-      const totalEnRevision = documentosBloqueantes.filter((doc) => doc.estado === "EN_REVISION").length;
-      const documentosEnRevision = documentosBloqueantes.filter((doc) => doc.estado === "EN_REVISION");
-      const totalNoEnviados = documentosBloqueantes.filter((doc) => doc.estado === "NO_ENVIADO").length;
-      const totalNoActualizados = documentosBloqueantes.filter((doc) => doc.estado === "NO_ACTUALIZADO").length;
-      const totalRechazados = documentosBloqueantes.filter((doc) => doc.estado === "RECHAZADO").length;
+      const documentosEnRevision = archivosActivos.filter(
+        (archivo) => limpiarTexto(archivo.estado).toUpperCase() === "EN_REVISION"
+      ).map((archivo) => ({
+        nombre: limpiarTexto(archivo.nombre_documento),
+        estado: "EN_REVISION"
+      }));
 
       return {
         id: expedienteId,
@@ -189,10 +144,10 @@ export async function onRequestGet(context) {
         email: row.email || "",
         telefono_contacto: row.telefono_contacto || "",
         total_documentos_pendientes: documentosEnRevision.length,
-        total_documentos_en_revision: totalEnRevision,
-        total_documentos_no_enviados: totalNoEnviados,
-        total_documentos_no_actualizados: totalNoActualizados,
-        total_documentos_rechazados: totalRechazados,
+        total_documentos_en_revision: documentosEnRevision.length,
+        total_documentos_no_enviados: 0,
+        total_documentos_no_actualizados: 0,
+        total_documentos_rechazados: 0,
         documentos_pendientes_resumen: documentosEnRevision.map((doc) => doc.nombre).join(" · "),
         documentos_bloqueantes: documentosEnRevision,
         version_requerida: Number(row.version_requerida || 0),
