@@ -154,27 +154,28 @@
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
     .btn-modo-documental-admin {
-      min-height: 36px;
+      min-height: 40px;
       border-radius: 999px;
-      padding: 0 16px;
+      padding: 0 18px;
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      border: 1px solid #c6d4e4;
-      background: linear-gradient(180deg, #f9fbff 0%, #eef4ff 100%);
+      gap: 11px;
+      border: 1px solid #9eb8d6;
+      background: linear-gradient(180deg, #ffffff 0%, #e9f1ff 100%);
       color: #123a63;
-      box-shadow: 0 4px 14px rgba(18, 58, 99, 0.08);
+      box-shadow: 0 6px 18px rgba(18, 58, 99, 0.11);
       font-weight: 700;
+      font-size: 13px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .btn-modo-documental-admin:hover {
-      background: linear-gradient(180deg, #ffffff 0%, #e8f0ff 100%);
-      border-color: #9fb7d3;
+      background: linear-gradient(180deg, #ffffff 0%, #dfeafe 100%);
+      border-color: #7fa3cb;
       color: #0f3153;
       transform: translateY(-1px);
     }
-    .btn-modo-documental-admin svg { width: 16px; height: 16px; display: block; }
+    .btn-modo-documental-admin svg { width: 17px; height: 17px; display: block; }
     .btn-modo-documental-admin:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -219,6 +220,16 @@
       font-size: 13px;
       line-height: 1.55;
       color: #445261;
+    }
+    .modal-cambio-modo-admin-aviso {
+      margin-top: 12px;
+      padding: 12px 13px;
+      border-radius: 10px;
+      border: 1px solid #e5d1a2;
+      background: #fff8e8;
+      color: #7a5412;
+      font-size: 13px;
+      line-height: 1.55;
     }
     .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
@@ -785,6 +796,9 @@
         <select id="selectCambioModoDocumentalAdmin"></select>
       </div>
       <p class="modal-cambio-modo-admin-ayuda" id="textoCambioModoDocumentalAdmin">Selecciona una opción para continuar.</p>
+      <div class="modal-cambio-modo-admin-aviso" id="avisoCambioModoDocumentalAdmin">
+        Si pasas de autogestión a una secretaría, se eliminará la documentación base propia actual de este administrador y pasará a aplicarse la de la secretaría seleccionada.
+      </div>
       <div id="mensajeCambioModoDocumentalAdmin" class="mensaje"></div>
       <div class="modal-acciones">
         <button type="button" class="btn btn-suave" id="btnCancelarCambioModoDocumentalAdmin">Cancelar</button>
@@ -1361,6 +1375,7 @@
     function actualizarEstadoModalCambioModoDocumentalAdmin() {
       const select = document.getElementById("selectCambioModoDocumentalAdmin");
       const texto = document.getElementById("textoCambioModoDocumentalAdmin");
+      const aviso = document.getElementById("avisoCambioModoDocumentalAdmin");
       const btn = document.getElementById("btnConfirmarCambioModoDocumentalAdmin");
       const valorActual = obtenerValorModoDocumentalActualAdmin();
       const valorDestino = String(select.value || "");
@@ -1368,18 +1383,21 @@
 
       if (!valorDestino) {
         texto.textContent = "Selecciona una opción para continuar.";
+        aviso.textContent = "Si pasas de autogestión a una secretaría, se eliminará la documentación base propia actual de este administrador y pasará a aplicarse la de la secretaría seleccionada.";
         btn.disabled = true;
         return;
       }
 
       if (valorDestino === valorActual) {
         texto.textContent = "Ese modo documental ya está activo actualmente para este administrador.";
+        aviso.textContent = "No se realizará ningún cambio mientras mantengas seleccionada la modalidad actual.";
         btn.disabled = true;
         return;
       }
 
       if (modoActual === "AUTOGESTION" && valorDestino === "AUTOGESTION") {
         texto.textContent = "Este administrador ya se autogestiona.";
+        aviso.textContent = "No se realizará ningún cambio mientras mantengas la autogestión.";
         btn.disabled = true;
         return;
       }
@@ -1389,23 +1407,29 @@
         texto.textContent = secretaria
           ? `Se migrará este administrador para que su documentación dependa de ${secretaria.nombre_publico || secretaria.nombre || "la secretaría seleccionada"}. Sus documentos base propios dejarán de aplicarse.`
           : "Selecciona una secretaría válida para continuar.";
+        aviso.textContent = secretaria
+          ? "Al confirmar, se eliminará la documentación base propia actual del administrador y se sustituirá por la documentación de la secretaría elegida."
+          : "Debes elegir una secretaría válida para poder aplicar el cambio.";
         btn.disabled = !secretaria;
         return;
       }
 
       if (modoActual === "SECRETARIA_EXTERNA" && valorDestino === "AUTOGESTION") {
         texto.textContent = "Este administrador dejará de depender de la secretaría actual y volverá a autogestionar su documentación.";
+        aviso.textContent = "La documentación base de la secretaría no se eliminará del sistema, pero dejará de aplicarse a este administrador.";
         btn.disabled = false;
         return;
       }
 
       if (modoActual === "SECRETARIA_EXTERNA" && valorDestino !== valorActual) {
         texto.textContent = "El cambio directo entre dos secretarías todavía no está disponible. Primero debes pasar a autogestión y después elegir la nueva secretaría.";
+        aviso.textContent = "Para evitar inconsistencias, este cambio debe hacerse en dos pasos: pasar a autogestión y, después, seleccionar la nueva secretaría.";
         btn.disabled = true;
         return;
       }
 
       texto.textContent = "Selecciona una opción para continuar.";
+      aviso.textContent = "Revisa bien el impacto del cambio antes de confirmarlo.";
       btn.disabled = true;
     }
 
