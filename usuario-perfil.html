@@ -99,7 +99,7 @@
     .bloque-documentacion-admin.activo { display: block; }
     .documentacion-admin-shell { display: grid; gap: 12px; }
     .documentacion-admin-barra {
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
@@ -122,6 +122,7 @@
       flex-wrap: wrap;
     }
     .documentacion-admin-ayuda {
+      display: none;
       margin: 0;
       font-size: 13px;
       line-height: 1.6;
@@ -147,6 +148,7 @@
     .documentacion-admin-pill.modo-secretaria { color: #8a5a00; background: #fff7e8; border-color: #f0d9a7; }
     .documentacion-admin-pill.version { color: #123a63; background: #eef4ff; border-color: #c6d8f0; }
     .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .documentacion-admin-toolbar .btn-icono:disabled { opacity: 0.45; cursor: not-allowed; background: #f8fafc; color: #8090a0; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .documentacion-admin-acciones-modo.ocultas { display: none; }
     .tabla-documentacion-admin th.th-titulo-con-info { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
@@ -172,9 +174,16 @@
       flex-wrap: wrap;
       padding: 10px 2px 0;
     }
-    .modal-doc-base textarea { min-height: 120px; resize: vertical; }
+    .documentacion-admin-meta-linea { display: none; }
+    .modal-doc-base { max-width: 440px; padding: 18px; }
+    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 12px; align-items: start; }
+    .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
+    .modal-doc-base textarea { min-height: 96px; resize: vertical; }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
+    @media (max-width: 720px) {
+      .modal-doc-base-campos { grid-template-columns: 1fr; }
+    }
     .documentacion-admin-migracion label {
       font-size: 13px;
       font-weight: 700;
@@ -445,10 +454,18 @@
           <p>Consulta aquí la documentación base exigida para tus actividades y actúa sobre ella si tu cuenta se autogestiona.</p>
         </div>
         <div class="documentacion-admin-toolbar">
-          <button type="button" class="btn btn-suave" id="btnNuevoDocumentoBaseAdmin">Nuevo</button>
-          <button type="button" class="btn btn-suave" id="btnEditarDocumentoBaseAdmin" disabled>Editar</button>
-          <button type="button" class="btn btn-suave" id="btnAlternarEstadoDocumentoBaseAdmin" disabled>Desactivar</button>
-          <button type="button" class="btn btn-suave" id="btnEliminarDocumentoBaseAdmin" disabled>Eliminar</button>
+          <button type="button" class="btn-icono" id="btnNuevoDocumentoBaseAdmin" title="Nuevo documento" aria-label="Nuevo documento">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+          </button>
+          <button type="button" class="btn-icono" id="btnEditarDocumentoBaseAdmin" title="Editar documento" aria-label="Editar documento" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+          </button>
+          <button type="button" class="btn-icono" id="btnAlternarEstadoDocumentoBaseAdmin" title="Activar o desactivar documento" aria-label="Activar o desactivar documento" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="5"></rect><circle cx="9" cy="12" r="3"></circle></svg>
+          </button>
+          <button type="button" class="btn-icono peligro" id="btnEliminarDocumentoBaseAdmin" title="Eliminar documento" aria-label="Eliminar documento" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
           <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </button>
@@ -704,13 +721,15 @@
   <div id="modalDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-doc-base">
       <h3 id="modalDocumentoBaseAdminTitulo">Nuevo documento</h3>
-      <div class="campo-linea">
-        <label for="documentoBaseAdminNombre">Título</label>
-        <input type="text" id="documentoBaseAdminNombre" maxlength="120">
-      </div>
-      <div class="campo-linea">
-        <label for="documentoBaseAdminVersion">Versión</label>
-        <input type="number" id="documentoBaseAdminVersion" min="1" step="1">
+      <div class="modal-doc-base-campos">
+        <div class="campo-linea">
+          <label for="documentoBaseAdminNombre">Título</label>
+          <input type="text" id="documentoBaseAdminNombre" maxlength="120">
+        </div>
+        <div class="campo-linea">
+          <label for="documentoBaseAdminVersion">Versión</label>
+          <input type="text" id="documentoBaseAdminVersion" maxlength="20" inputmode="decimal" autocomplete="off">
+        </div>
       </div>
       <div class="campo-linea">
         <label for="documentoBaseAdminDescripcion">Descripción</label>
@@ -1411,7 +1430,8 @@
 
     async function guardarDocumentoBaseAdmin() {
       const nombre = String(document.getElementById("documentoBaseAdminNombre").value || "").trim();
-      const version = Number.parseInt(document.getElementById("documentoBaseAdminVersion").value || "", 10);
+      const versionTexto = String(document.getElementById("documentoBaseAdminVersion").value || "").trim().replace(",", ".");
+      const version = Number.parseFloat(versionTexto);
       const descripcion = String(document.getElementById("documentoBaseAdminDescripcion").value || "").trim();
       const documentoId = Number.parseInt(document.getElementById("documentoBaseAdminId").value || "", 10);
 
@@ -1419,8 +1439,8 @@
         jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar el título del documento.");
         return;
       }
-      if (!Number.isInteger(version) || version <= 0) {
-        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar una versión válida.");
+      if (!Number.isFinite(version) || version <= 0) {
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar una versión válida. Por ahora el sistema admite valores numéricos como 1, 1.1 o 2.0.");
         return;
       }
 
