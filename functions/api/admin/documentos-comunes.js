@@ -81,7 +81,7 @@ async function leerDocumentosAdmin(env, adminId, soloActivos = false) {
     FROM admin_documentos_comunes
     WHERE admin_id = ?
       ${soloActivos ? "AND activo = 1" : ""}
-    ORDER BY activo DESC, orden ASC, id ASC
+    ORDER BY orden ASC, id ASC
   `).bind(adminId).all();
 
   return rows?.results || [];

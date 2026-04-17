@@ -87,25 +87,13 @@ export async function onRequestPost(context) {
       }
     }
 
-    const maxOrdenRow = await env.DB.prepare(`
-      SELECT COALESCE(MAX(orden), -1) AS max_orden
-      FROM admin_documentos_comunes
-      WHERE admin_id = ?
-        AND activo = 1
-    `).bind(documento.admin_id).first();
-
-    const nuevoOrden = activar
-      ? Number(maxOrdenRow?.max_orden ?? -1) + 1
-      : Number(documento.orden || 0);
-
     await env.DB.prepare(`
       UPDATE admin_documentos_comunes
       SET
         activo = ?,
-        orden = ?,
         fecha_actualizacion = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(activar ? 1 : 0, nuevoOrden, documentoId).run();
+    `).bind(activar ? 1 : 0, documentoId).run();
 
     return json({
       ok: true,

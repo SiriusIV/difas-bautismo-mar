@@ -27,12 +27,12 @@ async function resolverAdminObjetivo(env, session, adminIdParam) {
 function formatearModoDocumental(resolucion) {
   const modo = String(resolucion?.modo || "").toUpperCase();
   if (modo === "AUTOGESTION") {
-    return "Autogestión";
+    return "Autogesti\u00f3n";
   }
   if (modo === "SECRETARIA_EXTERNA") {
-    return "Gestionado por secretaría";
+    return "Gestionado por secretar\u00eda";
   }
-  return "Sin configuración documental operativa";
+  return "Autogesti\u00f3n";
 }
 
 function construirResumenDocumentacion(documentos) {
@@ -86,7 +86,7 @@ export async function onRequestGet(context) {
         fecha_actualizacion
       FROM admin_documentos_comunes
       WHERE admin_id = ?
-      ORDER BY activo DESC, orden ASC, id ASC
+      ORDER BY orden ASC, id ASC
     `).bind(propietarioDocumentalId).all();
 
     const documentos = (documentosRows?.results || []).map((row) => ({
