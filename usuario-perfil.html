@@ -513,15 +513,15 @@
       <div class="documentacion-admin-shell">
         <div class="documentacion-admin-barra">
           <div class="documentacion-admin-barra-info">
-            <span class="documentacion-admin-pill version" id="documentacionAdminVersionGlobal">Versión global: —</span>
+            <span class="documentacion-admin-pill version" id="documentacionAdminVersionGlobal">Responsable:</span>
             <span class="documentacion-admin-pill" id="documentacionAdminModoPill">Cargando...</span>
-            <p class="documentacion-admin-resumen" id="documentacionAdminResumen">Cargando documentación base...</p>
+            <p class="documentacion-admin-resumen oculto" id="documentacionAdminResumen"></p>
           </div>
           <div class="documentacion-admin-barra-acciones">
             <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo">
               <button type="button" class="btn-modo-documental-admin" id="btnCambiarModoDocumentalAdmin">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.96 8.96 0 0 1-2.64 6.36A9 9 0 1 1 20 9"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M3 12a8.96 8.96 0 0 0 2.64 6.36A9 9 0 0 0 20 15"></path><polyline points="3 21 3 15 9 15"></polyline></svg>
-                <span>Cambiar modo documental</span>
+                <span>Cambiar responsable</span>
               </button>
             </div>
           </div>
@@ -789,10 +789,10 @@
   </div>
   <div id="modalCambioModoDocumentalAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-cambio-modo-admin">
-      <h3>Cambiar modo documental</h3>
-      <p>Elige si este administrador seguirá en autogestión o pasará a depender de una secretaría disponible.</p>
+      <h3>Cambiar responsable</h3>
+      <p>Elige si este administrador seguirá autogestionando su documentación o pasará a depender de una secretaría disponible.</p>
       <div class="campo-linea">
-        <label for="selectCambioModoDocumentalAdmin">Modo documental</label>
+        <label for="selectCambioModoDocumentalAdmin">Responsable documental</label>
         <select id="selectCambioModoDocumentalAdmin"></select>
       </div>
       <p class="modal-cambio-modo-admin-ayuda" id="textoCambioModoDocumentalAdmin">Selecciona una opción para continuar.</p>
@@ -1337,20 +1337,19 @@
 
     function actualizarResumenDocumentacionAdminLocal() {
       const resumen = document.getElementById("documentacionAdminResumen");
-      const docs = Array.isArray(documentacionAdminContexto?.documentos) ? documentacionAdminContexto.documentos : [];
-      const activos = docs.filter((doc) => Number(doc?.activo || 0) === 1).length;
-      const total = docs.length;
-
       if (!resumen) return;
+      resumen.textContent = "";
+    }
 
-      if (!total) {
-        resumen.textContent = "No hay documentos base disponibles actualmente para este administrador.";
-        return;
+    function obtenerTextoResponsableDocumentalAdmin(contexto = documentacionAdminContexto) {
+      const modoDocumental = String(contexto?.modo_documental || "").toUpperCase();
+      if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
+        const nombreSecretaria = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
+        return `Adscrito a ${nombreSecretaria}`;
       }
 
-      resumen.textContent = activos === total
-        ? `${activos} documento(s) activo(s).`
-        : `${activos} documento(s) activo(s) de ${total}.`;
+      const nombreAdmin = contexto?.admin?.nombre || document.getElementById("nombre")?.value?.trim() || "Administrador";
+      return nombreAdmin;
     }
 
     async function cargarSecretariasDisponiblesAdmin() {
@@ -1813,22 +1812,20 @@
       const editable = !!contexto?.editable;
 
       modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
-      versionGlobal.textContent = `Versión global: ${Number(contexto?.version_actual || 1)}`;
-      resumen.textContent = contexto?.resumen || "No hay información documental disponible actualmente.";
+      versionGlobal.textContent = "Responsable:";
+      pillModo.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
+      resumen.textContent = "";
 
       if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
         const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
         nota.textContent = `La documentación obligatoria de tus actividades depende de ${nombre}. Aquí puedes consultarla, pero su edición y mantenimiento corresponden a esa secretaría.`;
-        pillModo.textContent = "Gestionado por secretaría";
         pillModo.className = "documentacion-admin-pill modo-secretaria";
       } else if (modoDocumental === "AUTOGESTION") {
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar, editar y mantener los documentos base aplicables a tus actividades.";
-        pillModo.textContent = "Autogestión";
         pillModo.className = "documentacion-admin-pill modo-autogestion";
       } else {
         modo.textContent = "Autogestión";
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar y mantener los documentos base de tus actividades.";
-        pillModo.textContent = "Autogestión";
         pillModo.className = "documentacion-admin-pill modo-autogestion";
       }
 
