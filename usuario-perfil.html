@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Perfil de usuario</title>
+  <title>Perfil</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -344,7 +344,7 @@
       <div class="cabecera-inner">
         <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabecera">
         <div class="cabecera-titulos">
-          <h1>Perfil de usuario</h1>
+          <h1 id="tituloCabecera">Perfil</h1>
           <h2 id="subtituloCabecera">Cuenta</h2>
         </div>
       </div>
@@ -851,8 +851,18 @@
       const valor = String(rol || "").toUpperCase();
       if (valor === "SUPERADMIN") return "Superadministrador";
       if (valor === "ADMIN") return "Administrador";
+      if (valor === "SECRETARIA") return "Secretaría";
       if (valor === "SOLICITANTE") return "Usuario";
       return "Cuenta";
+    }
+
+    function tituloCabeceraPorRol(rol) {
+      const valor = String(rol || "").toUpperCase();
+      if (valor === "ADMIN") return "Perfil de administrador";
+      if (valor === "SECRETARIA") return "Perfil de secretaría";
+      if (valor === "SOLICITANTE") return "Perfil de usuario";
+      if (valor === "SUPERADMIN") return "Perfil de superadministrador";
+      return "Perfil";
     }
 
     function etiquetaEstadoDocumentacion(estado) {
@@ -960,16 +970,11 @@
       if (Number.isNaN(fecha.getTime())) return valor;
       const formatter = new Intl.DateTimeFormat("es-ES", {
         timeZone: "Europe/Madrid",
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
         day: "2-digit",
         month: "2-digit",
         year: "numeric"
       });
-      const partes = formatter.formatToParts(fecha);
-      const mapa = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
-      return `${mapa.hour || "00"}:${mapa.minute || "00"}, ${mapa.day || "00"}/${mapa.month || "00"}/${mapa.year || "0000"}`;
+      return formatter.format(fecha);
     }
 
     function estadoDetalleDocumento(_expedienteEstado, documento) {
@@ -1275,8 +1280,11 @@
     function esSolicitante() { return rolActual === "SOLICITANTE"; }
 
     function actualizarSubtitulo(perfil) {
+      const titulo = tituloCabeceraPorRol(perfil.rol);
       const nombreVisible = esSolicitante() ? (perfil.centro || "") : (perfil.nombre || "");
+      document.getElementById("tituloCabecera").textContent = titulo;
       document.getElementById("subtituloCabecera").textContent = `${etiquetaRol(perfil.rol)}: ${nombreVisible}`;
+      document.title = titulo;
     }
 
     function actualizarAccionesOrganizadores() {
