@@ -81,11 +81,11 @@ export async function resolverResponsableDocumental(env, adminId) {
   }
 
   return {
-    modo: "SIN_SECRETARIA_ASIGNADA",
+    modo: "AUTOGESTION",
     admin,
     responsable: admin,
-    puede_gestionar_documentacion: false,
-    observacion: limpiarTexto("El administrador no tiene módulo de secretaría activado ni una secretaría externa válida asignada.")
+    puede_gestionar_documentacion: true,
+    observacion: limpiarTexto("La cuenta se gestiona documentalmente en modo de autogesti\u00f3n.")
   };
 }
 
@@ -104,7 +104,21 @@ export async function puedeGestionarDocumentacionAdmin(env, sessionUserId, admin
     return { permitido: false, motivo: "SIN_RESPONSABLE_DOCUMENTAL", resolucion };
   }
 
-  const permitido = Number(resolucion.responsable?.id || 0) === Number(sessionUserId || 0);
+  const sessionId = Number(sessionUserId || 0);
+  const adminObjetivoId = Number(adminId || 0);
+  const responsableId = Number(resolucion.responsable?.id || 0);
+  const adminDocumentalId = Number(resolucion.admin?.id || 0);
+  const modo = limpiarTexto(resolucion.modo).toUpperCase();
+
+  const permitidoPorResponsable = responsableId > 0 && responsableId === sessionId;
+  const permitidoPorAutogestionPropia =
+    modo === "AUTOGESTION" &&
+    sessionId > 0 &&
+    adminDocumentalId > 0 &&
+    sessionId === adminDocumentalId &&
+    adminObjetivoId === adminDocumentalId;
+
+  const permitido = permitidoPorResponsable || permitidoPorAutogestionPropia;
   return {
     permitido,
     motivo: permitido ? "RESPONSABLE_DOCUMENTAL" : "RESPONSABLE_DISTINTO",
