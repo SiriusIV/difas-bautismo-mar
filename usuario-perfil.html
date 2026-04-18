@@ -166,11 +166,12 @@
       margin: 2px 0 8px;
     }
     .documentacion-admin-ayuda {
-      display: none;
+      display: block;
       margin: 0;
       font-size: 13px;
       line-height: 1.6;
       color: #4a5a6a;
+      width: 100%;
     }
     .documentacion-admin-resumen {
       margin: 0;
@@ -2172,22 +2173,22 @@
       if (esSecretaria()) {
         modo.textContent = "Secretaría";
         subtitulo.textContent = contexto?.secretaria?.nombre_publico || contexto?.secretaria?.nombre || contexto?.admin?.nombre || "Secretaría";
+        nota.textContent = "Consulta aquí la documentación base exigida para las actividades gestionadas dentro del ámbito de esta secretaría y mantén actualizado el marco documental aplicable.";
         resumen.textContent = "La documentación base definida por esta secretaría será la que se aplique a los administradores adscritos a ella.";
-        nota.textContent = "Desde aquí puedes mantener la documentación base común y revisar las remisiones pendientes de los administradores adscritos.";
       } else {
         modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
         subtitulo.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
+        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y actúa sobre ella si tu cuenta se autogestiona.";
         resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
       }
 
       if (!esSecretaria() && modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
-        const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
-        nota.textContent = `La documentación obligatoria de tus actividades depende de ${nombre}. Aquí puedes consultarla, pero su edición y mantenimiento corresponden a esa secretaría.`;
+        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades. Al estar adscrito a una secretaría externa, puedes consultarla pero su edición y mantenimiento corresponden a esa oficina.";
       } else if (!esSecretaria() && modoDocumental === "AUTOGESTION") {
-        nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar, editar y mantener los documentos base aplicables a tus actividades.";
+        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y mantén actualizado el marco documental aplicable cuando tu cuenta se autogestiona.";
       } else if (!esSecretaria()) {
         modo.textContent = "Autogestión";
-        nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar y mantener los documentos base de tus actividades.";
+        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y mantén actualizado el marco documental aplicable.";
       }
 
       if (btnCambioModo) {
