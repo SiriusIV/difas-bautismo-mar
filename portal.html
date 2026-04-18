@@ -3217,6 +3217,8 @@ function continuarSolicitudActividad() {
 
       const btnIr = e.target.closest("[data-notificacion-ir]");
       if (btnIr) {
+        e.preventDefault();
+        await aplicarNotificacionesMarcadasModal();
         const id = String(btnIr.dataset.notificacionIr || "");
         const item = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
           .find((row) => String(row.id || "") === id);
