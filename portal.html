@@ -305,15 +305,13 @@
       color: #123a63;
     }
     .notificacion-fecha {
-      display: block;
-      margin-top: 3px;
       font-size: 12px;
       color: #6c7a88;
+      white-space: nowrap;
     }
-    .notificacion-mensaje {
-      color: #4a5a6a;
-      line-height: 1.45;
-      font-size: 13px;
+    .col-notificacion-fecha {
+      width: 112px;
+      white-space: nowrap;
     }
     .col-notificacion-accion {
       width: 44px;
@@ -330,10 +328,9 @@
     .notificacion-enlace {
       color: inherit;
       text-decoration: none;
-      display: block;
+      display: inline-block;
     }
-    .notificacion-enlace:hover .notificacion-titulo,
-    .notificacion-enlace:hover .notificacion-resumen {
+    .notificacion-enlace:hover .notificacion-titulo {
       color: #0b5ed7;
       text-decoration: underline;
     }
@@ -360,8 +357,8 @@
       display: block;
     }
     .check-notificacion {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 6px;
       border: 1px solid #8fa6c0;
       display: inline-flex;
@@ -380,8 +377,8 @@
       box-shadow: 0 0 0 2px rgba(11, 94, 215, 0.12);
     }
     .check-notificacion svg {
-      width: 15px;
-      height: 15px;
+      width: 13px;
+      height: 13px;
       display: block;
       opacity: 0.18;
     }
@@ -1549,6 +1546,7 @@
         <table class="tabla-notificaciones">
           <thead>
             <tr>
+              <th class="col-notificacion-fecha">Fecha</th>
               <th class="col-notificacion-accion">Visto</th>
               <th class="col-notificacion-principal">Notificación</th>
             </tr>
@@ -1907,16 +1905,14 @@ function actualizarBotonSolicitarSegunFranja() {
       franja.style.display = texto.textContent ? "block" : "none";
     }
 
-    function formatearFechaHoraNotificacion(valor) {
+    function formatearFechaNotificacion(valor) {
       if (!valor) return "";
       const fecha = new Date(valor);
       if (Number.isNaN(fecha.getTime())) return "";
-      return fecha.toLocaleString("es-ES", {
+      return fecha.toLocaleDateString("es-ES", {
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
+        year: "numeric"
       });
     }
 
@@ -1961,7 +1957,7 @@ function actualizarBotonSolicitarSegunFranja() {
       }
 
       if (!items.length) {
-        lista.innerHTML = `<tr><td colspan="2"><div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div></td></tr>`;
+        lista.innerHTML = `<tr><td colspan="3"><div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div></td></tr>`;
         return;
       }
 
@@ -1982,20 +1978,18 @@ function actualizarBotonSolicitarSegunFranja() {
             </button>
           `);
         }
+        const titulo = String(item.titulo || "Notificación").trim();
         const contenidoPrincipal = item.url_destino
           ? `
             <a href="${item.url_destino}" class="notificacion-enlace" data-notificacion-ir="${String(item.id || "")}">
-              <div class="notificacion-titulo">${item.titulo || "Notificación"}</div>
-              <span class="notificacion-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</span>
-              <div class="notificacion-resumen">${item.mensaje || ""}</div>
+              <div class="notificacion-titulo">${titulo}</div>
             </a>
           `
           : `
-            <div class="notificacion-titulo">${item.titulo || "Notificación"}</div>
-            <span class="notificacion-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</span>
-            <div class="notificacion-resumen">${item.mensaje || ""}</div>
+            <div class="notificacion-titulo">${titulo}</div>
           `;
         row.innerHTML = `
+          <td class="col-notificacion-fecha"><span class="notificacion-fecha">${formatearFechaNotificacion(item.created_at || "")}</span></td>
           <td class="col-notificacion-accion">${accionesVisto.join("")}</td>
           <td class="col-notificacion-principal">
             ${contenidoPrincipal}
@@ -2044,7 +2038,6 @@ function actualizarBotonSolicitarSegunFranja() {
           notificacionesOperativasPortal = adminsConAlerta
             .map((admin) => {
               const adminId = Number(admin?.admin_id || 0);
-              const adminNombre = String(admin?.admin_nombre_publico || admin?.admin_nombre || "tu organizador").trim();
               const alertas = Array.isArray(admin?.alertas_revision) ? admin.alertas_revision : [];
               const firmaEstado = alertas.map((item) => ([
                 String(item?.nombre_documento || "").trim(),
@@ -2057,27 +2050,23 @@ function actualizarBotonSolicitarSegunFranja() {
 
               const totalRechazados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "RECHAZADO").length;
               const totalValidados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "VALIDADO").length;
-              let titulo = "Hay cambios en tu documentación remitida";
+              let titulo = "Cambios en tu documentación";
               if (totalRechazados > 0 && totalValidados === 0) {
                 titulo = totalRechazados === 1
-                  ? "Tienes 1 documento rechazado"
-                  : `Tienes ${totalRechazados} documentos rechazados`;
+                  ? "1 documento rechazado"
+                  : `${totalRechazados} documentos rechazados`;
               } else if (totalValidados > 0 && totalRechazados === 0) {
                 titulo = totalValidados === 1
-                  ? "Tienes 1 documento validado"
-                  : `Tienes ${totalValidados} documentos validados`;
+                  ? "1 documento validado"
+                  : `${totalValidados} documentos validados`;
               }
-
-              const mensaje = totalRechazados > 0
-                ? `Se ha actualizado la revisión documental de ${adminNombre}. Tienes cambios que revisar en tu documentación obligatoria.`
-                : `Se ha actualizado la revisión documental de ${adminNombre}. Ya puedes consultar el resultado en tu perfil.`;
 
               return {
                 id: idOperativa,
                 operativa: true,
                 leida: false,
                 titulo,
-                mensaje,
+                mensaje: "",
                 url_destino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`,
                 created_at: new Date().toISOString()
               };
@@ -2095,18 +2084,15 @@ function actualizarBotonSolicitarSegunFranja() {
         if (vistas.includes(idOperativa)) return;
 
         const titulo = total === 1
-          ? "Tienes 1 documento pendiente de revisión"
-          : `Tienes ${total} expedientes pendientes de revisión`;
-        const mensaje = esSecretaria()
-          ? "Hay documentación remitida por usuarios de administradores adscritos que está esperando revisión en tu bandeja de entrada."
-          : "Hay documentación remitida por usuarios que está esperando revisión en tu bandeja de entrada.";
+          ? "1 pendiente de revisión"
+          : `${total} pendientes de revisión`;
 
         notificacionesOperativasPortal = [{
           id: idOperativa,
           operativa: true,
           leida: false,
           titulo,
-          mensaje,
+          mensaje: "",
           url_destino: "/usuario-perfil.html?tab=pendientes",
           created_at: new Date().toISOString()
         }];
