@@ -1910,7 +1910,6 @@
         documentacionAdminSeleccionId = Number(data?.documento_id || 0) || documentacionAdminSeleccionId;
         await cargarDocumentacionAdmin();
         cerrarModalDocumentoBaseAdmin();
-        mostrarMensajePerfilTemporal("ok", data?.mensaje || (modoEdicionDocumentoBaseAdmin === "editar" ? "Documento actualizado correctamente." : "Documento creado correctamente."));
       } catch (error) {
         jsonMessage("mensajeDocumentoBaseAdmin", "error", error.message || "No se pudo guardar el documento.");
       }
@@ -3182,7 +3181,6 @@
         }
 
         await cargarDocumentacionAdmin();
-        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Documento eliminado correctamente.");
       } catch (error) {
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el documento.");
       }
