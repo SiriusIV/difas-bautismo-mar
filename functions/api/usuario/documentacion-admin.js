@@ -31,6 +31,35 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function indexarArchivosActivosPorDocumento(archivos = []) {
+  const porNombre = new Map();
+  const duplicados = [];
+
+  for (const archivo of Array.isArray(archivos) ? archivos : []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    if (!nombre) continue;
+
+    const existente = porNombre.get(nombre);
+    if (!existente) {
+      porNombre.set(nombre, archivo);
+      continue;
+    }
+
+    if (Number(archivo?.id || 0) > Number(existente?.id || 0)) {
+      duplicados.push(existente);
+      porNombre.set(nombre, archivo);
+    } else {
+      duplicados.push(archivo);
+    }
+  }
+
+  return {
+    porNombre,
+    vigentes: Array.from(porNombre.values()),
+    duplicados
+  };
+}
+
 function extraerKeyDesdeArchivoUrl(archivoUrl) {
   const texto = limpiarTexto(archivoUrl);
   if (!texto) return null;
@@ -268,7 +297,7 @@ function validarEntregas(entregas) {
 
 function construirEntregasDesdeOperaciones(documentos, archivosExistentes, operaciones) {
   const docsPorId = new Map((documentos || []).map((doc) => [Number(doc.id), doc]));
-  const archivosPorNombre = new Map((archivosExistentes || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+  const archivosPorNombre = indexarArchivosActivosPorDocumento(archivosExistentes || []).porNombre;
   const operacionesPorId = new Map();
 
   (operaciones || []).forEach((item) => {
@@ -433,8 +462,9 @@ export async function onRequestPost(context) {
 
     let expediente = await obtenerExpediente(env, usuario.id, adminId);
     const archivosExistentes = await obtenerArchivosActivos(env, expediente?.id);
+    const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosExistentes);
     const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
-    const archivosPorNombre = new Map(archivosExistentes.map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+    const archivosPorNombre = indiceArchivosExistentes.porNombre;
 
     let entregas = [];
     let cambiosIds = [];
@@ -478,8 +508,16 @@ export async function onRequestPost(context) {
 
     const entregasDeseadasPorDocumento = new Map(entregas.map((item) => [Number(item.documento_id), item]));
     const aDesactivar = [];
+    const idsADesactivar = new Set();
     const aInsertar = [];
     const cambiosRealesIds = new Set();
+
+    for (const duplicado of indiceArchivosExistentes.duplicados) {
+      const duplicadoId = Number(duplicado?.id || 0);
+      if (!(duplicadoId > 0) || idsADesactivar.has(duplicadoId)) continue;
+      aDesactivar.push(duplicado);
+      idsADesactivar.add(duplicadoId);
+    }
 
     for (const doc of documentos) {
       const existente = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
@@ -499,14 +537,22 @@ export async function onRequestPost(context) {
       }
 
       if (existente && !deseada) {
-        aDesactivar.push(existente);
+        const existenteId = Number(existente.id || 0);
+        if (existenteId > 0 && !idsADesactivar.has(existenteId)) {
+          aDesactivar.push(existente);
+          idsADesactivar.add(existenteId);
+        }
         cambiosRealesIds.add(Number(doc.id));
         continue;
       }
 
       if (existente && deseada) {
         if (limpiarTexto(existente.archivo_url) !== limpiarTexto(deseada.archivo_url)) {
-          aDesactivar.push(existente);
+          const existenteId = Number(existente.id || 0);
+          if (existenteId > 0 && !idsADesactivar.has(existenteId)) {
+            aDesactivar.push(existente);
+            idsADesactivar.add(existenteId);
+          }
           aInsertar.push({
             documento: doc,
             archivo_url: deseada.archivo_url
@@ -572,12 +618,19 @@ export async function onRequestPost(context) {
         ).run();
       }
 
-      for (const archivo of aDesactivar) {
-        await borrarArchivoBucketSiExiste(env, archivo.archivo_url);
-      }
     }
 
     const archivosFinales = expediente ? await obtenerArchivosActivos(env, expediente.id) : [];
+    const urlsActivasFinales = new Set(
+      archivosFinales
+        .map((archivo) => limpiarTexto(archivo.archivo_url))
+        .filter(Boolean)
+    );
+    for (const archivo of aDesactivar) {
+      const archivoUrl = limpiarTexto(archivo?.archivo_url);
+      if (!archivoUrl || urlsActivasFinales.has(archivoUrl)) continue;
+      await borrarArchivoBucketSiExiste(env, archivoUrl);
+    }
     const estadoExpediente = calcularEstadoEfectivo(documentos, archivosFinales);
     const versionAportada = archivosFinales.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
 
