@@ -1052,19 +1052,19 @@
 
     function etiquetaRol(rol) {
       const valor = String(rol || "").toUpperCase();
-      if (valor === "SUPERADMIN") return "Superadministrador";
-      if (valor === "ADMIN") return "Administrador";
-      if (valor === "SECRETARIA") return "Secretaría";
-      if (valor === "SOLICITANTE") return "Usuario";
+      if (valor === "SUPERADMIN") return "SUPERADMINISTRADOR";
+      if (valor === "ADMIN") return "ADMINISTRADOR";
+      if (valor === "SECRETARIA") return "SECRETARÍA";
+      if (valor === "SOLICITANTE") return "USUARIO";
       return "Cuenta";
     }
 
     function tituloCabeceraPorRol(rol) {
       const valor = String(rol || "").toUpperCase();
-      if (valor === "ADMIN") return "Perfil de administrador";
-      if (valor === "SECRETARIA") return "Perfil de secretaría";
-      if (valor === "SOLICITANTE") return "Perfil de usuario";
-      if (valor === "SUPERADMIN") return "Perfil de superadministrador";
+      if (valor === "ADMIN") return "Perfil de ADMINISTRADOR";
+      if (valor === "SECRETARIA") return "Perfil de SECRETARÍA";
+      if (valor === "SOLICITANTE") return "Perfil de USUARIO";
+      if (valor === "SUPERADMIN") return "Perfil de SUPERADMINISTRADOR";
       return "Perfil";
     }
 
@@ -2385,13 +2385,13 @@
       const overlay = document.getElementById("accionesOverlayImagen");
       const imagenMostrada = logoUrl || "logo.png";
 
-      if (esPerfilOrganizador()) {
+      if (esAdmin()) {
         document.getElementById("bloqueImagenAdmin").classList.remove("oculto");
       } else {
         document.getElementById("bloqueImagenAdmin").classList.add("oculto");
       }
 
-      if (esPerfilOrganizador()) {
+      if (esAdmin()) {
         preview.src = imagenMostrada;
         overlay.classList.add("activo");
       } else {
@@ -2418,11 +2418,16 @@
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
         layout.classList.add("sin-imagen");
-      } else if (esPerfilOrganizador()) {
+      } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
         document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
         layout.classList.remove("sin-imagen");
+      } else if (esSecretaria()) {
+        document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
+        document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
+        document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
+        layout.classList.add("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
