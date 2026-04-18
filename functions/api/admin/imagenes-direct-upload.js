@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+import { getUserSession } from "../usuario/_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 
 function json(data, init = 200) {
@@ -24,13 +24,14 @@ export async function onRequestPost(context) {
 
   try {
     // 1. Autenticación
-    const session = await getAdminSession(request, env);
+    const rawSession = await getUserSession(request, env.SECRET_KEY);
+    const session = rawSession ? { usuario_id: rawSession.id, rol: rawSession.rol, username: rawSession.email } : null;
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
     }
 
     const rol = await getRolUsuario(env, session.usuario_id);
-    if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+    if (rol !== "ADMIN" && rol !== "SUPERADMIN" && rol !== "SECRETARIA") {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
