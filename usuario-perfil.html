@@ -329,7 +329,7 @@
     .indicador-expediente.rojo { background: #d92d20; border-color: #b42318; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16); }
     .indicador-expediente.neutro { background: #f0f4f8; border-color: #d5dfe8; }
     .indicador-expediente svg { width: 12px; height: 12px; display: block; }
-    .indicador-expediente.advertencia { width: 38px; height: 38px; color: #d99a00; }
+    .indicador-expediente.advertencia { width: 18px; height: 18px; color: transparent; }
     .panel-documentos-estado-vacio { padding: 18px 2px 4px; font-size: 13px; color: var(--muted); }
     .detalle-documentacion-panel { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
     .detalle-documentacion-panel.oculto { display: none !important; }
@@ -1095,7 +1095,7 @@
 
       if (valor === "RECHAZADA" || valor === "NO_ACTUALIZADO") {
         return {
-          html: `<span class="indicador-expediente advertencia" title="Necesita acción" aria-label="Necesita acción"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4.2c.4 0 .8.2 1 .6l8.2 13.5c.4.7-.1 1.7-1 1.7H3.6c-.9 0-1.4-1-1-1.7L11 4.8c.2-.4.6-.6 1-.6Z"></path><path fill="#111111" d="M12 8.1c.55 0 1 .45 1 1v5.3c0 .55-.45 1-1 1s-1-.45-1-1V9.1c0-.55.45-1 1-1Zm0 9.15a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z"></path></svg></span>`,
+          html: `<span class="indicador-expediente advertencia" title="Necesita acción" aria-label="Necesita acción"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3.8c1.1 0 2.1.55 2.68 1.48l11.04 18.1A3.15 3.15 0 0 1 27.04 28H4.96a3.15 3.15 0 0 1-2.68-4.62l11.04-18.1A3.14 3.14 0 0 1 16 3.8Z" fill="#ffd21f" stroke="#111111" stroke-width="2.4" stroke-linejoin="round"></path><rect x="14.15" y="10" width="3.7" height="10.2" rx="1.85" fill="#111111"></rect><circle cx="16" cy="24.2" r="2.2" fill="#111111"></circle></svg></span>`,
           titulo: "Necesita acción"
         };
       }
