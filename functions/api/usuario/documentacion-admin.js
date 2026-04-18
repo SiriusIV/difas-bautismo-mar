@@ -5,6 +5,7 @@ import {
   enviarEmail,
   nombreVisibleAdmin
 } from "../_email.js";
+import { crearNotificacion } from "../_notificaciones.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, status = 200) {
@@ -609,6 +610,7 @@ export async function onRequestPost(context) {
 
     const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, Array.from(cambiosRealesIds));
     let notificacionAdmin = { ok: false, skipped: true, error: "", destinatario: "" };
+    let notificacionInternaResponsable = { ok: false, skipped: true, error: "" };
 
     if (cambiosCorreo.length > 0) {
       const responsableDocumental = await resolverResponsableDocumental(env, adminId);
@@ -627,6 +629,17 @@ export async function onRequestPost(context) {
         html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
       });
       notificacionAdmin.destinatario = destinatarioResponsable;
+
+      if (Number(responsableDocumental?.responsable?.id || 0) > 0) {
+        notificacionInternaResponsable = await crearNotificacion(env, {
+          usuarioId: Number(responsableDocumental.responsable.id || 0),
+          rolDestino: responsableDocumental?.responsable?.rol || "",
+          tipo: "DOCUMENTACION",
+          titulo: "Nueva documentación remitida",
+          mensaje: `${usuario.centro || "Un usuario"} ha remitido documentación para revisión en ${nombreVisibleAdmin(admin)}.`,
+          urlDestino: "/usuario-perfil.html"
+        });
+      }
 
       if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
         console.error("No se pudo enviar el correo al responsable documental tras guardar cambios documentales.", {
@@ -661,6 +674,10 @@ export async function onRequestPost(context) {
         omitida: !!notificacionAdmin.skipped,
         error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || ""),
         destinatario: notificacionAdmin.destinatario || ""
+      },
+      notificacion_interna_responsable: {
+        creada: !!notificacionInternaResponsable.ok,
+        error: notificacionInternaResponsable.ok ? "" : (notificacionInternaResponsable.error || "")
       }
     });
   } catch (error) {
