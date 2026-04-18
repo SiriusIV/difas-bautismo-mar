@@ -355,6 +355,10 @@
       cursor: pointer;
       margin-top: 2px;
     }
+    .check-notificacion.marcado {
+      background: #e7f0ff;
+      border-color: #5f8fc7;
+    }
     .check-notificacion svg {
       width: 12px;
       height: 12px;
@@ -1554,6 +1558,7 @@
     let notificacionesPortal = [];
     let notificacionesOperativasPortal = [];
     let notificacionesNoLeidas = 0;
+    let notificacionesMarcadasEnModal = new Set();
     const STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS = "portal_notificaciones_operativas_vistas";
     let carruselResetTimeout = null;
     const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -1920,7 +1925,8 @@ function actualizarBotonSolicitarSegunFranja() {
       const lista = document.getElementById("listaNotificacionesPortal");
       const subtitulo = document.querySelector(".modal-notificaciones-subtitulo");
       lista.innerHTML = "";
-      const items = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])];
+      const items = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
+        .filter((item) => !item.leida);
       const unread = items.filter((item) => !item.leida).length;
 
       if (subtitulo) {
@@ -1939,10 +1945,11 @@ function actualizarBotonSolicitarSegunFranja() {
         row.className = item.leida ? "" : "no-leida";
         const accionesVisto = [];
         if (!item.leida) {
+          const marcado = notificacionesMarcadasEnModal.has(String(item.id || ""));
           accionesVisto.push(`
             <button
               type="button"
-              class="check-notificacion"
+              class="check-notificacion ${marcado ? "marcado" : ""}"
               data-notificacion-leida="${String(item.id || "")}"
               title="Marcar como vista"
               aria-label="Marcar como vista">
@@ -2060,12 +2067,23 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     function abrirModalNotificacionesPortal() {
+      notificacionesMarcadasEnModal = new Set();
       renderizarNotificacionesPortal();
       document.getElementById("modalNotificacionesPortal").classList.add("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "false");
     }
 
-    function cerrarModalNotificacionesPortal() {
+    async function aplicarNotificacionesMarcadasModal() {
+      const ids = Array.from(notificacionesMarcadasEnModal || []);
+      if (!ids.length) return;
+      for (const id of ids) {
+        await marcarNotificacionComoVistaPortal(id);
+      }
+      notificacionesMarcadasEnModal = new Set();
+    }
+
+    async function cerrarModalNotificacionesPortal() {
+      await aplicarNotificacionesMarcadasModal();
       document.getElementById("modalNotificacionesPortal").classList.remove("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
     }
@@ -3084,7 +3102,9 @@ function continuarSolicitudActividad() {
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
     document.getElementById("btnNotificacionesSesion").addEventListener("click", abrirModalNotificacionesPortal);
-    document.getElementById("btnCerrarModalNotificaciones").addEventListener("click", cerrarModalNotificacionesPortal);
+    document.getElementById("btnCerrarModalNotificaciones").addEventListener("click", async function () {
+      await cerrarModalNotificacionesPortal();
+    });
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
     document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
       const adminId = Number.parseInt(this.dataset.adminId || "", 10);
@@ -3104,13 +3124,20 @@ function continuarSolicitudActividad() {
     document.getElementById("modalDocumentacionPendiente").addEventListener("click", function (e) {
       if (e.target.id === "modalDocumentacionPendiente") cerrarModalDocumentacionPendiente();
     });
-    document.getElementById("modalNotificacionesPortal").addEventListener("click", function (e) {
-      if (e.target.id === "modalNotificacionesPortal") cerrarModalNotificacionesPortal();
+    document.getElementById("modalNotificacionesPortal").addEventListener("click", async function (e) {
+      if (e.target.id === "modalNotificacionesPortal") await cerrarModalNotificacionesPortal();
     });
     document.getElementById("listaNotificacionesPortal").addEventListener("click", async function (e) {
       const btnLeer = e.target.closest("[data-notificacion-leida]");
       if (btnLeer) {
-        await marcarNotificacionComoVistaPortal(btnLeer.dataset.notificacionLeida);
+        const id = String(btnLeer.dataset.notificacionLeida || "");
+        if (!id) return;
+        if (notificacionesMarcadasEnModal.has(id)) {
+          notificacionesMarcadasEnModal.delete(id);
+        } else {
+          notificacionesMarcadasEnModal.add(id);
+        }
+        renderizarNotificacionesPortal();
         return;
       }
 
