@@ -307,14 +307,19 @@
       font-size: 13px;
       line-height: 1.55;
     }
-    .tabs-bloque-documentacion { display: flex; gap: 8px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    .tabs-bloque-linea { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
+    .tabs-bloque-documentacion { display: none; }
+    .tabs-bloque-linea { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin: 10px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-wrap: wrap; }
     .tab-bloque-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-bloque-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
     .panel-bloque-documentacion { display: none; }
     .panel-bloque-documentacion.activo { display: block; }
-    .acciones-bloque-documentacion { display: flex; align-items: center; gap: 8px; }
+    .acciones-bloque-documentacion { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .acciones-bloque-documentacion.ocultas { display: none; }
+    .btn-volver-documentacion.oculto { display: none !important; }
+    .btn-indicador-expediente { appearance: none; border: none; background: transparent; padding: 0; margin: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-indicador-expediente:hover .indicador-expediente,
+    .btn-indicador-expediente:focus-visible .indicador-expediente { filter: brightness(0.96); transform: scale(1.02); }
+    .btn-indicador-expediente:focus-visible { outline: none; }
     .btn-icono.peligro:hover { color: #9b1c1c; border-color: #d9b2b2; background: #fff7f7; }
     .tabla-organizadores-wrap { width: 100%; overflow-x: auto; }
     .tabla-organizadores { width: 100%; border-collapse: collapse; min-width: 720px; }
@@ -672,6 +677,9 @@
           <button type="button" class="tab-bloque-btn" id="tabBloqueDocumentos" data-tab-bloque="documentos" role="tab" aria-selected="false">Documentos</button>
         </div>
         <div class="acciones-bloque-documentacion">
+          <button type="button" class="btn-icono btn-volver-documentacion oculto" id="btnVolverOrganizadores" title="Volver a organizadores" aria-label="Volver a organizadores">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+          </button>
           <button type="button" class="btn-icono" id="btnAgregarOrganizador" title="Añadir organizador" aria-label="Añadir organizador">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
           </button>
@@ -697,7 +705,7 @@
         <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionPerfil">Aún no has añadido ningún organizador a tu seguimiento documental.</div>
       </div>
       <div class="panel-bloque-documentacion" id="panelBloqueDocumentos" role="tabpanel" aria-labelledby="tabBloqueDocumentos">
-        <div id="detalleDocumentacionSinSeleccion" class="panel-documentos-estado-vacio">Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.</div>
+        <div id="detalleDocumentacionSinSeleccion" class="panel-documentos-estado-vacio">Selecciona un organizador en la tabla para consultar y gestionar sus documentos.</div>
         <div class="detalle-documentacion-panel oculto" id="detalleDocumentacionPanel">
           <div class="detalle-documentacion-header">
             <div>
@@ -849,7 +857,9 @@
 
   <div id="modalObservacionesDocumento" class="modal-fondo" aria-hidden="true">
     <div class="modal" style="max-width: 620px;">
-      <h3 id="tituloModalObservacionesDocumento">Observaciones del documento</h3>
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarObservacionesDocumentoTop" aria-label="Cerrar observaciones" style="position:absolute; top:16px; right:18px;">✕</button>
+      <h3 id="tituloModalObservacionesDocumento">Observaciones</h3>
+      <p id="subtituloModalObservacionesDocumento" style="margin: 6px 0 18px; font-size: 18px; line-height: 1.35; color: #4a5a6a;"></p>
       <div class="campo-linea">
         <label>Estado</label>
         <div id="estadoModalObservacionesDocumento" class="campo-linea-valor-fijo"></div>
@@ -857,9 +867,6 @@
       <div class="campo-linea">
         <label>Observaciones</label>
         <p id="textoModalObservacionesDocumento" style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #4a5a6a;"></p>
-      </div>
-      <div class="modal-acciones">
-        <button type="button" class="btn btn-suave" id="btnCerrarObservacionesDocumento">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1228,7 +1235,8 @@
       const estado = etiquetaEstadoDocumentacion(String(documento?.estado_documento || "NO_ENVIADO").toUpperCase());
       const observaciones = String(documento?.observaciones_admin || "").trim();
 
-      document.getElementById("tituloModalObservacionesDocumento").textContent = `Observaciones · ${titulo}`;
+      document.getElementById("tituloModalObservacionesDocumento").textContent = "Observaciones";
+      document.getElementById("subtituloModalObservacionesDocumento").textContent = titulo;
       document.getElementById("estadoModalObservacionesDocumento").textContent = estado;
       document.getElementById("textoModalObservacionesDocumento").textContent = observaciones || "No constan observaciones asociadas a este estado.";
       document.getElementById("modalObservacionesDocumento").classList.add("activo");
@@ -1261,6 +1269,9 @@
 
     function activarTabBloqueDocumentacion(tab) {
       const esOrganizadores = tab !== "documentos";
+      const btnVolver = document.getElementById("btnVolverOrganizadores");
+      const btnAgregar = document.getElementById("btnAgregarOrganizador");
+      const btnEliminar = document.getElementById("btnEliminarOrganizador");
 
       if (esOrganizadores && document.getElementById("panelBloqueDocumentos").classList.contains("activo") && tieneCambiosPendientesDetalle()) {
         cambioTabBloquePendiente = "organizadores";
@@ -1274,7 +1285,9 @@
       document.getElementById("tabBloqueDocumentos").setAttribute("aria-selected", esOrganizadores ? "false" : "true");
       document.getElementById("panelBloqueOrganizadores").classList.toggle("activo", esOrganizadores);
       document.getElementById("panelBloqueDocumentos").classList.toggle("activo", !esOrganizadores);
-      document.querySelector(".acciones-bloque-documentacion")?.classList.toggle("ocultas", !esOrganizadores);
+      btnVolver?.classList.toggle("oculto", esOrganizadores);
+      if (btnAgregar) btnAgregar.classList.toggle("oculto", !esOrganizadores);
+      if (btnEliminar) btnEliminar.classList.toggle("oculto", !esOrganizadores);
 
       if (!esOrganizadores) {
         cargarDetalleSeleccionado();
@@ -1453,7 +1466,7 @@
         : Number(organizadorSeleccionadoId || 0);
 
       if (!Number.isInteger(adminId) || adminId <= 0) {
-        renderizarPanelDocumentosVacio("Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.");
+        renderizarPanelDocumentosVacio("Selecciona un organizador en la tabla para consultar y gestionar sus documentos.");
         return;
       }
 
@@ -1733,17 +1746,7 @@
       }
     }
 
-    function actualizarTituloTabDocumentos() {
-      const btn = document.getElementById("tabBloqueDocumentos");
-      const resumen = (resumenDocumentacion || []).find((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0)) || null;
-      if (!resumen) {
-        btn.textContent = "Documentos";
-        return;
-      }
-
-      const nombre = resumen.admin_nombre_publico || resumen.admin_nombre || "Organizador";
-      btn.textContent = `Documentos de ${nombre}`;
-    }
+    function actualizarTituloTabDocumentos() {}
 
     function seleccionarOrganizador(adminId) {
       const id = Number(adminId || 0);
@@ -1761,7 +1764,6 @@
       organizadorSeleccionadoId = Number.isInteger(id) && id > 0 ? id : null;
       renderizarResumenDocumentacion();
       actualizarAccionesOrganizadores();
-      actualizarTituloTabDocumentos();
       if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
         cargarDetalleSeleccionado();
       }
@@ -1786,8 +1788,7 @@
         organizadorSeleccionadoId = null;
         vacio.classList.remove("oculto");
         actualizarAccionesOrganizadores();
-        actualizarTituloTabDocumentos();
-        renderizarPanelDocumentosVacio("Selecciona un organizador en la pestaña Organizadores para consultar y gestionar sus documentos.");
+        renderizarPanelDocumentosVacio("Selecciona un organizador en la tabla para consultar y gestionar sus documentos.");
         return;
       }
 
@@ -1818,13 +1819,12 @@
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
           </td>
           <td>Requeridos: ${Number(item.total_documentos || 0)} / Validados: ${Number(item.total_documentos_validados || 0)}</td>
-          <td>${indicador.html}</td>
+          <td><button type="button" class="btn-indicador-expediente" data-abrir-documentacion="${adminId}" aria-label="Abrir documentos del organizador">${indicador.html}</button></td>
         `;
         body.appendChild(tr);
       });
 
       actualizarAccionesOrganizadores();
-      actualizarTituloTabDocumentos();
       if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
         cargarDetalleSeleccionado();
       }
@@ -3290,7 +3290,18 @@
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnAgregarOrganizador").addEventListener("click", abrirModalAgregarOrganizador);
     document.getElementById("btnEliminarOrganizador").addEventListener("click", eliminarOrganizadorSeleccionado);
+    document.getElementById("btnVolverOrganizadores").addEventListener("click", function () {
+      activarTabBloqueDocumentacion("organizadores");
+    });
     document.getElementById("tablaEstadoDocumentacionBody").addEventListener("click", function (event) {
+      const botonAbrir = event.target.closest("[data-abrir-documentacion]");
+      if (botonAbrir) {
+        const adminId = Number.parseInt(botonAbrir.dataset.abrirDocumentacion || "", 10);
+        if (!Number.isInteger(adminId) || adminId <= 0) return;
+        seleccionarOrganizador(adminId);
+        activarTabBloqueDocumentacion("documentos");
+        return;
+      }
       const selector = event.target.closest(".selector-doc");
       if (!selector) return;
       const adminId = Number.parseInt(selector.value || "", 10);
@@ -3403,7 +3414,7 @@
     document.getElementById("btnCerrarEstadosDocumento").addEventListener("click", () => {
       document.getElementById("modalEstadosDocumento").classList.remove("activo");
     });
-    document.getElementById("btnCerrarObservacionesDocumento").addEventListener("click", cerrarModalObservacionesDocumento);
+    document.getElementById("btnCerrarObservacionesDocumentoTop").addEventListener("click", cerrarModalObservacionesDocumento);
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
