@@ -2,6 +2,7 @@ import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
+import { crearNotificacion } from "../_notificaciones.js";
 import {
   construirEmailHtmlResolucionExpedienteDocumental,
   construirEmailTextoResolucionExpedienteDocumental
@@ -247,6 +248,18 @@ export async function onRequestPost(context) {
       })
     });
 
+    const hayRechazos = cambiosAplicados.some((item) => String(item.estado || "").toUpperCase() === "RECHAZADO");
+    const notificacionInternaCentro = await crearNotificacion(env, {
+      usuarioId: Number(expediente.centro_usuario_id || 0),
+      rolDestino: "SOLICITANTE",
+      tipo: "DOCUMENTACION",
+      titulo: hayRechazos ? "Documentación revisada con incidencias" : "Documentación revisada",
+      mensaje: hayRechazos
+        ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay documentos rechazados o con observaciones que debes revisar.`
+        : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`,
+      urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
+    });
+
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId,
       baseUrl,
@@ -262,6 +275,10 @@ export async function onRequestPost(context) {
         enviada: !!notificacionCentro.ok,
         omitida: !!notificacionCentro.skipped,
         error: notificacionCentro.ok ? "" : (notificacionCentro.error || "")
+      },
+      notificacion_interna_centro: {
+        creada: !!notificacionInternaCentro.ok,
+        error: notificacionInternaCentro.ok ? "" : (notificacionInternaCentro.error || "")
       },
       impacto_reservas: impactoReservas
     });
