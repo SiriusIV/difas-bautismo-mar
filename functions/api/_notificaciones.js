@@ -48,6 +48,21 @@ async function insertarNotificacionCompatible(env, valores) {
         valores.titulo,
         valores.mensaje
       ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "mensaje", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo,
+        valores.mensaje
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo
+      ]
     }
   ];
 
@@ -68,7 +83,9 @@ async function insertarNotificacionCompatible(env, valores) {
       ultimoError = error;
       const faltaRol = esErrorColumnaAusente(error, "rol_destino");
       const faltaUrl = esErrorColumnaAusente(error, "url_destino");
-      if (!faltaRol && !faltaUrl) {
+      const faltaTipo = esErrorColumnaAusente(error, "tipo");
+      const faltaMensaje = esErrorColumnaAusente(error, "mensaje");
+      if (!faltaRol && !faltaUrl && !faltaTipo && !faltaMensaje) {
         throw error;
       }
     }
@@ -150,6 +167,42 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
         ${whereNoLeidas}
       ORDER BY datetime(created_at) DESC, id DESC
       LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        '' AS tipo,
+        titulo,
+        mensaje,
+        '' AS url_destino,
+        leida,
+        created_at,
+        '' AS leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        '' AS tipo,
+        titulo,
+        '' AS mensaje,
+        '' AS url_destino,
+        leida,
+        created_at,
+        '' AS leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
     `
   ];
 
@@ -161,7 +214,10 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
       ultimoError = error;
       const faltaRol = esErrorColumnaAusente(error, "rol_destino");
       const faltaUrl = esErrorColumnaAusente(error, "url_destino");
-      if (!faltaRol && !faltaUrl) {
+      const faltaTipo = esErrorColumnaAusente(error, "tipo");
+      const faltaMensaje = esErrorColumnaAusente(error, "mensaje");
+      const faltaLeidaAt = esErrorColumnaAusente(error, "leida_at");
+      if (!faltaRol && !faltaUrl && !faltaTipo && !faltaMensaje && !faltaLeidaAt) {
         throw error;
       }
     }
