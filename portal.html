@@ -2053,7 +2053,18 @@ function actualizarBotonSolicitarSegunFranja() {
               const totalRechazados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "RECHAZADO").length;
               const totalValidados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "VALIDADO").length;
               let titulo = "Cambio en la documentación";
-              if (totalRechazados > 0 && totalValidados === 0) {
+              if (alertas.length === 1) {
+                const unica = alertas[0] || {};
+                const nombreDocumento = String(unica?.nombre_documento || "Documento").trim();
+                const estadoDocumento = String(unica?.estado || "").toUpperCase();
+                if (estadoDocumento === "RECHAZADO") {
+                  titulo = `${nombreDocumento} · Rechazado`;
+                } else if (estadoDocumento === "VALIDADO") {
+                  titulo = `${nombreDocumento} · Validado`;
+                } else {
+                  titulo = `${nombreDocumento} · Actualizado`;
+                }
+              } else if (totalRechazados > 0 && totalValidados === 0) {
                 titulo = "Documentación rechazada";
               } else if (totalValidados > 0 && totalRechazados === 0) {
                 titulo = "Documentación validada";
