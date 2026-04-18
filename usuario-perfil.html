@@ -1328,14 +1328,19 @@
           throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
         }
 
-        mostrarMensajeDetalleTemporal("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
-        await cargarResumenDocumentacion();
         detalleCambiosPendientes = new Map();
+        const mensajeExito = data?.mensaje || "Cambios documentales guardados correctamente.";
+        mostrarMensajeDetalleTemporal("ok", mensajeExito);
         const adminIdActual = detalleDocumentacionActual;
-        if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
-          await cargarDetalleSeleccionado(adminIdActual);
-          mostrarMensajeDetalleTemporal("ok", data?.mensaje || "Cambios documentales guardados correctamente.");
-        } else {
+        try {
+          await cargarResumenDocumentacion();
+          if (Number.isInteger(adminIdActual) && adminIdActual > 0) {
+            await cargarDetalleSeleccionado(adminIdActual);
+          } else {
+            actualizarAccionesDetalleDocumentacion();
+          }
+        } catch (refreshError) {
+          console.error("La documentación se guardó, pero falló el refresco visual posterior.", refreshError);
           actualizarAccionesDetalleDocumentacion();
         }
         return true;
