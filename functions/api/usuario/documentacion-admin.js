@@ -675,6 +675,7 @@ export async function onRequestPost(context) {
         cambios: cambiosCorreo
       };
 
+      try {
       notificacionAdmin = await enviarEmail(env, {
         to: destinatarioResponsable,
         subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
@@ -703,6 +704,14 @@ export async function onRequestPost(context) {
           modo_responsable_documental: responsableDocumental?.modo || "",
           centro_usuario_id: usuario.id,
           error: notificacionAdmin.error || ""
+        });
+      }
+      } catch (errorNotificacionResponsable) {
+        console.error("No se pudo notificar al responsable documental tras guardar cambios documentales.", {
+          admin_id: admin.id,
+          centro_usuario_id: usuario.id,
+          responsable_documental_id: responsableDocumental?.responsable?.id || null,
+          error: errorNotificacionResponsable?.message || String(errorNotificacionResponsable || "")
         });
       }
     }
