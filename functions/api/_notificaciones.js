@@ -7,6 +7,18 @@ function esErrorColumnaAusente(error, columna) {
   return texto.includes("no column named") && texto.includes(String(columna || "").toLowerCase());
 }
 
+function hayErrorEsquemaNotificaciones(error) {
+  return [
+    "rol_destino",
+    "url_destino",
+    "tipo",
+    "mensaje",
+    "leida",
+    "leida_at",
+    "created_at"
+  ].some((columna) => esErrorColumnaAusente(error, columna));
+}
+
 async function insertarNotificacionCompatible(env, valores) {
   const variantes = [
     {
@@ -63,6 +75,51 @@ async function insertarNotificacionCompatible(env, valores) {
         valores.usuario_id,
         valores.titulo
       ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "mensaje", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo,
+        valores.mensaje
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "mensaje", "leida"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo,
+        valores.mensaje
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "leida"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo", "mensaje"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo,
+        valores.mensaje
+      ]
+    },
+    {
+      columnas: ["usuario_id", "titulo"],
+      binds: [
+        valores.usuario_id,
+        valores.titulo
+      ]
     }
   ];
 
@@ -81,11 +138,7 @@ async function insertarNotificacionCompatible(env, valores) {
       return { ok: true };
     } catch (error) {
       ultimoError = error;
-      const faltaRol = esErrorColumnaAusente(error, "rol_destino");
-      const faltaUrl = esErrorColumnaAusente(error, "url_destino");
-      const faltaTipo = esErrorColumnaAusente(error, "tipo");
-      const faltaMensaje = esErrorColumnaAusente(error, "mensaje");
-      if (!faltaRol && !faltaUrl && !faltaTipo && !faltaMensaje) {
+      if (!hayErrorEsquemaNotificaciones(error)) {
         throw error;
       }
     }
@@ -203,6 +256,40 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
         ${whereNoLeidas}
       ORDER BY datetime(created_at) DESC, id DESC
       LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        '' AS tipo,
+        titulo,
+        '' AS mensaje,
+        '' AS url_destino,
+        0 AS leida,
+        created_at,
+        '' AS leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        '' AS tipo,
+        titulo,
+        '' AS mensaje,
+        '' AS url_destino,
+        0 AS leida,
+        '' AS created_at,
+        '' AS leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+      ORDER BY id DESC
+      LIMIT ?
     `
   ];
 
@@ -212,12 +299,7 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
       return await env.DB.prepare(sql).bind(usuarioId, limiteSeguro).all();
     } catch (error) {
       ultimoError = error;
-      const faltaRol = esErrorColumnaAusente(error, "rol_destino");
-      const faltaUrl = esErrorColumnaAusente(error, "url_destino");
-      const faltaTipo = esErrorColumnaAusente(error, "tipo");
-      const faltaMensaje = esErrorColumnaAusente(error, "mensaje");
-      const faltaLeidaAt = esErrorColumnaAusente(error, "leida_at");
-      if (!faltaRol && !faltaUrl && !faltaTipo && !faltaMensaje && !faltaLeidaAt) {
+      if (!hayErrorEsquemaNotificaciones(error)) {
         throw error;
       }
     }
@@ -257,18 +339,21 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
 
   const whereNoLeidas = soloNoLeidas ? "AND COALESCE(leida, 0) = 0" : "";
 
-  let unreadRow;
-
-  const [rows, unread] = await Promise.all([
-    listarNotificacionesCompatible(env, id, limiteSeguro, whereNoLeidas),
-    env.DB.prepare(`
+  const rows = await listarNotificacionesCompatible(env, id, limiteSeguro, whereNoLeidas);
+  let unreadRow = null;
+  try {
+    unreadRow = await env.DB.prepare(`
       SELECT COUNT(*) AS total
       FROM notificaciones
       WHERE usuario_id = ?
         AND COALESCE(leida, 0) = 0
-    `).bind(id).first()
-  ]);
-  unreadRow = unread;
+    `).bind(id).first();
+  } catch (error) {
+    if (!hayErrorEsquemaNotificaciones(error)) {
+      throw error;
+    }
+    unreadRow = { total: Number(rows?.results?.length || 0) };
+  }
 
   const items = (rows?.results || []).map((row) => ({
     id: Number(row.id || 0),
@@ -295,14 +380,34 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
   const id = Number(notificacionId || 0);
   if (!userId || !id) return { ok: false, error: "Identificador inválido." };
 
-  const result = await env.DB.prepare(`
-    UPDATE notificaciones
-    SET
-      leida = 1,
-      leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
-    WHERE id = ?
-      AND usuario_id = ?
-  `).bind(id, userId).run();
+  let result;
+  try {
+    result = await env.DB.prepare(`
+      UPDATE notificaciones
+      SET
+        leida = 1,
+        leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
+      WHERE id = ?
+        AND usuario_id = ?
+    `).bind(id, userId).run();
+  } catch (error) {
+    if (!hayErrorEsquemaNotificaciones(error)) {
+      throw error;
+    }
+    try {
+      result = await env.DB.prepare(`
+        UPDATE notificaciones
+        SET leida = 1
+        WHERE id = ?
+          AND usuario_id = ?
+      `).bind(id, userId).run();
+    } catch (errorLeida) {
+      if (!hayErrorEsquemaNotificaciones(errorLeida)) {
+        throw errorLeida;
+      }
+      return { ok: true, changes: 0 };
+    }
+  }
 
   return { ok: true, changes: Number(result?.meta?.changes || 0) };
 }
@@ -311,14 +416,33 @@ export async function marcarTodasLasNotificacionesLeidas(env, usuarioId) {
   const userId = Number(usuarioId || 0);
   if (!userId) return { ok: false, error: "Usuario inválido." };
 
-  const result = await env.DB.prepare(`
-    UPDATE notificaciones
-    SET
-      leida = 1,
-      leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
-    WHERE usuario_id = ?
-      AND COALESCE(leida, 0) = 0
-  `).bind(userId).run();
+  let result;
+  try {
+    result = await env.DB.prepare(`
+      UPDATE notificaciones
+      SET
+        leida = 1,
+        leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
+      WHERE usuario_id = ?
+        AND COALESCE(leida, 0) = 0
+    `).bind(userId).run();
+  } catch (error) {
+    if (!hayErrorEsquemaNotificaciones(error)) {
+      throw error;
+    }
+    try {
+      result = await env.DB.prepare(`
+        UPDATE notificaciones
+        SET leida = 1
+        WHERE usuario_id = ?
+      `).bind(userId).run();
+    } catch (errorLeida) {
+      if (!hayErrorEsquemaNotificaciones(errorLeida)) {
+        throw errorLeida;
+      }
+      return { ok: true, changes: 0 };
+    }
+  }
 
   return { ok: true, changes: Number(result?.meta?.changes || 0) };
 }
