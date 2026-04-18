@@ -272,16 +272,32 @@ export async function onRequestPost(context) {
     });
 
     const hayRechazos = cambiosAplicados.some((item) => String(item.estado || "").toUpperCase() === "RECHAZADO");
-    const notificacionInternaCentro = await crearNotificacion(env, {
-      usuarioId: Number(expediente.centro_usuario_id || 0),
-      rolDestino: "SOLICITANTE",
-      tipo: "DOCUMENTACION",
-      titulo: hayRechazos ? "Documentación revisada con incidencias" : "Documentación revisada",
-      mensaje: hayRechazos
-        ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay documentos rechazados o con observaciones que debes revisar.`
-        : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`,
-      urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
-    });
+    let notificacionInternaCentro = { ok: false, skipped: true, error: "" };
+    try {
+      notificacionInternaCentro = await crearNotificacion(env, {
+        usuarioId: Number(expediente.centro_usuario_id || 0),
+        rolDestino: "SOLICITANTE",
+        tipo: "DOCUMENTACION",
+        titulo: hayRechazos ? "Documentación revisada con incidencias" : "Documentación revisada",
+        mensaje: hayRechazos
+          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay documentos rechazados o con observaciones que debes revisar.`
+          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`,
+        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
+      });
+    } catch (errorNotificacion) {
+      notificacionInternaCentro = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacion?.message || String(errorNotificacion || "")
+      };
+      console.error("No se pudo crear la notificación interna de resolución documental del administrador.", {
+        expediente_id: Number(documentacionId || 0),
+        centro_usuario_id: Number(expediente.centro_usuario_id || 0),
+        admin_id: Number(adminId || 0),
+        revisor_id: Number(session.usuario_id || 0),
+        error: notificacionInternaCentro.error
+      });
+    }
 
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId,
