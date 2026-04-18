@@ -812,7 +812,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><span class="estado-pill-doc NO_INICIADO">No presentado</span></td>
+              <td><span class="estado-pill-doc NO_ENVIADO">No presentado</span></td>
               <td>Este documento todavía no ha sido remitido a través de la plataforma.</td>
             </tr>
             <tr>
@@ -947,7 +947,6 @@
     let documentacionAdminSeleccionId = null;
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
-    let diagnosticoPendientesRevisionAdmin = "";
     let expedienteRevisionAdminActual = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
@@ -959,7 +958,7 @@
     let temporizadorMensajeDetalle = null;
 
     function esAutogestionAdminEditable() {
-      return esAdmin() && !!documentacionAdminContexto?.editable;
+      return (esAdmin() || esSecretaria()) && !!documentacionAdminContexto?.editable;
     }
 
     function jsonMessage(id, tipo, texto) {
@@ -1469,8 +1468,10 @@
     }
 
     function esAdmin() { return rolActual === "ADMIN"; }
+    function esSecretaria() { return rolActual === "SECRETARIA"; }
     function esSuperadmin() { return rolActual === "SUPERADMIN"; }
     function esSolicitante() { return rolActual === "SOLICITANTE"; }
+    function esPerfilOrganizador() { return esAdmin() || esSecretaria(); }
 
     function actualizarSubtitulo(perfil) {
       const titulo = tituloCabeceraPorRol(perfil.rol);
@@ -1835,7 +1836,7 @@
       }
 
       try {
-        const res = await fetch("/api/admin/documentos-metadata", {
+        const res = await fetch(esSecretaria() ? "/api/secretaria/documentos-metadata" : "/api/admin/documentos-metadata", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1870,7 +1871,7 @@
           inputControl.disabled = true;
         }
 
-        const res = await fetch("/api/admin/documentos-estado", {
+        const res = await fetch(esSecretaria() ? "/api/secretaria/documentos-estado" : "/api/admin/documentos-estado", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -1954,25 +1955,28 @@
 
       if (!esAutogestionAdminEditable()) {
         vacio.classList.remove("oculto");
-        vacio.textContent = "La validación documental pendiente solo está disponible cuando esta cuenta se autogestiona.";
+        vacio.textContent = esSecretaria()
+          ? "La secretaría no tiene ahora mismo remisiones pendientes de revisión."
+          : "La validación documental pendiente solo está disponible cuando esta cuenta se autogestiona.";
         return;
       }
 
       if (!pendientesRevisionAdmin.length) {
         vacio.classList.remove("oculto");
         vacio.textContent = "No hay expedientes pendientes de revisión documental.";
-        if (diagnosticoPendientesRevisionAdmin) {
-          vacio.textContent += ` ${diagnosticoPendientesRevisionAdmin}`;
-        }
         return;
       }
 
       vacio.classList.add("oculto");
       pendientesRevisionAdmin.forEach((item) => {
         const tr = document.createElement("tr");
+        const sublineaSolicitante = esSecretaria()
+          ? `<div class="pendiente-admin-sublinea">Administrador: ${item.admin_nombre_publico || item.admin_nombre || "Administrador adscrito"}</div>`
+          : "";
         tr.innerHTML = `
           <td>
             <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
+            ${sublineaSolicitante}
           </td>
           <td>
             <div>${item.documentos_pendientes_resumen || "Documentos pendientes de revisión"}</div>
@@ -1998,7 +2002,7 @@
       const nota = document.getElementById("documentacionAdminNota");
       const responsableValor = document.getElementById("documentacionAdminResponsableValor");
 
-      if (!esAdmin()) {
+      if (!esPerfilOrganizador()) {
         bloque.classList.remove("activo");
         body.innerHTML = "";
         vacio.classList.add("oculto");
@@ -2013,16 +2017,23 @@
       const modoDocumental = String(contexto?.modo_documental || "").toUpperCase();
       const editable = !!contexto?.editable;
 
-      modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
-      responsableValor.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
-      resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
+      if (esSecretaria()) {
+        modo.textContent = "Secretaría";
+        responsableValor.textContent = contexto?.secretaria?.nombre_publico || contexto?.secretaria?.nombre || contexto?.admin?.nombre || "Secretaría";
+        resumen.textContent = "La documentación base definida por esta secretaría será la que se aplique a los administradores adscritos a ella.";
+        nota.textContent = "Desde aquí puedes mantener la documentación base común y revisar las remisiones pendientes de los administradores adscritos.";
+      } else {
+        modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
+        responsableValor.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
+        resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
+      }
 
-      if (modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
+      if (!esSecretaria() && modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
         const nombre = contexto.responsable_documental.nombre_publico || contexto.responsable_documental.nombre || "la secretaría responsable";
         nota.textContent = `La documentación obligatoria de tus actividades depende de ${nombre}. Aquí puedes consultarla, pero su edición y mantenimiento corresponden a esa secretaría.`;
-      } else if (modoDocumental === "AUTOGESTION") {
+      } else if (!esSecretaria() && modoDocumental === "AUTOGESTION") {
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar, editar y mantener los documentos base aplicables a tus actividades.";
-      } else {
+      } else if (!esSecretaria()) {
         modo.textContent = "Autogestión";
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar y mantener los documentos base de tus actividades.";
       }
@@ -2030,7 +2041,9 @@
       if (!documentos.length) {
         documentacionAdminSeleccionId = null;
         vacio.classList.remove("oculto");
-        if (editable) {
+        if (esSecretaria()) {
+          vacio.textContent = "Todavía no has definido documentos base para esta secretaría.";
+        } else if (editable) {
           vacio.textContent = "Todavía no has definido documentos base para tus actividades.";
         } else {
           vacio.textContent = "No hay documentos base disponibles actualmente para este administrador.";
@@ -2074,7 +2087,7 @@
     }
 
     async function cargarDocumentacionAdmin() {
-      if (!esAdmin()) {
+      if (!esPerfilOrganizador()) {
         documentacionAdminContexto = null;
         pendientesRevisionAdmin = [];
         renderizarBloqueDocumentacionAdmin();
@@ -2086,20 +2099,25 @@
       renderizarBloqueDocumentacionAdmin();
 
       try {
-        const res = await fetch("/api/admin/documentacion-contexto", {
+        const endpointContexto = esSecretaria()
+          ? "/api/secretaria/documentacion-contexto"
+          : "/api/admin/documentacion-contexto";
+        const res = await fetch(endpointContexto, {
           credentials: "include"
         });
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo cargar la documentación base del administrador.");
+          throw new Error(data?.error || (esSecretaria()
+            ? "No se pudo cargar la documentación base de la secretaría."
+            : "No se pudo cargar la documentación base del administrador."));
         }
         const modoDocumentalAdmin = String(data?.modo_documental || "").toUpperCase();
         documentacionAdminContexto = {
           ...data,
-          modo_documental: modoDocumentalAdmin || "AUTOGESTION",
-          modo_documental_etiqueta: data?.modo_documental_etiqueta || "Autogesti\u00f3n",
-          editable: modoDocumentalAdmin === "SECRETARIA_EXTERNA" ? false : true
+          modo_documental: modoDocumentalAdmin || (esSecretaria() ? "SECRETARIA" : "AUTOGESTION"),
+          modo_documental_etiqueta: data?.modo_documental_etiqueta || (esSecretaria() ? "Secretaría" : "Autogestión"),
+          editable: esSecretaria() ? true : modoDocumentalAdmin === "SECRETARIA_EXTERNA" ? false : true
         };
         renderizarBloqueDocumentacionAdmin();
         activarVistaDocumentacionAdmin(documentacionAdminVistaActual);
@@ -2111,13 +2129,15 @@
         }
       } catch (error) {
         documentacionAdminContexto = {
-          modo_documental: "AUTOGESTION",
-          modo_documental_etiqueta: "Autogestión",
+          modo_documental: esSecretaria() ? "SECRETARIA" : "AUTOGESTION",
+          modo_documental_etiqueta: esSecretaria() ? "Secretaría" : "Autogestión",
           resumen: "",
-          observacion: error.message || "No se pudo cargar la documentación base del administrador.",
+          observacion: error.message || (esSecretaria()
+            ? "No se pudo cargar la documentación base de la secretaría."
+            : "No se pudo cargar la documentación base del administrador."),
           responsable_documental: null,
           documentos: [],
-          editable: true
+          editable: !!esSecretaria()
         };
         renderizarBloqueDocumentacionAdmin();
         pendientesRevisionAdmin = [];
@@ -2128,15 +2148,14 @@
     async function cargarPendientesRevisionAdmin() {
       if (!esAutogestionAdminEditable()) {
         pendientesRevisionAdmin = [];
-        diagnosticoPendientesRevisionAdmin = "";
         renderizarPendientesRevisionAdmin();
         return;
       }
 
       try {
         const adminId = Number(documentacionAdminContexto?.admin_id || 0);
-        const url = new URL("/api/admin/documentacion-pendientes", window.location.origin);
-        if (adminId > 0) {
+        const url = new URL(esSecretaria() ? "/api/secretaria/documentacion-pendientes" : "/api/admin/documentacion-pendientes", window.location.origin);
+        if (!esSecretaria() && adminId > 0) {
           url.searchParams.set("admin_id", String(adminId));
         }
         url.searchParams.set("filtro", "pendientes");
@@ -2151,11 +2170,9 @@
           throw new Error(data?.error || "No se pudo cargar la bandeja de pendientes.");
         }
         pendientesRevisionAdmin = Array.isArray(data?.expedientes) ? data.expedientes : [];
-        diagnosticoPendientesRevisionAdmin = `(diagnóstico temporal: admin_id=${adminId || 0}, total_backend=${Number(data?.total || 0)}, filas_recibidas=${pendientesRevisionAdmin.length})`;
         renderizarPendientesRevisionAdmin();
       } catch (error) {
         pendientesRevisionAdmin = [];
-        diagnosticoPendientesRevisionAdmin = `(diagnóstico temporal: error="${String(error?.message || "sin detalle").trim()}")`;
         renderizarPendientesRevisionAdmin();
         const mensaje = String(error?.message || "").trim();
         const esMensajeDePermisoDocumental =
@@ -2185,7 +2202,10 @@
       body.innerHTML = "";
       if (!expediente) return;
 
-      document.getElementById("modalRevisionExpedienteAdminTitulo").textContent = `Revisión documental · ${expediente.expediente?.centro || "Solicitante"}`;
+      const nombreAdminExpediente = expediente?.expediente?.admin_nombre_publico || expediente?.expediente?.admin_nombre || "";
+      document.getElementById("modalRevisionExpedienteAdminTitulo").textContent = esSecretaria() && nombreAdminExpediente
+        ? `Revisión documental · ${expediente.expediente?.centro || "Solicitante"} · ${nombreAdminExpediente}`
+        : `Revisión documental · ${expediente.expediente?.centro || "Solicitante"}`;
       document.getElementById("modalRevisionExpedienteAdminResumen").textContent = "Revisa los documentos recibidos, establece su estado final y añade observaciones individuales si procede. Al guardar se enviará un único correo agrupado para este expediente.";
 
       (expediente.documentos || []).forEach((doc) => {
@@ -2238,7 +2258,9 @@
     async function abrirRevisionExpedienteAdmin(expedienteId, centroUsuarioId) {
       limpiarMensajeRevisionExpediente();
       try {
-        const url = `/api/admin/documentacion-detalle?centro_usuario_id=${encodeURIComponent(centroUsuarioId)}&admin_id=${encodeURIComponent(documentacionAdminContexto?.admin_id || "")}`;
+        const url = esSecretaria()
+          ? `/api/secretaria/documentacion-detalle?documentacion_id=${encodeURIComponent(expedienteId)}`
+          : `/api/admin/documentacion-detalle?centro_usuario_id=${encodeURIComponent(centroUsuarioId)}&admin_id=${encodeURIComponent(documentacionAdminContexto?.admin_id || "")}`;
         const res = await fetch(url, { credentials: "include" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
@@ -2281,12 +2303,12 @@
       }
 
       try {
-        const res = await fetch("/api/admin/documentacion-resolver-agrupado", {
+        const res = await fetch(esSecretaria() ? "/api/secretaria/documentacion-resolver-agrupado" : "/api/admin/documentacion-resolver-agrupado", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            admin_id: Number(documentacionAdminContexto?.admin_id || 0),
+            admin_id: esSecretaria() ? Number(expedienteRevisionAdminActual?.expediente?.admin_id || 0) : Number(documentacionAdminContexto?.admin_id || 0),
             documentacion_id: Number(expedienteRevisionAdminActual.expediente.id || 0),
             cambios
           })
@@ -2310,13 +2332,13 @@
       const overlay = document.getElementById("accionesOverlayImagen");
       const imagenMostrada = logoUrl || "logo.png";
 
-      if (esAdmin()) {
+      if (esPerfilOrganizador()) {
         document.getElementById("bloqueImagenAdmin").classList.remove("oculto");
       } else {
         document.getElementById("bloqueImagenAdmin").classList.add("oculto");
       }
 
-      if (esAdmin()) {
+      if (esPerfilOrganizador()) {
         preview.src = imagenMostrada;
         overlay.classList.add("activo");
       } else {
@@ -2343,7 +2365,7 @@
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
         layout.classList.add("sin-imagen");
-      } else if (esAdmin()) {
+      } else if (esPerfilOrganizador()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
         document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
@@ -2685,7 +2707,7 @@
     }
 
     function obtenerEstadoActualPerfil() {
-      if (esAdmin()) {
+      if (esPerfilOrganizador()) {
         return {
           nombre: document.getElementById("nombre").value.trim(),
           nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
@@ -2719,7 +2741,7 @@
       if (!perfilOriginal) return false;
       const actual = obtenerEstadoActualPerfil();
 
-      if (esAdmin()) {
+      if (esPerfilOrganizador()) {
         return actual.nombre !== (perfilOriginal.nombre || "") ||
           actual.nombre_publico !== (perfilOriginal.nombre_publico || "") ||
           actual.localidad !== (perfilOriginal.localidad || "") ||
@@ -2756,7 +2778,7 @@
         };
       }
 
-      if (esAdmin()) {
+      if (esPerfilOrganizador()) {
         return {
           nombre: document.getElementById("nombre").value.trim(),
           nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
@@ -2874,7 +2896,7 @@
     }
 
     async function manejarSeleccionImagen(file) {
-      if (!file || !esAdmin()) return;
+      if (!file || !esPerfilOrganizador()) return;
       if (!file.type.startsWith("image/")) {
         jsonMessage("mensajePerfil", "error", "El archivo seleccionado no es una imagen valida.");
         return;
@@ -2898,7 +2920,7 @@
     }
 
     async function eliminarImagenActual() {
-      if (!esAdmin()) return;
+      if (!esPerfilOrganizador()) return;
       document.getElementById("logo_url").value = "";
       actualizarPreviewImagen();
       jsonMessage("mensajePerfil", "ok", "Imagen retirada del formulario. Guarda los cambios para confirmar.");
@@ -3093,7 +3115,7 @@
       if (!confirmar) return;
 
       try {
-        const res = await fetch("/api/admin/documentos-eliminar", {
+        const res = await fetch(esSecretaria() ? "/api/secretaria/documentos-eliminar" : "/api/admin/documentos-eliminar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
