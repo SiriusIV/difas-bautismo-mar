@@ -301,7 +301,7 @@
     .notificacion-titulo {
       margin: 0;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 500;
       color: #123a63;
     }
     .notificacion-fecha {
@@ -2052,15 +2052,11 @@ function actualizarBotonSolicitarSegunFranja() {
 
               const totalRechazados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "RECHAZADO").length;
               const totalValidados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "VALIDADO").length;
-              let titulo = "Cambios en tu documentación";
+              let titulo = "Cambio en la documentación";
               if (totalRechazados > 0 && totalValidados === 0) {
-                titulo = totalRechazados === 1
-                  ? "1 documento rechazado"
-                  : `${totalRechazados} documentos rechazados`;
+                titulo = "Documentación rechazada";
               } else if (totalValidados > 0 && totalRechazados === 0) {
-                titulo = totalValidados === 1
-                  ? "1 documento validado"
-                  : `${totalValidados} documentos validados`;
+                titulo = "Documentación validada";
               }
 
               return {
@@ -2085,9 +2081,7 @@ function actualizarBotonSolicitarSegunFranja() {
         const vistas = leerNotificacionesOperativasVistas();
         if (vistas.includes(idOperativa)) return;
 
-        const titulo = total === 1
-          ? "1 pendiente de revisión"
-          : `${total} pendientes de revisión`;
+        const titulo = "Documentación pendiente de revisión";
 
         notificacionesOperativasPortal = [{
           id: idOperativa,
