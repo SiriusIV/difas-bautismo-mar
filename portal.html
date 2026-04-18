@@ -305,14 +305,20 @@
     .col-notificacion-principal {
       width: auto;
     }
-    .col-notificacion-abrir {
-      width: 44px;
-      text-align: center;
-    }
     .notificacion-resumen {
       color: #4a5a6a;
       line-height: 1.45;
       font-size: 13px;
+    }
+    .notificacion-enlace {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+    }
+    .notificacion-enlace:hover .notificacion-titulo,
+    .notificacion-enlace:hover .notificacion-resumen {
+      color: #0b5ed7;
+      text-decoration: underline;
     }
     .btn-notificacion-icono {
       width: 30px;
@@ -334,6 +340,24 @@
     .btn-notificacion-icono svg {
       width: 15px;
       height: 15px;
+      display: block;
+    }
+    .check-notificacion {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid #9fb2c7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: #0b5ed7;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+    .check-notificacion svg {
+      width: 12px;
+      height: 12px;
       display: block;
     }
     .btn-cerrar-modal-plano {
@@ -1499,7 +1523,6 @@
             <tr>
               <th class="col-notificacion-accion">Visto</th>
               <th class="col-notificacion-principal">Notificación</th>
-              <th class="col-notificacion-abrir">Abrir</th>
             </tr>
           </thead>
           <tbody id="listaNotificacionesPortal"></tbody>
@@ -1895,11 +1918,19 @@ function actualizarBotonSolicitarSegunFranja() {
 
     function renderizarNotificacionesPortal() {
       const lista = document.getElementById("listaNotificacionesPortal");
+      const subtitulo = document.querySelector(".modal-notificaciones-subtitulo");
       lista.innerHTML = "";
       const items = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])];
+      const unread = items.filter((item) => !item.leida).length;
+
+      if (subtitulo) {
+        subtitulo.textContent = unread > 0
+          ? `Tienes ${unread} notificación${unread === 1 ? "" : "es"} pendiente${unread === 1 ? "" : "s"} de leer.`
+          : "No tienes notificaciones pendientes de leer.";
+      }
 
       if (!items.length) {
-        lista.innerHTML = `<tr><td colspan="3"><div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div></td></tr>`;
+        lista.innerHTML = `<tr><td colspan="2"><div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div></td></tr>`;
         return;
       }
 
@@ -1907,12 +1938,11 @@ function actualizarBotonSolicitarSegunFranja() {
         const row = document.createElement("tr");
         row.className = item.leida ? "" : "no-leida";
         const accionesVisto = [];
-        const accionesAbrir = [];
         if (!item.leida) {
           accionesVisto.push(`
             <button
               type="button"
-              class="btn-notificacion-icono"
+              class="check-notificacion"
               data-notificacion-leida="${String(item.id || "")}"
               title="Marcar como vista"
               aria-label="Marcar como vista">
@@ -1920,26 +1950,24 @@ function actualizarBotonSolicitarSegunFranja() {
             </button>
           `);
         }
-        if (item.url_destino) {
-          accionesAbrir.push(`
-            <button
-              type="button"
-              class="btn-notificacion-icono"
-              data-notificacion-ir="${String(item.id || "")}"
-              title="Abrir"
-              aria-label="Abrir">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="m4 8 8 6 8-6"></path></svg>
-            </button>
-          `);
-        }
-        row.innerHTML = `
-          <td class="col-notificacion-accion">${accionesVisto.join("")}</td>
-          <td class="col-notificacion-principal">
+        const contenidoPrincipal = item.url_destino
+          ? `
+            <a href="${item.url_destino}" class="notificacion-enlace" data-notificacion-ir="${String(item.id || "")}">
+              <div class="notificacion-titulo">${item.titulo || "Notificación"}</div>
+              <span class="notificacion-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</span>
+              <div class="notificacion-resumen">${item.mensaje || ""}</div>
+            </a>
+          `
+          : `
             <div class="notificacion-titulo">${item.titulo || "Notificación"}</div>
             <span class="notificacion-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</span>
             <div class="notificacion-resumen">${item.mensaje || ""}</div>
+          `;
+        row.innerHTML = `
+          <td class="col-notificacion-accion">${accionesVisto.join("")}</td>
+          <td class="col-notificacion-principal">
+            ${contenidoPrincipal}
           </td>
-          <td class="col-notificacion-abrir">${accionesAbrir.join("")}</td>
         `;
         lista.appendChild(row);
       });
