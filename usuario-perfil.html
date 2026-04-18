@@ -84,7 +84,7 @@
     .tabla-docs td:first-child, .tabla-docs th:first-child { padding-left: 12px; }
     .tabla-docs td:last-child, .tabla-docs th:last-child { padding-right: 12px; }
     .tabla-docs tr:last-child td { border-bottom: none; }
-    .estado-pill-doc { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+    .estado-pill-doc { display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
     .estado-pill-doc.VALIDADA,
     .estado-pill-doc.VALIDADO { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .estado-pill-doc.EN_REVISION,
@@ -94,7 +94,8 @@
     .estado-pill-doc.NO_ENVIADO { color: #ffffff; background: #111111; border-color: #f5f5f5; }
     .estado-pill-doc.RECHAZADA,
     .estado-pill-doc.RECHAZADO { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
-    button.estado-pill-doc { cursor: pointer; }
+    button.estado-pill-doc { cursor: pointer; background-clip: padding-box; }
+    button.estado-pill-doc:hover { filter: brightness(0.98); }
     .admin-doc-nombre { font-weight: 700; color: #243648; }
     .admin-doc-meta { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .td-centro { min-width: 220px; }
@@ -845,6 +846,24 @@
       </div>
     </div>
   </div>
+
+  <div id="modalObservacionesDocumento" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 620px;">
+      <h3 id="tituloModalObservacionesDocumento">Observaciones del documento</h3>
+      <div class="campo-linea">
+        <label>Estado</label>
+        <div id="estadoModalObservacionesDocumento" class="campo-linea-valor-fijo"></div>
+      </div>
+      <div class="campo-linea">
+        <label>Observaciones</label>
+        <p id="textoModalObservacionesDocumento" style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #4a5a6a;"></p>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCerrarObservacionesDocumento">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalAgregarOrganizador" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Añadir organizador</h3>
@@ -1203,6 +1222,24 @@
       return (detalleDocumentacionDatos || []).find((doc) => Number(doc.id || 0) === Number(detalleDocumentacionSeleccionId || 0)) || null;
     }
 
+    function abrirModalObservacionesDocumento(doc) {
+      const documento = doc || null;
+      const titulo = documento?.nombre || "Documento";
+      const estado = etiquetaEstadoDocumentacion(String(documento?.estado_documento || "NO_ENVIADO").toUpperCase());
+      const observaciones = String(documento?.observaciones_admin || "").trim();
+
+      document.getElementById("tituloModalObservacionesDocumento").textContent = `Observaciones · ${titulo}`;
+      document.getElementById("estadoModalObservacionesDocumento").textContent = estado;
+      document.getElementById("textoModalObservacionesDocumento").textContent = observaciones || "No constan observaciones asociadas a este estado.";
+      document.getElementById("modalObservacionesDocumento").classList.add("activo");
+      document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalObservacionesDocumento() {
+      document.getElementById("modalObservacionesDocumento").classList.remove("activo");
+      document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "true");
+    }
+
     function actualizarAccionesDetalleDocumentacion() {
       const doc = obtenerDocumentoSeleccionadoDetalle();
       const btnVer = document.getElementById("btnVerDesdeDetalleDocumentacion");
@@ -1388,7 +1425,7 @@
           </td>
           <td>${Number(doc.version_documental || 0) > 0 ? Number(doc.version_documental || 0) : "-"}</td>
           <td class="td-fecha-entrega">${formatearFechaCorta(doc.entrega_fecha_subida || "")}</td>
-          <td><span class="estado-pill-doc ${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</span></td>
+          <td><button type="button" class="estado-pill-doc ${estadoDoc}" data-estado-doc-id="${docId}">${etiquetaEstadoDocumentacion(estadoDoc)}</button></td>
         `;
         body.appendChild(tr);
       });
@@ -3268,6 +3305,15 @@
       detalleDocumentacionSeleccionId = docId;
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
     });
+    document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
+      const btnEstado = event.target.closest("[data-estado-doc-id]");
+      if (!btnEstado) return;
+      const docId = Number.parseInt(btnEstado.dataset.estadoDocId || "", 10);
+      if (!Number.isInteger(docId) || docId <= 0) return;
+      const doc = (detalleDocumentacionDatos || []).find((item) => Number(item.id || 0) === docId);
+      if (!doc) return;
+      abrirModalObservacionesDocumento(doc);
+    });
     document.getElementById("btnVerDesdeDetalleDocumentacion").addEventListener("click", function () {
       const doc = obtenerDocumentoSeleccionadoDetalle();
       const cambio = doc ? detalleCambiosPendientes.get(Number(doc.id || 0)) || null : null;
@@ -3357,6 +3403,7 @@
     document.getElementById("btnCerrarEstadosDocumento").addEventListener("click", () => {
       document.getElementById("modalEstadosDocumento").classList.remove("activo");
     });
+    document.getElementById("btnCerrarObservacionesDocumento").addEventListener("click", cerrarModalObservacionesDocumento);
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -3372,7 +3419,8 @@
       "modalInfoDocumentoBaseAdmin",
       "modalRevisionExpedienteAdmin",
       "modalCambiosPendientesDocumentos",
-      "modalEstadosDocumento"
+      "modalEstadosDocumento",
+      "modalObservacionesDocumento"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -3386,6 +3434,7 @@
         if (id === "modalRevisionExpedienteAdmin") cerrarModalRevisionExpedienteAdmin();
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
         if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
+        if (id === "modalObservacionesDocumento") cerrarModalObservacionesDocumento();
       });
     });
 
