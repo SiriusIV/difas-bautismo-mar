@@ -67,6 +67,7 @@ export async function onRequestPost(context) {
     const titulo = limpiarTexto(body?.nombre);
     const descripcion = limpiarTexto(body?.descripcion);
     const version = parsearVersionPositiva(body?.version_documental);
+    const archivoUrl = limpiarTexto(body?.archivo_url);
 
     if (!titulo) return json({ ok: false, error: "Debes indicar un título válido para el documento." }, 400);
     if (!version) return json({ ok: false, error: "Debes indicar una versión válida del documento." }, 400);
@@ -79,9 +80,9 @@ export async function onRequestPost(context) {
       }
       await env.DB.prepare(`
         UPDATE admin_documentos_comunes
-        SET nombre = ?, descripcion = ?, version_documental = ?, fecha_actualizacion = CURRENT_TIMESTAMP
+        SET nombre = ?, descripcion = ?, archivo_url = ?, version_documental = ?, fecha_actualizacion = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).bind(titulo, descripcion || null, version, documentoId).run();
+      `).bind(titulo, descripcion || null, archivoUrl || null, version, documentoId).run();
 
       const impacto = await recalcularImpactoSecretaria(env, session.usuario_id, baseUrl, "documentos_actualizados");
       return json({ ok: true, mensaje: "Documento actualizado correctamente.", documento_id: documentoId, impacto_reservas: impacto });
@@ -95,8 +96,8 @@ export async function onRequestPost(context) {
     const result = await env.DB.prepare(`
       INSERT INTO admin_documentos_comunes (
         admin_id, nombre, descripcion, archivo_url, orden, activo, version_documental, fecha_actualizacion
-      ) VALUES (?, ?, ?, '', ?, 1, ?, CURRENT_TIMESTAMP)
-    `).bind(session.usuario_id, titulo, descripcion || null, orden, version).run();
+      ) VALUES (?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)
+    `).bind(session.usuario_id, titulo, descripcion || null, archivoUrl || null, orden, version).run();
 
     const impacto = await recalcularImpactoSecretaria(env, session.usuario_id, baseUrl, "documento_creado");
     return json({ ok: true, mensaje: "Documento creado correctamente.", documento_id: Number(result?.meta?.last_row_id || 0), impacto_reservas: impacto });
