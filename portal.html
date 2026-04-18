@@ -203,15 +203,15 @@
     }
     .btn-notificaciones-badge {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
+      top: -5px;
+      right: -7px;
+      min-width: 14px;
+      height: 14px;
+      padding: 0 3px;
       border-radius: 999px;
       background: #d92d20;
       color: #fff;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       display: none;
       align-items: center;
@@ -234,12 +234,17 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 12px;
-      flex-wrap: wrap;
     }
     .modal-notificaciones-head h3 {
       margin: 0;
       font-size: 22px;
       color: #123a63;
+    }
+    .modal-notificaciones-acciones-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .lista-notificaciones {
       max-height: 62vh;
@@ -254,12 +259,19 @@
       padding: 14px;
       background: #fff;
       display: grid;
-      gap: 8px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
     }
     .notificacion-item.no-leida {
       border-color: #9fb2c7;
       background: #f8fbff;
       box-shadow: inset 3px 0 0 #0b5ed7;
+    }
+    .notificacion-item-main {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
     }
     .notificacion-item-head {
       display: flex;
@@ -285,10 +297,43 @@
       font-size: 14px;
     }
     .notificacion-item-acciones {
-      display: flex;
-      justify-content: flex-end;
+      display: grid;
       gap: 8px;
-      flex-wrap: wrap;
+      justify-items: end;
+    }
+    .btn-notificacion-icono {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid #cfd7e1;
+      background: #fff;
+      color: #34506b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-notificacion-icono:hover {
+      border-color: #9fb2c7;
+      color: #123a63;
+      background: #f8fbff;
+    }
+    .btn-notificacion-icono svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+    .btn-cerrar-modal-plano {
+      border: none;
+      background: transparent;
+      color: #6c7a88;
+      font-size: 28px;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+    }
+    .btn-cerrar-modal-plano:hover {
+      color: #123a63;
     }
     .estado-vacio-notificaciones {
       border: 1px dashed #cfd7e1;
@@ -1426,17 +1471,17 @@
     </div>
   </div>
 
-  <div id="modalNotificacionesPortal" class="modal-fondo" aria-hidden="true">
-    <div class="modal modal-notificaciones">
-      <div class="modal-notificaciones-head">
-        <h3>Notificaciones</h3>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-suave" id="btnMarcarTodasNotificacionesLeidas">Marcar todas como vistas</button>
-          <button class="btn btn-admin" id="btnCerrarModalNotificaciones">Cerrar</button>
+    <div id="modalNotificacionesPortal" class="modal-fondo" aria-hidden="true">
+      <div class="modal modal-notificaciones">
+        <div class="modal-notificaciones-head">
+          <h3>Notificaciones</h3>
+          <div class="modal-notificaciones-acciones-head">
+            <button class="btn btn-suave" id="btnMarcarTodasNotificacionesLeidas">Marcar todas como vistas</button>
+            <button class="btn-cerrar-modal-plano" id="btnCerrarModalNotificaciones" type="button" aria-label="Cerrar notificaciones" title="Cerrar">×</button>
+          </div>
         </div>
+        <div id="listaNotificacionesPortal" class="lista-notificaciones"></div>
       </div>
-      <div id="listaNotificacionesPortal" class="lista-notificaciones"></div>
-    </div>
   </div>
 
   <script>
@@ -1462,6 +1507,7 @@
     let notificacionesPortal = [];
     let notificacionesOperativasPortal = [];
     let notificacionesNoLeidas = 0;
+    const STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS = "portal_notificaciones_operativas_vistas";
     let carruselResetTimeout = null;
     const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     const IMAGEN_SIN_ACTIVIDADES = new Image();
@@ -1798,6 +1844,22 @@ function actualizarBotonSolicitarSegunFranja() {
       });
     }
 
+    function leerNotificacionesOperativasVistas() {
+      try {
+        const raw = localStorage.getItem(STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map((item) => String(item || "")) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function guardarNotificacionesOperativasVistas(ids) {
+      try {
+        localStorage.setItem(STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS, JSON.stringify(ids || []));
+      } catch {}
+    }
+
     function actualizarIconoNotificacionesPortal() {
       const btn = document.getElementById("btnNotificacionesSesion");
       const badge = document.getElementById("badgeNotificacionesSesion");
@@ -1821,18 +1883,38 @@ function actualizarBotonSolicitarSegunFranja() {
         const row = document.createElement("div");
         row.className = `notificacion-item ${item.leida ? "" : "no-leida"}`.trim();
         const acciones = [];
-        if (!item.leida && !item.operativa) {
-          acciones.push(`<button type="button" class="btn btn-suave" data-notificacion-leida="${Number(item.id || 0)}">Marcar como vista</button>`);
+        if (!item.leida) {
+          acciones.push(`
+            <button
+              type="button"
+              class="btn-notificacion-icono"
+              data-notificacion-leida="${String(item.id || "")}"
+              title="Marcar como vista"
+              aria-label="Marcar como vista">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            </button>
+          `);
         }
         if (item.url_destino) {
-          acciones.push(`<button type="button" class="btn" data-notificacion-ir="${String(item.id || "")}">Abrir</button>`);
+          acciones.push(`
+            <button
+              type="button"
+              class="btn-notificacion-icono"
+              data-notificacion-ir="${String(item.id || "")}"
+              title="Abrir"
+              aria-label="Abrir">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg>
+            </button>
+          `);
         }
         row.innerHTML = `
-          <div class="notificacion-item-head">
-            <h4 class="notificacion-item-titulo">${item.titulo || "Notificación"}</h4>
-            <div class="notificacion-item-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</div>
+          <div class="notificacion-item-main">
+            <div class="notificacion-item-head">
+              <h4 class="notificacion-item-titulo">${item.titulo || "Notificación"}</h4>
+              <div class="notificacion-item-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</div>
+            </div>
+            <div class="notificacion-item-mensaje">${item.mensaje || ""}</div>
           </div>
-          <div class="notificacion-item-mensaje">${item.mensaje || ""}</div>
           <div class="notificacion-item-acciones">${acciones.join("")}</div>
         `;
         lista.appendChild(row);
@@ -1866,6 +1948,11 @@ function actualizarBotonSolicitarSegunFranja() {
 
         const total = Number(data?.total || 0);
         if (total <= 0) return;
+        const fechaRef = String(data?.expedientes?.[0]?.fecha_ultima_entrega || "").trim() || "sin-fecha";
+        const rol = String(usuarioAutenticado?.rol || "").toUpperCase() || "ROL";
+        const idOperativa = `operativa-bandeja-${rol}-${total}-${fechaRef}`;
+        const vistas = leerNotificacionesOperativasVistas();
+        if (vistas.includes(idOperativa)) return;
 
         const titulo = total === 1
           ? "Tienes 1 documento pendiente de revisión"
@@ -1875,7 +1962,7 @@ function actualizarBotonSolicitarSegunFranja() {
           : "Hay documentación remitida por usuarios que está esperando revisión en tu bandeja de entrada.";
 
         notificacionesOperativasPortal = [{
-          id: "operativa-bandeja",
+          id: idOperativa,
           operativa: true,
           leida: false,
           titulo,
@@ -1932,7 +2019,20 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     async function marcarNotificacionComoVistaPortal(notificacionId) {
-      const id = Number(notificacionId || 0);
+      const idTexto = String(notificacionId || "").trim();
+      if (!idTexto) return;
+      const operativa = (notificacionesOperativasPortal || []).find((item) => String(item.id || "") === idTexto);
+      if (operativa) {
+        const vistas = leerNotificacionesOperativasVistas();
+        if (!vistas.includes(idTexto)) {
+          vistas.push(idTexto);
+          guardarNotificacionesOperativasVistas(vistas);
+        }
+        await cargarNotificacionesPortal();
+        return;
+      }
+
+      const id = Number(idTexto || 0);
       if (!id) return;
       await fetch("/api/usuario/notificaciones-leer", {
         method: "POST",
