@@ -280,6 +280,8 @@
     .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 12px; align-items: start; }
     .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
     .modal-doc-base textarea { min-height: 96px; resize: vertical; }
+    .campo-archivo-documento-base { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .campo-archivo-documento-base span { font-size: 13px; color: var(--muted); }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
     @media (max-width: 720px) {
@@ -870,7 +872,16 @@
         <label for="documentoBaseAdminDescripcion">Descripción</label>
         <textarea id="documentoBaseAdminDescripcion"></textarea>
       </div>
+      <div class="campo-linea">
+        <label for="documentoBaseAdminArchivo">Documento PDF</label>
+        <div class="campo-archivo-documento-base">
+          <button type="button" class="btn btn-suave" id="btnSeleccionarArchivoDocumentoBaseAdmin">Seleccionar PDF</button>
+          <span id="textoArchivoDocumentoBaseAdmin">Ningún archivo seleccionado.</span>
+        </div>
+        <input type="file" id="documentoBaseAdminArchivo" class="input-oculto" accept="application/pdf,.pdf">
+      </div>
       <input type="hidden" id="documentoBaseAdminId">
+      <input type="hidden" id="documentoBaseAdminArchivoUrl">
       <div id="mensajeDocumentoBaseAdmin" class="mensaje"></div>
       <div class="modal-acciones">
         <button type="button" class="btn btn-suave" id="btnCancelarDocumentoBaseAdmin">Cancelar</button>
@@ -1782,12 +1793,23 @@
       limpiarMensaje("mensajeDocumentoBaseAdmin");
     }
 
+    function actualizarTextoArchivoDocumentoBaseAdmin(texto = "Ningún archivo seleccionado.") {
+      document.getElementById("textoArchivoDocumentoBaseAdmin").textContent = texto;
+    }
+
+    function limpiarArchivoDocumentoBaseAdmin() {
+      document.getElementById("documentoBaseAdminArchivo").value = "";
+      document.getElementById("documentoBaseAdminArchivoUrl").value = "";
+      actualizarTextoArchivoDocumentoBaseAdmin();
+    }
+
     function cerrarModalDocumentoBaseAdmin() {
       document.getElementById("modalDocumentoBaseAdmin").classList.remove("activo");
       document.getElementById("documentoBaseAdminId").value = "";
       document.getElementById("documentoBaseAdminNombre").value = "";
       document.getElementById("documentoBaseAdminVersion").value = "1";
       document.getElementById("documentoBaseAdminDescripcion").value = "";
+      limpiarArchivoDocumentoBaseAdmin();
       limpiarMensajeDocumentoBaseAdmin();
     }
 
@@ -1798,6 +1820,9 @@
       document.getElementById("documentoBaseAdminNombre").value = doc?.nombre || "";
       document.getElementById("documentoBaseAdminVersion").value = String(Number(doc?.version_documental || 1));
       document.getElementById("documentoBaseAdminDescripcion").value = doc?.descripcion || "";
+      document.getElementById("documentoBaseAdminArchivo").value = "";
+      document.getElementById("documentoBaseAdminArchivoUrl").value = doc?.archivo_url || "";
+      actualizarTextoArchivoDocumentoBaseAdmin(doc?.archivo_url ? "PDF actual asociado. Puedes sustituirlo seleccionando otro archivo." : "Ningún archivo seleccionado.");
       limpiarMensajeDocumentoBaseAdmin();
       document.getElementById("modalDocumentoBaseAdmin").classList.add("activo");
       setTimeout(() => {
@@ -1825,6 +1850,9 @@
       const version = Number.parseFloat(versionTexto);
       const descripcion = String(document.getElementById("documentoBaseAdminDescripcion").value || "").trim();
       const documentoId = Number.parseInt(document.getElementById("documentoBaseAdminId").value || "", 10);
+      const inputArchivo = document.getElementById("documentoBaseAdminArchivo");
+      const archivo = inputArchivo?.files?.[0] || null;
+      let archivoUrl = String(document.getElementById("documentoBaseAdminArchivoUrl").value || "").trim();
 
       if (!nombre) {
         jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar el título del documento.");
@@ -1834,8 +1862,33 @@
         jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes indicar una versión válida. Por ahora el sistema admite valores numéricos como 1, 1.1 o 2.0.");
         return;
       }
+      if (!documentoId && !archivo) {
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Debes seleccionar el PDF del documento para poder crearlo.");
+        return;
+      }
 
       try {
+        if (archivo) {
+          const esPdf = String(archivo.type || "").toLowerCase() === "application/pdf" || String(archivo.name || "").toLowerCase().endsWith(".pdf");
+          if (!esPdf) {
+            throw new Error("Solo se admiten archivos PDF.");
+          }
+          const formData = new FormData();
+          formData.append("file", archivo);
+          formData.append("nombre_documento", nombre);
+          const uploadRes = await fetch("/api/admin/documentos-upload", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+          });
+          const uploadData = await uploadRes.json().catch(() => null);
+          if (!uploadRes.ok || !uploadData?.ok) {
+            throw new Error(uploadData?.error || "No se pudo subir el PDF del documento.");
+          }
+          archivoUrl = String(uploadData.archivo_url || "").trim();
+          document.getElementById("documentoBaseAdminArchivoUrl").value = archivoUrl;
+        }
+
         const res = await fetch(esSecretaria() ? "/api/secretaria/documentos-metadata" : "/api/admin/documentos-metadata", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1844,7 +1897,8 @@
             documento_id: Number.isInteger(documentoId) && documentoId > 0 ? documentoId : null,
             nombre,
             version_documental: version,
-            descripcion
+            descripcion,
+            archivo_url: archivoUrl
           })
         });
 
@@ -3158,6 +3212,25 @@
     document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
     document.getElementById("btnCancelarCambioModoDocumentalAdmin").addEventListener("click", cerrarModalCambioModoDocumentalAdmin);
     document.getElementById("btnConfirmarCambioModoDocumentalAdmin").addEventListener("click", confirmarCambioModoDocumentalAdmin);
+    document.getElementById("btnSeleccionarArchivoDocumentoBaseAdmin").addEventListener("click", function () {
+      document.getElementById("documentoBaseAdminArchivo").click();
+    });
+    document.getElementById("documentoBaseAdminArchivo").addEventListener("change", function () {
+      const file = this.files && this.files[0] ? this.files[0] : null;
+      if (!file) {
+        actualizarTextoArchivoDocumentoBaseAdmin("Ningún archivo seleccionado.");
+        return;
+      }
+      const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
+      if (!esPdf) {
+        this.value = "";
+        actualizarTextoArchivoDocumentoBaseAdmin("Ningún archivo seleccionado.");
+        jsonMessage("mensajeDocumentoBaseAdmin", "error", "Solo se admiten archivos PDF.");
+        return;
+      }
+      limpiarMensajeDocumentoBaseAdmin();
+      actualizarTextoArchivoDocumentoBaseAdmin(`PDF seleccionado: ${file.name}`);
+    });
     document.getElementById("btnCancelarDocumentoBaseAdmin").addEventListener("click", cerrarModalDocumentoBaseAdmin);
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
     document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
