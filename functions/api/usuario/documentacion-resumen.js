@@ -44,6 +44,22 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function seleccionarUltimosArchivosPorDocumento(archivos = []) {
+  const porNombre = new Map();
+
+  for (const archivo of Array.isArray(archivos) ? archivos : []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    if (!nombre) continue;
+
+    const existente = porNombre.get(nombre);
+    if (!existente || Number(archivo?.id || 0) > Number(existente?.id || 0)) {
+      porNombre.set(nombre, archivo);
+    }
+  }
+
+  return Array.from(porNombre.values());
+}
+
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) {
     return "NO_ENVIADO";
@@ -213,10 +229,14 @@ export async function onRequestGet(context) {
       const placeholders = expedientesIds.map(() => "?").join(", ");
       const archivosRows = await env.DB.prepare(`
         SELECT
+          id,
           documentacion_id,
           nombre_documento,
           version_documental,
-          estado
+          estado,
+          fecha_subida,
+          fecha_validacion,
+          observaciones_admin
         FROM centro_admin_documentacion_archivos
         WHERE activo = 1
           AND documentacion_id IN (${placeholders})
@@ -233,10 +253,22 @@ export async function onRequestGet(context) {
 
     const administradores = Array.from(adminsAgrupados.values()).map((admin) => {
       const expediente = expedientesPorAdmin.get(admin.admin_id) || null;
-      const archivosActivos = expediente ? (archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
+      const archivosActivos = expediente ? seleccionarUltimosArchivosPorDocumento(archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
       const estadoEfectivo = calcularEstadoGlobal(admin.documentos, archivosActivos);
       const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
       const totalValidados = contarDocumentosValidados(admin.documentos, archivosActivos);
+      const alertasRevision = archivosActivos
+        .filter((archivo) => {
+          const estado = normalizarEstadoDocumento(archivo?.estado);
+          return estado === "VALIDADO" || estado === "RECHAZADO";
+        })
+        .map((archivo) => ({
+          nombre_documento: archivo.nombre_documento || "",
+          estado: normalizarEstadoDocumento(archivo.estado),
+          fecha_subida: archivo.fecha_subida || "",
+          fecha_validacion: archivo.fecha_validacion || "",
+          observaciones_admin: archivo.observaciones_admin || ""
+        }));
 
       return {
         admin_id: admin.admin_id,
@@ -254,7 +286,9 @@ export async function onRequestGet(context) {
         fecha_ultima_entrega: archivosActivos.length ? (expediente?.fecha_ultima_entrega || "") : "",
         fecha_validacion: expediente?.fecha_validacion || "",
         observaciones_admin: expediente?.observaciones_admin || "",
-        al_dia: estadoEfectivo === "VALIDADA"
+        al_dia: estadoEfectivo === "VALIDADA",
+        total_alertas_revision: alertasRevision.length,
+        alertas_revision: alertasRevision
       };
     });
 
