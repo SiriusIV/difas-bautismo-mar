@@ -2,6 +2,11 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function esErrorColumnaAusente(error, columna) {
+  const texto = limpiarTexto(error?.message || error || "").toLowerCase();
+  return texto.includes("no column named") && texto.includes(String(columna || "").toLowerCase());
+}
+
 export async function crearNotificacion(env, {
   usuarioId,
   rolDestino = "",
@@ -16,25 +21,49 @@ export async function crearNotificacion(env, {
     return { ok: false, error: "Faltan datos para crear la notificación." };
   }
 
-  await env.DB.prepare(`
-    INSERT INTO notificaciones (
-      usuario_id,
-      rol_destino,
-      tipo,
-      titulo,
-      mensaje,
-      url_destino,
-      leida,
-      created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-  `).bind(
-    id,
-    limpiarTexto(rolDestino).toUpperCase() || null,
-    limpiarTexto(tipo).toUpperCase() || null,
-    tituloLimpio,
-    limpiarTexto(mensaje) || null,
-    limpiarTexto(urlDestino) || null
-  ).run();
+  try {
+    await env.DB.prepare(`
+      INSERT INTO notificaciones (
+        usuario_id,
+        rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        url_destino,
+        leida,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+    `).bind(
+      id,
+      limpiarTexto(rolDestino).toUpperCase() || null,
+      limpiarTexto(tipo).toUpperCase() || null,
+      tituloLimpio,
+      limpiarTexto(mensaje) || null,
+      limpiarTexto(urlDestino) || null
+    ).run();
+  } catch (error) {
+    if (!esErrorColumnaAusente(error, "rol_destino")) {
+      throw error;
+    }
+
+    await env.DB.prepare(`
+      INSERT INTO notificaciones (
+        usuario_id,
+        tipo,
+        titulo,
+        mensaje,
+        url_destino,
+        leida,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+    `).bind(
+      id,
+      limpiarTexto(tipo).toUpperCase() || null,
+      tituloLimpio,
+      limpiarTexto(mensaje) || null,
+      limpiarTexto(urlDestino) || null
+    ).run();
+  }
 
   return { ok: true };
 }
@@ -46,32 +75,68 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
 
   const whereNoLeidas = soloNoLeidas ? "AND COALESCE(leida, 0) = 0" : "";
 
-  const [rows, unreadRow] = await Promise.all([
-    env.DB.prepare(`
-      SELECT
-        id,
-        usuario_id,
-        rol_destino,
-        tipo,
-        titulo,
-        mensaje,
-        url_destino,
-        leida,
-        created_at,
-        leida_at
-      FROM notificaciones
-      WHERE usuario_id = ?
-        ${whereNoLeidas}
-      ORDER BY datetime(created_at) DESC, id DESC
-      LIMIT ?
-    `).bind(id, limiteSeguro).all(),
-    env.DB.prepare(`
-      SELECT COUNT(*) AS total
-      FROM notificaciones
-      WHERE usuario_id = ?
-        AND COALESCE(leida, 0) = 0
-    `).bind(id).first()
-  ]);
+  let rows;
+  let unreadRow;
+
+  try {
+    [rows, unreadRow] = await Promise.all([
+      env.DB.prepare(`
+        SELECT
+          id,
+          usuario_id,
+          rol_destino,
+          tipo,
+          titulo,
+          mensaje,
+          url_destino,
+          leida,
+          created_at,
+          leida_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          ${whereNoLeidas}
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT ?
+      `).bind(id, limiteSeguro).all(),
+      env.DB.prepare(`
+        SELECT COUNT(*) AS total
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND COALESCE(leida, 0) = 0
+      `).bind(id).first()
+    ]);
+  } catch (error) {
+    if (!esErrorColumnaAusente(error, "rol_destino")) {
+      throw error;
+    }
+
+    [rows, unreadRow] = await Promise.all([
+      env.DB.prepare(`
+        SELECT
+          id,
+          usuario_id,
+          '' AS rol_destino,
+          tipo,
+          titulo,
+          mensaje,
+          url_destino,
+          leida,
+          created_at,
+          leida_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          ${whereNoLeidas}
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT ?
+      `).bind(id, limiteSeguro).all(),
+      env.DB.prepare(`
+        SELECT COUNT(*) AS total
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND COALESCE(leida, 0) = 0
+      `).bind(id).first()
+    ]);
+  }
 
   const items = (rows?.results || []).map((row) => ({
     id: Number(row.id || 0),
