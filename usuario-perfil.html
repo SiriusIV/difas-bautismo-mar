@@ -945,6 +945,7 @@
     let documentacionAdminSeleccionId = null;
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
+    let diagnosticoPendientesRevisionAdmin = "";
     let expedienteRevisionAdminActual = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
@@ -1958,6 +1959,9 @@
       if (!pendientesRevisionAdmin.length) {
         vacio.classList.remove("oculto");
         vacio.textContent = "No hay expedientes pendientes de revisión documental.";
+        if (diagnosticoPendientesRevisionAdmin) {
+          vacio.textContent += ` ${diagnosticoPendientesRevisionAdmin}`;
+        }
         return;
       }
 
@@ -2122,6 +2126,7 @@
     async function cargarPendientesRevisionAdmin() {
       if (!esAutogestionAdminEditable()) {
         pendientesRevisionAdmin = [];
+        diagnosticoPendientesRevisionAdmin = "";
         renderizarPendientesRevisionAdmin();
         return;
       }
@@ -2144,9 +2149,11 @@
           throw new Error(data?.error || "No se pudo cargar la bandeja de pendientes.");
         }
         pendientesRevisionAdmin = Array.isArray(data?.expedientes) ? data.expedientes : [];
+        diagnosticoPendientesRevisionAdmin = `(diagnóstico temporal: admin_id=${adminId || 0}, total_backend=${Number(data?.total || 0)}, filas_recibidas=${pendientesRevisionAdmin.length})`;
         renderizarPendientesRevisionAdmin();
       } catch (error) {
         pendientesRevisionAdmin = [];
+        diagnosticoPendientesRevisionAdmin = `(diagnóstico temporal: error="${String(error?.message || "sin detalle").trim()}")`;
         renderizarPendientesRevisionAdmin();
         const mensaje = String(error?.message || "").trim();
         const esMensajeDePermisoDocumental =
