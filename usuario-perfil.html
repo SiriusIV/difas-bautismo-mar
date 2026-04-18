@@ -2127,8 +2127,17 @@
       }
 
       try {
-        const res = await fetch("/api/admin/documentacion-pendientes", {
-          credentials: "include"
+        const adminId = Number(documentacionAdminContexto?.admin_id || 0);
+        const url = new URL("/api/admin/documentacion-pendientes", window.location.origin);
+        if (adminId > 0) {
+          url.searchParams.set("admin_id", String(adminId));
+        }
+        url.searchParams.set("filtro", "pendientes");
+        url.searchParams.set("_ts", String(Date.now()));
+
+        const res = await fetch(url.toString(), {
+          credentials: "include",
+          cache: "no-store"
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
