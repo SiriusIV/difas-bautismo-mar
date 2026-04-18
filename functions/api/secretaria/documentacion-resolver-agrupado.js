@@ -29,6 +29,26 @@ function normalizarEstadoDocumento(estado) {
   return "";
 }
 
+function seleccionarUltimosArchivosPorDocumento(archivos = []) {
+  const porNombre = new Map();
+
+  for (const archivo of Array.isArray(archivos) ? archivos : []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    if (!nombre) continue;
+
+    const existente = porNombre.get(nombre);
+    if (!existente || Number(archivo?.id || 0) > Number(existente?.id || 0)) {
+      porNombre.set(nombre, archivo);
+    }
+  }
+
+  return Array.from(porNombre.values()).sort((a, b) => {
+    const nombreA = limpiarTexto(a?.nombre_documento).localeCompare(limpiarTexto(b?.nombre_documento), "es", { sensitivity: "base" });
+    if (nombreA !== 0) return nombreA;
+    return Number(a?.id || 0) - Number(b?.id || 0);
+  });
+}
+
 function calcularEstadoGlobal(documentosBaseActivos, archivosActivos) {
   if (!Array.isArray(documentosBaseActivos) || documentosBaseActivos.length === 0) {
     return "NO_INICIADO";
@@ -100,7 +120,7 @@ export async function onRequestPost(context) {
       ORDER BY nombre_documento ASC, id ASC
     `).bind(documentacionId).all();
 
-    const archivosLista = archivos?.results || [];
+    const archivosLista = seleccionarUltimosArchivosPorDocumento(archivos?.results || []);
     const archivosPorId = new Map(archivosLista.map((item) => [Number(item.id || 0), item]));
     const cambiosAplicados = [];
 
@@ -156,7 +176,10 @@ export async function onRequestPost(context) {
         AND activo = 1
     `).bind(session.usuario_id).all();
 
-    const estadoExpediente = calcularEstadoGlobal(documentosBaseActivos?.results || [], archivosActualizados?.results || []);
+    const estadoExpediente = calcularEstadoGlobal(
+      documentosBaseActivos?.results || [],
+      seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || [])
+    );
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
