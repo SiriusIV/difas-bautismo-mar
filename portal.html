@@ -1990,12 +1990,16 @@ function actualizarBotonSolicitarSegunFranja() {
           endpoint = "/api/secretaria/documentacion-pendientes";
         } else if (esAdmin()) {
           endpoint = "/api/admin/documentacion-pendientes";
+        } else if (esSolicitante()) {
+          endpoint = "/api/usuario/documentacion-resumen";
         } else {
           return;
         }
 
         const url = new URL(endpoint, window.location.origin);
-        url.searchParams.set("filtro", "pendientes");
+        if (!esSolicitante()) {
+          url.searchParams.set("filtro", "pendientes");
+        }
         url.searchParams.set("_ts", String(Date.now()));
 
         const res = await fetch(url.toString(), {
@@ -2004,6 +2008,58 @@ function actualizarBotonSolicitarSegunFranja() {
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) return;
+
+        if (esSolicitante()) {
+          const adminsConAlerta = Array.isArray(data?.administradores)
+            ? data.administradores.filter((admin) => Number(admin?.total_alertas_revision || 0) > 0)
+            : [];
+          if (!adminsConAlerta.length) return;
+
+          const vistas = leerNotificacionesOperativasVistas();
+          notificacionesOperativasPortal = adminsConAlerta
+            .map((admin) => {
+              const adminId = Number(admin?.admin_id || 0);
+              const adminNombre = String(admin?.admin_nombre_publico || admin?.admin_nombre || "tu organizador").trim();
+              const alertas = Array.isArray(admin?.alertas_revision) ? admin.alertas_revision : [];
+              const firmaEstado = alertas.map((item) => ([
+                String(item?.nombre_documento || "").trim(),
+                String(item?.estado || "").trim(),
+                String(item?.fecha_validacion || "").trim(),
+                String(item?.fecha_subida || "").trim()
+              ].join("|"))).join("::");
+              const idOperativa = `operativa-documentacion-${adminId}-${firmaEstado}`;
+              if (!firmaEstado || vistas.includes(idOperativa)) return null;
+
+              const totalRechazados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "RECHAZADO").length;
+              const totalValidados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "VALIDADO").length;
+              let titulo = "Hay cambios en tu documentación remitida";
+              if (totalRechazados > 0 && totalValidados === 0) {
+                titulo = totalRechazados === 1
+                  ? "Tienes 1 documento rechazado"
+                  : `Tienes ${totalRechazados} documentos rechazados`;
+              } else if (totalValidados > 0 && totalRechazados === 0) {
+                titulo = totalValidados === 1
+                  ? "Tienes 1 documento validado"
+                  : `Tienes ${totalValidados} documentos validados`;
+              }
+
+              const mensaje = totalRechazados > 0
+                ? `Se ha actualizado la revisión documental de ${adminNombre}. Tienes cambios que revisar en tu documentación obligatoria.`
+                : `Se ha actualizado la revisión documental de ${adminNombre}. Ya puedes consultar el resultado en tu perfil.`;
+
+              return {
+                id: idOperativa,
+                operativa: true,
+                leida: false,
+                titulo,
+                mensaje,
+                url_destino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`,
+                created_at: new Date().toISOString()
+              };
+            })
+            .filter(Boolean);
+          return;
+        }
 
         const total = Number(data?.total || 0);
         if (total <= 0) return;
