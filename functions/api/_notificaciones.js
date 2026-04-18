@@ -7,6 +7,169 @@ function esErrorColumnaAusente(error, columna) {
   return texto.includes("no column named") && texto.includes(String(columna || "").toLowerCase());
 }
 
+async function insertarNotificacionCompatible(env, valores) {
+  const variantes = [
+    {
+      columnas: ["usuario_id", "rol_destino", "tipo", "titulo", "mensaje", "url_destino", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.rol_destino,
+        valores.tipo,
+        valores.titulo,
+        valores.mensaje,
+        valores.url_destino
+      ]
+    },
+    {
+      columnas: ["usuario_id", "tipo", "titulo", "mensaje", "url_destino", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.tipo,
+        valores.titulo,
+        valores.mensaje,
+        valores.url_destino
+      ]
+    },
+    {
+      columnas: ["usuario_id", "rol_destino", "tipo", "titulo", "mensaje", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.rol_destino,
+        valores.tipo,
+        valores.titulo,
+        valores.mensaje
+      ]
+    },
+    {
+      columnas: ["usuario_id", "tipo", "titulo", "mensaje", "leida", "created_at"],
+      binds: [
+        valores.usuario_id,
+        valores.tipo,
+        valores.titulo,
+        valores.mensaje
+      ]
+    }
+  ];
+
+  let ultimoError = null;
+  for (const variante of variantes) {
+    try {
+      const placeholders = variante.columnas
+        .map((columna) => (columna === "leida" ? "0" : columna === "created_at" ? "CURRENT_TIMESTAMP" : "?"))
+        .join(", ");
+      const sql = `
+        INSERT INTO notificaciones (
+          ${variante.columnas.join(", ")}
+        ) VALUES (${placeholders})
+      `;
+      await env.DB.prepare(sql).bind(...variante.binds).run();
+      return { ok: true };
+    } catch (error) {
+      ultimoError = error;
+      const faltaRol = esErrorColumnaAusente(error, "rol_destino");
+      const faltaUrl = esErrorColumnaAusente(error, "url_destino");
+      if (!faltaRol && !faltaUrl) {
+        throw error;
+      }
+    }
+  }
+
+  throw ultimoError || new Error("No se pudo insertar la notificación.");
+}
+
+async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, whereNoLeidas) {
+  const variantes = [
+    `
+      SELECT
+        id,
+        usuario_id,
+        rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        url_destino,
+        leida,
+        created_at,
+        leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        url_destino,
+        leida,
+        created_at,
+        leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        '' AS url_destino,
+        leida,
+        created_at,
+        leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `,
+    `
+      SELECT
+        id,
+        usuario_id,
+        '' AS rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        '' AS url_destino,
+        leida,
+        created_at,
+        leida_at
+      FROM notificaciones
+      WHERE usuario_id = ?
+        ${whereNoLeidas}
+      ORDER BY datetime(created_at) DESC, id DESC
+      LIMIT ?
+    `
+  ];
+
+  let ultimoError = null;
+  for (const sql of variantes) {
+    try {
+      return await env.DB.prepare(sql).bind(usuarioId, limiteSeguro).all();
+    } catch (error) {
+      ultimoError = error;
+      const faltaRol = esErrorColumnaAusente(error, "rol_destino");
+      const faltaUrl = esErrorColumnaAusente(error, "url_destino");
+      if (!faltaRol && !faltaUrl) {
+        throw error;
+      }
+    }
+  }
+
+  throw ultimoError || new Error("No se pudieron listar las notificaciones.");
+}
+
 export async function crearNotificacion(env, {
   usuarioId,
   rolDestino = "",
@@ -21,51 +184,14 @@ export async function crearNotificacion(env, {
     return { ok: false, error: "Faltan datos para crear la notificación." };
   }
 
-  try {
-    await env.DB.prepare(`
-      INSERT INTO notificaciones (
-        usuario_id,
-        rol_destino,
-        tipo,
-        titulo,
-        mensaje,
-        url_destino,
-        leida,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-    `).bind(
-      id,
-      limpiarTexto(rolDestino).toUpperCase() || null,
-      limpiarTexto(tipo).toUpperCase() || null,
-      tituloLimpio,
-      limpiarTexto(mensaje) || null,
-      limpiarTexto(urlDestino) || null
-    ).run();
-  } catch (error) {
-    if (!esErrorColumnaAusente(error, "rol_destino")) {
-      throw error;
-    }
-
-    await env.DB.prepare(`
-      INSERT INTO notificaciones (
-        usuario_id,
-        tipo,
-        titulo,
-        mensaje,
-        url_destino,
-        leida,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-    `).bind(
-      id,
-      limpiarTexto(tipo).toUpperCase() || null,
-      tituloLimpio,
-      limpiarTexto(mensaje) || null,
-      limpiarTexto(urlDestino) || null
-    ).run();
-  }
-
-  return { ok: true };
+  return await insertarNotificacionCompatible(env, {
+    usuario_id: id,
+    rol_destino: limpiarTexto(rolDestino).toUpperCase() || null,
+    tipo: limpiarTexto(tipo).toUpperCase() || null,
+    titulo: tituloLimpio,
+    mensaje: limpiarTexto(mensaje) || null,
+    url_destino: limpiarTexto(urlDestino) || null
+  });
 }
 
 export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoLeidas = false } = {}) {
@@ -75,68 +201,18 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
 
   const whereNoLeidas = soloNoLeidas ? "AND COALESCE(leida, 0) = 0" : "";
 
-  let rows;
   let unreadRow;
 
-  try {
-    [rows, unreadRow] = await Promise.all([
-      env.DB.prepare(`
-        SELECT
-          id,
-          usuario_id,
-          rol_destino,
-          tipo,
-          titulo,
-          mensaje,
-          url_destino,
-          leida,
-          created_at,
-          leida_at
-        FROM notificaciones
-        WHERE usuario_id = ?
-          ${whereNoLeidas}
-        ORDER BY datetime(created_at) DESC, id DESC
-        LIMIT ?
-      `).bind(id, limiteSeguro).all(),
-      env.DB.prepare(`
-        SELECT COUNT(*) AS total
-        FROM notificaciones
-        WHERE usuario_id = ?
-          AND COALESCE(leida, 0) = 0
-      `).bind(id).first()
-    ]);
-  } catch (error) {
-    if (!esErrorColumnaAusente(error, "rol_destino")) {
-      throw error;
-    }
-
-    [rows, unreadRow] = await Promise.all([
-      env.DB.prepare(`
-        SELECT
-          id,
-          usuario_id,
-          '' AS rol_destino,
-          tipo,
-          titulo,
-          mensaje,
-          url_destino,
-          leida,
-          created_at,
-          leida_at
-        FROM notificaciones
-        WHERE usuario_id = ?
-          ${whereNoLeidas}
-        ORDER BY datetime(created_at) DESC, id DESC
-        LIMIT ?
-      `).bind(id, limiteSeguro).all(),
-      env.DB.prepare(`
-        SELECT COUNT(*) AS total
-        FROM notificaciones
-        WHERE usuario_id = ?
-          AND COALESCE(leida, 0) = 0
-      `).bind(id).first()
-    ]);
-  }
+  const [rows, unread] = await Promise.all([
+    listarNotificacionesCompatible(env, id, limiteSeguro, whereNoLeidas),
+    env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM notificaciones
+      WHERE usuario_id = ?
+        AND COALESCE(leida, 0) = 0
+    `).bind(id).first()
+  ]);
+  unreadRow = unread;
 
   const items = (rows?.results || []).map((row) => ({
     id: Number(row.id || 0),
