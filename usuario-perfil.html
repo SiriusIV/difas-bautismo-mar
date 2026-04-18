@@ -103,6 +103,13 @@
     .bloque-documentacion-admin { margin-top: 14px; display: none; }
     .bloque-documentacion-admin.activo { display: block; }
     .documentacion-admin-shell { display: grid; gap: 12px; }
+    .documentacion-admin-subtitulo {
+      margin: 6px 0 0;
+      font-size: 16px;
+      line-height: 1.35;
+      color: #123a63;
+      font-weight: 600;
+    }
     .documentacion-admin-barra {
       display: flex;
       align-items: stretch;
@@ -177,6 +184,21 @@
       border-radius: 12px;
       border: 1px solid #e5d1a2;
       background: #fff8e8;
+    }
+    .documentacion-admin-resumen::before {
+      content: "!";
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      border-radius: 999px;
+      background: #f0b429;
+      color: #1f2937;
+      font-weight: 800;
+      font-size: 12px;
+      vertical-align: middle;
     }
     .documentacion-admin-pill {
       display: inline-flex;
@@ -586,7 +608,7 @@
       <div class="bloque-head-documentacion">
         <div>
           <h3>Documentación obligatoria</h3>
-          <p>Consulta aquí la documentación base exigida para tus actividades y actúa sobre ella si tu cuenta se autogestiona.</p>
+          <p class="documentacion-admin-subtitulo" id="documentacionAdminSubtitulo">Cargando responsable documental...</p>
         </div>
         <div class="documentacion-admin-toolbar">
           <button type="button" class="btn-icono" id="btnNuevoDocumentoBaseAdmin" title="Nuevo documento" aria-label="Nuevo documento">
@@ -606,10 +628,7 @@
       <div class="documentacion-admin-shell">
         <div class="documentacion-admin-barra">
           <div class="documentacion-admin-barra-info">
-            <div class="documentacion-admin-responsable-linea">
-              <span class="documentacion-admin-responsable-etiqueta">Responsable:</span>
-              <span class="documentacion-admin-responsable-valor" id="documentacionAdminResponsableValor">Cargando...</span>
-            </div>
+            <p class="documentacion-admin-ayuda" id="documentacionAdminNota">Cargando documentación base...</p>
           </div>
           <div class="documentacion-admin-barra-acciones">
             <div class="documentacion-admin-acciones-modo ocultas" id="documentacionAdminAccionesModo"></div>
@@ -623,7 +642,6 @@
             Bandeja de entrada
           </button>
         </div>
-        <p class="documentacion-admin-ayuda" id="documentacionAdminNota">Cargando documentación base...</p>
         <div class="documentacion-admin-meta-linea">
           <div class="documentacion-admin-meta-items">
             <strong id="documentacionAdminModo">Autogestión</strong>
@@ -2133,8 +2151,7 @@
       const modo = document.getElementById("documentacionAdminModo");
       const resumen = document.getElementById("documentacionAdminResumen");
       const nota = document.getElementById("documentacionAdminNota");
-      const responsableValor = document.getElementById("documentacionAdminResponsableValor");
-      const responsableEtiqueta = document.querySelector(".documentacion-admin-responsable-etiqueta");
+      const subtitulo = document.getElementById("documentacionAdminSubtitulo");
       const btnCambioModo = document.getElementById("btnCambiarModoDocumentalAdmin");
 
       if (!esPerfilOrganizador()) {
@@ -2154,12 +2171,12 @@
 
       if (esSecretaria()) {
         modo.textContent = "Secretaría";
-        responsableValor.textContent = contexto?.secretaria?.nombre_publico || contexto?.secretaria?.nombre || contexto?.admin?.nombre || "Secretaría";
+        subtitulo.textContent = contexto?.secretaria?.nombre_publico || contexto?.secretaria?.nombre || contexto?.admin?.nombre || "Secretaría";
         resumen.textContent = "La documentación base definida por esta secretaría será la que se aplique a los administradores adscritos a ella.";
         nota.textContent = "Desde aquí puedes mantener la documentación base común y revisar las remisiones pendientes de los administradores adscritos.";
       } else {
         modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
-        responsableValor.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
+        subtitulo.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
         resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
       }
 
@@ -2173,10 +2190,6 @@
         nota.textContent = "Tu cuenta se autogestiona. Desde aquí puedes consultar y mantener los documentos base de tus actividades.";
       }
 
-      if (responsableEtiqueta) {
-        responsableEtiqueta.textContent = "";
-        responsableEtiqueta.classList.add("oculto");
-      }
       if (btnCambioModo) {
         btnCambioModo.classList.toggle("oculto", esSecretaria());
       }
