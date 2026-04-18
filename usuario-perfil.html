@@ -1686,6 +1686,10 @@
       const url = new URL(window.location.href);
       const adminId = Number.parseInt(url.searchParams.get("admin_id") || "", 10);
       adminIdPreferentePerfil = Number.isInteger(adminId) && adminId > 0 ? adminId : null;
+      const tab = String(url.searchParams.get("tab") || "").trim().toLowerCase();
+      if (tab === "pendientes" || tab === "bandeja") {
+        documentacionAdminVistaActual = "pendientes";
+      }
     }
 
     function actualizarTituloTabDocumentos() {
