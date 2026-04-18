@@ -188,6 +188,109 @@
       color: #123a63;
       line-height: 1.2;
     }
+    .franja-sesion-spacer { flex: 1 1 auto; }
+    .btn-notificaciones {
+      position: relative;
+    }
+    .btn-notificaciones.tiene-no-leidas {
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+      background: #eef4ff;
+    }
+    .btn-notificaciones-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #d92d20;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .btn-notificaciones-badge.activo { display: inline-flex; }
+    .modal-notificaciones {
+      max-width: 760px;
+      padding: 18px;
+    }
+    .modal-notificaciones-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .modal-notificaciones-head h3 {
+      margin: 0;
+      font-size: 22px;
+      color: #123a63;
+    }
+    .lista-notificaciones {
+      max-height: 62vh;
+      overflow-y: auto;
+      display: grid;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .notificacion-item {
+      border: 1px solid #d9e2eb;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+    .notificacion-item.no-leida {
+      border-color: #9fb2c7;
+      background: #f8fbff;
+      box-shadow: inset 3px 0 0 #0b5ed7;
+    }
+    .notificacion-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .notificacion-item-titulo {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #123a63;
+    }
+    .notificacion-item-fecha {
+      font-size: 12px;
+      color: #6c7a88;
+      white-space: nowrap;
+    }
+    .notificacion-item-mensaje {
+      color: #4a5a6a;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .notificacion-item-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .estado-vacio-notificaciones {
+      border: 1px dashed #cfd7e1;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      color: #5b6774;
+      background: #fafcff;
+      font-size: 14px;
+    }
 
     .contenedor {
       max-width: 1108px;
@@ -1082,6 +1185,20 @@
           </svg>
         </button>
         <div id="textoSesion" class="franja-sesion-texto"></div>
+        <div class="franja-sesion-spacer"></div>
+        <button
+          id="btnNotificacionesSesion"
+          class="nav-btn-icon btn-notificaciones"
+          type="button"
+          title="Abrir notificaciones"
+          aria-label="Abrir notificaciones"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 6-3 8h18c0-2-3-1-3-8"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="badgeNotificacionesSesion" class="btn-notificaciones-badge">0</span>
+        </button>
       </div>
     </div>
 
@@ -1301,6 +1418,19 @@
     </div>
   </div>
 
+  <div id="modalNotificacionesPortal" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-notificaciones">
+      <div class="modal-notificaciones-head">
+        <h3>Notificaciones</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-suave" id="btnMarcarTodasNotificacionesLeidas">Marcar todas como vistas</button>
+          <button class="btn btn-admin" id="btnCerrarModalNotificaciones">Cerrar</button>
+        </div>
+      </div>
+      <div id="listaNotificacionesPortal" class="lista-notificaciones"></div>
+    </div>
+  </div>
+
   <script>
     let actividadesCache = [];
     let usuarioAutenticado = null;
@@ -1321,6 +1451,8 @@
     let programaSeleccionado = "";
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
+    let notificacionesPortal = [];
+    let notificacionesNoLeidas = 0;
     let carruselResetTimeout = null;
     const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     const IMAGEN_SIN_ACTIVIDADES = new Image();
@@ -1615,11 +1747,13 @@ function actualizarBotonSolicitarSegunFranja() {
       const franja = document.getElementById("franjaSesion");
       const texto = document.getElementById("textoSesion");
       const btnPerfil = document.getElementById("btnPerfilSesion");
+      const btnNotificaciones = document.getElementById("btnNotificacionesSesion");
 
       if (!usuarioAutenticado) {
         franja.style.display = "none";
         texto.textContent = "";
         btnPerfil.style.display = "none";
+        btnNotificaciones.style.display = "none";
         return;
       }
 
@@ -1638,7 +1772,123 @@ function actualizarBotonSolicitarSegunFranja() {
       }
 
       btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
+      btnNotificaciones.style.display = texto.textContent ? "inline-flex" : "none";
       franja.style.display = texto.textContent ? "block" : "none";
+    }
+
+    function formatearFechaHoraNotificacion(valor) {
+      if (!valor) return "";
+      const fecha = new Date(valor);
+      if (Number.isNaN(fecha.getTime())) return "";
+      return fecha.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function actualizarIconoNotificacionesPortal() {
+      const btn = document.getElementById("btnNotificacionesSesion");
+      const badge = document.getElementById("badgeNotificacionesSesion");
+      const total = Number(notificacionesNoLeidas || 0);
+      btn.classList.toggle("tiene-no-leidas", total > 0);
+      badge.classList.toggle("activo", total > 0);
+      badge.textContent = total > 99 ? "99+" : String(total || 0);
+    }
+
+    function renderizarNotificacionesPortal() {
+      const lista = document.getElementById("listaNotificacionesPortal");
+      lista.innerHTML = "";
+
+      if (!notificacionesPortal.length) {
+        lista.innerHTML = `<div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div>`;
+        return;
+      }
+
+      notificacionesPortal.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = `notificacion-item ${item.leida ? "" : "no-leida"}`.trim();
+        const acciones = [];
+        if (!item.leida) {
+          acciones.push(`<button type="button" class="btn btn-suave" data-notificacion-leida="${Number(item.id || 0)}">Marcar como vista</button>`);
+        }
+        if (item.url_destino) {
+          acciones.push(`<button type="button" class="btn" data-notificacion-ir="${Number(item.id || 0)}">Abrir</button>`);
+        }
+        row.innerHTML = `
+          <div class="notificacion-item-head">
+            <h4 class="notificacion-item-titulo">${item.titulo || "Notificación"}</h4>
+            <div class="notificacion-item-fecha">${formatearFechaHoraNotificacion(item.created_at || "")}</div>
+          </div>
+          <div class="notificacion-item-mensaje">${item.mensaje || ""}</div>
+          <div class="notificacion-item-acciones">${acciones.join("")}</div>
+        `;
+        lista.appendChild(row);
+      });
+    }
+
+    async function cargarNotificacionesPortal() {
+      if (!usuarioAutenticado) {
+        notificacionesPortal = [];
+        notificacionesNoLeidas = 0;
+        actualizarIconoNotificacionesPortal();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/usuario/notificaciones?limit=25&_ts=${Date.now()}`, {
+          credentials: "include",
+          cache: "no-store"
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudieron cargar las notificaciones.");
+        }
+        notificacionesPortal = Array.isArray(data?.items) ? data.items : [];
+        notificacionesNoLeidas = Number(data?.unread || 0);
+        actualizarIconoNotificacionesPortal();
+        renderizarNotificacionesPortal();
+      } catch {
+        notificacionesPortal = [];
+        notificacionesNoLeidas = 0;
+        actualizarIconoNotificacionesPortal();
+        renderizarNotificacionesPortal();
+      }
+    }
+
+    function abrirModalNotificacionesPortal() {
+      renderizarNotificacionesPortal();
+      document.getElementById("modalNotificacionesPortal").classList.add("activo");
+      document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalNotificacionesPortal() {
+      document.getElementById("modalNotificacionesPortal").classList.remove("activo");
+      document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
+    }
+
+    async function marcarNotificacionComoVistaPortal(notificacionId) {
+      const id = Number(notificacionId || 0);
+      if (!id) return;
+      await fetch("/api/usuario/notificaciones-leer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ notificacion_id: id })
+      });
+      await cargarNotificacionesPortal();
+    }
+
+    async function marcarTodasLasNotificacionesComoVistasPortal() {
+      await fetch("/api/usuario/notificaciones-leer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ todas: true })
+      });
+      await cargarNotificacionesPortal();
     }
 
     function actualizarVisibilidadSeleccionFranjas() {
@@ -1655,12 +1905,14 @@ function actualizarBotonSolicitarSegunFranja() {
       if (!res.ok) {
         usuarioAutenticado = null;
         actualizarModoAcceso();
+        await cargarNotificacionesPortal();
         return;
       }
 
       const data = await res.json();
       usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
       actualizarModoAcceso();
+      await cargarNotificacionesPortal();
     }
 
     function actualizarModoAcceso() {
@@ -2580,7 +2832,10 @@ function continuarSolicitudActividad() {
       });
 
       usuarioAutenticado = null;
+      notificacionesPortal = [];
+      notificacionesNoLeidas = 0;
       actualizarModoAcceso();
+      actualizarIconoNotificacionesPortal();
       await cargarActividadesPublicas();
     }
 
@@ -2614,6 +2869,9 @@ function continuarSolicitudActividad() {
     }
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
+    document.getElementById("btnNotificacionesSesion").addEventListener("click", abrirModalNotificacionesPortal);
+    document.getElementById("btnCerrarModalNotificaciones").addEventListener("click", cerrarModalNotificacionesPortal);
+    document.getElementById("btnMarcarTodasNotificacionesLeidas").addEventListener("click", marcarTodasLasNotificacionesComoVistasPortal);
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
     document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
       const adminId = Number.parseInt(this.dataset.adminId || "", 10);
@@ -2632,6 +2890,29 @@ function continuarSolicitudActividad() {
     });
     document.getElementById("modalDocumentacionPendiente").addEventListener("click", function (e) {
       if (e.target.id === "modalDocumentacionPendiente") cerrarModalDocumentacionPendiente();
+    });
+    document.getElementById("modalNotificacionesPortal").addEventListener("click", function (e) {
+      if (e.target.id === "modalNotificacionesPortal") cerrarModalNotificacionesPortal();
+    });
+    document.getElementById("listaNotificacionesPortal").addEventListener("click", async function (e) {
+      const btnLeer = e.target.closest("[data-notificacion-leida]");
+      if (btnLeer) {
+        await marcarNotificacionComoVistaPortal(btnLeer.dataset.notificacionLeida);
+        return;
+      }
+
+      const btnIr = e.target.closest("[data-notificacion-ir]");
+      if (btnIr) {
+        const id = Number(btnIr.dataset.notificacionIr || 0);
+        const item = notificacionesPortal.find((row) => Number(row.id || 0) === id);
+        if (!item) return;
+        if (!item.leida) {
+          await marcarNotificacionComoVistaPortal(id);
+        }
+        if (item.url_destino) {
+          location.href = item.url_destino;
+        }
+      }
     });
 
     window.seleccionarActividad = seleccionarActividad;
