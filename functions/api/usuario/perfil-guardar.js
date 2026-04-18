@@ -147,14 +147,16 @@ export async function onRequestPost(context) {
 
     const centro = user.centro == null ? null : String(user.centro);
     const esAdmin = user.rol === "ADMIN";
+    const esSecretaria = user.rol === "SECRETARIA";
     const esSuperadmin = user.rol === "SUPERADMIN";
     const esSolicitante = user.rol === "SOLICITANTE";
+    const esPerfilOrganizador = esAdmin || esSecretaria;
 
     const nombre = esSolicitante
       ? centro
       : (nombreRecibido || user.nombre || "");
 
-    const nombre_publico = esAdmin
+    const nombre_publico = esPerfilOrganizador
       ? (nombrePublicoRecibido || "")
       : (user.nombre_publico || "");
 
@@ -172,7 +174,7 @@ export async function onRequestPost(context) {
       ? documentoIdentificacionRecibido
       : (user.documento_identificacion || "");
 
-    if (!nombre && (esAdmin || esSuperadmin)) {
+    if (!nombre && (esPerfilOrganizador || esSuperadmin)) {
       return json({ ok: false, error: "El nombre es obligatorio" }, 400);
     }
 
@@ -194,8 +196,8 @@ export async function onRequestPost(context) {
       }
     }
 
-    const web_externa_url = esAdmin ? webExternaRecibida : "";
-    const logo_url = esAdmin ? logo_url_recibido : "";
+    const web_externa_url = esPerfilOrganizador ? webExternaRecibida : "";
+    const logo_url = esPerfilOrganizador ? logo_url_recibido : "";
 
     await env.DB.prepare(`
       UPDATE usuarios
