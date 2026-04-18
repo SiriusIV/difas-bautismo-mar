@@ -152,6 +152,12 @@
       flex: 0 1 520px;
       min-width: 300px;
     }
+    .documentacion-admin-acciones-tabla {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin: 2px 0 8px;
+    }
     .documentacion-admin-ayuda {
       display: none;
       margin: 0;
@@ -592,8 +598,8 @@
           <button type="button" class="btn-icono peligro" id="btnEliminarDocumentoBaseAdmin" title="Eliminar documento" aria-label="Eliminar documento" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
           </button>
-          <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <button type="button" class="btn-icono" id="btnCambiarModoDocumentalAdmin" title="Cambiar responsable" aria-label="Cambiar responsable">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11"></path><path d="M13 5l3 3-3 3"></path><path d="M19 16H8"></path><path d="M11 13l-3 3 3 3"></path></svg>
           </button>
         </div>
       </div>
@@ -601,9 +607,6 @@
         <div class="documentacion-admin-barra">
           <div class="documentacion-admin-barra-info">
             <div class="documentacion-admin-responsable-linea">
-              <button type="button" class="btn-modo-documental-admin" id="btnCambiarModoDocumentalAdmin" title="Cambiar responsable" aria-label="Cambiar responsable">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11"></path><path d="M13 5l3 3-3 3"></path><path d="M19 16H8"></path><path d="M11 13l-3 3 3 3"></path></svg>
-              </button>
               <span class="documentacion-admin-responsable-etiqueta">Responsable:</span>
               <span class="documentacion-admin-responsable-valor" id="documentacionAdminResponsableValor">Cargando...</span>
             </div>
@@ -627,6 +630,11 @@
           </div>
         </div>
         <div class="panel-documentacion-admin activo" id="panelDocumentacionAdminBase" role="tabpanel" aria-labelledby="tabDocumentacionAdminBase">
+          <div class="documentacion-admin-acciones-tabla">
+            <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
           <div class="tabla-documentacion-admin-wrap">
             <table class="tabla-documentacion-admin">
               <thead>
@@ -2052,11 +2060,14 @@
       btnVer.classList.toggle("oculto", !vistaBase);
       btnInfo.classList.toggle("oculto", !vistaBase);
       accionesModo.classList.toggle("ocultas", !esAdmin());
+      btnCambioModo.classList.toggle("oculto", !esAdmin());
       btnCambioModo.disabled = !esAdmin();
     }
 
     function activarVistaDocumentacionAdmin(vista = "base") {
       const objetivo = vista === "pendientes" && esAutogestionAdminEditable() ? "pendientes" : "base";
+      const tabsWrap = document.querySelector(".tabs-documentacion-admin");
+      const tieneVariasVistas = esAutogestionAdminEditable();
       documentacionAdminVistaActual = objetivo;
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("activa", objetivo === "base");
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("activa", objetivo === "pendientes");
@@ -2064,7 +2075,9 @@
       document.getElementById("tabDocumentacionAdminPendientes").setAttribute("aria-selected", objetivo === "pendientes" ? "true" : "false");
       document.getElementById("panelDocumentacionAdminBase").classList.toggle("activo", objetivo === "base");
       document.getElementById("panelDocumentacionAdminPendientes").classList.toggle("activo", objetivo === "pendientes");
+      document.getElementById("tabDocumentacionAdminBase").classList.toggle("oculto", !tieneVariasVistas);
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("oculto", !esAutogestionAdminEditable());
+      tabsWrap?.classList.toggle("oculto", !tieneVariasVistas);
       actualizarAccionesDocumentacionAdmin();
     }
 
