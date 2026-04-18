@@ -768,8 +768,9 @@
 
   <div id="modalCambiosPendientesDocumentos" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarCambiosPendientesDocumentosTop" aria-label="Cerrar aviso" style="position:absolute; top:16px; right:18px;">✕</button>
       <h3>Cambios documentales sin guardar</h3>
-      <p>Si cambias ahora a la pestaña Organizadores, se perderán los cambios realizados en los documentos si no los guardas antes.</p>
+      <p>Si sales ahora sin guardar, los cambios realizados en la documentación se perderán. Puedes continuar sin guardar o guardar ahora antes de salir.</p>
       <div class="modal-acciones">
         <button type="button" class="btn btn-suave" id="btnModalDocumentosSalirSinGuardar">Salir sin guardar</button>
         <button type="button" class="btn" id="btnModalDocumentosGuardar">Guardar cambios</button>
@@ -993,6 +994,7 @@
     let secretariasDisponiblesAdmin = [];
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
+    let organizadorPendienteId = null;
     let adminIdPreferentePerfil = null;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
@@ -1274,8 +1276,7 @@
       const btnEliminar = document.getElementById("btnEliminarOrganizador");
 
       if (esOrganizadores && document.getElementById("panelBloqueDocumentos").classList.contains("activo") && tieneCambiosPendientesDetalle()) {
-        cambioTabBloquePendiente = "organizadores";
-        document.getElementById("modalCambiosPendientesDocumentos").classList.add("activo");
+        abrirModalCambiosPendientesDocumentos("organizadores");
         return;
       }
 
@@ -1295,15 +1296,30 @@
     }
 
     function cerrarModalCambiosPendientesDocumentos() {
+      cambioTabBloquePendiente = null;
+      organizadorPendienteId = null;
       document.getElementById("modalCambiosPendientesDocumentos").classList.remove("activo");
+      document.getElementById("modalCambiosPendientesDocumentos").setAttribute("aria-hidden", "true");
+    }
+
+    function abrirModalCambiosPendientesDocumentos(destino = "organizadores", adminId = null) {
+      cambioTabBloquePendiente = destino || "organizadores";
+      organizadorPendienteId = Number.isInteger(Number(adminId || 0)) && Number(adminId || 0) > 0 ? Number(adminId || 0) : null;
+      document.getElementById("modalCambiosPendientesDocumentos").classList.add("activo");
+      document.getElementById("modalCambiosPendientesDocumentos").setAttribute("aria-hidden", "false");
     }
 
     function salirDeDocumentosSinGuardar() {
       detalleCambiosPendientes = new Map();
       limpiarMensajeDetalle();
       actualizarAccionesDetalleDocumentacion();
-      cerrarModalCambiosPendientesDocumentos();
       const destino = cambioTabBloquePendiente || "organizadores";
+      const adminId = organizadorPendienteId;
+      cerrarModalCambiosPendientesDocumentos();
+      if (adminId) {
+        organizadorSeleccionadoId = adminId;
+        renderizarResumenDocumentacion();
+      }
       cambioTabBloquePendiente = null;
       activarTabBloqueDocumentacion(destino);
     }
@@ -1311,8 +1327,13 @@
     async function guardarDocumentosPendientes() {
       const ok = await guardarCambiosDetalleDocumentacion();
       if (ok && !tieneCambiosPendientesDetalle()) {
-        cerrarModalCambiosPendientesDocumentos();
         const destino = cambioTabBloquePendiente || "organizadores";
+        const adminId = organizadorPendienteId;
+        cerrarModalCambiosPendientesDocumentos();
+        if (adminId) {
+          organizadorSeleccionadoId = adminId;
+          renderizarResumenDocumentacion();
+        }
         cambioTabBloquePendiente = null;
         activarTabBloqueDocumentacion(destino);
       }
@@ -1755,11 +1776,9 @@
         Number(organizadorSeleccionadoId || 0) !== id &&
         tieneCambiosPendientesDetalle()
       ) {
-        const confirmar = window.confirm("Hay cambios pendientes sin guardar en los documentos del organizador actual. Si continúas, se perderán. ¿Deseas cambiar de organizador igualmente?");
-        if (!confirmar) {
-          renderizarResumenDocumentacion();
-          return;
-        }
+        abrirModalCambiosPendientesDocumentos("documentos", id);
+        renderizarResumenDocumentacion();
+        return;
       }
       organizadorSeleccionadoId = Number.isInteger(id) && id > 0 ? id : null;
       renderizarResumenDocumentacion();
@@ -3418,6 +3437,7 @@
     document.getElementById("btnConfirmarAgregarOrganizador").addEventListener("click", confirmarAgregarOrganizador);
     document.getElementById("btnModalDocumentosSalirSinGuardar").addEventListener("click", salirDeDocumentosSinGuardar);
     document.getElementById("btnModalDocumentosGuardar").addEventListener("click", guardarDocumentosPendientes);
+    document.getElementById("btnCerrarCambiosPendientesDocumentosTop").addEventListener("click", cerrarModalCambiosPendientesDocumentos);
     document.getElementById("btnAyudaEstadosDocumento").addEventListener("click", () => {
       document.getElementById("modalEstadosDocumento").classList.add("activo");
     });
