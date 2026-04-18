@@ -196,10 +196,10 @@
       color: #123a63;
     }
     .btn-notificaciones.tiene-no-leidas {
-      color: #0b5ed7;
-      border-color: #5f8fc7;
-      background: #e7f0ff;
-      box-shadow: 0 0 0 2px rgba(11, 94, 215, 0.08);
+      color: #b42318;
+      border-color: #f1b4ae;
+      background: #fff1f0;
+      box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.08);
     }
     .btn-notificaciones-badge {
       position: absolute;
@@ -1460,6 +1460,7 @@
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
     let notificacionesPortal = [];
+    let notificacionesOperativasPortal = [];
     let notificacionesNoLeidas = 0;
     let carruselResetTimeout = null;
     const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -1800,7 +1801,7 @@ function actualizarBotonSolicitarSegunFranja() {
     function actualizarIconoNotificacionesPortal() {
       const btn = document.getElementById("btnNotificacionesSesion");
       const badge = document.getElementById("badgeNotificacionesSesion");
-      const total = Number(notificacionesNoLeidas || 0);
+      const total = Number(notificacionesNoLeidas || 0) + Number((notificacionesOperativasPortal || []).length || 0);
       btn.classList.toggle("tiene-no-leidas", total > 0);
       badge.classList.toggle("activo", total > 0);
       badge.textContent = total > 99 ? "99+" : String(total || 0);
@@ -1809,21 +1810,22 @@ function actualizarBotonSolicitarSegunFranja() {
     function renderizarNotificacionesPortal() {
       const lista = document.getElementById("listaNotificacionesPortal");
       lista.innerHTML = "";
+      const items = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])];
 
-      if (!notificacionesPortal.length) {
+      if (!items.length) {
         lista.innerHTML = `<div class="estado-vacio-notificaciones">No hay notificaciones pendientes.</div>`;
         return;
       }
 
-      notificacionesPortal.forEach((item) => {
+      items.forEach((item) => {
         const row = document.createElement("div");
         row.className = `notificacion-item ${item.leida ? "" : "no-leida"}`.trim();
         const acciones = [];
-        if (!item.leida) {
+        if (!item.leida && !item.operativa) {
           acciones.push(`<button type="button" class="btn btn-suave" data-notificacion-leida="${Number(item.id || 0)}">Marcar como vista</button>`);
         }
         if (item.url_destino) {
-          acciones.push(`<button type="button" class="btn" data-notificacion-ir="${Number(item.id || 0)}">Abrir</button>`);
+          acciones.push(`<button type="button" class="btn" data-notificacion-ir="${String(item.id || "")}">Abrir</button>`);
         }
         row.innerHTML = `
           <div class="notificacion-item-head">
@@ -1837,9 +1839,59 @@ function actualizarBotonSolicitarSegunFranja() {
       });
     }
 
+    async function cargarNotificacionesOperativasPortal() {
+      notificacionesOperativasPortal = [];
+      if (!usuarioAutenticado) return;
+
+      try {
+        let endpoint = "";
+        if (esSecretaria()) {
+          endpoint = "/api/secretaria/documentacion-pendientes";
+        } else if (esAdmin()) {
+          endpoint = "/api/admin/documentacion-pendientes";
+        } else {
+          return;
+        }
+
+        const url = new URL(endpoint, window.location.origin);
+        url.searchParams.set("filtro", "pendientes");
+        url.searchParams.set("_ts", String(Date.now()));
+
+        const res = await fetch(url.toString(), {
+          credentials: "include",
+          cache: "no-store"
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) return;
+
+        const total = Number(data?.total || 0);
+        if (total <= 0) return;
+
+        const titulo = total === 1
+          ? "Tienes 1 documento pendiente de revisión"
+          : `Tienes ${total} expedientes pendientes de revisión`;
+        const mensaje = esSecretaria()
+          ? "Hay documentación remitida por usuarios de administradores adscritos que está esperando revisión en tu bandeja de entrada."
+          : "Hay documentación remitida por usuarios que está esperando revisión en tu bandeja de entrada.";
+
+        notificacionesOperativasPortal = [{
+          id: "operativa-bandeja",
+          operativa: true,
+          leida: false,
+          titulo,
+          mensaje,
+          url_destino: "/usuario-perfil.html?tab=pendientes",
+          created_at: new Date().toISOString()
+        }];
+      } catch {
+        notificacionesOperativasPortal = [];
+      }
+    }
+
     async function cargarNotificacionesPortal() {
       if (!usuarioAutenticado) {
         notificacionesPortal = [];
+        notificacionesOperativasPortal = [];
         notificacionesNoLeidas = 0;
         actualizarIconoNotificacionesPortal();
         return;
@@ -1856,10 +1908,12 @@ function actualizarBotonSolicitarSegunFranja() {
         }
         notificacionesPortal = Array.isArray(data?.items) ? data.items : [];
         notificacionesNoLeidas = Number(data?.unread || 0);
+        await cargarNotificacionesOperativasPortal();
         actualizarIconoNotificacionesPortal();
         renderizarNotificacionesPortal();
       } catch {
         notificacionesPortal = [];
+        await cargarNotificacionesOperativasPortal();
         notificacionesNoLeidas = 0;
         actualizarIconoNotificacionesPortal();
         renderizarNotificacionesPortal();
@@ -2911,10 +2965,11 @@ function continuarSolicitudActividad() {
 
       const btnIr = e.target.closest("[data-notificacion-ir]");
       if (btnIr) {
-        const id = Number(btnIr.dataset.notificacionIr || 0);
-        const item = notificacionesPortal.find((row) => Number(row.id || 0) === id);
+        const id = String(btnIr.dataset.notificacionIr || "");
+        const item = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
+          .find((row) => String(row.id || "") === id);
         if (!item) return;
-        if (!item.leida) {
+        if (!item.leida && !item.operativa) {
           await marcarNotificacionComoVistaPortal(id);
         }
         if (item.url_destino) {
