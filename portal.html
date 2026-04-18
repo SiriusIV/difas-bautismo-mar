@@ -190,24 +190,22 @@
     }
     .franja-sesion-spacer { flex: 1 1 auto; }
     .btn-notificaciones {
-      position: relative;
-      border-color: #8fb0d3;
-      background: #f4f8ff;
-      color: #123a63;
-      gap: 0;
-    }
-    .btn-notificaciones.tiene-no-leidas {
-      color: #123a63;
-      border-color: #f1b4ae;
-      background: #fff1f0;
-      box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.08);
-    }
-    .btn-notificaciones.tiene-contador {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: auto;
       min-width: 58px;
+      height: 34px;
       padding: 0 10px 0 9px;
       border-radius: 999px;
-      gap: 8px;
+      border-color: #f1b4ae;
+      background: #fff;
+      color: #123a63;
+      box-shadow: 0 4px 12px rgba(180, 35, 24, 0.08);
+    }
+    .btn-notificaciones.tiene-no-leidas {
+      display: inline-flex;
     }
     .btn-notificaciones.tiene-no-leidas svg {
       color: #b42318;
@@ -218,9 +216,9 @@
       height: 18px;
       padding: 0 5px;
       border-radius: 999px;
-      background: #d92d20;
-      color: #fff;
-      font-size: 10px;
+      background: transparent;
+      color: #b42318;
+      font-size: 12px;
       font-weight: 700;
       display: none;
       align-items: center;
@@ -1932,9 +1930,9 @@ function actualizarBotonSolicitarSegunFranja() {
       const badge = document.getElementById("badgeNotificacionesSesion");
       const total = Number(notificacionesNoLeidas || 0) + Number((notificacionesOperativasPortal || []).length || 0);
       btn.classList.toggle("tiene-no-leidas", total > 0);
-      btn.classList.toggle("tiene-contador", total > 0);
       badge.classList.toggle("activo", total > 0);
       badge.textContent = total > 99 ? "99+" : String(total || 0);
+      btn.style.display = total > 0 ? "inline-flex" : "none";
     }
 
     function renderizarNotificacionesPortal() {
