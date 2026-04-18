@@ -18,18 +18,19 @@ export async function onRequestGet(context) {
 
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
-    if (!session?.usuario_id) {
+    const usuarioId = Number(session?.usuario_id || session?.id || 0);
+    if (!usuarioId) {
       return json({ ok: false, error: "No autorizado." }, { status: 401 });
     }
 
     const url = new URL(request.url);
     const soloNoLeidas = ["1", "true", "si", "sí"].includes(String(url.searchParams.get("solo_no_leidas") || "").toLowerCase());
     const limit = Number(url.searchParams.get("limit") || 25);
-    const data = await listarNotificaciones(env, session.usuario_id, { limit, soloNoLeidas });
+    const data = await listarNotificaciones(env, usuarioId, { limit, soloNoLeidas });
 
     return json({
       ok: true,
-      usuario_id: Number(session.usuario_id || 0),
+      usuario_id: usuarioId,
       total: data.total,
       unread: data.unread,
       items: data.items

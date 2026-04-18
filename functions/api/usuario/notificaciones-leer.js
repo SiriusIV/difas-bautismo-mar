@@ -18,13 +18,14 @@ export async function onRequestPost(context) {
 
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
-    if (!session?.usuario_id) {
+    const usuarioId = Number(session?.usuario_id || session?.id || 0);
+    if (!usuarioId) {
       return json({ ok: false, error: "No autorizado." }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
     if (body?.todas === true) {
-      const result = await marcarTodasLasNotificacionesLeidas(env, session.usuario_id);
+      const result = await marcarTodasLasNotificacionesLeidas(env, usuarioId);
       return json({
         ok: true,
         mensaje: "Todas las notificaciones se han marcado como vistas.",
@@ -37,7 +38,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Debes indicar una notificación válida." }, { status: 400 });
     }
 
-    const result = await marcarNotificacionLeida(env, session.usuario_id, notificacionId);
+    const result = await marcarNotificacionLeida(env, usuarioId, notificacionId);
     return json({
       ok: true,
       mensaje: "Notificación marcada como vista.",
