@@ -29,6 +29,12 @@ function sanitizarSegmento(valor = "") {
     .slice(0, 80);
 }
 
+function generarSufijoUnico() {
+  const ahora = Date.now().toString(36);
+  const aleatorio = Math.random().toString(36).slice(2, 8);
+  return `${ahora}-${aleatorio}`;
+}
+
 async function obtenerUsuarioSolicitante(env, userId) {
   return await env.DB.prepare(`
     SELECT
@@ -109,7 +115,8 @@ export async function onRequestPost(context) {
     const centroSeguro = sanitizarSegmento(usuario.centro || `usuario-${usuario.id}`) || `usuario-${usuario.id}`;
     const adminSeguro = sanitizarSegmento(admin.nombre || `admin-${adminId}`) || `admin-${adminId}`;
     const nombreSeguro = sanitizarSegmento(nombreDocumento) || "documento";
-    const key = `documentos/centros/${centroSeguro}/admin-${adminId}-${adminSeguro}/${nombreSeguro}.pdf`;
+    const sufijo = generarSufijoUnico();
+    const key = `documentos/centros/${centroSeguro}/admin-${adminId}-${adminSeguro}/${nombreSeguro}-${sufijo}.pdf`;
     const buffer = await file.arrayBuffer();
 
     await env.DOCS_BUCKET.put(key, buffer, {
