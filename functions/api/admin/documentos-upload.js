@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -28,9 +28,12 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
-    const session = await getAdminSession(request, env);
+    const session = await getUserSession(request, env.SECRET_KEY);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
+    }
+    if (!["ADMIN", "SUPERADMIN", "SECRETARIA"].includes(String(session.rol || "").toUpperCase())) {
+      return json({ ok: false, error: "No autorizado." }, 403);
     }
 
     if (!env.DOCS_BUCKET) {

@@ -83,6 +83,7 @@ export async function onRequestPost(context) {
     const titulo = limpiarTexto(body?.nombre);
     const descripcion = limpiarTexto(body?.descripcion);
     const version = parsearVersionPositiva(body?.version_documental);
+    const archivoUrl = limpiarTexto(body?.archivo_url);
 
     if (!titulo) {
       return json({ ok: false, error: "Debes indicar un título válido para el documento." }, 400);
@@ -107,12 +108,14 @@ export async function onRequestPost(context) {
         SET
           nombre = ?,
           descripcion = ?,
+          archivo_url = ?,
           version_documental = ?,
           fecha_actualizacion = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
         titulo,
         descripcion || null,
+        archivoUrl || null,
         version,
         documentoId
       ).run();
@@ -147,11 +150,12 @@ export async function onRequestPost(context) {
         version_documental,
         fecha_actualizacion
       )
-      VALUES (?, ?, ?, '', ?, 1, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)
     `).bind(
       session.usuario_id,
       titulo,
       descripcion || null,
+      archivoUrl || null,
       orden,
       version
     ).run();
