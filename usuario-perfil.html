@@ -306,12 +306,44 @@
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-meta-linea { display: none; }
-    .modal-doc-base { max-width: 440px; padding: 18px; }
-    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 12px; align-items: start; }
+    .modal-doc-base { max-width: 620px; padding: 22px 22px 20px; }
+    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 116px; gap: 14px; align-items: start; }
     .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
-    .modal-doc-base textarea { min-height: 96px; resize: vertical; }
-    .campo-archivo-documento-base { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .campo-archivo-documento-base span { font-size: 13px; color: var(--muted); }
+    .modal-doc-base textarea { min-height: 148px; resize: vertical; width: 100%; }
+    .campo-archivo-documento-base {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .documento-base-pdf-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #fdeaea;
+      border: 1px solid #f2c4c4;
+      color: #b42318;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .campo-archivo-documento-base .btn { flex: 0 0 auto; }
+    .campo-archivo-documento-base span {
+      font-size: 13px;
+      color: var(--muted);
+      flex: 1 1 220px;
+      min-width: 180px;
+      line-height: 1.45;
+    }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
     @media (max-width: 720px) {
@@ -996,11 +1028,12 @@
       </div>
       <div class="campo-linea">
         <label for="documentoBaseAdminDescripcion">Descripción</label>
-        <textarea id="documentoBaseAdminDescripcion"></textarea>
+        <textarea id="documentoBaseAdminDescripcion" placeholder="Describe el alcance, contenido o uso previsto de este documento obligatorio."></textarea>
       </div>
       <div class="campo-linea">
         <label for="documentoBaseAdminArchivo">Documento PDF</label>
         <div class="campo-archivo-documento-base">
+          <span class="documento-base-pdf-badge" aria-hidden="true">PDF</span>
           <button type="button" class="btn btn-suave" id="btnSeleccionarArchivoDocumentoBaseAdmin">Seleccionar PDF</button>
           <span id="textoArchivoDocumentoBaseAdmin">Ningún archivo seleccionado.</span>
         </div>
