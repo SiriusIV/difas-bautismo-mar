@@ -112,7 +112,12 @@ export async function onRequestGet(context) {
             WHERE r.actividad_id = a.id
         AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
           )
-        ) AS plazas_disponibles
+        ) AS plazas_disponibles,
+        (
+          SELECT MAX(datetime(f.fecha || ' ' || f.hora_fin))
+          FROM franjas f
+          WHERE f.actividad_id = a.id
+        ) AS ultima_franja_fin
 
       FROM actividades a
       LEFT JOIN usuarios u
