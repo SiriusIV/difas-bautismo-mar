@@ -306,7 +306,7 @@
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-meta-linea { display: none; }
-    .modal-doc-base { max-width: 700px; padding: 22px 24px 20px; }
+    .modal-doc-base { max-width: 820px; width: min(820px, calc(100vw - 48px)); padding: 22px 24px 20px; }
     .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 74px; gap: 16px; align-items: start; margin-bottom: 16px; }
     .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
     .modal-doc-base textarea { min-height: 96px; resize: vertical; width: 100%; }
@@ -352,6 +352,22 @@
       height: 15px;
       display: block;
       flex: 0 0 auto;
+    }
+    .btn-guardar-doc-base {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18);
+    }
+    .btn-guardar-doc-base svg {
+      width: 16px;
+      height: 16px;
+      margin: 0;
     }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
@@ -1052,13 +1068,12 @@
             <span>Seleccionar PDF</span>
           </button>
           <span id="textoArchivoDocumentoBaseAdmin" aria-live="polite"></span>
-          <button type="button" class="btn btn-accion-doc-base" id="btnGuardarDocumentoBaseAdmin">
+          <button type="button" class="btn btn-guardar-doc-base" id="btnGuardarDocumentoBaseAdmin" aria-label="Guardar documento">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <path d="M17 21v-8H7v8"></path>
               <path d="M7 3v5h8"></path>
             </svg>
-            <span>Guardar</span>
           </button>
         </div>
         <input type="file" id="documentoBaseAdminArchivo" class="input-oculto" accept="application/pdf,.pdf">
