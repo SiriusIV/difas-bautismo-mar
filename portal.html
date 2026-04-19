@@ -575,11 +575,10 @@
       object-fit: cover;
     }
 
-    .badge-completa {
+    .badge-estado-actividad {
       position: absolute;
       top: 8px;
       left: 8px;
-      background: #dc3545;
       color: #fff;
       font-size: 11px;
       font-weight: bold;
@@ -587,6 +586,9 @@
       border-radius: 6px;
       z-index: 2;
     }
+    .badge-estado-actividad.completa { background: #dc3545; }
+    .badge-estado-actividad.finalizada { background: #5f6d7a; }
+    .badge-estado-actividad.ultimas { background: #d97706; }
 
     .card-body h3 {
       margin: 0 0 7px 0;
@@ -2653,12 +2655,13 @@ function obtenerActividadesFiltradas() {
               Number(actividadSeleccionada.id) === Number(a.id) &&
               i === carruselAutoIndex
             );
+        const badgeEstado = obtenerBadgeEstadoActividad(a);
 
         return `
           <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
             <div class="card-img-wrap">
               <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
-              ${Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1 ? `<div class="badge-completa">COMPLETA</div>` : ``}
+              ${badgeEstado ? `<div class="badge-estado-actividad ${badgeEstado.clase}">${badgeEstado.texto}</div>` : ``}
             </div>
             <div class="card-body">
               <h3>${a.titulo_publico || a.nombre}</h3>
@@ -2691,6 +2694,48 @@ function obtenerActividadesFiltradas() {
           colocarWrapEnCardInstantaneo(cardInicial);
         }
       }, 50);
+    }
+
+    function esModoCarruselPublico() {
+      const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
+      return !rol || rol === "SOLICITANTE" || rol === "SECRETARIA";
+    }
+
+    function parsearFechaHoraActividad(valor) {
+      if (!valor) return null;
+      const normalizada = String(valor).trim().replace(" ", "T");
+      const fecha = new Date(normalizada);
+      return Number.isNaN(fecha.getTime()) ? null : fecha;
+    }
+
+    function obtenerBadgeEstadoActividad(actividad) {
+      const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
+      const completa = aforoLimitado && Number(actividad?.completa_calculada || 0) === 1;
+      if (completa) {
+        return { texto: "COMPLETA", clase: "completa" };
+      }
+
+      if (!esModoCarruselPublico()) {
+        return null;
+      }
+
+      const ultimaFranjaFin = parsearFechaHoraActividad(actividad?.ultima_franja_fin);
+      if (ultimaFranjaFin && ultimaFranjaFin.getTime() < Date.now()) {
+        return { texto: "FINALIZADA", clase: "finalizada" };
+      }
+
+      const plazasTotales = Number(actividad?.plazas_totales || 0);
+      const plazasDisponibles = Number(actividad?.plazas_disponibles || 0);
+      if (
+        aforoLimitado &&
+        plazasTotales > 0 &&
+        plazasDisponibles > 0 &&
+        plazasDisponibles <= Math.ceil(plazasTotales / 4)
+      ) {
+        return { texto: "ÚLTIMAS PLAZAS", clase: "ultimas" };
+      }
+
+      return null;
     }
     function destruirMapaActividad() {
       if (resizeObserverMapa) {
