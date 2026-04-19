@@ -2814,7 +2814,11 @@ function renderMapaActividad(a) {
 
 
       const organizadorHTML = a.organizador_publico
-        ? `<div><strong>Organiza:</strong> ${a.organizador_publico}</div>`
+        ? `<div><strong>Organiza:</strong> ${
+            String(a.organizador_web_externa_url || "").trim()
+              ? `<a href="${a.organizador_web_externa_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${a.organizador_publico}</a>`
+              : a.organizador_publico
+          }</div>`
         : "";
 
       document.getElementById("detalleMeta").innerHTML = `

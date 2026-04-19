@@ -387,10 +387,58 @@
     .btn-icono-imagen svg { width: 14px; height: 14px; display: block; }
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 7px; flex-wrap: wrap; }
     .fila-admin-telefono-password { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+    #filaAdminNombrePublicoEmail { grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) auto; align-items: end; }
     .campos-inline-admin { display: grid; grid-template-columns: minmax(0, 0.56fr) minmax(0, 0.44fr); gap: 9px; }
     .campo-password-admin-inline { display: flex; align-items: flex-start; justify-content: flex-end; align-self: start; padding-top: 22px; }
     .campo-password-admin-inline .password-linea { justify-content: flex-end; align-items: center; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+    .campo-web-propia-admin { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; min-width: 116px; }
+    .campo-web-propia-admin label { margin-bottom: 8px; }
+    .toggle-web-propia-wrap { display: inline-flex; align-items: center; gap: 10px; }
+    .toggle-web-propia-etiqueta { font-size: 13px; color: #334250; font-weight: 600; }
+    .toggle-web-propia {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: 46px;
+      height: 26px;
+    }
+    .toggle-web-propia input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+    }
+    .toggle-web-propia-control {
+      position: relative;
+      width: 46px;
+      height: 26px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #d7dbe0 0%, #c8ced6 100%);
+      border: 1px solid #b9c2cc;
+      transition: all 0.18s ease;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), 0 1px 2px rgba(17,24,39,0.06);
+    }
+    .toggle-web-propia-control::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%);
+      border: 1px solid rgba(120, 132, 148, 0.35);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+      transition: transform 0.18s ease;
+    }
+    .toggle-web-propia input:checked + .toggle-web-propia-control {
+      background: linear-gradient(180deg, #28c95a 0%, #15b347 100%);
+      border-color: #12a640;
+    }
+    .toggle-web-propia input:checked + .toggle-web-propia-control::after { transform: translateX(20px); }
+    .toggle-web-propia input:focus-visible + .toggle-web-propia-control { outline: 2px solid rgba(18, 58, 99, 0.22); outline-offset: 2px; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-password-acceso { display: flex; align-items: flex-end; }
     .btn-password-acceso { background: var(--primary); color: #fff; border: none; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
@@ -529,6 +577,17 @@
           <div class="fila oculto" id="filaAdminNombrePublicoEmail">
             <div class="campo-linea"><label for="nombrePublicoAdmin">Nombre público</label><input type="text" id="nombrePublicoAdmin" name="nombrePublicoAdmin"></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"></div>
+            <div class="campo-web-propia-admin oculto" id="campoWebPropiaAdmin">
+              <label for="toggleWebPropiaAdmin">Web</label>
+              <div class="toggle-web-propia-wrap">
+                <span class="toggle-web-propia-etiqueta">Web</span>
+                <label class="toggle-web-propia" title="Web propia del administrador">
+                  <input type="checkbox" id="toggleWebPropiaAdmin" aria-label="Web propia del administrador">
+                  <span class="toggle-web-propia-control" aria-hidden="true"></span>
+                </label>
+              </div>
+              <input type="hidden" id="webExternaAdmin" name="webExternaAdmin">
+            </div>
           </div>
           <div class="fila oculto fila-admin-telefono-password" id="filaAdminTelefonoPassword">
             <div class="campos-inline-admin">
@@ -1001,6 +1060,22 @@
     </div>
   </div>
 
+  <div id="modalWebPropiaAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 520px;">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarWebPropiaAdminTop" aria-label="Cerrar web propia" style="position:absolute; top:16px; right:18px;">✕</button>
+      <h3>Web propia</h3>
+      <p>Indica la dirección de la web externa del administrador para enlazar su nombre público desde la ficha de actividad.</p>
+      <div id="mensajeWebPropiaAdmin" class="mensaje oculto" aria-live="polite"></div>
+      <div class="campo-linea">
+        <label for="inputWebPropiaAdminUrl">Dirección web</label>
+        <input type="url" id="inputWebPropiaAdminUrl" placeholder="https://...">
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="btn" id="btnAceptarWebPropiaAdmin">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let perfilOriginal = null;
     let rolActual = "";
@@ -1023,6 +1098,7 @@
     let cambioTabBloquePendiente = null;
     let organizadorPendienteId = null;
     let adminIdPreferentePerfil = null;
+    let modalWebPropiaAdminAbierto = false;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
@@ -1275,6 +1351,57 @@
     function cerrarModalObservacionesDocumento() {
       document.getElementById("modalObservacionesDocumento").classList.remove("activo");
       document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "true");
+    }
+
+    function sincronizarToggleWebPropiaAdmin() {
+      const input = document.getElementById("webExternaAdmin");
+      const toggle = document.getElementById("toggleWebPropiaAdmin");
+      if (!input || !toggle) return;
+      toggle.checked = String(input.value || "").trim() !== "";
+    }
+
+    function esUrlWebValida(url = "") {
+      const valor = String(url || "").trim();
+      if (!valor) return false;
+      try {
+        const parsed = new URL(valor);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function abrirModalWebPropiaAdmin() {
+      const modal = document.getElementById("modalWebPropiaAdmin");
+      const input = document.getElementById("inputWebPropiaAdminUrl");
+      const actual = document.getElementById("webExternaAdmin").value.trim();
+      limpiarMensaje("mensajeWebPropiaAdmin");
+      input.value = actual;
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+      modalWebPropiaAdminAbierto = true;
+      setTimeout(() => input.focus(), 0);
+    }
+
+    function cerrarModalWebPropiaAdmin() {
+      const modal = document.getElementById("modalWebPropiaAdmin");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+      modalWebPropiaAdminAbierto = false;
+      limpiarMensaje("mensajeWebPropiaAdmin");
+      sincronizarToggleWebPropiaAdmin();
+    }
+
+    function aceptarWebPropiaAdmin() {
+      const input = document.getElementById("inputWebPropiaAdminUrl");
+      const hidden = document.getElementById("webExternaAdmin");
+      const valor = String(input.value || "").trim();
+      if (!esUrlWebValida(valor)) {
+        jsonMessage("mensajeWebPropiaAdmin", "error", "Debes indicar una dirección web válida que empiece por http:// o https://.");
+        return;
+      }
+      hidden.value = valor;
+      cerrarModalWebPropiaAdmin();
     }
 
     function actualizarAccionesDetalleDocumentacion() {
@@ -2521,20 +2648,24 @@
         document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
+        document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
         layout.classList.add("sin-imagen");
       } else if (esAdmin()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
         document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
+        document.getElementById("campoWebPropiaAdmin").classList.remove("oculto");
         layout.classList.remove("sin-imagen");
       } else if (esSecretaria()) {
         document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
         document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
         document.getElementById("filaAdminTelefonoPassword").classList.remove("oculto");
+        document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
         layout.classList.add("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
+        document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
         layout.classList.add("sin-imagen");
       }
 
@@ -2549,6 +2680,8 @@
       document.getElementById("emailAdmin").value = perfil.email || "";
       document.getElementById("telefonoAdmin").value = perfil.telefono_contacto || "";
       document.getElementById("localidadAdmin").value = perfil.localidad || "";
+      document.getElementById("webExternaAdmin").value = perfil.web_externa_url || "";
+      sincronizarToggleWebPropiaAdmin();
       document.getElementById("nombreSuperadmin").value = perfil.nombre || "";
       document.getElementById("emailSuperadmin").value = perfil.email || "";
       document.getElementById("telefonoSuperadmin").value = perfil.telefono_contacto || "";
@@ -2572,6 +2705,7 @@
         tipo_documento: perfil.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
+        web_externa_url: perfil.web_externa_url || "",
         rol: rolActual
       };
 
@@ -2596,6 +2730,7 @@
         centro: perfil.centro || sesion?.centro || "",
         email: perfil.email || sesion?.email || "",
         telefono_contacto: perfil.telefono_contacto || sesion?.telefono_contacto || "",
+        web_externa_url: perfil.web_externa_url || sesion?.web_externa_url || "",
         responsable_legal: perfil.responsable_legal || sesion?.responsable_legal || "",
         tipo_documento: perfil.tipo_documento || sesion?.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || sesion?.documento_identificacion || "",
@@ -2876,7 +3011,8 @@
           localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
-          logo_url: document.getElementById("logo_url").value.trim()
+          logo_url: document.getElementById("logo_url").value.trim(),
+          web_externa_url: document.getElementById("webExternaAdmin").value.trim()
         };
       }
 
@@ -2909,7 +3045,8 @@
           actual.localidad !== (perfilOriginal.localidad || "") ||
           actual.email !== (perfilOriginal.email || "") ||
           actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "") ||
-          actual.logo_url !== (perfilOriginal.logo_url || "");
+          actual.logo_url !== (perfilOriginal.logo_url || "") ||
+          actual.web_externa_url !== (perfilOriginal.web_externa_url || "");
       }
 
       if (esSuperadmin()) {
@@ -2947,7 +3084,8 @@
           localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
-          logo_url: document.getElementById("logo_url").value.trim()
+          logo_url: document.getElementById("logo_url").value.trim(),
+          web_externa_url: document.getElementById("webExternaAdmin").value.trim()
         };
       }
 
@@ -3472,6 +3610,15 @@
       document.getElementById("modalEstadosDocumento").classList.remove("activo");
     });
     document.getElementById("btnCerrarObservacionesDocumentoTop").addEventListener("click", cerrarModalObservacionesDocumento);
+    document.getElementById("toggleWebPropiaAdmin").addEventListener("change", function () {
+      if (this.checked) {
+        abrirModalWebPropiaAdmin();
+      } else {
+        document.getElementById("webExternaAdmin").value = "";
+      }
+    });
+    document.getElementById("btnAceptarWebPropiaAdmin").addEventListener("click", aceptarWebPropiaAdmin);
+    document.getElementById("btnCerrarWebPropiaAdminTop").addEventListener("click", cerrarModalWebPropiaAdmin);
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -3488,7 +3635,8 @@
       "modalRevisionExpedienteAdmin",
       "modalCambiosPendientesDocumentos",
       "modalEstadosDocumento",
-      "modalObservacionesDocumento"
+      "modalObservacionesDocumento",
+      "modalWebPropiaAdmin"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -3503,6 +3651,7 @@
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
         if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
         if (id === "modalObservacionesDocumento") cerrarModalObservacionesDocumento();
+        if (id === "modalWebPropiaAdmin") cerrarModalWebPropiaAdmin();
       });
     });
 
