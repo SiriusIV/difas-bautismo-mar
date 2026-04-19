@@ -89,6 +89,7 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(body.email).toLowerCase();
     const telefono_contacto = limpiarTexto(body.telefono_contacto);
     const webExternaRecibida = limpiarTexto(body.web_externa_url);
+    const webExternaActivaRecibida = Number(body.web_externa_activa || 0) === 1 ? 1 : 0;
     const logo_url_recibido = normalizarNullable(body.logo_url);
     const responsableLegalRecibido = limpiarTexto(body.responsable_legal);
     const tipoDocumentoRecibido = limpiarTexto(body.tipo_documento).toUpperCase();
@@ -110,24 +111,47 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "La web externa no es valida" }, 400);
     }
 
-    const user = await env.DB.prepare(`
-      SELECT
-        id,
-        nombre,
-        nombre_publico,
-        localidad,
-        centro,
-        email,
-        rol,
-        responsable_legal,
-        tipo_documento,
-        documento_identificacion,
-        logo_url,
-        web_externa_url
-      FROM usuarios
-      WHERE id = ?
-      LIMIT 1
-    `).bind(session.id).first();
+    let user = null;
+    try {
+      user = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          rol,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          logo_url,
+          web_externa_url,
+          web_externa_activa
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(session.id).first();
+    } catch (_) {
+      user = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          rol,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          logo_url,
+          web_externa_url
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(session.id).first();
+    }
 
     if (!user) {
       return json({ ok: false, error: "Usuario no encontrado" }, 404);
@@ -197,41 +221,58 @@ export async function onRequestPost(context) {
     }
 
     const web_externa_url = esPerfilOrganizador ? webExternaRecibida : "";
+    const web_externa_activa = esPerfilOrganizador ? webExternaActivaRecibida : 0;
     const logo_url = esPerfilOrganizador ? logo_url_recibido : "";
 
-    await env.DB.prepare(`
-      UPDATE usuarios
-      SET
-        nombre = ?,
-        nombre_publico = ?,
-        localidad = ?,
-        centro = ?,
-        email = ?,
-        telefono_contacto = ?,
-        responsable_legal = ?,
-        tipo_documento = ?,
-        documento_identificacion = ?,
-        web_externa_url = ?,
-        logo_url = ?
-      WHERE id = ?
-    `).bind(
-      nombre,
-      nombre_publico,
-      localidad,
-      centro,
-      email,
-      telefono_contacto,
-      responsable_legal,
-      tipo_documento,
-      documento_identificacion,
-      web_externa_url,
-      logo_url,
-      user.id
-    ).run();
-
-    const perfil = await env.DB.prepare(`
-      SELECT
-        id,
+    try {
+      await env.DB.prepare(`
+        UPDATE usuarios
+        SET
+          nombre = ?,
+          nombre_publico = ?,
+          localidad = ?,
+          centro = ?,
+          email = ?,
+          telefono_contacto = ?,
+          responsable_legal = ?,
+          tipo_documento = ?,
+          documento_identificacion = ?,
+          web_externa_url = ?,
+          web_externa_activa = ?,
+          logo_url = ?
+        WHERE id = ?
+      `).bind(
+        nombre,
+        nombre_publico,
+        localidad,
+        centro,
+        email,
+        telefono_contacto,
+        responsable_legal,
+        tipo_documento,
+        documento_identificacion,
+        web_externa_url,
+        web_externa_activa,
+        logo_url,
+        user.id
+      ).run();
+    } catch (_) {
+      await env.DB.prepare(`
+        UPDATE usuarios
+        SET
+          nombre = ?,
+          nombre_publico = ?,
+          localidad = ?,
+          centro = ?,
+          email = ?,
+          telefono_contacto = ?,
+          responsable_legal = ?,
+          tipo_documento = ?,
+          documento_identificacion = ?,
+          web_externa_url = ?,
+          logo_url = ?
+        WHERE id = ?
+      `).bind(
         nombre,
         nombre_publico,
         localidad,
@@ -243,11 +284,53 @@ export async function onRequestPost(context) {
         documento_identificacion,
         web_externa_url,
         logo_url,
-        rol
-      FROM usuarios
-      WHERE id = ?
-      LIMIT 1
-    `).bind(user.id).first();
+        user.id
+      ).run();
+    }
+
+    let perfil = null;
+    try {
+      perfil = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          telefono_contacto,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          web_externa_url,
+          web_externa_activa,
+          logo_url,
+          rol
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(user.id).first();
+    } catch (_) {
+      perfil = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          telefono_contacto,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          web_externa_url,
+          logo_url,
+          rol
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(user.id).first();
+    }
 
     const cookie = await createSessionCookie(
       {
@@ -262,7 +345,8 @@ export async function onRequestPost(context) {
         tipo_documento: perfil.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
-        web_externa_url: perfil.web_externa_url || ""
+        web_externa_url: perfil.web_externa_url || "",
+        web_externa_activa: Number(perfil.web_externa_activa || 0)
       },
       env.SECRET_KEY
     );
@@ -283,6 +367,7 @@ export async function onRequestPost(context) {
           tipo_documento: perfil.tipo_documento || "",
           documento_identificacion: perfil.documento_identificacion || "",
           web_externa_url: perfil.web_externa_url || "",
+          web_externa_activa: Number(perfil.web_externa_activa || 0),
           logo_url: perfil.logo_url || "",
           rol: perfil.rol || ""
         }

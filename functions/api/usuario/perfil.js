@@ -22,25 +22,49 @@ export async function onRequestGet(context) {
       );
     }
 
-    const user = await env.DB.prepare(`
-      SELECT
-        id,
-        nombre,
-        nombre_publico,
-        localidad,
-        centro,
-        email,
-        telefono_contacto,
-        responsable_legal,
-        tipo_documento,
-        documento_identificacion,
-        web_externa_url,
-        logo_url,
-        rol
-      FROM usuarios
-      WHERE id = ?
-      LIMIT 1
-    `).bind(session.id).first();
+    let user = null;
+    try {
+      user = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          telefono_contacto,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          web_externa_url,
+          web_externa_activa,
+          logo_url,
+          rol
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(session.id).first();
+    } catch (_) {
+      user = await env.DB.prepare(`
+        SELECT
+          id,
+          nombre,
+          nombre_publico,
+          localidad,
+          centro,
+          email,
+          telefono_contacto,
+          responsable_legal,
+          tipo_documento,
+          documento_identificacion,
+          web_externa_url,
+          logo_url,
+          rol
+        FROM usuarios
+        WHERE id = ?
+        LIMIT 1
+      `).bind(session.id).first();
+    }
 
     if (!user) {
       return json(
@@ -63,6 +87,7 @@ export async function onRequestGet(context) {
         tipo_documento: user.tipo_documento || "",
         documento_identificacion: user.documento_identificacion || "",
         web_externa_url: user.web_externa_url || "",
+        web_externa_activa: Number(user.web_externa_activa || 0),
         logo_url: user.logo_url || "",
         rol: user.rol || ""
       }
