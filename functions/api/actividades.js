@@ -80,7 +80,14 @@ export async function onRequestGet(context) {
         actividad_franja_final AS (
           SELECT
             actividad_id,
-            MAX(datetime(fecha || ' ' || hora_fin)) AS ultima_franja_fin
+            MAX(CASE WHEN COALESCE(es_recurrente, 0) = 1 THEN 1 ELSE 0 END) AS tiene_franjas_recurrentes,
+            MAX(
+              CASE
+                WHEN COALESCE(es_recurrente, 0) = 0 AND fecha IS NOT NULL AND hora_fin IS NOT NULL
+                  THEN datetime(fecha || ' ' || hora_fin)
+                ELSE NULL
+              END
+            ) AS ultima_franja_fin
           FROM franjas
           GROUP BY actividad_id
         )
@@ -116,6 +123,7 @@ export async function onRequestGet(context) {
           COALESCE(at.plazas_totales, 0) AS plazas_totales,
           COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
           (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
+          COALESCE(aff.tiene_franjas_recurrentes, 0) AS tiene_franjas_recurrentes,
           aff.ultima_franja_fin,
           CASE
             WHEN a.aforo_limitado = 1
@@ -195,7 +203,14 @@ export async function onRequestGet(context) {
       actividad_franja_final AS (
         SELECT
           actividad_id,
-          MAX(datetime(fecha || ' ' || hora_fin)) AS ultima_franja_fin
+          MAX(CASE WHEN COALESCE(es_recurrente, 0) = 1 THEN 1 ELSE 0 END) AS tiene_franjas_recurrentes,
+          MAX(
+            CASE
+              WHEN COALESCE(es_recurrente, 0) = 0 AND fecha IS NOT NULL AND hora_fin IS NOT NULL
+                THEN datetime(fecha || ' ' || hora_fin)
+              ELSE NULL
+            END
+          ) AS ultima_franja_fin
         FROM franjas
         GROUP BY actividad_id
       )
@@ -234,6 +249,7 @@ export async function onRequestGet(context) {
         COALESCE(at.plazas_totales, 0) AS plazas_totales,
         COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
         (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
+        COALESCE(aff.tiene_franjas_recurrentes, 0) AS tiene_franjas_recurrentes,
         aff.ultima_franja_fin,
         CASE
           WHEN a.aforo_limitado = 1
