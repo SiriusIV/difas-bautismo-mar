@@ -13,10 +13,26 @@ function json(data, status = 200) {
   });
 }
 
+async function desactivarActividadesFinalizadasPorPeriodo(env) {
+  await env.DB.prepare(`
+    UPDATE actividades
+    SET activa = 0,
+        visible_portal = 0
+    WHERE tipo = 'TEMPORAL'
+      AND fecha_fin IS NOT NULL
+      AND date(fecha_fin) < date('now')
+      AND (
+        COALESCE(activa, 0) <> 0
+        OR COALESCE(visible_portal, 0) <> 0
+      )
+  `).run();
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await desactivarActividadesFinalizadasPorPeriodo(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
