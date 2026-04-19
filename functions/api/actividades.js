@@ -81,6 +81,7 @@ export async function onRequestGet(context) {
         a.patron_recurrencia,
         a.usa_enlace_externo,
         a.enlace_externo_url,
+        u.web_externa_url AS organizador_web_externa_url,
         COALESCE(at.plazas_totales, 0) AS plazas_totales,
         COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
         (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
@@ -93,6 +94,8 @@ export async function onRequestGet(context) {
           ELSE 0
         END AS completa_calculada
       FROM actividades a
+      LEFT JOIN usuarios u
+        ON u.id = a.admin_id
       LEFT JOIN actividad_totales at
         ON at.actividad_id = a.id
       WHERE a.activa = 1
