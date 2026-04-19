@@ -306,10 +306,11 @@
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-meta-linea { display: none; }
-    .modal-doc-base { max-width: 560px; padding: 22px 22px 20px; }
-    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 104px; gap: 14px; align-items: start; margin-bottom: 12px; }
+    .modal-doc-base { max-width: 700px; padding: 22px 24px 20px; }
+    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 74px; gap: 16px; align-items: start; margin-bottom: 16px; }
     .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
-    .modal-doc-base textarea { min-height: 104px; resize: vertical; width: 100%; }
+    .modal-doc-base textarea { min-height: 96px; resize: vertical; width: 100%; }
+    .modal-doc-base .campo-linea + .campo-linea { margin-top: 2px; }
     .campo-archivo-documento-base {
       display: flex;
       align-items: center;
@@ -328,6 +329,29 @@
       flex: 0 1 auto;
       min-width: 0;
       line-height: 1.35;
+    }
+    .modal-doc-base-acciones {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .btn-accion-doc-base {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: Arial, sans-serif;
+    }
+    .btn-accion-doc-base svg {
+      width: 15px;
+      height: 15px;
+      display: block;
+      flex: 0 0 auto;
     }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
@@ -1000,6 +1024,7 @@
   </div>
   <div id="modalDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-doc-base">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarDocumentoBaseAdminTop" aria-label="Cerrar documento" style="position:absolute; top:16px; right:18px;">✕</button>
       <h3 id="modalDocumentoBaseAdminTitulo">Nuevo documento</h3>
       <div class="modal-doc-base-campos">
         <div class="campo-linea">
@@ -1015,21 +1040,32 @@
         <label for="documentoBaseAdminDescripcion">Descripción</label>
         <textarea id="documentoBaseAdminDescripcion" placeholder="Describe el alcance, contenido o uso previsto de este documento obligatorio."></textarea>
       </div>
-      <div class="campo-linea">
-        <label for="documentoBaseAdminArchivo">Documento PDF</label>
+      <div class="modal-doc-base-acciones">
         <div class="campo-archivo-documento-base">
-          <button type="button" class="btn btn-suave" id="btnSeleccionarArchivoDocumentoBaseAdmin">Seleccionar PDF</button>
+          <button type="button" class="btn btn-suave btn-accion-doc-base" id="btnSeleccionarArchivoDocumentoBaseAdmin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+              <path d="M14 2v5h5"></path>
+              <path d="M9 15h6"></path>
+              <path d="M9 11h4"></path>
+            </svg>
+            <span>Seleccionar PDF</span>
+          </button>
           <span id="textoArchivoDocumentoBaseAdmin" aria-live="polite"></span>
+          <button type="button" class="btn btn-accion-doc-base" id="btnGuardarDocumentoBaseAdmin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <path d="M17 21v-8H7v8"></path>
+              <path d="M7 3v5h8"></path>
+            </svg>
+            <span>Guardar</span>
+          </button>
         </div>
         <input type="file" id="documentoBaseAdminArchivo" class="input-oculto" accept="application/pdf,.pdf">
       </div>
       <input type="hidden" id="documentoBaseAdminId">
       <input type="hidden" id="documentoBaseAdminArchivoUrl">
       <div id="mensajeDocumentoBaseAdmin" class="mensaje"></div>
-      <div class="modal-acciones">
-        <button type="button" class="btn btn-suave" id="btnCancelarDocumentoBaseAdmin">Cancelar</button>
-        <button type="button" class="btn" id="btnGuardarDocumentoBaseAdmin">Guardar</button>
-      </div>
     </div>
   </div>
   <div id="modalInfoDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
@@ -3514,7 +3550,7 @@
       limpiarMensajeDocumentoBaseAdmin();
       actualizarTextoArchivoDocumentoBaseAdmin("PDF cargado correctamente.");
     });
-    document.getElementById("btnCancelarDocumentoBaseAdmin").addEventListener("click", cerrarModalDocumentoBaseAdmin);
+    document.getElementById("btnCerrarDocumentoBaseAdminTop").addEventListener("click", cerrarModalDocumentoBaseAdmin);
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
     document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
     document.getElementById("btnCancelarRevisionExpedienteAdmin").addEventListener("click", cerrarModalRevisionExpedienteAdmin);
