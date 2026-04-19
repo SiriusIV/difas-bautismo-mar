@@ -2278,7 +2278,7 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     async function cargarActividadesPublicas() {
-      const res = await fetch("/api/actividades", { credentials: "include" });
+      const res = await fetch(`/api/actividades?_ts=${Date.now()}`, { credentials: "include", cache: "no-store" });
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
