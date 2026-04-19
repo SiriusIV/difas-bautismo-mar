@@ -559,6 +559,14 @@
       border-color: #0b5ed7;
       box-shadow: 0 8px 24px rgba(11,94,215,0.16);
     }
+    .card.estado-no-visible {
+      opacity: 0.68;
+      filter: saturate(0.72);
+    }
+    .card.estado-inactiva {
+      opacity: 0.5;
+      filter: grayscale(0.18) saturate(0.55);
+    }
 
     .card-img-wrap {
       position: relative;
@@ -1589,8 +1597,9 @@
     let carruselAutoPlayActivo = true;
     let carruselAutoIndex = 0;
     let carruselReanudarTimeout = null;
-    let provinciaSeleccionada = "";
-    let programaSeleccionado = "";
+      let provinciaSeleccionada = "";
+      let estadoActividadSeleccionado = "";
+      let programaSeleccionado = "";
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
     let notificacionesPortal = [];
@@ -2265,17 +2274,30 @@ function actualizarBotonSolicitarSegunFranja() {
       const wrapAdmin = document.getElementById("filtroAdminWrap");
       const selectProvincia = document.getElementById("filtroProvincia");
       const selectAdmin = document.getElementById("filtroAdminSecretaria");
+      const labelProvincia = document.querySelector('label[for="filtroProvincia"]');
 
       if (esSecretaria()) {
         wrapProvincia.classList.add("oculto");
         wrapAdmin.classList.remove("oculto");
         provinciaSeleccionada = "";
+        estadoActividadSeleccionado = "";
         if (selectProvincia) selectProvincia.value = "";
+        if (labelProvincia) labelProvincia.textContent = "Localidad";
+      } else if (esAdmin()) {
+        wrapProvincia.classList.remove("oculto");
+        wrapAdmin.classList.add("oculto");
+        adminSecretariaSeleccionado = "";
+        provinciaSeleccionada = "";
+        if (selectAdmin) selectAdmin.value = "";
+        if (selectProvincia) selectProvincia.value = estadoActividadSeleccionado;
+        if (labelProvincia) labelProvincia.textContent = "Estado";
       } else {
         wrapProvincia.classList.remove("oculto");
         wrapAdmin.classList.add("oculto");
         adminSecretariaSeleccionado = "";
+        estadoActividadSeleccionado = "";
         if (selectAdmin) selectAdmin.value = "";
+        if (labelProvincia) labelProvincia.textContent = "Localidad";
       }
     }
 
@@ -2367,6 +2389,24 @@ function actualizarBotonSolicitarSegunFranja() {
       const select = document.getElementById("filtroProvincia");
       if (!select) return;
 
+      if (esAdmin()) {
+        const opciones = [
+          ["", "Todas"],
+          ["publicadas", "Publicadas"],
+          ["no_publicadas", "No publicadas"]
+        ];
+
+        select.innerHTML = opciones.map(([valor, texto]) => `<option value="${valor}">${texto}</option>`).join("");
+
+        if (!opciones.some(([valor]) => valor === estadoActividadSeleccionado)) {
+          estadoActividadSeleccionado = "";
+        }
+
+        select.value = estadoActividadSeleccionado;
+        renderizarFiltroProgramas();
+        return;
+      }
+
       const provincias = [...new Set(
         actividadesCache
           .map(a => String(a.provincia || "").trim())
@@ -2411,7 +2451,7 @@ function actualizarBotonSolicitarSegunFranja() {
       renderizarFiltroProgramas();
     }
 
-    function renderizarFiltroProgramas() {
+function renderizarFiltroProgramas() {
   const select = document.getElementById("filtroPrograma");
   if (!select) return;
 
@@ -2422,9 +2462,13 @@ function actualizarBotonSolicitarSegunFranja() {
           : actividadesCache
       )
     : (
+        esAdmin()
+          ? filtrarActividadesPorEstadoAdmin(actividadesCache)
+          : (
         provinciaSeleccionada
           ? actividadesCache.filter(a => String(a.provincia || "").trim() === provinciaSeleccionada)
           : actividadesCache
+          )
       );
 
   const programas = [...new Set(
@@ -2448,7 +2492,7 @@ function actualizarSubtituloCabecera() {
   const h2 = document.getElementById("subtituloCabecera");
   if (!h2) return;
 
-  if (esSecretaria()) {
+  if (esSecretaria() || esAdmin()) {
     h2.textContent = "Armada";
   } else if (!provinciaSeleccionada) {
     h2.textContent = "Armada";
@@ -2457,14 +2501,29 @@ function actualizarSubtituloCabecera() {
   }
 }
     
+function filtrarActividadesPorEstadoAdmin(lista) {
+  if (!Array.isArray(lista)) return [];
+  if (!estadoActividadSeleccionado) return lista;
+  return lista.filter((a) => {
+    const visible = Number(a.visible_portal || 0) === 1;
+    if (estadoActividadSeleccionado === "publicadas") return visible;
+    if (estadoActividadSeleccionado === "no_publicadas") return !visible;
+    return true;
+  });
+}
 
 function obtenerActividadesFiltradas() {
-  return actividadesCache.filter(a => {
+  const base = esAdmin()
+    ? filtrarActividadesPorEstadoAdmin(actividadesCache)
+    : actividadesCache;
+
+  return base.filter(a => {
     const coincideAdmin =
       !adminSecretariaSeleccionado ||
       String(a.admin_id || "").trim() === adminSecretariaSeleccionado;
 
     const coincideProvincia =
+      esAdmin() ||
       !provinciaSeleccionada ||
       String(a.provincia || "").trim() === provinciaSeleccionada;
 
@@ -2543,11 +2602,17 @@ function obtenerActividadesFiltradas() {
           return "No hay actividades disponibles con los filtros seleccionados para esta secretaría.";
         }
 
-        return "No hay actividades disponibles actualmente para esta secretaría.";
+      return "No hay actividades disponibles actualmente para esta secretaría.";
       }
 
       if (esAdmin()) {
-        return "Este administrador no tiene actividades activas y visibles en este momento.";
+        if (estadoActividadSeleccionado === "publicadas") {
+          return "Este administrador no tiene actividades publicadas en este momento.";
+        }
+        if (estadoActividadSeleccionado === "no_publicadas") {
+          return "Este administrador no tiene actividades no publicadas en este momento.";
+        }
+        return "Este administrador no tiene actividades para mostrar en este momento.";
       }
 
       if (provinciaSeleccionada || programaSeleccionado) {
@@ -2657,8 +2722,20 @@ function obtenerActividadesFiltradas() {
             );
         const badgeEstado = obtenerBadgeEstadoActividad(a);
 
+        const claseEstadoAdmin = esAdmin()
+          ? (
+              Number(a.activa || 0) !== 1
+                ? "estado-inactiva"
+                : (Number(a.visible_portal || 0) === 1 ? "" : "estado-no-visible")
+            )
+          : "";
+
+        const clasesCard = ["card"];
+        if (activa) clasesCard.push("activa");
+        if (claseEstadoAdmin) clasesCard.push(claseEstadoAdmin);
+
         return `
-          <div class="card ${activa ? 'activa' : ''}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
+          <div class="${clasesCard.join(" ")}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
             <div class="card-img-wrap">
               <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
               ${badgeEstado ? `<div class="badge-estado-actividad ${badgeEstado.clase}">${badgeEstado.texto}</div>` : ``}
@@ -2696,11 +2773,6 @@ function obtenerActividadesFiltradas() {
       }, 50);
     }
 
-    function esModoCarruselPublico() {
-      const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
-      return !rol || rol === "SOLICITANTE" || rol === "SECRETARIA";
-    }
-
     function parsearFechaHoraActividad(valor) {
       if (!valor) return null;
       const normalizada = String(valor).trim().replace(" ", "T");
@@ -2713,10 +2785,6 @@ function obtenerActividadesFiltradas() {
       const completa = aforoLimitado && Number(actividad?.completa_calculada || 0) === 1;
       if (completa) {
         return { texto: "COMPLETA", clase: "completa" };
-      }
-
-      if (!esModoCarruselPublico()) {
-        return null;
       }
 
       const ultimaFranjaFin = parsearFechaHoraActividad(actividad?.ultima_franja_fin);
@@ -3324,7 +3392,11 @@ function continuarSolicitudActividad() {
 const filtroProvincia = document.getElementById("filtroProvincia");
 if (filtroProvincia) {
   filtroProvincia.addEventListener("change", function () {
-    provinciaSeleccionada = this.value;
+    if (esAdmin()) {
+      estadoActividadSeleccionado = this.value;
+    } else {
+      provinciaSeleccionada = this.value;
+    }
     programaSeleccionado = "";
     actividadSeleccionada = null;
     carruselAutoIndex = 0;
