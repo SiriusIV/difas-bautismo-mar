@@ -268,9 +268,9 @@ export async function onRequestPost(context) {
           telefono_contacto = ?,
           responsable_legal = ?,
           tipo_documento = ?,
-          documento_identificacion = ?,
-          web_externa_url = ?,
-          logo_url = ?
+        documento_identificacion = ?,
+        web_externa_url = ?,
+        logo_url = ?
         WHERE id = ?
       `).bind(
         nombre,
@@ -289,6 +289,7 @@ export async function onRequestPost(context) {
     }
 
     let perfil = null;
+    const webExternaActivaRespuesta = web_externa_activa;
     try {
       perfil = await env.DB.prepare(`
         SELECT
@@ -346,7 +347,7 @@ export async function onRequestPost(context) {
         documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
         web_externa_url: perfil.web_externa_url || "",
-        web_externa_activa: Number(perfil.web_externa_activa || 0)
+        web_externa_activa: Number(perfil.web_externa_activa ?? webExternaActivaRespuesta ?? 0)
       },
       env.SECRET_KEY
     );
@@ -367,7 +368,7 @@ export async function onRequestPost(context) {
           tipo_documento: perfil.tipo_documento || "",
           documento_identificacion: perfil.documento_identificacion || "",
           web_externa_url: perfil.web_externa_url || "",
-          web_externa_activa: Number(perfil.web_externa_activa || 0),
+          web_externa_activa: Number(perfil.web_externa_activa ?? webExternaActivaRespuesta ?? 0),
           logo_url: perfil.logo_url || "",
           rol: perfil.rol || ""
         }

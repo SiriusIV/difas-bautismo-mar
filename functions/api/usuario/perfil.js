@@ -87,7 +87,7 @@ export async function onRequestGet(context) {
         tipo_documento: user.tipo_documento || "",
         documento_identificacion: user.documento_identificacion || "",
         web_externa_url: user.web_externa_url || "",
-        web_externa_activa: Number(user.web_externa_activa || 0),
+        web_externa_activa: Number(user.web_externa_activa ?? session.web_externa_activa ?? 0),
         logo_url: user.logo_url || "",
         rol: user.rol || ""
       }
