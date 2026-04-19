@@ -306,43 +306,28 @@
     .toggle-estado-doc-base input:checked + .toggle-estado-doc-base-control::after { transform: translateX(18px); }
     .toggle-estado-doc-base input:disabled + .toggle-estado-doc-base-control { opacity: 0.55; cursor: not-allowed; }
     .documentacion-admin-meta-linea { display: none; }
-    .modal-doc-base { max-width: 620px; padding: 22px 22px 20px; }
-    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 116px; gap: 14px; align-items: start; }
+    .modal-doc-base { max-width: 560px; padding: 22px 22px 20px; }
+    .modal-doc-base-campos { display: grid; grid-template-columns: minmax(0, 1fr) 104px; gap: 14px; align-items: start; margin-bottom: 12px; }
     .modal-doc-base-campos .campo-linea { margin-bottom: 0; }
-    .modal-doc-base textarea { min-height: 148px; resize: vertical; width: 100%; }
+    .modal-doc-base textarea { min-height: 104px; resize: vertical; width: 100%; }
     .campo-archivo-documento-base {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
       flex-wrap: wrap;
       width: 100%;
-      padding: 14px 16px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #f8fafc;
-    }
-    .documento-base-pdf-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 52px;
-      height: 36px;
-      padding: 0 12px;
-      border-radius: 10px;
-      background: #fdeaea;
-      border: 1px solid #f2c4c4;
-      color: #b42318;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
     }
     .campo-archivo-documento-base .btn { flex: 0 0 auto; }
     .campo-archivo-documento-base span {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
-      flex: 1 1 220px;
-      min-width: 180px;
-      line-height: 1.45;
+      flex: 0 1 auto;
+      min-width: 0;
+      line-height: 1.35;
     }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
@@ -1033,9 +1018,8 @@
       <div class="campo-linea">
         <label for="documentoBaseAdminArchivo">Documento PDF</label>
         <div class="campo-archivo-documento-base">
-          <span class="documento-base-pdf-badge" aria-hidden="true">PDF</span>
           <button type="button" class="btn btn-suave" id="btnSeleccionarArchivoDocumentoBaseAdmin">Seleccionar PDF</button>
-          <span id="textoArchivoDocumentoBaseAdmin">Ningún archivo seleccionado.</span>
+          <span id="textoArchivoDocumentoBaseAdmin" aria-live="polite"></span>
         </div>
         <input type="file" id="documentoBaseAdminArchivo" class="input-oculto" accept="application/pdf,.pdf">
       </div>
@@ -2060,8 +2044,10 @@
       limpiarMensaje("mensajeDocumentoBaseAdmin");
     }
 
-    function actualizarTextoArchivoDocumentoBaseAdmin(texto = "Ningún archivo seleccionado.") {
-      document.getElementById("textoArchivoDocumentoBaseAdmin").textContent = texto;
+    function actualizarTextoArchivoDocumentoBaseAdmin(texto = "") {
+      const nodo = document.getElementById("textoArchivoDocumentoBaseAdmin");
+      nodo.textContent = texto;
+      nodo.style.display = texto ? "inline" : "none";
     }
 
     function limpiarArchivoDocumentoBaseAdmin() {
@@ -2089,7 +2075,7 @@
       document.getElementById("documentoBaseAdminDescripcion").value = doc?.descripcion || "";
       document.getElementById("documentoBaseAdminArchivo").value = "";
       document.getElementById("documentoBaseAdminArchivoUrl").value = doc?.archivo_url || "";
-      actualizarTextoArchivoDocumentoBaseAdmin(doc?.archivo_url ? "PDF actual asociado. Puedes sustituirlo seleccionando otro archivo." : "Ningún archivo seleccionado.");
+      actualizarTextoArchivoDocumentoBaseAdmin(doc?.archivo_url ? "PDF actual cargado." : "");
       limpiarMensajeDocumentoBaseAdmin();
       document.getElementById("modalDocumentoBaseAdmin").classList.add("activo");
       setTimeout(() => {
@@ -3208,7 +3194,7 @@
         }
 
         rellenarFormulario(normalizarPerfil(data.perfil));
-        jsonMessage("mensajePerfil", "ok", data.mensaje || "Perfil actualizado correctamente.");
+        mostrarMensajePerfilTemporal("ok", data.mensaje || "Perfil actualizado correctamente.");
         return true;
       } catch (error) {
         jsonMessage("mensajePerfil", "error", error.message || "Error al guardar el perfil.");
@@ -3515,18 +3501,18 @@
     document.getElementById("documentoBaseAdminArchivo").addEventListener("change", function () {
       const file = this.files && this.files[0] ? this.files[0] : null;
       if (!file) {
-        actualizarTextoArchivoDocumentoBaseAdmin("Ningún archivo seleccionado.");
+        actualizarTextoArchivoDocumentoBaseAdmin("");
         return;
       }
       const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
       if (!esPdf) {
         this.value = "";
-        actualizarTextoArchivoDocumentoBaseAdmin("Ningún archivo seleccionado.");
+        actualizarTextoArchivoDocumentoBaseAdmin("");
         jsonMessage("mensajeDocumentoBaseAdmin", "error", "Solo se admiten archivos PDF.");
         return;
       }
       limpiarMensajeDocumentoBaseAdmin();
-      actualizarTextoArchivoDocumentoBaseAdmin(`PDF seleccionado: ${file.name}`);
+      actualizarTextoArchivoDocumentoBaseAdmin("PDF cargado correctamente.");
     });
     document.getElementById("btnCancelarDocumentoBaseAdmin").addEventListener("click", cerrarModalDocumentoBaseAdmin);
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
