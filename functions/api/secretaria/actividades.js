@@ -84,6 +84,13 @@ export async function onRequestGet(context) {
           COALESCE(SUM(ocupadas), 0) AS plazas_ocupadas
         FROM franja_ocupacion
         GROUP BY actividad_id
+      ),
+      actividad_franja_final AS (
+        SELECT
+          actividad_id,
+          MAX(datetime(fecha || ' ' || hora_fin)) AS ultima_franja_fin
+        FROM franjas
+        GROUP BY actividad_id
       )
       SELECT
         a.id,
@@ -121,6 +128,7 @@ export async function onRequestGet(context) {
         COALESCE(at.plazas_totales, 0) AS plazas_totales,
         COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
         (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
+        aff.ultima_franja_fin,
         CASE
           WHEN a.aforo_limitado = 1
                AND a.usa_franjas = 1
@@ -136,6 +144,8 @@ export async function onRequestGet(context) {
         ON u.id = a.admin_id
       LEFT JOIN actividad_totales at
         ON at.actividad_id = a.id
+      LEFT JOIN actividad_franja_final aff
+        ON aff.actividad_id = a.id
       WHERE a.activa = 1
         AND a.visible_portal = 1
         AND (
