@@ -777,6 +777,18 @@
 .detalle-titulo-link:hover {
   text-decoration: underline;
 }
+
+.detalle-meta-link {
+  color: #1d4ed8;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.detalle-meta-link:hover,
+.detalle-meta-link:focus-visible {
+  color: #123a63;
+  text-decoration: underline;
+}
     
 .detalle-subtitulo {
   margin: 0 0 8px;
@@ -2816,7 +2828,7 @@ function renderMapaActividad(a) {
       const organizadorHTML = a.organizador_publico
         ? `<div><strong>Organiza:</strong> ${
             String(a.organizador_web_externa_url || "").trim()
-              ? `<a href="${a.organizador_web_externa_url}" target="_blank" rel="noopener noreferrer" class="detalle-titulo-link">${a.organizador_publico}</a>`
+              ? `<a href="${a.organizador_web_externa_url}" target="_blank" rel="noopener noreferrer" class="detalle-meta-link">${a.organizador_publico}</a>`
               : a.organizador_publico
           }</div>`
         : "";
