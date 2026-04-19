@@ -2827,6 +2827,7 @@ function renderMapaActividad(a) {
 
       const organizadorHTML = a.organizador_publico
         ? `<div><strong>Organiza:</strong> ${
+            Number(a.organizador_web_externa_activa || 0) === 1 &&
             String(a.organizador_web_externa_url || "").trim()
               ? `<a href="${a.organizador_web_externa_url}" target="_blank" rel="noopener noreferrer" class="detalle-meta-link">${a.organizador_publico}</a>`
               : a.organizador_publico
