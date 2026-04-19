@@ -2,7 +2,12 @@ import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json; charset=utf-8" },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    },
     ...init
   });
 }
@@ -107,6 +112,12 @@ export async function onRequestGet(context) {
         a.patron_recurrencia,
         a.usa_enlace_externo,
         a.enlace_externo_url,
+        u.web_externa_url AS organizador_web_externa_url,
+        CASE
+          WHEN TRIM(COALESCE(u.web_externa_url, '')) <> '' THEN
+            COALESCE(u.web_externa_activa, 1)
+          ELSE 0
+        END AS organizador_web_externa_activa,
         COALESCE(at.plazas_totales, 0) AS plazas_totales,
         COALESCE(at.plazas_ocupadas, 0) AS plazas_ocupadas,
         (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) AS plazas_disponibles,
@@ -121,6 +132,8 @@ export async function onRequestGet(context) {
       FROM actividades a
       INNER JOIN admins_secretaria s
         ON s.id = a.admin_id
+      LEFT JOIN usuarios u
+        ON u.id = a.admin_id
       LEFT JOIN actividad_totales at
         ON at.actividad_id = a.id
       WHERE a.activa = 1
