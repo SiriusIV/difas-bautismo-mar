@@ -4,7 +4,12 @@ import { getRolUsuario } from "./_permisos.js";
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8" }
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    }
   });
 }
 
@@ -45,6 +50,12 @@ export async function onRequestGet(context) {
         a.patron_recurrencia,
         a.usa_enlace_externo,
         a.enlace_externo_url,
+        u.web_externa_url AS organizador_web_externa_url,
+        CASE
+          WHEN TRIM(COALESCE(u.web_externa_url, '')) <> '' THEN
+            COALESCE(u.web_externa_activa, 1)
+          ELSE 0
+        END AS organizador_web_externa_activa,
         a.direccion_postal,
         a.latitud,
         a.longitud,
@@ -104,6 +115,8 @@ export async function onRequestGet(context) {
         ) AS plazas_disponibles
 
       FROM actividades a
+      LEFT JOIN usuarios u
+        ON u.id = a.admin_id
     `;
 
     const binds = [];
