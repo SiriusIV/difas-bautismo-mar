@@ -133,7 +133,15 @@ export async function onRequestGet(context) {
           SELECT MAX(datetime(f.fecha || ' ' || f.hora_fin))
           FROM franjas f
           WHERE f.actividad_id = a.id
-        ) AS ultima_franja_fin
+            AND COALESCE(f.es_recurrente, 0) = 0
+            AND f.fecha IS NOT NULL
+            AND f.hora_fin IS NOT NULL
+        ) AS ultima_franja_fin,
+        (
+          SELECT MAX(CASE WHEN COALESCE(f.es_recurrente, 0) = 1 THEN 1 ELSE 0 END)
+          FROM franjas f
+          WHERE f.actividad_id = a.id
+        ) AS tiene_franjas_recurrentes
 
       FROM actividades a
       LEFT JOIN usuarios u
