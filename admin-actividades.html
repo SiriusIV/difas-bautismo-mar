@@ -690,6 +690,29 @@
   flex-wrap: wrap;
 }
 
+.acciones-franja-config {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.acciones-franja-select {
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
+}
+
+.tabla-franjas-admin .col-num {
+  text-align: center;
+}
+
+.tabla-franjas-admin td.col-num,
+.tabla-franjas-admin th.col-num {
+  text-align: center;
+  vertical-align: middle;
+}
+
 .btn-icono-franja {
   width: 36px;
   height: 36px;
@@ -1921,6 +1944,62 @@
       }
     }
 
+    function compactarCabeceraFranjas() {
+      const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
+      const bloqueProgramacion = stepProgramacion?.querySelector('.subbloque');
+      const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
+      const toolbar = bloqueFranjas?.querySelector(".acciones-franja-toolbar");
+      const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
+      const selectFrecuencia = document.getElementById("es_recurrente");
+      const selectUsaFranjas = document.getElementById("usa_franjas");
+      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+
+      const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
+      const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
+      const filaCompacta = bloqueProgramacion.querySelector(":scope > .fila-compacta");
+
+      if (cabeceraRedundanteTitulo) cabeceraRedundanteTitulo.classList.add("oculto");
+      if (cabeceraRedundanteTexto) cabeceraRedundanteTexto.classList.add("oculto");
+      if (filaCompacta) filaCompacta.classList.add("oculto");
+
+      if (!toolbar.querySelector(".acciones-franja-config")) {
+        const configWrap = document.createElement("div");
+        configWrap.className = "acciones-franja-config";
+
+        const toggle = document.createElement("label");
+        toggle.className = "toggle-switch";
+        toggle.title = "Usa franjas horarias";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "usa_franjas_toggle";
+        checkbox.setAttribute("aria-label", "Usa franjas horarias");
+
+        const slider = document.createElement("span");
+        slider.className = "toggle-slider";
+
+        const sincronizarToggle = () => {
+          checkbox.checked = String(selectUsaFranjas.value) === "1";
+        };
+
+        checkbox.addEventListener("change", () => {
+          selectUsaFranjas.value = checkbox.checked ? "1" : "0";
+          selectUsaFranjas.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        selectUsaFranjas.addEventListener("change", sincronizarToggle);
+        selectUsaFranjas.classList.add("oculto");
+        sincronizarToggle();
+
+        selectFrecuencia.classList.remove("input-mini");
+        selectFrecuencia.classList.add("acciones-franja-select");
+
+        toggle.append(checkbox, slider);
+        configWrap.append(toggle, selectorFrecuencia);
+        toolbar.insertBefore(configWrap, toolbar.firstChild);
+      }
+    }
+
     function abrirModalSalidaSinGuardar() {
       const modal = document.getElementById("modalSalidaSinGuardar");
       if (!modal) return;
@@ -2929,9 +3008,9 @@ function renderListaFranjas() {
         </td>
         <td>${bloqueProgramacion}</td>
         <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
-        <td>${capacidad}</td>
-        <td>${ocupadas}</td>
-        <td>${disponibles}</td>
+        <td class="col-num">${capacidad}</td>
+        <td class="col-num">${ocupadas}</td>
+        <td class="col-num">${disponibles}</td>
       </tr>
     `;
   }).join("");
@@ -2943,9 +3022,9 @@ function renderListaFranjas() {
           <th class="col-seleccion-franja"></th>
           <th>Fecha / Periodicidad</th>
           <th>Horario</th>
-          <th>Capacidad</th>
-          <th>Ocupadas</th>
-          <th>Disponibles</th>
+          <th class="col-num">Capacidad</th>
+          <th class="col-num">Ocupadas</th>
+          <th class="col-num">Disponibles</th>
         </tr>
       </thead>
       <tbody>${filas}</tbody>
@@ -3649,6 +3728,7 @@ function retrocederPaso() {
 
       document.getElementById("app").style.display = "block";
       reorganizarLayoutEditorActividad();
+      compactarCabeceraFranjas();
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
@@ -3819,3 +3899,6 @@ function retrocederPaso() {
   </script>
 </body>
 </html>
+
+
+
