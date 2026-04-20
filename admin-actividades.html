@@ -3134,6 +3134,8 @@ function renderListaFranjas() {
     function renderPreviewFranjas() {
       const wrap = document.getElementById("tablaFranjasPreviewWrap");
       const body = document.getElementById("tablaFranjasPreviewBody");
+      const tabla = wrap?.querySelector("table");
+      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
 
       if (!franjasCache.length || document.getElementById("usa_franjas").value !== "1") {
         wrap.style.display = "none";
@@ -3141,18 +3143,35 @@ function renderListaFranjas() {
         return;
       }
 
-      body.innerHTML = franjasCache
+      if (tabla) {
+        tabla.innerHTML = `
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              ${aforoLimitado ? "<th>Plazas</th>" : ""}
+            </tr>
+          </thead>
+          <tbody id="tablaFranjasPreviewBody"></tbody>
+        `;
+      }
+
+      const nuevoBody = document.getElementById("tablaFranjasPreviewBody");
+
+      nuevoBody.innerHTML = franjasCache
         .filter(f => f && f.hora_inicio && f.hora_fin)
         .map(f => `
           <tr>
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
             <td>${f.hora_fin}</td>
+            ${aforoLimitado ? `<td>${f.capacidad == null ? "—" : f.capacidad}</td>` : ""}
           </tr>
         `)
         .join("");
 
-      wrap.style.display = body.innerHTML.trim() ? "block" : "none";
+      wrap.style.display = nuevoBody.innerHTML.trim() ? "block" : "none";
     }
 
 function editarFranja(id) {
