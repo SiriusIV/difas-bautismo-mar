@@ -1558,7 +1558,7 @@
                 </div>
               </div>
 
-              <div class="fila" id="bloquePatronRecurrencia">
+              <div class="fila oculto" id="bloquePatronRecurrencia">
                 <div>
                   <label for="patron_recurrencia">Descripción del patrón</label>
                   <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
@@ -2023,6 +2023,13 @@
       return normalizarTexto(document.getElementById("imagen_url")?.value);
     }
 
+    function sincronizarPatronRecurrenciaOculto() {
+      const oculto = document.getElementById("patron_recurrencia");
+      const visible = document.getElementById("fr_patron_recurrencia");
+      if (!oculto || !visible) return;
+      oculto.value = visible.value || "";
+    }
+
     function registrarImagenOriginalDesdeFormulario() {
       imagenOriginalId = getImagenIdActualFormulario();
       imagenOriginalUrl = getImagenUrlActualFormulario();
@@ -2379,6 +2386,7 @@ async function manejarCambioCriticoCampo(id) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
+    setValor("fr_patron_recurrencia", actividad.patron_recurrencia || "");
     setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
     setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
@@ -2446,7 +2454,7 @@ async function manejarCambioCriticoCampo(id) {
       const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
 
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
-      document.getElementById("bloquePatronRecurrencia").classList.toggle("oculto", !usaFranjas || !esRecurrente);
+      document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
       document.getElementById("bloqueSelectorFrecuencia").classList.toggle("oculto", !usaFranjas);
       document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
 
@@ -2457,6 +2465,7 @@ async function manejarCambioCriticoCampo(id) {
       if (!usaFranjas) {
         document.getElementById("es_recurrente").value = "0";
         document.getElementById("patron_recurrencia").value = "";
+        document.getElementById("fr_patron_recurrencia").value = "";
         document.getElementById("bloqueFranjasEditor").classList.add("oculto");
         franjasCache = [];
         renderListaFranjas();
@@ -2932,6 +2941,7 @@ function limpiarFormularioFranja() {
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
   document.getElementById("fr_patron_recurrencia").value = "";
+  sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
   document.getElementById("fr_capacidad").value = "";
@@ -3075,6 +3085,7 @@ function editarFranja(id) {
   document.getElementById("es_recurrente").value = String(Number(f.es_recurrente || 0));
   document.getElementById("fr_fecha").value = f.fecha || "";
   document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
+  sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
   document.getElementById("fr_capacidad").value = f.capacidad == null ? "" : f.capacidad;
@@ -3130,6 +3141,8 @@ function editarFranja(id) {
         hora_fin: document.getElementById("fr_hora_fin").value,
         capacidad: document.getElementById("fr_capacidad").value
       };
+
+      sincronizarPatronRecurrenciaOculto();
 
       const esEdicion = !!payload.id;
 
@@ -3782,6 +3795,19 @@ function retrocederPaso() {
           const file = e.target.files && e.target.files[0];
           await manejarSeleccionImagenActividad(file);
           inputImagenActividad.value = "";
+        });
+      }
+
+      const inputPatronFranja = document.getElementById("fr_patron_recurrencia");
+      if (inputPatronFranja) {
+        inputPatronFranja.addEventListener("input", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
+        });
+
+        inputPatronFranja.addEventListener("change", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
         });
       }
 
