@@ -694,14 +694,53 @@
 .acciones-franja-config {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex-wrap: wrap;
 }
 
+.acciones-franja-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 248px;
+  min-width: 248px;
+  max-width: 248px;
+  min-height: 42px;
+  border: 1px solid #c9cfd6;
+  border-radius: 12px;
+  background: #fff;
+  padding-left: 58px;
+  transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+
+.acciones-franja-combo.desactivado {
+  background: #f4f7fa;
+  border-color: #d9e1e9;
+}
+
+.acciones-franja-combo .toggle-switch {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.acciones-franja-select-wrap {
+  width: 100%;
+}
+
 .acciones-franja-select {
-  width: 170px;
-  min-width: 170px;
-  max-width: 170px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  border: none;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 34px;
+}
+
+.acciones-franja-select:disabled {
+  color: #7d8a96;
+  cursor: not-allowed;
 }
 
 .tabla-franjas-admin .col-num {
@@ -1983,6 +2022,9 @@
         const configWrap = document.createElement("div");
         configWrap.className = "acciones-franja-config";
 
+        const combo = document.createElement("div");
+        combo.className = "acciones-franja-combo";
+
         const toggle = document.createElement("label");
         toggle.className = "toggle-switch";
         toggle.title = "Usa franjas horarias";
@@ -1995,26 +2037,26 @@
         const slider = document.createElement("span");
         slider.className = "toggle-slider";
 
-        const sincronizarToggle = () => {
-          checkbox.checked = String(selectUsaFranjas.value) === "1";
-        };
-
         checkbox.addEventListener("change", () => {
           selectUsaFranjas.value = checkbox.checked ? "1" : "0";
           selectUsaFranjas.dispatchEvent(new Event("change", { bubbles: true }));
         });
 
-        selectUsaFranjas.addEventListener("change", sincronizarToggle);
         selectUsaFranjas.classList.add("oculto");
-        sincronizarToggle();
 
         selectFrecuencia.classList.remove("input-mini");
         selectFrecuencia.classList.add("acciones-franja-select");
+        const selectorWrap = document.createElement("div");
+        selectorWrap.className = "acciones-franja-select-wrap";
+        selectorWrap.appendChild(selectFrecuencia);
 
         toggle.append(checkbox, slider);
-        configWrap.append(toggle, selectorFrecuencia);
+        combo.append(toggle, selectorWrap);
+        configWrap.append(combo);
         toolbar.insertBefore(configWrap, toolbar.firstChild);
       }
+
+      sincronizarToggleUsaFranjas();
     }
 
     function abrirModalSalidaSinGuardar() {
@@ -2050,8 +2092,20 @@
     function sincronizarToggleUsaFranjas() {
       const select = document.getElementById("usa_franjas");
       const toggle = document.getElementById("usa_franjas_toggle");
+      const selectFrecuencia = document.getElementById("es_recurrente");
+      const combo = document.querySelector(".acciones-franja-combo");
       if (!select || !toggle) return;
-      toggle.checked = String(select.value) === "1";
+
+      const activo = String(select.value) === "1";
+      toggle.checked = activo;
+
+      if (selectFrecuencia) {
+        selectFrecuencia.disabled = !activo;
+      }
+
+      if (combo) {
+        combo.classList.toggle("desactivado", !activo);
+      }
     }
 
     function registrarImagenOriginalDesdeFormulario() {
@@ -2482,7 +2536,7 @@ async function manejarCambioCriticoCampo(id) {
 
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
       document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
-      document.getElementById("bloqueSelectorFrecuencia").classList.toggle("oculto", !usaFranjas);
+      document.getElementById("bloqueSelectorFrecuencia").classList.remove("oculto");
       document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
 
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
