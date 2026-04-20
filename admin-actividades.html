@@ -688,6 +688,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .acciones-franja-config {
@@ -1139,11 +1140,24 @@
       margin-bottom: 10px;
     }
 
-    .campo-franja-inline {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-    }
+.campo-franja-inline {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.campo-franja-accion {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+#bloqueFranjasEditor {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+}
 
     .campo-franja-inline label {
       display: block;
@@ -1627,6 +1641,9 @@
     <div id="fr_bloque_capacidad" class="campo-franja-inline">
       <label>Capacidad</label>
       <input type="number" id="fr_capacidad" min="1" step="1">
+    </div>
+
+    <div class="campo-franja-accion">
     </div>
   </div>
 
