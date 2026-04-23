@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -7,12 +7,12 @@
 
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leafletleaflet.css"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
   <script
-    src="https://unpkg.com/leafletleaflet.js"
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
@@ -2285,7 +2285,7 @@ function cancelarMensajeErrorActividad() {
       const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
       const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-      return ${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy};
+      return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
     function textoProgramacionFranja(f) {
@@ -2595,22 +2595,22 @@ async function manejarCambioCriticoCampo(id) {
       const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
 
       const organizadorHTML = organizador
-        ? <div><strong>Organiza:</strong> ${
+        ? `<div><strong>Organiza:</strong> ${
             usaEnlaceExterno && enlaceUrl
-              ? <a href="${enlaceUrl}" target="_blank" rel="noopener noreferrer" class="link-organizador">${organizador}</a>
+              ? `<a href="${enlaceUrl}" target="_blank" rel="noopener noreferrer" class="link-organizador">${organizador}</a>`
               : organizador
-          }</div>
+          }</div>`
         : "";
 
-      return 
+      return `
         ${organizadorHTML}
-        ${lugar ? <div><strong>Lugar:</strong> ${lugar}</div> : ""}
-        ${provincia ? <div><strong>Localidad:</strong> ${provincia}</div> : ""}
+        ${lugar ? `<div><strong>Lugar:</strong> ${lugar}</div>` : ""}
+        ${provincia ? `<div><strong>Localidad:</strong> ${provincia}</div>` : ""}
         ${tipo === "TEMPORAL" && (fecha_inicio || fecha_fin)
-          ? <div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>
+          ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>`
           : ""}
-        ${tipo === "PERMANENTE" ? <div><strong>Disponibilidad:</strong> Permanente</div> : ""}
-      ;
+        ${tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+      `;
     }
 
     function actualizarPreview() {
@@ -2694,8 +2694,8 @@ async function manejarCambioCriticoCampo(id) {
       }
 
       if (direccion) {
-        const urlMaps = https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)};
-        direccionDiv.innerHTML = <a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${direccion}</a>;
+        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${direccion}</a>`;
         direccionDiv.style.display = "block";
       } else {
         direccionDiv.innerHTML = "";
@@ -2833,7 +2833,7 @@ async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
   ultimaLocalidadBuscada = valor;
 
   try {
-    const res = await fetch(https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")});
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
     const data = await res.json();
 
     if (valor !== ultimaLocalidadBuscada) return false;
@@ -2865,10 +2865,10 @@ async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador 
 
   if (!dir) return false;
 
-  const consulta = loc ? ${dir}, ${loc}, España : ${dir}, España;
+  const consulta = loc ? `${dir}, ${loc}, España` : `${dir}, España`;
 
   try {
-    const res = await fetch(https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)});
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`);
     const data = await res.json();
 
     if (!data || !data.length) {
@@ -2902,7 +2902,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
 
   try {
     const res = await fetch(
-      https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`
     );
 
     const data = await res.json();
@@ -2942,7 +2942,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       const bloqueLocalidad = [cp, localidad].filter(Boolean).join(" ");
       if (bloqueLocalidad) {
         direccionCorta = direccionCorta
-          ? ${direccionCorta}, ${bloqueLocalidad}
+          ? `${direccionCorta}, ${bloqueLocalidad}`
           : bloqueLocalidad;
       }
     }
@@ -3069,7 +3069,7 @@ function renderListaFranjas() {
 
   if (!franjasCache.length) {
     franjaSeleccionadaId = null;
-    wrap.innerHTML = <div class="sin-franjas">No hay franjas cargadas.</div>;
+    wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
     actualizarAccionesFranjaUI();
     return;
   }
@@ -3086,7 +3086,7 @@ function renderListaFranjas() {
     const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
     const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
 
-    return 
+    return `
       <tr class="${seleccionada ? "seleccionada" : ""}">
         <td class="col-seleccion-franja">
           <input
@@ -3103,10 +3103,10 @@ function renderListaFranjas() {
         <td class="col-num">${ocupadas}</td>
         <td class="col-num">${disponibles}</td>
       </tr>
-    ;
+    `;
   }).join("");
 
-  wrap.innerHTML = 
+  wrap.innerHTML = `
     <table class="tabla-franjas-admin">
       <thead>
         <tr>
@@ -3120,7 +3120,7 @@ function renderListaFranjas() {
       </thead>
       <tbody>${filas}</tbody>
     </table>
-  ;
+  `;
 
   wrap.querySelectorAll('input[name="franjaSeleccionada"]').forEach(input => {
     input.addEventListener("change", () => {
@@ -3144,7 +3144,7 @@ function renderListaFranjas() {
       }
 
       if (tabla) {
-        tabla.innerHTML = 
+        tabla.innerHTML = `
           <thead>
             <tr>
               <th>Fecha</th>
@@ -3154,21 +3154,21 @@ function renderListaFranjas() {
             </tr>
           </thead>
           <tbody id="tablaFranjasPreviewBody"></tbody>
-        ;
+        `;
       }
 
       const nuevoBody = document.getElementById("tablaFranjasPreviewBody");
 
       nuevoBody.innerHTML = franjasCache
         .filter(f => f && f.hora_inicio && f.hora_fin)
-        .map(f => 
+        .map(f => `
           <tr>
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
             <td>${f.hora_fin}</td>
-            ${aforoLimitado ? <td>${f.capacidad == null ? "—" : f.capacidad}</td> : ""}
+            ${aforoLimitado ? `<td>${f.capacidad == null ? "—" : f.capacidad}</td>` : ""}
           </tr>
-        )
+        `)
         .join("");
 
       wrap.style.display = nuevoBody.innerHTML.trim() ? "block" : "none";
@@ -3201,7 +3201,7 @@ function editarFranja(id) {
         return;
       }
 
-      const res = await fetch(/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}, {
+      const res = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}`, {
         credentials: "same-origin"
       });
 
@@ -3445,7 +3445,7 @@ async function borrarFranja(id) {
       if (res.ok && data.ok) {
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
-          history.replaceState(null, "", admin-actividades.html?id=${encodeURIComponent(data.id)});
+          history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
           actualizarBotonEliminar();
         }
@@ -3457,7 +3457,7 @@ async function borrarFranja(id) {
         mostrarMensaje(
           "ok",
           avisoBorrado
-            ? ${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}
+            ? `${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
             : (data.mensaje || "Actividad guardada correctamente.")
         );
         return true;
@@ -3500,7 +3500,7 @@ async function borrarFranja(id) {
 
       if (!esEdicion && data.id) {
         document.getElementById("actividadId").value = data.id;
-        history.replaceState(null, "", admin-actividades.html?id=${encodeURIComponent(data.id)});
+        history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
         actualizarBotonEliminar();
       }
@@ -4025,3 +4025,6 @@ function retrocederPaso() {
   </script>
 </body>
 </html>
+
+
+
