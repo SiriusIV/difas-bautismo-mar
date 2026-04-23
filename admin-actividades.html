@@ -459,6 +459,11 @@
       margin-bottom: 0;
     }
 
+    .config-row-full {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+    }
+
     .config-panel {
       border: 1px solid var(--soft-border);
       border-radius: 12px;
@@ -1851,6 +1856,20 @@
       return String(fallback);
     }
 
+    function sincronizarTogglesPanelConfiguracion() {
+      [
+        "requiere_reserva",
+        "aforo_limitado",
+        "usa_enlace_externo",
+        "visible_portal",
+        "activa"
+      ].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
+
     function marcarCambiosPendientesActividad() {
       if (cargandoActividad) return;
       formularioActividadModificado = true;
@@ -1979,9 +1998,10 @@
           ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
 
           panel.appendChild(panelGrid);
-          main.append(filaSuperior, filaMedia, campoDescripcion, filaEnlace);
+          filaEnlace.classList.add("config-row-full");
+          main.append(filaSuperior, filaMedia, campoDescripcion);
 
-          grid.append(main, panel);
+          grid.append(main, panel, filaEnlace);
           stepConfig.appendChild(grid);
 
           filaNombre.remove();
@@ -2475,6 +2495,7 @@ async function manejarCambioCriticoCampo(id) {
     document.getElementById("tituloFormulario").textContent = "Editar actividad";
 
     registrarImagenOriginalDesdeFormulario();
+    sincronizarTogglesPanelConfiguracion();
     actualizarBotonEliminar();
     actualizarVisibilidadFormulario();
     actualizarPreview();
