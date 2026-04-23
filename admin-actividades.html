@@ -7,12 +7,12 @@
 
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    href="https://unpkg.com/leafletleaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
   <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    src="https://unpkg.com/leafletleaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
@@ -126,6 +126,46 @@
       background: #f7f9fb;
       color: var(--primary);
       border-color: #9fb2c7;
+    }
+
+    .btn-icono:disabled,
+    .btn-icono[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #f3f6f9;
+      color: #95a2b1;
+      border-color: #d7e2ee;
+    }
+
+    .btn-icono:disabled:hover,
+    .btn-icono[disabled]:hover {
+      background: #f3f6f9;
+      color: #95a2b1;
+      border-color: #d7e2ee;
+    }
+
+    .btn-icono-primario {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn-icono-primario:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+      color: #fff;
+    }
+
+    .btn-icono-peligro {
+      color: #9b1c1c;
+      border-color: #efc2c2;
+      background: #fff;
+    }
+
+    .btn-icono-peligro:hover {
+      background: #fdeaea;
+      border-color: #e5a9a9;
+      color: #9b1c1c;
     }
 
     .btn-icono svg {
@@ -298,8 +338,20 @@
     .contexto-acciones {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .contexto-acciones-grupo {
+      display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .contexto-acciones-grupo.portal-acceso {
+      margin-left: 18px;
     }
 
     .nav-btn {
@@ -388,6 +440,131 @@
       margin-bottom: 8px;
     }
 
+    .config-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .config-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .config-main .fila,
+    .config-main .fila-una {
+      margin-bottom: 0;
+    }
+
+    .config-panel {
+      border: 1px solid var(--soft-border);
+      border-radius: 12px;
+      background: var(--soft-bg);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-panel-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-panel-grid select {
+      max-width: none;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 32px;
+    }
+
+    .control-row-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334250;
+      line-height: 1.2;
+      margin: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .select-inline {
+      width: 156px;
+      min-width: 156px;
+      max-width: 156px;
+      margin-left: auto;
+    }
+
+    .select-toggle {
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #5f6d7a 50%),
+        linear-gradient(135deg, #5f6d7a 50%, transparent 50%);
+      background-position:
+        calc(100% - 16px) calc(50% - 3px),
+        calc(100% - 10px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 30px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: 44px;
+      height: 24px;
+      flex: 0 0 auto;
+    }
+
+    .toggle-switch input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .toggle-slider {
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: #d7dee7;
+      border: 1px solid #c5d0db;
+      position: relative;
+      transition: background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .toggle-slider::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+      transition: transform 0.18s ease;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #28b463;
+      border-color: #28b463;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::after {
+      transform: translateX(20px);
+    }
+
     label {
       display: block;
       font-weight: bold;
@@ -408,6 +585,11 @@
     textarea {
       min-height: 78px;
       resize: vertical;
+    }
+
+    #descripcion_corta {
+      min-height: 118px;
+      font-family: Arial, sans-serif;
     }
 
     .input-corto {
@@ -431,23 +613,6 @@
       border: 1px solid var(--info-border);
       font-size: 13px;
       line-height: 1.5;
-    }
-
-    .wizard-actions {
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .wizard-actions-left,
-    .wizard-actions-right {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
     }
 
     .btn {
@@ -523,6 +688,69 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.acciones-franja-config {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.acciones-franja-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 248px;
+  min-width: 248px;
+  max-width: 248px;
+  min-height: 42px;
+  border: 1px solid #c9cfd6;
+  border-radius: 12px;
+  background: #fff;
+  padding-left: 58px;
+  transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+
+.acciones-franja-combo.desactivado {
+  background: #f4f7fa;
+  border-color: #d9e1e9;
+}
+
+.acciones-franja-combo .toggle-switch {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.acciones-franja-select-wrap {
+  width: 100%;
+}
+
+.acciones-franja-select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  border: none;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 34px;
+}
+
+.acciones-franja-select:disabled {
+  color: #7d8a96;
+  cursor: not-allowed;
+}
+
+.tabla-franjas-admin .col-num {
+  text-align: center;
+}
+
+.tabla-franjas-admin td.col-num,
+.tabla-franjas-admin th.col-num {
+  text-align: center;
+  vertical-align: middle;
 }
 
 .btn-icono-franja {
@@ -951,11 +1179,24 @@
       margin-bottom: 10px;
     }
 
-    .campo-franja-inline {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-    }
+.campo-franja-inline {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.campo-franja-accion {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+#bloqueFranjasEditor {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+}
 
     .campo-franja-inline label {
       display: block;
@@ -999,7 +1240,82 @@
       height: 18px;
     }
 
+    .modal-confirmacion-salida {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(10, 24, 40, 0.26);
+      z-index: 120;
+    }
+
+    .modal-confirmacion-salida.activo {
+      display: flex;
+    }
+
+    .modal-confirmacion-salida .modal-panel {
+      width: min(520px, calc(100vw - 40px));
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 18px 42px rgba(12, 25, 38, 0.18);
+      padding: 18px 18px 16px;
+      position: relative;
+    }
+
+    .modal-confirmacion-salida .modal-cerrar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #667788;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .modal-confirmacion-salida .modal-cerrar:hover {
+      color: #1d4f91;
+    }
+
+    .modal-confirmacion-salida .modal-cerrar svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .modal-confirmacion-salida h4 {
+      margin: 0 28px 8px 0;
+      color: var(--brand);
+      font-size: 18px;
+    }
+
+    .modal-confirmacion-salida p {
+      margin: 0;
+      color: #4a5a6a;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .modal-confirmacion-salida .modal-acciones {
+      margin-top: 18px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 1100px) {
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+
       .fila-franja-inline {
         grid-template-columns: 1fr 1fr;
       }
@@ -1014,7 +1330,7 @@
         grid-template-columns: 1fr 1fr;
       }
 
-      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro {
+      .fila, .fila-compacta, .fila-compacta-tres, .fila-compacta-cuatro, .config-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1052,6 +1368,11 @@
       }
 
       .contexto-acciones {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .contexto-acciones-grupo {
         width: 100%;
       }
     }
@@ -1093,15 +1414,47 @@
             </div>
 
             <div class="contexto-acciones">
-              <button type="button" class="nav-btn nav-btn-peligro" id="btnEliminarActividad">Eliminar actividad</button>
+              <div class="contexto-acciones-grupo">
+                <button type="button" class="btn-icono" id="btnAnterior" title="Anterior" aria-label="Anterior" style="display:none;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"></path>
+                  </svg>
+                </button>
 
-              <a class="btn-icono" href="portal.html" title="Inicio" aria-label="Inicio">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 10.5L12 3l9 7.5"></path>
-                  <path d="M5 9.5V21h14V9.5"></path>
-                  <path d="M9 21v-6h6v6"></path>
-                </svg>
-              </a>
+                <button type="button" class="btn-icono" id="btnSiguiente" title="Siguiente" aria-label="Siguiente">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 6l6 6-6 6"></path>
+                  </svg>
+                </button>
+
+                <button type="submit" form="formActividad" class="btn-icono btn-icono-primario" id="btnGuardarActividad" title="Guardar actividad" aria-label="Guardar actividad">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                </button>
+
+                <button type="button" class="btn-icono btn-icono-peligro" id="btnEliminarActividad" title="Eliminar actividad" aria-label="Eliminar actividad">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="contexto-acciones-grupo portal-acceso">
+                <a class="btn-icono" href="portal.html" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 10.5L12 3l9 7.5"></path>
+                    <path d="M5 9.5V21h14V9.5"></path>
+                    <path d="M9 21v-6h6v6"></path>
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1113,6 +1466,7 @@
           <input type="hidden" id="zoom_mapa" value="15">
           <input type="hidden" id="imagen_url">
           <input type="hidden" id="imagen_id">
+          <input type="hidden" id="orden_portal" value="0">
 
           <section class="step-pane activo" data-step="0">
             <h3 class="step-title">Configuración</h3>
@@ -1148,10 +1502,16 @@
                 <textarea id="descripcion_corta"></textarea>
               </div>
             </div>
+
             <div class="fila" id="bloqueEnlaceExternoUrl">
-              <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                <label for="enlace_externo_url" style="margin:0; white-space:nowrap;">URL enlace externo</label>
-                <input type="text" id="enlace_externo_url" placeholder="https://..." style="flex:1 1 auto;">
+              <div>
+                <label for="enlace_externo_url">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://...">
+              </div>
+
+              <div>
+                <label for="enlace_externo_texto">Texto del enlace</label>
+                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
               </div>
             </div>
 
@@ -1251,7 +1611,7 @@
                 </div>
               </div>
 
-              <div class="fila" id="bloquePatronRecurrencia">
+              <div class="fila oculto" id="bloquePatronRecurrencia">
                 <div>
                   <label for="patron_recurrencia">Descripción del patrón</label>
                   <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
@@ -1284,13 +1644,6 @@
         </svg>
       </button>
 
-      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-      </button>
     </div>
   </div>
 
@@ -1320,6 +1673,16 @@
     <div id="fr_bloque_capacidad" class="campo-franja-inline">
       <label>Capacidad</label>
       <input type="number" id="fr_capacidad" min="1" step="1">
+    </div>
+
+    <div class="campo-franja-accion">
+      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -1354,18 +1717,26 @@
             </div>
           </section>
 
-          <div class="wizard-actions">
-            <div class="wizard-actions-left">
-              <button type="button" class="btn btn-peligro" id="btnCancelarActividad">Cancelar</button>
-            </div>
+        </form>
 
-            <div class="wizard-actions-right">
-              <button type="button" class="btn btn-secundario" id="btnAnterior" style="display:none;">Anterior</button>
-              <button type="button" class="btn" id="btnSiguiente">Siguiente</button>
-              <button type="submit" class="btn oculto" id="btnGuardarActividad">Guardar actividad</button>
+        <div class="modal-confirmacion-salida" id="modalSalidaSinGuardar" aria-hidden="true">
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalSalida">
+            <button type="button" class="modal-cerrar" id="btnCerrarModalSalida" aria-label="Cerrar aviso">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h4 id="tituloModalSalida">Hay cambios sin guardar</h4>
+            <p>Si sales ahora sin guardar, los cambios de esta actividad se perderán. Puedes volver al formulario, continuar sin guardar o guardar antes de salir.</p>
+
+            <div class="modal-acciones">
+              <button type="button" class="btn btn-secundario" id="btnSalirSinGuardar">Continuar sin guardar</button>
+              <button type="button" class="btn" id="btnGuardarYSalir">Guardar cambios</button>
             </div>
           </div>
-        </form>
+        </div>
       </div>
 
       <div class="bloque-inferior">
@@ -1412,6 +1783,9 @@
               <div id="previewSubtitulo" class="detalle-subtitulo-preview" style="display:none;"></div>
               <div id="previewMeta" class="detalle-meta-preview" style="display:none;"></div>
               <div id="previewTexto" class="detalle-texto-preview" style="display:none;"></div>
+              <div class="detalle-acciones-preview">
+                <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
+              </div>
 
               <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview" style="display:none;">
                 <h4>Programación</h4>
@@ -1468,6 +1842,8 @@
     let callbackCancelarMensajeActividad = null;
     let pantallaBloqueadaPorErrorActividad = false;
     let temporizadorMensajeActividad = null;
+    let formularioActividadModificado = false;
+    let salidaPendienteAlPortal = false;
 
     function normalizarTexto(v) {
       return String(v || "").trim();
@@ -1477,12 +1853,259 @@
       return normalizarTexto(v);
     }
 
+    function marcarCambiosPendientesActividad() {
+      if (cargandoActividad) return;
+      formularioActividadModificado = true;
+    }
+
+    function limpiarCambiosPendientesActividad() {
+      formularioActividadModificado = false;
+    }
+
+    function hayCambiosPendientesActividad() {
+      return formularioActividadModificado || actividadEsBorradorTecnico;
+    }
+
+    function reorganizarLayoutEditorActividad() {
+      const stepConfig = document.querySelector('.step-pane[data-step="0"]');
+      const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
+      if (!stepConfig || !stepProgramacion) return;
+
+      if (!stepConfig.querySelector(".config-grid")) {
+        const filasConfig = Array.from(stepConfig.children).filter((el) =>
+          el.classList?.contains("fila") ||
+          el.classList?.contains("fila-una") ||
+          el.classList?.contains("fila-compacta-config-final")
+        );
+
+        const filaNombre = filasConfig.find((el) => el.querySelector("#nombre"));
+        const filaTitulo = filasConfig.find((el) => el.querySelector("#titulo_publico"));
+        const filaDescripcion = filasConfig.find((el) => el.querySelector("#descripcion_corta"));
+        const filaEnlace = document.getElementById("bloqueEnlaceExternoUrl");
+        const filaControles = stepConfig.querySelector(".fila-compacta-config-final");
+        const filaProgramacion = stepProgramacion.querySelector(".fila-compacta-programacion");
+
+        if (filaNombre && filaTitulo && filaDescripcion && filaEnlace && filaControles && filaProgramacion) {
+          const crearFilaControlSelect = (bloque) => {
+            const label = bloque.querySelector("label");
+            const select = bloque.querySelector("select");
+            if (!label || !select) return bloque;
+
+            const fila = document.createElement("div");
+            fila.className = "control-row";
+
+            const texto = document.createElement("span");
+            texto.className = "control-row-label";
+            texto.textContent = label.textContent.trim();
+
+            select.classList.add("select-toggle", "select-inline");
+
+            fila.append(texto, select);
+            return fila;
+          };
+
+          const crearFilaControlToggle = (bloque) => {
+            const label = bloque.querySelector("label");
+            const select = bloque.querySelector("select");
+            if (!label || !select) return bloque;
+
+            const fila = document.createElement("div");
+            fila.className = "control-row";
+
+            const texto = document.createElement("span");
+            texto.className = "control-row-label";
+            texto.textContent = label.textContent.trim();
+
+            const toggle = document.createElement("label");
+            toggle.className = "toggle-switch";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = String(select.value) === "1";
+            checkbox.setAttribute("aria-label", label.textContent.trim());
+
+            const slider = document.createElement("span");
+            slider.className = "toggle-slider";
+
+            checkbox.addEventListener("change", () => {
+              select.value = checkbox.checked ? "1" : "0";
+              select.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+
+            select.addEventListener("change", () => {
+              checkbox.checked = String(select.value) === "1";
+            });
+
+            select.classList.add("oculto");
+            toggle.append(checkbox, slider);
+            fila.append(texto, toggle, select);
+            return fila;
+          };
+
+          const [campoNombre, campoOrganiza] = Array.from(filaNombre.children);
+          const [campoTitulo, campoPrograma] = Array.from(filaTitulo.children);
+          const [campoDescripcion] = Array.from(filaDescripcion.children);
+          const controlesConfig = Array.from(filaControles.children);
+          const controlesProgramacion = Array.from(filaProgramacion.children);
+
+          const grid = document.createElement("div");
+          grid.className = "config-grid";
+
+          const main = document.createElement("div");
+          main.className = "config-main";
+
+          const filaSuperior = document.createElement("div");
+          filaSuperior.className = "fila";
+          filaSuperior.append(campoNombre, campoOrganiza);
+
+          const filaMedia = document.createElement("div");
+          filaMedia.className = "fila";
+          filaMedia.append(campoTitulo, campoPrograma);
+
+          const panel = document.createElement("aside");
+          panel.className = "config-panel";
+
+          const panelGrid = document.createElement("div");
+          panelGrid.className = "control-panel-grid";
+
+          const [bloqueTipo, bloqueReserva, bloqueAforo] = controlesProgramacion;
+          const [bloqueEnlace, bloqueVisible, bloqueActiva] = controlesConfig;
+
+          [
+            crearFilaControlSelect(bloqueTipo),
+            crearFilaControlToggle(bloqueReserva),
+            crearFilaControlToggle(bloqueAforo),
+            crearFilaControlToggle(bloqueEnlace),
+            crearFilaControlToggle(bloqueVisible),
+            crearFilaControlToggle(bloqueActiva)
+          ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
+
+          panel.appendChild(panelGrid);
+          main.append(filaSuperior, filaMedia, campoDescripcion, filaEnlace);
+
+          grid.append(main, panel);
+          stepConfig.appendChild(grid);
+
+          filaNombre.remove();
+          filaTitulo.remove();
+          filaDescripcion.remove();
+          filaControles.remove();
+          filaProgramacion.remove();
+        }
+      }
+
+      const ayudaProgramacion = stepProgramacion.querySelector(".step-help");
+      if (ayudaProgramacion) {
+        ayudaProgramacion.textContent = "Define la vigencia temporal y la programación real de las franjas horarias.";
+      }
+    }
+
+    function compactarCabeceraFranjas() {
+      const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
+      const bloqueProgramacion = stepProgramacion?.querySelector('.subbloque');
+      const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
+      const toolbar = bloqueFranjas?.querySelector(".acciones-franja-toolbar");
+      const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
+      const selectFrecuencia = document.getElementById("es_recurrente");
+      const selectUsaFranjas = document.getElementById("usa_franjas");
+      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+
+      const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
+      const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
+      const filaCompacta = bloqueProgramacion.querySelector(":scope > .fila-compacta");
+
+      if (cabeceraRedundanteTitulo) cabeceraRedundanteTitulo.classList.add("oculto");
+      if (cabeceraRedundanteTexto) cabeceraRedundanteTexto.classList.add("oculto");
+      if (filaCompacta) filaCompacta.classList.add("oculto");
+
+      if (!toolbar.querySelector(".acciones-franja-config")) {
+        const configWrap = document.createElement("div");
+        configWrap.className = "acciones-franja-config";
+
+        const combo = document.createElement("div");
+        combo.className = "acciones-franja-combo";
+
+        const toggle = document.createElement("label");
+        toggle.className = "toggle-switch";
+        toggle.title = "Usa franjas horarias";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "usa_franjas_toggle";
+        checkbox.setAttribute("aria-label", "Usa franjas horarias");
+
+        const slider = document.createElement("span");
+        slider.className = "toggle-slider";
+
+        checkbox.addEventListener("change", () => {
+          selectUsaFranjas.value = checkbox.checked ? "1" : "0";
+          selectUsaFranjas.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        selectUsaFranjas.classList.add("oculto");
+
+        selectFrecuencia.classList.remove("input-mini");
+        selectFrecuencia.classList.add("acciones-franja-select");
+        const selectorWrap = document.createElement("div");
+        selectorWrap.className = "acciones-franja-select-wrap";
+        selectorWrap.appendChild(selectFrecuencia);
+
+        toggle.append(checkbox, slider);
+        combo.append(toggle, selectorWrap);
+        configWrap.append(combo);
+        toolbar.insertBefore(configWrap, toolbar.firstChild);
+      }
+
+      sincronizarToggleUsaFranjas();
+    }
+
+    function abrirModalSalidaSinGuardar() {
+      const modal = document.getElementById("modalSalidaSinGuardar");
+      if (!modal) return;
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalSalidaSinGuardar() {
+      const modal = document.getElementById("modalSalidaSinGuardar");
+      if (!modal) return;
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+      salidaPendienteAlPortal = false;
+    }
+
     function getImagenIdActualFormulario() {
       return normalizarImageId(document.getElementById("imagen_id")?.value);
     }
 
     function getImagenUrlActualFormulario() {
       return normalizarTexto(document.getElementById("imagen_url")?.value);
+    }
+
+    function sincronizarPatronRecurrenciaOculto() {
+      const oculto = document.getElementById("patron_recurrencia");
+      const visible = document.getElementById("fr_patron_recurrencia");
+      if (!oculto || !visible) return;
+      oculto.value = visible.value || "";
+    }
+
+    function sincronizarToggleUsaFranjas() {
+      const select = document.getElementById("usa_franjas");
+      const toggle = document.getElementById("usa_franjas_toggle");
+      const selectFrecuencia = document.getElementById("es_recurrente");
+      const combo = document.querySelector(".acciones-franja-combo");
+      if (!select || !toggle) return;
+
+      const activo = String(select.value) === "1";
+      toggle.checked = activo;
+
+      if (selectFrecuencia) {
+        selectFrecuencia.disabled = !activo;
+      }
+
+      if (combo) {
+        combo.classList.toggle("desactivado", !activo);
+      }
     }
 
     function registrarImagenOriginalDesdeFormulario() {
@@ -1662,7 +2285,7 @@ function cancelarMensajeErrorActividad() {
       const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
       const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-      return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
+      return ${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy};
     }
 
     function textoProgramacionFranja(f) {
@@ -1801,6 +2424,7 @@ async function manejarCambioCriticoCampo(id) {
         bloqueante: true,
         onAccept: () => {
           restaurarValorPrevioCampoCritico(id);
+          sincronizarToggleUsaFranjas();
           actualizarVisibilidadFormulario();
           actualizarPreview();
           renderMapaPreviewActividad();
@@ -1841,8 +2465,10 @@ async function manejarCambioCriticoCampo(id) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
+    setValor("fr_patron_recurrencia", actividad.patron_recurrencia || "");
     setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
+    setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
     setValor("latitud", actividad.latitud ?? "");
     setValor("longitud", actividad.longitud ?? "");
@@ -1867,6 +2493,7 @@ async function manejarCambioCriticoCampo(id) {
       if (!actividadEditandoId) {
         registrarImagenOriginalDesdeFormulario();
         actualizarBotonEliminar();
+        limpiarCambiosPendientesActividad();
         return;
       }
 
@@ -1892,6 +2519,8 @@ async function manejarCambioCriticoCampo(id) {
           await buscarLocalidadYCentrar(localidad, true);
         }
       }
+
+      limpiarCambiosPendientesActividad();
     }
 
     function actualizarVisibilidadFormulario() {
@@ -1903,9 +2532,11 @@ async function manejarCambioCriticoCampo(id) {
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
       const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
 
+      sincronizarToggleUsaFranjas();
+
       document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
-      document.getElementById("bloquePatronRecurrencia").classList.toggle("oculto", !usaFranjas || !esRecurrente);
-      document.getElementById("bloqueSelectorFrecuencia").classList.toggle("oculto", !usaFranjas);
+      document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
+      document.getElementById("bloqueSelectorFrecuencia").classList.remove("oculto");
       document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
 
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
@@ -1915,6 +2546,7 @@ async function manejarCambioCriticoCampo(id) {
       if (!usaFranjas) {
         document.getElementById("es_recurrente").value = "0";
         document.getElementById("patron_recurrencia").value = "";
+        document.getElementById("fr_patron_recurrencia").value = "";
         document.getElementById("bloqueFranjasEditor").classList.add("oculto");
         franjasCache = [];
         renderListaFranjas();
@@ -1922,6 +2554,10 @@ async function manejarCambioCriticoCampo(id) {
         limpiarFormularioFranja();
       }
 
+      if (!usaEnlaceExterno) {
+        document.getElementById("enlace_externo_url").value = "";
+        document.getElementById("enlace_externo_texto").value = "";
+      }
 
       const mensajes = [];
 
@@ -1959,18 +2595,22 @@ async function manejarCambioCriticoCampo(id) {
       const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
 
       const organizadorHTML = organizador
-        ? `<div><strong>Organiza:</strong> ${organizador}</div>`
+        ? <div><strong>Organiza:</strong> ${
+            usaEnlaceExterno && enlaceUrl
+              ? <a href="${enlaceUrl}" target="_blank" rel="noopener noreferrer" class="link-organizador">${organizador}</a>
+              : organizador
+          }</div>
         : "";
 
-      return `
+      return 
         ${organizadorHTML}
-        ${lugar ? `<div><strong>Lugar:</strong> ${lugar}</div>` : ""}
-        ${provincia ? `<div><strong>Localidad:</strong> ${provincia}</div>` : ""}
+        ${lugar ? <div><strong>Lugar:</strong> ${lugar}</div> : ""}
+        ${provincia ? <div><strong>Localidad:</strong> ${provincia}</div> : ""}
         ${tipo === "TEMPORAL" && (fecha_inicio || fecha_fin)
-          ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>`
+          ? <div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>
           : ""}
-        ${tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
-      `;
+        ${tipo === "PERMANENTE" ? <div><strong>Disponibilidad:</strong> Permanente</div> : ""}
+      ;
     }
 
     function actualizarPreview() {
@@ -1983,6 +2623,7 @@ async function manejarCambioCriticoCampo(id) {
       const textoDetalle = descripcionCorta;
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
       const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
+      const enlaceTexto = document.getElementById("enlace_externo_texto").value.trim() || "Más información";
       const direccion = document.getElementById("direccion_postal").value.trim();
 
       const elTitulo = document.getElementById("previewTitulo");
@@ -1990,27 +2631,16 @@ async function manejarCambioCriticoCampo(id) {
       const elImagen = document.getElementById("previewImagen");
       const elMeta = document.getElementById("previewMeta");
       const elTexto = document.getElementById("previewTexto");
+      const link = document.getElementById("previewEnlaceExterno");
       const direccionDiv = document.getElementById("previewDireccion");
 
       document.getElementById("tituloActividadContexto").textContent =
         tituloPublico || nombre || "Nueva actividad";
 
       if (titulo) {
-        elTitulo.innerHTML = "";
-        if (usaEnlaceExterno && enlaceUrl) {
-          const enlaceTitulo = document.createElement("a");
-          enlaceTitulo.href = enlaceUrl;
-          enlaceTitulo.target = "_blank";
-          enlaceTitulo.rel = "noopener noreferrer";
-          enlaceTitulo.className = "link-organizador";
-          enlaceTitulo.textContent = titulo;
-          elTitulo.appendChild(enlaceTitulo);
-        } else {
-          elTitulo.textContent = titulo;
-        }
+        elTitulo.textContent = titulo;
         elTitulo.style.display = "";
       } else {
-        elTitulo.innerHTML = "";
         elTitulo.style.display = "none";
       }
 
@@ -2064,8 +2694,8 @@ async function manejarCambioCriticoCampo(id) {
       }
 
       if (direccion) {
-        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
-        direccionDiv.innerHTML = `<a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${direccion}</a>`;
+        const urlMaps = https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)};
+        direccionDiv.innerHTML = <a href="${urlMaps}" target="_blank" rel="noopener noreferrer">${direccion}</a>;
         direccionDiv.style.display = "block";
       } else {
         direccionDiv.innerHTML = "";
@@ -2203,7 +2833,7 @@ async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
   ultimaLocalidadBuscada = valor;
 
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
+    const res = await fetch(https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")});
     const data = await res.json();
 
     if (valor !== ultimaLocalidadBuscada) return false;
@@ -2235,10 +2865,10 @@ async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador 
 
   if (!dir) return false;
 
-  const consulta = loc ? `${dir}, ${loc}, España` : `${dir}, España`;
+  const consulta = loc ? ${dir}, ${loc}, España : ${dir}, España;
 
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`);
+    const res = await fetch(https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)});
     const data = await res.json();
 
     if (!data || !data.length) {
@@ -2272,7 +2902,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
 
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`
+      https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1
     );
 
     const data = await res.json();
@@ -2312,7 +2942,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       const bloqueLocalidad = [cp, localidad].filter(Boolean).join(" ");
       if (bloqueLocalidad) {
         direccionCorta = direccionCorta
-          ? `${direccionCorta}, ${bloqueLocalidad}`
+          ? ${direccionCorta}, ${bloqueLocalidad}
           : bloqueLocalidad;
       }
     }
@@ -2392,6 +3022,7 @@ function limpiarFormularioFranja() {
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
   document.getElementById("fr_patron_recurrencia").value = "";
+  sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
   document.getElementById("fr_capacidad").value = "";
@@ -2438,7 +3069,7 @@ function renderListaFranjas() {
 
   if (!franjasCache.length) {
     franjaSeleccionadaId = null;
-    wrap.innerHTML = `<div class="sin-franjas">No hay franjas cargadas.</div>`;
+    wrap.innerHTML = <div class="sin-franjas">No hay franjas cargadas.</div>;
     actualizarAccionesFranjaUI();
     return;
   }
@@ -2455,7 +3086,7 @@ function renderListaFranjas() {
     const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
     const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
 
-    return `
+    return 
       <tr class="${seleccionada ? "seleccionada" : ""}">
         <td class="col-seleccion-franja">
           <input
@@ -2468,28 +3099,28 @@ function renderListaFranjas() {
         </td>
         <td>${bloqueProgramacion}</td>
         <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
-        <td>${capacidad}</td>
-        <td>${ocupadas}</td>
-        <td>${disponibles}</td>
+        <td class="col-num">${capacidad}</td>
+        <td class="col-num">${ocupadas}</td>
+        <td class="col-num">${disponibles}</td>
       </tr>
-    `;
+    ;
   }).join("");
 
-  wrap.innerHTML = `
+  wrap.innerHTML = 
     <table class="tabla-franjas-admin">
       <thead>
         <tr>
           <th class="col-seleccion-franja"></th>
           <th>Fecha / Periodicidad</th>
           <th>Horario</th>
-          <th>Capacidad</th>
-          <th>Ocupadas</th>
-          <th>Disponibles</th>
+          <th class="col-num">Capacidad</th>
+          <th class="col-num">Ocupadas</th>
+          <th class="col-num">Disponibles</th>
         </tr>
       </thead>
       <tbody>${filas}</tbody>
     </table>
-  `;
+  ;
 
   wrap.querySelectorAll('input[name="franjaSeleccionada"]').forEach(input => {
     input.addEventListener("change", () => {
@@ -2503,6 +3134,8 @@ function renderListaFranjas() {
     function renderPreviewFranjas() {
       const wrap = document.getElementById("tablaFranjasPreviewWrap");
       const body = document.getElementById("tablaFranjasPreviewBody");
+      const tabla = wrap?.querySelector("table");
+      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
 
       if (!franjasCache.length || document.getElementById("usa_franjas").value !== "1") {
         wrap.style.display = "none";
@@ -2510,18 +3143,35 @@ function renderListaFranjas() {
         return;
       }
 
-      body.innerHTML = franjasCache
+      if (tabla) {
+        tabla.innerHTML = 
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              ${aforoLimitado ? "<th>Plazas</th>" : ""}
+            </tr>
+          </thead>
+          <tbody id="tablaFranjasPreviewBody"></tbody>
+        ;
+      }
+
+      const nuevoBody = document.getElementById("tablaFranjasPreviewBody");
+
+      nuevoBody.innerHTML = franjasCache
         .filter(f => f && f.hora_inicio && f.hora_fin)
-        .map(f => `
+        .map(f => 
           <tr>
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
             <td>${f.hora_fin}</td>
+            ${aforoLimitado ? <td>${f.capacidad == null ? "—" : f.capacidad}</td> : ""}
           </tr>
-        `)
+        )
         .join("");
 
-      wrap.style.display = body.innerHTML.trim() ? "block" : "none";
+      wrap.style.display = nuevoBody.innerHTML.trim() ? "block" : "none";
     }
 
 function editarFranja(id) {
@@ -2535,6 +3185,7 @@ function editarFranja(id) {
   document.getElementById("es_recurrente").value = String(Number(f.es_recurrente || 0));
   document.getElementById("fr_fecha").value = f.fecha || "";
   document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
+  sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
   document.getElementById("fr_capacidad").value = f.capacidad == null ? "" : f.capacidad;
@@ -2550,7 +3201,7 @@ function editarFranja(id) {
         return;
       }
 
-      const res = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}`, {
+      const res = await fetch(/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}, {
         credentials: "same-origin"
       });
 
@@ -2590,6 +3241,8 @@ function editarFranja(id) {
         hora_fin: document.getElementById("fr_hora_fin").value,
         capacidad: document.getElementById("fr_capacidad").value
       };
+
+      sincronizarPatronRecurrenciaOculto();
 
       const esEdicion = !!payload.id;
 
@@ -2741,6 +3394,7 @@ async function borrarFranja(id) {
         patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
         usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
         enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
+        enlace_externo_texto: document.getElementById("enlace_externo_texto").value.trim(),
         direccion_postal: document.getElementById("direccion_postal").value.trim(),
         latitud: document.getElementById("latitud").value.trim(),
         longitud: document.getElementById("longitud").value.trim(),
@@ -2750,19 +3404,19 @@ async function borrarFranja(id) {
     }
 
     async function guardarActividad(event) {
-      event.preventDefault();
+      if (event) event.preventDefault();
       limpiarMensaje();
 
       const payload = construirPayloadActividad(0);
 
       if (!payload.nombre) {
         mostrarMensaje("error", "Debe indicar al menos el nombre de la actividad.");
-        return;
+        return false;
       }
 
       if (payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
         mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
-        return;
+        return false;
       }
 
       const tieneLat = payload.latitud !== "";
@@ -2770,7 +3424,7 @@ async function borrarFranja(id) {
 
       if ((tieneLat && !tieneLng) || (!tieneLat && tieneLng)) {
         mostrarMensaje("error", "Debe indicar latitud y longitud conjuntamente.");
-        return;
+        return false;
       }
 
       if ((tieneLat && tieneLng) && !payload.zoom_mapa) {
@@ -2791,7 +3445,7 @@ async function borrarFranja(id) {
       if (res.ok && data.ok) {
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
-          history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
+          history.replaceState(null, "", admin-actividades.html?id=${encodeURIComponent(data.id)});
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
           actualizarBotonEliminar();
         }
@@ -2799,14 +3453,17 @@ async function borrarFranja(id) {
         const avisoBorrado = await procesarImagenesPendientesPostGuardado();
 
         actividadEsBorradorTecnico = false;
+        limpiarCambiosPendientesActividad();
         mostrarMensaje(
           "ok",
           avisoBorrado
-            ? `${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
+            ? ${data.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}
             : (data.mensaje || "Actividad guardada correctamente.")
         );
+        return true;
       } else {
         mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
+        return false;
       }
     }
 
@@ -2843,7 +3500,7 @@ async function borrarFranja(id) {
 
       if (!esEdicion && data.id) {
         document.getElementById("actividadId").value = data.id;
-        history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
+        history.replaceState(null, "", admin-actividades.html?id=${encodeURIComponent(data.id)});
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
         actualizarBotonEliminar();
       }
@@ -2857,30 +3514,16 @@ async function borrarFranja(id) {
       return document.getElementById("actividadId").value;
     }
 
-    async function cancelarActividadEnEdicion() {
+    async function salirSinGuardarActividad() {
       const id = document.getElementById("actividadId").value;
 
-      const hayCambios =
-        document.getElementById("nombre").value.trim() ||
-        document.getElementById("titulo_publico").value.trim() ||
-        document.getElementById("descripcion_corta").value.trim() ||
-        franjasCache.length > 0 ||
-        getImagenUrlActualFormulario();
-
       if (!id) {
-        if (hayCambios) {
-          const confirmarSalir = confirm("Hay cambios no guardados. ¿Quieres cancelar y salir?");
-          if (!confirmarSalir) return;
-        }
         await limpiarUploadTemporalSiExiste();
         window.location.href = "portal.html";
         return;
       }
 
       if (actividadEsBorradorTecnico) {
-        const confirmarBorrado = confirm("Vas a cancelar esta actividad en borrador. Se eliminarán también sus franjas. ¿Continuar?");
-        if (!confirmarBorrado) return;
-
         const res = await fetch("/api/admin/actividades-guardar", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -2900,11 +3543,20 @@ async function borrarFranja(id) {
         return;
       }
 
-      const confirmarSalir = confirm("La actividad no es un borrador técnico. Cancelar solo cerrará esta edición. ¿Continuar?");
-      if (!confirmarSalir) return;
-
       await limpiarUploadTemporalSiExiste();
       window.location.href = "portal.html";
+    }
+
+    function intentarSalirAlPortal(event) {
+      if (event) event.preventDefault();
+      limpiarMensaje();
+
+      if (!hayCambiosPendientesActividad()) {
+        window.location.href = "portal.html";
+        return;
+      }
+
+      abrirModalSalidaSinGuardar();
     }
 
 async function accionEliminarActividadUI() {
@@ -2990,7 +3642,7 @@ function mostrarPaso(index) {
     pane.classList.toggle("activo", i === pasoActual);
   });
 
-  document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-block";
+  document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-flex";
   document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
   document.getElementById("btnGuardarActividad").classList.remove("oculto");
 
@@ -3140,6 +3792,7 @@ function retrocederPaso() {
           advertenciaImagenSinId = true;
         }
 
+        marcarCambiosPendientesActividad();
         actualizarPreview();
       } catch (error) {
         mostrarEstadoSubidaImagen("error", error.message || "No se pudo subir la imagen.");
@@ -3170,6 +3823,7 @@ function retrocederPaso() {
 
       document.getElementById("imagen_url").value = "";
       document.getElementById("imagen_id").value = "";
+      marcarCambiosPendientesActividad();
       actualizarPreview();
 
       if (currentId && !currentEsOriginal) {
@@ -3186,6 +3840,8 @@ function retrocederPaso() {
       if (!ok) return;
 
       document.getElementById("app").style.display = "block";
+      reorganizarLayoutEditorActividad();
+      compactarCabeceraFranjas();
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
@@ -3193,10 +3849,29 @@ function retrocederPaso() {
       document.getElementById("btnCancelarMensajeActividad").addEventListener("click", cancelarMensajeErrorActividad);
       document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
       document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
-      document.getElementById("btnCancelarActividad").addEventListener("click", cancelarActividadEnEdicion);
+      document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
       document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
       document.getElementById("btnEditarFranjaSeleccionada").addEventListener("click", editarFranjaSeleccionada);
       document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
+      document.getElementById("btnCerrarModalSalida").addEventListener("click", cerrarModalSalidaSinGuardar);
+      document.getElementById("btnSalirSinGuardar").addEventListener("click", async () => {
+        await salirSinGuardarActividad();
+      });
+      document.getElementById("btnGuardarYSalir").addEventListener("click", async () => {
+        salidaPendienteAlPortal = true;
+        const okGuardado = await guardarActividad();
+        if (okGuardado) {
+          window.location.href = "portal.html";
+          return;
+        }
+        salidaPendienteAlPortal = false;
+      });
+
+      document.getElementById("modalSalidaSinGuardar").addEventListener("click", (event) => {
+        if (event.target.id === "modalSalidaSinGuardar") {
+          cerrarModalSalidaSinGuardar();
+        }
+      });
 
       const btnSeleccionarImagenPreview = document.getElementById("btnSeleccionarImagenPreview");
       const inputImagenActividad = document.getElementById("inputImagenActividad");
@@ -3223,6 +3898,19 @@ function retrocederPaso() {
         });
       }
 
+      const inputPatronFranja = document.getElementById("fr_patron_recurrencia");
+      if (inputPatronFranja) {
+        inputPatronFranja.addEventListener("input", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
+        });
+
+        inputPatronFranja.addEventListener("change", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
+        });
+      }
+
       if (btnEliminarImagenPreview) {
         btnEliminarImagenPreview.addEventListener("click", async () => {
           await eliminarImagenActualDesdeEditor();
@@ -3241,6 +3929,7 @@ function retrocederPaso() {
           const okCambio = await manejarCambioCriticoCampo(id);
           if (!okCambio) return;
 
+          marcarCambiosPendientesActividad();
           actualizarVisibilidadFormulario();
           actualizarPreview();
 
@@ -3271,6 +3960,7 @@ function retrocederPaso() {
         "imagen_url",
         "usa_enlace_externo",
         "enlace_externo_url",
+        "enlace_externo_texto",
         "lugar",
         "direccion_postal",
         "latitud",
@@ -3281,6 +3971,7 @@ function retrocederPaso() {
         if (!el) return;
 
         el.addEventListener("input", () => {
+          marcarCambiosPendientesActividad();
           actualizarVisibilidadFormulario();
           actualizarPreview();
 
@@ -3294,6 +3985,7 @@ function retrocederPaso() {
         });
 
         el.addEventListener("change", () => {
+          marcarCambiosPendientesActividad();
           actualizarVisibilidadFormulario();
           actualizarPreview();
 
@@ -3323,6 +4015,12 @@ function retrocederPaso() {
       renderPreviewFranjas();
       CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
       mostrarPaso(0);
+
+      window.addEventListener("beforeunload", (event) => {
+        if (!hayCambiosPendientesActividad()) return;
+        event.preventDefault();
+        event.returnValue = "";
+      });
     });
   </script>
 </body>
