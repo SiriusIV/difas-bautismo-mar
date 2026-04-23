@@ -461,6 +461,7 @@
 
     .config-row-full {
       grid-column: 1 / -1;
+      grid-template-columns: 1fr;
       margin-bottom: 0;
     }
 
@@ -489,6 +490,10 @@
       justify-content: space-between;
       gap: 12px;
       min-height: 32px;
+    }
+
+    .control-row.toggle-pending {
+      visibility: hidden;
     }
 
     .control-row-label {
@@ -1866,7 +1871,12 @@
       ].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.dispatchEvent(new Event("change", { bubbles: true }));
+        const fila = el.closest(".control-row");
+        const checkbox = fila?.querySelector(".toggle-switch input");
+        if (checkbox) {
+          checkbox.checked = String(el.value) === "1";
+        }
+        fila?.classList.remove("toggle-pending");
       });
     }
 
@@ -1927,7 +1937,7 @@
             if (!label || !select) return bloque;
 
             const fila = document.createElement("div");
-            fila.className = "control-row";
+            fila.className = "control-row toggle-pending";
 
             const texto = document.createElement("span");
             texto.className = "control-row-label";
@@ -1951,6 +1961,7 @@
 
             select.addEventListener("change", () => {
               checkbox.checked = String(select.value) === "1";
+              fila.classList.remove("toggle-pending");
             });
 
             select.classList.add("oculto");
