@@ -1504,14 +1504,9 @@
             </div>
 
             <div class="fila" id="bloqueEnlaceExternoUrl">
-              <div>
-                <label for="enlace_externo_url">URL enlace externo</label>
-                <input type="text" id="enlace_externo_url" placeholder="https://...">
-              </div>
-
-              <div>
-                <label for="enlace_externo_texto">Texto del enlace</label>
-                <input type="text" id="enlace_externo_texto" placeholder="Ej: Web oficial">
+              <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                <label for="enlace_externo_url" style="margin:0; white-space:nowrap;">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://..." style="flex:1 1 auto;">
               </div>
             </div>
 
@@ -1783,9 +1778,6 @@
               <div id="previewSubtitulo" class="detalle-subtitulo-preview" style="display:none;"></div>
               <div id="previewMeta" class="detalle-meta-preview" style="display:none;"></div>
               <div id="previewTexto" class="detalle-texto-preview" style="display:none;"></div>
-              <div class="detalle-acciones-preview">
-                <a href="#" target="_blank" rel="noopener noreferrer" class="preview-link oculto" id="previewEnlaceExterno">Más información</a>
-              </div>
 
               <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview" style="display:none;">
                 <h4>Programación</h4>
@@ -1851,6 +1843,12 @@
 
     function normalizarImageId(v) {
       return normalizarTexto(v);
+    }
+
+    function normalizarFlagSelect(v, fallback = 0) {
+      if (v === true || v === 1 || v === "1") return "1";
+      if (v === false || v === 0 || v === "0") return "0";
+      return String(fallback);
     }
 
     function marcarCambiosPendientesActividad() {
@@ -2466,9 +2464,8 @@ async function manejarCambioCriticoCampo(id) {
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
     setValor("fr_patron_recurrencia", actividad.patron_recurrencia || "");
-    setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
+    setValor("usa_enlace_externo", normalizarFlagSelect(actividad.usa_enlace_externo, 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
-    setValor("enlace_externo_texto", actividad.enlace_externo_texto || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
     setValor("latitud", actividad.latitud ?? "");
     setValor("longitud", actividad.longitud ?? "");
@@ -2554,11 +2551,6 @@ async function manejarCambioCriticoCampo(id) {
         limpiarFormularioFranja();
       }
 
-      if (!usaEnlaceExterno) {
-        document.getElementById("enlace_externo_url").value = "";
-        document.getElementById("enlace_externo_texto").value = "";
-      }
-
       const mensajes = [];
 
       if (!requiereReserva) {
@@ -2623,7 +2615,6 @@ async function manejarCambioCriticoCampo(id) {
       const textoDetalle = descripcionCorta;
       const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
       const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
-      const enlaceTexto = document.getElementById("enlace_externo_texto").value.trim() || "Más información";
       const direccion = document.getElementById("direccion_postal").value.trim();
 
       const elTitulo = document.getElementById("previewTitulo");
@@ -2631,16 +2622,27 @@ async function manejarCambioCriticoCampo(id) {
       const elImagen = document.getElementById("previewImagen");
       const elMeta = document.getElementById("previewMeta");
       const elTexto = document.getElementById("previewTexto");
-      const link = document.getElementById("previewEnlaceExterno");
       const direccionDiv = document.getElementById("previewDireccion");
 
       document.getElementById("tituloActividadContexto").textContent =
         tituloPublico || nombre || "Nueva actividad";
 
       if (titulo) {
-        elTitulo.textContent = titulo;
+        elTitulo.innerHTML = "";
+        if (usaEnlaceExterno && enlaceUrl) {
+          const enlaceTitulo = document.createElement("a");
+          enlaceTitulo.href = enlaceUrl;
+          enlaceTitulo.target = "_blank";
+          enlaceTitulo.rel = "noopener noreferrer";
+          enlaceTitulo.className = "link-organizador";
+          enlaceTitulo.textContent = titulo;
+          elTitulo.appendChild(enlaceTitulo);
+        } else {
+          elTitulo.textContent = titulo;
+        }
         elTitulo.style.display = "";
       } else {
+        elTitulo.innerHTML = "";
         elTitulo.style.display = "none";
       }
 
@@ -2681,16 +2683,6 @@ async function manejarCambioCriticoCampo(id) {
       } else {
         elTexto.textContent = "";
         elTexto.style.display = "none";
-      }
-
-      if (usaEnlaceExterno && enlaceUrl) {
-        link.classList.remove("oculto");
-        link.href = enlaceUrl;
-        link.textContent = enlaceTexto;
-      } else {
-        link.classList.add("oculto");
-        link.href = "#";
-        link.textContent = "Más información";
       }
 
       if (direccion) {
@@ -3394,7 +3386,6 @@ async function borrarFranja(id) {
         patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
         usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
         enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
-        enlace_externo_texto: document.getElementById("enlace_externo_texto").value.trim(),
         direccion_postal: document.getElementById("direccion_postal").value.trim(),
         latitud: document.getElementById("latitud").value.trim(),
         longitud: document.getElementById("longitud").value.trim(),
@@ -3960,7 +3951,6 @@ function retrocederPaso() {
         "imagen_url",
         "usa_enlace_externo",
         "enlace_externo_url",
-        "enlace_externo_texto",
         "lugar",
         "direccion_postal",
         "latitud",
