@@ -1477,6 +1477,12 @@
       return normalizarTexto(v);
     }
 
+    function normalizarFlagSelect(v, fallback = 0) {
+      if (v === true || v === 1 || v === "1") return "1";
+      if (v === false || v === 0 || v === "0") return "0";
+      return String(fallback);
+    }
+
     function getImagenIdActualFormulario() {
       return normalizarImageId(document.getElementById("imagen_id")?.value);
     }
@@ -1841,7 +1847,7 @@ async function manejarCambioCriticoCampo(id) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
-    setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
+    setValor("usa_enlace_externo", normalizarFlagSelect(actividad.usa_enlace_externo, 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
     setValor("latitud", actividad.latitud ?? "");
