@@ -1477,6 +1477,12 @@
       return normalizarTexto(v);
     }
 
+    function normalizarFlagSelect(v, fallback = 0) {
+      if (v === true || v === 1 || v === "1") return "1";
+      if (v === false || v === 0 || v === "0") return "0";
+      return String(fallback);
+    }
+
     function getImagenIdActualFormulario() {
       return normalizarImageId(document.getElementById("imagen_id")?.value);
     }
@@ -1841,7 +1847,7 @@ async function manejarCambioCriticoCampo(id) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
-    setValor("usa_enlace_externo", String(actividad.usa_enlace_externo ?? 0));
+    setValor("usa_enlace_externo", normalizarFlagSelect(actividad.usa_enlace_externo, 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
     setValor("latitud", actividad.latitud ?? "");
@@ -1955,9 +1961,6 @@ async function manejarCambioCriticoCampo(id) {
       const lugar = document.getElementById("lugar").value.trim();
       const provincia = document.getElementById("provincia").value.trim();
       const organizador = document.getElementById("organizador_publico").value.trim();
-      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
-      const enlaceUrl = document.getElementById("enlace_externo_url").value.trim();
-
       const organizadorHTML = organizador
         ? `<div><strong>Organiza:</strong> ${organizador}</div>`
         : "";
@@ -2051,16 +2054,6 @@ async function manejarCambioCriticoCampo(id) {
       } else {
         elTexto.textContent = "";
         elTexto.style.display = "none";
-      }
-
-      if (usaEnlaceExterno && enlaceUrl) {
-        link.classList.remove("oculto");
-        link.href = enlaceUrl;
-        link.textContent = enlaceTexto;
-      } else {
-        link.classList.add("oculto");
-        link.href = "#";
-        link.textContent = "Más información";
       }
 
       if (direccion) {
