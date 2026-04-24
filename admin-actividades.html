@@ -2608,10 +2608,6 @@ async function manejarCambioCriticoCampo(id) {
 
       if (!usaFranjas) {
         document.getElementById("bloqueFranjasEditor").classList.add("oculto");
-        franjasCache = [];
-        renderListaFranjas();
-        renderPreviewFranjas();
-        limpiarFormularioFranja();
       }
 
       const mensajes = [];
@@ -3064,13 +3060,6 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
-
-      if (!usaFranjas) {
-        franjasCache = [];
-        renderListaFranjas();
-        renderPreviewFranjas();
-        limpiarFormularioFranja();
-      }
     }
 
 function limpiarFormularioFranja() {
