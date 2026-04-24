@@ -2060,13 +2060,13 @@
 
     function compactarCabeceraFranjas() {
       const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
-      const bloqueProgramacion = stepProgramacion?.querySelector('.subbloque');
       const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
+      const bloqueProgramacion = bloqueFranjas?.closest('.subbloque');
       const toolbar = document.getElementById("accionesFranjasToolbar");
       const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
       const selectFrecuencia = document.getElementById("es_recurrente");
       const selectUsaFranjas = document.getElementById("usa_franjas");
-      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+      if (!stepProgramacion || !bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
 
       const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
       const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
