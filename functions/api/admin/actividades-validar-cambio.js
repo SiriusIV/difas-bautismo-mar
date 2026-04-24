@@ -79,7 +79,7 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
     SELECT COUNT(*) AS total
     FROM reservas
     WHERE actividad_id = ?
-      AND estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+      AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
   `).bind(actividad_id).first();
 
   return Number(row?.total || 0);
