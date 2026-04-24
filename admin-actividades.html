@@ -450,7 +450,7 @@
     .config-aside {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       align-self: start;
       margin-top: -46px;
     }
@@ -459,10 +459,10 @@
       border: 1px solid var(--soft-border);
       border-radius: 12px;
       background: #eef4ff;
-      padding: 8px 10px;
+      padding: 7px 10px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .config-periodo-card.desactivado {
@@ -474,7 +474,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
     }
 
     .config-periodo-campo label {
@@ -483,8 +483,8 @@
     }
 
     .config-periodo-campo input {
-      width: 126px;
-      min-width: 126px;
+      width: 118px;
+      min-width: 118px;
     }
 
     .config-periodo-campo input:disabled {
@@ -523,14 +523,33 @@
       margin-bottom: 0;
     }
 
+    .config-enlace-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .config-enlace-inline label {
+      margin: 0;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .config-enlace-inline input {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+    }
+
     .config-panel {
       border: 1px solid var(--soft-border);
       border-radius: 12px;
       background: var(--soft-bg);
-      padding: 10px 12px;
+      padding: 8px 10px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .config-panel.panel-pending {
@@ -539,7 +558,7 @@
 
     .control-panel-grid {
       display: grid;
-      gap: 8px;
+      gap: 5px;
     }
 
     .control-panel-grid select {
@@ -551,7 +570,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      min-height: 32px;
+      min-height: 28px;
     }
 
     .control-row.toggle-pending {
@@ -592,8 +611,8 @@
       position: relative;
       display: inline-flex;
       align-items: center;
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 22px;
       flex: 0 0 auto;
     }
 
@@ -606,8 +625,8 @@
     }
 
     .toggle-slider {
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 22px;
       border-radius: 999px;
       background: #d7dee7;
       border: 1px solid #c5d0db;
@@ -620,8 +639,8 @@
       position: absolute;
       top: 2px;
       left: 2px;
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       background: #fff;
       box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
@@ -634,7 +653,7 @@
     }
 
     .toggle-switch input:checked + .toggle-slider::after {
-      transform: translateX(20px);
+      transform: translateX(18px);
     }
 
     label {
@@ -1601,9 +1620,9 @@
             </div>
 
             <div class="fila" id="bloqueEnlaceExternoUrl">
-              <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                <label for="enlace_externo_url" style="margin:0; white-space:nowrap;">URL enlace externo</label>
-                <input type="text" id="enlace_externo_url" placeholder="https://..." style="flex:1 1 auto;">
+              <div class="config-enlace-inline">
+                <label for="enlace_externo_url">URL enlace externo</label>
+                <input type="text" id="enlace_externo_url" placeholder="https://...">
               </div>
             </div>
 
