@@ -475,6 +475,10 @@
       gap: 8px;
     }
 
+    .config-panel.panel-pending {
+      visibility: hidden;
+    }
+
     .control-panel-grid {
       display: grid;
       gap: 8px;
@@ -1878,6 +1882,10 @@
         }
         fila?.classList.remove("toggle-pending");
       });
+
+      document.querySelectorAll(".config-panel.panel-pending").forEach((panel) => {
+        panel.classList.remove("panel-pending");
+      });
     }
 
     function marcarCambiosPendientesActividad() {
@@ -1991,7 +1999,7 @@
           filaMedia.append(campoTitulo, campoPrograma);
 
           const panel = document.createElement("aside");
-          panel.className = "config-panel";
+          panel.className = "config-panel panel-pending";
 
           const panelGrid = document.createElement("div");
           panelGrid.className = "control-panel-grid";
@@ -3859,12 +3867,12 @@ function retrocederPaso() {
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ok = await comprobarSesionAdmin();
-      if (!ok) return;
+        const ok = await comprobarSesionAdmin();
+        if (!ok) return;
 
-      document.getElementById("app").style.display = "block";
-      reorganizarLayoutEditorActividad();
-      compactarCabeceraFranjas();
+        const app = document.getElementById("app");
+        reorganizarLayoutEditorActividad();
+        compactarCabeceraFranjas();
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
@@ -4028,6 +4036,8 @@ function retrocederPaso() {
         mostrarMensaje("error", error.message || "No se pudo inicializar el panel.");
       } finally {
         cargandoActividad = false;
+        sincronizarTogglesPanelConfiguracion();
+        app.style.display = "block";
       }
 
       actualizarVisibilidadFormulario();
