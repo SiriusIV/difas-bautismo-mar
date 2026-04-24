@@ -1624,8 +1624,6 @@
               <h4>Programación</h4>
               <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
 
-              <div id="cabeceraControlFranjas" class="cabecera-franjas-control"></div>
-
               <div class="fila-compacta">
                 <div>
                   <select id="usa_franjas" class="input-mini">
@@ -1650,14 +1648,13 @@
                 <div></div>
               </div>
 
-<div class="subbloque oculto" id="bloqueFranjasEditor">
   <div class="subbloque-head">
     <div class="subbloque-head-texto">
       <h4>Franjas horarias</h4>
       <p>Selecciona una franja de la tabla y utiliza los iconos para editarla, borrarla o guardar una nueva.</p>
     </div>
 
-    <div class="acciones-franja-toolbar">
+    <div class="acciones-franja-toolbar" id="accionesFranjasToolbar">
       <button type="button" class="btn-icono-franja" id="btnEditarFranjaSeleccionada" title="Editar franja" aria-label="Editar franja" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 20h9"></path>
@@ -1677,6 +1674,8 @@
 
     </div>
   </div>
+
+<div class="subbloque oculto" id="bloqueFranjasEditor">
 
   <input type="hidden" id="franjaId" value="">
 
@@ -2063,12 +2062,11 @@
       const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
       const bloqueProgramacion = stepProgramacion?.querySelector('.subbloque');
       const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
-      const toolbar = bloqueFranjas?.querySelector(".acciones-franja-toolbar");
-      const cabeceraControl = document.getElementById("cabeceraControlFranjas");
+      const toolbar = document.getElementById("accionesFranjasToolbar");
       const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
       const selectFrecuencia = document.getElementById("es_recurrente");
       const selectUsaFranjas = document.getElementById("usa_franjas");
-      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !cabeceraControl || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
 
       const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
       const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
@@ -2113,7 +2111,7 @@
         toggle.append(checkbox, slider);
         combo.append(toggle, selectorWrap);
         configWrap.append(combo);
-        cabeceraControl.appendChild(configWrap);
+        toolbar.insertBefore(configWrap, toolbar.firstChild);
       }
 
       sincronizarToggleUsaFranjas();
@@ -2472,6 +2470,11 @@ async function manejarCambioCriticoCampo(id) {
   if (pantallaBloqueadaPorErrorActividad) return false;
   if (cargandoActividad) return true;
 
+  if (id === "tipo") {
+    guardarValorPrevioCampoCritico(id);
+    return true;
+  }
+
   limpiarMensaje();
 
   const resultado = await validarCambioCriticoActividad();
@@ -2630,8 +2633,8 @@ async function manejarCambioCriticoCampo(id) {
       }
 
       const aviso = document.getElementById("avisoConfiguracion");
-      aviso.textContent = mensajes.join(" ");
-      aviso.classList.toggle("oculto", mensajes.length === 0);
+      aviso.textContent = "";
+      aviso.classList.add("oculto");
 
       actualizarEstadoFranjasUI();
     }
