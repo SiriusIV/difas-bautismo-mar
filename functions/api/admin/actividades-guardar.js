@@ -129,13 +129,14 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
 function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
+  const visiblePortal = parsearFlag(body.visible_portal, 1);
 
   return {
     nombre: limpiarTexto(body.nombre),
     tipo,
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
-    activa: parsearFlag(body.activa, 1),
+    activa: visiblePortal,
 
     titulo_publico: normalizarNullable(body.titulo_publico),
     subtitulo_publico: normalizarNullable(body.subtitulo_publico),
@@ -151,7 +152,7 @@ function construirPayload(body, admin_id) {
     imagen_url: normalizarNullable(body.imagen_url),
     imagen_id: normalizarNullable(body.imagen_id),
 
-    visible_portal: parsearFlag(body.visible_portal, 1),
+    visible_portal: visiblePortal,
     orden_portal: parsearEntero(body.orden_portal, 0),
     organizador_publico: normalizarNullable(body.organizador_publico),
     usa_franjas: parsearFlag(body.usa_franjas, 1),
