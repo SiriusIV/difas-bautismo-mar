@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de actividades</title>
+  <title>GestiÃ³n de actividades</title>
 
   <link
     rel="stylesheet"
@@ -442,6 +442,11 @@
       margin-bottom: 0;
     }
 
+    .config-periodo {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
     .fila-una {
       display: grid;
       grid-template-columns: 1fr;
@@ -611,7 +616,7 @@
     }
 
     #descripcion_corta {
-      min-height: 118px;
+      min-height: 86px;
       font-family: Arial, sans-serif;
     }
 
@@ -727,6 +732,10 @@
   margin-left: auto;
 }
 
+.acciones-franja-config .acciones-franja-select {
+  width: 220px;
+}
+
 .cabecera-franjas-control {
   display: flex;
   justify-content: flex-end;
@@ -751,6 +760,10 @@
 .acciones-franja-combo.desactivado {
   background: #fff;
   border-color: #d9e1e9;
+}
+
+.acciones-franja-combo.solo-select {
+  padding-left: 14px;
 }
 
 .acciones-franja-combo .toggle-switch {
@@ -1420,8 +1433,8 @@
       <div class="bloque-marca">
         <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
         <div class="titulos-cabecera">
-          <h1>Gestión de actividades</h1>
-          <h2 id="subtituloCabecera">Alta y edición de actividades</h2>
+          <h1>GestiÃ³n de actividades</h1>
+          <h2 id="subtituloCabecera">Alta y ediciÃ³n de actividades</h2>
         </div>
       </div>
 
@@ -1505,8 +1518,8 @@
           <input type="hidden" id="orden_portal" value="0">
 
           <section class="step-pane activo" data-step="0">
-            <h3 class="step-title">Configuración</h3>
-            <p class="step-help">Define la actividad y su presentación pública.</p>
+            <h3 class="step-title">ConfiguraciÃ³n</h3>
+            <p class="step-help">Define la actividad y su presentaciÃ³n pÃºblica.</p>
 
             <div class="fila">
               <div>
@@ -1522,7 +1535,7 @@
 
             <div class="fila">
               <div>
-                <label for="titulo_publico">Título</label>
+                <label for="titulo_publico">TÃ­tulo</label>
                 <input type="text" id="titulo_publico">
               </div>
 
@@ -1534,7 +1547,7 @@
 
             <div class="fila-una">
               <div>
-                <label for="descripcion_corta">Descripción</label>
+                <label for="descripcion_corta">DescripciÃ³n</label>
                 <textarea id="descripcion_corta"></textarea>
               </div>
             </div>
@@ -1551,14 +1564,14 @@
                 <label for="usa_enlace_externo">Mostrar enlace externo</label>
                 <select id="usa_enlace_externo" class="input-mini">
                   <option value="0">No</option>
-                  <option value="1">Sí</option>
+                  <option value="1">SÃ­</option>
                 </select>
               </div>
 
               <div>
                 <label for="visible_portal">Visible en portal</label>
                 <select id="visible_portal" class="input-mini">
-                  <option value="1">Sí</option>
+                  <option value="1">SÃ­</option>
                   <option value="0">No</option>
                 </select>
               </div>
@@ -1566,7 +1579,7 @@
               <div>
                 <label for="activa">Activa</label>
                 <select id="activa" class="input-mini">
-                  <option value="1">Sí</option>
+                  <option value="1">SÃ­</option>
                   <option value="0">No</option>
                 </select>
               </div>
@@ -1579,8 +1592,8 @@
           </section>
 
           <section class="step-pane" data-step="1">
-            <h3 class="step-title">Programación</h3>
-            <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
+            <h3 class="step-title">ProgramaciÃ³n</h3>
+            <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestiÃ³n de franjas.</p>
 
             <div class="fila-compacta fila-compacta-programacion">
               <div>
@@ -1594,7 +1607,7 @@
               <div>
                 <label for="requiere_reserva">Con reserva</label>
                 <select id="requiere_reserva" class="input-mini">
-                  <option value="1">Sí</option>
+                  <option value="1">SÃ­</option>
                   <option value="0">No</option>
                 </select>
               </div>
@@ -1602,7 +1615,7 @@
               <div>
                 <label for="aforo_limitado">Aforo limitado</label>
                 <select id="aforo_limitado" class="input-mini">
-                  <option value="1">Sí</option>
+                  <option value="1">SÃ­</option>
                   <option value="0">No</option>
                 </select>
               </div>
@@ -1628,13 +1641,13 @@
             <div id="avisoConfiguracion" class="aviso-config oculto"></div>
 
             <div class="subbloque">
-              <h4>Programación</h4>
-              <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
+              <h4>ProgramaciÃ³n</h4>
+              <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquÃ­ mismo su programaciÃ³n.</p>
 
               <div class="fila-compacta">
                 <div>
                   <select id="usa_franjas" class="input-mini">
-                    <option value="1">Sí</option>
+                    <option value="1">SÃ­</option>
                     <option value="0">No</option>
                   </select>
                 </div>
@@ -1642,15 +1655,15 @@
                 <div id="bloqueSelectorFrecuencia">
                   <select id="es_recurrente" class="input-mini">
                     <option value="0">Fechas concretas</option>
-                    <option value="1">Patrón de frecuencia</option>
+                    <option value="1">PatrÃ³n de frecuencia</option>
                   </select>
                 </div>
               </div>
 
               <div class="fila oculto" id="bloquePatronRecurrencia">
                 <div>
-                  <label for="patron_recurrencia">Descripción del patrón</label>
-                  <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+                  <label for="patron_recurrencia">DescripciÃ³n del patrÃ³n</label>
+                  <input type="text" id="patron_recurrencia" placeholder="Ej: Primer sÃ¡bado de cada mes">
                 </div>
                 <div></div>
               </div>
@@ -1695,8 +1708,8 @@
     </div>
 
     <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-      <label>Patrón</label>
-      <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+      <label>PatrÃ³n</label>
+      <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sÃ¡bado de cada mes">
     </div>
 
     <div class="campo-franja-inline">
@@ -1733,8 +1746,8 @@
           </section>
 
           <section class="step-pane" data-step="2">
-            <h3 class="step-title">Localización</h3>
-            <p class="step-help">Define el lugar y ajusta la posición en el mapa.</p>
+            <h3 class="step-title">LocalizaciÃ³n</h3>
+            <p class="step-help">Define el lugar y ajusta la posiciÃ³n en el mapa.</p>
 
             <div class="fila">
               <div>
@@ -1750,7 +1763,7 @@
 
             <div class="fila-una">
               <div>
-                <label for="direccion_postal">Dirección postal</label>
+                <label for="direccion_postal">DirecciÃ³n postal</label>
                 <input type="text" id="direccion_postal">
               </div>
             </div>
@@ -1768,7 +1781,7 @@
             </button>
 
             <h4 id="tituloModalSalida">Hay cambios sin guardar</h4>
-            <p>Si sales ahora sin guardar, los cambios de esta actividad se perderán. Puedes volver al formulario, continuar sin guardar o guardar antes de salir.</p>
+            <p>Si sales ahora sin guardar, los cambios de esta actividad se perderÃ¡n. Puedes volver al formulario, continuar sin guardar o guardar antes de salir.</p>
 
             <div class="modal-acciones">
               <button type="button" class="btn btn-secundario" id="btnSalirSinGuardar">Continuar sin guardar</button>
@@ -1824,7 +1837,7 @@
               <div id="previewTexto" class="detalle-texto-preview" style="display:none;"></div>
 
               <div id="tablaFranjasPreviewWrap" class="tabla-franjas-preview" style="display:none;">
-                <h4>Programación</h4>
+                <h4>ProgramaciÃ³n</h4>
                 <table>
                   <thead>
                     <tr>
@@ -1899,6 +1912,7 @@
       [
         "requiere_reserva",
         "aforo_limitado",
+        "usa_franjas",
         "usa_enlace_externo",
         "visible_portal"
       ].forEach((id) => {
@@ -1944,12 +1958,14 @@
 
         const filaNombre = filasConfig.find((el) => el.querySelector("#nombre"));
         const filaTitulo = filasConfig.find((el) => el.querySelector("#titulo_publico"));
-        const filaDescripcion = filasConfig.find((el) => el.querySelector("#descripcion_corta"));
-        const filaEnlace = document.getElementById("bloqueEnlaceExternoUrl");
-        const filaControles = stepConfig.querySelector(".fila-compacta-config-final");
-        const filaProgramacion = stepProgramacion.querySelector(".fila-compacta-programacion");
+          const filaDescripcion = filasConfig.find((el) => el.querySelector("#descripcion_corta"));
+          const filaEnlace = document.getElementById("bloqueEnlaceExternoUrl");
+          const filaControles = stepConfig.querySelector(".fila-compacta-config-final");
+          const filaProgramacion = stepProgramacion.querySelector(".fila-compacta-programacion");
+          const bloqueFechas = document.getElementById("bloqueFechas");
+          const selectUsaFranjas = document.getElementById("usa_franjas");
 
-        if (filaNombre && filaTitulo && filaDescripcion && filaEnlace && filaControles && filaProgramacion) {
+          if (filaNombre && filaTitulo && filaDescripcion && filaEnlace && filaControles && filaProgramacion && bloqueFechas && selectUsaFranjas) {
           const crearFilaControlSelect = (bloque) => {
             const label = bloque.querySelector("label");
             const select = bloque.querySelector("select");
@@ -1968,10 +1984,10 @@
             return fila;
           };
 
-          const crearFilaControlToggle = (bloque) => {
-            const label = bloque.querySelector("label");
-            const select = bloque.querySelector("select");
-            if (!label || !select) return bloque;
+            const crearFilaControlToggle = (bloque) => {
+              const label = bloque.querySelector("label");
+              const select = bloque.querySelector("select");
+              if (!label || !select) return bloque;
 
             const fila = document.createElement("div");
             fila.className = "control-row toggle-pending";
@@ -2003,9 +2019,46 @@
 
             select.classList.add("oculto");
             toggle.append(checkbox, slider);
-            fila.append(texto, toggle, select);
-            return fila;
-          };
+              fila.append(texto, toggle, select);
+              return fila;
+            };
+
+            const crearFilaControlToggleDirecto = (select, labelText) => {
+              if (!select) return null;
+
+              const fila = document.createElement("div");
+              fila.className = "control-row toggle-pending";
+
+              const texto = document.createElement("span");
+              texto.className = "control-row-label";
+              texto.textContent = labelText;
+
+              const toggle = document.createElement("label");
+              toggle.className = "toggle-switch";
+
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = String(select.value) === "1";
+              checkbox.setAttribute("aria-label", labelText);
+
+              const slider = document.createElement("span");
+              slider.className = "toggle-slider";
+
+              checkbox.addEventListener("change", () => {
+                select.value = checkbox.checked ? "1" : "0";
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+              });
+
+              select.addEventListener("change", () => {
+                checkbox.checked = String(select.value) === "1";
+                fila.classList.remove("toggle-pending");
+              });
+
+              select.classList.add("oculto");
+              toggle.append(checkbox, slider);
+              fila.append(texto, toggle, select);
+              return fila;
+            };
 
           const [campoNombre, campoOrganiza] = Array.from(filaNombre.children);
           const [campoTitulo, campoPrograma] = Array.from(filaTitulo.children);
@@ -2040,13 +2093,15 @@
             crearFilaControlSelect(bloqueTipo),
             crearFilaControlToggle(bloqueReserva),
             crearFilaControlToggle(bloqueAforo),
+            crearFilaControlToggleDirecto(selectUsaFranjas, "Con franjas horarias"),
             crearFilaControlToggle(bloqueEnlace),
             crearFilaControlToggle(bloqueVisible)
           ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
 
           panel.appendChild(panelGrid);
           filaEnlace.classList.add("config-row-full");
-          main.append(filaSuperior, filaMedia, campoDescripcion);
+          bloqueFechas.classList.add("config-row-full", "config-periodo");
+          main.append(filaSuperior, filaMedia, campoDescripcion, bloqueFechas);
 
           grid.append(main, panel, filaEnlace);
           stepConfig.appendChild(grid);
@@ -2061,19 +2116,18 @@
 
       const ayudaProgramacion = stepProgramacion.querySelector(".step-help");
       if (ayudaProgramacion) {
-        ayudaProgramacion.textContent = "Define la vigencia temporal y la programación real de las franjas horarias.";
+        ayudaProgramacion.textContent = "Define la vigencia temporal y la programaciÃ³n real de las franjas horarias.";
       }
     }
 
     function compactarCabeceraFranjas() {
       const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
-      const selectUsaFranjas = document.getElementById("usa_franjas");
       const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
-      const bloqueProgramacion = selectUsaFranjas?.closest('.subbloque');
+      const selectFrecuencia = document.getElementById("es_recurrente");
+      const bloqueProgramacion = selectFrecuencia?.closest('.subbloque');
       const toolbar = document.getElementById("accionesFranjasToolbar");
       const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
-      const selectFrecuencia = document.getElementById("es_recurrente");
-      if (!stepProgramacion || !bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+      if (!stepProgramacion || !bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia) return;
 
       const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
       const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
@@ -2088,26 +2142,7 @@
         configWrap.className = "acciones-franja-config";
 
         const combo = document.createElement("div");
-        combo.className = "acciones-franja-combo";
-
-        const toggle = document.createElement("label");
-        toggle.className = "toggle-switch";
-        toggle.title = "Usa franjas horarias";
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.id = "usa_franjas_toggle";
-        checkbox.setAttribute("aria-label", "Usa franjas horarias");
-
-        const slider = document.createElement("span");
-        slider.className = "toggle-slider";
-
-        checkbox.addEventListener("change", () => {
-          selectUsaFranjas.value = checkbox.checked ? "1" : "0";
-          selectUsaFranjas.dispatchEvent(new Event("change", { bubbles: true }));
-        });
-
-        selectUsaFranjas.classList.add("oculto");
+        combo.className = "acciones-franja-combo solo-select";
 
         selectFrecuencia.classList.remove("input-mini");
         selectFrecuencia.classList.add("acciones-franja-select");
@@ -2115,13 +2150,10 @@
         selectorWrap.className = "acciones-franja-select-wrap";
         selectorWrap.appendChild(selectFrecuencia);
 
-        toggle.append(checkbox, slider);
-        combo.append(toggle, selectorWrap);
+        combo.append(selectorWrap);
         configWrap.append(combo);
         toolbar.appendChild(configWrap);
       }
-
-      sincronizarToggleUsaFranjas();
     }
 
     function abrirModalSalidaSinGuardar() {
@@ -2152,25 +2184,6 @@
       const visible = document.getElementById("fr_patron_recurrencia");
       if (!oculto || !visible) return;
       oculto.value = visible.value || "";
-    }
-
-    function sincronizarToggleUsaFranjas() {
-      const select = document.getElementById("usa_franjas");
-      const toggle = document.getElementById("usa_franjas_toggle");
-      const selectFrecuencia = document.getElementById("es_recurrente");
-      const combo = document.querySelector(".acciones-franja-combo");
-      if (!select || !toggle) return;
-
-      const activo = String(select.value) === "1";
-      toggle.checked = activo;
-
-      if (selectFrecuencia) {
-        selectFrecuencia.disabled = !activo;
-      }
-
-      if (combo) {
-        combo.classList.toggle("desactivado", !activo);
-      }
     }
 
     function registrarImagenOriginalDesdeFormulario() {
@@ -2219,7 +2232,7 @@
 
       const avisos = [];
       if (advertenciaImagenSinId) {
-        avisos.push("La imagen anterior no se pudo borrar automáticamente porque no tenía image_id.");
+        avisos.push("La imagen anterior no se pudo borrar automÃ¡ticamente porque no tenÃ­a image_id.");
       }
       if (errores.length) {
         avisos.push("Alguna imagen anterior no se pudo borrar en Cloudflare.");
@@ -2347,7 +2360,7 @@ function cancelarMensajeErrorActividad() {
       const fecha = new Date(yyyy, mm - 1, dd);
       if (Number.isNaN(fecha.getTime())) return fechaISO;
 
-      const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+      const dias = ["domingo", "lunes", "martes", "miÃ©rcoles", "jueves", "viernes", "sÃ¡bado"];
       const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
       return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
@@ -2489,12 +2502,11 @@ async function manejarCambioCriticoCampo(id) {
   if (!resultado?.ok) {
     mostrarMensaje(
       "error",
-      resultado.error || "El cambio no es válido.",
+      resultado.error || "El cambio no es vÃ¡lido.",
       {
         bloqueante: true,
         onAccept: () => {
           restaurarValorPrevioCampoCritico(id);
-          sincronizarToggleUsaFranjas();
           actualizarVisibilidadFormulario();
           actualizarPreview();
           renderMapaPreviewActividad();
@@ -2594,56 +2606,52 @@ async function manejarCambioCriticoCampo(id) {
       limpiarCambiosPendientesActividad();
     }
 
-    function actualizarVisibilidadFormulario() {
-      const tipo = document.getElementById("tipo").value;
-      const usaFranjas = document.getElementById("usa_franjas").value === "1";
-      const requiereReserva = document.getElementById("requiere_reserva").value === "1";
-      const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
-      const esRecurrente = document.getElementById("es_recurrente").value === "1";
-      const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
-      const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
+    function getPasoFlowActividad() {
+  return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2] : [0, 2];
+}
 
-      sincronizarToggleUsaFranjas();
+function normalizarPasoSegunFlujo(pasoDeseado) {
+  const flow = getPasoFlowActividad();
+  if (flow.includes(pasoDeseado)) return pasoDeseado;
+  if (pasoDeseado <= flow[0]) return flow[0];
+  if (pasoDeseado >= flow[flow.length - 1]) return flow[flow.length - 1];
 
-      document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
-      document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
-      document.getElementById("bloqueSelectorFrecuencia").classList.remove("oculto");
-      document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
+  for (let i = 0; i < flow.length; i += 1) {
+    if (flow[i] > pasoDeseado) return flow[i];
+  }
 
-      document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
-      document.getElementById("fr_bloque_patron").classList.toggle("oculto", !frEsRecurrente);
-      document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
+  return flow[0];
+}
 
-      if (!usaFranjas) {
-        document.getElementById("bloqueFranjasEditor").classList.add("oculto");
-      }
+function actualizarVisibilidadFormulario() {
+  const tipo = document.getElementById("tipo").value;
+  const usaFranjas = document.getElementById("usa_franjas").value === "1";
+  const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
+  const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
+  const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
+  const stepProgramacion = document.querySelector('.step-pane[data-step="1"]');
 
-      const mensajes = [];
+  document.getElementById("bloqueFechas").classList.toggle("oculto", tipo !== "TEMPORAL");
+  document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
+  document.getElementById("bloqueSelectorFrecuencia").classList.remove("oculto");
+  document.getElementById("bloqueEnlaceExternoUrl").classList.toggle("oculto", !usaEnlaceExterno);
+  stepProgramacion?.classList.toggle("oculto", !usaFranjas);
 
-      if (!requiereReserva) {
-        mensajes.push("Actividad informativa: no mostrará botón de solicitud ni generará reservas.");
-      }
+  document.getElementById("fr_bloque_fecha").classList.toggle("oculto", frEsRecurrente);
+  document.getElementById("fr_bloque_patron").classList.toggle("oculto", !frEsRecurrente);
+  document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
 
-      if (!aforoLimitado) {
-        mensajes.push("Sin control de aforo: no habrá cálculo de plazas ni gestión nominal de asistentes.");
-      }
+  const aviso = document.getElementById("avisoConfiguracion");
+  aviso.textContent = "";
+  aviso.classList.add("oculto");
 
-      if (usaFranjas && !requiereReserva) {
-        mensajes.push("Las franjas se mostrarán solo con valor informativo.");
-      }
+  actualizarEstadoFranjasUI();
+  if (!getPasoFlowActividad().includes(pasoActual)) {
+    mostrarPaso(normalizarPasoSegunFlujo(pasoActual));
+  }
+}
 
-      if (!usaFranjas) {
-        mensajes.push("No se mostrará bloque de programación en el portal.");
-      }
-
-      const aviso = document.getElementById("avisoConfiguracion");
-      aviso.textContent = "";
-      aviso.classList.add("oculto");
-
-      actualizarEstadoFranjasUI();
-    }
-
-    function construirMetaPreview() {
+function construirMetaPreview() {
       const tipo = document.getElementById("tipo").value;
       const fecha_inicio = document.getElementById("fecha_inicio").value;
       const fecha_fin = document.getElementById("fecha_fin").value;
@@ -2892,7 +2900,7 @@ async function buscarLocalidadYCentrar(nombreLocalidad, fijarMarcador = false) {
   ultimaLocalidadBuscada = valor;
 
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", España")}`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(valor + ", EspaÃ±a")}`);
     const data = await res.json();
 
     if (valor !== ultimaLocalidadBuscada) return false;
@@ -2924,7 +2932,7 @@ async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador 
 
   if (!dir) return false;
 
-  const consulta = loc ? `${dir}, ${loc}, España` : `${dir}, España`;
+  const consulta = loc ? `${dir}, ${loc}, EspaÃ±a` : `${dir}, EspaÃ±a`;
 
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`);
@@ -2951,7 +2959,7 @@ async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador 
     actualizarPreview();
     return true;
   } catch (e) {
-    console.warn("No se pudo centrar por dirección postal", e);
+    console.warn("No se pudo centrar por direcciÃ³n postal", e);
     return false;
   }
 }
@@ -3025,7 +3033,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
 
     return true;
   } catch (e) {
-    console.warn("No se pudo resolver dirección/localidad desde coordenadas", e);
+    console.warn("No se pudo resolver direcciÃ³n/localidad desde coordenadas", e);
     return false;
   }
 }
@@ -3053,7 +3061,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
     const ok = await buscarDireccionYCentrar(direccion, localidad, true);
 
     if (!ok) {
-      mostrarMensaje("error", "No se ha podido localizar la dirección postal indicada.");
+      mostrarMensaje("error", "No se ha podido localizar la direcciÃ³n postal indicada.");
     }
   }, 500);
 }
@@ -3135,9 +3143,9 @@ function renderListaFranjas() {
 
   const filas = franjasCache.map(f => {
     const bloqueProgramacion = textoProgramacionFranja(f);
-    const capacidad = f.capacidad == null ? "—" : String(f.capacidad);
-    const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
-    const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
+    const capacidad = f.capacidad == null ? "â€”" : String(f.capacidad);
+    const ocupadas = f.ocupadas == null ? "â€”" : String(f.ocupadas);
+    const disponibles = f.disponibles == null ? "â€”" : String(f.disponibles);
     const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
 
     return `
@@ -3220,7 +3228,7 @@ function renderListaFranjas() {
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
             <td>${f.hora_fin}</td>
-            ${aforoLimitado ? `<td>${f.capacidad == null ? "—" : f.capacidad}</td>` : ""}
+            ${aforoLimitado ? `<td>${f.capacidad == null ? "â€”" : f.capacidad}</td>` : ""}
           </tr>
         `)
         .join("");
@@ -3343,7 +3351,7 @@ async function borrarFranja(id) {
     if (primerData?.requiere_confirmacion) {
       mostrarMensaje(
         "aviso",
-        primerData.mensaje || "Esta acción requiere confirmación.",
+        primerData.mensaje || "Esta acciÃ³n requiere confirmaciÃ³n.",
         {
           confirmable: true,
           onAccept: async () => {
@@ -3382,7 +3390,7 @@ async function borrarFranja(id) {
 
     mostrarMensaje(
       "error",
-      "¿Seguro que quieres eliminar esta franja?",
+      "Â¿Seguro que quieres eliminar esta franja?",
       {
         confirmable: true,
         onAccept: async () => {
@@ -3587,7 +3595,7 @@ async function borrarFranja(id) {
         const data = await res.json();
 
         if (!res.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo cancelar el borrador técnico.");
+          mostrarMensaje("error", data.error || "No se pudo cancelar el borrador tÃ©cnico.");
           return;
         }
 
@@ -3644,8 +3652,8 @@ async function accionEliminarActividadUI() {
     }
 
     const textoConfirmacion = primerData?.requiere_confirmacion
-      ? (primerData.mensaje || "Esta acción requiere confirmación.")
-      : "¿Seguro que quieres eliminar esta actividad? Esta acción no se puede deshacer.";
+      ? (primerData.mensaje || "Esta acciÃ³n requiere confirmaciÃ³n.")
+      : "Â¿Seguro que quieres eliminar esta actividad? Esta acciÃ³n no se puede deshacer.";
 
     mostrarMensaje(
       "aviso",
@@ -3689,14 +3697,16 @@ async function accionEliminarActividadUI() {
 
 function mostrarPaso(index) {
   const panes = Array.from(document.querySelectorAll(".step-pane"));
-  pasoActual = Math.max(0, Math.min(index, panes.length - 1));
+  const flow = getPasoFlowActividad();
+  pasoActual = normalizarPasoSegunFlujo(index);
 
-  panes.forEach((pane, i) => {
-    pane.classList.toggle("activo", i === pasoActual);
+  panes.forEach((pane) => {
+    pane.classList.toggle("activo", Number(pane.dataset.step) === pasoActual);
   });
 
-  document.getElementById("btnAnterior").style.display = pasoActual === 0 ? "none" : "inline-flex";
-  document.getElementById("btnSiguiente").classList.toggle("oculto", pasoActual === panes.length - 1);
+  const indiceActual = flow.indexOf(pasoActual);
+  document.getElementById("btnAnterior").style.display = indiceActual <= 0 ? "none" : "inline-flex";
+  document.getElementById("btnSiguiente").classList.toggle("oculto", indiceActual === flow.length - 1);
   document.getElementById("btnGuardarActividad").classList.remove("oculto");
 
   actualizarPreview();
@@ -3708,19 +3718,13 @@ function mostrarPaso(index) {
 
       if (pasoActual === 0) {
         const nombre = document.getElementById("nombre").value.trim();
+        const tipo = document.getElementById("tipo").value;
+        const fechaInicio = document.getElementById("fecha_inicio").value;
+        const fechaFin = document.getElementById("fecha_fin").value;
         if (!nombre) {
           mostrarMensaje("error", "Debe indicar el nombre de la actividad.");
           return false;
         }
-      }
-
-      if (pasoActual === 1) {
-        const tipo = document.getElementById("tipo").value;
-        const usaFranjas = document.getElementById("usa_franjas").value === "1";
-        const esRecurrente = document.getElementById("es_recurrente").value === "1";
-        const fechaInicio = document.getElementById("fecha_inicio").value;
-        const fechaFin = document.getElementById("fecha_fin").value;
-        const patron = document.getElementById("patron_recurrencia").value.trim();
 
         if (tipo === "TEMPORAL") {
           if (!fechaInicio || !fechaFin) {
@@ -3732,9 +3736,14 @@ function mostrarPaso(index) {
             return false;
           }
         }
+      }
 
-        if (usaFranjas && esRecurrente && !patron) {
-          mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
+      if (pasoActual === 1) {
+        const esRecurrente = document.getElementById("es_recurrente").value === "1";
+        const patron = document.getElementById("patron_recurrencia").value.trim();
+
+        if (esRecurrente && !patron) {
+          mostrarMensaje("error", "Debe indicar el patrÃ³n de recurrencia.");
           return false;
         }
       }
@@ -3755,12 +3764,16 @@ function mostrarPaso(index) {
     function avanzarPaso() {
   if (pantallaBloqueadaPorErrorActividad) return;
   if (!validarPasoActual()) return;
-  mostrarPaso(pasoActual + 1);
+  const flow = getPasoFlowActividad();
+  const indiceActual = flow.indexOf(pasoActual);
+  mostrarPaso(flow[Math.min(indiceActual + 1, flow.length - 1)]);
 }
 
 function retrocederPaso() {
   if (pantallaBloqueadaPorErrorActividad) return;
-  mostrarPaso(pasoActual - 1);
+  const flow = getPasoFlowActividad();
+  const indiceActual = flow.indexOf(pasoActual);
+  mostrarPaso(flow[Math.max(indiceActual - 1, 0)]);
 }
 
     function mostrarEstadoSubidaImagen(tipo, texto) {
@@ -3814,7 +3827,7 @@ function retrocederPaso() {
       if (!file) return;
 
       if (!file.type.startsWith("image/")) {
-        mostrarEstadoSubidaImagen("error", "El archivo seleccionado no es una imagen válida.");
+        mostrarEstadoSubidaImagen("error", "El archivo seleccionado no es una imagen vÃ¡lida.");
         return;
       }
 
@@ -3882,9 +3895,9 @@ function retrocederPaso() {
       if (currentId && !currentEsOriginal) {
         mostrarMensaje("ok", "Imagen eliminada.");
       } else if (currentEsOriginal) {
-        mostrarMensaje("ok", "La imagen se eliminará definitivamente al guardar la actividad.");
+        mostrarMensaje("ok", "La imagen se eliminarÃ¡ definitivamente al guardar la actividad.");
       } else {
-        mostrarMensaje("ok", "La imagen se ha quitado del formulario. Al guardar, dejará de usarse.");
+        mostrarMensaje("ok", "La imagen se ha quitado del formulario. Al guardar, dejarÃ¡ de usarse.");
       }
     }
 
@@ -4078,6 +4091,7 @@ function retrocederPaso() {
   </script>
 </body>
 </html>
+
 
 
 
