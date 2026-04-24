@@ -433,6 +433,15 @@
       max-width: 900px;
     }
 
+    .subbloque-periodo-actividad {
+      margin-bottom: 8px;
+    }
+
+    .subbloque-periodo-actividad .fila-fechas-programacion {
+      max-width: none;
+      margin-bottom: 0;
+    }
+
     .fila-una {
       display: grid;
       grid-template-columns: 1fr;
@@ -709,6 +718,12 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.cabecera-franjas-control {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 8px;
 }
 
 .acciones-franja-combo {
@@ -1586,15 +1601,20 @@
               </div>
             </div>
 
-            <div class="fila fila-fechas-programacion" id="bloqueFechas">
-              <div>
-                <label for="fecha_inicio">Fecha inicio</label>
-                <input type="date" id="fecha_inicio">
-              </div>
+            <div class="subbloque subbloque-periodo-actividad" id="bloqueFechas">
+              <h4>Periodo de la actividad</h4>
+              <p>Define el intervalo general en el que se desarrolla la actividad completa.</p>
 
-              <div>
-                <label for="fecha_fin">Fecha fin</label>
-                <input type="date" id="fecha_fin">
+              <div class="fila fila-fechas-programacion">
+                <div>
+                  <label for="fecha_inicio">Fecha inicio</label>
+                  <input type="date" id="fecha_inicio">
+                </div>
+
+                <div>
+                  <label for="fecha_fin">Fecha fin</label>
+                  <input type="date" id="fecha_fin">
+                </div>
               </div>
             </div>
 
@@ -1603,6 +1623,8 @@
             <div class="subbloque">
               <h4>Programación</h4>
               <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
+
+              <div id="cabeceraControlFranjas" class="cabecera-franjas-control"></div>
 
               <div class="fila-compacta">
                 <div>
@@ -2042,10 +2064,11 @@
       const bloqueProgramacion = stepProgramacion?.querySelector('.subbloque');
       const bloqueFranjas = document.getElementById("bloqueFranjasEditor");
       const toolbar = bloqueFranjas?.querySelector(".acciones-franja-toolbar");
+      const cabeceraControl = document.getElementById("cabeceraControlFranjas");
       const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
       const selectFrecuencia = document.getElementById("es_recurrente");
       const selectUsaFranjas = document.getElementById("usa_franjas");
-      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
+      if (!bloqueProgramacion || !bloqueFranjas || !toolbar || !cabeceraControl || !selectorFrecuencia || !selectFrecuencia || !selectUsaFranjas) return;
 
       const cabeceraRedundanteTitulo = bloqueProgramacion.querySelector(":scope > h4");
       const cabeceraRedundanteTexto = bloqueProgramacion.querySelector(":scope > p");
@@ -2090,7 +2113,7 @@
         toggle.append(checkbox, slider);
         combo.append(toggle, selectorWrap);
         configWrap.append(combo);
-        toolbar.insertBefore(configWrap, toolbar.firstChild);
+        cabeceraControl.appendChild(configWrap);
       }
 
       sincronizarToggleUsaFranjas();
@@ -2581,9 +2604,6 @@ async function manejarCambioCriticoCampo(id) {
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
 
       if (!usaFranjas) {
-        document.getElementById("es_recurrente").value = "0";
-        document.getElementById("patron_recurrencia").value = "";
-        document.getElementById("fr_patron_recurrencia").value = "";
         document.getElementById("bloqueFranjasEditor").classList.add("oculto");
         franjasCache = [];
         renderListaFranjas();
