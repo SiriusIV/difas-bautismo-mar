@@ -74,6 +74,17 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   return Number(row?.comprometidas || 0);
 }
 
+async function obtenerSolicitudesVivasActividad(env, actividad_id) {
+  const row = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas
+    WHERE actividad_id = ?
+      AND estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+  `).bind(actividad_id).first();
+
+  return Number(row?.total || 0);
+}
+
 function construirEstadoPropuesto(body, actual) {
   const tipo = limpiarTexto(body.tipo || actual.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
@@ -177,13 +188,7 @@ export async function onRequestPost(context) {
     `).bind(id).first();
 
     const hayConfirmadas = Number(confirmadasFuturas?.total || 0) > 0;
-
-    if (hayConfirmadas && Number(actual.usa_franjas || 0) === 1 && Number(p.usa_franjas || 0) === 0) {
-      return json({
-        ok: false,
-        error: "No puedes desactivar las franjas porque existen reservas confirmadas futuras."
-      }, 200);
-    }
+    const solicitudesVivas = await obtenerSolicitudesVivasActividad(env, id);
 
     if (hayConfirmadas && p.tipo === "PERMANENTE" && String(actual.tipo || "").toUpperCase() === "TEMPORAL") {
       return json({
@@ -217,13 +222,13 @@ export async function onRequestPost(context) {
     }
 
     if (
-      plazasComprometidas > 0 &&
+      solicitudesVivas > 0 &&
       Number(actual.usa_franjas || 0) === 1 &&
       Number(p.usa_franjas || 0) === 0
     ) {
       return json({
         ok: false,
-        error: "No puedes desactivar las franjas porque existen plazas comprometidas en reservas activas."
+        error: "No puedes desactivar las franjas porque existen solicitudes activas asociadas a esta actividad."
       }, 200);
     }
 
