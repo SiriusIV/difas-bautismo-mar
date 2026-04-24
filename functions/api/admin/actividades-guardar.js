@@ -116,9 +116,11 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
 async function obtenerSolicitudesVivasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COUNT(*) AS total
-    FROM reservas
-    WHERE actividad_id = ?
-      AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+    FROM reservas r
+    INNER JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE f.actividad_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
   `).bind(actividad_id).first();
 
   return Number(row?.total || 0);
