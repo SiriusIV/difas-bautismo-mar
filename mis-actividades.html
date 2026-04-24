@@ -327,12 +327,12 @@
       width: 12%;
     }
 
-    th.activa-col, td.activa-col {
+    th.visible-col, td.visible-col {
       width: 6.5%;
     }
 
-    th.visible-col, td.visible-col {
-      width: 6.5%;
+    td.activa-col {
+      display: none;
     }
 
     .badge {
@@ -499,7 +499,6 @@
                   <th class="inicio-col">Comienza</th>
                   <th class="fin-col">Finaliza</th>
                   <th class="estado-col">Estado</th>
-                  <th class="activa-col">Activa</th>
                   <th class="visible-col">Visible</th>
                 </tr>
               </thead>
@@ -621,7 +620,7 @@
       const tbody = document.getElementById("tabla");
 
       if (!actividadesFiltradas.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay actividades.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay actividades.</td></tr>`;
         actividadSeleccionada = null;
         actualizarBotones();
         return;

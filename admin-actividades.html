@@ -1900,8 +1900,7 @@
         "requiere_reserva",
         "aforo_limitado",
         "usa_enlace_externo",
-        "visible_portal",
-        "activa"
+        "visible_portal"
       ].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -2035,15 +2034,14 @@
           panelGrid.className = "control-panel-grid";
 
           const [bloqueTipo, bloqueReserva, bloqueAforo] = controlesProgramacion;
-          const [bloqueEnlace, bloqueVisible, bloqueActiva] = controlesConfig;
+          const [bloqueEnlace, bloqueVisible] = controlesConfig;
 
           [
             crearFilaControlSelect(bloqueTipo),
             crearFilaControlToggle(bloqueReserva),
             crearFilaControlToggle(bloqueAforo),
             crearFilaControlToggle(bloqueEnlace),
-            crearFilaControlToggle(bloqueVisible),
-            crearFilaControlToggle(bloqueActiva)
+            crearFilaControlToggle(bloqueVisible)
           ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
 
           panel.appendChild(panelGrid);
@@ -2530,6 +2528,7 @@ async function manejarCambioCriticoCampo(id) {
     setValor("imagen_url", actividad.imagen_url || "");
     setValor("imagen_id", actividad.imagen_id || "");
     setValor("visible_portal", String(actividad.visible_portal ?? 1));
+    setValor("activa", String(actividad.visible_portal ?? actividad.activa ?? 1));
     setValor("orden_portal", String(actividad.orden_portal ?? 0));
     setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
     setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
@@ -3432,7 +3431,7 @@ async function borrarFranja(id) {
         tipo: document.getElementById("tipo").value,
         fecha_inicio: document.getElementById("fecha_inicio").value,
         fecha_fin: document.getElementById("fecha_fin").value,
-        activa: document.getElementById("activa").value,
+        activa: document.getElementById("visible_portal").value,
         titulo_publico: document.getElementById("titulo_publico").value.trim(),
         subtitulo_publico: document.getElementById("subtitulo_publico").value.trim(),
         descripcion_corta: document.getElementById("descripcion_corta").value.trim(),
@@ -4005,7 +4004,6 @@ function retrocederPaso() {
         "es_recurrente",
         "patron_recurrencia",
         "visible_portal",
-        "activa",
         "orden_portal",
         "provincia",
         "titulo_publico",
