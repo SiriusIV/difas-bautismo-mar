@@ -264,6 +264,13 @@
       color: var(--brand);
     }
 
+    .filtro-grupo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .panel-topbar select {
       min-width: 240px;
       padding: 8px 10px;
@@ -272,6 +279,71 @@
       font-size: 13px;
       background: #fff;
       color: #1e2a36;
+    }
+
+    .filtro-multiselect {
+      position: relative;
+      min-width: 240px;
+    }
+
+    .filtro-multiselect-btn {
+      width: 100%;
+      min-height: 37px;
+      padding: 8px 38px 8px 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      background: #fff;
+      color: #1e2a36;
+      font-size: 13px;
+      line-height: 1.35;
+      text-align: left;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .filtro-multiselect-btn::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 1.8px solid #5f6d7a;
+      border-bottom: 1.8px solid #5f6d7a;
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .filtro-multiselect-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d6dde6;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+      display: none;
+      z-index: 30;
+    }
+
+    .filtro-multiselect.abierto .filtro-multiselect-menu {
+      display: block;
+    }
+
+    .filtro-multiselect-opcion {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 4px;
+      font-size: 13px;
+      color: #1e2a36;
+      cursor: pointer;
+    }
+
+    .filtro-multiselect-opcion input {
+      margin: 0;
     }
 
     .tabla-wrap {
@@ -310,7 +382,7 @@
     }
 
     th.nombre-col, td.nombre-col {
-      width: 25%;
+      width: 32.2%;
     }
 
     th.tipo-col, td.tipo-col {
@@ -330,7 +402,7 @@
     }
 
     th.estado-col, td.estado-col {
-      width: 18%;
+      width: 10.8%;
     }
 
     td.activa-col {
@@ -474,10 +546,33 @@
         <div class="panel">
           <div class="panel-topbar">
             <div class="panel-topbar-izq">
-              <label for="filtroPrograma">Programa</label>
-              <select id="filtroPrograma">
-                <option value="">Todos</option>
-              </select>
+              <div class="filtro-grupo">
+                <label for="filtroPrograma">Programa</label>
+                <select id="filtroPrograma">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+
+              <div class="filtro-grupo">
+                <label for="btnFiltroTipoActividad">Tipo actividad</label>
+                <div class="filtro-multiselect" id="filtroTipoActividadWrap">
+                  <button type="button" class="filtro-multiselect-btn" id="btnFiltroTipoActividad">Todas</button>
+                  <div class="filtro-multiselect-menu" id="menuFiltroTipoActividad">
+                    <label class="filtro-multiselect-opcion">
+                      <input type="checkbox" value="permanentes" checked>
+                      <span>Permanentes</span>
+                    </label>
+                    <label class="filtro-multiselect-opcion">
+                      <input type="checkbox" value="temporales_activas" checked>
+                      <span>Temporales activas</span>
+                    </label>
+                    <label class="filtro-multiselect-opcion">
+                      <input type="checkbox" value="inactivas" checked>
+                      <span>Inactivas</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="panel-topbar-der">
@@ -542,6 +637,7 @@
     let actividadSeleccionada = null;
     let usuarioSesion = null;
     let filtroPrograma = "";
+    let filtrosTipoActividad = new Set(["permanentes", "temporales_activas", "inactivas"]);
 
     function mostrarMensaje(tipo, texto) {
       const el = document.getElementById("mensaje");
@@ -640,14 +736,54 @@
       document.getElementById("btnEliminar").disabled = !hay;
     }
 
-    function aplicarFiltroPrograma() {
-      if (!filtroPrograma) {
-        actividadesFiltradas = [...actividadesCache];
-      } else {
-        actividadesFiltradas = actividadesCache.filter(a =>
-          String(a.subtitulo_publico || "").trim() === filtroPrograma
-        );
+    function esActividadVisibleActiva(a) {
+      return Number(a.visible_portal || 0) === 1 && Number(a.activa || 0) === 1;
+    }
+
+    function obtenerClaveFiltroTipoActividad(a) {
+      if (!esActividadVisibleActiva(a)) return "inactivas";
+      return String(a.tipo || "").toUpperCase() === "PERMANENTE" ? "permanentes" : "temporales_activas";
+    }
+
+    function actualizarResumenFiltroTipoActividad() {
+      const btn = document.getElementById("btnFiltroTipoActividad");
+      const orden = ["permanentes", "temporales_activas", "inactivas"];
+      const etiquetas = {
+        permanentes: "Permanentes",
+        temporales_activas: "Temporales activas",
+        inactivas: "Inactivas"
+      };
+
+      const activas = orden.filter(clave => filtrosTipoActividad.has(clave));
+
+      if (activas.length === orden.length) {
+        btn.textContent = "Todas";
+        return;
       }
+
+      if (!activas.length) {
+        btn.textContent = "Ninguna";
+        return;
+      }
+
+      btn.textContent = activas.map(clave => etiquetas[clave]).join(", ");
+    }
+
+    function sincronizarChecksFiltroTipoActividad() {
+      document.querySelectorAll("#menuFiltroTipoActividad input[type='checkbox']").forEach(input => {
+        input.checked = filtrosTipoActividad.has(input.value);
+      });
+      actualizarResumenFiltroTipoActividad();
+    }
+
+    function aplicarFiltroPrograma() {
+      actividadesFiltradas = actividadesCache.filter(a => {
+        if (filtroPrograma && String(a.subtitulo_publico || "").trim() !== filtroPrograma) {
+          return false;
+        }
+
+        return filtrosTipoActividad.has(obtenerClaveFiltroTipoActividad(a));
+      });
 
       if (
         actividadSeleccionada &&
@@ -695,7 +831,7 @@
 
       tbody.innerHTML = actividadesFiltradas.map(a => {
         const estado = calcularEstadoActividad(a);
-        const estaVisible = Number(a.visible_portal || 0) === 1 && Number(a.activa || 0) === 1;
+        const estaVisible = esActividadVisibleActiva(a);
         const filaClases = [
           actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "fila-seleccionada" : "",
           estaVisible ? "" : "fila-inactiva"
@@ -779,6 +915,7 @@
         .sort(compararActividadesPanel);
 
       poblarFiltroPrograma();
+      sincronizarChecksFiltroTipoActividad();
       aplicarFiltroPrograma();
       actividadSeleccionada = null;
       pintarTabla();
@@ -873,6 +1010,34 @@
       filtroPrograma = this.value;
       aplicarFiltroPrograma();
       pintarTabla();
+    });
+
+    document.getElementById("btnFiltroTipoActividad").addEventListener("click", function () {
+      document.getElementById("filtroTipoActividadWrap").classList.toggle("abierto");
+    });
+
+    document.querySelectorAll("#menuFiltroTipoActividad input[type='checkbox']").forEach(input => {
+      input.addEventListener("change", function () {
+        if (this.checked) {
+          filtrosTipoActividad.add(this.value);
+        } else if (filtrosTipoActividad.size > 1) {
+          filtrosTipoActividad.delete(this.value);
+        } else {
+          this.checked = true;
+          return;
+        }
+
+        actualizarResumenFiltroTipoActividad();
+        aplicarFiltroPrograma();
+        pintarTabla();
+      });
+    });
+
+    document.addEventListener("click", function (event) {
+      const wrap = document.getElementById("filtroTipoActividadWrap");
+      if (!wrap.contains(event.target)) {
+        wrap.classList.remove("abierto");
+      }
     });
 
     window.seleccionarActividad = seleccionarActividad;
