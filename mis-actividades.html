@@ -563,8 +563,12 @@
                       <span>Permanentes</span>
                     </label>
                     <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="temporales_activas" checked>
-                      <span>Temporales activas</span>
+                      <input type="checkbox" value="temporales" checked>
+                      <span>Temporales</span>
+                    </label>
+                    <label class="filtro-multiselect-opcion">
+                      <input type="checkbox" value="activas" checked>
+                      <span>Activas</span>
                     </label>
                     <label class="filtro-multiselect-opcion">
                       <input type="checkbox" value="inactivas" checked>
@@ -637,7 +641,7 @@
     let actividadSeleccionada = null;
     let usuarioSesion = null;
     let filtroPrograma = "";
-    let filtrosTipoActividad = new Set(["permanentes", "temporales_activas", "inactivas"]);
+    let filtrosTipoActividad = new Set(["permanentes", "temporales", "activas", "inactivas"]);
 
     function mostrarMensaje(tipo, texto) {
       const el = document.getElementById("mensaje");
@@ -740,17 +744,13 @@
       return Number(a.visible_portal || 0) === 1 && Number(a.activa || 0) === 1;
     }
 
-    function obtenerClaveFiltroTipoActividad(a) {
-      if (!esActividadVisibleActiva(a)) return "inactivas";
-      return String(a.tipo || "").toUpperCase() === "PERMANENTE" ? "permanentes" : "temporales_activas";
-    }
-
     function actualizarResumenFiltroTipoActividad() {
       const btn = document.getElementById("btnFiltroTipoActividad");
-      const orden = ["permanentes", "temporales_activas", "inactivas"];
+      const orden = ["permanentes", "temporales", "activas", "inactivas"];
       const etiquetas = {
         permanentes: "Permanentes",
-        temporales_activas: "Temporales activas",
+        temporales: "Temporales",
+        activas: "Activas",
         inactivas: "Inactivas"
       };
 
@@ -782,7 +782,20 @@
           return false;
         }
 
-        return filtrosTipoActividad.has(obtenerClaveFiltroTipoActividad(a));
+        const esPermanente = String(a.tipo || "").toUpperCase() === "PERMANENTE";
+        const esTemporal = String(a.tipo || "").toUpperCase() === "TEMPORAL";
+        const esActiva = esActividadVisibleActiva(a);
+        const esInactiva = !esActiva;
+
+        const coincideTipo =
+          (filtrosTipoActividad.has("permanentes") && esPermanente) ||
+          (filtrosTipoActividad.has("temporales") && esTemporal);
+
+        const coincideEstado =
+          (filtrosTipoActividad.has("activas") && esActiva) ||
+          (filtrosTipoActividad.has("inactivas") && esInactiva);
+
+        return coincideTipo && coincideEstado;
       });
 
       if (
