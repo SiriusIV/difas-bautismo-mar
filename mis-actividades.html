@@ -382,27 +382,30 @@
     }
 
     th.nombre-col, td.nombre-col {
-      width: 32.2%;
+      width: 29.5%;
     }
 
     th.tipo-col, td.tipo-col {
-      width: 13.5%;
+      width: 12.5%;
     }
 
     th.programa-col, td.programa-col {
-      width: 18.5%;
+      width: 17.5%;
     }
 
     th.inicio-col, td.inicio-col {
-      width: 11.5%;
+      width: 11%;
+      text-align: center;
     }
 
     th.fin-col, td.fin-col {
-      width: 11.5%;
+      width: 11%;
+      text-align: center;
     }
 
     th.estado-col, td.estado-col {
-      width: 10.8%;
+      width: 18.5%;
+      text-align: center;
     }
 
     td.activa-col {
@@ -429,6 +432,7 @@
       font-size: 11px;
       color: #6b7280;
       line-height: 1.2;
+      text-align: center;
     }
 
     .fila-seleccionada {
@@ -871,7 +875,7 @@
                 Number(a.aforo_limitado || 0) === 1 &&
                 Number(a.usa_franjas || 0) === 1 &&
                 Number(a.plazas_totales || 0) > 0
-                  ? `<div class="estado-extra">${Number(a.plazas_disponibles || 0)}/${Number(a.plazas_totales || 0)}</div>`
+                  ? `<div class="estado-extra">Plazas: ${Number(a.plazas_disponibles || 0)} disponibles de ${Number(a.plazas_totales || 0)}</div>`
                   : ``
               }
             </td>
