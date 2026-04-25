@@ -1611,10 +1611,11 @@
                 <input type="text" id="nombre" required>
               </div>
 
-              <div>
-                <label for="organizador_publico">Organiza</label>
-                <input type="text" id="organizador_publico">
-              </div>
+                <div>
+                  <label for="organizador_publico">Organiza</label>
+                  <input type="text" id="organizador_publico" list="listaOrganizadoresActivos">
+                  <datalist id="listaOrganizadoresActivos"></datalist>
+                </div>
             </div>
 
             <div class="fila">
@@ -1623,10 +1624,11 @@
                 <input type="text" id="titulo_publico">
               </div>
 
-              <div>
-                <label for="subtitulo_publico">Programa de actividades</label>
-                <input type="text" id="subtitulo_publico">
-              </div>
+                <div>
+                  <label for="subtitulo_publico">Programa de actividades</label>
+                  <input type="text" id="subtitulo_publico" list="listaProgramasActivos">
+                  <datalist id="listaProgramasActivos"></datalist>
+                </div>
             </div>
 
             <div class="fila-una">
@@ -2504,6 +2506,38 @@ function cancelarMensajeErrorActividad() {
       }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      actualizarSugerenciasCamposActividad();
+    }
+
+    function actualizarSugerenciasCamposActividad() {
+      const listaOrganizadores = document.getElementById("listaOrganizadoresActivos");
+      const listaProgramas = document.getElementById("listaProgramasActivos");
+      if (!listaOrganizadores || !listaProgramas) return;
+
+      const actividadesPortal = actividadesCache.filter((actividad) =>
+        Number(actividad?.visible_portal || 0) === 1 &&
+        Number(actividad?.activa ?? actividad?.visible_portal ?? 0) === 1
+      );
+
+      const organizadores = [...new Set(
+        actividadesPortal
+          .map((actividad) => String(actividad?.organizador_publico || "").trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "es"));
+
+      const programas = [...new Set(
+        actividadesPortal
+          .map((actividad) => String(actividad?.subtitulo_publico || "").trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "es"));
+
+      listaOrganizadores.innerHTML = organizadores
+        .map((valor) => `<option value="${valor.replace(/"/g, "&quot;")}"></option>`)
+        .join("");
+
+      listaProgramas.innerHTML = programas
+        .map((valor) => `<option value="${valor.replace(/"/g, "&quot;")}"></option>`)
+        .join("");
     }
 
     function setValor(id, valor) {
@@ -3616,6 +3650,8 @@ async function borrarFranja(id) {
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
           actualizarBotonEliminar();
         }
+
+        await cargarActividades();
 
         const avisoBorrado = await procesarImagenesPendientesPostGuardado();
 
