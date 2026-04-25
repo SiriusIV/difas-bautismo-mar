@@ -275,12 +275,12 @@
     }
 
     .tabla-wrap {
-      overflow-x: auto;
+      overflow-x: hidden;
     }
 
     table {
       width: 100%;
-      min-width: 1120px;
+      min-width: 0;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
@@ -303,32 +303,34 @@
     }
 
     th.sel-col, td.sel-col {
-      width: 44px;
+      width: 28px;
       text-align: center;
+      padding-left: 4px;
+      padding-right: 4px;
     }
 
     th.nombre-col, td.nombre-col {
-      width: 22%;
+      width: 24%;
     }
 
     th.tipo-col, td.tipo-col {
-      width: 13%;
+      width: 14%;
     }
 
     th.programa-col, td.programa-col {
-      width: 18%;
+      width: 19%;
     }
 
     th.inicio-col, td.inicio-col {
-      width: 11%;
+      width: 12%;
     }
 
     th.fin-col, td.fin-col {
-      width: 11%;
+      width: 12%;
     }
 
     th.estado-col, td.estado-col {
-      width: 12%;
+      width: 19%;
     }
 
     td.activa-col {
@@ -589,6 +591,47 @@
       return { texto: "DISPONIBLE", clase: "info" };
     }
 
+    function obtenerFechaOrdenActividad(a) {
+      return String(
+        a.fecha_inicio ||
+        a.fecha_fin ||
+        a.created_at ||
+        a.updated_at ||
+        ""
+      );
+    }
+
+    function obtenerGrupoOrdenActividad(a) {
+      const visible = Number(a.visible_portal || 0) === 1;
+      const activa = Number(a.activa || 0) === 1;
+
+      if (!visible || !activa) return 2;
+      if (String(a.tipo || "").toUpperCase() === "PERMANENTE") return 0;
+      return 1;
+    }
+
+    function compararActividadesPanel(a, b) {
+      const grupoA = obtenerGrupoOrdenActividad(a);
+      const grupoB = obtenerGrupoOrdenActividad(b);
+
+      if (grupoA !== grupoB) return grupoA - grupoB;
+
+      const fechaA = obtenerFechaOrdenActividad(a);
+      const fechaB = obtenerFechaOrdenActividad(b);
+
+      if (fechaA && fechaB && fechaA !== fechaB) {
+        return fechaA < fechaB ? 1 : -1;
+      }
+
+      if (fechaA && !fechaB) return -1;
+      if (!fechaA && fechaB) return 1;
+
+      return String(a.titulo_publico || a.nombre || "").localeCompare(
+        String(b.titulo_publico || b.nombre || ""),
+        "es"
+      );
+    }
+
     function actualizarBotones() {
       const hay = !!actividadSeleccionada;
       document.getElementById("btnEditar").disabled = !hay;
@@ -733,15 +776,7 @@
       }
 
       actividadesCache = (Array.isArray(data.actividades) ? data.actividades : [])
-        .sort((a, b) => {
-          const fa = a.fecha_inicio || "";
-          const fb = b.fecha_inicio || "";
-
-          if (fa && fb) return fa < fb ? 1 : (fa > fb ? -1 : 0);
-          if (fa && !fb) return -1;
-          if (!fa && fb) return 1;
-          return String(a.titulo_publico || a.nombre || "").localeCompare(String(b.titulo_publico || b.nombre || ""), "es");
-        });
+        .sort(compararActividadesPanel);
 
       poblarFiltroPrograma();
       aplicarFiltroPrograma();
