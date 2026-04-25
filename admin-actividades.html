@@ -2799,7 +2799,10 @@ function construirMetaPreview() {
         ${lugar ? `<div><strong>Lugar:</strong> ${lugar}</div>` : ""}
         ${provincia ? `<div><strong>Localidad:</strong> ${provincia}</div>` : ""}
         ${tipo === "TEMPORAL" && (fecha_inicio || fecha_fin)
-          ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(fecha_inicio)}${fecha_inicio && fecha_fin ? " - " : ""}${formatearFechaLargaES(fecha_fin)}</div>`
+          ? `<div><strong>Fechas:</strong> ${fecha_inicio && fecha_fin
+              ? `de ${formatearFechaLargaES(fecha_inicio)} a ${formatearFechaLargaES(fecha_fin)}`
+              : formatearFechaLargaES(fecha_inicio || fecha_fin)
+            }</div>`
           : ""}
         ${tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
       `;

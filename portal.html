@@ -2981,7 +2981,10 @@ function renderMapaActividad(a) {
         ${organizadorHTML}
         ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
         ${a.provincia ? `<div><strong>Localidad:</strong> ${a.provincia}</div>` : ""}
-        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearFechaLargaES(a.fecha_inicio)}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${formatearFechaLargaES(a.fecha_fin)}</div>` : ""}
+        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio && a.fecha_fin
+            ? `de ${formatearFechaLargaES(a.fecha_inicio)} a ${formatearFechaLargaES(a.fecha_fin)}`
+            : formatearFechaLargaES(a.fecha_inicio || a.fecha_fin)
+          }</div>` : ""}
         ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
       `;
 
