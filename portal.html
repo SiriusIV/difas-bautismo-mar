@@ -638,6 +638,11 @@
       gap: 10px;
     }
 
+    .detalle-img-wrap {
+      position: relative;
+      width: 100%;
+    }
+
     .detalle-img {
       width: 100%;
       height: 200px;
@@ -649,6 +654,11 @@
 
     .detalle-img.oculta {
       opacity: 0;
+    }
+
+    .detalle-img-wrap .badge-estado-actividad {
+      top: 10px;
+      left: 10px;
     }
 
     .mapa-info-wrap {
@@ -1449,7 +1459,10 @@
       <div class="detalle" id="detalleActividad">
         <div class="detalle-grid">
           <div class="detalle-col-izq">
-            <img id="detalleImagen" class="detalle-img oculta" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Imagen actividad">
+            <div class="detalle-img-wrap">
+              <img id="detalleImagen" class="detalle-img oculta" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Imagen actividad">
+              <div id="detalleBadgeEstado" class="badge-estado-actividad" style="display:none;"></div>
+            </div>
 
             <div class="mapa-info-wrap">
               <div id="direccionActividad" class="direccion-actividad"></div>
@@ -2784,14 +2797,14 @@ function obtenerActividadesFiltradas() {
     function obtenerBadgeEstadoActividad(actividad) {
       const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
       const completa = aforoLimitado && Number(actividad?.completa_calculada || 0) === 1;
-      if (completa) {
-        return { texto: "COMPLETA", clase: "completa" };
-      }
-
       const tieneFranjasRecurrentes = Number(actividad?.tiene_franjas_recurrentes || 0) === 1;
       const ultimaFranjaFin = parsearFechaHoraActividad(actividad?.ultima_franja_fin);
       if (!tieneFranjasRecurrentes && ultimaFranjaFin && ultimaFranjaFin.getTime() < Date.now()) {
         return { texto: "FINALIZADA", clase: "finalizada" };
+      }
+
+      if (completa) {
+        return { texto: "COMPLETA", clase: "completa" };
       }
 
       const plazasTotales = Number(actividad?.plazas_totales || 0);
@@ -2911,6 +2924,8 @@ function renderMapaActividad(a) {
         document.getElementById("detalleTexto").textContent = "";
         document.getElementById("detalleImagen").src = IMAGEN_PLACEHOLDER_TRANSPARENTE;
         document.getElementById("detalleImagen").classList.add("oculta");
+        document.getElementById("detalleBadgeEstado").style.display = "none";
+        document.getElementById("detalleBadgeEstado").className = "badge-estado-actividad";
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
@@ -2938,6 +2953,19 @@ function renderMapaActividad(a) {
       document.getElementById("detalleSubtitulo").textContent = a.subtitulo_publico || "";
       document.getElementById("detalleImagen").src = a.imagen_url || "logo.png";
       document.getElementById("detalleImagen").classList.remove("oculta");
+      const badgeDetalle = document.getElementById("detalleBadgeEstado");
+      const badgeEstado = obtenerBadgeEstadoActividad(a);
+      if (badgeDetalle) {
+        if (badgeEstado) {
+          badgeDetalle.textContent = badgeEstado.texto;
+          badgeDetalle.className = `badge-estado-actividad ${badgeEstado.clase}`;
+          badgeDetalle.style.display = "inline-flex";
+        } else {
+          badgeDetalle.textContent = "";
+          badgeDetalle.className = "badge-estado-actividad";
+          badgeDetalle.style.display = "none";
+        }
+      }
 
 
       const organizadorHTML = a.organizador_publico
