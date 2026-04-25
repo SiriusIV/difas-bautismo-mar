@@ -613,15 +613,33 @@
 
     .select-toggle {
       appearance: none;
+      -webkit-appearance: none;
+      border-radius: 12px;
+      min-height: 38px;
+      padding: 8px 38px 8px 12px;
+      border: 1px solid #c9cfd6;
+      background-color: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       background-image:
         linear-gradient(45deg, transparent 50%, #5f6d7a 50%),
         linear-gradient(135deg, #5f6d7a 50%, transparent 50%);
       background-position:
-        calc(100% - 16px) calc(50% - 3px),
-        calc(100% - 10px) calc(50% - 3px);
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px);
       background-size: 6px 6px, 6px 6px;
       background-repeat: no-repeat;
-      padding-right: 30px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+
+    .select-toggle:hover {
+      border-color: #b7c6d6;
+      background-color: #fbfdff;
+    }
+
+    .select-toggle:focus {
+      outline: none;
+      border-color: #9fb7d3;
+      box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.10);
     }
 
     .toggle-switch {
