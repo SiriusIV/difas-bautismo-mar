@@ -1711,6 +1711,41 @@
       return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
+    function formatearIntervaloFechaES(fechaInicioISO, fechaFinISO) {
+      if (!fechaInicioISO || !fechaFinISO) {
+        return formatearFechaLargaES(fechaInicioISO || fechaFinISO);
+      }
+
+      const [yyyyInicio, mmInicio, ddInicio] = String(fechaInicioISO).split("-").map(Number);
+      const [yyyyFin, mmFin, ddFin] = String(fechaFinISO).split("-").map(Number);
+      if (!yyyyInicio || !mmInicio || !ddInicio || !yyyyFin || !mmFin || !ddFin) {
+        return `de ${formatearFechaLargaES(fechaInicioISO)} a ${formatearFechaLargaES(fechaFinISO)}`;
+      }
+
+      const fechaInicio = new Date(yyyyInicio, mmInicio - 1, ddInicio);
+      const fechaFin = new Date(yyyyFin, mmFin - 1, ddFin);
+      if (Number.isNaN(fechaInicio.getTime()) || Number.isNaN(fechaFin.getTime())) {
+        return `de ${formatearFechaLargaES(fechaInicioISO)} a ${formatearFechaLargaES(fechaFinISO)}`;
+      }
+
+      const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+      const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+      if (yyyyInicio === yyyyFin && mmInicio === mmFin && ddInicio === ddFin) {
+        return formatearFechaLargaES(fechaInicioISO);
+      }
+
+      if (yyyyInicio === yyyyFin && mmInicio === mmFin) {
+        return `Del ${dias[fechaInicio.getDay()]} ${ddInicio} al ${dias[fechaFin.getDay()]} ${ddFin} de ${meses[mmInicio - 1]} de ${yyyyInicio}`;
+      }
+
+      if (yyyyInicio === yyyyFin) {
+        return `Del ${dias[fechaInicio.getDay()]} ${ddInicio} de ${meses[mmInicio - 1]} al ${dias[fechaFin.getDay()]} ${ddFin} de ${meses[mmFin - 1]} de ${yyyyInicio}`;
+      }
+
+      return `Del ${dias[fechaInicio.getDay()]} ${ddInicio} de ${meses[mmInicio - 1]} de ${yyyyInicio} al ${dias[fechaFin.getDay()]} ${ddFin} de ${meses[mmFin - 1]} de ${yyyyFin}`;
+    }
+
     function textoProgramacionFranja(f) {
       if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
         return f.patron_recurrencia;
@@ -2981,10 +3016,7 @@ function renderMapaActividad(a) {
         ${organizadorHTML}
         ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
         ${a.provincia ? `<div><strong>Localidad:</strong> ${a.provincia}</div>` : ""}
-        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${a.fecha_inicio && a.fecha_fin
-            ? `de ${formatearFechaLargaES(a.fecha_inicio)} a ${formatearFechaLargaES(a.fecha_fin)}`
-            : formatearFechaLargaES(a.fecha_inicio || a.fecha_fin)
-          }</div>` : ""}
+        ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearIntervaloFechaES(a.fecha_inicio, a.fecha_fin)}</div>` : ""}
         ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
       `;
 
