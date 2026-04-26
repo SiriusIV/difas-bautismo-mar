@@ -460,7 +460,7 @@
       <div class="cabecera-centro">
         <h1 id="tituloEvento">DIFAS 2026</h1>
         <h2>Panel de administración de reservas</h2>
-        <div class="subactividad" id="subactividadActual">Actividad</div>
+        <div class="subactividad" id="subactividadActual">Todas las actividades</div>
 
         <div class="nav-admin">
           <a class="nav-btn" id="navFranjas" href="admin-franjas.html">Franjas horarias</a>
@@ -694,7 +694,7 @@
 
     async function cargarActividadesFiltro() {
       try {
-        const res = await fetch("/api/actividades", { credentials: "include" });
+        const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" });
         const data = await res.json();
 
         if (!res.ok || !data.ok) return;
