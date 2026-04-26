@@ -20,19 +20,19 @@ export async function onRequestGet(context) {
           f.capacidad,
           COUNT(
             CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.id
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id
             END
           ) AS numero_reservas,
           COALESCE(SUM(
             CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
               ELSE 0
             END
           ), 0) AS ocupadas,
           (
             f.capacidad - COALESCE(SUM(
               CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
                 ELSE 0
               END
             ), 0)
@@ -63,7 +63,7 @@ export async function onRequestGet(context) {
           HAVING (
             f.capacidad - COALESCE(SUM(
               CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN r.personas
+                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
                 ELSE 0
               END
             ), 0)

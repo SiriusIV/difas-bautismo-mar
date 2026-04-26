@@ -1,4 +1,5 @@
 import { getUserSession } from "./usuario/_auth.js";
+import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -82,7 +83,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -150,6 +151,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const sessionUser = await getUserSession(request, env.SECRET_KEY);
     const usuarioId = sessionUser?.id || null;
 

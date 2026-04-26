@@ -1,3 +1,5 @@
+import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -18,7 +20,7 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
 
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -87,6 +89,7 @@ export async function onRequestGet(context) {
   const { env, request } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const actividad_id = Number(url.searchParams.get("actividad_id"));
 

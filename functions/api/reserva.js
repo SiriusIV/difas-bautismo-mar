@@ -1,3 +1,5 @@
+import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -10,7 +12,7 @@ function limpiarTexto(valor) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(expira) {
@@ -119,6 +121,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
 
