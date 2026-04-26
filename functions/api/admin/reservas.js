@@ -94,7 +94,7 @@ async function obtenerReservas(env, filtros) {
         OR r.contacto LIKE ?
         OR r.email LIKE ?
         OR r.telefono LIKE ?
-        OR COALESCE(a.nombre, '') LIKE ?
+        OR COALESCE(a.titulo_publico, a.nombre, '') LIKE ?
       )
     `);
     const q = likeValue(filtros.buscar);
@@ -124,7 +124,7 @@ async function obtenerReservas(env, filtros) {
       f.hora_fin,
       f.capacidad,
 
-      COALESCE(a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
 
       COALESCE((
         SELECT COUNT(*)
