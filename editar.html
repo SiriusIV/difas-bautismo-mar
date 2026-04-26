@@ -179,7 +179,6 @@
     .estado-badge.pendiente { background: #d39e00; }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
-    .estado-badge.cancelada { background: #6c757d; }
 
     .resumen-grid {
       display: grid;
@@ -519,8 +518,8 @@
 
   <div id="modalCancelada" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Solicitud cancelada</h3>
-      <p>La solicitud ha sido anulada correctamente y las plazas han quedado liberadas.</p>
+      <h3>Solicitud anulada</h3>
+      <p>La solicitud ha sido anulada correctamente, se ha eliminado del sistema y las plazas han quedado liberadas.</p>
 
       <div class="bloque">
         Ya no podrá modificar esta solicitud desde este enlace.
@@ -547,7 +546,6 @@
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "rechazada") return "rechazada";
-      if (e === "cancelada") return "cancelada";
       return "";
     }
 
@@ -843,7 +841,7 @@ ${enlaceSolicitudActual}`;
     async function anularSolicitud() {
       if (!solicitudEditable() || anulacionEnCurso) return;
 
-      const confirmar = window.confirm("¿Desea anular esta solicitud? La solicitud pasará a estado CANCELADA y liberará sus plazas.");
+      const confirmar = window.confirm("¿Desea anular esta solicitud? La solicitud se eliminará del sistema y liberará sus plazas.");
       if (!confirmar) return;
 
       try {
