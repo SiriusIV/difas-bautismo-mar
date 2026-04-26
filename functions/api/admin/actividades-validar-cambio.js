@@ -1,4 +1,5 @@
 import { getAdminSession } from "./_auth.js";
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -46,7 +47,7 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
       CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
           CASE
             WHEN r.prereserva_expira_en IS NOT NULL
                  AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -81,7 +82,7 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
     INNER JOIN franjas f
       ON f.id = r.franja_id
     WHERE f.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
   `).bind(actividad_id).first();
 
   return Number(row?.total || 0);
@@ -127,6 +128,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);

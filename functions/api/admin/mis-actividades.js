@@ -1,5 +1,6 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -33,6 +34,7 @@ export async function onRequestGet(context) {
 
   try {
     await desactivarActividadesFinalizadasPorPeriodo(env);
+    await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -101,7 +103,7 @@ export async function onRequestGet(context) {
           ), 0)
           FROM reservas r
           WHERE r.actividad_id = a.id
-        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
         ) AS plazas_ocupadas,
 
         /* plazas disponibles */
@@ -126,7 +128,7 @@ export async function onRequestGet(context) {
             ), 0)
             FROM reservas r
             WHERE r.actividad_id = a.id
-        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
           )
         ) AS plazas_disponibles,
         (

@@ -1,4 +1,5 @@
 import { requireAdminSession, getAdminSession } from "./_auth.js";
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { checkAdminActividad } from "./_permisos.js";
 
 function json(data, init = {}) {
@@ -132,7 +133,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -175,10 +176,10 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.actividad_id,
       f.es_recurrente,
       f.patron_recurrencia,
-      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN r.id END) AS numero_reservas,
+      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION') THEN
+          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -264,6 +265,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     const url = new URL(request.url);
     const actividad_id = parsearIdPositivo(url.searchParams.get("actividad_id"));

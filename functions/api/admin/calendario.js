@@ -1,3 +1,5 @@
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -13,13 +15,13 @@ function colorEstado(estado) {
   const e = String(estado || "").toUpperCase();
   if (e === "PENDIENTE") return "#d39e00";
   if (e === "CONFIRMADA") return "#198754";
-  if (e === "CONDICIONADA_DOCUMENTACION") return "#b7791f";
+  if (e === "SUSPENDIDA") return "#b7791f";
   if (e === "RECHAZADA") return "#dc3545";
   return "#0b5ed7";
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(expira) {
@@ -76,7 +78,7 @@ async function obtenerReservasCalendario(env, filtros) {
     where.push("r.estado = ?");
     binds.push(filtros.estado);
   } else {
-    const estados = ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"];
+    const estados = ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"];
     if (filtros.incluirRechazadas) estados.push("RECHAZADA");
 
     where.push(`r.estado IN (${estados.map(() => "?").join(", ")})`);
@@ -161,6 +163,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
 
     const filtros = {

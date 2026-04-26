@@ -1,5 +1,6 @@
 import { getAdminSession } from "./_auth.js";
 import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -30,7 +31,7 @@ function fechaComparableISO(fechaDdMmAaaa) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function calcularPlazasReservadasPendientes(row) {
@@ -169,7 +170,7 @@ function resumirReservas(rows) {
     total_solicitudes: rows.length,
     pendientes: 0,
     confirmadas: 0,
-    condicionadas_documentacion: 0,
+    suspendidas: 0,
     rechazadas: 0
   };
 
@@ -178,7 +179,7 @@ function resumirReservas(rows) {
 
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
-    if (estado === "CONDICIONADA_DOCUMENTACION") resumen.condicionadas_documentacion += 1;
+    if (estado === "SUSPENDIDA") resumen.suspendidas += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
   }
 
@@ -244,6 +245,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json(
