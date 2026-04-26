@@ -76,6 +76,11 @@ async function obtenerReservas(env, filtros) {
     binds.push(filtros.actividadId);
   }
 
+  if (!filtros.esSuperadmin) {
+    where.push("a.admin_id = ?");
+    binds.push(filtros.adminId);
+  }
+
   if (filtros.estado) {
     where.push("r.estado = ?");
     binds.push(filtros.estado);
@@ -180,21 +185,33 @@ function resumirReservas(rows) {
   return resumen;
 }
 
-async function obtenerFranjas(env, actividadId = null) {
+async function obtenerFranjas(env, filtros = {}) {
   let sql = `
     SELECT
-      id,
-      fecha,
-      hora_inicio,
-      hora_fin,
-      actividad_id
+      f.id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.actividad_id
     FROM franjas
+    INNER JOIN actividades a
+      ON a.id = f.actividad_id
   `;
   const binds = [];
+  const where = [];
 
-  if (actividadId) {
-    sql += ` WHERE actividad_id = ?`;
-    binds.push(actividadId);
+  if (filtros.actividadId) {
+    where.push("f.actividad_id = ?");
+    binds.push(filtros.actividadId);
+  }
+
+  if (!filtros.esSuperadmin) {
+    where.push("a.admin_id = ?");
+    binds.push(filtros.adminId);
+  }
+
+  if (where.length) {
+    sql += ` WHERE ${where.join(" AND ")}`;
   }
 
   sql += ` ORDER BY fecha ASC, hora_inicio ASC`;
@@ -247,12 +264,8 @@ export async function onRequestGet(context) {
 
     const rol = await getRolUsuario(env, session.usuario_id);
 
-    if (rol !== "SUPERADMIN" && !filtros.actividadId) {
-      return json(
-        { ok: false, error: "actividad_id requerido." },
-        { status: 400 }
-      );
-    }
+    filtros.esSuperadmin = rol === "SUPERADMIN";
+    filtros.adminId = Number(session.usuario_id || 0);
 
     if (filtros.actividadId) {
       await checkAdminActividad(env, session.usuario_id, filtros.actividadId);
@@ -260,7 +273,7 @@ export async function onRequestGet(context) {
 
     const [rows, franjas] = await Promise.all([
       obtenerReservas(env, filtros),
-      obtenerFranjas(env, filtros.actividadId)
+      obtenerFranjas(env, filtros)
     ]);
 
     const reservas = rows.map(row => ({
