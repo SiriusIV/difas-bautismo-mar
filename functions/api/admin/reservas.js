@@ -61,6 +61,8 @@ async function obtenerReservas(env, filtros) {
   const where = [];
   const binds = [];
 
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+
   if (filtros.fecha) {
     where.push("f.fecha = ?");
     binds.push(filtros.fecha);
@@ -168,8 +170,7 @@ function resumirReservas(rows) {
     pendientes: 0,
     confirmadas: 0,
     condicionadas_documentacion: 0,
-    rechazadas: 0,
-    canceladas: 0
+    rechazadas: 0
   };
 
   for (const row of rows) {
@@ -179,7 +180,6 @@ function resumirReservas(rows) {
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
     if (estado === "CONDICIONADA_DOCUMENTACION") resumen.condicionadas_documentacion += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
-    if (estado === "CANCELADA") resumen.canceladas += 1;
   }
 
   return resumen;
@@ -199,6 +199,15 @@ async function obtenerFranjas(env, filtros = {}) {
   `;
   const binds = [];
   const where = [];
+
+  where.push(`
+    EXISTS (
+      SELECT 1
+      FROM reservas r
+      WHERE r.franja_id = f.id
+        AND UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'
+    )
+  `);
 
   if (filtros.actividadId) {
     where.push("f.actividad_id = ?");
@@ -373,7 +382,6 @@ export async function onRequestPatch(context) {
     let nuevoEstado = null;
     if (accion === "confirmar") nuevoEstado = "CONFIRMADA";
     if (accion === "rechazar") nuevoEstado = "RECHAZADA";
-    if (accion === "cancelar") nuevoEstado = "CANCELADA";
     if (accion === "reabrir") nuevoEstado = "PENDIENTE";
 
     if (!nuevoEstado) {

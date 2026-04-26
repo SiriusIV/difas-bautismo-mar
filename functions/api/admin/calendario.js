@@ -15,7 +15,6 @@ function colorEstado(estado) {
   if (e === "CONFIRMADA") return "#198754";
   if (e === "CONDICIONADA_DOCUMENTACION") return "#b7791f";
   if (e === "RECHAZADA") return "#dc3545";
-  if (e === "CANCELADA") return "#6c757d";
   return "#0b5ed7";
 }
 
@@ -61,6 +60,8 @@ async function obtenerReservasCalendario(env, filtros) {
   const where = [];
   const binds = [];
 
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+
   if (filtros.start) {
     where.push("f.fecha >= ?");
     binds.push(filtros.start);
@@ -77,7 +78,6 @@ async function obtenerReservasCalendario(env, filtros) {
   } else {
     const estados = ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"];
     if (filtros.incluirRechazadas) estados.push("RECHAZADA");
-    if (filtros.incluirCanceladas) estados.push("CANCELADA");
 
     where.push(`r.estado IN (${estados.map(() => "?").join(", ")})`);
     binds.push(...estados);
@@ -170,7 +170,6 @@ export async function onRequestGet(context) {
         const v = limpiarTexto(url.searchParams.get("estado") || "").toUpperCase();
         return v || null;
       })(),
-      incluirCanceladas: url.searchParams.get("incluir_canceladas") === "1",
       incluirRechazadas: url.searchParams.get("incluir_rechazadas") === "1"
     };
 
