@@ -64,7 +64,7 @@ export async function onRequestGet(context) {
           f.capacidad,
           COALESCE(SUM(
             CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA') THEN
+              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
                 CASE
                   WHEN r.prereserva_expira_en IS NOT NULL
                        AND datetime('now') <= datetime(r.prereserva_expira_en)
