@@ -212,6 +212,7 @@
     .estado-badge.pendiente { background: #d39e00; }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.suspendida { background: #b7791f; }
     .estado-badge.cancelada { background: #6c757d; }
 
     .fila-seleccionada { background: #f2f7ff; }
@@ -357,8 +358,8 @@
             <option value="">Todos</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="CONFIRMADA">Confirmada</option>
+            <option value="SUSPENDIDA">Suspendida</option>
             <option value="RECHAZADA">Rechazada</option>
-            <option value="CANCELADA">Cancelada</option>
           </select>
         </div>
 
@@ -469,6 +470,7 @@ function obtenerActividadIdURL() {
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
+      if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
       if (e === "cancelada") return "cancelada";
       return "";
@@ -484,8 +486,8 @@ function obtenerActividadIdURL() {
     function pintarResumen(lista) {
       const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
       const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
+      const suspendidas = lista.filter(r => r.estado === "SUSPENDIDA").length;
       const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
-      const canceladas = lista.filter(r => r.estado === "CANCELADA").length;
 
       document.getElementById("resumenPanel").innerHTML = `
         <span>Total reservas: ${lista.length}</span>
@@ -494,9 +496,9 @@ function obtenerActividadIdURL() {
         <span>|</span>
         <span>Confirmadas: ${confirmadas}</span>
         <span>|</span>
-        <span>Rechazadas: ${rechazadas}</span>
+        <span>Suspendidas: ${suspendidas}</span>
         <span>|</span>
-        <span>Canceladas: ${canceladas}</span>
+        <span>Rechazadas: ${rechazadas}</span>
       `;
     }
 
