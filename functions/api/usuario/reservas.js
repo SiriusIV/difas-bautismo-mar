@@ -1,4 +1,5 @@
 import { getUserSession } from "./_auth.js";
+import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -8,7 +9,7 @@ function json(data, status = 200) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "CONDICIONADA_DOCUMENTACION"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(row) {
@@ -37,6 +38,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await ejecutarMantenimientoReservas(env);
     const user = await getUserSession(request, env.SECRET_KEY);
 
     if (!user || !user.id) {
