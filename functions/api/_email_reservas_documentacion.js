@@ -40,7 +40,7 @@ export function construirEmailTextoReservaCondicionadaDocumentacion({
 }) {
   const organizador = nombreVisibleAdmin(admin);
   const lineas = [
-    "Tu solicitud ha quedado condicionada por un cambio en la documentacion obligatoria vigente.",
+    "Tu solicitud ha quedado suspendida por un cambio en la documentacion obligatoria vigente.",
     "",
     `${motivo_texto || "Se ha producido un cambio documental que requiere una nueva revision."}`,
     "",
@@ -84,7 +84,7 @@ export function construirEmailHtmlReservaCondicionadaDocumentacion({
   `).join("");
 
   return `
-    <p>Tu solicitud ha quedado condicionada por un cambio en la documentacion obligatoria vigente.</p>
+    <p>Tu solicitud ha quedado suspendida por un cambio en la documentacion obligatoria vigente.</p>
     <p>${escaparHtml(motivo_texto || "Se ha producido un cambio documental que requiere una nueva revision.")}</p>
     <p><strong>Organizador:</strong> ${organizador}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>

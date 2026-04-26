@@ -242,7 +242,7 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
     INNER JOIN actividades a ON a.id = r.actividad_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
-      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'CONDICIONADA_DOCUMENTACION')
+      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
     ORDER BY r.fecha_solicitud ASC, r.id ASC
   `).bind(adminId, usuarioId).all();
 
@@ -280,7 +280,7 @@ async function actualizarEstadoReserva(env, reservaId, nuevoEstado) {
 async function notificarReservaCondicionada(env, payload) {
   return await enviarEmail(env, {
     to: payload?.centro?.email || "",
-    subject: `[Reservas] Solicitud condicionada por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
+    subject: `[Reservas] Solicitud suspendida por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
     text: construirEmailTextoReservaCondicionadaDocumentacion(payload),
     html: construirEmailHtmlReservaCondicionadaDocumentacion(payload)
   });
@@ -328,7 +328,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
     admin_id: adminIdNumerico,
     motivo,
     total_solicitantes_revisados: 0,
-    reservas_condicionadas: 0,
+    reservas_suspendidas: 0,
     reservas_reactivadas: 0,
     notificaciones_condicionadas: 0,
     notificaciones_reactivadas: 0,
@@ -385,25 +385,25 @@ export async function recalcularImpactoDocumentalReservas(env, {
     }
 
     const enlacePerfil = construirUrlPerfilDocumentacion(baseUrl, adminIdNumerico);
-    const reservasCondicionadas = [];
+    const reservasSuspendidas = [];
     const reservasReactivadas = [];
 
     for (const reserva of reservas) {
       const estadoReserva = limpiarTexto(reserva.estado).toUpperCase();
       if (estadoDocumentalCompleto(estadoGlobal)) {
-        if (estadoReserva === "CONDICIONADA_DOCUMENTACION") {
+        if (estadoReserva === "SUSPENDIDA") {
           await actualizarEstadoReserva(env, Number(reserva.id || 0), "CONFIRMADA");
           reservasReactivadas.push(reserva);
           resumen.reservas_reactivadas += 1;
         }
-      } else if (estadoReserva !== "CONDICIONADA_DOCUMENTACION") {
-        await actualizarEstadoReserva(env, Number(reserva.id || 0), "CONDICIONADA_DOCUMENTACION");
-        reservasCondicionadas.push(reserva);
-        resumen.reservas_condicionadas += 1;
+      } else if (estadoReserva !== "SUSPENDIDA") {
+        await actualizarEstadoReserva(env, Number(reserva.id || 0), "SUSPENDIDA");
+        reservasSuspendidas.push(reserva);
+        resumen.reservas_suspendidas += 1;
       }
     }
 
-    if (reservasCondicionadas.length) {
+    if (reservasSuspendidas.length) {
       const resultado = await notificarReservaCondicionada(env, {
         admin,
         responsable: resolucion.responsable,
@@ -412,7 +412,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
           email: solicitante.email || ""
         },
         motivo_texto: motivoImpactoDocumentalTexto(motivo),
-        reservas: reservasCondicionadas,
+        reservas: reservasSuspendidas,
         documentos_pendientes: pendientes,
         enlace_perfil: enlacePerfil
       });
@@ -441,16 +441,16 @@ export async function recalcularImpactoDocumentalReservas(env, {
         id: Number(reserva.id || 0),
         codigo_reserva: reserva.codigo_reserva || "",
         estado_anterior: reserva.estado || "",
-        estado_nuevo: reservasCondicionadas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
-          ? "CONDICIONADA_DOCUMENTACION"
+        estado_nuevo: reservasSuspendidas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
+          ? "SUSPENDIDA"
           : reservasReactivadas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
             ? "CONFIRMADA"
             : (reserva.estado || "")
       })),
       estado_documental: estadoGlobal,
       pendientes,
-      accion: reservasCondicionadas.length
-        ? "CONDICIONADA"
+      accion: reservasSuspendidas.length
+        ? "SUSPENDIDA"
         : reservasReactivadas.length
           ? "REACTIVADA"
           : "SIN_CAMBIOS"
