@@ -390,7 +390,7 @@
     .estado.pendiente { background: #d39e00; }
     .estado.confirmada { background: #198754; }
     .estado.rechazada { background: #dc3545; }
-    .estado.cancelada { background: #6c757d; }
+    .estado.suspendida { background: #b7791f; }
 
     @media (max-width: 1200px) {
       .cabecera-centro {
@@ -495,16 +495,9 @@
             <option value="">PENDIENTE + CONFIRMADA</option>
             <option value="PENDIENTE">Solo PENDIENTE</option>
             <option value="CONFIRMADA">Solo CONFIRMADA</option>
+            <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
             <option value="RECHAZADA">Solo RECHAZADA</option>
-            <option value="CANCELADA">Solo CANCELADA</option>
           </select>
-        </div>
-
-        <div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkCanceladas">
-            Incluir canceladas
-          </label>
         </div>
 
         <div>
@@ -527,20 +520,20 @@
           <div class="valor" id="contadorConfirmadas">0</div>
         </div>
         <div class="tarjeta-estado">
-          <div class="etiqueta">Rechazadas</div>
-          <div class="valor" id="contadorRechazadas">0</div>
+          <div class="etiqueta">Suspendidas</div>
+          <div class="valor" id="contadorSuspendidas">0</div>
         </div>
         <div class="tarjeta-estado">
-          <div class="etiqueta">Canceladas</div>
-          <div class="valor" id="contadorCanceladas">0</div>
+          <div class="etiqueta">Rechazadas</div>
+          <div class="valor" id="contadorRechazadas">0</div>
         </div>
       </div>
 
       <div class="leyenda">
         <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
         <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
+        <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
         <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
-        <span class="leyenda-item"><span class="leyenda-color" style="background:#6c757d;"></span>CANCELADA</span>
       </div>
 
       <div id="calendar"></div>
@@ -658,13 +651,11 @@
         params.set("end", "2100-12-31");
 
         const estado = document.getElementById("filtroEstado").value;
-        const incluirCanceladas = document.getElementById("chkCanceladas").checked;
         const incluirRechazadas = document.getElementById("chkRechazadas").checked;
 
         if (estado) {
           params.set("estado", estado);
         } else {
-          if (incluirCanceladas) params.set("incluir_canceladas", "1");
           if (incluirRechazadas) params.set("incluir_rechazadas", "1");
         }
 
@@ -698,7 +689,6 @@
         const params = new URLSearchParams();
         params.set("start", "2000-01-01");
         params.set("end", "2100-12-31");
-        params.set("incluir_canceladas", "1");
         params.set("incluir_rechazadas", "1");
 
         const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
@@ -712,13 +702,13 @@
 
         const pendientes = eventos.filter(e => e.extendedProps?.estado === "PENDIENTE").length;
         const confirmadas = eventos.filter(e => e.extendedProps?.estado === "CONFIRMADA").length;
+        const suspendidas = eventos.filter(e => e.extendedProps?.estado === "SUSPENDIDA").length;
         const rechazadas = eventos.filter(e => e.extendedProps?.estado === "RECHAZADA").length;
-        const canceladas = eventos.filter(e => e.extendedProps?.estado === "CANCELADA").length;
 
         document.getElementById("contadorPendientes").textContent = pendientes;
         document.getElementById("contadorConfirmadas").textContent = confirmadas;
+        document.getElementById("contadorSuspendidas").textContent = suspendidas;
         document.getElementById("contadorRechazadas").textContent = rechazadas;
-        document.getElementById("contadorCanceladas").textContent = canceladas;
       } catch {
       }
     }
@@ -729,14 +719,11 @@
       if (estadoActual === "PENDIENTE") {
         opciones.push({ value: "confirmar", label: "Pasar a CONFIRMADA" });
         opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
-        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
       } else if (estadoActual === "CONFIRMADA") {
         opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
-        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
+      } else if (estadoActual === "SUSPENDIDA") {
+        opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
       } else if (estadoActual === "RECHAZADA") {
-        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
-        opciones.push({ value: "cancelar", label: "Pasar a CANCELADA" });
-      } else if (estadoActual === "CANCELADA") {
         opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
       }
 
@@ -818,7 +805,6 @@
       let textoConfirmacion = "¿Desea ejecutar esta acción?";
       if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
       if (accion === "rechazar") textoConfirmacion = "¿Desea rechazar esta solicitud?";
-      if (accion === "cancelar") textoConfirmacion = "¿Desea cancelar esta solicitud o reserva?";
       if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
 
       const confirmar = window.confirm(textoConfirmacion);
@@ -871,13 +857,11 @@
       params.set("end", fetchInfo.endStr);
 
       const estado = document.getElementById("filtroEstado").value;
-      const incluirCanceladas = document.getElementById("chkCanceladas").checked;
       const incluirRechazadas = document.getElementById("chkRechazadas").checked;
 
       if (estado) {
         params.set("estado", estado);
       } else {
-        if (incluirCanceladas) params.set("incluir_canceladas", "1");
         if (incluirRechazadas) params.set("incluir_rechazadas", "1");
       }
 
@@ -954,12 +938,6 @@
 
     function activarRecargaAutomaticaFiltros() {
       document.getElementById("filtroEstado").addEventListener("change", async () => {
-        limpiarMensaje();
-        calendar.refetchEvents();
-        await actualizarContadores();
-      });
-
-      document.getElementById("chkCanceladas").addEventListener("change", async () => {
         limpiarMensaje();
         calendar.refetchEvents();
         await actualizarContadores();
