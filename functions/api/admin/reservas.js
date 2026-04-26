@@ -193,7 +193,7 @@ async function obtenerFranjas(env, filtros = {}) {
       f.hora_inicio,
       f.hora_fin,
       f.actividad_id
-    FROM franjas
+    FROM franjas f
     INNER JOIN actividades a
       ON a.id = f.actividad_id
   `;
