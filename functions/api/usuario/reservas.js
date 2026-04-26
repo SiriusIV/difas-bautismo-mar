@@ -71,6 +71,7 @@ export async function onRequestGet(context) {
       LEFT JOIN franjas f ON r.franja_id = f.id
       LEFT JOIN actividades a ON r.actividad_id = a.id
       WHERE r.usuario_id = ?
+        AND UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'
       ORDER BY f.fecha DESC, f.hora_inicio DESC, r.fecha_solicitud DESC
     `).bind(user.id).all();
 
