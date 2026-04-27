@@ -90,17 +90,8 @@ async function obtenerReservas(env, filtros) {
   }
 
   if (filtros.buscar) {
-    where.push(`
-      (
-        r.codigo_reserva LIKE ?
-        OR r.centro LIKE ?
-        OR r.contacto LIKE ?
-        OR r.email LIKE ?
-        OR r.telefono LIKE ?
-      )
-    `);
-    const q = likeValue(filtros.buscar);
-    binds.push(q, q, q, q, q);
+    where.push("r.centro = ?");
+    binds.push(filtros.buscar);
   }
 
   const sql = `
@@ -162,6 +153,33 @@ async function obtenerReservas(env, filtros) {
 
   const result = await env.DB.prepare(sql).bind(...binds).all();
   return result.results || [];
+}
+
+async function obtenerSolicitantes(env, filtros) {
+  const where = [];
+  const binds = [];
+
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  where.push("TRIM(COALESCE(r.centro, '')) <> ''");
+
+  if (!filtros.esSuperadmin) {
+    where.push("a.admin_id = ?");
+    binds.push(filtros.adminId);
+  }
+
+  const sql = `
+    SELECT DISTINCT TRIM(r.centro) AS solicitante
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    ORDER BY solicitante COLLATE NOCASE ASC
+  `;
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
+  return (result.results || [])
+    .map((row) => limpiarTexto(row.solicitante))
+    .filter(Boolean);
 }
 
 function resumirReservas(rows) {
@@ -278,9 +296,10 @@ export async function onRequestGet(context) {
       await checkAdminActividad(env, session.usuario_id, filtros.actividadId);
     }
 
-    const [rows, franjas] = await Promise.all([
+    const [rows, franjas, solicitantes] = await Promise.all([
       obtenerReservas(env, filtros),
-      obtenerFranjas(env, filtros)
+      obtenerFranjas(env, filtros),
+      obtenerSolicitantes(env, filtros)
     ]);
 
     const reservas = rows.map(row => ({
@@ -329,6 +348,7 @@ export async function onRequestGet(context) {
         hora_fin: f.hora_fin,
         actividad_id: f.actividad_id
       })),
+      solicitantes,
       reservas
     });
   } catch (error) {
