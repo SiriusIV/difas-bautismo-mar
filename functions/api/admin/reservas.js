@@ -64,14 +64,14 @@ async function obtenerReservas(env, filtros) {
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
 
-  if (filtros.fecha) {
-    where.push("f.fecha = ?");
-    binds.push(filtros.fecha);
+  if (filtros.fechaInicio) {
+    where.push("f.fecha >= ?");
+    binds.push(filtros.fechaInicio);
   }
 
-  if (filtros.franjaId) {
-    where.push("f.id = ?");
-    binds.push(filtros.franjaId);
+  if (filtros.fechaFin) {
+    where.push("f.fecha <= ?");
+    binds.push(filtros.fechaFin);
   }
 
   if (filtros.actividadId) {
@@ -97,11 +97,10 @@ async function obtenerReservas(env, filtros) {
         OR r.contacto LIKE ?
         OR r.email LIKE ?
         OR r.telefono LIKE ?
-        OR COALESCE(a.titulo_publico, a.nombre, '') LIKE ?
       )
     `);
     const q = likeValue(filtros.buscar);
-    binds.push(q, q, q, q, q, q);
+    binds.push(q, q, q, q, q);
   }
 
   const sql = `
@@ -257,11 +256,8 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
 
     const filtros = {
-      fecha: fechaComparableISO(url.searchParams.get("fecha") || ""),
-      franjaId: (() => {
-        const v = parseInt(url.searchParams.get("franja") || "", 10);
-        return Number.isInteger(v) && v > 0 ? v : null;
-      })(),
+      fechaInicio: fechaComparableISO(url.searchParams.get("fecha_inicio") || ""),
+      fechaFin: fechaComparableISO(url.searchParams.get("fecha_fin") || ""),
       actividadId: (() => {
         const v = parseInt(url.searchParams.get("actividad_id") || "", 10);
         return Number.isInteger(v) && v > 0 ? v : null;
@@ -319,8 +315,8 @@ export async function onRequestGet(context) {
     return json({
       ok: true,
       filtros_aplicados: {
-        fecha: filtros.fecha,
-        franja: filtros.franjaId,
+        fecha_inicio: filtros.fechaInicio,
+        fecha_fin: filtros.fechaFin,
         actividad_id: filtros.actividadId,
         estado: filtros.estado,
         buscar: filtros.buscar
