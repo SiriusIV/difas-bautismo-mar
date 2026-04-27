@@ -1243,15 +1243,30 @@
       const logo = document.getElementById("logoCabecera");
       if (!logo) return;
       logo.classList.remove("logo-admin-arfer");
-      const actual = document.getElementById("logo_url").value.trim();
+      const logoInput = document.getElementById("logo_url");
+      const actual = logoInput ? String(logoInput.value || "").trim() : "";
       const imagenMostrada = actual || "logo.png";
       logo.src = imagenMostrada;
-      if (!esAdmin() || !esAdminArfer({
-        nombre: document.getElementById("nombre").value,
-        centro: document.getElementById("centro").value,
-        nombre_publico: document.getElementById("nombre_publico").value,
-        email: document.getElementById("email").value
-      })) return;
+      const valor = (id) => {
+        const el = document.getElementById(id);
+        return el ? String(el.value || "").trim() : "";
+      };
+      const datosPerfil = esAdmin()
+        ? {
+            nombre: valor("nombre"),
+            nombre_publico: valor("nombrePublicoAdmin"),
+            email: valor("emailAdmin")
+          }
+        : esSolicitante()
+          ? {
+              centro: valor("centroSolicitante"),
+              email: valor("emailSolicitante")
+            }
+          : {
+              nombre: valor("nombreSuperadmin"),
+              email: valor("emailSuperadmin")
+            };
+      if (!esAdmin() || !esAdminArfer(datosPerfil)) return;
       logo.src = LOGO_ADMIN_ARFER;
       logo.classList.add("logo-admin-arfer");
     }
