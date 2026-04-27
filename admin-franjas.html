@@ -52,6 +52,9 @@
       max-width: 120px;
       height: auto;
     }
+    .logo.logo-admin-arfer {
+      max-width: 133px;
+    }
 
     .titulos {
       text-align: center;
@@ -376,9 +379,30 @@
   </div>
 
   <script>
+    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let franjasCache = [];
     let actividadesDisponibles = [];
     let envioFranjasEnCurso = false;
+    function esAdminArfer(usuario = {}) {
+      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
+        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
+    }
+    async function aplicarLogoCabeceraAdmin() {
+      const logo = document.querySelector(".logo");
+      if (!logo) return;
+      try {
+        const response = await fetch("/api/usuario/session", { credentials: "same-origin" });
+        const data = await response.json().catch(() => null);
+        const user = data?.user;
+        logo.classList.remove("logo-admin-arfer");
+        const logoUsuario = String(user?.logo_url || "").trim();
+        if (logoUsuario) logo.src = logoUsuario;
+        else logo.src = "logo.png";
+        if (!esAdminArfer(user)) return;
+        logo.src = LOGO_ADMIN_ARFER;
+        logo.classList.add("logo-admin-arfer");
+      } catch (_) {}
+    }
 
     function actividadIdDesdeURL() {
       const params = new URLSearchParams(window.location.search);
@@ -792,6 +816,7 @@
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
+      await aplicarLogoCabeceraAdmin();
 
       document.getElementById("app").style.display = "block";
 

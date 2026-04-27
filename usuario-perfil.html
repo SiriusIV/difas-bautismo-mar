@@ -32,6 +32,7 @@
     .cabecera { background: #fff; border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 20px 18px; margin-bottom: 14px; display: flex; justify-content: center; align-items: center; }
     .cabecera-inner { display: flex; align-items: center; justify-content: center; gap: 50px; text-align: left; min-width: 0; }
     .logo-cabecera { width: 77px; height: auto; display: block; flex: 0 0 auto; }
+    .logo-cabecera.logo-admin-arfer { width: 86px; }
     .cabecera-titulos h1 { margin: 0; font-size: 24px; line-height: 1.15; color: var(--brand); font-weight: 600; }
     .cabecera-titulos h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; line-height: 1.3; }
     .acciones-superiores { display: flex; gap: 8px; align-items: center; }
@@ -1206,6 +1207,7 @@
   </div>
 
   <script>
+    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let perfilOriginal = null;
     let rolActual = "";
     let navegacionPendiente = null;
@@ -2765,7 +2767,7 @@
         overlay.classList.remove("activo");
       }
 
-      document.getElementById("logoCabecera").src = "logo.png";
+      aplicarLogoCabeceraPerfilAdmin();
     }
 
     function ocultarTodoPorRol() {
@@ -3801,3 +3803,23 @@
   </script>
 </body>
 </html>
+    function esAdminArfer(usuario = {}) {
+      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
+        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
+    }
+    function aplicarLogoCabeceraPerfilAdmin() {
+      const logo = document.getElementById("logoCabecera");
+      if (!logo) return;
+      logo.classList.remove("logo-admin-arfer");
+      const actual = document.getElementById("logo_url").value.trim();
+      const imagenMostrada = actual || "logo.png";
+      logo.src = imagenMostrada;
+      if (!esAdmin() || !esAdminArfer({
+        nombre: document.getElementById("nombre").value,
+        centro: document.getElementById("centro").value,
+        nombre_publico: document.getElementById("nombre_publico").value,
+        email: document.getElementById("email").value
+      })) return;
+      logo.src = LOGO_ADMIN_ARFER;
+      logo.classList.add("logo-admin-arfer");
+    }

@@ -11,6 +11,7 @@
     .cabecera-global-inner { max-width: 1108px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
     .bloque-marca { display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap; text-align: left; }
     .logo-cabecera { width: 77px; height: auto; display: block; }
+    .logo-cabecera.logo-admin-arfer { width: 86px; }
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
     .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
@@ -36,7 +37,7 @@
     .filtros { display: grid; grid-template-columns: 150px 150px 150px 1fr auto; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
-    .filtro-toggle-wrap { display: flex; align-items: center; justify-content: center; min-height: 40px; padding-top: 2px; }
+    .filtro-toggle-wrap { display: flex; align-items: center; justify-content: center; min-height: 40px; padding-top: 8px; }
     .toggle-switch { position: relative; display: inline-flex; align-items: center; width: 44px; height: 24px; flex: 0 0 auto; }
     .toggle-switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
     .toggle-slider { width: 44px; height: 24px; border-radius: 999px; background: #d7dee7; border: 1px solid #c5d0db; position: relative; transition: background 0.18s ease, border-color 0.18s ease; }
@@ -129,9 +130,9 @@
           <div><label for="filtroActividad">Actividad</label><select id="filtroActividad"><option value="">Todas</option></select></div>
           <div><label for="filtroFechaInicio">Fecha inicio</label><input type="date" id="filtroFechaInicio"></div>
           <div><label for="filtroFechaFin">Fecha fin</label><input type="date" id="filtroFechaFin"></div>
-          <div><label for="filtroBuscar">Solicitante</label><input type="text" id="filtroBuscar" placeholder="Buscar solicitante"></div>
+          <div><label for="filtroBuscar">Solicitante</label><select id="filtroBuscar"><option value="">Todos</option></select></div>
           <div class="filtro-toggle-wrap">
-            <label class="toggle-switch" title="Activar filtros" aria-label="Activar filtros"><input type="checkbox" id="toggleFiltrosActivos" checked><span class="toggle-slider"></span></label>
+            <label class="toggle-switch" title="Activar filtros" aria-label="Activar filtros"><input type="checkbox" id="toggleFiltrosActivos"><span class="toggle-slider"></span></label>
           </div>
         </div>
       </div>
@@ -162,9 +163,22 @@
     </div>
   </div>
   <script>
+    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let reservaSeleccionada = null;
     let reservasActuales = [];
     let nombreAdminPanel = "Administrador";
+    function esAdminArfer(userLike = {}) {
+      return [userLike?.nombre, userLike?.centro, userLike?.nombre_publico, userLike?.email]
+        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
+    }
+    function aplicarLogoAdminArfer(img, userLike = {}) {
+      if (!img) return;
+      img.classList.remove("logo-admin-arfer");
+      img.style.width = "";
+      if (!esAdminArfer(userLike)) return;
+      img.src = LOGO_ADMIN_ARFER;
+      img.classList.add("logo-admin-arfer");
+    }
     function mostrarMensaje(tipo, texto) { const m = document.getElementById("mensaje"); m.className = "mensaje " + tipo; m.style.display = "block"; m.textContent = texto; }
     function limpiarMensaje() { const m = document.getElementById("mensaje"); m.className = "mensaje"; m.style.display = "none"; m.textContent = ""; }
     function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
@@ -177,10 +191,24 @@
       if (partes.length !== 3) return texto;
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
     }
-    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) return; const nombre = data.user.nombre || data.user.email || "Administrador"; const logo = String(data.user.logo_url || "").trim(); nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; if (logo) { document.getElementById("logoCabeceraAdminReservas").src = logo; } } catch (_) {} }
+    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) return; const nombre = data.user.nombre || data.user.email || "Administrador"; const logo = String(data.user.logo_url || "").trim(); nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logo) { logoEl.src = logo; } aplicarLogoAdminArfer(logoEl, data.user); } catch (_) {} }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navFranjas").href = `admin-franjas.html${sufijo}`; document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
+    function poblarSolicitantesFiltro(solicitantes = []) {
+      const sel = document.getElementById("filtroBuscar");
+      const actual = sel.value || "";
+      sel.innerHTML = `<option value="">Todos</option>`;
+      (solicitantes || []).forEach((nombre) => {
+        const texto = String(nombre || "").trim();
+        if (!texto) return;
+        const opt = document.createElement("option");
+        opt.value = texto;
+        opt.textContent = texto;
+        if (texto === actual) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
     function leerFiltros() {
       const estado = document.getElementById("filtroEstadoCabecera").value || "";
       if (!document.getElementById("toggleFiltrosActivos").checked) {
@@ -209,14 +237,14 @@
     function abrirModalObservaciones(id) { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return; document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones; document.getElementById("modalObservaciones").classList.add("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false"); }
     function cerrarModalObservaciones() { document.getElementById("modalObservaciones").classList.remove("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true"); }
     function pintarReservas(reservas) { reservasActuales = reservas.slice(); const tbody = document.getElementById("tbodyReservas"); if (reservaSeleccionada) { const sigue = reservasActuales.find((r) => Number(r.id) === Number(reservaSeleccionada.id)); reservaSeleccionada = sigue || null; } if (!reservas.length) { tbody.innerHTML = `<tr><td colspan="10" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`; actualizarBotonesAccion(); return; } tbody.innerHTML = reservas.map((r) => { const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim()); return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}"><td class="sel-col"><input type="radio" name="seleccionReserva" ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "checked" : ""} onchange="seleccionarReserva(${r.id})"></td><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="fecha-col"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div><div class="fecha-secundaria"></div></td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="solicitante-col">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></td><td class="horario-col"><div class="horario-principal">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</div></td><td class="res-col">${r.plazas_reservadas}</td><td class="asig-col">${r.plazas_asignadas}</td><td class="tipo-col">${r.alumnos} / ${r.profesores}</td></tr>`; }).join(""); actualizarBotonesAccion(); }
-    async function cargarPanel() { limpiarMensaje(); try { actualizarSubactividad(); const filtros = leerFiltros(); const query = construirQuery(filtros); const url = `/api/admin/reservas${query ? "?" + query : ""}`; const res = await fetch(url, { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cargar el panel."); pintarResumen(data.resumen || { total_solicitudes: 0, pendientes: 0, confirmadas: 0, suspendidas: 0, rechazadas: 0 }); pintarReservas(data.reservas || []); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cargar el panel de reservas."); } }
+    async function cargarPanel() { limpiarMensaje(); try { actualizarSubactividad(); const filtros = leerFiltros(); const query = construirQuery(filtros); const url = `/api/admin/reservas${query ? "?" + query : ""}`; const res = await fetch(url, { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cargar el panel."); poblarSolicitantesFiltro(data.solicitantes || []); pintarResumen(data.resumen || { total_solicitudes: 0, pendientes: 0, confirmadas: 0, suspendidas: 0, rechazadas: 0 }); pintarReservas(data.reservas || []); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cargar el panel de reservas."); } }
     async function abrirEditarSeleccion() { if (!reservaSeleccionada) return; if (!reservaSeleccionada.token_edicion) { mostrarMensaje("error", "La reserva seleccionada no incluye token de edición."); return; } window.location.href = `editar.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`; }
     async function abrirAsistentesSeleccion() { if (!reservaSeleccionada) return; if (!reservaSeleccionada.token_edicion) { mostrarMensaje("error", "La reserva seleccionada no incluye token de edición."); return; } window.location.href = `asistentes.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`; }
     async function cambiarEstadoSeleccion(estado) { if (!reservaSeleccionada) return; let texto = "¿Desea aplicar el cambio de estado?"; if (estado === "CONFIRMADA") texto = "¿Desea confirmar esta solicitud?"; if (estado === "RECHAZADA") texto = "¿Desea rechazar esta solicitud?"; if (!window.confirm(texto)) return; limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaSeleccionada.id, accion: estado === "CONFIRMADA" ? "confirmar" : "rechazar" }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); await cargarPanel(); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cambiar el estado."); } }
     document.getElementById("filtroActividad").addEventListener("change", function () { actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); });
     document.getElementById("toggleFiltrosActivos").addEventListener("change", function () { reservaSeleccionada = null; cargarPanel(); });
     document.getElementById("filtroEstadoCabecera").addEventListener("change", function () { reservaSeleccionada = null; cargarPanel(); });
-    ["filtroActividad","filtroFechaInicio","filtroFechaFin","filtroBuscar"].forEach((id) => { const el = document.getElementById(id); if (!el) return; el.addEventListener(id === "filtroBuscar" ? "input" : "change", function () { if (!document.getElementById("toggleFiltrosActivos").checked) return; if (id === "filtroActividad") { actualizarSubactividad(); } reservaSeleccionada = null; cargarPanel(); }); });
+    ["filtroActividad","filtroFechaInicio","filtroFechaFin","filtroBuscar"].forEach((id) => { const el = document.getElementById(id); if (!el) return; el.addEventListener("change", function () { if (!document.getElementById("toggleFiltrosActivos").checked) return; if (id === "filtroActividad") { actualizarSubactividad(); } reservaSeleccionada = null; cargarPanel(); }); });
     document.getElementById("btnEditarSeleccion").addEventListener("click", abrirEditarSeleccion);
     document.getElementById("btnAsistentesSeleccion").addEventListener("click", abrirAsistentesSeleccion);
     document.getElementById("btnConfirmarSeleccion").addEventListener("click", function () { cambiarEstadoSeleccion("CONFIRMADA"); });
