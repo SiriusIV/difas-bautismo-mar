@@ -1234,6 +1234,28 @@
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
 
+    function esAdminArfer(usuario = {}) {
+      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
+        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
+    }
+
+    function aplicarLogoCabeceraPerfilAdmin() {
+      const logo = document.getElementById("logoCabecera");
+      if (!logo) return;
+      logo.classList.remove("logo-admin-arfer");
+      const actual = document.getElementById("logo_url").value.trim();
+      const imagenMostrada = actual || "logo.png";
+      logo.src = imagenMostrada;
+      if (!esAdmin() || !esAdminArfer({
+        nombre: document.getElementById("nombre").value,
+        centro: document.getElementById("centro").value,
+        nombre_publico: document.getElementById("nombre_publico").value,
+        email: document.getElementById("email").value
+      })) return;
+      logo.src = LOGO_ADMIN_ARFER;
+      logo.classList.add("logo-admin-arfer");
+    }
+
     function esAutogestionAdminEditable() {
       return (esAdmin() || esSecretaria()) && !!documentacionAdminContexto?.editable;
     }
@@ -3803,23 +3825,3 @@
   </script>
 </body>
 </html>
-    function esAdminArfer(usuario = {}) {
-      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
-    function aplicarLogoCabeceraPerfilAdmin() {
-      const logo = document.getElementById("logoCabecera");
-      if (!logo) return;
-      logo.classList.remove("logo-admin-arfer");
-      const actual = document.getElementById("logo_url").value.trim();
-      const imagenMostrada = actual || "logo.png";
-      logo.src = imagenMostrada;
-      if (!esAdmin() || !esAdminArfer({
-        nombre: document.getElementById("nombre").value,
-        centro: document.getElementById("centro").value,
-        nombre_publico: document.getElementById("nombre_publico").value,
-        email: document.getElementById("email").value
-      })) return;
-      logo.src = LOGO_ADMIN_ARFER;
-      logo.classList.add("logo-admin-arfer");
-    }
