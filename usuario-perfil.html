@@ -51,8 +51,15 @@
     .bloque-head-documentacion { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
     .bloque-head-documentacion h3 { margin: 0; font-size: 18px; color: var(--brand); }
     .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: none; }
-    .bloque-head-documentacion-principal { display: flex; align-items: stretch; gap: 12px; flex: 1 1 420px; min-width: 0; }
-    .bloque-head-documentacion-texto { min-width: 0; flex: 1 1 auto; }
+    .bloque-head-documentacion-principal { display: flex; align-items: center; gap: 12px; flex: 1 1 420px; min-width: 0; }
+    .bloque-head-documentacion-texto {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 4px;
+    }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 8px; }
     #filaSolicitanteEmailTelefono { grid-template-columns: 1.37fr 0.75fr 0.46fr; }
     #filaSolicitanteCuentaCentro { grid-template-columns: 0.7fr 1.15fr 0.9fr; align-items: end; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
@@ -106,11 +113,12 @@
     .bloque-documentacion-admin.activo { display: block; }
     .documentacion-admin-shell { display: grid; gap: 12px; }
     .documentacion-admin-subtitulo {
-      margin: 6px 0 0;
+      margin: 7px 0 0;
       font-size: 16px;
       line-height: 1.35;
       color: #123a63;
       font-weight: 600;
+      text-align: right;
     }
     .documentacion-admin-barra {
       display: flex;
