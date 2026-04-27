@@ -17,7 +17,11 @@
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .barra-navegacion-izq { font-size: 14px; font-weight: 500; color: #123a63; line-height: 1.2; }
+    .barra-navegacion-izq { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; font-weight: 500; color: #123a63; line-height: 1.2; }
+    .panel-titulo { white-space: nowrap; }
+    .estado-cabecera { display: inline-flex; align-items: center; gap: 8px; }
+    .estado-cabecera label { margin: 0; font-size: 12px; white-space: nowrap; }
+    .estado-cabecera select { width: auto; min-width: 146px; height: 34px; padding: 7px 30px 7px 10px; }
     .barra-navegacion-der, .nav-admin, .acciones-superiores, .filtro-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .barra-navegacion-der, .nav-admin { margin-left: auto; }
     .nav-btn { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; cursor: pointer; }
@@ -30,7 +34,7 @@
     .btn-icono svg, .btn-icono-filtro svg { width: 18px; height: 18px; }
     .bloque { padding: 14px; margin-bottom: 10px; }
     .bloque h3 { margin: 0 0 12px; font-size: 15px; color: #123a63; }
-    .filtros { display: grid; grid-template-columns: 150px 140px 190px 160px 1fr auto; gap: 10px; align-items: end; }
+    .filtros { display: grid; grid-template-columns: 150px 150px 150px 1fr auto; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
     .filtro-toggle-wrap { display: flex; align-items: center; justify-content: center; min-height: 40px; padding-top: 2px; }
@@ -98,7 +102,19 @@
   <div class="app-scroll">
     <div class="contenedor">
       <div class="barra-navegacion">
-        <div class="barra-navegacion-izq" id="subactividadActual">Panel de reservas</div>
+        <div class="barra-navegacion-izq">
+          <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
+          <div class="estado-cabecera">
+            <label for="filtroEstadoCabecera">Estado</label>
+            <select id="filtroEstadoCabecera">
+              <option value="">Todos</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="CONFIRMADA">Confirmada</option>
+              <option value="SUSPENDIDA">Suspendida</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </div>
+        </div>
         <div class="barra-navegacion-der">
           <div class="nav-admin">
             <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
@@ -113,10 +129,9 @@
         <h3>Filtros</h3>
         <div class="filtros">
           <div><label for="filtroActividad">Actividad</label><select id="filtroActividad"><option value="">Todas</option></select></div>
-          <div><label for="filtroFecha">Fecha</label><input type="date" id="filtroFecha"></div>
-          <div><label for="filtroFranja">Horario</label><select id="filtroFranja"><option value="">Todos</option></select></div>
-          <div><label for="filtroEstado">Estado</label><select id="filtroEstado"><option value="">Todos</option><option value="PENDIENTE">Pendiente</option><option value="CONFIRMADA">Confirmada</option><option value="SUSPENDIDA">Suspendida</option><option value="RECHAZADA">Rechazada</option></select></div>
-          <div><label for="filtroBuscar">Buscar</label><input type="text" id="filtroBuscar" placeholder="Actividad o solicitante"></div>
+          <div><label for="filtroFechaInicio">Fecha inicio</label><input type="date" id="filtroFechaInicio"></div>
+          <div><label for="filtroFechaFin">Fecha fin</label><input type="date" id="filtroFechaFin"></div>
+          <div><label for="filtroBuscar">Solicitante</label><input type="text" id="filtroBuscar" placeholder="Buscar solicitante"></div>
           <div class="filtro-toggle-wrap">
             <label class="toggle-switch" title="Activar filtros" aria-label="Activar filtros"><input type="checkbox" id="toggleFiltrosActivos" checked><span class="toggle-slider"></span></label>
           </div>
@@ -166,24 +181,44 @@
     }
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) return; const nombre = data.user.nombre || data.user.email || "Administrador"; const logo = String(data.user.logo_url || "").trim(); nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; if (logo) { document.getElementById("logoCabeceraAdminReservas").src = logo; } } catch (_) {} }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navFranjas").href = `admin-franjas.html${sufijo}`; document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
-    function actualizarSubactividad() { const sel = document.getElementById("filtroActividad"); const texto = sel.options[sel.selectedIndex]?.text || ""; document.getElementById("subactividadActual").textContent = texto ? `Panel de reservas de ${nombreAdminPanel} · ${texto}` : `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
+    function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
-    function leerFiltros() { if (!document.getElementById("toggleFiltrosActivos").checked) { return { actividad_id: "", fecha: "", franja: "", estado: "", buscar: "" }; } return { actividad_id: (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(), fecha: document.getElementById("filtroFecha").value || "", franja: document.getElementById("filtroFranja").value || "", estado: document.getElementById("filtroEstado").value || "", buscar: document.getElementById("filtroBuscar").value.trim() }; }
-    function construirQuery(filtros) { const params = new URLSearchParams(); if (filtros.actividad_id) params.set("actividad_id", filtros.actividad_id); if (filtros.fecha) params.set("fecha", filtros.fecha.split("-").reverse().join("/")); if (filtros.franja) params.set("franja", filtros.franja); if (filtros.estado) params.set("estado", filtros.estado); if (filtros.buscar) params.set("buscar", filtros.buscar); return params.toString(); }
-    function pintarFranjas(franjas) { const sel = document.getElementById("filtroFranja"); const valorActual = sel.value; sel.innerHTML = `<option value="">Todos</option>`; franjas.forEach((f) => { const opt = document.createElement("option"); opt.value = f.id; opt.textContent = `${f.fecha} - ${f.hora_inicio} a ${f.hora_fin}`; if (String(valorActual) === String(f.id)) opt.selected = true; sel.appendChild(opt); }); }
+    function leerFiltros() {
+      const estado = document.getElementById("filtroEstadoCabecera").value || "";
+      if (!document.getElementById("toggleFiltrosActivos").checked) {
+        return { actividad_id: "", fecha_inicio: "", fecha_fin: "", estado, buscar: "" };
+      }
+      return {
+        actividad_id: (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(),
+        fecha_inicio: document.getElementById("filtroFechaInicio").value || "",
+        fecha_fin: document.getElementById("filtroFechaFin").value || "",
+        estado,
+        buscar: document.getElementById("filtroBuscar").value.trim()
+      };
+    }
+    function construirQuery(filtros) {
+      const params = new URLSearchParams();
+      if (filtros.actividad_id) params.set("actividad_id", filtros.actividad_id);
+      if (filtros.fecha_inicio) params.set("fecha_inicio", filtros.fecha_inicio.split("-").reverse().join("/"));
+      if (filtros.fecha_fin) params.set("fecha_fin", filtros.fecha_fin.split("-").reverse().join("/"));
+      if (filtros.estado) params.set("estado", filtros.estado);
+      if (filtros.buscar) params.set("buscar", filtros.buscar);
+      return params.toString();
+    }
     function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
     function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnEditarSeleccion").disabled = !hay; document.getElementById("btnAsistentesSeleccion").disabled = !hay; document.getElementById("btnConfirmarSeleccion").disabled = !hay || reservaSeleccionada.estado !== "PENDIENTE"; document.getElementById("btnRechazarSeleccion").disabled = !hay || !["PENDIENTE", "SUSPENDIDA"].includes(reservaSeleccionada.estado); }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function abrirModalObservaciones(id) { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return; document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones; document.getElementById("modalObservaciones").classList.add("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false"); }
     function cerrarModalObservaciones() { document.getElementById("modalObservaciones").classList.remove("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true"); }
     function pintarReservas(reservas) { reservasActuales = reservas.slice(); const tbody = document.getElementById("tbodyReservas"); if (reservaSeleccionada) { const sigue = reservasActuales.find((r) => Number(r.id) === Number(reservaSeleccionada.id)); reservaSeleccionada = sigue || null; } if (!reservas.length) { tbody.innerHTML = `<tr><td colspan="10" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`; actualizarBotonesAccion(); return; } tbody.innerHTML = reservas.map((r) => { const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim()); return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}"><td class="sel-col"><input type="radio" name="seleccionReserva" ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "checked" : ""} onchange="seleccionarReserva(${r.id})"></td><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="fecha-col"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div><div class="fecha-secundaria"></div></td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="solicitante-col">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></td><td class="horario-col"><div class="horario-principal">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</div></td><td class="res-col">${r.plazas_reservadas}</td><td class="asig-col">${r.plazas_asignadas}</td><td class="tipo-col">${r.alumnos} / ${r.profesores}</td></tr>`; }).join(""); actualizarBotonesAccion(); }
-    async function cargarPanel() { limpiarMensaje(); try { actualizarSubactividad(); const filtros = leerFiltros(); const query = construirQuery(filtros); const url = `/api/admin/reservas${query ? "?" + query : ""}`; const res = await fetch(url, { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cargar el panel."); pintarFranjas(data.franjas || []); pintarResumen(data.resumen || { total_solicitudes: 0, pendientes: 0, confirmadas: 0, suspendidas: 0, rechazadas: 0 }); pintarReservas(data.reservas || []); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cargar el panel de reservas."); } }
+    async function cargarPanel() { limpiarMensaje(); try { actualizarSubactividad(); const filtros = leerFiltros(); const query = construirQuery(filtros); const url = `/api/admin/reservas${query ? "?" + query : ""}`; const res = await fetch(url, { credentials: "same-origin" }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cargar el panel."); pintarResumen(data.resumen || { total_solicitudes: 0, pendientes: 0, confirmadas: 0, suspendidas: 0, rechazadas: 0 }); pintarReservas(data.reservas || []); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cargar el panel de reservas."); } }
     async function abrirEditarSeleccion() { if (!reservaSeleccionada) return; if (!reservaSeleccionada.token_edicion) { mostrarMensaje("error", "La reserva seleccionada no incluye token de edición."); return; } window.location.href = `editar.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`; }
     async function abrirAsistentesSeleccion() { if (!reservaSeleccionada) return; if (!reservaSeleccionada.token_edicion) { mostrarMensaje("error", "La reserva seleccionada no incluye token de edición."); return; } window.location.href = `asistentes.html?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`; }
     async function cambiarEstadoSeleccion(estado) { if (!reservaSeleccionada) return; let texto = "¿Desea aplicar el cambio de estado?"; if (estado === "CONFIRMADA") texto = "¿Desea confirmar esta solicitud?"; if (estado === "RECHAZADA") texto = "¿Desea rechazar esta solicitud?"; if (!window.confirm(texto)) return; limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaSeleccionada.id, accion: estado === "CONFIRMADA" ? "confirmar" : "rechazar" }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); await cargarPanel(); } catch (error) { mostrarMensaje("error", error.message || "No se pudo cambiar el estado."); } }
     document.getElementById("filtroActividad").addEventListener("change", function () { actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); });
     document.getElementById("toggleFiltrosActivos").addEventListener("change", function () { reservaSeleccionada = null; cargarPanel(); });
-    ["filtroActividad","filtroFecha","filtroFranja","filtroEstado","filtroBuscar"].forEach((id) => { const el = document.getElementById(id); if (!el) return; el.addEventListener(id === "filtroBuscar" ? "input" : "change", function () { if (!document.getElementById("toggleFiltrosActivos").checked) return; if (id === "filtroActividad") { actualizarSubactividad(); } reservaSeleccionada = null; cargarPanel(); }); });
+    document.getElementById("filtroEstadoCabecera").addEventListener("change", function () { reservaSeleccionada = null; cargarPanel(); });
+    ["filtroActividad","filtroFechaInicio","filtroFechaFin","filtroBuscar"].forEach((id) => { const el = document.getElementById(id); if (!el) return; el.addEventListener(id === "filtroBuscar" ? "input" : "change", function () { if (!document.getElementById("toggleFiltrosActivos").checked) return; if (id === "filtroActividad") { actualizarSubactividad(); } reservaSeleccionada = null; cargarPanel(); }); });
     document.getElementById("btnEditarSeleccion").addEventListener("click", abrirEditarSeleccion);
     document.getElementById("btnAsistentesSeleccion").addEventListener("click", abrirAsistentesSeleccion);
     document.getElementById("btnConfirmarSeleccion").addEventListener("click", function () { cambiarEstadoSeleccion("CONFIRMADA"); });
