@@ -89,7 +89,9 @@
       height: auto;
       display: block;
       flex: 0 0 auto;
+      transition: opacity 0.12s ease;
     }
+    .logo-cabecera.logo-pendiente { opacity: 0; }
     .logo-cabecera.logo-admin-arfer { width: 78px; }
 
     .titulos-cabecera h1 {
@@ -1534,7 +1536,7 @@
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
-        <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente">
         <div class="titulos-cabecera">
           <h1>Gestión de actividades</h1>
           <h2 id="subtituloCabecera">Alta y edición de actividades</h2>
@@ -4262,7 +4264,8 @@ function retrocederPaso() {
       const logoUsuario = String(usuario?.logo_url || "").trim();
       if (logoUsuario) img.src = logoUsuario;
       else img.src = "logo.png";
-      if (!esAdminArfer(usuario)) return;
+      if (!esAdminArfer(usuario)) { img.classList.remove("logo-pendiente"); return; }
       img.src = LOGO_ADMIN_ARFER;
       img.classList.add("logo-admin-arfer");
+      img.classList.remove("logo-pendiente");
     }

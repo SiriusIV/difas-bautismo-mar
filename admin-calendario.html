@@ -50,7 +50,9 @@
       top: 0;
       max-width: 110px;
       height: auto;
+      transition: opacity 0.12s ease;
     }
+    .logo.logo-pendiente { opacity: 0; }
     .logo.logo-admin-arfer {
       max-width: 122px;
     }
@@ -444,7 +446,7 @@
 <body>
   <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
+      <img src="logo.png" alt="Logo" class="logo logo-pendiente">
 
       <div class="cabecera-centro">
         <h1 id="tituloEvento">Cargando evento...</h1>
@@ -591,10 +593,11 @@
         const logoUsuario = String(user?.logo_url || "").trim();
         if (logoUsuario) logo.src = logoUsuario;
         else logo.src = "logo.png";
-        if (!esAdminArfer(user)) return;
+        if (!esAdminArfer(user)) { logo.classList.remove("logo-pendiente"); return; }
         logo.src = LOGO_ADMIN_ARFER;
         logo.classList.add("logo-admin-arfer");
       } catch (_) {}
+      logo.classList.remove("logo-pendiente");
     }
 
     function redirigirLogin() {

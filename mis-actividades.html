@@ -70,7 +70,9 @@
       height: auto;
       display: block;
       flex: 0 0 auto;
+      transition: opacity 0.12s ease;
     }
+    .logo-cabecera.logo-pendiente { opacity: 0; }
     .logo-cabecera.logo-admin-arfer { width: 86px; }
 
     .titulos-cabecera {
@@ -517,7 +519,7 @@
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
-        <img src="logo.png" alt="Logo" class="logo-cabecera">
+        <img src="logo.png" alt="Logo" class="logo-cabecera logo-pendiente">
 
         <div class="titulos-cabecera">
           <h1 id="tituloCabecera">Panel de actividades</h1>
@@ -657,9 +659,10 @@
       const logoUsuario = String(usuario?.logo_url || "").trim();
       if (logoUsuario) img.src = logoUsuario;
       else img.src = "logo.png";
-      if (!esAdminArfer(usuario)) return;
+      if (!esAdminArfer(usuario)) { img.classList.remove("logo-pendiente"); return; }
       img.src = LOGO_ADMIN_ARFER;
       img.classList.add("logo-admin-arfer");
+      img.classList.remove("logo-pendiente");
     }
     let filtroPrograma = "";
     let filtrosTipoActividad = new Set(["permanentes", "temporales", "activas", "inactivas"]);

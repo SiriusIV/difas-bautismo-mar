@@ -51,7 +51,9 @@
       left: 0;
       max-width: 120px;
       height: auto;
+      transition: opacity 0.12s ease;
     }
+    .logo.logo-pendiente { opacity: 0; }
     .logo.logo-admin-arfer {
       max-width: 133px;
     }
@@ -266,7 +268,7 @@
 <body>
   <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
+      <img src="logo.png" alt="Logo" class="logo logo-pendiente">
       <div class="titulos">
         <h1>Panel de administración</h1>
         <h2>Gestión de franjas</h2>
@@ -398,10 +400,11 @@
         const logoUsuario = String(user?.logo_url || "").trim();
         if (logoUsuario) logo.src = logoUsuario;
         else logo.src = "logo.png";
-        if (!esAdminArfer(user)) return;
+        if (!esAdminArfer(user)) { logo.classList.remove("logo-pendiente"); return; }
         logo.src = LOGO_ADMIN_ARFER;
         logo.classList.add("logo-admin-arfer");
       } catch (_) {}
+      logo.classList.remove("logo-pendiente");
     }
 
     function actividadIdDesdeURL() {

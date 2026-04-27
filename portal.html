@@ -62,7 +62,9 @@
   width: 77px;
   height: auto;
   display: block;
+  transition: opacity 0.12s ease;
 }
+.logo-cabecera.logo-pendiente { opacity: 0; }
 .logo-cabecera.logo-admin-arfer {
   width: 86px;
 }
@@ -1310,7 +1312,7 @@
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
-        <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabeceraPortal">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente" id="logoCabeceraPortal">
         <div class="titulos-cabecera">
           <h1>Actividades Públicas Institucionales</h1>
           <h2 id="subtituloCabecera">Armada</h2>
@@ -1957,6 +1959,7 @@ function actualizarBotonSolicitarSegunFranja() {
         logo.src = LOGO_ADMIN_ARFER;
         logo.classList.add("logo-admin-arfer");
       }
+      logo.classList.remove("logo-pendiente");
     }
 
     function actualizarFranjaSesion() {
