@@ -51,6 +51,8 @@
     .bloque-head-documentacion { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
     .bloque-head-documentacion h3 { margin: 0; font-size: 18px; color: var(--brand); }
     .bloque-head-documentacion p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: none; }
+    .bloque-head-documentacion-principal { display: flex; align-items: stretch; gap: 12px; flex: 1 1 420px; min-width: 0; }
+    .bloque-head-documentacion-texto { min-width: 0; flex: 1 1 auto; }
     .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 8px; }
     #filaSolicitanteEmailTelefono { grid-template-columns: 1.37fr 0.75fr 0.46fr; }
     #filaSolicitanteCuentaCentro { grid-template-columns: 0.7fr 1.15fr 0.9fr; align-items: end; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
@@ -217,6 +219,16 @@
     .documentacion-admin-pill.version { color: #123a63; background: #eef4ff; border-color: #c6d8f0; }
     .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .documentacion-admin-toolbar .btn-icono:disabled { opacity: 0.45; cursor: not-allowed; background: #f8fafc; color: #8090a0; }
+    .btn-cambio-documental-cabecera {
+      width: 54px;
+      min-width: 54px;
+      height: auto;
+      min-height: 66px;
+      border-radius: 16px;
+      align-self: stretch;
+      flex: 0 0 54px;
+    }
+    .btn-cambio-documental-cabecera svg { width: 21px; height: 21px; }
     .tabs-documentacion-admin { display: flex; gap: 8px; margin: 2px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tab-documentacion-admin-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-documentacion-admin-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
@@ -757,9 +769,14 @@
     </div>
     <div class="bloque bloque-documentacion-admin" id="bloqueDocumentacionAdmin">
       <div class="bloque-head-documentacion">
-        <div>
-          <h3>Documentación obligatoria</h3>
-          <p class="documentacion-admin-subtitulo" id="documentacionAdminSubtitulo">Cargando responsable documental...</p>
+        <div class="bloque-head-documentacion-principal">
+          <button type="button" class="btn-icono btn-cambio-documental-cabecera" id="btnCambiarModoDocumentalAdmin" title="Cambiar responsable" aria-label="Cambiar responsable">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11"></path><path d="M13 5l3 3-3 3"></path><path d="M19 16H8"></path><path d="M11 13l-3 3 3 3"></path></svg>
+          </button>
+          <div class="bloque-head-documentacion-texto">
+            <h3>Documentación obligatoria</h3>
+            <p class="documentacion-admin-subtitulo" id="documentacionAdminSubtitulo">Cargando responsable documental...</p>
+          </div>
         </div>
         <div class="documentacion-admin-toolbar">
           <button type="button" class="btn-icono" id="btnNuevoDocumentoBaseAdmin" title="Nuevo documento" aria-label="Nuevo documento">
@@ -770,9 +787,6 @@
           </button>
           <button type="button" class="btn-icono peligro" id="btnEliminarDocumentoBaseAdmin" title="Eliminar documento" aria-label="Eliminar documento" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          </button>
-          <button type="button" class="btn-icono" id="btnCambiarModoDocumentalAdmin" title="Cambiar responsable" aria-label="Cambiar responsable">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11"></path><path d="M13 5l3 3-3 3"></path><path d="M19 16H8"></path><path d="M11 13l-3 3 3 3"></path></svg>
           </button>
         </div>
       </div>
