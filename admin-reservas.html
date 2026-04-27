@@ -12,7 +12,6 @@
     .bloque-marca { display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap; text-align: left; }
     .logo-cabecera { width: 77px; height: auto; display: block; transition: opacity 0.12s ease; }
     .logo-cabecera.logo-pendiente { opacity: 0; }
-    .logo-cabecera.logo-admin-arfer { width: 86px; }
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
     .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
@@ -164,21 +163,14 @@
     </div>
   </div>
   <script>
-    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let reservaSeleccionada = null;
     let reservasActuales = [];
     let nombreAdminPanel = "Administrador";
-    function esAdminArfer(userLike = {}) {
-      return [userLike?.nombre, userLike?.centro, userLike?.nombre_publico, userLike?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
-    function aplicarLogoAdminArfer(img, userLike = {}) {
+    function aplicarLogoCabeceraAdmin(img, userLike = {}) {
       if (!img) return;
-      img.classList.remove("logo-admin-arfer");
       img.style.width = "";
-      if (!esAdminArfer(userLike)) { img.classList.remove("logo-pendiente"); return; }
-      img.src = LOGO_ADMIN_ARFER;
-      img.classList.add("logo-admin-arfer");
+      const logoUsuario = String(userLike?.logo_url || "").trim();
+      img.src = logoUsuario || "logo.png";
       img.classList.remove("logo-pendiente");
     }
     function mostrarMensaje(tipo, texto) { const m = document.getElementById("mensaje"); m.className = "mensaje " + tipo; m.style.display = "block"; m.textContent = texto; }
@@ -193,7 +185,7 @@
       if (partes.length !== 3) return texto;
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
     }
-    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) logoEl.classList.remove("logo-pendiente"); return; } const nombre = data.user.nombre || data.user.email || "Administrador"; const logo = String(data.user.logo_url || "").trim(); nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; if (logoEl && logo) { logoEl.src = logo; } aplicarLogoAdminArfer(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) logoEl.classList.remove("logo-pendiente"); } }
+    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navFranjas").href = `admin-franjas.html${sufijo}`; document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }

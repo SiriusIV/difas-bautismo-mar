@@ -65,10 +65,6 @@
   transition: opacity 0.12s ease;
 }
 .logo-cabecera.logo-pendiente { opacity: 0; }
-.logo-cabecera.logo-admin-arfer {
-  width: 86px;
-}
-
     .titulos-cabecera h1 {
       margin: 0;
       font-size: 24px;
@@ -1936,11 +1932,6 @@ function actualizarBotonSolicitarSegunFranja() {
 }
     
 
-    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
-    function esAdminArfer(usuario = {}) {
-      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
     function actualizarLogoCabeceraSesion() {
       const logo = document.getElementById("logoCabeceraPortal");
       if (!logo) return;
@@ -1948,16 +1939,10 @@ function actualizarBotonSolicitarSegunFranja() {
       const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
       const logoUsuario = String(usuarioAutenticado?.logo_url || "").trim();
 
-      logo.classList.remove("logo-admin-arfer");
       if ((rol === "ADMIN" || rol === "SUPERADMIN") && logoUsuario) {
         logo.src = logoUsuario;
       } else {
         logo.src = "logo.png";
-      }
-
-      if ((rol === "ADMIN" || rol === "SUPERADMIN") && esAdminArfer(usuarioAutenticado)) {
-        logo.src = LOGO_ADMIN_ARFER;
-        logo.classList.add("logo-admin-arfer");
       }
       logo.classList.remove("logo-pendiente");
     }

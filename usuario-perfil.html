@@ -33,7 +33,6 @@
     .cabecera-inner { display: flex; align-items: center; justify-content: center; gap: 50px; text-align: left; min-width: 0; }
     .logo-cabecera { width: 77px; height: auto; display: block; flex: 0 0 auto; transition: opacity 0.12s ease; }
     .logo-cabecera.logo-pendiente { opacity: 0; }
-    .logo-cabecera.logo-admin-arfer { width: 86px; }
     .cabecera-titulos h1 { margin: 0; font-size: 24px; line-height: 1.15; color: var(--brand); font-weight: 600; }
     .cabecera-titulos h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; line-height: 1.3; }
     .acciones-superiores { display: flex; gap: 8px; align-items: center; }
@@ -1208,7 +1207,6 @@
   </div>
 
   <script>
-    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let perfilOriginal = null;
     let rolActual = "";
     let navegacionPendiente = null;
@@ -1235,41 +1233,13 @@
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
 
-    function esAdminArfer(usuario = {}) {
-      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
-
     function aplicarLogoCabeceraPerfilAdmin() {
       const logo = document.getElementById("logoCabecera");
       if (!logo) return;
-      logo.classList.remove("logo-admin-arfer");
       const logoInput = document.getElementById("logo_url");
       const actual = logoInput ? String(logoInput.value || "").trim() : "";
       const imagenMostrada = actual || "logo.png";
       logo.src = imagenMostrada;
-      const valor = (id) => {
-        const el = document.getElementById(id);
-        return el ? String(el.value || "").trim() : "";
-      };
-      const datosPerfil = esAdmin()
-        ? {
-            nombre: valor("nombre"),
-            nombre_publico: valor("nombrePublicoAdmin"),
-            email: valor("emailAdmin")
-          }
-        : esSolicitante()
-          ? {
-              centro: valor("centroSolicitante"),
-              email: valor("emailSolicitante")
-            }
-          : {
-              nombre: valor("nombreSuperadmin"),
-              email: valor("emailSuperadmin")
-            };
-      if (!esAdmin() || !esAdminArfer(datosPerfil)) { logo.classList.remove("logo-pendiente"); return; }
-      logo.src = LOGO_ADMIN_ARFER;
-      logo.classList.add("logo-admin-arfer");
       logo.classList.remove("logo-pendiente");
     }
 

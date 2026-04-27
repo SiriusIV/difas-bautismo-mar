@@ -66,7 +66,6 @@
       transition: opacity 0.12s ease;
     }
     .logo-cabecera.logo-pendiente { opacity: 0; }
-    .logo-cabecera.logo-admin-arfer { width: 86px; }
 
     .cabecera-titulos h1 {
       margin: 0;
@@ -479,23 +478,14 @@
   </template>
 
   <script>
-    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let documentosOriginales = [];
     let versionActual = 1;
-    function esAdminArfer(usuario = {}) {
-      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
     function aplicarLogoAdminArfer(img, usuario = {}) {
       if (!img) return;
-      img.classList.remove("logo-admin-arfer");
       img.style.width = "";
       const logoUsuario = String(usuario?.logo_url || "").trim();
       if (logoUsuario) img.src = logoUsuario;
       else img.src = "logo.png";
-      if (!esAdminArfer(usuario)) { img.classList.remove("logo-pendiente"); return; }
-      img.src = LOGO_ADMIN_ARFER;
-      img.classList.add("logo-admin-arfer");
       img.classList.remove("logo-pendiente");
     }
 

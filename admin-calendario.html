@@ -53,9 +53,6 @@
       transition: opacity 0.12s ease;
     }
     .logo.logo-pendiente { opacity: 0; }
-    .logo.logo-admin-arfer {
-      max-width: 122px;
-    }
 
     .cabecera-centro {
       text-align: center;
@@ -573,15 +570,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script>
-    const LOGO_ADMIN_ARFER = "assets/logo-arfer.svg";
     let calendar;
     let eventoSeleccionado = null;
     let accionEnCurso = false;
     let fechaInicialCalendario = null;
-    function esAdminArfer(usuario = {}) {
-      return [usuario?.nombre, usuario?.centro, usuario?.nombre_publico, usuario?.email]
-        .some((valor) => String(valor || "").trim().toUpperCase() === "ARFER");
-    }
     async function aplicarLogoCabeceraAdmin() {
       const logo = document.querySelector(".logo");
       if (!logo) return;
@@ -589,13 +581,9 @@
         const response = await fetch("/api/usuario/session", { credentials: "same-origin" });
         const data = await response.json().catch(() => null);
         const user = data?.user;
-        logo.classList.remove("logo-admin-arfer");
         const logoUsuario = String(user?.logo_url || "").trim();
         if (logoUsuario) logo.src = logoUsuario;
         else logo.src = "logo.png";
-        if (!esAdminArfer(user)) { logo.classList.remove("logo-pendiente"); return; }
-        logo.src = LOGO_ADMIN_ARFER;
-        logo.classList.add("logo-admin-arfer");
       } catch (_) {}
       logo.classList.remove("logo-pendiente");
     }
