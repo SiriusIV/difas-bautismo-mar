@@ -20,8 +20,6 @@
     .barra-navegacion { padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .barra-navegacion-izq { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; font-weight: 500; color: #123a63; line-height: 1.2; }
     .panel-titulo { white-space: nowrap; }
-    .estado-cabecera { display: inline-flex; align-items: center; gap: 12px; }
-    .estado-cabecera select { width: auto; min-width: 146px; height: 34px; padding: 7px 30px 7px 10px; }
     .barra-navegacion-der, .nav-admin, .acciones-superiores, .filtro-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .barra-navegacion-der, .nav-admin { margin-left: auto; }
     .nav-btn { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; cursor: pointer; }
@@ -46,6 +44,8 @@
     .toggle-switch input:checked + .toggle-slider::after { transform: translateX(20px); }
     .resumen-linea { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
     .resumen { font-weight: 700; display: flex; gap: 12px; flex-wrap: wrap; color: #123a63; font-size: 13px; }
+    .resumen-centro { flex: 1 1 220px; display: flex; align-items: center; justify-content: flex-start; min-width: 180px; }
+    .resumen-centro select { width: 100%; max-width: 220px; min-width: 160px; height: 34px; padding: 7px 30px 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
     .tabla-wrap { overflow-x: auto; }
     table { width: 100%; min-width: 930px; border-collapse: collapse; background: #fff; table-layout: fixed; font-size: 13px; }
     th, td { border-bottom: 1px solid #dde4ea; padding: 9px 8px; text-align: left; vertical-align: middle; line-height: 1.3; }
@@ -104,15 +104,6 @@
       <div class="barra-navegacion">
         <div class="barra-navegacion-izq">
           <span class="panel-titulo" id="subactividadActual">Panel de reservas:</span>
-          <div class="estado-cabecera">
-            <select id="filtroEstadoCabecera">
-              <option value="">Todas</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="CONFIRMADA">Confirmada</option>
-              <option value="SUSPENDIDA">Suspendida</option>
-              <option value="RECHAZADA">Rechazada</option>
-            </select>
-          </div>
         </div>
         <div class="barra-navegacion-der">
           <div class="nav-admin">
@@ -138,6 +129,15 @@
       <div class="bloque">
         <div class="resumen-linea">
           <div class="resumen" id="resumenPanel"></div>
+          <div class="resumen-centro">
+            <select id="filtroEstadoCabecera">
+              <option value="">Todas</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="CONFIRMADA">Confirmada</option>
+              <option value="SUSPENDIDA">Suspendida</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </div>
           <div class="acciones-superiores">
             <button type="button" class="btn-icono" id="btnEditarSeleccion" title="Editar reserva" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
             <button type="button" class="btn-icono" id="btnAsistentesSeleccion" title="Gestionar asistentes" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
