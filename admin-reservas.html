@@ -35,10 +35,10 @@
     .filtros { display: grid; grid-template-columns: 282px 150px 150px minmax(180px, 1fr) auto; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
-    .filtro-acciones-rapidas { display: flex; align-items: center; justify-content: center; min-height: 40px; padding-top: 8px; }
-    .btn-filtros-reset { width: 38px; height: 38px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; padding: 0; }
-    .btn-filtros-reset:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
-    .btn-filtros-reset svg { width: 18px; height: 18px; display: block; }
+    .filtro-acciones-rapidas { display: flex; align-items: end; justify-content: center; min-height: 40px; }
+    .btn-filtros-reset { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #bfc9d4; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; padding: 0; }
+    .btn-filtros-reset:hover { background: #f7f9fb; border-color: #9fb2c7; }
+    .btn-filtros-reset img { width: 18px; height: 18px; display: block; }
     .resumen-linea { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 220px) auto; align-items: center; gap: 16px; margin-bottom: 12px; }
     .resumen { font-weight: 700; display: flex; gap: 12px; flex-wrap: wrap; color: #123a63; font-size: 13px; }
     .resumen-centro { display: flex; align-items: center; justify-content: center; }
@@ -120,10 +120,7 @@
           <div><label for="filtroBuscar">Solicitante</label><select id="filtroBuscar"><option value="">Todos</option></select></div>
           <div class="filtro-acciones-rapidas">
             <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                <line x1="4" y1="20" x2="20" y2="4"></line>
-              </svg>
+              <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
             </button>
           </div>
         </div>
