@@ -7,6 +7,7 @@ import {
   enviarEmail,
   nombreVisibleAdmin
 } from "../_email.js";
+import { crearNotificacion } from "../_notificaciones.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -288,6 +289,33 @@ export async function onRequestPost(context) {
       });
     }
 
+    let notificacionInternaCentro = { ok: false, skipped: true, error: "" };
+    try {
+      notificacionInternaCentro = await crearNotificacion(env, {
+        usuarioId: Number(expediente.centro_usuario_id || 0),
+        rolDestino: "SOLICITANTE",
+        tipo: "DOCUMENTACION",
+        titulo: estadoExpediente === "VALIDADA" ? "Documentación validada" : "Documentación revisada con incidencias",
+        mensaje: estadoExpediente === "VALIDADA"
+          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`
+          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay observaciones o documentos rechazados que debes revisar.`,
+        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
+      });
+    } catch (errorNotificacionInterna) {
+      notificacionInternaCentro = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+      };
+      console.error("No se pudo crear la notificación interna de resolución documental.", {
+        expediente_id: Number(documentacionId || 0),
+        centro_usuario_id: Number(expediente.centro_usuario_id || 0),
+        admin_id: Number(adminId || 0),
+        revisor_id: Number(session.usuario_id || 0),
+        error: notificacionInternaCentro.error
+      });
+    }
+
     return json({
       ok: true,
       mensaje: nuevoEstadoDocumento === "VALIDADO"
@@ -299,6 +327,10 @@ export async function onRequestPost(context) {
         enviada: !!notificacionCentro.ok,
         omitida: !!notificacionCentro.skipped,
         error: notificacionCentro.ok ? "" : (notificacionCentro.error || "")
+      },
+      notificacion_interna_centro: {
+        creada: !!notificacionInternaCentro.ok,
+        error: notificacionInternaCentro.ok ? "" : (notificacionInternaCentro.error || "")
       }
     });
   } catch (error) {

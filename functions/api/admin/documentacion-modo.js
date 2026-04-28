@@ -8,6 +8,7 @@ import {
 } from "../_email.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
+import { crearNotificacion } from "../_notificaciones.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -205,12 +206,34 @@ async function notificarAfectadosCambioMarco(env, admin, secretaria, afectados, 
       html: construirEmailHtmlCambioMarcoDocumental(payload)
     });
 
+    let notificacionInterna = { ok: false, skipped: true, error: "" };
+    try {
+      notificacionInterna = await crearNotificacion(env, {
+        usuarioId: Number(afectado.centro_usuario_id || 0),
+        rolDestino: "SOLICITANTE",
+        tipo: "DOCUMENTACION",
+        titulo: totalDocumentos > 0 ? "Marco documental actualizado" : "Marco documental reiniciado",
+        mensaje: totalDocumentos > 0
+          ? `La documentación obligatoria de ${nombreVisibleAdmin(admin)} ha cambiado y debes revisar tu perfil para actualizarla si procede.`
+          : `La documentación obligatoria de ${nombreVisibleAdmin(admin)} ha sido reiniciada. Revisa tu perfil para comprobar si debes remitir nueva documentación.`,
+        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(admin?.id || 0))}&tab=documentos`
+      });
+    } catch (errorNotificacionInterna) {
+      notificacionInterna = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+      };
+    }
+
     notificaciones.push({
       centro_usuario_id: Number(afectado.centro_usuario_id || 0),
       email: afectado.email || "",
       enviada: !!resultado.ok,
       omitida: !!resultado.skipped,
-      error: resultado.ok ? "" : (resultado.error || "")
+      error: resultado.ok ? "" : (resultado.error || ""),
+      notificacion_interna_creada: !!notificacionInterna.ok,
+      notificacion_interna_error: notificacionInterna.ok ? "" : (notificacionInterna.error || "")
     });
   }
 

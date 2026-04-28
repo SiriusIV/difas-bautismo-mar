@@ -257,18 +257,24 @@ export async function onRequestGet(context) {
       const estadoEfectivo = calcularEstadoGlobal(admin.documentos, archivosActivos);
       const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
       const totalValidados = contarDocumentosValidados(admin.documentos, archivosActivos);
-      const alertasRevision = archivosActivos
-        .filter((archivo) => {
-          const estado = normalizarEstadoDocumento(archivo?.estado);
-          return estado === "VALIDADO" || estado === "RECHAZADO";
-        })
-        .map((archivo) => ({
-          nombre_documento: archivo.nombre_documento || "",
-          estado: normalizarEstadoDocumento(archivo.estado),
-          fecha_subida: archivo.fecha_subida || "",
-          fecha_validacion: archivo.fecha_validacion || "",
-          observaciones_admin: archivo.observaciones_admin || ""
-        }));
+      const archivosPorNombre = new Map(
+        (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+      );
+      const alertasRevision = (admin.documentos || []).map((doc) => {
+        const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+        if (!entrega) return null;
+        const estadoDocumento = calcularEstadoDocumento(doc, entrega);
+        if (!["VALIDADO", "RECHAZADO", "NO_ACTUALIZADO"].includes(estadoDocumento)) {
+          return null;
+        }
+        return {
+          nombre_documento: doc.nombre || "",
+          estado: estadoDocumento,
+          fecha_subida: entrega.fecha_subida || "",
+          fecha_validacion: entrega.fecha_validacion || "",
+          observaciones_admin: entrega.observaciones_admin || ""
+        };
+      }).filter(Boolean);
 
       return {
         admin_id: admin.admin_id,

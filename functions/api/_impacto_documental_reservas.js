@@ -9,6 +9,7 @@ import {
   construirEmailTextoReservaReactivadaDocumentacion
 } from "./_email_reservas_documentacion.js";
 import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
+import { crearNotificacion } from "./_notificaciones.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -295,6 +296,28 @@ async function notificarReservaReactivada(env, payload) {
   });
 }
 
+async function crearNotificacionReservaCondicionada(env, payload) {
+  return await crearNotificacion(env, {
+    usuarioId: Number(payload?.centro?.usuario_id || 0),
+    rolDestino: "SOLICITANTE",
+    tipo: "DOCUMENTACION",
+    titulo: "Documentación pendiente para tus reservas",
+    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} necesita revisión o actualización. Algunas reservas han quedado suspendidas hasta que la regularices.`,
+    urlDestino: payload?.enlace_perfil || ""
+  });
+}
+
+async function crearNotificacionReservaReactivada(env, payload) {
+  return await crearNotificacion(env, {
+    usuarioId: Number(payload?.centro?.usuario_id || 0),
+    rolDestino: "SOLICITANTE",
+    tipo: "DOCUMENTACION",
+    titulo: "Documentación al día y reservas reactivadas",
+    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} vuelve a estar al día. Ya puedes consultar tus reservas reactivadas en tu perfil.`,
+    urlDestino: payload?.enlace_perfil || ""
+  });
+}
+
 export async function recalcularImpactoDocumentalReservas(env, {
   adminId,
   baseUrl = "",
@@ -404,10 +427,11 @@ export async function recalcularImpactoDocumentalReservas(env, {
     }
 
     if (reservasSuspendidas.length) {
-      const resultado = await notificarReservaCondicionada(env, {
+      const payloadNotificacion = {
         admin,
         responsable: resolucion.responsable,
         centro: {
+          usuario_id: Number(solicitante.id || 0),
           centro: solicitante.centro || "",
           email: solicitante.email || ""
         },
@@ -415,23 +439,44 @@ export async function recalcularImpactoDocumentalReservas(env, {
         reservas: reservasSuspendidas,
         documentos_pendientes: pendientes,
         enlace_perfil: enlacePerfil
-      });
+      };
+      const resultado = await notificarReservaCondicionada(env, payloadNotificacion);
       if (resultado.ok) resumen.notificaciones_condicionadas += 1;
+      try {
+        await crearNotificacionReservaCondicionada(env, payloadNotificacion);
+      } catch (errorNotificacionInterna) {
+        console.error("No se pudo crear la notificación interna de suspensión documental.", {
+          admin_id: Number(adminIdNumerico || 0),
+          centro_usuario_id: Number(solicitante.id || 0),
+          error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+        });
+      }
     }
 
     if (reservasReactivadas.length) {
-      const resultado = await notificarReservaReactivada(env, {
+      const payloadNotificacion = {
         admin,
         responsable: resolucion.responsable,
         centro: {
+          usuario_id: Number(solicitante.id || 0),
           centro: solicitante.centro || "",
           email: solicitante.email || ""
         },
         motivo_texto: motivoImpactoDocumentalTexto(motivo),
         reservas: reservasReactivadas,
         enlace_perfil: enlacePerfil
-      });
+      };
+      const resultado = await notificarReservaReactivada(env, payloadNotificacion);
       if (resultado.ok) resumen.notificaciones_reactivadas += 1;
+      try {
+        await crearNotificacionReservaReactivada(env, payloadNotificacion);
+      } catch (errorNotificacionInterna) {
+        console.error("No se pudo crear la notificación interna de reactivación documental.", {
+          admin_id: Number(adminIdNumerico || 0),
+          centro_usuario_id: Number(solicitante.id || 0),
+          error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+        });
+      }
     }
 
     resumen.detalle.push({

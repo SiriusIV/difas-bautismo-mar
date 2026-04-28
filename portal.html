@@ -2135,9 +2135,13 @@ function actualizarBotonSolicitarSegunFranja() {
                   titulo = `${nombreDocumento} · Rechazado`;
                 } else if (estadoDocumento === "VALIDADO") {
                   titulo = `${nombreDocumento} · Validado`;
+                } else if (estadoDocumento === "NO_ACTUALIZADO") {
+                  titulo = `${nombreDocumento} · Desactualizado`;
                 } else {
                   titulo = `${nombreDocumento} · Actualizado`;
                 }
+              } else if (alertas.some((item) => String(item?.estado || "").toUpperCase() === "NO_ACTUALIZADO")) {
+                titulo = "Documentación desactualizada";
               } else if (totalRechazados > 0 && totalValidados === 0) {
                 titulo = "Documentación rechazada";
               } else if (totalValidados > 0 && totalRechazados === 0) {
