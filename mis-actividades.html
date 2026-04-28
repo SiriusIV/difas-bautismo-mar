@@ -66,12 +66,13 @@
     }
 
     .logo-cabecera {
-      width: 105px;
+      width: 77px;
       height: auto;
       display: block;
       flex: 0 0 auto;
       transition: opacity 0.12s ease;
     }
+    .logo-cabecera.logo-admin-personal { width: 105px; }
     .logo-cabecera.logo-pendiente { opacity: 0; }
 
     .titulos-cabecera {
@@ -478,8 +479,9 @@
 
     @media (max-width: 900px) {
       .logo-cabecera {
-        width: 78px;
+        width: 68px;
       }
+      .logo-cabecera.logo-admin-personal { width: 78px; }
 
       .titulos-cabecera h1 {
         font-size: 21px;
@@ -492,8 +494,9 @@
 
     @media (max-width: 700px) {
       .logo-cabecera {
-        width: 71px;
+        width: 62px;
       }
+      .logo-cabecera.logo-admin-personal { width: 71px; }
 
       .bloque-marca {
         gap: 18px;
@@ -676,8 +679,10 @@
       if (!img) return;
       img.style.width = "";
       const logoUsuario = String(usuario?.logo_url || "").trim();
+      img.classList.remove("logo-admin-personal");
       if (logoUsuario) img.src = logoUsuario;
       else img.src = "logo.png";
+      if (logoUsuario) img.classList.add("logo-admin-personal");
       img.classList.remove("logo-pendiente");
     }
     let filtroPrograma = "";

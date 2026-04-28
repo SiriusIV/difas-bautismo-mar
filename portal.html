@@ -59,11 +59,12 @@
 }
 
 .logo-cabecera {
-  width: 105px;
+  width: 77px;
   height: auto;
   display: block;
   transition: opacity 0.12s ease;
 }
+.logo-cabecera.logo-admin-personal { width: 105px; }
 .logo-cabecera.logo-pendiente { opacity: 0; }
     .titulos-cabecera h1 {
       margin: 0;
@@ -1939,8 +1940,10 @@ function actualizarBotonSolicitarSegunFranja() {
       const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
       const logoUsuario = String(usuarioAutenticado?.logo_url || "").trim();
 
+      logo.classList.remove("logo-admin-personal");
       if ((rol === "ADMIN" || rol === "SUPERADMIN") && logoUsuario) {
         logo.src = logoUsuario;
+        logo.classList.add("logo-admin-personal");
       } else {
         logo.src = "logo.png";
       }

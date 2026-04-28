@@ -59,12 +59,13 @@
     }
 
     .logo-cabecera {
-      width: 105px;
+      width: 77px;
       height: auto;
       display: block;
       flex: 0 0 auto;
       transition: opacity 0.12s ease;
     }
+    .logo-cabecera.logo-admin-personal { width: 105px; }
     .logo-cabecera.logo-pendiente { opacity: 0; }
 
     .cabecera-titulos h1 {
@@ -571,8 +572,10 @@
       if (!img) return;
       img.style.width = "";
       const logoUsuario = String(usuario?.logo_url || "").trim();
+      img.classList.remove("logo-admin-personal");
       if (logoUsuario) img.src = logoUsuario;
       else img.src = "logo.png";
+      if (logoUsuario) img.classList.add("logo-admin-personal");
       img.classList.remove("logo-pendiente");
     }
 

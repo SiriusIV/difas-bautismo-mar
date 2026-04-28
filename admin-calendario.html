@@ -48,10 +48,11 @@
       position: absolute;
       left: 0;
       top: 0;
-      max-width: 148px;
+      max-width: 110px;
       height: auto;
       transition: opacity 0.12s ease;
     }
+    .logo.logo-admin-personal { max-width: 148px; }
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
@@ -581,8 +582,10 @@
         const data = await response.json().catch(() => null);
         const user = data?.user;
         const logoUsuario = String(user?.logo_url || "").trim();
+        logo.classList.remove("logo-admin-personal");
         if (logoUsuario) logo.src = logoUsuario;
         else logo.src = "logo.png";
+        if (logoUsuario) logo.classList.add("logo-admin-personal");
       } catch (_) {}
       logo.classList.remove("logo-pendiente");
     }
