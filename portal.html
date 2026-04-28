@@ -2226,6 +2226,26 @@ function actualizarBotonSolicitarSegunFranja() {
         .length;
     }
 
+    function aplicarNotificacionVistaEnMemoriaPortal(notificacionId) {
+      const idTexto = String(notificacionId || "").trim();
+      if (!idTexto) return;
+      let actualizada = false;
+      notificacionesOperativasPortal = (notificacionesOperativasPortal || []).map((item) => {
+        if (String(item.id || "") !== idTexto || item.leida) return item;
+        actualizada = true;
+        return { ...item, leida: true };
+      });
+      notificacionesPortal = (notificacionesPortal || []).map((item) => {
+        if (String(item.id || "") !== idTexto || item.leida) return item;
+        actualizada = true;
+        return { ...item, leida: true };
+      });
+      if (actualizada) {
+        notificacionesNoLeidas = (notificacionesPortal || []).filter((item) => !item.leida).length;
+        actualizarIconoNotificacionesPortal();
+      }
+    }
+
     async function cerrarModalNotificacionesPortal() {
       document.getElementById("modalNotificacionesPortal").classList.remove("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
@@ -3398,6 +3418,8 @@ function continuarSolicitudActividad() {
       if (btnLeer) {
         const id = String(btnLeer.dataset.notificacionLeida || "");
         if (!id) return;
+        aplicarNotificacionVistaEnMemoriaPortal(id);
+        renderizarNotificacionesPortal();
         await marcarNotificacionComoVistaPortal(id);
         if (contarNotificacionesPendientesPortal() <= 0) {
           await cerrarModalNotificacionesPortal();
@@ -3415,6 +3437,7 @@ function continuarSolicitudActividad() {
           .find((row) => String(row.id || "") === id);
         if (!item) return;
         if (!item.leida) {
+          aplicarNotificacionVistaEnMemoriaPortal(id);
           await marcarNotificacionComoVistaPortal(id);
         }
         await cerrarModalNotificacionesPortal();
@@ -3425,6 +3448,12 @@ function continuarSolicitudActividad() {
     });
 
     window.seleccionarActividad = seleccionarActividad;
+
+    window.addEventListener("pageshow", async function (event) {
+      if (event.persisted) {
+        await comprobarSesionUsuario();
+      }
+    });
 
     (async function init() {
       const appScrollPortal = document.getElementById("appScrollPortal");
