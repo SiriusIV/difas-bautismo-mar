@@ -18,8 +18,8 @@
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .barra-navegacion-izq { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; font-weight: 500; color: #123a63; line-height: 1.2; }
-    .panel-titulo { white-space: nowrap; }
+    .barra-navegacion-izq { display: flex; align-items: center; justify-content: center; flex: 1 1 auto; text-align: center; min-width: 260px; }
+    .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
     .barra-navegacion-der, .nav-admin, .acciones-superiores, .filtro-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .barra-navegacion-der, .nav-admin { margin-left: auto; }
     .nav-btn { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; cursor: pointer; }
@@ -36,9 +36,9 @@
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
     .filtro-acciones-rapidas { display: flex; align-items: end; justify-content: center; min-height: 40px; }
-    .btn-filtros-reset { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #bfc9d4; background: #fff; color: #4a5a6a; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; padding: 0; }
-    .btn-filtros-reset:hover { background: #f7f9fb; border-color: #9fb2c7; }
-    .btn-filtros-reset img { width: 18px; height: 18px; display: block; }
+    .btn-filtros-reset { width: 40px; height: 40px; border: none; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+    .btn-filtros-reset img { width: 22px; height: 22px; display: block; transition: transform 0.15s ease, opacity 0.15s ease; }
+    .btn-filtros-reset:hover img { transform: scale(1.06); opacity: 0.88; }
     .resumen-linea { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 220px) auto; align-items: center; gap: 16px; margin-bottom: 12px; }
     .resumen { font-weight: 700; display: flex; gap: 12px; flex-wrap: wrap; color: #123a63; font-size: 13px; }
     .resumen-centro { display: flex; align-items: center; justify-content: center; }
@@ -81,7 +81,7 @@
     .btn-modal:hover { background: #f7f9fb; }
     @media (max-width: 1200px) { .filtros { grid-template-columns: 1fr 1fr; } .bloque-marca { gap: 28px; } }
     @media (max-width: 980px) { .cabecera-global-inner, .contenedor { max-width: 100%; } .barra-navegacion, .barra-navegacion-der, .nav-admin { align-items: stretch; margin-left: 0; } table, thead, tbody, th, td, tr { display: block; } thead { display: none; } tr { margin-bottom: 16px; border: 1px solid #dde4ea; border-radius: 8px; overflow: hidden; } td { border-bottom: 1px solid #eef2f6; white-space: normal !important; text-align: left !important; } table { min-width: 100%; } }
-    @media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 85px; } }
+    @media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion-izq { min-width: 0; width: 100%; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 85px; } }
   </style>
 </head>
 <body>
@@ -100,7 +100,7 @@
     <div class="contenedor">
       <div class="barra-navegacion">
         <div class="barra-navegacion-izq">
-          <span class="panel-titulo" id="subactividadActual">Panel de reservas:</span>
+          <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
         </div>
         <div class="barra-navegacion-der">
           <div class="nav-admin">
@@ -183,9 +183,9 @@
       if (partes.length !== 3) return texto;
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
     }
-    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
+    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
-    function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}:`; actualizarNavegacionActividad(); }
+    function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
     function poblarSolicitantesFiltro(solicitantes = []) {
       const sel = document.getElementById("filtroBuscar");
