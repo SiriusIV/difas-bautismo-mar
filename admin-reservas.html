@@ -17,8 +17,8 @@
     .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-    .barra-navegacion { padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .barra-navegacion-izq { display: flex; align-items: center; justify-content: center; flex: 1 1 auto; text-align: center; min-width: 260px; }
+    .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
+    .barra-navegacion-izq { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; text-align: center; width: min(100%, 560px); pointer-events: none; }
     .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
     .barra-navegacion-der, .nav-admin, .acciones-superiores, .filtro-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .barra-navegacion-der, .nav-admin { margin-left: auto; }
@@ -81,7 +81,7 @@
     .btn-modal:hover { background: #f7f9fb; }
     @media (max-width: 1200px) { .filtros { grid-template-columns: 1fr 1fr; } .bloque-marca { gap: 28px; } }
     @media (max-width: 980px) { .cabecera-global-inner, .contenedor { max-width: 100%; } .barra-navegacion, .barra-navegacion-der, .nav-admin { align-items: stretch; margin-left: 0; } table, thead, tbody, th, td, tr { display: block; } thead { display: none; } tr { margin-bottom: 16px; border: 1px solid #dde4ea; border-radius: 8px; overflow: hidden; } td { border-bottom: 1px solid #eef2f6; white-space: normal !important; text-align: left !important; } table { min-width: 100%; } }
-    @media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion-izq { min-width: 0; width: 100%; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 85px; } }
+    @media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion { justify-content: center; padding-top: 16px; padding-bottom: 12px; } .barra-navegacion-izq { position: static; transform: none; width: 100%; order: -1; pointer-events: auto; } .barra-navegacion-der { width: 100%; justify-content: center; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 85px; } }
   </style>
 </head>
 <body>
@@ -104,7 +104,6 @@
         </div>
         <div class="barra-navegacion-der">
           <div class="nav-admin">
-            <a class="nav-btn activo" id="navReservas" href="admin-reservas.html">Reservas</a>
             <a class="btn-icono" id="navCalendario" href="admin-calendario.html" title="Calendario" aria-label="Calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></a>
             <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
           </div>
@@ -184,7 +183,7 @@
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
     }
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
-    function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navReservas").href = `admin-reservas.html${sufijo}`; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
+    function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
     function poblarSolicitantesFiltro(solicitantes = []) {
