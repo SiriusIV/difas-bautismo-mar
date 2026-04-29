@@ -139,9 +139,29 @@ export async function onRequestGet(context) {
       FROM reservas r
       INNER JOIN actividades a
         ON a.id = r.actividad_id
+      LEFT JOIN franjas f
+        ON f.id = r.franja_id
       INNER JOIN usuarios u
         ON u.id = a.admin_id
       WHERE r.usuario_id = ?
+        AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
+        AND (
+          (
+            r.franja_id IS NOT NULL
+            AND f.fecha IS NOT NULL
+            AND datetime(
+              f.fecha || ' ' || COALESCE(NULLIF(TRIM(f.hora_fin), ''), '23:59:59')
+            ) >= datetime('now')
+          )
+          OR
+          (
+            r.franja_id IS NULL
+            AND (
+              a.fecha_fin IS NULL
+              OR datetime(a.fecha_fin || ' 23:59:59') >= datetime('now')
+            )
+          )
+        )
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).bind(usuario.id).all();
