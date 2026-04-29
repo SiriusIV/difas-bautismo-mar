@@ -171,12 +171,7 @@
       flex: 0 1 520px;
       min-width: 300px;
     }
-    .documentacion-admin-acciones-tabla {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      margin: 2px 0 8px;
-    }
+    .documentacion-admin-acciones-tabla { display: none; }
     .documentacion-admin-ayuda {
       display: block;
       margin: 0;
@@ -239,7 +234,8 @@
       flex: 0 0 66px;
     }
     .btn-cambio-documental-cabecera svg { width: 46px; height: 46px; }
-    .tabs-documentacion-admin { display: flex; gap: 8px; margin: 2px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tabs-documentacion-admin { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .tabs-documentacion-admin-acciones { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .tab-documentacion-admin-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-documentacion-admin-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
     .panel-documentacion-admin { display: none; }
@@ -851,8 +847,13 @@
           <button type="button" class="tab-documentacion-admin-btn activa" id="tabDocumentacionAdminBase" data-tab-admin-doc="base" role="tab" aria-selected="true">Documentos base</button>
           <button type="button" class="tab-documentacion-admin-btn" id="tabDocumentacionAdminPendientes" data-tab-admin-doc="pendientes" role="tab" aria-selected="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M3 7h18"></path><path d="M6 12h12"></path><path d="M10 17h4"></path></svg>
-            Bandeja de entrada
+            Bandeja de entrada de solicitudes de actividad
           </button>
+          <div class="tabs-documentacion-admin-acciones">
+            <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
         </div>
         <div class="documentacion-admin-meta-linea">
           <div class="documentacion-admin-meta-items">
@@ -860,11 +861,6 @@
           </div>
         </div>
         <div class="panel-documentacion-admin activo" id="panelDocumentacionAdminBase" role="tabpanel" aria-labelledby="tabDocumentacionAdminBase">
-          <div class="documentacion-admin-acciones-tabla">
-            <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-          </div>
           <div class="tabla-documentacion-admin-wrap">
             <table class="tabla-documentacion-admin">
               <thead>
