@@ -474,6 +474,8 @@
     .detalle-documentacion-panel { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
     .detalle-documentacion-panel.oculto { display: none !important; }
     .detalle-documentacion-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 10px; flex-wrap: wrap; }
+    .detalle-documentacion-titulo-zona { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+    .detalle-documentacion-titulo-bloque { min-width: 0; }
     .detalle-documentacion-header h4 { margin: 0; font-size: 28px; color: var(--brand); }
     .detalle-documentacion-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .tabla-estados-expediente-wrap { width: 100%; overflow-x: auto; }
@@ -888,9 +890,6 @@
           <button type="button" class="tab-bloque-btn" id="tabBloqueDocumentos" data-tab-bloque="documentos" role="tab" aria-selected="false">Documentos</button>
         </div>
         <div class="acciones-bloque-documentacion">
-          <button type="button" class="btn-icono btn-volver-documentacion oculto" id="btnVolverOrganizadores" title="Volver a organizadores" aria-label="Volver a organizadores">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
-          </button>
           <button type="button" class="btn-icono" id="btnAgregarOrganizador" title="Añadir organizador" aria-label="Añadir organizador">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
           </button>
@@ -919,10 +918,15 @@
         <div id="detalleDocumentacionSinSeleccion" class="panel-documentos-estado-vacio">Selecciona un organizador en la tabla para consultar y gestionar sus documentos.</div>
         <div class="detalle-documentacion-panel oculto" id="detalleDocumentacionPanel">
           <div class="detalle-documentacion-header">
-            <div>
-              <h4 id="detalleDocumentacionAdmin">Organizador</h4>
+            <div class="detalle-documentacion-titulo-zona">
+              <button type="button" class="btn-icono btn-volver-documentacion oculto" id="btnVolverOrganizadores" title="Volver a organizadores" aria-label="Volver a organizadores">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+              </button>
+              <div class="detalle-documentacion-titulo-bloque">
+                <h4 id="detalleDocumentacionAdmin">Organizador</h4>
               <div class="modal-detalle-sublinea">
                 <p class="modal-detalle-subtitulo">Documentación obligatoria para la solicitud de actividades</p>
+              </div>
               </div>
             </div>
             <div class="detalle-documentacion-toolbar">
