@@ -19,55 +19,37 @@
 
   <style>
     html, body {
-      height: 100%;
+      min-height: 100%;
     }
 
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(244,246,248,0.08) 38%, #f4f6f8 78%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
       margin: 0;
       color: #222;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      display: block;
+      overflow-x: hidden;
+      overflow-y: auto;
       font-size: 15px;
     }
 
     .cabecera {
       position: relative;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.82) 32%, rgba(255,255,255,0.88) 58%, rgba(255,255,255,0.97) 100%),
-        linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.22) 100%),
-        url("assets/fondo_cabecera.png") center 28% / cover no-repeat;
+      background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.80) 100%);
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
       padding: 18px 20px 14px;
-      flex: 0 0 auto;
       z-index: 20;
-      overflow: hidden;
-    }
-
-    .cabecera::before {
-      content: "";
-      position: absolute;
-      inset: -16px;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.40) 34%, rgba(255,255,255,0.58) 64%, rgba(255,255,255,0.88) 100%),
-        url("assets/fondo_cabecera.png") center 28% / cover no-repeat;
-      filter: blur(8px) saturate(0.92);
-      transform: scale(1.03);
-      opacity: 0.58;
-      pointer-events: none;
-      z-index: 0;
     }
 
     .cabecera-inner {
-      position: relative;
       max-width: 1108px;
       margin: 0 auto;
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 1;
     }
 
     .bloque-marca {
@@ -103,10 +85,8 @@
     }
 
     .app-scroll {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
+      width: 100%;
+      overflow: visible;
     }
     .app-scroll.portal-cargando {
       visibility: hidden;
@@ -182,11 +162,9 @@
 
     .franja-sesion {
       display: none;
-      position: relative;
       max-width: 1108px;
       margin: 14px auto 0;
       padding: 0 16px;
-      z-index: 1;
     }
 
     .franja-sesion-inner {
