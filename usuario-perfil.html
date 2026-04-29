@@ -451,7 +451,7 @@
     .btn-volver-documentacion.oculto { display: none !important; }
     .bloque-head-documentacion-superior { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
     .bloque-head-documentacion-titulos { min-width: 0; }
-    .bloque-head-documentacion-titulos p { margin-top: 22px; }
+    .bloque-head-documentacion-titulos p { margin-top: 16px; }
     .btn-indicador-expediente { appearance: none; border: none; background: transparent; padding: 0; margin: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-indicador-expediente:hover .indicador-expediente,
     .btn-indicador-expediente:focus-visible .indicador-expediente { filter: brightness(0.96); transform: scale(1.02); }
@@ -480,10 +480,11 @@
     .detalle-documentacion-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 10px; flex-wrap: nowrap; }
     .detalle-documentacion-titulo-zona { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
     .detalle-documentacion-titulo-bloque { min-width: 0; display: flex; align-items: center; gap: 16px; flex: 1 1 auto; }
-    .detalle-documentacion-titulo-bloque .modal-detalle-sublinea { margin-top: 0; margin-left: auto; min-width: 0; }
+    .detalle-documentacion-titulo-bloque .modal-detalle-sublinea { display: none; }
     .detalle-documentacion-titulo-bloque .modal-detalle-subtitulo { text-align: right; }
     .detalle-documentacion-header h4 { margin: 0; font-size: 28px; color: var(--brand); }
     .detalle-documentacion-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; flex: 0 0 auto; }
+    .detalle-documentacion-toolbar.oculta { display: none !important; }
     .tabla-estados-expediente-wrap { width: 100%; overflow-x: auto; }
     .tabla-estados-expediente { width: 100%; border-collapse: collapse; min-width: 560px; }
     .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -942,16 +943,13 @@
               </button>
               <div class="detalle-documentacion-titulo-bloque">
                 <h4 id="detalleDocumentacionAdmin">Organizador</h4>
-                <div class="modal-detalle-sublinea">
-                  <p class="modal-detalle-subtitulo">Documentación obligatoria para la solicitud de actividades</p>
-                </div>
               </div>
             </div>
             <div class="detalle-documentacion-toolbar">
               <button type="button" class="btn-icono-modal oculto" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </button>
-              <button type="button" class="btn-icono-modal oculto" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
+              <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Añadir o actualizar documento" aria-label="Añadir o actualizar documento" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
               </button>
               <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
@@ -1579,10 +1577,15 @@
 
     function actualizarAccionesDetalleDocumentacion() {
       const doc = obtenerDocumentoSeleccionadoDetalle();
+      const toolbar = document.querySelector(".detalle-documentacion-toolbar");
       const btnVer = document.getElementById("btnVerDesdeDetalleDocumentacion");
       const btnSubir = document.getElementById("btnSubirDesdeDetalleDocumentacion");
       const btnEliminar = document.getElementById("btnEliminarDesdeDetalleDocumentacion");
       const btnGuardar = document.getElementById("btnGuardarDesdeDetalleDocumentacion");
+
+      if (toolbar) {
+        toolbar.classList.toggle("oculta", esSolicitante());
+      }
 
       const cambio = doc ? detalleCambiosPendientes.get(Number(doc.id || 0)) || null : null;
       const tieneArchivoActual = !!(doc && doc.entrega_archivo_url);
