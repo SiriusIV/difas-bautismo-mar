@@ -609,13 +609,11 @@
     .tabla-detalle-docs tr.fila-seleccionada td { background: #f5f9ff; }
     .col-seleccion { width: 42px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
-    .enlace-documento-base { color: #0b5ed7; text-decoration: none; text-underline-offset: 2px; }
     .acciones-doc-fila { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
     .btn-accion-doc-inline { appearance: none; border: none; background: transparent; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #355070; transition: opacity .18s ease, transform .18s ease; }
     .btn-accion-doc-inline:hover { opacity: 0.82; transform: translateY(-1px); }
     .btn-accion-doc-inline:disabled { opacity: 0.34; cursor: not-allowed; transform: none; }
     .btn-accion-doc-inline img { width: 20px; height: 20px; display: block; }
-    .enlace-documento-base:hover { color: #084298; text-decoration: underline; }
     .estado-provisional { display: block; margin-top: 4px; font-size: 11px; color: #5f6d7a; }
     .tabs-modal-detalle-linea { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-modal-detalle { display: flex; gap: 8px; }
@@ -952,7 +950,7 @@
             <thead>
               <tr>
                 <th class="col-seleccion"></th>
-                <th><span class="cabecera-columna-icono"><svg class="icono-columna-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.59 5.34"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l2.83-2.83"></path></svg><span>Título</span></span></th>
+                <th>Título</th>
                 <th>Versión</th>
                 <th>Última entrega</th>
                 <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadosDocumento" aria-label="Ayuda sobre los estados de documento" title="Ayuda sobre los estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
@@ -1604,10 +1602,9 @@
 
     function descargarDocumentoDetalle(doc) {
       const documento = doc || null;
-      const cambio = documento ? detalleCambiosPendientes.get(Number(documento.id || 0)) || null : null;
-      if (!documento || !documento.entrega_archivo_url || cambio?.tipo === "eliminar") return;
+      if (!documento || !documento.archivo_url) return;
       const enlace = document.createElement("a");
-      enlace.href = documento.entrega_archivo_url;
+      enlace.href = documento.archivo_url;
       enlace.download = "";
       enlace.rel = "noopener";
       document.body.appendChild(enlace);
@@ -1811,9 +1808,7 @@
           ? "NO_ENVIADO"
           : (cambio?.tipo === "subir" ? "EN_REVISION" : estadoDetalleDocumento("", doc));
         const pendiente = etiquetaCambioPendienteDetalle(cambio);
-        const documentoBase = doc.archivo_url
-          ? `<a href="${doc.archivo_url}" target="_blank" rel="noopener noreferrer" class="enlace-documento-base">${doc.nombre || "Documento"}</a>`
-          : (doc.nombre || "Documento");
+        const documentoBase = doc.nombre || "Documento";
 
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
@@ -1835,7 +1830,7 @@
               <button type="button" class="btn-accion-doc-inline" data-doc-accion="subir" data-doc-id="${docId}" title="Subir documento" aria-label="Subir documento">
                 <img src="assets/icono-subir-documento.svg" alt="">
               </button>
-              <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento remitido" aria-label="Descargar documento remitido" ${doc.entrega_archivo_url && cambio?.tipo !== "eliminar" ? "" : "disabled"}>
+              <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento base" aria-label="Descargar documento base" ${doc.archivo_url ? "" : "disabled"}>
                 <img src="assets/icono-descargar-documento.svg" alt="">
               </button>
             </div>
