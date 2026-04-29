@@ -23,18 +23,6 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
-async function asegurarTablaSeleccion(env) {
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS usuario_documentacion_organizadores (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      centro_usuario_id INTEGER NOT NULL,
-      admin_id INTEGER NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(centro_usuario_id, admin_id)
-    )
-  `).run();
-}
-
 function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
@@ -141,19 +129,19 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
-    await asegurarTablaSeleccion(env);
-
     const adminsRows = await env.DB.prepare(`
       SELECT
-        u.id AS admin_id,
+        DISTINCT a.admin_id AS admin_id,
         u.nombre AS admin_nombre,
         u.nombre_publico AS admin_nombre_publico,
         u.localidad AS admin_localidad,
         u.email AS admin_email
-      FROM usuario_documentacion_organizadores sel
+      FROM reservas r
+      INNER JOIN actividades a
+        ON a.id = r.actividad_id
       INNER JOIN usuarios u
-        ON u.id = sel.admin_id
-      WHERE sel.centro_usuario_id = ?
+        ON u.id = a.admin_id
+      WHERE r.usuario_id = ?
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).bind(usuario.id).all();
