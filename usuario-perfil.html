@@ -596,18 +596,25 @@
     .detalle-docs-estado-linea { margin: 0 0 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #445261; }
     .detalle-docs-estado-etiqueta { font-weight: 600; color: #334250; }
     .tabla-detalle-docs-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
-    .tabla-detalle-docs { width: 100%; border-collapse: collapse; min-width: 640px; }
+    .tabla-detalle-docs { width: 100%; border-collapse: collapse; min-width: 760px; }
     .tabla-detalle-docs th, .tabla-detalle-docs td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-detalle-docs th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-detalle-docs tr:last-child td { border-bottom: none; }
     .tabla-detalle-docs .col-documento { line-height: 1.45; }
+    .tabla-detalle-docs .col-acciones-doc { width: 132px; text-align: center; }
     .tabla-detalle-docs th:nth-child(3), .tabla-detalle-docs td:nth-child(3),
     .tabla-detalle-docs th:nth-child(4), .tabla-detalle-docs td:nth-child(4),
-    .tabla-detalle-docs th:nth-child(5), .tabla-detalle-docs td:nth-child(5) { text-align: center; }
+    .tabla-detalle-docs th:nth-child(5), .tabla-detalle-docs td:nth-child(5),
+    .tabla-detalle-docs th:nth-child(6), .tabla-detalle-docs td:nth-child(6) { text-align: center; }
     .tabla-detalle-docs tr.fila-seleccionada td { background: #f5f9ff; }
     .col-seleccion { width: 42px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
     .enlace-documento-base { color: #0b5ed7; text-decoration: none; text-underline-offset: 2px; }
+    .acciones-doc-fila { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-accion-doc-inline { appearance: none; border: none; background: transparent; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #355070; transition: opacity .18s ease, transform .18s ease; }
+    .btn-accion-doc-inline:hover { opacity: 0.82; transform: translateY(-1px); }
+    .btn-accion-doc-inline:disabled { opacity: 0.34; cursor: not-allowed; transform: none; }
+    .btn-accion-doc-inline img { width: 20px; height: 20px; display: block; }
     .enlace-documento-base:hover { color: #084298; text-decoration: underline; }
     .estado-provisional { display: block; margin-top: 4px; font-size: 11px; color: #5f6d7a; }
     .tabs-modal-detalle-linea { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
@@ -921,10 +928,10 @@
               </div>
             </div>
             <div class="detalle-documentacion-toolbar">
-              <button type="button" class="btn-icono-modal" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
+              <button type="button" class="btn-icono-modal oculto" id="btnVerDesdeDetalleDocumentacion" title="Ver documento remitido" aria-label="Ver documento remitido" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </button>
-              <button type="button" class="btn-icono-modal" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
+              <button type="button" class="btn-icono-modal oculto" id="btnSubirDesdeDetalleDocumentacion" title="Subir documento firmado" aria-label="Subir documento firmado" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7.5 8.5 12 4l4.5 4.5"></path><path d="M4 20h16"></path></svg>
               </button>
               <button type="button" class="btn-icono-modal peligro" id="btnEliminarDesdeDetalleDocumentacion" title="Eliminar documento remitido" aria-label="Eliminar documento remitido" disabled>
@@ -949,6 +956,7 @@
                 <th>Versión</th>
                 <th>Última entrega</th>
                 <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadosDocumento" aria-label="Ayuda sobre los estados de documento" title="Ayuda sobre los estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
+                <th class="col-acciones-doc">Acciones</th>
               </tr>
             </thead>
             <tbody id="detalleDocumentacionBody"></tbody>
@@ -1477,6 +1485,18 @@
       return (detalleDocumentacionDatos || []).find((doc) => Number(doc.id || 0) === Number(detalleDocumentacionSeleccionId || 0)) || null;
     }
 
+    function obtenerDocumentoDetallePorId(docId) {
+      return (detalleDocumentacionDatos || []).find((doc) => Number(doc.id || 0) === Number(docId || 0)) || null;
+    }
+
+    function seleccionarDocumentoDetallePorId(docId) {
+      const id = Number(docId || 0);
+      if (!(id > 0)) return null;
+      detalleDocumentacionSeleccionId = id;
+      renderizarDetalleDocumentacion(detalleDocumentacionDatos);
+      return obtenerDocumentoSeleccionadoDetalle();
+    }
+
     function abrirModalObservacionesDocumento(doc) {
       const documento = doc || null;
       const titulo = documento?.nombre || "Documento";
@@ -1568,6 +1588,52 @@
       btnSubir.disabled = !doc;
       btnEliminar.disabled = !puedeEliminar;
       btnGuardar.disabled = !tieneCambiosPendientesDetalle();
+    }
+
+    function verDocumentoDetalle(doc) {
+      const documento = doc || null;
+      const cambio = documento ? detalleCambiosPendientes.get(Number(documento.id || 0)) || null : null;
+      if (!documento || !documento.entrega_archivo_url || cambio?.tipo === "eliminar") return;
+      window.open(documento.entrega_archivo_url, "_blank", "noopener");
+    }
+
+    function solicitarSubidaDocumentoDetalle(doc) {
+      if (!doc) return;
+      document.getElementById("inputArchivoDetalleDocumentacion").click();
+    }
+
+    function descargarDocumentoDetalle(doc) {
+      const documento = doc || null;
+      const cambio = documento ? detalleCambiosPendientes.get(Number(documento.id || 0)) || null : null;
+      if (!documento || !documento.entrega_archivo_url || cambio?.tipo === "eliminar") return;
+      const enlace = document.createElement("a");
+      enlace.href = documento.entrega_archivo_url;
+      enlace.download = "";
+      enlace.rel = "noopener";
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+    }
+
+    function eliminarDocumentoDetalle(doc) {
+      const documento = doc || null;
+      if (!documento) return;
+
+      const cambio = detalleCambiosPendientes.get(Number(documento.id)) || null;
+      const tieneArchivoActual = !!documento.entrega_archivo_url;
+      const tieneArchivoPendiente = cambio?.tipo === "subir";
+      if (!tieneArchivoActual && !tieneArchivoPendiente) return;
+
+      if (!tieneArchivoActual && tieneArchivoPendiente) {
+        detalleCambiosPendientes.delete(Number(documento.id));
+        renderizarDetalleDocumentacion(detalleDocumentacionDatos);
+        mostrarMensajeDetalleTemporal("ok", "Se ha cancelado la nueva subida pendiente para este documento.");
+        return;
+      }
+
+      detalleCambiosPendientes.set(Number(documento.id), { tipo: "eliminar" });
+      renderizarDetalleDocumentacion(detalleDocumentacionDatos);
+      mostrarMensajeDetalleTemporal("ok", "El documento ha quedado marcado para eliminarse cuando guardes los cambios.");
     }
 
     function activarTabBloqueDocumentacion(tab) {
@@ -1761,6 +1827,19 @@
           <td>${Number(doc.version_documental || 0) > 0 ? Number(doc.version_documental || 0) : "-"}</td>
           <td class="td-fecha-entrega">${formatearFechaCorta(doc.entrega_fecha_subida || "")}</td>
           <td><button type="button" class="estado-pill-doc ${estadoDoc}" data-estado-doc-id="${docId}">${etiquetaEstadoDocumentacion(estadoDoc)}</button></td>
+          <td class="col-acciones-doc">
+            <div class="acciones-doc-fila">
+              <button type="button" class="btn-accion-doc-inline" data-doc-accion="ver" data-doc-id="${docId}" title="Ver documento remitido" aria-label="Ver documento remitido" ${doc.entrega_archivo_url && cambio?.tipo !== "eliminar" ? "" : "disabled"}>
+                <img src="assets/icono-ver-documento.svg" alt="">
+              </button>
+              <button type="button" class="btn-accion-doc-inline" data-doc-accion="subir" data-doc-id="${docId}" title="Subir documento" aria-label="Subir documento">
+                <img src="assets/icono-subir-documento.svg" alt="">
+              </button>
+              <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento remitido" aria-label="Descargar documento remitido" ${doc.entrega_archivo_url && cambio?.tipo !== "eliminar" ? "" : "disabled"}>
+                <img src="assets/icono-descargar-documento.svg" alt="">
+              </button>
+            </div>
+          </td>
         `;
         body.appendChild(tr);
       });
@@ -3658,6 +3737,27 @@
       seleccionarOrganizador(adminId);
     });
     document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
+      const btnAccion = event.target.closest("[data-doc-accion]");
+      if (btnAccion) {
+        const docId = Number.parseInt(btnAccion.dataset.docId || "", 10);
+        if (!Number.isInteger(docId) || docId <= 0) return;
+        const doc = seleccionarDocumentoDetallePorId(docId);
+        if (!doc) return;
+        const accion = String(btnAccion.dataset.docAccion || "").toLowerCase();
+        if (accion === "ver") {
+          verDocumentoDetalle(doc);
+          return;
+        }
+        if (accion === "subir") {
+          solicitarSubidaDocumentoDetalle(doc);
+          return;
+        }
+        if (accion === "descargar") {
+          descargarDocumentoDetalle(doc);
+          return;
+        }
+      }
+
       const selector = event.target.closest(".selector-doc");
       if (!selector) return;
       const docId = Number.parseInt(selector.value || "", 10);
@@ -3675,14 +3775,10 @@
       abrirModalObservacionesDocumento(doc);
     });
     document.getElementById("btnVerDesdeDetalleDocumentacion").addEventListener("click", function () {
-      const doc = obtenerDocumentoSeleccionadoDetalle();
-      const cambio = doc ? detalleCambiosPendientes.get(Number(doc.id || 0)) || null : null;
-      if (!doc || !doc.entrega_archivo_url || cambio?.tipo === "eliminar") return;
-      window.open(doc.entrega_archivo_url, "_blank", "noopener");
+      verDocumentoDetalle(obtenerDocumentoSeleccionadoDetalle());
     });
     document.getElementById("btnSubirDesdeDetalleDocumentacion").addEventListener("click", function () {
-      if (!obtenerDocumentoSeleccionadoDetalle()) return;
-      document.getElementById("inputArchivoDetalleDocumentacion").click();
+      solicitarSubidaDocumentoDetalle(obtenerDocumentoSeleccionadoDetalle());
     });
     document.getElementById("inputArchivoDetalleDocumentacion").addEventListener("change", function (event) {
       const doc = obtenerDocumentoSeleccionadoDetalle();
@@ -3705,24 +3801,7 @@
       limpiarMensajeDetalle();
     });
     document.getElementById("btnEliminarDesdeDetalleDocumentacion").addEventListener("click", function () {
-      const doc = obtenerDocumentoSeleccionadoDetalle();
-      if (!doc) return;
-
-      const cambio = detalleCambiosPendientes.get(Number(doc.id)) || null;
-      const tieneArchivoActual = !!doc.entrega_archivo_url;
-      const tieneArchivoPendiente = cambio?.tipo === "subir";
-      if (!tieneArchivoActual && !tieneArchivoPendiente) return;
-
-      if (!tieneArchivoActual && tieneArchivoPendiente) {
-        detalleCambiosPendientes.delete(Number(doc.id));
-        renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-        mostrarMensajeDetalleTemporal("ok", "Se ha cancelado la nueva subida pendiente para este documento.");
-        return;
-      }
-
-      detalleCambiosPendientes.set(Number(doc.id), { tipo: "eliminar" });
-      renderizarDetalleDocumentacion(detalleDocumentacionDatos);
-      mostrarMensajeDetalleTemporal("ok", "El documento ha quedado marcado para eliminarse cuando guardes los cambios.");
+      eliminarDocumentoDetalle(obtenerDocumentoSeleccionadoDetalle());
     });
     document.getElementById("btnGuardarDesdeDetalleDocumentacion").addEventListener("click", async function () {
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return;
