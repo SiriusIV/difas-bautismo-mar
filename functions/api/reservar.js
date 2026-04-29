@@ -1,5 +1,6 @@
 import { getUserSession } from "./usuario/_auth.js";
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
+import { crearNotificacion } from "./_notificaciones.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -54,6 +55,8 @@ async function obtenerActividad(env, actividadId) {
   return await env.DB.prepare(`
     SELECT
       id,
+      admin_id,
+      COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre,
       requiere_reserva,
       usa_franjas,
       aforo_limitado
@@ -61,6 +64,26 @@ async function obtenerActividad(env, actividadId) {
     WHERE id = ?
     LIMIT 1
   `).bind(actividadId).first();
+}
+
+async function crearNotificacionNuevaSolicitudAdmin(env, {
+  adminId,
+  actividadId,
+  actividadNombre,
+  centro,
+  codigoReserva
+} = {}) {
+  const idAdmin = Number(adminId || 0);
+  if (!(idAdmin > 0)) return { ok: false, skipped: true, error: "Administrador no válido." };
+
+  return await crearNotificacion(env, {
+    usuarioId: idAdmin,
+    rolDestino: "ADMIN",
+    tipo: "RESERVA",
+    titulo: "Nueva solicitud de actividad",
+    mensaje: `${centro || "Un centro"} ha solicitado ${actividadNombre || "una actividad"}${codigoReserva ? ` (${codigoReserva})` : ""}.`,
+    urlDestino: actividadId ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}` : "/admin-reservas.html"
+  });
 }
 
 async function obtenerFranja(env, franjaId) {
@@ -340,6 +363,23 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       LIMIT 1
     `).bind(tokenEdicion).first();
 
+    let notificacionAdmin = { ok: false, skipped: true, error: "" };
+    try {
+      notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
+        adminId: actividad.admin_id,
+        actividadId,
+        actividadNombre: actividad.actividad_nombre || "Actividad",
+        centro,
+        codigoReserva: reservaCreada?.codigo_reserva || codigoReserva
+      });
+    } catch (errorNotificacion) {
+      notificacionAdmin = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacion?.message || String(errorNotificacion || "")
+      };
+    }
+
     return json({
       ok: true,
       mensaje: "Solicitud creada correctamente.",
@@ -358,7 +398,11 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       plazas_disponibles_restantes: Math.max(disponibles - plazasReservadas, 0),
       minutos_consolidacion: minutosConsolidacion,
       prereserva_expira_en: reservaCreada.prereserva_expira_en,
-      usuario_id: reservaCreada.usuario_id
+      usuario_id: reservaCreada.usuario_id,
+      notificacion_admin: {
+        creada: !!notificacionAdmin.ok,
+        error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
+      }
     });
   } catch (error) {
     return json(

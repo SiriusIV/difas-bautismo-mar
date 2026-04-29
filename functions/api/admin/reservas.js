@@ -1,6 +1,7 @@
 import { getAdminSession } from "./_auth.js";
 import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { crearNotificacion } from "../_notificaciones.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -258,6 +259,36 @@ async function obtenerActividadIdDeReserva(env, reservaId) {
   return result?.results?.[0]?.actividad_id || null;
 }
 
+async function obtenerContextoNotificacionReserva(env, reservaId) {
+  return await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.centro,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    WHERE r.id = ?
+    LIMIT 1
+  `).bind(reservaId).first();
+}
+
+async function crearNotificacionSolicitanteReservaAceptada(env, contexto = {}) {
+  const usuarioId = Number(contexto?.usuario_id || 0);
+  if (!(usuarioId > 0)) return { ok: false, skipped: true, error: "Solicitud sin usuario asociado." };
+
+  return await crearNotificacion(env, {
+    usuarioId,
+    rolDestino: "SOLICITANTE",
+    tipo: "RESERVA",
+    titulo: "Solicitud aceptada",
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido aceptada.`,
+    urlDestino: "/usuario-panel.html"
+  });
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -387,6 +418,7 @@ export async function onRequestPatch(context) {
     }
 
     const actividadId = await obtenerActividadIdDeReserva(env, id);
+    const contextoReserva = await obtenerContextoNotificacionReserva(env, id);
 
     if (!actividadId) {
       return json(
@@ -422,9 +454,26 @@ export async function onRequestPatch(context) {
       );
     }
 
+    let notificacionSolicitante = { ok: false, skipped: true, error: "" };
+    if (nuevoEstado === "CONFIRMADA") {
+      try {
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoReserva);
+      } catch (errorNotificacion) {
+        notificacionSolicitante = {
+          ok: false,
+          skipped: true,
+          error: errorNotificacion?.message || String(errorNotificacion || "")
+        };
+      }
+    }
+
     return json({
       ok: true,
-      mensaje: `Estado actualizado a ${nuevoEstado}.`
+      mensaje: `Estado actualizado a ${nuevoEstado}.`,
+      notificacion_solicitante: {
+        creada: !!notificacionSolicitante.ok,
+        error: notificacionSolicitante.ok ? "" : (notificacionSolicitante.error || "")
+      }
     });
   } catch (error) {
     return json(
