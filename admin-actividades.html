@@ -2516,6 +2516,20 @@ function cancelarMensajeErrorActividad() {
       return "";
     }
 
+    function aplicarLogoAdminArfer(img, usuario = {}) {
+      if (!img) return;
+      img.style.width = "";
+      const logoUsuario = String(usuario?.logo_url || "").trim();
+      img.classList.remove("logo-admin-personal");
+      if (logoUsuario) {
+        img.src = logoUsuario;
+        img.classList.add("logo-admin-personal");
+      } else {
+        img.src = "logo.png";
+      }
+      img.classList.remove("logo-pendiente");
+    }
+
     async function comprobarSesionAdmin() {
       const response = await fetch("/api/usuario/session", {
         method: "GET",
