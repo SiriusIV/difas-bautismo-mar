@@ -27,8 +27,40 @@
     }
 
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
-    .contenedor { max-width: 1108px; margin: 18px auto 22px; padding: 0 16px; }
+    body {
+      position: relative;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        linear-gradient(90deg,
+          rgba(244,246,248,1) 0%,
+          rgba(244,246,248,0.985) 38%,
+          rgba(244,246,248,0.93) 54%,
+          rgba(244,246,248,0.78) 66%,
+          rgba(244,246,248,0.42) 79%,
+          rgba(244,246,248,0.12) 90%,
+          rgba(244,246,248,0.02) 100%
+        ),
+        url("assets/fondo_perfil_usuario_derecha.jpg") right center / auto 88% no-repeat;
+      opacity: 0.86;
+    }
+    .contenedor {
+      position: relative;
+      z-index: 1;
+      max-width: 1108px;
+      margin: 18px auto 22px;
+      padding: 0 16px;
+    }
     .cabecera { background: #fff; border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 20px 18px; margin-bottom: 14px; display: flex; justify-content: center; align-items: center; }
     .cabecera-inner { display: flex; align-items: center; justify-content: center; gap: 50px; text-align: left; min-width: 0; }
     .logo-cabecera { width: 77px; height: auto; display: block; flex: 0 0 auto; transition: opacity 0.12s ease; }
@@ -657,6 +689,16 @@
     .cargando { opacity: 0.7; pointer-events: none; }
     @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
+      body::before {
+        background:
+          linear-gradient(180deg,
+            rgba(244,246,248,0.90) 0%,
+            rgba(244,246,248,0.82) 44%,
+            rgba(244,246,248,0.72) 100%
+          ),
+          url("assets/fondo_perfil_usuario_derecha.jpg") right top / auto 56% no-repeat;
+        opacity: 0.6;
+      }
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
       .preview-imagen { min-height: 252px; }
