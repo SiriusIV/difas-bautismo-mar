@@ -4246,18 +4246,3 @@ function retrocederPaso() {
   </script>
 </body>
 </html>
-
-
-
-
-
-    function aplicarLogoAdminArfer(img, usuario = {}) {
-      if (!img) return;
-      img.style.width = "";
-      const logoUsuario = String(usuario?.logo_url || "").trim();
-      img.classList.remove("logo-admin-personal");
-      if (logoUsuario) img.src = logoUsuario;
-      else img.src = "logo.png";
-      if (logoUsuario) img.classList.add("logo-admin-personal");
-      img.classList.remove("logo-pendiente");
-    }
