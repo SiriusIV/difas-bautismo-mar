@@ -1359,6 +1359,20 @@
           </svg>
           <span id="badgeNotificacionesSesion" class="btn-notificaciones-badge">0</span>
         </button>
+        <button
+          id="btnLogoutSesion"
+          class="nav-btn-icon"
+          type="button"
+          onclick="logoutActual()"
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -1395,53 +1409,13 @@
 
 <div id="barraUsuario" class="barra-usuario">
   <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
-  <button
-    class="nav-btn-icon"
-    type="button"
-    onclick="logoutActual()"
-    title="Cerrar sesión"
-    aria-label="Cerrar sesión"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline>
-      <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-  </button>
 </div>
 
-<div id="barraSecretaria" class="barra-secretaria">
-  <button
-    class="nav-btn-icon"
-    type="button"
-    onclick="logoutActual()"
-    title="Cerrar sesión"
-    aria-label="Cerrar sesión"
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline>
-      <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-  </button>
-</div>
+<div id="barraSecretaria" class="barra-secretaria"></div>
 
           <div id="barraAdmin" class="barra-admin">
             <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
             <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
-            <button
-              class="nav-btn-icon"
-              type="button"
-              onclick="logoutActual()"
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -3539,4 +3513,3 @@ if (filtroAdminSecretaria) {
   </script>
 </body>
 </html>
-
