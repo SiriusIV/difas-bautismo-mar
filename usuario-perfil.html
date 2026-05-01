@@ -69,7 +69,7 @@
     .mensaje { margin-bottom: 14px; padding: 11px 13px; border-radius: 8px; display: none; border: 1px solid transparent; line-height: 1.5; font-size: 13px; }
     .mensaje.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
-    .layout { display: grid; grid-template-columns: 256px minmax(0, 1fr); gap: 14px; align-items: stretch; }
+    .layout { display: grid; grid-template-columns: 228px minmax(0, 1fr); gap: 14px; align-items: stretch; }
     .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 13px 16px; height: 100%; }
     .app-perfil-cargando { visibility: hidden; }
@@ -515,87 +515,25 @@
     .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-estados-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-estados-expediente tr:last-child td { border-bottom: none; }
-    #bloqueImagenAdmin { align-self: start; height: auto; padding: 11px 13px; }
+    #bloqueImagenAdmin { align-self: start; height: auto; padding: 10px 12px; }
     .preview-imagen-wrap { position: relative; width: 100%; }
-    .preview-imagen { width: 100%; min-height: 240px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 10px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
+    .preview-imagen { width: 100%; min-height: 208px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 9px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
     .acciones-overlay-imagen { position: absolute; top: 9px; right: 9px; display: none; gap: 7px; z-index: 2; }
     .acciones-overlay-imagen.activo { display: flex; }
     .btn-icono-imagen { width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(18, 58, 99, 0.18); background: rgba(255, 255, 255, 0.96); color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
     .btn-icono-imagen.peligro { color: #9b1c1c; }
     .btn-icono-imagen svg { width: 14px; height: 14px; display: block; }
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: nowrap; }
-    .fila-admin-telefono-password { grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.08fr) minmax(0, 0.78fr) auto; align-items: end; }
+    .fila-admin-url-web { grid-template-columns: minmax(0, 1fr); align-items: end; }
     #filaAdminCuentaNombre { grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: end; }
-    #filaAdminNombrePublicoEmail { grid-template-columns: minmax(0, 0.58fr) minmax(0, 1.04fr) minmax(0, 0.68fr) auto; align-items: end; }
+    #filaAdminNombrePublicoEmail { grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.08fr) minmax(0, 0.78fr); align-items: end; }
     .campos-inline-admin { display: contents; }
-    .campo-password-admin-inline { display: flex; align-items: end; justify-content: flex-start; align-self: end; padding-top: 0; padding-left: 14px; }
-    .campo-password-admin-inline .password-linea { justify-content: flex-start; align-items: center; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
-    #btnCambiarPasswordAdmin { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; }
-    #btnCambiarPasswordAdmin .password-icono-boton { color: currentColor; display: inline-flex; align-items: center; justify-content: center; }
-    #btnCambiarPasswordAdmin .password-icono-boton svg { width: 17px; height: 17px; display: block; }
     .btn-password-admin-header { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; margin-right: 10px; }
     .btn-password-admin-header .password-icono-boton { color: currentColor; display: inline-flex; align-items: center; justify-content: center; }
     .btn-password-admin-header .password-icono-boton svg { width: 17px; height: 17px; display: block; }
     #telefonoAdmin { text-align: center; }
-    .campo-web-propia-admin { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: center; justify-self: center; min-width: 116px; }
-    .campo-web-propia-admin label { margin-bottom: 8px; }
-    .toggle-web-propia-wrap { display: inline-flex; align-items: center; gap: 0; }
-    .toggle-web-propia {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      width: 46px;
-      height: 26px;
-    }
-    .toggle-web-propia input {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      margin: 0;
-    }
-    .toggle-web-propia-control {
-      position: relative;
-      width: 46px;
-      height: 26px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #d7dbe0 0%, #c8ced6 100%);
-      border: 1px solid #b9c2cc;
-      transition: all 0.18s ease;
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), 0 1px 2px rgba(17,24,39,0.06);
-    }
-    .toggle-web-propia-control::after {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%);
-      border: 1px solid rgba(120, 132, 148, 0.35);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.16);
-      transition: transform 0.18s ease;
-    }
-    .toggle-web-propia input:checked + .toggle-web-propia-control {
-      background: linear-gradient(180deg, #28c95a 0%, #15b347 100%);
-      border-color: #12a640;
-    }
-    .toggle-web-propia input:checked + .toggle-web-propia-control::after { transform: translateX(20px); }
-    .toggle-web-propia input:focus-visible + .toggle-web-propia-control { outline: 2px solid rgba(18, 58, 99, 0.22); outline-offset: 2px; }
-    .campo-web-propia-admin { min-width: 64px; display: flex; flex-direction: column; justify-content: flex-end; }
-    .campo-web-propia-admin label { margin-bottom: 8px; }
-    #inputWebPropiaAdminUrl {
-      width: 100%;
-      min-width: 0;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-    #modalWebPropiaAdmin .campo-linea {
-      margin-top: 18px;
-    }
+    .campo-url-admin { margin-bottom: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-password-acceso { display: flex; align-items: flex-end; }
     .btn-password-acceso { background: var(--primary); color: #fff; border: none; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
@@ -687,7 +625,7 @@
     @media (max-width: 720px) {
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
-      .preview-imagen { min-height: 228px; }
+      .preview-imagen { min-height: 208px; }
       .documentacion-admin-barra-info,
       .documentacion-admin-barra-acciones {
         flex-basis: 100%;
@@ -761,26 +699,12 @@
             <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"></div>
             <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
-            <div class="campo-web-propia-admin oculto" id="campoWebPropiaAdmin">
-              <label for="toggleWebPropiaAdmin">Web</label>
-              <div class="toggle-web-propia-wrap">
-                <label class="toggle-web-propia" title="Web propia del administrador">
-                  <input type="checkbox" id="toggleWebPropiaAdmin" aria-label="Web propia del administrador">
-                  <span class="toggle-web-propia-control" aria-hidden="true"></span>
-                </label>
-              </div>
-              <input type="hidden" id="webExternaAdmin" name="webExternaAdmin">
-              <input type="hidden" id="webExternaActivaAdmin" name="webExternaActivaAdmin" value="0">
-            </div>
           </div>
-          <div class="fila oculto fila-admin-telefono-password" id="filaAdminTelefonoPassword">
-            <div class="campo-password-admin-inline">
-              <div class="password-linea">
-                <button type="button" class="btn btn-suave oculto" id="btnCambiarPasswordAdmin">
-                  <span class="password-icono-boton" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg></span>
-                  <span>Cambiar contraseña</span>
-                </button>
-              </div>
+          <div class="fila oculto fila-admin-url-web" id="filaAdminUrlWeb">
+            <div class="campo-linea campo-url-admin">
+              <label for="webExternaAdmin" id="labelWebExternaAdmin">URL del administrador</label>
+              <input type="url" id="webExternaAdmin" name="webExternaAdmin" placeholder="https://...">
+              <input type="hidden" id="webExternaActivaAdmin" name="webExternaActivaAdmin" value="0">
             </div>
           </div>
           <div class="fila oculto" id="filaSuperadminNombreEmail"><div><label for="nombreSuperadmin">Nombre</label><input type="text" id="nombreSuperadmin" name="nombreSuperadmin"></div><div><label for="emailSuperadmin">Email</label><input type="email" id="emailSuperadmin" name="emailSuperadmin"></div></div>
@@ -1240,22 +1164,6 @@
     </div>
   </div>
 
-  <div id="modalWebPropiaAdmin" class="modal-fondo" aria-hidden="true">
-    <div class="modal" style="max-width: 520px;">
-      <button type="button" class="btn-cerrar-modal" id="btnCerrarWebPropiaAdminTop" aria-label="Cerrar web propia" style="position:absolute; top:16px; right:18px;">✕</button>
-      <h3>Web propia</h3>
-      <p>Indica la dirección de la web externa del administrador para enlazar su nombre público desde la ficha de actividad.</p>
-      <div id="mensajeWebPropiaAdmin" class="mensaje oculto" aria-live="polite"></div>
-      <div class="campo-linea">
-        <label for="inputWebPropiaAdminUrl">Dirección web</label>
-        <input type="url" id="inputWebPropiaAdminUrl" placeholder="https://...">
-      </div>
-      <div class="modal-acciones">
-        <button type="button" class="btn" id="btnAceptarWebPropiaAdmin">Aceptar</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     let perfilOriginal = null;
     let rolActual = "";
@@ -1278,7 +1186,6 @@
     let cambioTabBloquePendiente = null;
     let organizadorPendienteId = null;
     let adminIdPreferentePerfil = null;
-    let modalWebPropiaAdminAbierto = false;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
@@ -1557,15 +1464,6 @@
       document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "true");
     }
 
-    function sincronizarToggleWebPropiaAdmin() {
-      const input = document.getElementById("webExternaAdmin");
-      const activa = document.getElementById("webExternaActivaAdmin");
-      const toggle = document.getElementById("toggleWebPropiaAdmin");
-      if (!input || !toggle || !activa) return;
-      const tieneUrl = String(input.value || "").trim() !== "";
-      toggle.checked = tieneUrl && Number(activa.value || 0) === 1;
-    }
-
     function esUrlWebValida(url = "") {
       const valor = String(url || "").trim();
       if (!valor) return false;
@@ -1577,39 +1475,25 @@
       }
     }
 
-    function abrirModalWebPropiaAdmin() {
-      const modal = document.getElementById("modalWebPropiaAdmin");
-      const input = document.getElementById("inputWebPropiaAdminUrl");
-      const actual = document.getElementById("webExternaAdmin").value.trim();
-      limpiarMensaje("mensajeWebPropiaAdmin");
-      input.value = actual;
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
-      modalWebPropiaAdminAbierto = true;
-      setTimeout(() => input.focus(), 0);
-    }
-
-    function cerrarModalWebPropiaAdmin() {
-      const modal = document.getElementById("modalWebPropiaAdmin");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
-      modalWebPropiaAdminAbierto = false;
-      limpiarMensaje("mensajeWebPropiaAdmin");
-      sincronizarToggleWebPropiaAdmin();
-    }
-
-    function aceptarWebPropiaAdmin() {
-      const input = document.getElementById("inputWebPropiaAdminUrl");
-      const hidden = document.getElementById("webExternaAdmin");
+    function sincronizarWebExternaAdmin() {
+      const input = document.getElementById("webExternaAdmin");
       const activa = document.getElementById("webExternaActivaAdmin");
+      if (!input || !activa) return;
       const valor = String(input.value || "").trim();
-      if (!esUrlWebValida(valor)) {
-        jsonMessage("mensajeWebPropiaAdmin", "error", "Debes indicar una dirección web válida que empiece por http:// o https://.");
-        return;
-      }
-      hidden.value = valor;
-      activa.value = "1";
-      cerrarModalWebPropiaAdmin();
+      activa.value = valor && esUrlWebValida(valor) ? "1" : "0";
+    }
+
+    function actualizarEtiquetaWebExternaAdmin(perfil = null) {
+      const label = document.getElementById("labelWebExternaAdmin");
+      if (!label) return;
+      const nombreVisible = String(
+        perfil?.nombre ||
+        document.getElementById("nombre")?.value ||
+        perfil?.nombre_publico ||
+        document.getElementById("nombrePublicoAdmin")?.value ||
+        ""
+      ).trim();
+      label.textContent = nombreVisible ? `URL de ${nombreVisible}` : "URL del administrador";
     }
 
     function actualizarAccionesDetalleDocumentacion() {
@@ -2900,7 +2784,7 @@
     }
 
     function ocultarTodoPorRol() {
-      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminTelefonoPassword","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
+      ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminUrlWeb","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
     }
@@ -2916,28 +2800,26 @@
         document.getElementById("filaSolicitanteResponsableDocumento").classList.remove("oculto");
         document.getElementById("filaSolicitanteEmailTelefono").classList.remove("oculto");
         document.getElementById("filaSolicitantePassword").classList.remove("oculto");
-        document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
         layout.classList.add("sin-imagen");
         } else if (esAdmin()) {
           document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
           document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
-          document.getElementById("campoWebPropiaAdmin").classList.remove("oculto");
+          document.getElementById("filaAdminUrlWeb").classList.remove("oculto");
           btnPasswordHeader.classList.remove("oculto");
           layout.classList.remove("sin-imagen");
         } else if (esSecretaria()) {
           document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
           document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
-          document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
           btnPasswordHeader.classList.remove("oculto");
           layout.classList.add("sin-imagen");
       } else if (esSuperadmin()) {
         document.getElementById("filaSuperadminNombreEmail").classList.remove("oculto");
         document.getElementById("filaSuperadminTelefono").classList.remove("oculto");
-        document.getElementById("campoWebPropiaAdmin").classList.add("oculto");
         layout.classList.add("sin-imagen");
       }
 
       actualizarSubtitulo(perfil);
+      actualizarEtiquetaWebExternaAdmin(perfil);
       actualizarPreviewImagen();
     }
 
@@ -2950,7 +2832,7 @@
       document.getElementById("localidadAdmin").value = perfil.localidad || "";
       document.getElementById("webExternaAdmin").value = perfil.web_externa_url || "";
       document.getElementById("webExternaActivaAdmin").value = Number(perfil.web_externa_activa || 0) === 1 ? "1" : "0";
-      sincronizarToggleWebPropiaAdmin();
+      sincronizarWebExternaAdmin();
       document.getElementById("nombreSuperadmin").value = perfil.nombre || "";
       document.getElementById("emailSuperadmin").value = perfil.email || "";
       document.getElementById("telefonoSuperadmin").value = perfil.telefono_contacto || "";
@@ -2980,6 +2862,7 @@
       };
 
       aplicarFormatoDocumento();
+      actualizarEtiquetaWebExternaAdmin(perfil);
       aplicarRol(perfil);
     }
 
@@ -3150,6 +3033,7 @@
 
     function obtenerEstadoActualPerfil() {
       if (esPerfilOrganizador()) {
+        const webExternaAdmin = document.getElementById("webExternaAdmin").value.trim();
         return {
           nombre: document.getElementById("nombre").value.trim(),
           nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
@@ -3157,8 +3041,8 @@
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim(),
-          web_externa_url: document.getElementById("webExternaAdmin").value.trim(),
-          web_externa_activa: Number(document.getElementById("webExternaActivaAdmin").value || 0) === 1 ? 1 : 0
+          web_externa_url: webExternaAdmin,
+          web_externa_activa: webExternaAdmin && esUrlWebValida(webExternaAdmin) ? 1 : 0
         };
       }
 
@@ -3225,6 +3109,7 @@
       }
 
       if (esPerfilOrganizador()) {
+        const webExternaAdmin = document.getElementById("webExternaAdmin").value.trim();
         return {
           nombre: document.getElementById("nombre").value.trim(),
           nombre_publico: document.getElementById("nombrePublicoAdmin").value.trim(),
@@ -3232,8 +3117,8 @@
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim(),
-          web_externa_url: document.getElementById("webExternaAdmin").value.trim(),
-          web_externa_activa: Number(document.getElementById("webExternaActivaAdmin").value || 0) === 1 ? 1 : 0
+          web_externa_url: webExternaAdmin,
+          web_externa_activa: webExternaAdmin && esUrlWebValida(webExternaAdmin) ? 1 : 0
         };
       }
 
@@ -3246,6 +3131,14 @@
     }
 
     function validarFormularioPerfil() {
+      if (esPerfilOrganizador()) {
+        const webExternaAdmin = document.getElementById("webExternaAdmin").value.trim();
+        if (webExternaAdmin && !esUrlWebValida(webExternaAdmin)) {
+          return { ok: false, error: "La URL del administrador debe empezar por http:// o https://." };
+        }
+        return { ok: true };
+      }
+
       if (!esSolicitante()) return { ok: true };
 
       const responsable = document.getElementById("responsableLegalSolicitante").value.trim();
@@ -3519,7 +3412,6 @@
       if (file) manejarSeleccionImagen(file);
       event.target.value = "";
     });
-    document.getElementById("btnCambiarPasswordAdmin").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnCambiarPasswordAdminHeader").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("tablaDocumentacionAdminBody").addEventListener("click", function (event) {
       const selector = event.target.closest(".selector-doc-admin");
@@ -3755,15 +3647,13 @@
       document.getElementById("modalEstadosDocumento").classList.remove("activo");
     });
     document.getElementById("btnCerrarObservacionesDocumentoTop").addEventListener("click", cerrarModalObservacionesDocumento);
-    document.getElementById("toggleWebPropiaAdmin").addEventListener("change", function () {
-      if (this.checked) {
-        abrirModalWebPropiaAdmin();
-      } else {
-        document.getElementById("webExternaActivaAdmin").value = "0";
-      }
+    document.getElementById("webExternaAdmin").addEventListener("input", function () {
+      sincronizarWebExternaAdmin();
+      actualizarEtiquetaWebExternaAdmin();
     });
-    document.getElementById("btnAceptarWebPropiaAdmin").addEventListener("click", aceptarWebPropiaAdmin);
-    document.getElementById("btnCerrarWebPropiaAdminTop").addEventListener("click", cerrarModalWebPropiaAdmin);
+    document.getElementById("nombre").addEventListener("input", function () {
+      actualizarEtiquetaWebExternaAdmin();
+    });
     document.getElementById("tipoDocumentoSolicitante").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
@@ -3779,8 +3669,7 @@
       "modalRevisionExpedienteAdmin",
       "modalCambiosPendientesDocumentos",
       "modalEstadosDocumento",
-      "modalObservacionesDocumento",
-      "modalWebPropiaAdmin"
+      "modalObservacionesDocumento"
     ].forEach((id) => {
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
@@ -3794,7 +3683,6 @@
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
         if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
         if (id === "modalObservacionesDocumento") cerrarModalObservacionesDocumento();
-        if (id === "modalWebPropiaAdmin") cerrarModalWebPropiaAdmin();
       });
     });
 
