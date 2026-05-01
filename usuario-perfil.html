@@ -2474,9 +2474,11 @@
             </select>
           </td>
           <td>
-            <button type="button" class="btn-observacion-pendiente" data-ver-observacion-pendiente="${Number(item.archivo_id || 0)}" title="Ver observaciones" aria-label="Ver observaciones" ${item.observaciones_admin ? "" : "disabled"}>
-              <img src="assets/icono-advertencia-documental.svg" alt="">
-            </button>
+            ${item.observaciones_admin ? `
+              <button type="button" class="btn-observacion-pendiente" data-ver-observacion-pendiente="${Number(item.archivo_id || 0)}" title="Ver observaciones" aria-label="Ver observaciones">
+                <img src="assets/icono-advertencia-documental.svg" alt="">
+              </button>
+            ` : ""}
           </td>
         `;
         body.appendChild(tr);
