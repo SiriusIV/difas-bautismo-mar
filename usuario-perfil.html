@@ -318,6 +318,8 @@
     .tabla-pendientes-admin th, .tabla-pendientes-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-pendientes-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-pendientes-admin tr:last-child td { border-bottom: none; }
+    .tabla-pendientes-admin tr.fila-seleccionada td { background: #f5f9ff; }
+    .tabla-pendientes-admin th:nth-child(4), .tabla-pendientes-admin td:nth-child(4) { text-align: center; }
     .tabla-pendientes-admin tr:hover td { background: #f9fbff; }
     .pendiente-admin-solicitante { font-weight: 700; color: #243648; }
     .pendiente-admin-sublinea { margin-top: 3px; font-size: 11px; color: var(--muted); }
@@ -344,13 +346,11 @@
     .select-estado-revision.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .select-estado-revision.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .select-estado-revision.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
-    .tabla-revision-expediente .btn-icono-modal { width: 32px; height: 32px; }
     .tabla-revision-expediente th:nth-child(1), .tabla-revision-expediente td:nth-child(1) { width: auto; }
-    .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2) { width: 110px; text-align: right; vertical-align: middle; }
-    .tabla-revision-expediente th:nth-child(3), .tabla-revision-expediente td:nth-child(3) { width: 210px; }
-    .tabla-revision-expediente th:nth-child(3) { text-align: center; }
-    .revision-expediente-observaciones-celda { padding-top: 2px; }
-    .revision-expediente-observaciones-label { display: block; font-size: 12px; font-weight: 700; color: #334250; margin-bottom: 6px; }
+    .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2) { width: 220px; }
+    .tabla-revision-expediente th:nth-child(2) { text-align: center; }
+    .revision-expediente-observaciones-celda { padding-top: 12px; }
+    .revision-expediente-observaciones-label { display: block; font-size: 12px; font-weight: 700; color: #334250; margin-bottom: 8px; }
     .revision-doc-titulo { font-weight: 700; color: #243648; }
     .revision-doc-meta { margin-top: 4px; font-size: 11px; color: var(--muted); line-height: 1.45; }
     .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 42px; height: 24px; }
@@ -864,6 +864,7 @@
             <table class="tabla-pendientes-admin">
               <thead>
                 <tr>
+                  <th class="col-seleccion"></th>
                   <th>Solicitante</th>
                   <th>Documentos pendientes</th>
                   <th>Última entrega</th>
@@ -1144,9 +1145,7 @@
           <thead>
             <tr>
               <th>Documento</th>
-              <th>Visualizar</th>
               <th>Estado</th>
-              <th>Observaciones</th>
             </tr>
           </thead>
           <tbody id="tablaRevisionExpedienteAdminBody"></tbody>
@@ -1193,6 +1192,7 @@
     let documentacionAdminSeleccionId = null;
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
+    let pendienteRevisionSeleccionId = null;
     let expedienteRevisionAdminActual = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
@@ -2172,6 +2172,10 @@
       return lista.find((doc) => Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0)) || null;
     }
 
+    function obtenerExpedientePendienteSeleccionado() {
+      return (pendientesRevisionAdmin || []).find((item) => Number(item.id || 0) === Number(pendienteRevisionSeleccionId || 0)) || null;
+    }
+
     function limpiarMensajeDocumentoBaseAdmin() {
       limpiarMensaje("mensajeDocumentoBaseAdmin");
     }
@@ -2356,10 +2360,12 @@
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
       const btnCambioModo = document.getElementById("btnCambiarModoDocumentalAdmin");
       const doc = obtenerDocumentoBaseAdminSeleccionado();
+      const expedientePendiente = obtenerExpedientePendienteSeleccionado();
       const editable = !!documentacionAdminContexto?.editable;
       const vistaBase = documentacionAdminVistaActual === "base";
+      const vistaPendientes = documentacionAdminVistaActual === "pendientes";
 
-      btnVer.disabled = !vistaBase || !doc || !doc.archivo_url;
+      btnVer.disabled = vistaBase ? (!doc || !doc.archivo_url) : (!vistaPendientes || !expedientePendiente);
       btnInfo.disabled = !vistaBase || !doc;
       btnNuevo.disabled = !editable || !vistaBase;
       btnEditar.disabled = !editable || !vistaBase || !doc;
@@ -2367,7 +2373,9 @@
       btnNuevo.classList.toggle("oculto", !editable || !vistaBase);
       btnEditar.classList.toggle("oculto", !editable || !vistaBase);
       btnEliminar.classList.toggle("oculto", !editable || !vistaBase);
-      btnVer.classList.toggle("oculto", !vistaBase);
+      btnVer.classList.remove("oculto");
+      btnVer.title = vistaPendientes ? "Ver documento del expediente seleccionado" : "Ver documento seleccionado";
+      btnVer.setAttribute("aria-label", btnVer.title);
       btnInfo.classList.toggle("oculto", !vistaBase);
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnCambioModo.classList.toggle("oculto", !esAdmin());
@@ -2397,26 +2405,39 @@
       body.innerHTML = "";
 
       if (!esAutogestionAdminEditable()) {
+        pendienteRevisionSeleccionId = null;
         vacio.classList.remove("oculto");
         vacio.textContent = esSecretaria()
           ? "La secretaría no tiene ahora mismo remisiones pendientes de revisión."
           : "La validación documental pendiente solo está disponible cuando esta cuenta se autogestiona.";
+        actualizarAccionesDocumentacionAdmin();
         return;
       }
 
       if (!pendientesRevisionAdmin.length) {
+        pendienteRevisionSeleccionId = null;
         vacio.classList.remove("oculto");
         vacio.textContent = "No hay expedientes pendientes de revisión documental.";
+        actualizarAccionesDocumentacionAdmin();
         return;
       }
 
       vacio.classList.add("oculto");
+      const existeSeleccion = pendientesRevisionAdmin.some((item) => Number(item.id || 0) === Number(pendienteRevisionSeleccionId || 0));
+      if (!existeSeleccion) {
+        pendienteRevisionSeleccionId = Number(pendientesRevisionAdmin[0]?.id || 0) || null;
+      }
       pendientesRevisionAdmin.forEach((item) => {
         const tr = document.createElement("tr");
+        const seleccionado = Number(item.id || 0) === Number(pendienteRevisionSeleccionId || 0);
+        tr.classList.toggle("fila-seleccionada", seleccionado);
         const sublineaSolicitante = esSecretaria()
           ? `<div class="pendiente-admin-sublinea">Administrador: ${item.admin_nombre_publico || item.admin_nombre || "Administrador adscrito"}</div>`
           : "";
         tr.innerHTML = `
+          <td class="col-seleccion">
+            <input type="radio" name="pendiente_revision_admin_seleccion" class="selector-doc selector-pendiente-admin" value="${Number(item.id || 0)}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar expediente pendiente">
+          </td>
           <td>
             <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
             ${sublineaSolicitante}
@@ -2434,6 +2455,7 @@
         `;
         body.appendChild(tr);
       });
+      actualizarAccionesDocumentacionAdmin();
     }
 
     function renderizarBloqueDocumentacionAdmin() {
@@ -2672,11 +2694,6 @@
             <div class="revision-doc-meta">Versión ${Number(doc.version_documental || 0)} · Última entrega ${formatearFechaCorta(doc.fecha_subida || "")}</div>
           </td>
           <td>
-            <button type="button" class="btn-icono-modal" data-ver-documento-revision="${Number(doc.id || 0)}" title="Ver documento">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-          </td>
-          <td>
             <select class="select-estado-revision ${claseEstado}" data-estado-revision="${Number(doc.id || 0)}">
               <option value="EN_REVISION" ${estado === "EN_REVISION" ? "selected" : ""}>En revisión</option>
               <option value="VALIDADO" ${estado === "VALIDADO" ? "selected" : ""}>Validado</option>
@@ -2687,7 +2704,7 @@
         const trDetalle = document.createElement("tr");
         trDetalle.className = "revision-expediente-detalle";
         trDetalle.innerHTML = `
-          <td colspan="3" class="revision-expediente-observaciones-celda">
+          <td colspan="2" class="revision-expediente-observaciones-celda">
             <label class="revision-expediente-observaciones-label" for="observacionesRevision_${Number(doc.id || 0)}">Observaciones</label>
             <textarea id="observacionesRevision_${Number(doc.id || 0)}" data-observaciones-revision="${Number(doc.id || 0)}" placeholder="Observaciones para este documento...">${observaciones}</textarea>
           </td>
@@ -2729,6 +2746,29 @@
         document.getElementById("modalRevisionExpedienteAdmin").classList.add("activo");
       } catch (error) {
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo abrir la revisión del expediente.");
+      }
+    }
+
+    async function verDocumentoPendienteSeleccionado() {
+      const expediente = obtenerExpedientePendienteSeleccionado();
+      if (!expediente?.id) return;
+
+      try {
+        const url = esSecretaria()
+          ? `/api/secretaria/documentacion-detalle?documentacion_id=${encodeURIComponent(expediente.id)}`
+          : `/api/admin/documentacion-detalle?centro_usuario_id=${encodeURIComponent(expediente.centro_usuario_id || "")}&admin_id=${encodeURIComponent(documentacionAdminContexto?.admin_id || "")}`;
+        const res = await fetch(url, { credentials: "include" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo abrir el documento del expediente seleccionado.");
+        }
+        const documento = (data.documentos || []).find((item) => String(item.archivo_url || "").trim());
+        if (!documento?.archivo_url) {
+          throw new Error("El expediente seleccionado no tiene un documento visible en este momento.");
+        }
+        window.open(documento.archivo_url, "_blank", "noopener");
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo abrir el documento del expediente seleccionado.");
       }
     }
 
@@ -3454,7 +3494,11 @@
       }
       await cambiarEstadoDocumentoBaseAdmin(doc, toggle.checked, toggle);
     });
-    document.getElementById("btnVerDocumentoBaseAdmin").addEventListener("click", function () {
+    document.getElementById("btnVerDocumentoBaseAdmin").addEventListener("click", async function () {
+      if (documentacionAdminVistaActual === "pendientes") {
+        await verDocumentoPendienteSeleccionado();
+        return;
+      }
       const doc = obtenerDocumentoBaseAdminSeleccionado();
       if (!doc || !doc.archivo_url) return;
       window.open(doc.archivo_url, "_blank", "noopener");
@@ -3496,20 +3540,21 @@
     });
     document.getElementById("btnCambiarModoDocumentalAdmin").addEventListener("click", abrirModalCambioModoDocumentalAdmin);
     document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("click", function (event) {
+      const selector = event.target.closest(".selector-pendiente-admin");
+      if (selector) {
+        const expedienteId = Number.parseInt(selector.value || "", 10);
+        if (!Number.isInteger(expedienteId) || expedienteId <= 0) return;
+        pendienteRevisionSeleccionId = expedienteId;
+        renderizarPendientesRevisionAdmin();
+        return;
+      }
       const btn = event.target.closest("[data-expediente-id]");
       if (!btn) return;
       const expedienteId = Number.parseInt(btn.dataset.expedienteId || "", 10);
       const centroId = Number.parseInt(btn.dataset.centroId || "", 10);
       if (!Number.isInteger(expedienteId) || !Number.isInteger(centroId) || expedienteId <= 0 || centroId <= 0) return;
+      pendienteRevisionSeleccionId = expedienteId;
       abrirRevisionExpedienteAdmin(expedienteId, centroId);
-    });
-    document.getElementById("tablaRevisionExpedienteAdminBody").addEventListener("click", function (event) {
-      const btn = event.target.closest("[data-ver-documento-revision]");
-      if (!btn) return;
-      const docId = Number.parseInt(btn.dataset.verDocumentoRevision || "", 10);
-      const doc = (expedienteRevisionAdminActual?.documentos || []).find((item) => Number(item.id || 0) === docId);
-      if (!doc?.archivo_url) return;
-      window.open(doc.archivo_url, "_blank", "noopener");
     });
     document.getElementById("tablaRevisionExpedienteAdminBody").addEventListener("change", function (event) {
       const select = event.target.closest("[data-estado-revision]");
