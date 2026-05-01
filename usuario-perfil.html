@@ -102,7 +102,7 @@
     .input-con-ayuda input { padding-right: 34px; }
     .btn-ayuda-campo { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 999px; border: 1px solid #6d87a3; background: #eef4ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
     .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
-    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { width: 100%; height: 40px; padding: 8px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="url"], select { width: 100%; height: 40px; padding: 8px 11px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     .campo-linea-valor-fijo { height: 40px; display: flex; align-items: center; padding: 8px 11px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .input-solo-lectura { background: #f7f9fb !important; color: #495867; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
@@ -515,9 +515,9 @@
     .tabla-estados-expediente th, .tabla-estados-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
     .tabla-estados-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; }
     .tabla-estados-expediente tr:last-child td { border-bottom: none; }
-    #bloqueImagenAdmin { align-self: start; height: auto; padding: 10px 12px; }
-    .preview-imagen-wrap { position: relative; width: 100%; }
-    .preview-imagen { width: 100%; min-height: 208px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 9px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
+    #bloqueImagenAdmin { align-self: stretch; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 12px; }
+    .preview-imagen-wrap { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; flex: 1 1 auto; }
+    .preview-imagen { width: 100%; min-height: 188px; aspect-ratio: 1 / 1; object-fit: contain; object-position: center; padding: 9px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); display: block; }
     .acciones-overlay-imagen { position: absolute; top: 9px; right: 9px; display: none; gap: 7px; z-index: 2; }
     .acciones-overlay-imagen.activo { display: flex; }
     .btn-icono-imagen { width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(18, 58, 99, 0.18); background: rgba(255, 255, 255, 0.96); color: #123a63; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
@@ -533,7 +533,9 @@
     .btn-password-admin-header .password-icono-boton { color: currentColor; display: inline-flex; align-items: center; justify-content: center; }
     .btn-password-admin-header .password-icono-boton svg { width: 17px; height: 17px; display: block; }
     #telefonoAdmin { text-align: center; }
-    .campo-url-admin { margin-bottom: 0; }
+    .campo-url-admin { margin-bottom: 0; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px; align-items: end; }
+    .campo-url-admin label { margin-bottom: 0; padding-bottom: 12px; }
+    .campo-url-admin input { min-width: 0; }
     .password-icono svg { width: 19px; height: 19px; display: block; }
     .campo-password-acceso { display: flex; align-items: flex-end; }
     .btn-password-acceso { background: var(--primary); color: #fff; border: none; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(11, 94, 215, 0.18); }
@@ -626,6 +628,8 @@
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
       .preview-imagen { min-height: 208px; }
+      .campo-url-admin { grid-template-columns: 1fr; gap: 6px; }
+      .campo-url-admin label { padding-bottom: 0; }
       .documentacion-admin-barra-info,
       .documentacion-admin-barra-acciones {
         flex-basis: 100%;
