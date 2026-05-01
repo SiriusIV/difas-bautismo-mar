@@ -329,12 +329,14 @@
     .modal-revision-expediente { width: calc(100vw - 56px); max-width: 1280px; min-width: 980px; padding: 24px 26px; }
     .modal-revision-expediente .modal-acciones { margin-top: 14px; }
     .modal-revision-resumen { margin-top: 10px; font-size: 13px; color: #4a5a6a; line-height: 1.6; padding: 12px 14px; border-radius: 12px; border: 1px solid #d7e4f3; background: #f7fbff; }
-    .tabla-revision-expediente-wrap { width: 100%; overflow-x: auto; max-height: 420px; overflow-y: auto; margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
-    .tabla-revision-expediente { width: 100%; border-collapse: collapse; min-width: 1120px; table-layout: fixed; }
+    .tabla-revision-expediente-wrap { width: 100%; overflow-x: hidden; max-height: 420px; overflow-y: auto; margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+    .tabla-revision-expediente { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 0; table-layout: fixed; }
     .tabla-revision-expediente th, .tabla-revision-expediente td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; }
     .tabla-revision-expediente th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
-    .tabla-revision-expediente tr:last-child td { border-bottom: none; }
-    .tabla-revision-expediente tr:hover td { background: #fbfdff; }
+    .tabla-revision-expediente tr.revision-expediente-detalle td { padding-top: 0; border-top: none; }
+    .tabla-revision-expediente tr.revision-expediente-detalle:last-child td { border-bottom: none; }
+    .tabla-revision-expediente tr.revision-expediente-principal:hover td,
+    .tabla-revision-expediente tr.revision-expediente-detalle:hover td { background: #fbfdff; }
     .tabla-revision-expediente textarea { width: 100%; min-height: 74px; resize: vertical; padding: 9px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; }
     .tabla-revision-expediente textarea:focus,
     .tabla-revision-expediente select:focus { outline: none; border-color: #7fa3cb; box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12); }
@@ -343,10 +345,12 @@
     .select-estado-revision.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .select-estado-revision.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .tabla-revision-expediente .btn-icono-modal { width: 32px; height: 32px; }
-    .tabla-revision-expediente th:nth-child(1), .tabla-revision-expediente td:nth-child(1) { width: 28%; }
-    .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2) { width: 92px; text-align: center; vertical-align: middle; }
-    .tabla-revision-expediente th:nth-child(3), .tabla-revision-expediente td:nth-child(3) { width: 180px; }
-    .tabla-revision-expediente th:nth-child(4), .tabla-revision-expediente td:nth-child(4) { width: auto; }
+    .tabla-revision-expediente th:nth-child(1), .tabla-revision-expediente td:nth-child(1) { width: auto; }
+    .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2) { width: 110px; text-align: right; vertical-align: middle; }
+    .tabla-revision-expediente th:nth-child(3), .tabla-revision-expediente td:nth-child(3) { width: 210px; }
+    .tabla-revision-expediente th:nth-child(3) { text-align: center; }
+    .revision-expediente-observaciones-celda { padding-top: 2px; }
+    .revision-expediente-observaciones-label { display: block; font-size: 12px; font-weight: 700; color: #334250; margin-bottom: 6px; }
     .revision-doc-titulo { font-weight: 700; color: #243648; }
     .revision-doc-meta { margin-top: 4px; font-size: 11px; color: var(--muted); line-height: 1.45; }
     .toggle-estado-doc-base { position: relative; display: inline-flex; align-items: center; width: 42px; height: 24px; }
@@ -633,7 +637,9 @@
       .fila { grid-template-columns: 1fr; }
       .preview-imagen { min-height: 208px; }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
-      .tabla-revision-expediente { min-width: 760px; table-layout: auto; }
+      .tabla-revision-expediente { min-width: 0; table-layout: auto; }
+      .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2),
+      .tabla-revision-expediente th:nth-child(3), .tabla-revision-expediente td:nth-child(3) { width: auto; }
       .documentacion-admin-barra-info,
       .documentacion-admin-barra-acciones {
         flex-basis: 100%;
@@ -2657,9 +2663,10 @@
           : estado === "RECHAZADO"
             ? "estado-rechazado"
             : "estado-revision";
-        const tr = document.createElement("tr");
         const observaciones = doc.observaciones_admin || "";
-        tr.innerHTML = `
+        const trPrincipal = document.createElement("tr");
+        trPrincipal.className = "revision-expediente-principal";
+        trPrincipal.innerHTML = `
           <td>
             <div class="revision-doc-titulo">${doc.nombre_documento || "Documento"}</div>
             <div class="revision-doc-meta">Versión ${Number(doc.version_documental || 0)} · Última entrega ${formatearFechaCorta(doc.fecha_subida || "")}</div>
@@ -2676,11 +2683,17 @@
               <option value="RECHAZADO" ${estado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
             </select>
           </td>
-          <td>
-            <textarea data-observaciones-revision="${Number(doc.id || 0)}" placeholder="Observaciones para este documento...">${observaciones}</textarea>
+        `;
+        const trDetalle = document.createElement("tr");
+        trDetalle.className = "revision-expediente-detalle";
+        trDetalle.innerHTML = `
+          <td colspan="3" class="revision-expediente-observaciones-celda">
+            <label class="revision-expediente-observaciones-label" for="observacionesRevision_${Number(doc.id || 0)}">Observaciones</label>
+            <textarea id="observacionesRevision_${Number(doc.id || 0)}" data-observaciones-revision="${Number(doc.id || 0)}" placeholder="Observaciones para este documento...">${observaciones}</textarea>
           </td>
         `;
-        body.appendChild(tr);
+        body.appendChild(trPrincipal);
+        body.appendChild(trDetalle);
       });
     }
 
