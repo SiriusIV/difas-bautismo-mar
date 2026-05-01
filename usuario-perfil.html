@@ -325,15 +325,16 @@
     .tabla-pendientes-admin th:nth-child(4), .tabla-pendientes-admin td:nth-child(4) { width: 132px; text-align: center; }
     .tabla-pendientes-admin th:nth-child(5), .tabla-pendientes-admin td:nth-child(5) { width: 182px; }
     .tabla-pendientes-admin th:nth-child(5) { text-align: center; }
-    .tabla-pendientes-admin th:nth-child(6), .tabla-pendientes-admin td:nth-child(6) { width: 26%; }
+    .tabla-pendientes-admin th:nth-child(6), .tabla-pendientes-admin td:nth-child(6) { width: 64px; text-align: center; }
     .tabla-pendientes-admin select { width: 100%; height: 38px; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #fff; font-size: 13px; font-weight: 600; }
-    .tabla-pendientes-admin textarea { width: 100%; min-height: 78px; resize: vertical; padding: 9px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; }
-    .tabla-pendientes-admin textarea:focus,
     .tabla-pendientes-admin select:focus { outline: none; border-color: #7fa3cb; box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12); }
     .tabla-pendientes-admin .select-estado-revision.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .tabla-pendientes-admin .select-estado-revision.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .tabla-pendientes-admin .select-estado-revision.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .tabla-pendientes-admin tr:hover td { background: #f9fbff; }
+    .btn-observacion-pendiente { appearance: none; border: none; background: transparent; padding: 0; margin: 0 auto; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-observacion-pendiente img { width: 20px; height: 20px; display: block; object-fit: contain; }
+    .btn-observacion-pendiente:disabled { opacity: 0.32; cursor: default; }
     .pendiente-admin-solicitante { font-weight: 700; color: #243648; }
     .pendiente-admin-sublinea { margin-top: 3px; font-size: 11px; color: var(--muted); }
     .btn-revision-expediente { border: 1px solid #c9cfd6; background: #fff; color: #123a63; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -882,7 +883,7 @@
                   <th>Documento pendiente</th>
                   <th>Última entrega</th>
                   <th>Estado</th>
-                  <th>Observaciones</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="tablaPendientesDocumentacionAdminBody"></tbody>
@@ -1089,7 +1090,11 @@
       </div>
       <div class="campo-linea">
         <label>Observaciones</label>
-        <p id="textoModalObservacionesDocumento" style="margin: 0; white-space: pre-wrap; line-height: 1.6; color: #4a5a6a;"></p>
+        <textarea id="textoModalObservacionesDocumento" style="width:100%; min-height:120px; resize:vertical; padding:9px 10px; border:1px solid #c9cfd6; border-radius:8px; font-size:13px; line-height:1.6; color:#4a5a6a;"></textarea>
+      </div>
+      <div class="modal-acciones oculto" id="accionesModalObservacionesDocumento">
+        <button type="button" class="btn btn-suave" id="btnCancelarObservacionesDocumento">Cancelar</button>
+        <button type="button" class="btn" id="btnGuardarObservacionesDocumento">Guardar observaciones</button>
       </div>
     </div>
   </div>
@@ -1185,6 +1190,7 @@
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
     let pendienteRevisionSeleccionId = null;
+    let contextoModalObservacionesDocumento = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
     let detalleCambiosPendientes = new Map();
@@ -1438,23 +1444,51 @@
       return obtenerDocumentoSeleccionadoDetalle();
     }
 
-    function abrirModalObservacionesDocumento(doc) {
+    function abrirModalObservacionesDocumento(doc, opciones = {}) {
       const documento = doc || null;
-      const titulo = documento?.nombre || "Documento";
-      const estado = etiquetaEstadoDocumentacion(String(documento?.estado_documento || "NO_ENVIADO").toUpperCase());
-      const observaciones = String(documento?.observaciones_admin || "").trim();
+      const titulo = opciones?.subtitulo || documento?.nombre || documento?.nombre_documento || "Documento";
+      const estadoBruto = String(opciones?.estado || documento?.estado_documento || documento?.estado || "NO_ENVIADO").toUpperCase();
+      const estado = etiquetaEstadoDocumentacion(estadoBruto);
+      const observaciones = String(opciones?.observaciones ?? documento?.observaciones_admin ?? "").trim();
+      const editable = !!opciones?.editable;
+      const textarea = document.getElementById("textoModalObservacionesDocumento");
+      const acciones = document.getElementById("accionesModalObservacionesDocumento");
 
-      document.getElementById("tituloModalObservacionesDocumento").textContent = "Observaciones";
+      contextoModalObservacionesDocumento = editable
+        ? {
+            onGuardar: typeof opciones?.onGuardar === "function" ? opciones.onGuardar : null
+          }
+        : null;
+
+      document.getElementById("tituloModalObservacionesDocumento").textContent = editable ? "Observaciones del rechazo" : "Observaciones";
       document.getElementById("subtituloModalObservacionesDocumento").textContent = titulo;
       document.getElementById("estadoModalObservacionesDocumento").textContent = estado;
-      document.getElementById("textoModalObservacionesDocumento").textContent = observaciones || "No constan observaciones asociadas a este estado.";
+      textarea.value = observaciones;
+      textarea.readOnly = !editable;
+      acciones.classList.toggle("oculto", !editable);
       document.getElementById("modalObservacionesDocumento").classList.add("activo");
       document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "false");
+      setTimeout(() => {
+        if (editable) textarea.focus();
+      }, 0);
     }
 
     function cerrarModalObservacionesDocumento() {
+      contextoModalObservacionesDocumento = null;
+      document.getElementById("btnCancelarObservacionesDocumento").onclick = null;
       document.getElementById("modalObservacionesDocumento").classList.remove("activo");
       document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "true");
+    }
+
+    async function guardarModalObservacionesDocumento() {
+      const contexto = contextoModalObservacionesDocumento;
+      if (!contexto?.onGuardar) {
+        cerrarModalObservacionesDocumento();
+        return;
+      }
+      const texto = String(document.getElementById("textoModalObservacionesDocumento").value || "").trim();
+      await contexto.onGuardar(texto);
+      cerrarModalObservacionesDocumento();
     }
 
     function esUrlWebValida(url = "") {
@@ -2440,7 +2474,9 @@
             </select>
           </td>
           <td>
-            <textarea data-observaciones-pendiente="${Number(item.archivo_id || 0)}" placeholder="Observaciones para este documento...">${item.observaciones_admin || ""}</textarea>
+            <button type="button" class="btn-observacion-pendiente" data-ver-observacion-pendiente="${Number(item.archivo_id || 0)}" title="Ver observaciones" aria-label="Ver observaciones" ${item.observaciones_admin ? "" : "disabled"}>
+              <img src="assets/icono-advertencia-documental.svg" alt="">
+            </button>
           </td>
         `;
         body.appendChild(tr);
@@ -2698,6 +2734,35 @@
       item.estado = estadoNormalizado;
       item.observaciones_admin = observacionesNormalizadas;
       return data;
+    }
+
+    async function abrirObservacionesPendienteParaRechazo(item, select) {
+      const estadoAnterior = String(item?.estado || "EN_REVISION").trim().toUpperCase();
+      const observacionesAnteriores = String(item?.observaciones_admin || "").trim();
+      abrirModalObservacionesDocumento(item, {
+        subtitulo: item?.nombre_documento || "Documento",
+        estado: "RECHAZADO",
+        observaciones: observacionesAnteriores,
+        editable: true,
+        onGuardar: async (texto) => {
+          await guardarCambioPendienteRevision(item, {
+            estado: "RECHAZADO",
+            observaciones: texto
+          });
+          mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
+          await cargarPendientesRevisionAdmin();
+        }
+      });
+      const btnCancelar = document.getElementById("btnCancelarObservacionesDocumento");
+      btnCancelar.onclick = () => {
+        item.estado = estadoAnterior;
+        item.observaciones_admin = observacionesAnteriores;
+        if (select) {
+          select.value = estadoAnterior;
+          refrescarClaseSelectRevision(select);
+        }
+        cerrarModalObservacionesDocumento();
+      };
     }
 
     function actualizarPreviewImagen() {
@@ -3427,6 +3492,19 @@
         renderizarPendientesRevisionAdmin();
         return;
       }
+      const botonObservaciones = event.target.closest("[data-ver-observacion-pendiente]");
+      if (botonObservaciones) {
+        const archivoId = Number.parseInt(botonObservaciones.dataset.verObservacionPendiente || "", 10);
+        if (!Number.isInteger(archivoId) || archivoId <= 0) return;
+        const item = (pendientesRevisionAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
+        if (!item || !String(item.observaciones_admin || "").trim()) return;
+        abrirModalObservacionesDocumento(item, {
+          subtitulo: item?.nombre_documento || "Documento",
+          estado: item?.estado || "EN_REVISION",
+          observaciones: item?.observaciones_admin || "",
+          editable: false
+        });
+      }
     });
     document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("change", async function (event) {
       const select = event.target.closest("[data-estado-pendiente]");
@@ -3435,13 +3513,19 @@
       if (!Number.isInteger(archivoId) || archivoId <= 0) return;
       const item = (pendientesRevisionAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
       if (!item) return;
+      const estadoAnterior = String(item.estado || "EN_REVISION").trim().toUpperCase();
+      if (String(select.value || "").trim().toUpperCase() === "RECHAZADO") {
+        select.value = estadoAnterior;
+        refrescarClaseSelectRevision(select);
+        await abrirObservacionesPendienteParaRechazo(item, select);
+        return;
+      }
       refrescarClaseSelectRevision(select);
       select.disabled = true;
       try {
-        const textarea = document.querySelector(`[data-observaciones-pendiente="${archivoId}"]`);
         await guardarCambioPendienteRevision(item, {
           estado: select.value,
-          observaciones: textarea?.value || item.observaciones_admin || ""
+          observaciones: item.observaciones_admin || ""
         });
         mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
         await cargarPendientesRevisionAdmin();
@@ -3451,30 +3535,6 @@
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado documental.");
       } finally {
         select.disabled = false;
-      }
-    });
-    document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("focusout", async function (event) {
-      const textarea = event.target.closest("[data-observaciones-pendiente]");
-      if (!textarea) return;
-      const archivoId = Number.parseInt(textarea.dataset.observacionesPendiente || "", 10);
-      if (!Number.isInteger(archivoId) || archivoId <= 0) return;
-      const item = (pendientesRevisionAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
-      if (!item) return;
-      const observacionesNormalizadas = String(textarea.value || "").trim();
-      if (observacionesNormalizadas === String(item.observaciones_admin || "").trim()) return;
-      textarea.disabled = true;
-      try {
-        const select = document.querySelector(`[data-estado-pendiente="${archivoId}"]`);
-        await guardarCambioPendienteRevision(item, {
-          estado: select?.value || item.estado || "EN_REVISION",
-          observaciones: observacionesNormalizadas
-        });
-        mostrarMensajePerfilTemporal("ok", "Observaciones actualizadas.");
-      } catch (error) {
-        textarea.value = item.observaciones_admin || "";
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron actualizar las observaciones.");
-      } finally {
-        textarea.disabled = false;
       }
     });
     document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
@@ -3627,6 +3687,14 @@
       document.getElementById("modalEstadosDocumento").classList.remove("activo");
     });
     document.getElementById("btnCerrarObservacionesDocumentoTop").addEventListener("click", cerrarModalObservacionesDocumento);
+    document.getElementById("btnCancelarObservacionesDocumento").addEventListener("click", cerrarModalObservacionesDocumento);
+    document.getElementById("btnGuardarObservacionesDocumento").addEventListener("click", async function () {
+      try {
+        await guardarModalObservacionesDocumento();
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron guardar las observaciones.");
+      }
+    });
     document.getElementById("webExternaAdmin").addEventListener("input", function () {
       sincronizarWebExternaAdmin();
       actualizarEtiquetaWebExternaAdmin();
