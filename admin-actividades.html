@@ -58,7 +58,14 @@
 
     .cabecera {
       background:
-        linear-gradient(90deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%),
+        linear-gradient(90deg,
+          rgba(255,255,255,0.06) 0%,
+          rgba(255,255,255,0.24) 22%,
+          rgba(255,255,255,0.72) 40%,
+          rgba(255,255,255,0.92) 54%,
+          rgba(255,255,255,0.98) 68%,
+          rgba(255,255,255,0.98) 100%
+        ),
         url("assets/cabeceraDefecto.jpg") center center / cover no-repeat;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
       padding: 18px 20px 14px;
@@ -1216,6 +1223,13 @@
     #mapaPreviewActividad {
       width: 100%;
       height: 200px;
+    }
+
+    .mapa-wrap-preview .leaflet-container,
+    #mapaPreviewActividad .leaflet-pane,
+    #mapaPreviewActividad .leaflet-map-pane {
+      width: 100%;
+      height: 100%;
     }
 
     .mapa-oculto {
@@ -2995,6 +3009,11 @@ function mostrarMapaPreviewActividad() {
   if (!mapaWrap) return;
   mapaWrap.classList.remove("mapa-oculto");
   mapaWrap.style.display = "block";
+  requestAnimationFrame(() => {
+    if (mapaPreviewActividad) {
+      mapaPreviewActividad.invalidateSize(true);
+    }
+  });
 }
 
 function asegurarMapaPreviewActividad(centro, zoomInicial) {
@@ -3063,6 +3082,11 @@ function sincronizarMapaPreviewActividad(lat, lng, zoom = 13) {
 
   if (mapaPreviewActividad) {
     mapaPreviewActividad.setView([lat, lng], zoom);
+    requestAnimationFrame(() => {
+      if (mapaPreviewActividad) {
+        mapaPreviewActividad.invalidateSize(true);
+      }
+    });
   }
 
   if (marcadorPreviewActividad) {
