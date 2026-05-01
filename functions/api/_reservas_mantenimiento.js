@@ -2,8 +2,8 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
-function estadoExcluidoDeHistorico(estado) {
-  return ["RECHAZADA", "ANULADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+function estadoIncluidoEnHistorico(estado) {
+  return ["CONFIRMADA"].includes(String(estado || "").toUpperCase());
 }
 
 async function asegurarTablaHistorico(env) {
@@ -105,7 +105,7 @@ async function obtenerReservasFinalizadas(env) {
 }
 
 async function guardarHistorico(env, reservas) {
-  const candidatas = (reservas || []).filter((row) => !estadoExcluidoDeHistorico(row.estado));
+  const candidatas = (reservas || []).filter((row) => estadoIncluidoEnHistorico(row.estado));
   if (!candidatas.length) return 0;
 
   const sentencias = candidatas.map((row) => env.DB.prepare(`
@@ -156,17 +156,34 @@ async function borrarReservasFinalizadas(env, reservas) {
   return ids.length;
 }
 
+async function borrarFranjasDeActividadesVencidas(env) {
+  const result = await env.DB.prepare(`
+    DELETE FROM franjas
+    WHERE actividad_id IN (
+      SELECT id
+      FROM actividades
+      WHERE UPPER(TRIM(COALESCE(tipo, ''))) = 'TEMPORAL'
+        AND fecha_fin IS NOT NULL
+        AND date(fecha_fin) < date('now')
+    )
+  `).run();
+
+  return Number(result?.meta?.changes || 0);
+}
+
 export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorico(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
   const finalizadas = await obtenerReservasFinalizadas(env);
   const archivadas = await guardarHistorico(env, finalizadas);
   const eliminadas = await borrarReservasFinalizadas(env, finalizadas);
+  const franjasEliminadas = await borrarFranjasDeActividadesVencidas(env);
 
   return {
     ok: true,
     rechazadas_automaticamente: rechazadasAutomaticamente,
     archivadas,
-    eliminadas
+    eliminadas,
+    franjas_eliminadas_por_fin_actividad: franjasEliminadas
   };
 }
