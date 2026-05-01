@@ -48,7 +48,12 @@
 
     body {
       font-family: Arial, sans-serif;
-      background: var(--bg);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
       margin: 0;
       color: var(--text);
       display: flex;
@@ -73,6 +78,7 @@
       top: 0;
       z-index: 50;
       flex: 0 0 auto;
+      border-bottom: 1px solid rgba(18, 58, 99, 0.16);
     }
 
     .cabecera-inner {
@@ -420,6 +426,34 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 8px;
+    }
+
+    .config-enlace-inline {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .config-enlace-visitado {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      font-size: 12px;
+      color: #123a63;
+      text-decoration: none;
+      font-weight: 600;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .config-enlace-visitado:hover {
+      text-decoration: underline;
+    }
+
+    .config-enlace-visitado.oculto {
+      display: none !important;
     }
 
     .fila-compacta {
@@ -1679,6 +1713,7 @@
               <div class="config-enlace-inline">
                 <label for="enlace_externo_url">URL enlace externo</label>
                 <input type="text" id="enlace_externo_url" placeholder="https://...">
+                <a id="enlaceExternoVisitar" class="config-enlace-visitado oculto" href="#" target="_blank" rel="noopener noreferrer">Abrir enlace externo</a>
               </div>
             </div>
 
@@ -2910,6 +2945,7 @@ function construirMetaPreview() {
       const elMeta = document.getElementById("previewMeta");
       const elTexto = document.getElementById("previewTexto");
       const direccionDiv = document.getElementById("previewDireccion");
+      const enlaceExternoVisitar = document.getElementById("enlaceExternoVisitar");
 
       document.getElementById("tituloActividadContexto").textContent =
         tituloPublico || nombre || "Nueva actividad";
@@ -2979,6 +3015,19 @@ function construirMetaPreview() {
       } else {
         direccionDiv.innerHTML = "";
         direccionDiv.style.display = "none";
+      }
+
+      if (enlaceExternoVisitar) {
+        const enlaceValido = /^https?:\/\//i.test(enlaceUrl);
+        if (enlaceValido) {
+          enlaceExternoVisitar.href = enlaceUrl;
+          enlaceExternoVisitar.textContent = enlaceUrl;
+          enlaceExternoVisitar.classList.remove("oculto");
+        } else {
+          enlaceExternoVisitar.href = "#";
+          enlaceExternoVisitar.textContent = "Abrir enlace externo";
+          enlaceExternoVisitar.classList.add("oculto");
+        }
       }
 
       renderPreviewFranjas();
