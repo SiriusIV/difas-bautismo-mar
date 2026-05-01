@@ -63,93 +63,71 @@ export async function onRequestGet(context) {
     }
 
     const condicionPendientes = soloPendientes
-      ? `
-        HAVING COALESCE(SUM(
-          CASE
-            WHEN a.activo = 1
-             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
-            THEN 1
-            ELSE 0
-          END
-        ), 0) > 0
-      `
+      ? "AND UPPER(TRIM(COALESCE(av.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')"
       : "";
 
     const rows = await env.DB.prepare(`
+      WITH archivos_vigentes AS (
+        SELECT
+          a.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY a.documentacion_id, TRIM(COALESCE(a.nombre_documento, ''))
+            ORDER BY a.id DESC
+          ) AS rn
+        FROM centro_admin_documentacion_archivos a
+        WHERE a.activo = 1
+      )
       SELECT
-        cad.id,
+        cad.id AS documentacion_id,
         cad.centro_usuario_id,
         cad.admin_id,
         cad.version_requerida,
         cad.version_aportada,
-        cad.estado,
+        cad.estado AS estado_expediente,
         cad.fecha_ultima_entrega,
         cad.fecha_validacion,
-        cad.observaciones_admin,
         u.centro,
         u.email,
         u.telefono_contacto,
-        COALESCE(SUM(
-          CASE
-            WHEN a.activo = 1
-             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
-            THEN 1
-            ELSE 0
-          END
-        ), 0) AS total_documentos_pendientes,
-        COALESCE(GROUP_CONCAT(
-          CASE
-            WHEN a.activo = 1
-             AND UPPER(TRIM(COALESCE(a.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
-            THEN a.nombre_documento
-            ELSE NULL
-          END,
-          ' · '
-        ), '') AS documentos_pendientes_resumen
+        av.id AS archivo_id,
+        av.nombre_documento,
+        av.archivo_url,
+        av.version_documental,
+        av.estado,
+        av.observaciones_admin,
+        av.fecha_subida
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios u
         ON u.id = cad.centro_usuario_id
-      LEFT JOIN centro_admin_documentacion_archivos a
-        ON a.documentacion_id = cad.id
+      INNER JOIN archivos_vigentes av
+        ON av.documentacion_id = cad.id
+       AND av.rn = 1
       WHERE cad.admin_id = ?
-      GROUP BY
-        cad.id,
-        cad.centro_usuario_id,
-        cad.admin_id,
-        cad.version_requerida,
-        cad.version_aportada,
-        cad.estado,
-        cad.fecha_ultima_entrega,
-        cad.fecha_validacion,
-        cad.observaciones_admin,
-        u.centro,
-        u.email,
-        u.telefono_contacto
-      ${condicionPendientes}
+        ${condicionPendientes}
       ORDER BY
-        datetime(cad.fecha_ultima_entrega) DESC,
-        u.centro ASC
+        datetime(COALESCE(av.fecha_subida, cad.fecha_ultima_entrega)) DESC,
+        u.centro ASC,
+        av.nombre_documento ASC
     `).bind(adminId).all();
 
     const expedientes = (rows?.results || []).map((row) => ({
-      id: Number(row.id || 0),
+      id: Number(row.documentacion_id || 0),
+      archivo_id: Number(row.archivo_id || 0),
       centro_usuario_id: Number(row.centro_usuario_id || 0),
       admin_id: Number(row.admin_id || 0),
       centro: row.centro || "",
       email: row.email || "",
       telefono_contacto: row.telefono_contacto || "",
-      total_documentos_pendientes: Number(row.total_documentos_pendientes || 0),
-      total_documentos_en_revision: Number(row.total_documentos_pendientes || 0),
-      total_documentos_no_enviados: 0,
-      total_documentos_no_actualizados: 0,
-      total_documentos_rechazados: 0,
-      documentos_pendientes_resumen: row.documentos_pendientes_resumen || "",
+      nombre_documento: row.nombre_documento || "",
+      archivo_url: row.archivo_url || "",
+      version_documental: Number(row.version_documental || 0),
+      estado: row.estado || "",
+      observaciones_admin: row.observaciones_admin || "",
+      fecha_ultima_entrega: row.fecha_subida || row.fecha_ultima_entrega || "",
       version_requerida: Number(row.version_requerida || 0),
       version_aportada: Number(row.version_aportada || 0),
-      estado: row.estado || "",
-      fecha_ultima_entrega: row.fecha_ultima_entrega || "",
-      fecha_validacion: row.fecha_validacion || "",
-      observaciones_admin: row.observaciones_admin || ""
+      estado_expediente: row.estado_expediente || "",
+      fecha_validacion: row.fecha_validacion || ""
     }));
 
     return json({
