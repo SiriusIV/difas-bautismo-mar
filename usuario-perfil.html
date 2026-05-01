@@ -1487,6 +1487,11 @@
         return;
       }
       const texto = String(document.getElementById("textoModalObservacionesDocumento").value || "").trim();
+      if (contexto.requireNonEmpty && !texto) {
+        mostrarMensajePerfilTemporal("error", "Debes indicar el motivo del rechazo antes de guardar.");
+        document.getElementById("textoModalObservacionesDocumento").focus();
+        return;
+      }
       await contexto.onGuardar(texto);
       cerrarModalObservacionesDocumento();
     }
@@ -2746,13 +2751,14 @@
         estado: "RECHAZADO",
         observaciones: observacionesAnteriores,
         editable: true,
+        requireNonEmpty: true,
         onGuardar: async (texto) => {
           await guardarCambioPendienteRevision(item, {
             estado: "RECHAZADO",
             observaciones: texto
           });
           mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
-          await cargarPendientesRevisionAdmin();
+          renderizarPendientesRevisionAdmin();
         }
       });
       const btnCancelar = document.getElementById("btnCancelarObservacionesDocumento");
@@ -3530,7 +3536,7 @@
           observaciones: item.observaciones_admin || ""
         });
         mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
-        await cargarPendientesRevisionAdmin();
+        renderizarPendientesRevisionAdmin();
       } catch (error) {
         select.value = item.estado || "EN_REVISION";
         refrescarClaseSelectRevision(select);
