@@ -321,12 +321,21 @@
     .contexto-head-top {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
       flex-wrap: wrap;
     }
 
     .contexto-titulos {
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+    }
+
+    .contexto-titulos-texto {
       min-width: 0;
     }
 
@@ -346,9 +355,10 @@
     .contexto-acciones {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 16px;
       flex-wrap: wrap;
+      flex: 0 0 auto;
     }
 
     .contexto-acciones-grupo {
@@ -356,6 +366,11 @@
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .contexto-acciones-grupo.pasos {
+      margin-left: 6px;
+      align-self: center;
     }
 
     .contexto-acciones-grupo.portal-acceso {
@@ -1540,6 +1555,10 @@
         align-items: flex-start;
       }
 
+      .contexto-titulos {
+        width: 100%;
+      }
+
       .contexto-acciones {
         width: 100%;
         justify-content: space-between;
@@ -1579,30 +1598,33 @@
       </div>
 
       <div class="bloque-superior">
-        <div class="contexto-head">
-          <div class="contexto-head-top">
-            <div class="contexto-titulos">
-              <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
-              <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
-            </div>
+          <div class="contexto-head">
+            <div class="contexto-head-top">
+              <div class="contexto-titulos">
+                <div class="contexto-titulos-texto">
+                  <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
+                  <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+                </div>
+                <div class="contexto-acciones-grupo pasos">
+                  <button type="button" class="btn-icono" id="btnAnterior" title="Anterior" aria-label="Anterior" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 18l-6-6 6-6"></path>
+                    </svg>
+                  </button>
 
-            <div class="contexto-acciones">
-              <div class="contexto-acciones-grupo">
-                <button type="button" class="btn-icono" id="btnAnterior" title="Anterior" aria-label="Anterior" style="display:none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 18l-6-6 6-6"></path>
-                  </svg>
-                </button>
+                  <button type="button" class="btn-icono" id="btnSiguiente" title="Siguiente" aria-label="Siguiente">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 6l6 6-6 6"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
-                <button type="button" class="btn-icono" id="btnSiguiente" title="Siguiente" aria-label="Siguiente">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 6l6 6-6 6"></path>
-                  </svg>
-                </button>
-
-                <button type="submit" form="formActividad" class="btn-icono btn-icono-primario" id="btnGuardarActividad" title="Guardar actividad" aria-label="Guardar actividad">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <div class="contexto-acciones">
+                <div class="contexto-acciones-grupo">
+                  <button type="submit" form="formActividad" class="btn-icono btn-icono-primario" id="btnGuardarActividad" title="Guardar actividad" aria-label="Guardar actividad">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
                     <polyline points="7 3 7 8 15 8"></polyline>
                   </svg>
@@ -3450,9 +3472,9 @@ function renderListaFranjas() {
           <thead>
             <tr>
               <th>Fecha</th>
-              <th>Inicio</th>
-              <th>Fin</th>
-              ${aforoLimitado ? "<th>Plazas</th>" : ""}
+                <th>Inicio</th>
+                <th>Fin</th>
+              ${aforoLimitado ? "<th>Total plazas</th>" : ""}
             </tr>
           </thead>
           <tbody id="tablaFranjasPreviewBody"></tbody>
