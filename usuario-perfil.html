@@ -2914,7 +2914,11 @@
       }
 
       try {
-        const res = await fetch("/api/usuario/documentacion-resumen", {
+        const url = new URL("/api/usuario/documentacion-resumen", window.location.origin);
+        if (Number.isInteger(Number(adminIdPreferentePerfil || 0)) && Number(adminIdPreferentePerfil || 0) > 0) {
+          url.searchParams.set("admin_id", String(Number(adminIdPreferentePerfil || 0)));
+        }
+        const res = await fetch(url.toString(), {
           credentials: "include"
         });
         const data = await res.json().catch(() => null);

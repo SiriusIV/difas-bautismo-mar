@@ -23,6 +23,21 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
+async function obtenerAdminVisible(env, adminId) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      nombre,
+      nombre_publico,
+      localidad,
+      email,
+      rol
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(adminId).first();
+}
+
 function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
@@ -129,6 +144,12 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
+    const url = new URL(request.url);
+    const adminPreferenteId = Number.parseInt(url.searchParams.get("admin_id") || "", 10);
+    const adminPreferenteValido = Number.isInteger(adminPreferenteId) && adminPreferenteId > 0
+      ? adminPreferenteId
+      : null;
+
     const adminsRows = await env.DB.prepare(`
       SELECT
         DISTINCT a.admin_id AS admin_id,
@@ -176,6 +197,21 @@ export async function onRequestGet(context) {
           admin_nombre_publico: row.admin_nombre_publico || "",
           admin_localidad: row.admin_localidad || "",
           admin_email: row.admin_email || "",
+          propietario_documental_id: null,
+          documentos: []
+        });
+      }
+    }
+
+    if (adminPreferenteValido && !adminsAgrupados.has(adminPreferenteValido)) {
+      const adminPreferente = await obtenerAdminVisible(env, adminPreferenteValido);
+      if (adminPreferente && ["ADMIN", "SUPERADMIN"].includes(String(adminPreferente.rol || "").toUpperCase())) {
+        adminsAgrupados.set(adminPreferenteValido, {
+          admin_id: adminPreferenteValido,
+          admin_nombre: adminPreferente.nombre || "",
+          admin_nombre_publico: adminPreferente.nombre_publico || "",
+          admin_localidad: adminPreferente.localidad || "",
+          admin_email: adminPreferente.email || "",
           propietario_documental_id: null,
           documentos: []
         });
