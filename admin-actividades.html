@@ -418,34 +418,6 @@
       margin-bottom: 8px;
     }
 
-    .config-enlace-inline {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .config-enlace-visitado {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      width: fit-content;
-      max-width: 100%;
-      font-size: 12px;
-      color: #123a63;
-      text-decoration: none;
-      font-weight: 600;
-      line-height: 1.4;
-      word-break: break-all;
-    }
-
-    .config-enlace-visitado:hover {
-      text-decoration: underline;
-    }
-
-    .config-enlace-visitado.oculto {
-      display: none !important;
-    }
-
     .fila-compacta {
       display: grid;
       grid-template-columns: minmax(150px, 200px) minmax(150px, 200px);
@@ -587,6 +559,13 @@
       flex: 1 1 auto;
       min-width: 0;
       width: auto;
+    }
+
+    .config-enlace-inline input.enlace-externo-activo {
+      color: #123a63;
+      text-decoration: underline;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .config-enlace-inline input:disabled {
@@ -1703,7 +1682,6 @@
               <div class="config-enlace-inline">
                 <label for="enlace_externo_url">URL enlace externo</label>
                 <input type="text" id="enlace_externo_url" placeholder="https://...">
-                <a id="enlaceExternoVisitar" class="config-enlace-visitado oculto" href="#" target="_blank" rel="noopener noreferrer">Abrir enlace externo</a>
               </div>
             </div>
 
@@ -2888,7 +2866,7 @@ function actualizarVisibilidadFormulario() {
   }
 }
 
-function construirMetaPreview() {
+    function construirMetaPreview() {
       const tipo = document.getElementById("tipo").value;
       const fecha_inicio = document.getElementById("fecha_inicio").value;
       const fecha_fin = document.getElementById("fecha_fin").value;
@@ -2917,6 +2895,19 @@ function construirMetaPreview() {
       `;
     }
 
+    function esUrlExternaValida(url) {
+      return /^https?:\/\//i.test(String(url || "").trim());
+    }
+
+    function actualizarEstadoCampoEnlaceExterno() {
+      const input = document.getElementById("enlace_externo_url");
+      if (!input) return;
+      const valor = String(input.value || "").trim();
+      const activa = esUrlExternaValida(valor);
+      input.classList.toggle("enlace-externo-activo", activa);
+      input.title = activa ? "Abrir enlace externo" : "";
+    }
+
     function actualizarPreview() {
       const nombre = document.getElementById("nombre").value.trim();
       const tituloPublico = document.getElementById("titulo_publico").value.trim();
@@ -2935,7 +2926,6 @@ function construirMetaPreview() {
       const elMeta = document.getElementById("previewMeta");
       const elTexto = document.getElementById("previewTexto");
       const direccionDiv = document.getElementById("previewDireccion");
-      const enlaceExternoVisitar = document.getElementById("enlaceExternoVisitar");
 
       document.getElementById("tituloActividadContexto").textContent =
         tituloPublico || nombre || "Nueva actividad";
@@ -3007,18 +2997,7 @@ function construirMetaPreview() {
         direccionDiv.style.display = "none";
       }
 
-      if (enlaceExternoVisitar) {
-        const enlaceValido = /^https?:\/\//i.test(enlaceUrl);
-        if (enlaceValido) {
-          enlaceExternoVisitar.href = enlaceUrl;
-          enlaceExternoVisitar.textContent = enlaceUrl;
-          enlaceExternoVisitar.classList.remove("oculto");
-        } else {
-          enlaceExternoVisitar.href = "#";
-          enlaceExternoVisitar.textContent = "Abrir enlace externo";
-          enlaceExternoVisitar.classList.add("oculto");
-        }
-      }
+      actualizarEstadoCampoEnlaceExterno();
 
       renderPreviewFranjas();
       renderMapaPreviewActividad();
@@ -4296,6 +4275,17 @@ function retrocederPaso() {
           }
         });
       });
+
+      const inputEnlaceExterno = document.getElementById("enlace_externo_url");
+      if (inputEnlaceExterno) {
+        inputEnlaceExterno.addEventListener("click", () => {
+          const valor = String(inputEnlaceExterno.value || "").trim();
+          if (!esUrlExternaValida(valor)) return;
+          window.open(valor, "_blank", "noopener,noreferrer");
+        });
+        inputEnlaceExterno.addEventListener("input", actualizarEstadoCampoEnlaceExterno);
+        inputEnlaceExterno.addEventListener("change", actualizarEstadoCampoEnlaceExterno);
+      }
 
       try {
         cargandoActividad = true;
