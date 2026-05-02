@@ -241,19 +241,20 @@
     .fila-solicitud {
       display: grid;
       grid-template-columns: 592px minmax(280px, 1fr);
+      grid-template-areas:
+        "superior observaciones"
+        "disponibilidad observaciones";
+      grid-template-rows: auto auto;
       gap: 16px;
       align-items: stretch;
     }
 
     .columna-solicitud-izquierda {
-      display: grid;
-      grid-template-rows: auto auto;
-      gap: 4px;
-      align-content: stretch;
-      align-self: end;
+      display: contents;
     }
 
     .fila-franja-plazas {
+      grid-area: superior;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 118px;
       gap: 10px;
@@ -279,6 +280,7 @@
     }
 
     .disponibilidad-inline {
+      grid-area: disponibilidad;
       display: flex;
       align-items: center;
       gap: 18px;
@@ -292,19 +294,19 @@
       width: 100%;
       min-width: 0;
       justify-content: flex-start;
-      align-self: start;
       box-sizing: border-box;
     }
 
     .campo-observaciones {
-      display: flex;
-      flex-direction: column;
+      grid-area: observaciones;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-self: stretch;
     }
 
     .campo-observaciones textarea {
       min-height: 100px;
       height: 100%;
-      flex: 1 1 auto;
       resize: none;
     }
 
