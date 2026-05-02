@@ -20,7 +20,7 @@
       margin: 0;
       color: #222;
       overflow-x: hidden;
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .contenedor {
@@ -34,7 +34,7 @@
       background: transparent;
       box-shadow: none;
       padding: 18px 20px 14px;
-      margin-bottom: 12px;
+      margin-bottom: 18px;
       z-index: 20;
     }
 
@@ -67,7 +67,7 @@
 
     .titulos-cabecera h1 {
       margin: 0;
-      font-size: 24px;
+      font-size: 22px;
       color: #123a63;
       line-height: 1.15;
       font-weight: 600;
@@ -84,7 +84,7 @@
     .lugar-evento,
     .fechas-evento {
       margin-top: 8px;
-      font-size: 15px;
+      font-size: 14px;
       color: #4a5a6a;
       text-align: left;
     }
@@ -139,7 +139,7 @@
 
     .formulario-solicitud {
       display: grid;
-      gap: 18px;
+      gap: 22px;
     }
 
     .solicitud-bloque {
@@ -158,10 +158,12 @@
     }
 
     .datos-actividad-solicitud {
-      display: grid;
-      gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
       color: #3f4d5c;
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .dato-actividad {
@@ -176,24 +178,24 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     .btn-icono-redondo,
     .btn-enlace-icono {
-      width: 46px;
-      height: 46px;
+      width: 38px;
+      height: 38px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
-      background: #0b5ed7;
-      color: #fff;
+      background: #fff;
+      color: #5b6b7c;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      box-shadow: 0 4px 14px rgba(11,94,215,0.18);
-      transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+      box-shadow: none;
+      transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       padding: 0;
       text-decoration: none;
       cursor: pointer;
@@ -201,15 +203,15 @@
 
     .btn-icono-redondo:hover,
     .btn-enlace-icono:hover {
-      background: #094db1;
-      border-color: #094db1;
-      transform: translateY(-1px);
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
     }
 
     .btn-icono-redondo svg,
     .btn-enlace-icono svg {
-      width: 20px;
-      height: 20px;
+      width: 17px;
+      height: 17px;
       display: block;
     }
 
@@ -231,38 +233,71 @@
 
     .fila-solicitud {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr);
       gap: 18px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .columna-solicitud-izquierda {
       display: grid;
       grid-template-rows: auto auto;
-      gap: 16px;
+      gap: 8px;
+      align-content: stretch;
     }
 
     .campo-franja .info-franja {
       display: none;
     }
 
+    .fila-plazas-disponibilidad {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .campo-plazas .fila {
+      margin-bottom: 0;
+    }
+
+    .campo-plazas input {
+      max-width: 128px;
+      text-align: center;
+    }
+
+    .disponibilidad-inline {
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #1d4f91;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
     .campo-observaciones textarea {
-      min-height: 130px;
+      min-height: 126px;
+      height: 100%;
     }
 
     label {
       display: block;
       font-weight: bold;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       color: #3c4a57;
+      font-size: 13px;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 11px 12px;
+      padding: 10px 12px;
       border: 1px solid #c9cfd6;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 14px;
       box-sizing: border-box;
       background: #fff;
     }
@@ -321,7 +356,7 @@
     .panel-resumen {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 0;
     }
 
     .tarjeta-resumen {
@@ -329,15 +364,16 @@
       border: 1px solid #c9dcff;
       color: #1d4f91;
       border-radius: 14px;
-      padding: 14px;
-      line-height: 1.7;
+      padding: 14px 16px;
+      line-height: 1.6;
+      font-size: 14px;
     }
 
     .tarjeta-titulo {
       display: block;
       font-weight: bold;
       margin-bottom: 8px;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .modal-fondo {
@@ -459,6 +495,15 @@
         grid-template-rows: auto;
       }
 
+      .fila-plazas-disponibilidad {
+        grid-template-columns: 1fr;
+      }
+
+      .campo-plazas input {
+        max-width: none;
+        text-align: left;
+      }
+
       .cabecera {
         padding: 16px 16px 10px;
       }
@@ -554,25 +599,33 @@
       </div>
     </div>
 
-    <div class="solicitud-bloque">
-      <div class="fila-solicitud">
-        <div class="columna-solicitud-izquierda">
-          <div class="fila campo-franja">
-            <label for="franja">Franja horaria</label>
+      <div class="solicitud-bloque">
+        <div class="fila-solicitud">
+          <div class="columna-solicitud-izquierda">
+            <div class="fila campo-franja">
+              <label for="franja">Franja horaria</label>
             <select id="franja" name="franja" required>
               <option value="">Cargando franjas...</option>
-            </select>
-            <div id="infoFranja" class="info-franja"></div>
+              </select>
+              <div id="infoFranja" class="info-franja"></div>
+            </div>
+
+            <div class="fila-plazas-disponibilidad">
+              <div class="campo-plazas">
+                <div class="fila">
+                  <label for="plazasSolicitadas">Plazas reservadas</label>
+                  <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+                </div>
+              </div>
+
+              <div id="resumenDisponibilidadInline" class="disponibilidad-inline">
+                Cargando disponibilidad...
+              </div>
+            </div>
           </div>
 
-          <div class="fila">
-            <label for="plazasSolicitadas">Plazas reservadas</label>
-            <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
-          </div>
-        </div>
-
-        <div class="fila campo-observaciones">
-          <label for="observaciones">Observaciones</label>
+          <div class="fila campo-observaciones">
+            <label for="observaciones">Observaciones</label>
           <textarea id="observaciones" name="observaciones"></textarea>
         </div>
       </div>
@@ -585,13 +638,6 @@
         <span class="tarjeta-titulo">Resumen de reserva</span>
         <div id="resumenReserva">
           Seleccione una franja e indique el número de plazas reservadas.
-        </div>
-      </div>
-
-      <div class="tarjeta-resumen">
-        <span class="tarjeta-titulo">Disponibilidad actual</span>
-        <div id="resumenDisponibilidad">
-          Cargando disponibilidad...
         </div>
       </div>
     </div>
@@ -877,7 +923,7 @@
 
       const infoFranja = document.getElementById("infoFranja");
       const resumenReserva = document.getElementById("resumenReserva");
-      const resumenDisponibilidad = document.getElementById("resumenDisponibilidad");
+      const resumenDisponibilidad = document.getElementById("resumenDisponibilidadInline");
 
       if (!franja) {
         infoFranja.textContent = "";
@@ -902,8 +948,8 @@
       `;
 
       resumenDisponibilidad.innerHTML = `
-        <strong>Plazas disponibles actualmente:</strong> ${disponibles}<br>
-        <strong>Capacidad de la franja:</strong> ${capacidad}
+        <strong>Plazas disponibles:</strong> ${disponibles}<br>
+        <strong>Total plazas:</strong> ${capacidad}
       `;
     }
 
