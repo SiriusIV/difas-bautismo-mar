@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -89,6 +89,12 @@
       text-align: left;
     }
 
+    .cabecera .organizador-evento,
+    .cabecera .lugar-evento,
+    .cabecera .fechas-evento {
+      display: none !important;
+    }
+
     .panel {
       background: rgba(255,255,255,0.92);
       border: 1px solid rgba(221,228,234,0.95);
@@ -131,6 +137,82 @@
       margin-bottom: 18px;
     }
 
+    .formulario-solicitud {
+      display: grid;
+      gap: 18px;
+    }
+
+    .solicitud-bloque {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(221,228,234,0.95);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    .solicitud-bloque-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .datos-actividad-solicitud {
+      display: grid;
+      gap: 8px;
+      color: #3f4d5c;
+      font-size: 15px;
+    }
+
+    .dato-actividad {
+      line-height: 1.35;
+    }
+
+    .dato-actividad strong {
+      color: #123a63;
+    }
+
+    .acciones-circulares {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icono-redondo,
+    .btn-enlace-icono {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #0b5ed7;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      box-shadow: 0 4px 14px rgba(11,94,215,0.18);
+      transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+      padding: 0;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-icono-redondo:hover,
+    .btn-enlace-icono:hover {
+      background: #094db1;
+      border-color: #094db1;
+      transform: translateY(-1px);
+    }
+
+    .btn-icono-redondo svg,
+    .btn-enlace-icono svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+
     .fila-doble {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -161,11 +243,11 @@
     }
 
     .campo-franja .info-franja {
-      margin-bottom: 0;
+      display: none;
     }
 
     .campo-observaciones textarea {
-      min-height: 152px;
+      min-height: 130px;
     }
 
     label {
@@ -364,6 +446,7 @@
     }
 
     @media (max-width: 900px) {
+      .solicitud-bloque-top,
       .fila-doble,
       .fila-contacto,
       .fila-solicitud,
@@ -387,6 +470,10 @@
       .bloque-marca {
         gap: 16px;
         text-align: center;
+      }
+
+      .acciones-circulares {
+        justify-content: flex-start;
       }
 
       .titulos-cabecera,
@@ -422,34 +509,55 @@
 
     <div id="mensaje" class="mensaje"></div>
 
-    <div class="panel">
-      <form id="formularioSolicitud" data-test="ok">
-        <div class="fila-doble">
-          <div class="fila">
-            <label for="centro">Centro solicitante</label>
-            <input type="text" id="centro" name="centro" required>
-          </div>
+    <div class="formulario-solicitud" data-layout-actualizado="1">
+  <form id="formularioSolicitud">
+    <input type="hidden" id="centro" name="centro" required>
 
-          <div class="fila">
-            <label for="contacto">Persona de contacto</label>
-            <input type="text" id="contacto" name="contacto" required>
-          </div>
+    <div class="solicitud-bloque solicitud-bloque-top">
+      <div class="datos-actividad-solicitud">
+        <div id="organizadorSolicitud" class="dato-actividad" style="display:none;"></div>
+        <div id="lugarSolicitud" class="dato-actividad" style="display:none;"></div>
+      </div>
+
+      <div class="acciones-circulares">
+        <button type="submit" id="btnPrepararEnvio" class="btn-icono-redondo" title="Enviar solicitud" aria-label="Enviar solicitud">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"></path>
+            <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
+          </svg>
+        </button>
+        <a href="portal.html" class="btn-enlace-icono" title="Volver al portal" aria-label="Volver al portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5.5 9.5V21h13V9.5"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="solicitud-bloque">
+      <div class="fila-contacto">
+        <div class="fila">
+          <label for="contacto">Persona de contacto</label>
+          <input type="text" id="contacto" name="contacto" required>
         </div>
 
-        <div class="fila-doble">
-          <div class="fila">
-            <label for="telefono">TelÃ©fono de contacto</label>
-            <input type="tel" id="telefono" name="telefono" required>
-          </div>
-
-          <div class="fila">
-            <label for="email">Correo electrÃ³nico de contacto</label>
-            <input type="email" id="email" name="email" required>
-          </div>
+        <div class="fila">
+          <label for="telefono">Teléfono de contacto</label>
+          <input type="tel" id="telefono" name="telefono" required>
         </div>
 
-        <div class="fila-doble">
-          <div class="fila">
+        <div class="fila">
+          <label for="email">Correo electrónico de contacto</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="solicitud-bloque">
+      <div class="fila-solicitud">
+        <div class="columna-solicitud-izquierda">
+          <div class="fila campo-franja">
             <label for="franja">Franja horaria</label>
             <select id="franja" name="franja" required>
               <option value="">Cargando franjas...</option>
@@ -463,40 +571,35 @@
           </div>
         </div>
 
-        <div class="fila">
+        <div class="fila campo-observaciones">
           <label for="observaciones">Observaciones</label>
           <textarea id="observaciones" name="observaciones"></textarea>
         </div>
-
-        <div class="acciones">
-          <button type="submit" id="btnPrepararEnvio">Enviar solicitud</button>
-          <a href="portal.html" class="btn-enlace btn-secundario">Volver al portal</a>
-        </div>
-      </form>
+      </div>
     </div>
+  </form>
 
-    <div class="panel">
-      <div class="panel-resumen">
-        <div class="tarjeta-resumen">
-          <span class="tarjeta-titulo">Resumen de reserva</span>
-          <div id="resumenReserva">
-            Seleccione una franja e indique el nÃºmero de plazas reservadas.
-          </div>
+  <div class="solicitud-bloque">
+    <div class="panel-resumen">
+      <div class="tarjeta-resumen">
+        <span class="tarjeta-titulo">Resumen de reserva</span>
+        <div id="resumenReserva">
+          Seleccione una franja e indique el número de plazas reservadas.
         </div>
+      </div>
 
-        <div class="tarjeta-resumen">
-          <span class="tarjeta-titulo">Disponibilidad actual</span>
-          <div id="resumenDisponibilidad">
-            Cargando disponibilidad...
-          </div>
+      <div class="tarjeta-resumen">
+        <span class="tarjeta-titulo">Disponibilidad actual</span>
+        <div id="resumenDisponibilidad">
+          Cargando disponibilidad...
         </div>
       </div>
     </div>
   </div>
-
+</div>
   <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>ConfirmaciÃ³n de envÃ­o</h3>
+      <h3>Confirmación de envío</h3>
 
       <div class="bloque">
         <p id="textoConfirmacionEnvio"></p>
@@ -504,7 +607,7 @@
 
       <div class="acciones">
         <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
-        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envÃ­o</button>
+        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envío</button>
       </div>
     </div>
   </div>
@@ -516,7 +619,7 @@
       <div class="bloque">
         <div class="modal-reserva-grid">
           <div class="modal-reserva-col">
-            <span class="modal-reserva-etiqueta">CÃ³digo de reserva</span>
+            <span class="modal-reserva-etiqueta">Código de reserva</span>
             <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
           </div>
 
@@ -527,13 +630,13 @@
         </div>
 
         <div class="modal-reserva-ayuda">
-          Puede importar una lista de asistentes o abrir el formulario de gestiÃ³n manual.
+          Puede importar una lista de asistentes o abrir el formulario de gestión manual.
         </div>
       </div>
 
       <div class="acciones">
         <button type="button" id="btnImportarLista">Importar lista de asistentes</button>
-        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestiÃ³n de asistentes</button>
+        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestión de asistentes</button>
         <button type="button" id="btnCerrarModalAsistentes" class="btn-secundario">Cerrar</button>
       </div>
     </div>
@@ -589,7 +692,7 @@
     }
 
     function textoEstadoModal(estado) {
-      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÃ“N";
+      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
       if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
       if (estado === "RECHAZADA") return "RECHAZADA";
@@ -634,69 +737,7 @@
     }
 
     function reorganizarFormularioSolicitud() {
-      const form = document.getElementById("formularioSolicitud");
-      if (!form || form.dataset.layoutActualizado === "1") return;
-
-      const filaCentroContacto = document.querySelector('#formularioSolicitud .fila-doble');
-      const filaTelefonoEmail = filaCentroContacto?.nextElementSibling;
-      const filaFranjaPlazas = filaTelefonoEmail?.nextElementSibling;
-      const filaObservaciones = filaFranjaPlazas?.nextElementSibling;
-      const acciones = form.querySelector('.acciones');
-
-      if (!filaCentroContacto || !filaTelefonoEmail || !filaFranjaPlazas || !filaObservaciones || !acciones) {
-        return;
-      }
-
-      const filaCentro = filaCentroContacto.children[0];
-      const filaContacto = filaCentroContacto.children[1];
-      const filaTelefono = filaTelefonoEmail.children[0];
-      const filaEmail = filaTelefonoEmail.children[1];
-      const filaFranja = filaFranjaPlazas.children[0];
-      const filaPlazas = filaFranjaPlazas.children[1];
-
-      if (!filaCentro || !filaContacto || !filaTelefono || !filaEmail || !filaFranja || !filaPlazas) {
-        return;
-      }
-
-      const campoOculto = document.createElement("div");
-      campoOculto.className = "campo-oculto";
-      campoOculto.setAttribute("aria-hidden", "true");
-      campoOculto.appendChild(filaCentro.querySelector("#centro"));
-
-      const filaContactoNueva = document.createElement("div");
-      filaContactoNueva.className = "fila-contacto";
-      filaContactoNueva.appendChild(filaContacto);
-      filaContactoNueva.appendChild(filaTelefono);
-      filaContactoNueva.appendChild(filaEmail);
-
-      const filaSolicitud = document.createElement("div");
-      filaSolicitud.className = "fila-solicitud";
-
-      const columnaIzquierda = document.createElement("div");
-      columnaIzquierda.className = "columna-solicitud-izquierda";
-      filaFranja.classList.add("campo-franja");
-      columnaIzquierda.appendChild(filaFranja);
-      columnaIzquierda.appendChild(filaPlazas);
-
-      filaObservaciones.classList.add("campo-observaciones");
-      filaSolicitud.appendChild(columnaIzquierda);
-      filaSolicitud.appendChild(filaObservaciones);
-
-      const labelTelefono = filaTelefono.querySelector('label[for="telefono"]');
-      const labelEmail = filaEmail.querySelector('label[for="email"]');
-      if (labelTelefono) labelTelefono.textContent = "Teléfono de contacto";
-      if (labelEmail) labelEmail.textContent = "Correo electrónico de contacto";
-
-      filaCentroContacto.remove();
-      filaTelefonoEmail.remove();
-      filaFranjaPlazas.remove();
-
-      form.insertBefore(filaSolicitud, acciones);
-      form.insertBefore(filaContactoNueva, filaSolicitud);
-      form.insertBefore(campoOculto, filaContactoNueva);
-
-      form.removeAttribute("data-test");
-      form.dataset.layoutActualizado = "1";
+      return;
     }
 
     async function cargarActividad() {
@@ -720,7 +761,7 @@
       actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
 
       if (!actividadActual) {
-        throw new Error("La actividad no estÃ¡ disponible.");
+        throw new Error("La actividad no está disponible.");
       }
 
       if (Number(actividadActual.requiere_reserva || 0) !== 1) {
@@ -732,23 +773,41 @@
       document.getElementById("subtituloEvento").textContent = actividadActual.subtitulo_publico || "Solicitud de reserva";
 
       const organizadorEl = document.getElementById("organizadorEvento");
+      const organizadorSolicitudEl = document.getElementById("organizadorSolicitud");
       const organizador = String(actividadActual.organizador_publico || "").trim();
       if (organizador) {
         organizadorEl.style.display = "block";
         organizadorEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
+        if (organizadorSolicitudEl) {
+          organizadorSolicitudEl.style.display = "block";
+          organizadorSolicitudEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
+        }
       } else {
         organizadorEl.style.display = "none";
         organizadorEl.textContent = "";
+        if (organizadorSolicitudEl) {
+          organizadorSolicitudEl.style.display = "none";
+          organizadorSolicitudEl.textContent = "";
+        }
       }
 
       const lugarEl = document.getElementById("lugarEvento");
+      const lugarSolicitudEl = document.getElementById("lugarSolicitud");
       const lugar = String(actividadActual.lugar || "").trim();
       if (lugar) {
         lugarEl.style.display = "block";
         lugarEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
+        if (lugarSolicitudEl) {
+          lugarSolicitudEl.style.display = "block";
+          lugarSolicitudEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
+        }
       } else {
         lugarEl.style.display = "none";
         lugarEl.textContent = "";
+        if (lugarSolicitudEl) {
+          lugarSolicitudEl.style.display = "none";
+          lugarSolicitudEl.textContent = "";
+        }
       }
 
       const fechasEl = document.getElementById("fechasEvento");
@@ -788,7 +847,7 @@
       franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
 
       const select = document.getElementById("franja");
-      select.innerHTML = '<option value="">Seleccione una opciÃ³n</option>';
+      select.innerHTML = '<option value="">Seleccione una opción</option>';
 
       franjasCache.forEach(f => {
         const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
@@ -822,7 +881,7 @@
 
       if (!franja) {
         infoFranja.textContent = "";
-        resumenReserva.textContent = "Seleccione una franja e indique el nÃºmero de plazas reservadas.";
+        resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
         resumenDisponibilidad.textContent = "Seleccione una franja para ver la disponibilidad.";
         return;
       }
@@ -833,13 +892,13 @@
       const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
 
-      infoFranja.textContent = `Capacidad total: ${capacidad}. Ocupadas: ${ocupadas}. Disponibles: ${disponibles}.`;
+      infoFranja.textContent = "";
 
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
-        <strong>Franja seleccionada:</strong> ${etiquetaFecha} Â· ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
         <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
-        <strong>Tiempo de consolidaciÃ³n previsto:</strong> ${minutos} minutos
+        <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
       `;
 
       resumenDisponibilidad.innerHTML = `
@@ -871,12 +930,12 @@
       }
 
       if (!Number.isInteger(plazas) || plazas <= 0) {
-        return { ok: false, error: "Debe indicar un nÃºmero vÃ¡lido de plazas reservadas." };
+        return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
       }
 
       const franjaSel = obtenerFranjaSeleccionada();
       if (!franjaSel) {
-        return { ok: false, error: "La franja seleccionada no es vÃ¡lida." };
+        return { ok: false, error: "La franja seleccionada no es válida." };
       }
 
       if (plazas > Number(franjaSel.disponibles || 0)) {
@@ -906,9 +965,9 @@
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
         Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
-        El tiempo de consolidaciÃ³n calculado para esta solicitud serÃ¡ de <span class="resaltado">${minutos} minutos</span> y comenzarÃ¡ a contar a partir del momento en que confirme el envÃ­o.<br><br>
-        Transcurrido ese plazo, las plazas reservadas no asignadas volverÃ¡n a quedar disponibles.<br><br>
-        AdemÃ¡s, se permitirÃ¡ ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
+        El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
+        Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
+        Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
       `;
 
       document.getElementById("modalConfirmacionEnvio").classList.add("activo");
@@ -961,7 +1020,7 @@
 
         reservaCreada = data;
         cerrarModalConfirmacion();
-        mostrarMensaje("ok", `Solicitud creada correctamente. CÃ³digo de reserva: ${data.codigo_reserva}.`);
+        mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
         await cargarFranjas();
         abrirModalAsistentes();
 
@@ -979,7 +1038,7 @@
     function cancelarEnvioSolicitud() {
       datosPendientesEnvio = null;
       cerrarModalConfirmacion();
-      mostrarMensaje("aviso", "El envÃ­o de la solicitud ha sido cancelado.");
+      mostrarMensaje("aviso", "El envío de la solicitud ha sido cancelado.");
     }
 
     function abrirGestionAsistentes() {
@@ -989,7 +1048,7 @@
 
     function importarListaAsistentes() {
       if (!reservaCreada?.token_edicion) return;
-      alert("La descarga de plantilla e importaciÃ³n Excel se implementarÃ¡ en el siguiente bloque funcional.");
+      alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
@@ -1032,9 +1091,10 @@
         await cargarFranjas();
       } catch (error) {
         console.error(error);
-        mostrarMensaje("error", error.message || "No se pudo inicializar la pÃ¡gina.");
+      mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
       }
     });
   </script>
 </body>
 </html>
+
