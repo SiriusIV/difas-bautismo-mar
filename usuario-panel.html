@@ -799,7 +799,7 @@
         return "La solicitud sigue en proceso de revisión. Si lo necesitas, puedes actualizar sus datos o la relación de asistentes.";
       }
       if (estado === "SUSPENDIDA") {
-        return "La solicitud está suspendida temporalmente. Revisa las observaciones y corrige la parte necesaria para que pueda volver a quedar en proceso.";
+        return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
       }
       if (estado === "RECHAZADA") {
         return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
@@ -813,6 +813,19 @@
     function construirAccionesEstado(reserva) {
       const acciones = [];
       const estado = normalizarEstadoReserva(reserva?.estado);
+      if (estado === "SUSPENDIDA") {
+        if (Number(reserva?.admin_id || 0) > 0) {
+          acciones.push({
+            label: "Ir a documentación",
+            principal: true,
+            onClick: () => {
+              location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
+            }
+          });
+        }
+        return acciones;
+      }
+
       if (reserva?.token_edicion && estado !== "CANCELADA" && estado !== "CONFIRMADA") {
         acciones.push({
           label: "Editar solicitud",
