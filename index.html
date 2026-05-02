@@ -173,6 +173,13 @@
       font-size: 14px;
     }
 
+    .dato-actividad-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #123a63;
+      line-height: 1.2;
+    }
+
     .dato-actividad {
       line-height: 1.35;
     }
@@ -241,20 +248,18 @@
     .fila-solicitud {
       display: grid;
       grid-template-columns: 592px minmax(280px, 1fr);
-      grid-template-areas:
-        "superior observaciones"
-        "disponibilidad observaciones";
-      grid-template-rows: auto auto;
       gap: 16px;
-      align-items: stretch;
+      align-items: start;
     }
 
     .columna-solicitud-izquierda {
-      display: contents;
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      align-content: start;
     }
 
     .fila-franja-plazas {
-      grid-area: superior;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 118px;
       gap: 10px;
@@ -279,34 +284,35 @@
       height: 38px;
     }
 
-    .disponibilidad-inline {
-      grid-area: disponibilidad;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      border: 1px solid #c9dcff;
-      background: #eef4ff;
-      color: #1d4f91;
-      border-radius: 12px;
-      padding: 7px 14px;
-      line-height: 1.3;
-      font-size: 13px;
-      width: 100%;
-      min-width: 0;
-      justify-content: flex-start;
-      box-sizing: border-box;
-    }
-
     .campo-observaciones {
-      grid-area: observaciones;
       display: grid;
       grid-template-rows: auto 1fr;
-      align-self: stretch;
+      align-content: start;
+    }
+
+    .panel-imagen-reserva {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .imagen-reserva-actividad {
+      width: 100%;
+      height: 182px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid #d9e2eb;
+      background: #edf3fb;
+      display: block;
+    }
+
+    .imagen-reserva-actividad.oculta {
+      display: none;
     }
 
     .campo-observaciones textarea {
-      min-height: 100px;
-      height: 100%;
+      min-height: 92px;
+      height: 92px;
       resize: none;
     }
 
@@ -527,9 +533,8 @@
         text-align: left;
       }
 
-      .disponibilidad-inline {
-        width: 100%;
-        justify-content: space-between;
+      .imagen-reserva-actividad {
+        height: 200px;
       }
 
       .cabecera {
@@ -588,6 +593,7 @@
 
     <div class="solicitud-bloque solicitud-bloque-top">
       <div class="datos-actividad-solicitud">
+        <div id="tituloSolicitudBloque" class="dato-actividad-titulo">Actividad</div>
         <div id="organizadorSolicitud" class="dato-actividad" style="display:none;"></div>
         <div id="lugarSolicitud" class="dato-actividad" style="display:none;"></div>
       </div>
@@ -647,14 +653,14 @@
             </div>
           </div>
 
-          <div id="resumenDisponibilidadInline" class="disponibilidad-inline">
-            Cargando disponibilidad...
+          <div class="fila campo-observaciones">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" name="observaciones"></textarea>
           </div>
         </div>
 
-        <div class="fila campo-observaciones">
-          <label for="observaciones">Observaciones</label>
-          <textarea id="observaciones" name="observaciones"></textarea>
+        <div class="panel-imagen-reserva">
+          <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
         </div>
       </div>
     </div>
@@ -844,7 +850,19 @@
 
       document.title = (actividadActual.titulo_publico || actividadActual.nombre || "Solicitud de reserva") + " - Solicitud";
       document.getElementById("tituloEvento").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
+      document.getElementById("tituloSolicitudBloque").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
       document.getElementById("subtituloEvento").textContent = actividadActual.subtitulo_publico || "Solicitud de reserva";
+      const imagenReservaActividad = document.getElementById("imagenReservaActividad");
+      if (imagenReservaActividad) {
+        const srcImagen = String(actividadActual.imagen_url || "").trim();
+        if (srcImagen) {
+          imagenReservaActividad.src = srcImagen;
+          imagenReservaActividad.classList.remove("oculta");
+        } else {
+          imagenReservaActividad.src = "";
+          imagenReservaActividad.classList.add("oculta");
+        }
+      }
 
       const organizadorEl = document.getElementById("organizadorEvento");
       const organizadorSolicitudEl = document.getElementById("organizadorSolicitud");
@@ -951,12 +969,9 @@
 
       const infoFranja = document.getElementById("infoFranja");
       const resumenReserva = document.getElementById("resumenReserva");
-      const resumenDisponibilidad = document.getElementById("resumenDisponibilidadInline");
-
       if (!franja) {
         infoFranja.textContent = "";
         resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
-        resumenDisponibilidad.textContent = "Seleccione una franja para ver la disponibilidad.";
         return;
       }
 
@@ -971,13 +986,8 @@
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
         <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
-        <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+        <strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
-      `;
-
-      resumenDisponibilidad.innerHTML = `
-        <strong>Plazas disponibles:</strong> ${disponibles}<br>
-        <strong>Total plazas:</strong> ${capacidad}
       `;
     }
 
