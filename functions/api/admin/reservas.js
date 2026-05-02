@@ -289,6 +289,34 @@ async function crearNotificacionSolicitanteReservaAceptada(env, contexto = {}) {
   });
 }
 
+async function crearNotificacionSolicitanteReservaRechazada(env, contexto = {}) {
+  const usuarioId = Number(contexto?.usuario_id || 0);
+  if (!(usuarioId > 0)) return { ok: false, skipped: true, error: "Solicitud sin usuario asociado." };
+
+  return await crearNotificacion(env, {
+    usuarioId,
+    rolDestino: "SOLICITANTE",
+    tipo: "RESERVA",
+    titulo: "Solicitud rechazada",
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Revisa su estado para corregirla o decidir quÃ© hacer a continuaciÃ³n.`,
+    urlDestino: "/usuario-panel.html"
+  });
+}
+
+async function crearNotificacionSolicitanteReservaReabierta(env, contexto = {}) {
+  const usuarioId = Number(contexto?.usuario_id || 0);
+  if (!(usuarioId > 0)) return { ok: false, skipped: true, error: "Solicitud sin usuario asociado." };
+
+  return await crearNotificacion(env, {
+    usuarioId,
+    rolDestino: "SOLICITANTE",
+    tipo: "RESERVA",
+    titulo: "Solicitud reabierta",
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} vuelve a estar en proceso.`,
+    urlDestino: "/usuario-panel.html"
+  });
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -455,16 +483,20 @@ export async function onRequestPatch(context) {
     }
 
     let notificacionSolicitante = { ok: false, skipped: true, error: "" };
-    if (nuevoEstado === "CONFIRMADA") {
-      try {
+    try {
+      if (nuevoEstado === "CONFIRMADA") {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoReserva);
-      } catch (errorNotificacion) {
-        notificacionSolicitante = {
-          ok: false,
-          skipped: true,
-          error: errorNotificacion?.message || String(errorNotificacion || "")
-        };
+      } else if (nuevoEstado === "RECHAZADA") {
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaRechazada(env, contextoReserva);
+      } else if (nuevoEstado === "PENDIENTE") {
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoReserva);
       }
+    } catch (errorNotificacion) {
+      notificacionSolicitante = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacion?.message || String(errorNotificacion || "")
+      };
     }
 
     return json({
