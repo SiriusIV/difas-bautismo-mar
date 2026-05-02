@@ -142,6 +142,12 @@
       height: 18px;
       display: block;
     }
+    .btn-filtros-reset img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
     .bloque {
       padding: 14px;
       margin-bottom: 10px;
@@ -192,9 +198,10 @@
       padding: 0;
       color: #4a5a6a;
     }
-    .btn-filtros-reset:hover {
-      color: #0b5ed7;
-      transform: scale(1.04);
+    .btn-filtros-reset:hover { color: #0b5ed7; }
+    .btn-filtros-reset:hover img {
+      transform: scale(1.06);
+      opacity: 0.88;
     }
     .resumen-linea {
       display: grid;
@@ -458,24 +465,11 @@
         <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
       </div>
       <div class="barra-navegacion-der">
-        <button type="button" class="btn-icono" id="btnRecargar" title="Recargar" aria-label="Recargar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-            <polyline points="21 3 21 9 15 9"></polyline>
-          </svg>
-        </button>
         <button type="button" class="btn-icono" id="btnPortal" title="Portal" aria-label="Portal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 10.5L12 3l9 7.5"></path>
             <path d="M5 9.5V21h14V9.5"></path>
             <path d="M9 21v-6h6v6"></path>
-          </svg>
-        </button>
-        <button type="button" class="btn-icono" id="btnSalir" title="Cerrar sesion" aria-label="Cerrar sesion">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
         </button>
       </div>
@@ -512,12 +506,7 @@
         </div>
         <div class="filtro-acciones-rapidas">
           <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 7h16"></path>
-              <path d="M7 12h10"></path>
-              <path d="M10 17h4"></path>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
           </button>
         </div>
       </div>
@@ -887,8 +876,6 @@
     document.getElementById("filtroFecha").addEventListener("change", aplicarFiltros);
     document.getElementById("filtroBuscar").addEventListener("input", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
-    document.getElementById("btnRecargar").addEventListener("click", cargarPanel);
-    document.getElementById("btnSalir").addEventListener("click", salir);
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
