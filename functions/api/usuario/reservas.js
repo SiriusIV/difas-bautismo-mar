@@ -12,6 +12,12 @@ function estadoBloqueaPlazas(estado) {
   return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
+function normalizarEstadoReserva(estado) {
+  const valor = String(estado || "").trim().toUpperCase();
+  if (valor === "CONDICIONADA_DOCUMENTACION") return "SUSPENDIDA";
+  return valor;
+}
+
 function esPrereservaVigente(row) {
   if (!row?.prereserva_expira_en) return false;
   if (!estadoBloqueaPlazas(row.estado)) return false;
@@ -82,7 +88,7 @@ export async function onRequestGet(context) {
     const data = rows.map(row => ({
       id: row.id,
       codigo_reserva: row.codigo_reserva,
-      estado: row.estado,
+      estado: normalizarEstadoReserva(row.estado),
       token_edicion: row.token_edicion || "",
       observaciones: row.observaciones || "",
       actividad: row.actividad || "Actividad",

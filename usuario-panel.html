@@ -246,13 +246,9 @@
       max-width: 32px;
       text-align: center;
     }
-    th.codigo-col, td.codigo-col {
-      width: 150px;
-      min-width: 150px;
-    }
     th.actividad-col, td.actividad-col {
-      width: 260px;
-      min-width: 260px;
+      width: 320px;
+      min-width: 320px;
     }
     th.estado-col, td.estado-col {
       width: 126px;
@@ -279,12 +275,6 @@
       color: #123a63;
       overflow-wrap: anywhere;
     }
-    .codigo {
-      font-weight: bold;
-      white-space: nowrap;
-      color: #111;
-    }
-    .codigo.con-observaciones { color: #c62828; }
     .estado-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -551,6 +541,15 @@
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
           </button>
+          <button type="button" class="btn-icono" id="btnAnularSolicitud" title="Anular solicitud" aria-label="Anular solicitud" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -560,7 +559,6 @@
             <tr>
               <th class="sel-col"></th>
               <th class="obs-col"></th>
-              <th class="codigo-col">Codigo</th>
               <th class="actividad-col">Actividad</th>
               <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha</th>
@@ -589,8 +587,14 @@
     let reservaSeleccionada = null;
     let nombreUsuarioPanel = "Usuario";
 
+    function normalizarEstadoReserva(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (valor === "CONDICIONADA_DOCUMENTACION") return "SUSPENDIDA";
+      return valor;
+    }
+
     function claseEstado(estado) {
-      const e = String(estado || "").toLowerCase();
+      const e = normalizarEstadoReserva(estado).toLowerCase();
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
@@ -600,7 +604,7 @@
     }
 
     function textoEstadoVisible(estado) {
-      const e = String(estado || "").toUpperCase();
+      const e = normalizarEstadoReserva(estado);
       if (e === "PENDIENTE") return "Pendiente";
       if (e === "CONFIRMADA") return "Confirmada";
       if (e === "SUSPENDIDA") return "Suspendida";
@@ -658,10 +662,10 @@
     }
 
     function pintarResumen(lista) {
-      const pendientes = lista.filter((r) => String(r.estado || "").toUpperCase() === "PENDIENTE").length;
-      const confirmadas = lista.filter((r) => String(r.estado || "").toUpperCase() === "CONFIRMADA").length;
-      const suspendidas = lista.filter((r) => String(r.estado || "").toUpperCase() === "SUSPENDIDA").length;
-      const rechazadas = lista.filter((r) => String(r.estado || "").toUpperCase() === "RECHAZADA").length;
+      const pendientes = lista.filter((r) => normalizarEstadoReserva(r.estado) === "PENDIENTE").length;
+      const confirmadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "CONFIRMADA").length;
+      const suspendidas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "SUSPENDIDA").length;
+      const rechazadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "RECHAZADA").length;
 
       document.getElementById("resumenPanel").innerHTML = `
         <span>Total reservas: ${lista.length}</span>
@@ -705,10 +709,10 @@
 
       return lista.filter((r) => {
         if (actividad && String(r.actividad || "").trim() !== actividad) return false;
-        if (estado && String(r.estado || "").trim().toUpperCase() !== estado) return false;
+        if (estado && normalizarEstadoReserva(r.estado) !== estado) return false;
         if (fecha && String(r.fecha || "") !== fecha) return false;
         if (buscar) {
-          const texto = `${r.codigo_reserva || ""} ${r.actividad || ""} ${r.fecha || ""} ${r.hora_inicio || ""} ${r.hora_fin || ""}`.toLowerCase();
+          const texto = `${r.actividad || ""} ${r.fecha || ""} ${r.hora_inicio || ""} ${r.hora_fin || ""}`.toLowerCase();
           if (!texto.includes(buscar)) return false;
         }
         return true;
@@ -719,6 +723,7 @@
       const hay = !!reservaSeleccionada;
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnAsistentes").disabled = !hay;
+      document.getElementById("btnAnularSolicitud").disabled = !hay || normalizarEstadoReserva(reservaSeleccionada?.estado) === "RECHAZADA";
     }
 
     function seleccionarReserva(id) {
@@ -731,7 +736,7 @@
     function abrirModalObservaciones(id) {
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
-      document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.codigo_reserva}`;
+      document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad || "Reserva"}`;
       document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
       document.getElementById("modalObservaciones").classList.add("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
@@ -751,7 +756,7 @@
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
         actualizarBotones();
         return;
       }
@@ -774,7 +779,6 @@
                 </button>
               ` : ``}
             </td>
-            <td class="codigo-col"><span class="codigo ${tieneObservaciones ? "con-observaciones" : ""}">${r.codigo_reserva || "-"}</span></td>
             <td class="actividad-col"><div class="actividad-nombre">${r.actividad || ""}</div></td>
             <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></td>
             <td class="fecha-col">${formatearFechaCorta(r.fecha)}</td>
@@ -841,6 +845,31 @@
       location.href = `asistentes.html?token=${encodeURIComponent(token)}`;
     }
 
+    async function anularSolicitudSeleccionada() {
+      if (!reservaSeleccionada || !reservaSeleccionada.token_edicion) return;
+      const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
+      if (!window.confirm(`¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
+
+      limpiarMensaje();
+      try {
+        const res = await fetch("/api/reserva-cancelar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ token_edicion: reservaSeleccionada.token_edicion })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo anular la solicitud.");
+        }
+        mostrarMensaje("ok", data.mensaje || "Solicitud anulada correctamente.");
+        reservaSeleccionada = null;
+        await cargarPanel();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo anular la solicitud.");
+      }
+    }
+
     async function salir() {
       await fetch("/api/usuario/logout", {
         method: "POST",
@@ -867,6 +896,7 @@
     document.getElementById("btnAsistentes").addEventListener("click", () => {
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
+    document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitudSeleccionada);
     document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
