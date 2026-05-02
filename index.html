@@ -592,15 +592,8 @@
 
       const perfil = data.perfil;
       const centro = document.getElementById("centro");
-      const contacto = document.getElementById("contacto");
-      const telefono = document.getElementById("telefono");
-      const email = document.getElementById("email");
-
       centro.value = perfil.centro || perfil.nombre_publico || perfil.nombre || "";
       centro.readOnly = true;
-      contacto.value = perfil.nombre || "";
-      telefono.value = perfil.telefono_contacto || "";
-      email.value = perfil.email || "";
     }
 
     async function cargarActividad() {
