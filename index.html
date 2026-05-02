@@ -5,52 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Solicitud de reserva</title>
   <style>
+    html, body {
+      min-height: 100%;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
       margin: 0;
-      padding: 0;
       color: #222;
+      overflow-x: hidden;
+      font-size: 15px;
     }
 
     .contenedor {
-      max-width: 1000px;
-      margin: 40px auto;
-      background: #ffffff;
-      padding: 28px;
-      border-radius: 10px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 28px;
-    }
-
-    h2 {
-      margin-top: 6px;
-      font-size: 22px;
-      font-weight: normal;
+      max-width: 1108px;
+      margin: 0 auto;
+      padding: 0 16px 32px;
     }
 
     .cabecera {
+      position: relative;
+      background: transparent;
+      box-shadow: none;
+      padding: 18px 20px 14px;
+      margin-bottom: 12px;
+      z-index: 20;
+    }
+
+    .cabecera-inner {
+      max-width: 1108px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .bloque-marca {
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      margin-bottom: 20px;
-      min-height: 120px;
+      gap: 50px;
+      flex-wrap: wrap;
+      text-align: left;
     }
 
-    .logo {
-      position: absolute;
-      left: 0;
-      max-width: 120px;
+    .logo-cabecera {
+      width: 77px;
       height: auto;
+      display: block;
     }
 
-    .titulos {
-      text-align: center;
+    .titulos-cabecera {
+      text-align: left;
+    }
+
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #123a63;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
     }
 
     .organizador-evento,
@@ -58,16 +85,17 @@
     .fechas-evento {
       margin-top: 8px;
       font-size: 15px;
-      color: #444;
-      text-align: center;
+      color: #4a5a6a;
+      text-align: left;
     }
 
     .panel {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(221,228,234,0.95);
+      border-radius: 18px;
       padding: 18px;
       margin-bottom: 22px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     .mensaje {
@@ -113,13 +141,14 @@
       display: block;
       font-weight: bold;
       margin-bottom: 6px;
+      color: #3c4a57;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 10px;
+      padding: 11px 12px;
       border: 1px solid #c9cfd6;
-      border-radius: 6px;
+      border-radius: 10px;
       font-size: 15px;
       box-sizing: border-box;
       background: #fff;
@@ -148,8 +177,9 @@
       color: white;
       border: none;
       padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 16px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       display: inline-block;
@@ -185,7 +215,7 @@
       background: #eef4ff;
       border: 1px solid #c9dcff;
       color: #1d4f91;
-      border-radius: 8px;
+      border-radius: 14px;
       padding: 14px;
       line-height: 1.7;
     }
@@ -309,15 +339,28 @@
         grid-template-columns: 1fr;
       }
 
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 10px auto;
+      .cabecera {
+        padding: 16px 16px 10px;
       }
 
-      .cabecera {
-        display: block;
-        min-height: auto;
+      .cabecera-inner {
+        justify-content: center;
+      }
+
+      .bloque-marca {
+        gap: 16px;
+        text-align: center;
+      }
+
+      .titulos-cabecera,
+      .organizador-evento,
+      .lugar-evento,
+      .fechas-evento {
+        text-align: center;
+      }
+
+      .titulos-cabecera h1 {
+        font-size: 22px;
       }
     }
   </style>
@@ -325,14 +368,18 @@
 <body>
   <div class="contenedor">
     <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
+      <div class="cabecera-inner">
+        <div class="bloque-marca">
+          <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
 
-      <div class="titulos">
-        <h1 id="tituloEvento">Cargando actividad...</h1>
-        <h2 id="subtituloEvento">Solicitud de reserva</h2>
-        <div id="organizadorEvento" class="organizador-evento" style="display:none;"></div>
-        <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
-        <div id="fechasEvento" class="fechas-evento" style="display:none;"></div>
+          <div class="titulos-cabecera">
+            <h1 id="tituloEvento">Cargando actividad...</h1>
+            <h2 id="subtituloEvento">Solicitud de reserva</h2>
+            <div id="organizadorEvento" class="organizador-evento" style="display:none;"></div>
+            <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+            <div id="fechasEvento" class="fechas-evento" style="display:none;"></div>
+          </div>
+        </div>
       </div>
     </div>
 
