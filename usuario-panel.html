@@ -376,36 +376,64 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
     }
+    .modal-encabezado {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
     .modal h3 {
-      margin: 0 0 14px;
-      font-size: 24px;
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+    .modal-subtitulo {
+      margin-top: 4px;
+      font-size: 15px;
+      color: #4a5a6a;
+      line-height: 1.3;
+    }
+    .modal-estado-superior {
+      flex: 0 0 auto;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      padding-top: 2px;
+    }
+    .modal-estado-superior strong {
+      font-size: 12px;
+      color: #5a6b7c;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
     .modal-contenido {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
       border-radius: 8px;
-      padding: 14px;
-      line-height: 1.6;
+      padding: 14px 14px 12px;
+      line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-word;
     }
     .estado-modal-linea {
       margin-bottom: 10px;
       color: #21374d;
-      line-height: 1.55;
+      line-height: 1.5;
     }
     .estado-modal-badge {
-      margin-left: 8px;
       vertical-align: middle;
     }
     .estado-modal-observaciones {
-      margin-top: 12px;
-      padding-top: 12px;
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 1px solid #dde4ea;
     }
     .estado-modal-observaciones strong {
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       color: #123a63;
     }
     .modal-acciones {
@@ -454,6 +482,14 @@
       table { min-width: 100%; }
     }
     @media (max-width: 700px) {
+      .modal-encabezado {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .modal-estado-superior {
+        align-items: flex-start;
+        text-align: left;
+      }
       .bloque-marca {
         flex-direction: column;
         text-align: center;
@@ -604,7 +640,13 @@
 
   <div id="modalObservaciones" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3 id="modalObservacionesTitulo">Observaciones</h3>
+      <div class="modal-encabezado">
+        <div>
+          <h3 id="modalObservacionesTitulo">Observaciones</h3>
+          <div id="modalObservacionesSubtitulo" class="modal-subtitulo"></div>
+        </div>
+        <div id="modalEstadoSuperior" class="modal-estado-superior" hidden></div>
+      </div>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
       <div id="modalObservacionesAcciones" class="modal-acciones">
         <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
@@ -766,7 +808,11 @@
     function abrirModalObservaciones(id) {
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
-      document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad || "Reserva"}`;
+      document.getElementById("modalObservacionesTitulo").textContent = "Observaciones";
+      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Reserva";
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      estadoSuperior.hidden = true;
+      estadoSuperior.innerHTML = "";
       document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
       document.getElementById("modalObservacionesAcciones").innerHTML = `
         <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
@@ -858,13 +904,18 @@
       const observaciones = String(reserva.observaciones || "").trim();
       const acciones = construirAccionesEstado(reserva);
 
-      document.getElementById("modalObservacionesTitulo").textContent = `Estado de la solicitud · ${reserva.actividad || "Reserva"}`;
+      document.getElementById("modalObservacionesTitulo").textContent = "Estado de la solicitud";
+      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Reserva";
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      estadoSuperior.hidden = false;
+      estadoSuperior.innerHTML = `
+        <strong>Estado actual</strong>
+        <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>
+      `;
       document.getElementById("modalObservacionesContenido").innerHTML = `
         <div class="estado-modal-linea">
-          <strong>Estado actual:</strong>
-          <span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>
+          ${escapeHtml(descripcion)}
         </div>
-        <div class="estado-modal-linea">${escapeHtml(descripcion)}</div>
         ${
           normalizarEstadoReserva(reserva.estado) !== "CONFIRMADA"
             ? `<div class="estado-modal-observaciones">
