@@ -247,9 +247,10 @@
 
     .columna-solicitud-izquierda {
       display: grid;
-      grid-template-rows: auto auto;
-      gap: 2px;
+      grid-template-rows: auto 1fr;
+      gap: 0;
       align-content: stretch;
+      align-self: stretch;
     }
 
     .fila-franja-plazas {
@@ -272,6 +273,11 @@
       text-align: center;
     }
 
+    .campo-franja select,
+    .campo-plazas input {
+      height: 38px;
+    }
+
     .disponibilidad-inline {
       display: flex;
       align-items: center;
@@ -286,6 +292,8 @@
       width: 100%;
       min-width: 0;
       justify-content: flex-start;
+      align-self: end;
+      box-sizing: border-box;
     }
 
     .campo-observaciones {
