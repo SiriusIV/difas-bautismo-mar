@@ -151,41 +151,51 @@ export async function onRequestGet(context) {
       : null;
 
     const adminsRows = await env.DB.prepare(`
+      WITH admins_fuente AS (
+        SELECT DISTINCT a.admin_id AS admin_id
+        FROM reservas r
+        INNER JOIN actividades a
+          ON a.id = r.actividad_id
+        LEFT JOIN franjas f
+          ON f.id = r.franja_id
+        WHERE r.usuario_id = ?
+          AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
+          AND (
+            (
+              r.franja_id IS NOT NULL
+              AND f.fecha IS NOT NULL
+              AND datetime(
+                f.fecha || ' ' || COALESCE(NULLIF(TRIM(f.hora_fin), ''), '23:59:59')
+              ) >= datetime('now')
+            )
+            OR
+            (
+              r.franja_id IS NULL
+              AND (
+                a.fecha_fin IS NULL
+                OR datetime(a.fecha_fin || ' 23:59:59') >= datetime('now')
+              )
+            )
+          )
+
+        UNION
+
+        SELECT DISTINCT cad.admin_id AS admin_id
+        FROM centro_admin_documentacion cad
+        WHERE cad.centro_usuario_id = ?
+      )
       SELECT
-        DISTINCT a.admin_id AS admin_id,
+        af.admin_id,
         u.nombre AS admin_nombre,
         u.nombre_publico AS admin_nombre_publico,
         u.localidad AS admin_localidad,
         u.email AS admin_email
-      FROM reservas r
-      INNER JOIN actividades a
-        ON a.id = r.actividad_id
-      LEFT JOIN franjas f
-        ON f.id = r.franja_id
+      FROM admins_fuente af
       INNER JOIN usuarios u
-        ON u.id = a.admin_id
-      WHERE r.usuario_id = ?
-        AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
-        AND (
-          (
-            r.franja_id IS NOT NULL
-            AND f.fecha IS NOT NULL
-            AND datetime(
-              f.fecha || ' ' || COALESCE(NULLIF(TRIM(f.hora_fin), ''), '23:59:59')
-            ) >= datetime('now')
-          )
-          OR
-          (
-            r.franja_id IS NULL
-            AND (
-              a.fecha_fin IS NULL
-              OR datetime(a.fecha_fin || ' 23:59:59') >= datetime('now')
-            )
-          )
-        )
-        AND u.rol IN ('ADMIN', 'SUPERADMIN')
+        ON u.id = af.admin_id
+      WHERE u.rol IN ('ADMIN', 'SUPERADMIN')
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
-    `).bind(usuario.id).all();
+    `).bind(usuario.id, usuario.id).all();
 
     const adminsAgrupados = new Map();
     for (const row of adminsRows?.results || []) {
