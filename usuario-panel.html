@@ -2,61 +2,116 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel de usuario</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <title>Panel de reservas</title>
   <style>
+    html, body { min-height: 100%; }
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
       margin: 0;
-      padding: 0;
       color: #222;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-size: 14px;
     }
-    .contenedor {
-      max-width: 1280px;
-      margin: 20px auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-    }
-    h1 { margin: 0; font-size: 28px; }
-    h2 { margin: 8px 0 0; font-size: 18px; font-weight: normal; }
-
-    .cabecera {
+    .cabecera-global {
       position: relative;
-      min-height: 150px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid #d9e0e7;
-      padding-bottom: 16px;
+      background: transparent;
+      box-shadow: none;
+      padding: 18px 20px 14px;
+      z-index: 20;
     }
-    .logo {
-      position: absolute;
-      left: 0;
-      top: 0;
-      max-width: 110px;
-      height: auto;
-    }
-    .cabecera-centro {
-      text-align: center;
-      padding: 0 220px;
-    }
-    .subactividad {
-      margin-top: 10px;
-      font-size: 15px;
-      color: #333;
-      text-align: center;
-    }
-    .cabecera-acciones {
-      position: absolute;
-      right: 0;
-      top: 0;
+    .cabecera-global-inner {
+      max-width: 1108px;
+      margin: 0 auto;
       display: flex;
-      gap: 10px;
+      justify-content: center;
       align-items: center;
     }
-
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+    .logo-cabecera {
+      width: 77px;
+      height: auto;
+      display: block;
+      transition: opacity 0.12s ease;
+    }
+    .logo-cabecera.logo-pendiente { opacity: 0; }
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #123a63;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .contenedor {
+      max-width: 1108px;
+      margin: 14px auto 22px;
+      padding: 0 16px 20px;
+    }
+    .barra-navegacion, .bloque {
+      background: rgba(255,255,255,0.94);
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      backdrop-filter: blur(2px);
+    }
+    .barra-navegacion {
+      position: relative;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-height: 58px;
+    }
+    .barra-navegacion-izq {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: min(100%, 620px);
+      pointer-events: none;
+    }
+    .panel-titulo {
+      white-space: nowrap;
+      font-size: 20px;
+      font-weight: 700;
+      color: #163c67;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    .barra-navegacion-der, .acciones-superiores {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .barra-navegacion-der { margin-left: auto; }
     .btn-icono {
       width: 36px;
       height: 36px;
@@ -82,124 +137,154 @@
       color: #8a98a8;
       background: #f8fafc;
     }
-    .btn-icono svg { width: 18px; height: 18px; }
-
+    .btn-icono svg, .btn-filtros-reset svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
     .bloque {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 18px;
+      padding: 14px;
+      margin-bottom: 10px;
     }
     .bloque h3 {
-      margin-top: 0;
-      margin-bottom: 14px;
-      font-size: 16px;
+      margin: 0 0 12px;
+      font-size: 15px;
+      color: #123a63;
     }
-
-    .filtros {
-      display: grid;
-      grid-template-columns: 180px 180px 220px 1fr auto auto;
-      gap: 10px;
-      align-items: end;
-    }
-
     label {
       display: block;
       font-weight: bold;
       margin-bottom: 6px;
+      color: #123a63;
+      font-size: 13px;
     }
-    input[type="text"],
-    input[type="date"],
-    select {
+    input[type="text"], input[type="date"], select {
       width: 100%;
       box-sizing: border-box;
-      padding: 10px 12px;
+      padding: 8px 10px;
       border: 1px solid #c9cfd6;
-      border-radius: 6px;
-      font-size: 15px;
+      border-radius: 8px;
+      font-size: 13px;
       background: #fff;
+      color: #1e2a36;
     }
-
-    .btn-icono-filtro {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #0b5ed7;
-      color: #fff;
+    .filtros {
+      display: grid;
+      grid-template-columns: 282px 170px 150px minmax(180px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .filtro-acciones-rapidas {
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      min-height: 40px;
+    }
+    .btn-filtros-reset {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.15s ease;
       padding: 0;
+      color: #4a5a6a;
     }
-    .btn-icono-filtro:hover {
-      background: #094db1;
-      border-color: #094db1;
+    .btn-filtros-reset:hover {
+      color: #0b5ed7;
+      transform: scale(1.04);
     }
-    .btn-icono-filtro.secundario {
-      background: #6c757d;
-      border-color: #6c757d;
-    }
-    .btn-icono-filtro.secundario:hover {
-      background: #565e64;
-      border-color: #565e64;
-    }
-    .btn-icono-filtro svg { width: 18px; height: 18px; }
-
     .resumen-linea {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .resumen {
-      font-weight: bold;
+      font-weight: 700;
       display: flex;
-      gap: 14px;
+      gap: 12px;
       flex-wrap: wrap;
+      color: #123a63;
+      font-size: 13px;
     }
-    .acciones-superiores {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
     .tabla-wrap { overflow-x: auto; }
     table {
       width: 100%;
-      min-width: 1080px;
+      min-width: 960px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
+      font-size: 13px;
+      border-radius: 10px;
+      overflow: hidden;
     }
     th, td {
       border-bottom: 1px solid #dde4ea;
-      padding: 10px 8px;
+      padding: 9px 8px;
       text-align: left;
-      vertical-align: top;
-      word-wrap: break-word;
-      line-height: 1.25;
+      vertical-align: middle;
+      line-height: 1.3;
     }
     th {
       background: #eef4ff;
       color: #1d4f91;
       font-weight: bold;
     }
-
-    th.sel-col, td.sel-col { width: 34px; text-align: center; }
-    th.obs-col, td.obs-col { width: 30px; text-align: center; }
-    th.codigo-col, td.codigo-col { width: 210px; }
-    th.actividad-col, td.actividad-col { width: 170px; }
-    th.estado-col, td.estado-col { width: 120px; }
-    th.fecha-col, td.fecha-col { width: 190px; }
-    th.plazas-col, td.plazas-col { width: 240px; }
-
+    th.sel-col, td.sel-col {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+      text-align: center;
+    }
+    th.obs-col, td.obs-col {
+      width: 32px;
+      min-width: 32px;
+      max-width: 32px;
+      text-align: center;
+    }
+    th.codigo-col, td.codigo-col {
+      width: 150px;
+      min-width: 150px;
+    }
+    th.actividad-col, td.actividad-col {
+      width: 260px;
+      min-width: 260px;
+    }
+    th.estado-col, td.estado-col {
+      width: 126px;
+      min-width: 126px;
+      text-align: center;
+    }
+    th.fecha-col, td.fecha-col {
+      width: 90px;
+      min-width: 90px;
+      text-align: center;
+    }
+    th.horario-col, td.horario-col {
+      width: 120px;
+      min-width: 120px;
+      text-align: center;
+    }
+    th.plazas-col, td.plazas-col {
+      width: 190px;
+      min-width: 190px;
+      text-align: center;
+    }
+    .actividad-nombre {
+      font-weight: 700;
+      color: #123a63;
+      overflow-wrap: anywhere;
+    }
+    .codigo {
+      font-weight: bold;
+      white-space: nowrap;
+      color: #111;
+    }
+    .codigo.con-observaciones { color: #c62828; }
     .estado-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -214,15 +299,14 @@
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.suspendida { background: #b7791f; }
     .estado-badge.cancelada { background: #6c757d; }
-
     .fila-seleccionada { background: #f2f7ff; }
     .muted { color: #6b7280; }
-
     .mensaje {
-      margin-bottom: 14px;
-      padding: 12px;
-      border-radius: 6px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
       display: none;
+      font-size: 13px;
     }
     .mensaje.error {
       display: block;
@@ -230,14 +314,12 @@
       color: #9b1c1c;
       border: 1px solid #f5c2c2;
     }
-
-    .codigo {
-      font-weight: bold;
-      white-space: nowrap;
-      color: #111;
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
     }
-    .codigo.con-observaciones { color: #c62828; }
-
     .icono-observacion {
       display: inline-flex;
       align-items: center;
@@ -254,7 +336,15 @@
       height: 16px;
       display: block;
     }
-
+    .icono-observacion:hover { transform: scale(1.08); }
+    td.sel-col input[type="radio"] {
+      margin: 0;
+      transform: scale(0.9);
+    }
+    .plazas-linea {
+      display: block;
+      white-space: nowrap;
+    }
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -275,8 +365,7 @@
       padding: 24px;
     }
     .modal h3 {
-      margin-top: 0;
-      margin-bottom: 14px;
+      margin: 0 0 14px;
       font-size: 24px;
     }
     .modal-contenido {
@@ -288,51 +377,111 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
-
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn-modal {
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-modal:hover { background: #f7f9fb; }
     @media (max-width: 1200px) {
       .filtros { grid-template-columns: 1fr 1fr; }
-      .cabecera-centro { padding: 120px 0 0 0; }
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 12px auto;
+      .bloque-marca { gap: 28px; }
+    }
+    @media (max-width: 980px) {
+      .contenedor { max-width: 100%; }
+      .barra-navegacion, .barra-navegacion-der { align-items: stretch; margin-left: 0; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        margin-bottom: 16px;
+        border: 1px solid #dde4ea;
+        border-radius: 8px;
+        overflow: hidden;
       }
-      .cabecera-acciones {
-        position: static;
+      td {
+        border-bottom: 1px solid #eef2f6;
+        white-space: normal !important;
+        text-align: left !important;
+      }
+      table { min-width: 100%; }
+    }
+    @media (max-width: 700px) {
+      .bloque-marca {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+      .barra-navegacion {
         justify-content: center;
-        margin-top: 14px;
+        padding-top: 16px;
+        padding-bottom: 12px;
       }
-      .cabecera { min-height: auto; }
+      .barra-navegacion-izq {
+        position: static;
+        transform: none;
+        width: 100%;
+        order: -1;
+        pointer-events: auto;
+      }
+      .barra-navegacion-der {
+        width: 100%;
+        justify-content: center;
+      }
+      .panel-titulo { font-size: 18px; }
+      .titulos-cabecera h2 { text-align: center; }
+      .logo-cabecera { width: 62px; }
+      .resumen-linea {
+        grid-template-columns: 1fr;
+      }
+      .acciones-superiores {
+        justify-content: center;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="contenedor">
-    <div class="cabecera">
-      <img src="logo.png" alt="Logo Armada" class="logo">
-
-      <div class="cabecera-centro">
-        <h1 id="tituloEvento">DIFAS 2026</h1>
-        <h2>Panel de usuario</h2>
-        <div class="subactividad">Mis reservas</div>
+  <div class="cabecera-global">
+    <div class="cabecera-global-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente" id="logoCabeceraUsuarioPanel">
+        <div class="titulos-cabecera">
+          <h1>Actividades Publicas Institucionales</h1>
+          <h2 id="subtituloCabecera">Usuario</h2>
+        </div>
       </div>
+    </div>
+  </div>
 
-      <div class="cabecera-acciones">
-        <button type="button" class="btn-icono" id="btnRecargar" title="Recargar">
+  <div class="contenedor">
+    <div class="barra-navegacion">
+      <div class="barra-navegacion-izq">
+        <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
+      </div>
+      <div class="barra-navegacion-der">
+        <button type="button" class="btn-icono" id="btnRecargar" title="Recargar" aria-label="Recargar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
             <polyline points="21 3 21 9 15 9"></polyline>
           </svg>
         </button>
-
-        <button type="button" class="btn-icono" id="btnPortal" title="Portal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M3 11.5L12 4l9 7.5"></path>
-            <path d="M5 10.5V20h14v-9.5"></path>
+        <button type="button" class="btn-icono" id="btnPortal" title="Portal" aria-label="Portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5L12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
           </svg>
         </button>
-        
-        <button type="button" class="btn-icono" id="btnSalir" title="Salir">
+        <button type="button" class="btn-icono" id="btnSalir" title="Cerrar sesion" aria-label="Cerrar sesion">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
@@ -349,9 +498,10 @@
       <div class="filtros">
         <div>
           <label for="filtroActividad">Actividad</label>
-          <input type="text" id="filtroActividad" placeholder="Actividad">
+          <select id="filtroActividad">
+            <option value="">Todas</option>
+          </select>
         </div>
-
         <div>
           <label for="filtroEstado">Estado</label>
           <select id="filtroEstado">
@@ -362,61 +512,43 @@
             <option value="RECHAZADA">Rechazada</option>
           </select>
         </div>
-
         <div>
           <label for="filtroFecha">Fecha</label>
           <input type="date" id="filtroFecha">
         </div>
-
         <div>
           <label for="filtroBuscar">Buscar</label>
-          <input type="text" id="filtroBuscar" placeholder="Código o franja">
+          <input type="text" id="filtroBuscar" placeholder="Codigo, actividad u horario">
         </div>
-
-        <button type="button" class="btn-icono-filtro" id="btnAplicarFiltros" title="Aplicar filtros">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-            <polygon points="3 4 21 4 14 12 14 19 10 17 10 12 3 4"></polygon>
-          </svg>
-        </button>
-
-        <button type="button" class="btn-icono-filtro secundario" id="btnLimpiarFiltros" title="Limpiar filtros">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6l-1 14H6L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-            <path d="M9 6V4h6v2"></path>
-          </svg>
-        </button>
+        <div class="filtro-acciones-rapidas">
+          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h16"></path>
+              <path d="M7 12h10"></path>
+              <path d="M10 17h4"></path>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="bloque">
       <div class="resumen-linea">
         <div class="resumen" id="resumenPanel"></div>
-
         <div class="acciones-superiores">
-          
-          <button type="button" class="btn-icono" id="btnEditar" title="Editar" disabled>
+          <button type="button" class="btn-icono" id="btnEditar" title="Editar reserva" aria-label="Editar reserva" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 20h9"></path>
               <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
             </svg>
           </button>
-
-          <button type="button" class="btn-icono" id="btnAsistentes" title="Asistentes" disabled>
+          <button type="button" class="btn-icono" id="btnAsistentes" title="Gestionar asistentes" aria-label="Gestionar asistentes" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </button>
-
-          <button type="button" class="btn-icono" id="btnNotificaciones" title="Notificaciones" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
           </button>
         </div>
@@ -428,10 +560,11 @@
             <tr>
               <th class="sel-col"></th>
               <th class="obs-col"></th>
-              <th class="codigo-col">Código</th>
+              <th class="codigo-col">Codigo</th>
               <th class="actividad-col">Actividad</th>
               <th class="estado-col">Estado</th>
-              <th class="fecha-col">Fecha / franja</th>
+              <th class="fecha-col">Fecha</th>
+              <th class="horario-col">Horario</th>
               <th class="plazas-col">Plazas</th>
             </tr>
           </thead>
@@ -445,27 +578,17 @@
     <div class="modal">
       <h3 id="modalObservacionesTitulo">Observaciones</h3>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
+      </div>
     </div>
   </div>
 
-
-  
   <script>
     let reservasActuales = [];
     let reservaSeleccionada = null;
+    let nombreUsuarioPanel = "Usuario";
 
-function obtenerActividadIdURL() {
-  const params = new URLSearchParams(window.location.search);
-  const actividadId = params.get("actividad_id");
-
-  if (actividadId) {
-    sessionStorage.setItem("actividad_id_actual", actividadId);
-    return actividadId;
-  }
-
-  return sessionStorage.getItem("actividad_id_actual");
-}
-    
     function claseEstado(estado) {
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
@@ -476,6 +599,16 @@ function obtenerActividadIdURL() {
       return "";
     }
 
+    function textoEstadoVisible(estado) {
+      const e = String(estado || "").toUpperCase();
+      if (e === "PENDIENTE") return "Pendiente";
+      if (e === "CONFIRMADA") return "Confirmada";
+      if (e === "SUSPENDIDA") return "Suspendida";
+      if (e === "RECHAZADA") return "Rechazada";
+      if (e === "CANCELADA") return "Cancelada";
+      return e || "-";
+    }
+
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensaje");
       m.className = "mensaje " + tipo;
@@ -483,11 +616,52 @@ function obtenerActividadIdURL() {
       m.textContent = texto;
     }
 
+    function limpiarMensaje() {
+      const m = document.getElementById("mensaje");
+      m.className = "mensaje";
+      m.style.display = "none";
+      m.textContent = "";
+    }
+
+    function aplicarLogoCabeceraUsuario() {
+      const logo = document.getElementById("logoCabeceraUsuarioPanel");
+      if (!logo) return;
+      logo.src = "logo.png";
+      logo.classList.remove("logo-pendiente");
+    }
+
+    function actualizarTituloPanel() {
+      document.getElementById("subactividadActual").textContent = `Panel de reservas de ${String(nombreUsuarioPanel || "Usuario").toUpperCase()}`;
+    }
+
+    async function cargarSesionCabecera() {
+      try {
+        const res = await fetch("/api/usuario/session", { credentials: "same-origin" });
+        const data = await res.json().catch(() => null);
+        aplicarLogoCabeceraUsuario();
+        if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) return;
+        const nombre = data.user.centro || data.user.nombre || data.user.email || "Usuario";
+        nombreUsuarioPanel = String(nombre || "Usuario").trim() || "Usuario";
+        document.getElementById("subtituloCabecera").textContent = `Usuario: ${nombreUsuarioPanel}`;
+        actualizarTituloPanel();
+      } catch (_) {
+        aplicarLogoCabeceraUsuario();
+      }
+    }
+
+    function formatearFechaCorta(fechaIso) {
+      const texto = String(fechaIso || "").trim();
+      if (!texto) return "-";
+      const partes = texto.split("-");
+      if (partes.length !== 3) return texto;
+      return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
+    }
+
     function pintarResumen(lista) {
-      const pendientes = lista.filter(r => r.estado === "PENDIENTE").length;
-      const confirmadas = lista.filter(r => r.estado === "CONFIRMADA").length;
-      const suspendidas = lista.filter(r => r.estado === "SUSPENDIDA").length;
-      const rechazadas = lista.filter(r => r.estado === "RECHAZADA").length;
+      const pendientes = lista.filter((r) => String(r.estado || "").toUpperCase() === "PENDIENTE").length;
+      const confirmadas = lista.filter((r) => String(r.estado || "").toUpperCase() === "CONFIRMADA").length;
+      const suspendidas = lista.filter((r) => String(r.estado || "").toUpperCase() === "SUSPENDIDA").length;
+      const rechazadas = lista.filter((r) => String(r.estado || "").toUpperCase() === "RECHAZADA").length;
 
       document.getElementById("resumenPanel").innerHTML = `
         <span>Total reservas: ${lista.length}</span>
@@ -502,18 +676,39 @@ function obtenerActividadIdURL() {
       `;
     }
 
+    function poblarActividadesFiltro(lista) {
+      const select = document.getElementById("filtroActividad");
+      const actual = select.value || "";
+      const actividades = Array.from(
+        new Set(
+          (lista || [])
+            .map((r) => String(r.actividad || "").trim())
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b, "es"));
+
+      select.innerHTML = `<option value="">Todas</option>`;
+      actividades.forEach((actividad) => {
+        const opt = document.createElement("option");
+        opt.value = actividad;
+        opt.textContent = actividad;
+        if (actividad === actual) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
     function filtrarReservas(lista) {
-      const actividad = document.getElementById("filtroActividad").value.trim().toLowerCase();
+      const actividad = document.getElementById("filtroActividad").value.trim();
       const estado = document.getElementById("filtroEstado").value.trim().toUpperCase();
       const fecha = document.getElementById("filtroFecha").value.trim();
       const buscar = document.getElementById("filtroBuscar").value.trim().toLowerCase();
 
-      return lista.filter(r => {
-        if (actividad && !String(r.actividad || "").toLowerCase().includes(actividad)) return false;
-        if (estado && String(r.estado || "").toUpperCase() !== estado) return false;
+      return lista.filter((r) => {
+        if (actividad && String(r.actividad || "").trim() !== actividad) return false;
+        if (estado && String(r.estado || "").trim().toUpperCase() !== estado) return false;
         if (fecha && String(r.fecha || "") !== fecha) return false;
         if (buscar) {
-          const texto = `${r.codigo_reserva} ${r.fecha} ${r.hora_inicio} ${r.hora_fin}`.toLowerCase();
+          const texto = `${r.codigo_reserva || ""} ${r.actividad || ""} ${r.fecha || ""} ${r.hora_inicio || ""} ${r.hora_fin || ""}`.toLowerCase();
           if (!texto.includes(buscar)) return false;
         }
         return true;
@@ -524,20 +719,18 @@ function obtenerActividadIdURL() {
       const hay = !!reservaSeleccionada;
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnAsistentes").disabled = !hay;
-      document.getElementById("btnNotificaciones").disabled = !hay;
     }
 
     function seleccionarReserva(id) {
-      reservaSeleccionada = reservasActuales.find(r => Number(r.id) === Number(id)) || null;
+      reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null;
       const filtradas = filtrarReservas(reservasActuales);
       pintarReservas(filtradas);
       actualizarBotones();
     }
 
     function abrirModalObservaciones(id) {
-      const reserva = reservasActuales.find(r => Number(r.id) === Number(id));
+      const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
-
       document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.codigo_reserva}`;
       document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
       document.getElementById("modalObservaciones").classList.add("activo");
@@ -553,47 +746,43 @@ function obtenerActividadIdURL() {
       const tbody = document.getElementById("tbodyReservas");
 
       if (reservaSeleccionada) {
-        const sigue = lista.find(r => Number(r.id) === Number(reservaSeleccionada.id));
+        const sigue = lista.find((r) => Number(r.id) === Number(reservaSeleccionada.id));
         reservaSeleccionada = sigue || null;
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
         actualizarBotones();
         return;
       }
 
-      tbody.innerHTML = lista.map(r => {
+      tbody.innerHTML = lista.map((r) => {
         const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
-
         return `
-          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'fila-seleccionada' : ''}">
+          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}">
             <td class="sel-col">
-              <input type="radio" name="seleccionReserva"
-                ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? 'checked' : ''}
-                onchange="seleccionarReserva(${r.id})">
+              <input type="radio" name="seleccionReserva" ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "checked" : ""} onchange="seleccionarReserva(${r.id})">
             </td>
             <td class="obs-col">
               ${tieneObservaciones ? `
                 <button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="abrirModalObservaciones(${r.id})">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/>
-                    <rect x="11" y="9" width="2" height="6" fill="#222"/>
-                    <rect x="11" y="16.5" width="2" height="2" fill="#222"/>
+                    <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"></path>
+                    <rect x="11" y="9" width="2" height="6" fill="#222"></rect>
+                    <rect x="11" y="16.5" width="2" height="2" fill="#222"></rect>
                   </svg>
                 </button>
-              ` : ''}
+              ` : ``}
             </td>
-            <td class="codigo-col">
-              <div class="codigo ${tieneObservaciones ? 'con-observaciones' : ''}">${r.codigo_reserva}</div>
-            </td>
-            <td class="actividad-col">${r.actividad || ''}</td>
-            <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${r.estado}</span></td>
-            <td class="fecha-col">${r.fecha}<br>${r.hora_inicio} - ${r.hora_fin}</td>
+            <td class="codigo-col"><span class="codigo ${tieneObservaciones ? "con-observaciones" : ""}">${r.codigo_reserva || "-"}</span></td>
+            <td class="actividad-col"><div class="actividad-nombre">${r.actividad || ""}</div></td>
+            <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></td>
+            <td class="fecha-col">${formatearFechaCorta(r.fecha)}</td>
+            <td class="horario-col">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</td>
             <td class="plazas-col">
-              Reservadas: ${r.plazas_reservadas_historicas}<br>
-              Pendientes: ${r.plazas_pendientes}<br>
-              Asignadas: ${r.plazas_asignadas}
+              <span class="plazas-linea">Reservadas: ${Number(r.plazas_reservadas_historicas || 0)}</span>
+              <span class="plazas-linea">Pendientes: ${Number(r.plazas_pendientes || 0)}</span>
+              <span class="plazas-linea">Asignadas: ${Number(r.plazas_asignadas || 0)}</span>
             </td>
           </tr>
         `;
@@ -603,26 +792,30 @@ function obtenerActividadIdURL() {
     }
 
     async function cargarPanel() {
-      const res = await fetch("/api/usuario/reservas", {
-        credentials: "include"
-      });
+      limpiarMensaje();
+      try {
+        const res = await fetch("/api/usuario/reservas", {
+          credentials: "include"
+        });
 
-      if (res.status === 401) {
-        location.href = "portal.html";
-        return;
+        if (res.status === 401) {
+          location.href = "portal.html";
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudieron cargar las reservas.");
+        }
+
+        reservasActuales = Array.isArray(data.data) ? data.data : [];
+        poblarActividadesFiltro(reservasActuales);
+        const filtradas = filtrarReservas(reservasActuales);
+        pintarResumen(filtradas);
+        pintarReservas(filtradas);
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudieron cargar las reservas.");
       }
-
-      const data = await res.json();
-
-      if (!data.ok) {
-        mostrarMensaje("error", data.error || "No se pudieron cargar las reservas.");
-        return;
-      }
-
-      reservasActuales = Array.isArray(data.data) ? data.data : [];
-      const filtradas = filtrarReservas(reservasActuales);
-      pintarResumen(filtradas);
-      pintarReservas(filtradas);
     }
 
     function aplicarFiltros() {
@@ -641,11 +834,11 @@ function obtenerActividadIdURL() {
     }
 
     function editarReserva(token) {
-      location.href = "editar.html?token=" + encodeURIComponent(token);
+      location.href = `editar.html?token=${encodeURIComponent(token)}`;
     }
 
     function abrirAsistentes(token) {
-      location.href = "asistentes.html?token=" + encodeURIComponent(token);
+      location.href = `asistentes.html?token=${encodeURIComponent(token)}`;
     }
 
     async function salir() {
@@ -656,19 +849,17 @@ function obtenerActividadIdURL() {
       location.href = "portal.html";
     }
 
-    function abrirNotificaciones() {
-      alert("Panel de notificaciones pendiente de implementar.");
-    }
-
     function irPortal() {
       location.href = "portal.html";
     }
-    
-    document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
+
+    document.getElementById("filtroActividad").addEventListener("change", aplicarFiltros);
+    document.getElementById("filtroEstado").addEventListener("change", aplicarFiltros);
+    document.getElementById("filtroFecha").addEventListener("change", aplicarFiltros);
+    document.getElementById("filtroBuscar").addEventListener("input", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
     document.getElementById("btnRecargar").addEventListener("click", cargarPanel);
     document.getElementById("btnSalir").addEventListener("click", salir);
-    document.getElementById("btnNotificaciones").addEventListener("click", abrirNotificaciones);
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
@@ -676,7 +867,7 @@ function obtenerActividadIdURL() {
     document.getElementById("btnAsistentes").addEventListener("click", () => {
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
-
+    document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
     });
@@ -684,7 +875,11 @@ function obtenerActividadIdURL() {
     window.seleccionarReserva = seleccionarReserva;
     window.abrirModalObservaciones = abrirModalObservaciones;
 
-    cargarPanel();
+    (async function init() {
+      await cargarSesionCabecera();
+      actualizarTituloPanel();
+      await cargarPanel();
+    })();
   </script>
 </body>
 </html>
