@@ -233,8 +233,8 @@
 
     .fila-solicitud {
       display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr);
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.78fr);
+      gap: 16px;
       align-items: stretch;
     }
 
@@ -245,15 +245,15 @@
       align-content: stretch;
     }
 
-    .campo-franja .info-franja {
-      display: none;
+    .fila-franja-plazas {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 118px;
+      gap: 12px;
+      align-items: end;
     }
 
-    .fila-plazas-disponibilidad {
-      display: grid;
-      grid-template-columns: 128px minmax(0, 1fr);
-      gap: 14px;
-      align-items: end;
+    .campo-franja .info-franja {
+      display: none;
     }
 
     .campo-plazas .fila {
@@ -261,27 +261,29 @@
     }
 
     .campo-plazas input {
-      max-width: 128px;
+      max-width: 118px;
       text-align: center;
     }
 
     .disponibilidad-inline {
-      align-self: stretch;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
+      align-items: center;
+      gap: 18px;
       border: 1px solid #c9dcff;
       background: #eef4ff;
       color: #1d4f91;
       border-radius: 12px;
-      padding: 10px 12px;
-      line-height: 1.45;
+      padding: 10px 14px;
+      line-height: 1.3;
       font-size: 13px;
+      width: fit-content;
+      min-width: 0;
     }
 
     .campo-observaciones textarea {
-      min-height: 126px;
+      min-height: 100px;
       height: 100%;
+      resize: none;
     }
 
     label {
@@ -354,9 +356,7 @@
     }
 
     .panel-resumen {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
+      display: block;
     }
 
     .tarjeta-resumen {
@@ -486,7 +486,6 @@
       .fila-doble,
       .fila-contacto,
       .fila-solicitud,
-      .panel-resumen,
       .modal-reserva-grid {
         grid-template-columns: 1fr;
       }
@@ -495,13 +494,18 @@
         grid-template-rows: auto;
       }
 
-      .fila-plazas-disponibilidad {
+      .fila-franja-plazas {
         grid-template-columns: 1fr;
       }
 
       .campo-plazas input {
         max-width: none;
         text-align: left;
+      }
+
+      .disponibilidad-inline {
+        width: 100%;
+        justify-content: space-between;
       }
 
       .cabecera {
@@ -599,33 +603,33 @@
       </div>
     </div>
 
-      <div class="solicitud-bloque">
-        <div class="fila-solicitud">
-          <div class="columna-solicitud-izquierda">
+    <div class="solicitud-bloque">
+      <div class="fila-solicitud">
+        <div class="columna-solicitud-izquierda">
+          <div class="fila-franja-plazas">
             <div class="fila campo-franja">
               <label for="franja">Franja horaria</label>
-            <select id="franja" name="franja" required>
-              <option value="">Cargando franjas...</option>
+              <select id="franja" name="franja" required>
+                <option value="">Cargando franjas...</option>
               </select>
               <div id="infoFranja" class="info-franja"></div>
             </div>
 
-            <div class="fila-plazas-disponibilidad">
-              <div class="campo-plazas">
-                <div class="fila">
-                  <label for="plazasSolicitadas">Plazas reservadas</label>
-                  <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
-                </div>
-              </div>
-
-              <div id="resumenDisponibilidadInline" class="disponibilidad-inline">
-                Cargando disponibilidad...
+            <div class="campo-plazas">
+              <div class="fila">
+                <label for="plazasSolicitadas">Plazas reservadas</label>
+                <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
               </div>
             </div>
           </div>
 
-          <div class="fila campo-observaciones">
-            <label for="observaciones">Observaciones</label>
+          <div id="resumenDisponibilidadInline" class="disponibilidad-inline">
+            Cargando disponibilidad...
+          </div>
+        </div>
+
+        <div class="fila campo-observaciones">
+          <label for="observaciones">Observaciones</label>
           <textarea id="observaciones" name="observaciones"></textarea>
         </div>
       </div>
