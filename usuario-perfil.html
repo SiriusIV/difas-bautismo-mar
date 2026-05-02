@@ -613,6 +613,8 @@
     .tabla-detalle-docs th:nth-child(5), .tabla-detalle-docs td:nth-child(5),
     .tabla-detalle-docs th:nth-child(6), .tabla-detalle-docs td:nth-child(6) { text-align: center; }
     .tabla-detalle-docs tr.fila-seleccionada td { background: #f5f9ff; }
+    .tabla-detalle-docs.solicitante-sin-selector th.col-seleccion,
+    .tabla-detalle-docs.solicitante-sin-selector td.col-seleccion { display: none; }
     .col-seleccion { width: 42px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
     .acciones-doc-fila { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
@@ -1444,6 +1446,10 @@
       return obtenerDocumentoSeleccionadoDetalle();
     }
 
+    function hayCambiosPendientesEnPagina() {
+      return hayCambiosSinGuardar() || tieneCambiosPendientesDetalle();
+    }
+
     function abrirModalObservacionesDocumento(doc, opciones = {}) {
       const documento = doc || null;
       const titulo = opciones?.subtitulo || documento?.nombre || documento?.nombre_documento || "Documento";
@@ -1633,33 +1639,40 @@
       document.getElementById("modalCambiosPendientesDocumentos").setAttribute("aria-hidden", "false");
     }
 
-    function salirDeDocumentosSinGuardar() {
-      detalleCambiosPendientes = new Map();
-      limpiarMensajeDetalle();
-      actualizarAccionesDetalleDocumentacion();
-      const destino = cambioTabBloquePendiente || "organizadores";
+    function continuarNavegacionTrasDocumentosPendientes(destino) {
+      if (destino === "portal") {
+        if (hayCambiosSinGuardar()) {
+          document.getElementById("modalCambiosPendientes").classList.add("activo");
+          return;
+        }
+        location.href = "portal.html";
+        return;
+      }
+
       const adminId = organizadorPendienteId;
-      cerrarModalCambiosPendientesDocumentos();
       if (adminId) {
         organizadorSeleccionadoId = adminId;
         renderizarResumenDocumentacion();
       }
       cambioTabBloquePendiente = null;
-      activarTabBloqueDocumentacion(destino);
+      activarTabBloqueDocumentacion(destino || "organizadores");
+    }
+
+    function salirDeDocumentosSinGuardar() {
+      detalleCambiosPendientes = new Map();
+      limpiarMensajeDetalle();
+      actualizarAccionesDetalleDocumentacion();
+      const destino = cambioTabBloquePendiente || "organizadores";
+      cerrarModalCambiosPendientesDocumentos();
+      continuarNavegacionTrasDocumentosPendientes(destino);
     }
 
     async function guardarDocumentosPendientes() {
       const ok = await guardarCambiosDetalleDocumentacion();
       if (ok && !tieneCambiosPendientesDetalle()) {
         const destino = cambioTabBloquePendiente || "organizadores";
-        const adminId = organizadorPendienteId;
         cerrarModalCambiosPendientesDocumentos();
-        if (adminId) {
-          organizadorSeleccionadoId = adminId;
-          renderizarResumenDocumentacion();
-        }
-        cambioTabBloquePendiente = null;
-        activarTabBloqueDocumentacion(destino);
+        continuarNavegacionTrasDocumentosPendientes(destino);
       }
     }
 
@@ -1749,7 +1762,9 @@
     function renderizarDetalleDocumentacion(documentos = []) {
       const body = document.getElementById("detalleDocumentacionBody");
       const vacio = document.getElementById("detalleDocumentacionVacio");
+      const tabla = body?.closest(".tabla-detalle-docs");
       body.innerHTML = "";
+      tabla?.classList.toggle("solicitante-sin-selector", esSolicitante());
 
       if (!documentos.length) {
         vacio.classList.remove("oculto");
@@ -1772,9 +1787,7 @@
 
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
-          <td class="col-seleccion">
-            <input type="radio" name="detalle_documento_seleccion" class="selector-doc" value="${docId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento">
-          </td>
+          <td class="col-seleccion">${esSolicitante() ? "" : `<input type="radio" name="detalle_documento_seleccion" class="selector-doc" value="${docId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento">`}</td>
           <td class="col-documento">
             ${documentoBase}
             ${pendiente ? `<span class="estado-provisional">${pendiente}</span>` : ""}
@@ -3285,6 +3298,10 @@
     }
 
     function irPortal() {
+      if (tieneCambiosPendientesDetalle()) {
+        abrirModalCambiosPendientesDocumentos("portal");
+        return;
+      }
       if (hayCambiosSinGuardar()) {
         document.getElementById("modalCambiosPendientes").classList.add("activo");
         return;
@@ -3627,6 +3644,7 @@
       if (!btnEstado) return;
       const docId = Number.parseInt(btnEstado.dataset.estadoDocId || "", 10);
       if (!Number.isInteger(docId) || docId <= 0) return;
+      seleccionarDocumentoDetallePorId(docId);
       const doc = (detalleDocumentacionDatos || []).find((item) => Number(item.id || 0) === docId);
       if (!doc) return;
       abrirModalObservacionesDocumento(doc);
@@ -3718,6 +3736,11 @@
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
     document.getElementById("btnAceptarPasswordNueva").addEventListener("click", confirmarCambioPassword);
+    window.addEventListener("beforeunload", function (event) {
+      if (!hayCambiosPendientesEnPagina()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
 
     [
       "modalCambiosPendientes",
