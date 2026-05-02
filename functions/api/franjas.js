@@ -7,6 +7,13 @@ function json(data, init = {}) {
   });
 }
 
+function haFinalizadoFranja(row, ahora = new Date()) {
+  if (!row?.fecha || !row?.hora_fin) return false;
+  const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
+  if (Number.isNaN(fechaHoraFin.getTime())) return false;
+  return fechaHoraFin.getTime() < ahora.getTime();
+}
+
 async function obtenerFranjasConDisponibilidad(env, actividad_id) {
   const sql = `
     SELECT
@@ -98,7 +105,7 @@ export async function onRequestGet(context) {
     }
 
     const actividad = await env.DB.prepare(`
-      SELECT usa_franjas
+      SELECT usa_franjas, tipo
       FROM actividades
       WHERE id = ?
       LIMIT 1
@@ -115,7 +122,12 @@ export async function onRequestGet(context) {
       });
     }
 
-    const franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
+    let franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
+
+    if (String(actividad.tipo || "").toUpperCase() === "PERMANENTE") {
+      const ahora = new Date();
+      franjas = franjas.filter((franja) => !haFinalizadoFranja(franja, ahora));
+    }
 
     return json({
       ok: true,
