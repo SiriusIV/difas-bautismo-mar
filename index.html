@@ -137,6 +137,37 @@
       gap: 16px;
     }
 
+    .campo-oculto {
+      display: none;
+    }
+
+    .fila-contacto {
+      display: grid;
+      grid-template-columns: 1.05fr 0.8fr 1.15fr;
+      gap: 16px;
+    }
+
+    .fila-solicitud {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .columna-solicitud-izquierda {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 16px;
+    }
+
+    .campo-franja .info-franja {
+      margin-bottom: 0;
+    }
+
+    .campo-observaciones textarea {
+      min-height: 152px;
+    }
+
     label {
       display: block;
       font-weight: bold;
@@ -334,9 +365,15 @@
 
     @media (max-width: 900px) {
       .fila-doble,
+      .fila-contacto,
+      .fila-solicitud,
       .panel-resumen,
       .modal-reserva-grid {
         grid-template-columns: 1fr;
+      }
+
+      .columna-solicitud-izquierda {
+        grid-template-rows: auto;
       }
 
       .cabecera {
@@ -386,7 +423,7 @@
     <div id="mensaje" class="mensaje"></div>
 
     <div class="panel">
-      <form id="formularioSolicitud">
+      <form id="formularioSolicitud" data-test="ok">
         <div class="fila-doble">
           <div class="fila">
             <label for="centro">Centro solicitante</label>
@@ -401,12 +438,12 @@
 
         <div class="fila-doble">
           <div class="fila">
-            <label for="telefono">Teléfono de contacto</label>
+            <label for="telefono">TelÃ©fono de contacto</label>
             <input type="tel" id="telefono" name="telefono" required>
           </div>
 
           <div class="fila">
-            <label for="email">Correo electrónico de contacto</label>
+            <label for="email">Correo electrÃ³nico de contacto</label>
             <input type="email" id="email" name="email" required>
           </div>
         </div>
@@ -443,7 +480,7 @@
         <div class="tarjeta-resumen">
           <span class="tarjeta-titulo">Resumen de reserva</span>
           <div id="resumenReserva">
-            Seleccione una franja e indique el número de plazas reservadas.
+            Seleccione una franja e indique el nÃºmero de plazas reservadas.
           </div>
         </div>
 
@@ -459,7 +496,7 @@
 
   <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Confirmación de envío</h3>
+      <h3>ConfirmaciÃ³n de envÃ­o</h3>
 
       <div class="bloque">
         <p id="textoConfirmacionEnvio"></p>
@@ -467,7 +504,7 @@
 
       <div class="acciones">
         <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
-        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envío</button>
+        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envÃ­o</button>
       </div>
     </div>
   </div>
@@ -479,7 +516,7 @@
       <div class="bloque">
         <div class="modal-reserva-grid">
           <div class="modal-reserva-col">
-            <span class="modal-reserva-etiqueta">Código de reserva</span>
+            <span class="modal-reserva-etiqueta">CÃ³digo de reserva</span>
             <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
           </div>
 
@@ -490,13 +527,13 @@
         </div>
 
         <div class="modal-reserva-ayuda">
-          Puede importar una lista de asistentes o abrir el formulario de gestión manual.
+          Puede importar una lista de asistentes o abrir el formulario de gestiÃ³n manual.
         </div>
       </div>
 
       <div class="acciones">
         <button type="button" id="btnImportarLista">Importar lista de asistentes</button>
-        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestión de asistentes</button>
+        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestiÃ³n de asistentes</button>
         <button type="button" id="btnCerrarModalAsistentes" class="btn-secundario">Cerrar</button>
       </div>
     </div>
@@ -552,7 +589,7 @@
     }
 
     function textoEstadoModal(estado) {
-      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
+      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÃ“N";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
       if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
       if (estado === "RECHAZADA") return "RECHAZADA";
@@ -596,6 +633,72 @@
       centro.readOnly = true;
     }
 
+    function reorganizarFormularioSolicitud() {
+      const form = document.getElementById("formularioSolicitud");
+      if (!form || form.dataset.layoutActualizado === "1") return;
+
+      const filaCentroContacto = document.querySelector('#formularioSolicitud .fila-doble');
+      const filaTelefonoEmail = filaCentroContacto?.nextElementSibling;
+      const filaFranjaPlazas = filaTelefonoEmail?.nextElementSibling;
+      const filaObservaciones = filaFranjaPlazas?.nextElementSibling;
+      const acciones = form.querySelector('.acciones');
+
+      if (!filaCentroContacto || !filaTelefonoEmail || !filaFranjaPlazas || !filaObservaciones || !acciones) {
+        return;
+      }
+
+      const filaCentro = filaCentroContacto.children[0];
+      const filaContacto = filaCentroContacto.children[1];
+      const filaTelefono = filaTelefonoEmail.children[0];
+      const filaEmail = filaTelefonoEmail.children[1];
+      const filaFranja = filaFranjaPlazas.children[0];
+      const filaPlazas = filaFranjaPlazas.children[1];
+
+      if (!filaCentro || !filaContacto || !filaTelefono || !filaEmail || !filaFranja || !filaPlazas) {
+        return;
+      }
+
+      const campoOculto = document.createElement("div");
+      campoOculto.className = "campo-oculto";
+      campoOculto.setAttribute("aria-hidden", "true");
+      campoOculto.appendChild(filaCentro.querySelector("#centro"));
+
+      const filaContactoNueva = document.createElement("div");
+      filaContactoNueva.className = "fila-contacto";
+      filaContactoNueva.appendChild(filaContacto);
+      filaContactoNueva.appendChild(filaTelefono);
+      filaContactoNueva.appendChild(filaEmail);
+
+      const filaSolicitud = document.createElement("div");
+      filaSolicitud.className = "fila-solicitud";
+
+      const columnaIzquierda = document.createElement("div");
+      columnaIzquierda.className = "columna-solicitud-izquierda";
+      filaFranja.classList.add("campo-franja");
+      columnaIzquierda.appendChild(filaFranja);
+      columnaIzquierda.appendChild(filaPlazas);
+
+      filaObservaciones.classList.add("campo-observaciones");
+      filaSolicitud.appendChild(columnaIzquierda);
+      filaSolicitud.appendChild(filaObservaciones);
+
+      const labelTelefono = filaTelefono.querySelector('label[for="telefono"]');
+      const labelEmail = filaEmail.querySelector('label[for="email"]');
+      if (labelTelefono) labelTelefono.textContent = "Teléfono de contacto";
+      if (labelEmail) labelEmail.textContent = "Correo electrónico de contacto";
+
+      filaCentroContacto.remove();
+      filaTelefonoEmail.remove();
+      filaFranjaPlazas.remove();
+
+      form.insertBefore(filaSolicitud, acciones);
+      form.insertBefore(filaContactoNueva, filaSolicitud);
+      form.insertBefore(campoOculto, filaContactoNueva);
+
+      form.removeAttribute("data-test");
+      form.dataset.layoutActualizado = "1";
+    }
+
     async function cargarActividad() {
       const actividad_id = getActividadId();
 
@@ -617,7 +720,7 @@
       actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
 
       if (!actividadActual) {
-        throw new Error("La actividad no está disponible.");
+        throw new Error("La actividad no estÃ¡ disponible.");
       }
 
       if (Number(actividadActual.requiere_reserva || 0) !== 1) {
@@ -685,7 +788,7 @@
       franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
 
       const select = document.getElementById("franja");
-      select.innerHTML = '<option value="">Seleccione una opción</option>';
+      select.innerHTML = '<option value="">Seleccione una opciÃ³n</option>';
 
       franjasCache.forEach(f => {
         const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
@@ -719,7 +822,7 @@
 
       if (!franja) {
         infoFranja.textContent = "";
-        resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
+        resumenReserva.textContent = "Seleccione una franja e indique el nÃºmero de plazas reservadas.";
         resumenDisponibilidad.textContent = "Seleccione una franja para ver la disponibilidad.";
         return;
       }
@@ -734,9 +837,9 @@
 
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
-        <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Franja seleccionada:</strong> ${etiquetaFecha} Â· ${franja.hora_inicio} - ${franja.hora_fin}<br>
         <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
-        <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+        <strong>Tiempo de consolidaciÃ³n previsto:</strong> ${minutos} minutos
       `;
 
       resumenDisponibilidad.innerHTML = `
@@ -768,12 +871,12 @@
       }
 
       if (!Number.isInteger(plazas) || plazas <= 0) {
-        return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
+        return { ok: false, error: "Debe indicar un nÃºmero vÃ¡lido de plazas reservadas." };
       }
 
       const franjaSel = obtenerFranjaSeleccionada();
       if (!franjaSel) {
-        return { ok: false, error: "La franja seleccionada no es válida." };
+        return { ok: false, error: "La franja seleccionada no es vÃ¡lida." };
       }
 
       if (plazas > Number(franjaSel.disponibles || 0)) {
@@ -803,9 +906,9 @@
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
         Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
-        El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
-        Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
-        Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
+        El tiempo de consolidaciÃ³n calculado para esta solicitud serÃ¡ de <span class="resaltado">${minutos} minutos</span> y comenzarÃ¡ a contar a partir del momento en que confirme el envÃ­o.<br><br>
+        Transcurrido ese plazo, las plazas reservadas no asignadas volverÃ¡n a quedar disponibles.<br><br>
+        AdemÃ¡s, se permitirÃ¡ ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
       `;
 
       document.getElementById("modalConfirmacionEnvio").classList.add("activo");
@@ -858,7 +961,7 @@
 
         reservaCreada = data;
         cerrarModalConfirmacion();
-        mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        mostrarMensaje("ok", `Solicitud creada correctamente. CÃ³digo de reserva: ${data.codigo_reserva}.`);
         await cargarFranjas();
         abrirModalAsistentes();
 
@@ -876,7 +979,7 @@
     function cancelarEnvioSolicitud() {
       datosPendientesEnvio = null;
       cerrarModalConfirmacion();
-      mostrarMensaje("aviso", "El envío de la solicitud ha sido cancelado.");
+      mostrarMensaje("aviso", "El envÃ­o de la solicitud ha sido cancelado.");
     }
 
     function abrirGestionAsistentes() {
@@ -886,12 +989,14 @@
 
     function importarListaAsistentes() {
       if (!reservaCreada?.token_edicion) return;
-      alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
+      alert("La descarga de plantilla e importaciÃ³n Excel se implementarÃ¡ en el siguiente bloque funcional.");
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
       const sesionOk = await comprobarSesion();
       if (!sesionOk) return;
+
+      reorganizarFormularioSolicitud();
 
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
       document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
@@ -927,7 +1032,7 @@
         await cargarFranjas();
       } catch (error) {
         console.error(error);
-        mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
+        mostrarMensaje("error", error.message || "No se pudo inicializar la pÃ¡gina.");
       }
     });
   </script>
