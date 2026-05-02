@@ -296,6 +296,21 @@
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.suspendida { background: #b7791f; }
     .estado-badge.cancelada { background: #6c757d; }
+    .estado-trigger {
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .estado-trigger:hover .estado-badge,
+    .estado-trigger:focus-visible .estado-badge {
+      box-shadow: 0 0 0 2px rgba(11,94,215,0.16);
+      transform: translateY(-1px);
+    }
     .fila-seleccionada { background: #f2f7ff; }
     .muted { color: #6b7280; }
     .mensaje {
@@ -374,11 +389,31 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .estado-modal-linea {
+      margin-bottom: 10px;
+      color: #21374d;
+      line-height: 1.55;
+    }
+    .estado-modal-badge {
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .estado-modal-observaciones {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #dde4ea;
+    }
+    .estado-modal-observaciones strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #123a63;
+    }
     .modal-acciones {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
       margin-top: 16px;
+      flex-wrap: wrap;
     }
     .btn-modal {
       border: 1px solid #bfc9d4;
@@ -390,6 +425,12 @@
       cursor: pointer;
     }
     .btn-modal:hover { background: #f7f9fb; }
+    .btn-modal.btn-modal-principal {
+      background: #0b5ed7;
+      border-color: #0b5ed7;
+      color: #fff;
+    }
+    .btn-modal.btn-modal-principal:hover { background: #0a53be; }
     @media (max-width: 1200px) {
       .filtros { grid-template-columns: 1fr 1fr; }
       .bloque-marca { gap: 28px; }
@@ -565,7 +606,7 @@
     <div class="modal">
       <h3 id="modalObservacionesTitulo">Observaciones</h3>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
-      <div class="modal-acciones">
+      <div id="modalObservacionesAcciones" class="modal-acciones">
         <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
       </div>
     </div>
@@ -727,6 +768,10 @@
       if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
       document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad || "Reserva"}`;
       document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
+      document.getElementById("modalObservacionesAcciones").innerHTML = `
+        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
+      `;
+      document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
       document.getElementById("modalObservaciones").classList.add("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
     }
@@ -734,6 +779,111 @@
     function cerrarModalObservaciones() {
       document.getElementById("modalObservaciones").classList.remove("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function descripcionEstadoReserva(reserva) {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (estado === "CONFIRMADA") {
+        return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
+      }
+      if (estado === "PENDIENTE") {
+        return "La solicitud sigue en proceso de revisión. Si lo necesitas, puedes actualizar sus datos o la relación de asistentes.";
+      }
+      if (estado === "SUSPENDIDA") {
+        return "La solicitud está suspendida temporalmente. Revisa las observaciones y corrige la parte necesaria para que pueda volver a quedar en proceso.";
+      }
+      if (estado === "RECHAZADA") {
+        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
+      }
+      if (estado === "CANCELADA") {
+        return "La solicitud está anulada y ya no admite cambios.";
+      }
+      return "Consulta el estado actual de tu solicitud y corrige la información necesaria si procede.";
+    }
+
+    function construirAccionesEstado(reserva) {
+      const acciones = [];
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (reserva?.token_edicion && estado !== "CANCELADA" && estado !== "CONFIRMADA") {
+        acciones.push({
+          label: "Editar solicitud",
+          principal: true,
+          onClick: () => editarReserva(reserva.token_edicion)
+        });
+        acciones.push({
+          label: "Gestionar asistentes",
+          onClick: () => abrirAsistentes(reserva.token_edicion)
+        });
+      }
+      if (Number(reserva?.admin_id || 0) > 0 && estado !== "CONFIRMADA" && estado !== "CANCELADA") {
+        acciones.push({
+          label: "Ir a documentación",
+          onClick: () => {
+            location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
+          }
+        });
+      }
+      return acciones;
+    }
+
+    function abrirModalEstado(id) {
+      const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
+      if (!reserva) return;
+
+      const estadoTexto = textoEstadoVisible(reserva.estado);
+      const estadoClase = claseEstado(reserva.estado);
+      const descripcion = descripcionEstadoReserva(reserva);
+      const observaciones = String(reserva.observaciones || "").trim();
+      const acciones = construirAccionesEstado(reserva);
+
+      document.getElementById("modalObservacionesTitulo").textContent = `Estado de la solicitud · ${reserva.actividad || "Reserva"}`;
+      document.getElementById("modalObservacionesContenido").innerHTML = `
+        <div class="estado-modal-linea">
+          <strong>Estado actual:</strong>
+          <span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>
+        </div>
+        <div class="estado-modal-linea">${escapeHtml(descripcion)}</div>
+        ${
+          normalizarEstadoReserva(reserva.estado) !== "CONFIRMADA"
+            ? `<div class="estado-modal-observaciones">
+                <strong>Observaciones</strong>
+                <div>${escapeHtml(observaciones || "No hay observaciones adicionales registradas para esta solicitud.")}</div>
+              </div>`
+            : ""
+        }
+      `;
+
+      const accionesHtml = acciones.map((accion, indice) => `
+        <button type="button" class="btn-modal${accion.principal ? " btn-modal-principal" : ""}" data-accion-estado="${indice}">${escapeHtml(accion.label)}</button>
+      `).join("");
+
+      document.getElementById("modalObservacionesAcciones").innerHTML = `
+        ${accionesHtml}
+        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
+      `;
+
+      acciones.forEach((accion, indice) => {
+        const boton = document.querySelector(`[data-accion-estado="${indice}"]`);
+        if (boton) {
+          boton.addEventListener("click", () => {
+            cerrarModalObservaciones();
+            accion.onClick();
+          });
+        }
+      });
+      document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
+
+      document.getElementById("modalObservaciones").classList.add("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
     }
 
     function pintarReservas(lista) {
@@ -769,7 +919,11 @@
               ` : ``}
             </td>
             <td class="actividad-col"><div class="actividad-nombre">${r.actividad || ""}</div></td>
-            <td class="estado-col"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></td>
+            <td class="estado-col">
+              <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
+                <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
+              </button>
+            </td>
             <td class="fecha-col">${formatearFechaCorta(r.fecha)}</td>
             <td class="horario-col">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</td>
             <td class="plazas-col">
@@ -884,13 +1038,13 @@
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
     document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitudSeleccionada);
-    document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
     });
 
     window.seleccionarReserva = seleccionarReserva;
     window.abrirModalObservaciones = abrirModalObservaciones;
+    window.abrirModalEstado = abrirModalEstado;
 
     (async function init() {
       await cargarSesionCabecera();

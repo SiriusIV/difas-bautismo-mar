@@ -58,6 +58,7 @@ export async function onRequestGet(context) {
         r.estado,
         r.token_edicion,
         r.observaciones,
+        a.admin_id,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
         CASE
@@ -91,6 +92,7 @@ export async function onRequestGet(context) {
       estado: normalizarEstadoReserva(row.estado),
       token_edicion: row.token_edicion || "",
       observaciones: row.observaciones || "",
+      admin_id: Number(row.admin_id || 0),
       actividad: row.actividad || "Actividad",
       fecha: row.fecha,
       hora_inicio: row.hora_inicio,
