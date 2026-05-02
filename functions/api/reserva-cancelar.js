@@ -7,7 +7,7 @@ export async function onRequestPost(context) {
 
     if (!tokenEdicion) {
       return Response.json(
-        { ok: false, error: "Falta el token de ediciÃ³n." },
+        { ok: false, error: "Falta el token de edicion." },
         { status: 400 }
       );
     }
@@ -39,16 +39,6 @@ export async function onRequestPost(context) {
       return Response.json(
         { ok: false, error: "No existe ninguna solicitud con ese token." },
         { status: 404 }
-      );
-    }
-
-    if (reserva.estado === "RECHAZADA") {
-      return Response.json(
-        {
-          ok: false,
-          error: "La solicitud ya estÃ¡ rechazada y no puede anularse desde este formulario."
-        },
-        { status: 400 }
       );
     }
 
@@ -112,17 +102,16 @@ export async function onRequestPost(context) {
       codigo_reserva: reserva.codigo_reserva,
       token_edicion: reserva.token_edicion,
       estado: "ANULADA",
-      franja: {
+      franja: estadoFinal ? {
         id: estadoFinal.id,
         fecha: estadoFinal.fecha,
         hora_inicio: estadoFinal.hora_inicio,
         hora_fin: estadoFinal.hora_fin
-      },
-      capacidad: estadoFinal.capacidad,
-      ocupadas: estadoFinal.ocupadas,
-      disponibles_despues: estadoFinal.disponibles
+      } : null,
+      capacidad: estadoFinal?.capacidad ?? null,
+      ocupadas: estadoFinal?.ocupadas ?? 0,
+      disponibles_despues: estadoFinal?.disponibles ?? null
     });
-
   } catch (error) {
     return Response.json(
       {
