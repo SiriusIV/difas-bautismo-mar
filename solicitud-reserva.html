@@ -1,0 +1,1184 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solicitud de reserva</title>
+  <style>
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
+      margin: 0;
+      color: #222;
+      overflow-x: hidden;
+      font-size: 14px;
+    }
+
+    .contenedor {
+      max-width: 1108px;
+      margin: 0 auto;
+      padding: 0 16px 32px;
+    }
+
+    .cabecera {
+      position: relative;
+      background: transparent;
+      box-shadow: none;
+      padding: 18px 20px 14px;
+      margin-bottom: 18px;
+      z-index: 20;
+    }
+
+    .cabecera-inner {
+      max-width: 1108px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+
+    .logo-cabecera {
+      width: 77px;
+      height: auto;
+      display: block;
+    }
+
+    .titulos-cabecera {
+      text-align: left;
+    }
+
+    .titulos-cabecera h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #123a63;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+
+    .titulos-cabecera h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
+    }
+
+    .organizador-evento,
+    .lugar-evento,
+    .fechas-evento {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #4a5a6a;
+      text-align: left;
+    }
+
+    .cabecera .organizador-evento,
+    .cabecera .lugar-evento,
+    .cabecera .fechas-evento {
+      display: none !important;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(221,228,234,0.95);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    .mensaje {
+      margin-top: 16px;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.error {
+      display: block;
+      background: #fdeaea;
+      color: #9b1c1c;
+      border: 1px solid #f5c2c2;
+    }
+
+    .mensaje.ok {
+      display: block;
+      background: #eaf7ea;
+      color: #146c2e;
+      border: 1px solid #b9e0c0;
+    }
+
+    .mensaje.aviso {
+      display: block;
+      background: #eef4ff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+    }
+
+    .fila {
+      margin-bottom: 18px;
+    }
+
+    .formulario-solicitud {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+    }
+
+    #formularioSolicitud {
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .solicitud-bloque {
+      background: #fff;
+      border: 1px solid rgba(221,228,234,0.95);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    .solicitud-bloque-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .datos-actividad-solicitud {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      color: #3f4d5c;
+      font-size: 14px;
+    }
+
+    .dato-actividad-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #123a63;
+      line-height: 1.2;
+    }
+
+    .dato-actividad {
+      line-height: 1.35;
+    }
+
+    .dato-actividad strong {
+      color: #123a63;
+    }
+
+    .acciones-circulares {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icono-redondo,
+    .btn-enlace-icono {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      box-shadow: none;
+      transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      padding: 0;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-icono-redondo:hover,
+    .btn-enlace-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono-redondo svg,
+    .btn-enlace-icono svg {
+      width: 17px;
+      height: 17px;
+      display: block;
+    }
+
+    .fila-doble {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .campo-oculto {
+      display: none;
+    }
+
+    .fila-contacto {
+      display: grid;
+      grid-template-columns: 1.05fr 0.8fr 1.15fr;
+      gap: 16px;
+    }
+
+    .fila-solicitud {
+      display: grid;
+      grid-template-columns: 592px minmax(280px, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .columna-solicitud-izquierda {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .fila-franja-plazas {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 118px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .campo-franja .info-franja {
+      display: none;
+    }
+
+    .campo-plazas .fila {
+      margin-bottom: 0;
+    }
+
+    .campo-plazas input {
+      max-width: 118px;
+      text-align: center;
+    }
+
+    .campo-franja select,
+    .campo-plazas input {
+      height: 38px;
+    }
+
+    .campo-observaciones {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-content: start;
+    }
+
+    .panel-imagen-reserva {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .imagen-reserva-actividad {
+      width: 100%;
+      height: 182px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid #d9e2eb;
+      background: #edf3fb;
+      display: block;
+    }
+
+    .imagen-reserva-actividad.oculta {
+      display: none;
+    }
+
+    .campo-observaciones textarea {
+      min-height: 92px;
+      height: 92px;
+      resize: none;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #3c4a57;
+      font-size: 13px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #c9cfd6;
+      border-radius: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .info-franja {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .acciones {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button, .btn-enlace {
+      background: #0b5ed7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    button:hover, .btn-enlace:hover {
+      background: #094db1;
+    }
+
+    button:disabled, .btn-enlace.deshabilitado {
+      background: #7aa7e8;
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .btn-secundario {
+      background: #6c757d;
+    }
+
+    .btn-secundario:hover {
+      background: #565e64;
+    }
+
+    .panel-resumen {
+      display: block;
+    }
+
+    .tarjeta-resumen {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      color: #1d4f91;
+      border-radius: 14px;
+      padding: 14px 16px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .tarjeta-titulo {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 760px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    .modal p {
+      margin-top: 0;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+
+    .modal .bloque {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .modal .acciones {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .modal-reserva-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .modal-reserva-col {
+      text-align: center;
+    }
+
+    .modal-reserva-etiqueta {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .modal-reserva-codigo {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      vertical-align: middle;
+    }
+
+    .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.confirmada { background: #198754; }
+    .estado-badge.suspendida { background: #b7791f; }
+    .estado-badge.rechazada { background: #dc3545; }
+    .estado-badge.cancelada { background: #6c757d; }
+
+    .modal-reserva-ayuda {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #444;
+      text-align: center;
+    }
+
+    .resaltado {
+      font-weight: bold;
+    }
+
+    @media (max-width: 900px) {
+      .solicitud-bloque-top,
+      .fila-doble,
+      .fila-contacto,
+      .fila-solicitud,
+      .modal-reserva-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .columna-solicitud-izquierda {
+        grid-template-rows: auto;
+      }
+
+      .fila-franja-plazas {
+        grid-template-columns: 1fr;
+      }
+
+      .campo-plazas input {
+        max-width: none;
+        text-align: left;
+      }
+
+      .imagen-reserva-actividad {
+        height: 200px;
+      }
+
+      .cabecera {
+        padding: 16px 16px 10px;
+      }
+
+      .cabecera-inner {
+        justify-content: center;
+      }
+
+      .bloque-marca {
+        gap: 16px;
+        text-align: center;
+      }
+
+      .acciones-circulares {
+        justify-content: flex-start;
+      }
+
+      .titulos-cabecera,
+      .organizador-evento,
+      .lugar-evento,
+      .fechas-evento {
+        text-align: center;
+      }
+
+      .titulos-cabecera h1 {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <div class="cabecera-inner">
+        <div class="bloque-marca">
+          <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
+
+          <div class="titulos-cabecera">
+            <h1 id="tituloEvento">Cargando actividad...</h1>
+            <h2 id="subtituloEvento">Solicitud de reserva</h2>
+            <div id="organizadorEvento" class="organizador-evento" style="display:none;"></div>
+            <div id="lugarEvento" class="lugar-evento" style="display:none;"></div>
+            <div id="fechasEvento" class="fechas-evento" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mensaje" class="mensaje"></div>
+
+    <div class="formulario-solicitud" data-layout-actualizado="1">
+  <form id="formularioSolicitud">
+    <input type="hidden" id="centro" name="centro" required>
+
+    <div class="solicitud-bloque solicitud-bloque-top">
+      <div class="datos-actividad-solicitud">
+        <div id="tituloSolicitudBloque" class="dato-actividad-titulo">Actividad</div>
+        <div id="organizadorSolicitud" class="dato-actividad" style="display:none;"></div>
+        <div id="lugarSolicitud" class="dato-actividad" style="display:none;"></div>
+      </div>
+
+      <div class="acciones-circulares">
+        <button type="submit" id="btnPrepararEnvio" class="btn-icono-redondo" title="Enviar solicitud" aria-label="Enviar solicitud">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"></path>
+            <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
+          </svg>
+        </button>
+        <a href="portal.html" class="btn-enlace-icono" title="Volver al portal" aria-label="Volver al portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5.5 9.5V21h13V9.5"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="solicitud-bloque">
+      <div class="fila-contacto">
+        <div class="fila">
+          <label for="contacto">Persona de contacto</label>
+          <input type="text" id="contacto" name="contacto" required>
+        </div>
+
+        <div class="fila">
+          <label for="telefono">Teléfono de contacto</label>
+          <input type="tel" id="telefono" name="telefono" required>
+        </div>
+
+        <div class="fila">
+          <label for="email">Correo electrónico de contacto</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="solicitud-bloque">
+      <div class="fila-solicitud">
+        <div class="columna-solicitud-izquierda">
+          <div class="fila-franja-plazas">
+            <div class="fila campo-franja">
+              <label for="franja">Franja horaria</label>
+              <select id="franja" name="franja" required>
+                <option value="">Cargando franjas...</option>
+              </select>
+              <div id="infoFranja" class="info-franja"></div>
+            </div>
+
+            <div class="campo-plazas">
+              <div class="fila">
+                <label for="plazasSolicitadas">Plazas reservadas</label>
+                <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="fila campo-observaciones">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" name="observaciones"></textarea>
+          </div>
+        </div>
+
+        <div class="panel-imagen-reserva">
+          <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="solicitud-bloque">
+    <div class="panel-resumen">
+      <div class="tarjeta-resumen">
+        <span class="tarjeta-titulo">Resumen de reserva</span>
+        <div id="resumenReserva">
+          Seleccione una franja e indique el número de plazas reservadas.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Confirmación de envío</h3>
+
+      <div class="bloque">
+        <p id="textoConfirmacionEnvio"></p>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
+        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envío</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAsistentes" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Asistentes</h3>
+
+      <div class="bloque">
+        <div class="modal-reserva-grid">
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Código de reserva</span>
+            <span id="modalCodigoReserva" class="modal-reserva-codigo"></span>
+          </div>
+
+          <div class="modal-reserva-col">
+            <span class="modal-reserva-etiqueta">Estado</span>
+            <span id="modalEstadoReserva" class="estado-badge pendiente">PENDIENTE</span>
+          </div>
+        </div>
+
+        <div class="modal-reserva-ayuda">
+          Puede importar una lista de asistentes o abrir el formulario de gestión manual.
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button type="button" id="btnImportarLista">Importar lista de asistentes</button>
+        <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestión de asistentes</button>
+        <button type="button" id="btnCerrarModalAsistentes" class="btn-secundario">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let actividadActual = null;
+    let franjasCache = [];
+    let envioEnCurso = false;
+    let reservaCreada = null;
+    let datosPendientesEnvio = null;
+
+    function getActividadId() {
+      const params = new URLSearchParams(window.location.search);
+      const id = parseInt(params.get("actividad_id") || "", 10);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    }
+
+    function getFranjaId() {
+      const params = new URLSearchParams(window.location.search);
+      const id = parseInt(params.get("franja_id") || "", 10);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    }
+
+    function mostrarMensaje(tipo, texto) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje " + tipo;
+      mensaje.style.display = "block";
+      mensaje.textContent = texto;
+    }
+
+    function limpiarMensaje() {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.className = "mensaje";
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+    }
+
+    function calcularMinutosConsolidacion(plazas) {
+      const n = Number(plazas || 0);
+      if (!Number.isFinite(n) || n <= 0) return 20;
+      return 20 + (n * 3);
+    }
+
+    function claseEstadoBadge(estado) {
+      const e = String(estado || "").toLowerCase();
+      if (e === "pendiente") return "pendiente";
+      if (e === "confirmada") return "confirmada";
+      if (e === "suspendida") return "suspendida";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
+
+    function textoEstadoModal(estado) {
+      if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
+      if (estado === "CONFIRMADA") return "CONFIRMADA";
+      if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
+      if (estado === "RECHAZADA") return "RECHAZADA";
+      if (estado === "CANCELADA") return "CANCELADA";
+      return estado || "";
+    }
+
+    async function comprobarSesion() {
+      const res = await fetch("/api/usuario/session", {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        window.location.href = "portal.html";
+        return false;
+      }
+
+      const data = await res.json();
+
+      if (!data.ok || !data.authenticated) {
+        window.location.href = "portal.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    async function precargarDatosSolicitante() {
+      const res = await fetch("/api/usuario/perfil", {
+        credentials: "include"
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok || !data?.perfil) {
+        return;
+      }
+
+      const perfil = data.perfil;
+      const centro = document.getElementById("centro");
+      centro.value = perfil.centro || perfil.nombre_publico || perfil.nombre || "";
+      centro.readOnly = true;
+    }
+
+    function reorganizarFormularioSolicitud() {
+      return;
+    }
+
+    async function cargarActividad() {
+      const actividad_id = getActividadId();
+
+      if (!actividad_id) {
+        throw new Error("No se ha indicado la actividad.");
+      }
+
+      const response = await fetch("/api/actividades", {
+        credentials: "include"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las actividades.");
+      }
+
+      const actividades = Array.isArray(data.actividades) ? data.actividades : [];
+      actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
+
+      if (!actividadActual) {
+        throw new Error("La actividad no está disponible.");
+      }
+
+      if (Number(actividadActual.requiere_reserva || 0) !== 1) {
+        throw new Error("Esta actividad es informativa y no admite reservas.");
+      }
+
+      document.title = (actividadActual.titulo_publico || actividadActual.nombre || "Solicitud de reserva") + " - Solicitud";
+      document.getElementById("tituloEvento").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
+      document.getElementById("tituloSolicitudBloque").textContent = actividadActual.titulo_publico || actividadActual.nombre || "Actividad";
+      document.getElementById("subtituloEvento").textContent = actividadActual.subtitulo_publico || "Solicitud de reserva";
+      const imagenReservaActividad = document.getElementById("imagenReservaActividad");
+      if (imagenReservaActividad) {
+        const srcImagen = String(actividadActual.imagen_url || "").trim();
+        if (srcImagen) {
+          imagenReservaActividad.src = srcImagen;
+          imagenReservaActividad.classList.remove("oculta");
+        } else {
+          imagenReservaActividad.src = "";
+          imagenReservaActividad.classList.add("oculta");
+        }
+      }
+
+      const organizadorEl = document.getElementById("organizadorEvento");
+      const organizadorSolicitudEl = document.getElementById("organizadorSolicitud");
+      const organizador = String(actividadActual.organizador_publico || "").trim();
+      if (organizador) {
+        organizadorEl.style.display = "block";
+        organizadorEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
+        if (organizadorSolicitudEl) {
+          organizadorSolicitudEl.style.display = "block";
+          organizadorSolicitudEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
+        }
+      } else {
+        organizadorEl.style.display = "none";
+        organizadorEl.textContent = "";
+        if (organizadorSolicitudEl) {
+          organizadorSolicitudEl.style.display = "none";
+          organizadorSolicitudEl.textContent = "";
+        }
+      }
+
+      const lugarEl = document.getElementById("lugarEvento");
+      const lugarSolicitudEl = document.getElementById("lugarSolicitud");
+      const lugar = String(actividadActual.lugar || "").trim();
+      if (lugar) {
+        lugarEl.style.display = "block";
+        lugarEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
+        if (lugarSolicitudEl) {
+          lugarSolicitudEl.style.display = "block";
+          lugarSolicitudEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
+        }
+      } else {
+        lugarEl.style.display = "none";
+        lugarEl.textContent = "";
+        if (lugarSolicitudEl) {
+          lugarSolicitudEl.style.display = "none";
+          lugarSolicitudEl.textContent = "";
+        }
+      }
+
+      const fechasEl = document.getElementById("fechasEvento");
+      if (
+        actividadActual.tipo === "TEMPORAL" &&
+        (actividadActual.fecha_inicio || actividadActual.fecha_fin)
+      ) {
+        fechasEl.style.display = "block";
+        fechasEl.innerHTML = `<strong>Fechas:</strong> ${actividadActual.fecha_inicio || ""}${actividadActual.fecha_inicio && actividadActual.fecha_fin ? " - " : ""}${actividadActual.fecha_fin || ""}`;
+      } else {
+        fechasEl.style.display = "none";
+        fechasEl.textContent = "";
+      }
+    }
+
+    async function cargarFranjas() {
+      const actividad_id = getActividadId();
+
+      if (!actividad_id) {
+        throw new Error("No se ha indicado la actividad.");
+      }
+
+      const response = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad_id)}`, {
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudieron cargar las franjas.");
+      }
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error(data.error || "Error cargando franjas.");
+      }
+
+      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+
+      const select = document.getElementById("franja");
+      select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+      franjasCache.forEach(f => {
+        const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = `${etiquetaFecha} - ${f.hora_inicio} a ${f.hora_fin} (${f.disponibles} plazas disponibles)`;
+        select.appendChild(option);
+      });
+
+      const franjaInicial = getFranjaId();
+      if (franjaInicial && franjasCache.some((f) => Number(f.id) === franjaInicial)) {
+        select.value = String(franjaInicial);
+      }
+
+      actualizarResumenPantalla();
+    }
+
+    function obtenerFranjaSeleccionada() {
+      const id = parseInt(document.getElementById("franja").value || "", 10);
+      if (!id) return null;
+      return franjasCache.find(f => Number(f.id) === id) || null;
+    }
+
+    function actualizarResumenPantalla() {
+      const franja = obtenerFranjaSeleccionada();
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+
+      const infoFranja = document.getElementById("infoFranja");
+      const resumenReserva = document.getElementById("resumenReserva");
+      if (!franja) {
+        infoFranja.textContent = "";
+        resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
+        return;
+      }
+
+      const disponibles = Number(franja.disponibles || 0);
+      const capacidad = Number(franja.capacidad || 0);
+      const ocupadas = Number(franja.ocupadas || 0);
+      const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
+      const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
+
+      infoFranja.textContent = "";
+
+      resumenReserva.innerHTML = `
+        <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
+        <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+        <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+      `;
+    }
+
+    function validarDatosFormulario() {
+      const actividad_id = getActividadId();
+      const centro = document.getElementById("centro").value.trim();
+      const contacto = document.getElementById("contacto").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const franja = document.getElementById("franja").value;
+      const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+      const observaciones = document.getElementById("observaciones").value.trim();
+
+      if (!actividad_id) {
+        return { ok: false, error: "No se ha indicado la actividad." };
+      }
+
+      if (!actividadActual || Number(actividadActual.requiere_reserva || 0) !== 1) {
+        return { ok: false, error: "Esta actividad no admite reservas." };
+      }
+
+      if (!centro || !contacto || !telefono || !email || !franja) {
+        return { ok: false, error: "Debe completar todos los datos obligatorios." };
+      }
+
+      if (!Number.isInteger(plazas) || plazas <= 0) {
+        return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
+      }
+
+      const franjaSel = obtenerFranjaSeleccionada();
+      if (!franjaSel) {
+        return { ok: false, error: "La franja seleccionada no es válida." };
+      }
+
+      if (plazas > Number(franjaSel.disponibles || 0)) {
+        return {
+          ok: false,
+          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${franjaSel.disponibles}. Solicitadas: ${plazas}.`
+        };
+      }
+
+      return {
+        ok: true,
+        datos: {
+          actividad_id,
+          centro,
+          contacto,
+          telefono,
+          email,
+          franja,
+          plazas_solicitadas: plazas,
+          observaciones
+        }
+      };
+    }
+
+    function abrirModalConfirmacion(datos) {
+      const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
+
+      document.getElementById("textoConfirmacionEnvio").innerHTML = `
+        Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
+        El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
+        Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
+        Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
+      `;
+
+      document.getElementById("modalConfirmacionEnvio").classList.add("activo");
+      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalConfirmacion() {
+      document.getElementById("modalConfirmacionEnvio").classList.remove("activo");
+      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "true");
+    }
+
+    function abrirModalAsistentes() {
+      if (!reservaCreada) return;
+
+      document.getElementById("modalCodigoReserva").textContent = reservaCreada.codigo_reserva || "";
+      const badge = document.getElementById("modalEstadoReserva");
+      badge.className = `estado-badge ${claseEstadoBadge(reservaCreada.estado)}`;
+      badge.textContent = textoEstadoModal(reservaCreada.estado);
+
+      document.getElementById("modalAsistentes").classList.add("activo");
+      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalAsistentes() {
+      document.getElementById("modalAsistentes").classList.remove("activo");
+      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "true");
+    }
+
+    async function confirmarEnvioSolicitud() {
+      if (!datosPendientesEnvio || envioEnCurso) return;
+
+      try {
+        envioEnCurso = true;
+        document.getElementById("btnConfirmarEnvio").disabled = true;
+        document.getElementById("btnCancelarEnvio").disabled = true;
+        document.getElementById("btnPrepararEnvio").disabled = true;
+
+        const response = await fetch("/api/reservar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(datosPendientesEnvio)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo crear la solicitud.");
+        }
+
+        reservaCreada = data;
+        cerrarModalConfirmacion();
+        mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        await cargarFranjas();
+        abrirModalAsistentes();
+
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo crear la solicitud.");
+        cerrarModalConfirmacion();
+      } finally {
+        envioEnCurso = false;
+        document.getElementById("btnConfirmarEnvio").disabled = false;
+        document.getElementById("btnCancelarEnvio").disabled = false;
+        document.getElementById("btnPrepararEnvio").disabled = false;
+      }
+    }
+
+    function cancelarEnvioSolicitud() {
+      datosPendientesEnvio = null;
+      cerrarModalConfirmacion();
+      mostrarMensaje("aviso", "El envío de la solicitud ha sido cancelado.");
+    }
+
+    function abrirGestionAsistentes() {
+      if (!reservaCreada?.token_edicion) return;
+      window.location.href = `asistentes.html?token=${encodeURIComponent(reservaCreada.token_edicion)}`;
+    }
+
+    function importarListaAsistentes() {
+      if (!reservaCreada?.token_edicion) return;
+      alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      const sesionOk = await comprobarSesion();
+      if (!sesionOk) return;
+
+      reorganizarFormularioSolicitud();
+
+      document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
+      document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
+
+      document.getElementById("formularioSolicitud").addEventListener("submit", function (e) {
+        e.preventDefault();
+        limpiarMensaje();
+
+        const validacion = validarDatosFormulario();
+        if (!validacion.ok) {
+          mostrarMensaje("error", validacion.error);
+          return;
+        }
+
+        datosPendientesEnvio = validacion.datos;
+        abrirModalConfirmacion(validacion.datos);
+      });
+
+      document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
+      document.getElementById("btnCancelarEnvio").addEventListener("click", cancelarEnvioSolicitud);
+      
+      document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
+      document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
+      document.getElementById("btnCerrarModalAsistentes").addEventListener("click", cerrarModalAsistentes);
+
+      document.getElementById("modalAsistentes").addEventListener("click", function (e) {
+        if (e.target.id === "modalAsistentes") cerrarModalAsistentes();
+      });
+
+      try {
+        await precargarDatosSolicitante();
+        await cargarActividad();
+        await cargarFranjas();
+      } catch (error) {
+        console.error(error);
+      mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
+      }
+    });
+  </script>
+</body>
+</html>
+

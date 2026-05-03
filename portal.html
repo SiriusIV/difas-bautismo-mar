@@ -3288,11 +3288,11 @@ function continuarSolicitudActividad() {
     const franja = franjasActividadActual.find(f => Number(f.id) === Number(franjaSeleccionadaPortalId));
     if (!franja || !franja.seleccionable) return;
 
-    location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}&franja_id=${encodeURIComponent(franja.id)}`;
+        location.href = `solicitud-reserva.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}&franja_id=${encodeURIComponent(franja.id)}`;
     return;
   }
 
-  location.href = `index.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
+      location.href = `solicitud-reserva.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
 }
 
     function editarActividadActual() {
