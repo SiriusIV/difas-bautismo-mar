@@ -244,18 +244,11 @@
       gap: var(--gap-campos);
     }
 
-    .fila-solicitud {
+    .fila-solicitud-doble {
       display: grid;
-      grid-template-columns: 592px minmax(280px, 1fr);
-      gap: var(--gap-campos);
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: var(--gap-bloques);
       align-items: start;
-    }
-
-    .columna-solicitud-izquierda {
-      display: grid;
-      grid-template-rows: auto auto;
-      gap: 10px;
-      align-content: start;
     }
 
     .fila-franja-plazas {
@@ -287,19 +280,19 @@
       display: grid;
       grid-template-rows: auto 1fr;
       align-content: start;
+      margin-top: 10px;
     }
 
     .panel-imagen-reserva {
       display: flex;
       flex-direction: column;
-      gap: 8px;
     }
 
     .imagen-reserva-actividad {
       width: 100%;
-      height: 182px;
+      height: 200px;
       object-fit: cover;
-      border-radius: 14px;
+      border-radius: 12px;
       border: 1px solid #d9e2eb;
       background: #edf3fb;
       display: block;
@@ -509,13 +502,9 @@
     @media (max-width: 900px) {
       .solicitud-bloque-top,
       .fila-contacto,
-      .fila-solicitud,
+      .fila-solicitud-doble,
       .modal-reserva-grid {
         grid-template-columns: 1fr;
-      }
-
-      .columna-solicitud-izquierda {
-        grid-template-rows: auto;
       }
 
       .fila-franja-plazas {
@@ -627,9 +616,15 @@
           </div>
         </div>
 
-        <div class="solicitud-bloque">
-          <div class="fila-solicitud">
-            <div class="columna-solicitud-izquierda">
+        <div class="fila-solicitud-doble">
+          <div class="solicitud-bloque">
+            <div class="panel-imagen-reserva">
+              <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
+            </div>
+          </div>
+
+          <div class="solicitud-bloque">
+            <div>
               <div class="fila-franja-plazas">
                 <div class="fila campo-franja">
                   <label for="franja">Franja horaria</label>
@@ -651,10 +646,6 @@
                 <label for="observaciones">Observaciones</label>
                 <textarea id="observaciones" name="observaciones"></textarea>
               </div>
-            </div>
-
-            <div class="panel-imagen-reserva">
-              <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
             </div>
           </div>
         </div>
