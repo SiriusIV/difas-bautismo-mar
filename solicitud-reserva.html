@@ -267,7 +267,7 @@
 
     .fila-franja-plazas {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 128px 118px;
+      grid-template-columns: minmax(0, 1fr) 120px 138px;
       gap: 10px;
       align-items: start;
     }
@@ -291,10 +291,15 @@
     }
 
     .campo-disponibles input {
-      max-width: 128px;
+      max-width: 120px;
       text-align: center;
       background: #f7f9fb;
       color: #425466;
+    }
+
+    .campo-disponibles label,
+    .campo-plazas label {
+      white-space: nowrap;
     }
 
     .campo-franja select,
@@ -445,6 +450,33 @@
       font-weight: bold;
       margin-bottom: 8px;
       font-size: 15px;
+    }
+
+    .tarjeta-aviso {
+      background: #fff6dc;
+      border: 1px solid #f1d18a;
+      color: #8a5a00;
+    }
+
+    .tarjeta-aviso-encabezado {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .icono-info-aviso {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #f0b323;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex: 0 0 auto;
     }
 
     .nota-obligatorios {
@@ -748,8 +780,11 @@
             </div>
           </div>
 
-          <div class="tarjeta-resumen">
-            <span class="tarjeta-titulo">Información adicional</span>
+          <div class="tarjeta-resumen tarjeta-aviso">
+            <div class="tarjeta-aviso-encabezado">
+              <span class="icono-info-aviso" aria-hidden="true">i</span>
+              <span class="tarjeta-titulo">Información adicional</span>
+            </div>
             <div id="resumenExplicativo">
               Este bloque queda reservado para el mensaje explicativo de la solicitud.
             </div>
