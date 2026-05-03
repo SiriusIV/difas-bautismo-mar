@@ -178,9 +178,34 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 320px 180px 180px;
+      grid-template-columns: 260px 320px 180px 180px;
       gap: 14px;
       align-items: end;
+    }
+
+    .selector-vista {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .selector-vista button {
+      flex: 1 1 0;
+      width: auto;
+      background: #fff;
+      color: #1d4f91;
+      border: 1px solid #c9dcff;
+      font-weight: 600;
+    }
+
+    .selector-vista button.activo {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
+    }
+
+    .oculto {
+      display: none !important;
     }
 
     .checkbox-label {
@@ -489,33 +514,41 @@
 
     <div id="mensaje" class="mensaje"></div>
 
-    <div class="panel">
-      <div class="filtros">
-        <div>
-          <label for="filtroEstado">Estado</label>
-          <select id="filtroEstado">
-            <option value="">PENDIENTE + CONFIRMADA</option>
-            <option value="PENDIENTE">Solo PENDIENTE</option>
-            <option value="CONFIRMADA">Solo CONFIRMADA</option>
-            <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
-            <option value="RECHAZADA">Solo RECHAZADA</option>
-          </select>
-        </div>
+      <div class="panel">
+        <div class="filtros">
+          <div>
+            <label>Vista</label>
+            <div class="selector-vista">
+              <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
+              <button type="button" id="btnVistaActividades">Actividades programadas</button>
+            </div>
+          </div>
 
-        <div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkRechazadas">
-            Incluir rechazadas
-          </label>
+          <div id="bloqueFiltroEstado">
+            <label for="filtroEstado">Estado</label>
+            <select id="filtroEstado">
+              <option value="">PENDIENTE + CONFIRMADA</option>
+              <option value="PENDIENTE">Solo PENDIENTE</option>
+              <option value="CONFIRMADA">Solo CONFIRMADA</option>
+              <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
+              <option value="RECHAZADA">Solo RECHAZADA</option>
+            </select>
+          </div>
+
+          <div id="bloqueChkRechazadas">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkRechazadas">
+              Incluir rechazadas
+            </label>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="panel">
-      <div class="resumen-estados">
-        <div class="tarjeta-estado">
-          <div class="etiqueta">Pendientes</div>
-          <div class="valor" id="contadorPendientes">0</div>
+      <div class="panel" id="panelResumenReservas">
+        <div class="resumen-estados" id="bloqueResumenEstados">
+          <div class="tarjeta-estado">
+            <div class="etiqueta">Pendientes</div>
+            <div class="valor" id="contadorPendientes">0</div>
         </div>
         <div class="tarjeta-estado">
           <div class="etiqueta">Confirmadas</div>
@@ -531,12 +564,13 @@
         </div>
       </div>
 
-      <div class="leyenda">
-        <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
-        <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
-        <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
-        <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
-      </div>
+        <div class="leyenda" id="bloqueLeyendaReservas">
+          <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
+          <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
+          <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
+          <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
+          <span class="leyenda-item oculto" id="leyendaActividadProgramada"><span class="leyenda-color" style="background:#0b5ed7;"></span>ACTIVIDAD PROGRAMADA</span>
+        </div>
 
       <div id="calendar"></div>
     </div>
@@ -548,10 +582,10 @@
 
       <div id="modalDetalle" class="detalle"></div>
 
-      <div class="bloque-estado">
-        <div class="fila-estado">
-          <div>
-            <label for="selectEstadoDestino">Cambiar estado</label>
+        <div class="bloque-estado" id="bloqueEstadoReserva">
+          <div class="fila-estado">
+            <div>
+              <label for="selectEstadoDestino">Cambiar estado</label>
             <select id="selectEstadoDestino"></select>
           </div>
           <div>
@@ -560,10 +594,10 @@
         </div>
       </div>
 
-      <div class="acciones-modal">
-        <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
-        <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
-        <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
+        <div class="acciones-modal" id="accionesModalReserva">
+          <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
+          <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
+          <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
       </div>
     </div>
   </div>
@@ -574,6 +608,7 @@
     let eventoSeleccionado = null;
     let accionEnCurso = false;
     let fechaInicialCalendario = null;
+    let vistaCalendarioActual = "reservas";
     async function aplicarLogoCabeceraAdmin() {
       const logo = document.querySelector(".logo");
       if (!logo) return;
@@ -661,19 +696,40 @@
       }
     }
 
+    function aplicarVistaCalendario(vista, { recargar = true } = {}) {
+      vistaCalendarioActual = vista === "actividades" ? "actividades" : "reservas";
+
+      const esVistaActividades = vistaCalendarioActual === "actividades";
+      document.getElementById("btnVistaSolicitudes").classList.toggle("activo", !esVistaActividades);
+      document.getElementById("btnVistaActividades").classList.toggle("activo", esVistaActividades);
+      document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("bloqueChkRechazadas").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("panelResumenReservas").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaActividadProgramada").classList.toggle("oculto", !esVistaActividades);
+
+      if (recargar && calendar) {
+        limpiarMensaje();
+        calendar.refetchEvents();
+        void actualizarContadores();
+      }
+    }
+
     async function obtenerFechaInicialConEventos() {
       try {
         const params = new URLSearchParams();
         params.set("start", "2000-01-01");
         params.set("end", "2100-12-31");
+        params.set("vista", vistaCalendarioActual);
 
-        const estado = document.getElementById("filtroEstado").value;
-        const incluirRechazadas = document.getElementById("chkRechazadas").checked;
+        if (vistaCalendarioActual === "reservas") {
+          const estado = document.getElementById("filtroEstado").value;
+          const incluirRechazadas = document.getElementById("chkRechazadas").checked;
 
-        if (estado) {
-          params.set("estado", estado);
-        } else {
-          if (incluirRechazadas) params.set("incluir_rechazadas", "1");
+          if (estado) {
+            params.set("estado", estado);
+          } else if (incluirRechazadas) {
+            params.set("incluir_rechazadas", "1");
+          }
         }
 
         const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
@@ -702,11 +758,20 @@
     }
 
     async function actualizarContadores() {
+      if (vistaCalendarioActual !== "reservas") {
+        document.getElementById("contadorPendientes").textContent = "0";
+        document.getElementById("contadorConfirmadas").textContent = "0";
+        document.getElementById("contadorSuspendidas").textContent = "0";
+        document.getElementById("contadorRechazadas").textContent = "0";
+        return;
+      }
+
       try {
         const params = new URLSearchParams();
         params.set("start", "2000-01-01");
         params.set("end", "2100-12-31");
         params.set("incluir_rechazadas", "1");
+        params.set("vista", "reservas");
 
         const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
           credentials: "same-origin"
@@ -762,7 +827,31 @@
     function abrirModalEvento(info) {
       eventoSeleccionado = info.event;
       const p = info.event.extendedProps;
+      const tipoEvento = p.tipo_evento || "RESERVA";
+      const bloqueEstado = document.getElementById("bloqueEstadoReserva");
+      const btnEditar = document.getElementById("btnAbrirEditar");
+      const btnAsistentes = document.getElementById("btnAbrirAsistentes");
       const estadoClass = String(p.estado || "").toLowerCase();
+
+      if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
+        document.getElementById("modalTitulo").textContent = p.actividad || info.event.title || "Actividad programada";
+        document.getElementById("modalDetalle").innerHTML = `
+          <div class="detalle-bloque">
+            <strong>Organiza:</strong> ${p.organizador || ""}<br>
+            <strong>Lugar:</strong> ${p.lugar || ""}<br>
+            <strong>Fecha:</strong> ${p.fecha || ""}<br>
+            <strong>Horario:</strong> ${p.hora_inicio || ""} - ${p.hora_fin || ""}<br>
+            <strong>Capacidad:</strong> ${p.capacidad || 0}<br>
+            <strong>Plazas disponibles:</strong> ${p.disponibles || 0}
+          </div>
+        `;
+        bloqueEstado.classList.add("oculto");
+        btnEditar.classList.add("oculto");
+        btnAsistentes.classList.add("oculto");
+        document.getElementById("modalEvento").classList.add("activo");
+        document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
+        return;
+      }
 
       const plazasReservadasPendientes = Number(p.plazas_reservadas || 0);
       const plazasAsignadas = Number(p.plazas_asignadas || 0);
@@ -795,8 +884,11 @@
         </div>
       `;
 
-      document.getElementById("btnAbrirEditar").href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
-      document.getElementById("btnAbrirAsistentes").href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
+      btnEditar.href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
+      btnAsistentes.href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
+      bloqueEstado.classList.remove("oculto");
+      btnEditar.classList.remove("oculto");
+      btnAsistentes.classList.remove("oculto");
 
       cargarSelectorEstado(p.estado);
 
@@ -812,6 +904,10 @@
 
     async function ejecutarAccionDesdeModal() {
       if (!eventoSeleccionado || accionEnCurso) return;
+      if ((eventoSeleccionado.extendedProps?.tipo_evento || "RESERVA") !== "RESERVA") {
+        cerrarModalEvento();
+        return;
+      }
 
       const accion = document.getElementById("selectEstadoDestino").value;
       if (!accion) {
@@ -872,14 +968,17 @@
       const params = new URLSearchParams();
       params.set("start", fetchInfo.startStr);
       params.set("end", fetchInfo.endStr);
+      params.set("vista", vistaCalendarioActual);
 
-      const estado = document.getElementById("filtroEstado").value;
-      const incluirRechazadas = document.getElementById("chkRechazadas").checked;
+      if (vistaCalendarioActual === "reservas") {
+        const estado = document.getElementById("filtroEstado").value;
+        const incluirRechazadas = document.getElementById("chkRechazadas").checked;
 
-      if (estado) {
-        params.set("estado", estado);
-      } else {
-        if (incluirRechazadas) params.set("incluir_rechazadas", "1");
+        if (estado) {
+          params.set("estado", estado);
+        } else if (incluirRechazadas) {
+          params.set("incluir_rechazadas", "1");
+        }
       }
 
       return `/api/admin/calendario?${params.toString()}`;
@@ -955,12 +1054,14 @@
 
     function activarRecargaAutomaticaFiltros() {
       document.getElementById("filtroEstado").addEventListener("change", async () => {
+        if (vistaCalendarioActual !== "reservas") return;
         limpiarMensaje();
         calendar.refetchEvents();
         await actualizarContadores();
       });
 
       document.getElementById("chkRechazadas").addEventListener("change", async () => {
+        if (vistaCalendarioActual !== "reservas") return;
         limpiarMensaje();
         calendar.refetchEvents();
         await actualizarContadores();
@@ -976,6 +1077,12 @@
       document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
       document.getElementById("btnAplicarEstado").addEventListener("click", ejecutarAccionDesdeModal);
+      document.getElementById("btnVistaSolicitudes").addEventListener("click", function() {
+        aplicarVistaCalendario("reservas");
+      });
+      document.getElementById("btnVistaActividades").addEventListener("click", function() {
+        aplicarVistaCalendario("actividades");
+      });
 
       document.getElementById("btnRecargarIcono").addEventListener("click", async function() {
         limpiarMensaje();
@@ -991,6 +1098,7 @@
 
       try {
         await cargarConfigEvento();
+        aplicarVistaCalendario("reservas", { recargar: false });
         fechaInicialCalendario = await obtenerFechaInicialConEventos();
         crearCalendario();
         activarRecargaAutomaticaFiltros();

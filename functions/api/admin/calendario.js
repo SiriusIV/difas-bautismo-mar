@@ -20,6 +20,10 @@ function colorEstado(estado) {
   return "#0b5ed7";
 }
 
+function colorActividadProgramada() {
+  return "#0b5ed7";
+}
+
 function estadoBloqueaPlazas(estado) {
   return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
@@ -100,23 +104,60 @@ async function obtenerReservasCalendario(env, filtros) {
       r.observaciones,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
-
       f.fecha,
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
-
       COALESCE((
         SELECT COUNT(*)
         FROM visitantes v
         WHERE v.reserva_id = r.id
       ), 0) AS asistentes_cargados
-
     FROM reservas r
     INNER JOIN franjas f
       ON f.id = r.franja_id
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
     ORDER BY f.fecha ASC, f.hora_inicio ASC, r.fecha_solicitud ASC
+  `;
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
+  return result.results || [];
+}
+
+async function obtenerFranjasProgramadasCalendario(env, filtros) {
+  const where = [
+    "f.fecha IS NOT NULL",
+    "f.hora_inicio IS NOT NULL",
+    "f.hora_fin IS NOT NULL"
+  ];
+  const binds = [];
+
+  if (filtros.start) {
+    where.push("f.fecha >= ?");
+    binds.push(filtros.start);
+  }
+
+  if (filtros.end) {
+    where.push("f.fecha < ?");
+    binds.push(filtros.end);
+  }
+
+  const sql = `
+    SELECT
+      f.id,
+      f.actividad_id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.capacidad,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(a.organizador_publico, '') AS organizador_publico,
+      COALESCE(a.lugar, '') AS lugar
+    FROM franjas f
+    INNER JOIN actividades a
+      ON a.id = f.actividad_id
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    ORDER BY f.fecha ASC, f.hora_inicio ASC, f.id ASC
   `;
 
   const result = await env.DB.prepare(sql).bind(...binds).all();
@@ -146,13 +187,11 @@ async function obtenerBloqueoPorFranja(env, franjaIds) {
   const rows = result.results || [];
 
   const map = new Map();
-
   for (const row of rows) {
     const franjaId = Number(row.franja_id);
     const acumulado = map.get(franjaId) || 0;
     map.set(franjaId, acumulado + calcularBloqueoActualReserva(row));
   }
-
   return map;
 }
 
@@ -170,6 +209,10 @@ export async function onRequestGet(context) {
     const filtros = {
       start: limpiarTexto(url.searchParams.get("start") || ""),
       end: limpiarTexto(url.searchParams.get("end") || ""),
+      vista: (() => {
+        const v = limpiarTexto(url.searchParams.get("vista") || "").toLowerCase();
+        return v === "actividades" ? "actividades" : "reservas";
+      })(),
       estado: (() => {
         const v = limpiarTexto(url.searchParams.get("estado") || "").toUpperCase();
         return v || null;
@@ -177,53 +220,92 @@ export async function onRequestGet(context) {
       incluirRechazadas: url.searchParams.get("incluir_rechazadas") === "1"
     };
 
-    const rows = await obtenerReservasCalendario(env, filtros);
-    const franjaIds = [...new Set(rows.map(r => Number(r.franja_id)).filter(Boolean))];
-    const bloqueoPorFranja = await obtenerBloqueoPorFranja(env, franjaIds);
+    let eventos = [];
 
-    const eventos = rows.map(row => {
-      const capacidad = Number(row.capacidad || 0);
-      const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.franja_id)) || 0);
-      const disponibles = Math.max(capacidad - bloqueoFranja, 0);
+    if (filtros.vista === "actividades") {
+      const rows = await obtenerFranjasProgramadasCalendario(env, filtros);
+      const franjaIds = [...new Set(rows.map((r) => Number(r.id)).filter(Boolean))];
+      const bloqueoPorFranja = await obtenerBloqueoPorFranja(env, franjaIds);
 
-      const plazasAsignadas = calcularPlazasAsignadas(row);
-      const plazasReservadas = calcularPlazasReservadasPendientes(row);
+      eventos = rows.map((row) => {
+        const capacidad = Number(row.capacidad || 0);
+        const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.id)) || 0);
+        const disponibles = Math.max(capacidad - bloqueoFranja, 0);
+        const color = colorActividadProgramada();
 
-      return {
-        id: String(row.id),
-        title: `${row.codigo_reserva} · ${row.centro || "Sin centro"}`,
-        start: construirIsoLocal(row.fecha, row.hora_inicio),
-        end: construirIsoLocal(row.fecha, row.hora_fin),
-        backgroundColor: colorEstado(row.estado),
-        borderColor: colorEstado(row.estado),
-        textColor: "#ffffff",
-        extendedProps: {
-          id: row.id,
-          franja_id: row.franja_id,
-          codigo_reserva: row.codigo_reserva,
-          token_edicion: row.token_edicion || "",
-          estado: row.estado,
-          centro: row.centro || "",
-          contacto: row.contacto || "",
-          telefono: row.telefono || "",
-          email: row.email || "",
-          observaciones: row.observaciones || "",
-          fecha: row.fecha,
-          hora_inicio: row.hora_inicio,
-          hora_fin: row.hora_fin,
-          capacidad,
-          prereserva_expira_en: row.prereserva_expira_en,
-          plazas_prereservadas_historicas: Number(row.plazas_prereservadas || 0),
-          plazas_reservadas: plazasReservadas,
-          plazas_asignadas: plazasAsignadas,
-          disponibles,
-          asistentes_cargados: Number(row.asistentes_cargados || 0)
-        }
-      };
-    });
+        return {
+          id: `actividad-${row.id}`,
+          title: `${row.actividad_nombre || "Actividad"}${row.lugar ? ` · ${row.lugar}` : ""}`,
+          start: construirIsoLocal(row.fecha, row.hora_inicio),
+          end: construirIsoLocal(row.fecha, row.hora_fin),
+          backgroundColor: color,
+          borderColor: color,
+          textColor: "#ffffff",
+          extendedProps: {
+            tipo_evento: "ACTIVIDAD_PROGRAMADA",
+            franja_id: Number(row.id || 0),
+            actividad_id: Number(row.actividad_id || 0),
+            actividad_nombre: row.actividad_nombre || "Actividad",
+            organizador_publico: row.organizador_publico || "",
+            lugar: row.lugar || "",
+            fecha: row.fecha,
+            hora_inicio: row.hora_inicio,
+            hora_fin: row.hora_fin,
+            capacidad,
+            disponibles
+          }
+        };
+      });
+    } else {
+      const rows = await obtenerReservasCalendario(env, filtros);
+      const franjaIds = [...new Set(rows.map((r) => Number(r.franja_id)).filter(Boolean))];
+      const bloqueoPorFranja = await obtenerBloqueoPorFranja(env, franjaIds);
+
+      eventos = rows.map((row) => {
+        const capacidad = Number(row.capacidad || 0);
+        const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.franja_id)) || 0);
+        const disponibles = Math.max(capacidad - bloqueoFranja, 0);
+        const plazasAsignadas = calcularPlazasAsignadas(row);
+        const plazasReservadas = calcularPlazasReservadasPendientes(row);
+
+        return {
+          id: String(row.id),
+          title: `${row.codigo_reserva} · ${row.centro || "Sin centro"}`,
+          start: construirIsoLocal(row.fecha, row.hora_inicio),
+          end: construirIsoLocal(row.fecha, row.hora_fin),
+          backgroundColor: colorEstado(row.estado),
+          borderColor: colorEstado(row.estado),
+          textColor: "#ffffff",
+          extendedProps: {
+            tipo_evento: "RESERVA",
+            id: row.id,
+            franja_id: row.franja_id,
+            codigo_reserva: row.codigo_reserva,
+            token_edicion: row.token_edicion || "",
+            estado: row.estado,
+            centro: row.centro || "",
+            contacto: row.contacto || "",
+            telefono: row.telefono || "",
+            email: row.email || "",
+            observaciones: row.observaciones || "",
+            fecha: row.fecha,
+            hora_inicio: row.hora_inicio,
+            hora_fin: row.hora_fin,
+            capacidad,
+            prereserva_expira_en: row.prereserva_expira_en,
+            plazas_prereservadas_historicas: Number(row.plazas_prereservadas || 0),
+            plazas_reservadas: plazasReservadas,
+            plazas_asignadas: plazasAsignadas,
+            disponibles,
+            asistentes_cargados: Number(row.asistentes_cargados || 0)
+          }
+        };
+      });
+    }
 
     return json({
       ok: true,
+      vista: filtros.vista,
       eventos
     });
   } catch (error) {
