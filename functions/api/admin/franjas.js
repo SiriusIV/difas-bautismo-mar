@@ -38,6 +38,13 @@ function parsearFlag(valor, defecto = 0) {
   return defecto;
 }
 
+function haFinalizadoFranja(row, ahora = new Date()) {
+  if (!row?.fecha || !row?.hora_fin) return false;
+  const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
+  if (Number.isNaN(fechaHoraFin.getTime())) return false;
+  return fechaHoraFin.getTime() < ahora.getTime();
+}
+
 function validarDatosFranja({
   fecha,
   hora_inicio,
@@ -224,7 +231,7 @@ async function obtenerResumenFranjas(env, actividad_id) {
   const result = await env.DB.prepare(sql).bind(actividad_id).all();
   const rows = result.results || [];
 
-  return rows.map(row => {
+  let franjas = rows.map(row => {
     const capacidad = row.capacidad === null || row.capacidad === undefined ? null : Number(row.capacidad || 0);
     const ocupadas = aforoLimitado ? Number(row.ocupadas || 0) : 0;
 
@@ -237,6 +244,11 @@ async function obtenerResumenFranjas(env, actividad_id) {
       numero_reservas: aforoLimitado ? Number(row.numero_reservas || 0) : 0
     };
   });
+
+  const ahora = new Date();
+  franjas = franjas.filter((franja) => !haFinalizadoFranja(franja, ahora));
+
+  return franjas;
 }
 
 async function obtenerFranjaPorId(env, id) {
