@@ -2,6 +2,7 @@ import { getAdminSession } from "./_auth.js";
 import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { crearNotificacion } from "../_notificaciones.js";
+import { enviarEmail } from "../_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -266,6 +267,10 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       r.usuario_id,
       r.codigo_reserva,
       r.centro,
+      r.contacto,
+      r.email,
+      r.observaciones,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
     LEFT JOIN actividades a
@@ -273,6 +278,79 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
     WHERE r.id = ?
     LIMIT 1
   `).bind(reservaId).first();
+}
+
+function escaparHtmlCorreo(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
+  const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
+  const codigo = limpiarTexto(contexto?.codigo_reserva || "");
+  const organizador = limpiarTexto(contexto?.organizador_nombre || "el organizador");
+  const saludo = limpiarTexto(contexto?.contacto)
+    ? `Hola ${limpiarTexto(contexto.contacto)},`
+    : "Hola,";
+
+  let asunto = "[Reservas] Actualización de tu solicitud";
+  let mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada.`;
+
+  if (nuevoEstado === "CONFIRMADA") {
+    asunto = "[Reservas] Solicitud aceptada";
+    mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido aceptada por ${organizador}.`;
+  } else if (nuevoEstado === "RECHAZADA") {
+    asunto = "[Reservas] Solicitud rechazada";
+    mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada por ${organizador}. Revisa su estado para corregirla o decidir qué hacer a continuación.`;
+  } else if (nuevoEstado === "PENDIENTE") {
+    asunto = "[Reservas] Solicitud reabierta";
+    mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisión del organizador.`;
+  }
+
+  const observaciones = limpiarTexto(contexto?.observaciones || "");
+  const texto = [
+    saludo,
+    "",
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Organiza: ${organizador}`,
+    observaciones && nuevoEstado === "RECHAZADA" ? `Observaciones: ${observaciones}` : "",
+    "",
+    "Puedes consultar el detalle actualizado desde tu panel de usuario."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>${escaparHtmlCorreo(saludo)}</p>
+    <p>${escaparHtmlCorreo(mensaje)}</p>
+    <p><strong>Actividad:</strong> ${escaparHtmlCorreo(actividad)}</p>
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtmlCorreo(codigo)}</p>` : ""}
+    <p><strong>Organiza:</strong> ${escaparHtmlCorreo(organizador)}</p>
+    ${observaciones && nuevoEstado === "RECHAZADA" ? `<p><strong>Observaciones:</strong> ${escaparHtmlCorreo(observaciones)}</p>` : ""}
+    <p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
+async function enviarCorreoSolicitanteCambioEstado(env, contexto = {}, nuevoEstado = "") {
+  const destinatario = limpiarTexto(contexto?.email || "");
+  if (!destinatario) {
+    return { ok: false, skipped: true, error: "La solicitud no tiene correo de contacto." };
+  }
+
+  const correo = construirCorreoEstadoReserva(contexto, nuevoEstado);
+  return await enviarEmail(env, {
+    to: destinatario,
+    subject: correo.asunto,
+    text: correo.texto,
+    html: correo.html
+  });
 }
 
 async function crearNotificacionSolicitanteReservaAceptada(env, contexto = {}) {
@@ -483,6 +561,7 @@ export async function onRequestPatch(context) {
     }
 
     let notificacionSolicitante = { ok: false, skipped: true, error: "" };
+    let correoSolicitante = { ok: false, skipped: true, error: "" };
     try {
       if (nuevoEstado === "CONFIRMADA") {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoReserva);
@@ -491,8 +570,14 @@ export async function onRequestPatch(context) {
       } else if (nuevoEstado === "PENDIENTE") {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoReserva);
       }
+      correoSolicitante = await enviarCorreoSolicitanteCambioEstado(env, contextoReserva, nuevoEstado);
     } catch (errorNotificacion) {
       notificacionSolicitante = {
+        ok: false,
+        skipped: true,
+        error: errorNotificacion?.message || String(errorNotificacion || "")
+      };
+      correoSolicitante = {
         ok: false,
         skipped: true,
         error: errorNotificacion?.message || String(errorNotificacion || "")
@@ -505,6 +590,10 @@ export async function onRequestPatch(context) {
       notificacion_solicitante: {
         creada: !!notificacionSolicitante.ok,
         error: notificacionSolicitante.ok ? "" : (notificacionSolicitante.error || "")
+      },
+      correo_solicitante: {
+        enviado: !!correoSolicitante.ok,
+        error: correoSolicitante.ok ? "" : (correoSolicitante.error || "")
       }
     });
   } catch (error) {

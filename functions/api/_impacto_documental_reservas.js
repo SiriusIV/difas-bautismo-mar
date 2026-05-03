@@ -15,6 +15,18 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function resolverContactoReservaParaCorreo(reservas = []) {
+  const primeraConCorreo = (Array.isArray(reservas) ? reservas : []).find((reserva) => limpiarTexto(reserva?.email));
+  if (!primeraConCorreo) {
+    return { contacto: "", email: "" };
+  }
+
+  return {
+    contacto: limpiarTexto(primeraConCorreo.contacto || ""),
+    email: limpiarTexto(primeraConCorreo.email || "")
+  };
+}
+
 function parsearFecha(valor) {
   const texto = limpiarTexto(valor);
   if (!texto) return null;
@@ -237,6 +249,8 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
       r.estado,
       r.actividad_id,
       r.franja_id,
+      r.contacto,
+      r.email,
       r.fecha_solicitud,
       r.fecha_modificacion
     FROM reservas r
@@ -426,18 +440,20 @@ export async function recalcularImpactoDocumentalReservas(env, {
       }
     }
 
-    if (reservasSuspendidas.length) {
-      const payloadNotificacion = {
-        admin,
-        responsable: resolucion.responsable,
-        centro: {
-          usuario_id: Number(solicitante.id || 0),
-          centro: solicitante.centro || "",
-          email: solicitante.email || ""
-        },
-        motivo_texto: motivoImpactoDocumentalTexto(motivo),
-        reservas: reservasSuspendidas,
-        documentos_pendientes: pendientes,
+      if (reservasSuspendidas.length) {
+        const contactoCorreo = resolverContactoReservaParaCorreo(reservasSuspendidas);
+        const payloadNotificacion = {
+          admin,
+          responsable: resolucion.responsable,
+          centro: {
+            usuario_id: Number(solicitante.id || 0),
+            centro: solicitante.centro || "",
+            contacto: contactoCorreo.contacto,
+            email: contactoCorreo.email
+          },
+          motivo_texto: motivoImpactoDocumentalTexto(motivo),
+          reservas: reservasSuspendidas,
+          documentos_pendientes: pendientes,
         enlace_perfil: enlacePerfil
       };
       const resultado = await notificarReservaCondicionada(env, payloadNotificacion);
@@ -453,18 +469,20 @@ export async function recalcularImpactoDocumentalReservas(env, {
       }
     }
 
-    if (reservasReactivadas.length) {
-      const payloadNotificacion = {
-        admin,
-        responsable: resolucion.responsable,
-        centro: {
-          usuario_id: Number(solicitante.id || 0),
-          centro: solicitante.centro || "",
-          email: solicitante.email || ""
-        },
-        motivo_texto: motivoImpactoDocumentalTexto(motivo),
-        reservas: reservasReactivadas,
-        enlace_perfil: enlacePerfil
+      if (reservasReactivadas.length) {
+        const contactoCorreo = resolverContactoReservaParaCorreo(reservasReactivadas);
+        const payloadNotificacion = {
+          admin,
+          responsable: resolucion.responsable,
+          centro: {
+            usuario_id: Number(solicitante.id || 0),
+            centro: solicitante.centro || "",
+            contacto: contactoCorreo.contacto,
+            email: contactoCorreo.email
+          },
+          motivo_texto: motivoImpactoDocumentalTexto(motivo),
+          reservas: reservasReactivadas,
+          enlace_perfil: enlacePerfil
       };
       const resultado = await notificarReservaReactivada(env, payloadNotificacion);
       if (resultado.ok) resumen.notificaciones_reactivadas += 1;
