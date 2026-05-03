@@ -348,6 +348,13 @@
       justify-content: center;
     }
 
+    .contenido-bloque-formulario {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+
     label {
       display: block;
       font-weight: bold;
@@ -441,10 +448,12 @@
     }
 
     .nota-obligatorios {
-      margin-top: 2px;
+      margin-top: auto;
       text-align: right;
       font-size: 12px;
       color: #c62828;
+      background: #fff;
+      align-self: flex-end;
     }
 
     .campo-obligatorio {
@@ -694,7 +703,7 @@
           </div>
 
           <div class="solicitud-bloque solicitud-bloque-formulario">
-            <div>
+            <div class="contenido-bloque-formulario">
               <div class="fila-franja-plazas">
                 <div class="fila campo-franja">
                   <label for="franja">Franja horaria <span class="campo-obligatorio">*</span></label>
@@ -723,11 +732,11 @@
                 <label for="observaciones">Observaciones</label>
                 <textarea id="observaciones" name="observaciones"></textarea>
               </div>
+
+              <div class="nota-obligatorios">* Campos obligatorios</div>
             </div>
           </div>
         </div>
-
-        <div class="nota-obligatorios">* Campos obligatorios</div>
       </form>
 
       <div class="solicitud-bloque">
@@ -799,6 +808,7 @@
     let envioEnCurso = false;
     let reservaCreada = null;
     let datosPendientesEnvio = null;
+    let solicitudPendienteEnvio = false;
 
     function getActividadId() {
       const params = new URLSearchParams(window.location.search);
@@ -849,6 +859,24 @@
       if (estado === "RECHAZADA") return "RECHAZADA";
       if (estado === "CANCELADA") return "CANCELADA";
       return estado || "";
+    }
+
+    function marcarSolicitudPendiente() {
+      solicitudPendienteEnvio = true;
+    }
+
+    function limpiarSolicitudPendiente() {
+      solicitudPendienteEnvio = false;
+    }
+
+    function haySolicitudSinEnviar() {
+      if (reservaCreada) return false;
+      return solicitudPendienteEnvio;
+    }
+
+    function confirmarSalidaSinEnviar() {
+      if (!haySolicitudSinEnviar()) return true;
+      return window.confirm("La solicitud no ha sido enviada. Si sale sin enviar, se perderán los cambios.");
     }
 
     async function comprobarSesion() {
@@ -1154,6 +1182,7 @@
         }
 
         reservaCreada = data;
+        limpiarSolicitudPendiente();
         cerrarModalConfirmacion();
         mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
         await cargarFranjas();
@@ -1190,10 +1219,27 @@
       const sesionOk = await comprobarSesion();
       if (!sesionOk) return;
 
+      const form = document.getElementById("formularioSolicitud");
+      const enlacePortal = document.querySelector('a[href="portal.html"].btn-enlace-icono');
+
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
       document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
 
-      document.getElementById("formularioSolicitud").addEventListener("submit", function (e) {
+      form.addEventListener("input", function (e) {
+        const objetivo = e.target;
+        if (!(objetivo instanceof HTMLElement)) return;
+        if (objetivo.id === "plazasDisponibles" || objetivo.id === "centro") return;
+        marcarSolicitudPendiente();
+      });
+
+      form.addEventListener("change", function (e) {
+        const objetivo = e.target;
+        if (!(objetivo instanceof HTMLElement)) return;
+        if (objetivo.id === "plazasDisponibles" || objetivo.id === "centro") return;
+        marcarSolicitudPendiente();
+      });
+
+      form.addEventListener("submit", function (e) {
         e.preventDefault();
         limpiarMensaje();
 
@@ -1205,6 +1251,19 @@
 
         datosPendientesEnvio = validacion.datos;
         abrirModalConfirmacion(validacion.datos);
+      });
+
+      if (enlacePortal) {
+        enlacePortal.addEventListener("click", function (e) {
+          if (confirmarSalidaSinEnviar()) return;
+          e.preventDefault();
+        });
+      }
+
+      window.addEventListener("beforeunload", function (e) {
+        if (!haySolicitudSinEnviar()) return;
+        e.preventDefault();
+        e.returnValue = "";
       });
 
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
