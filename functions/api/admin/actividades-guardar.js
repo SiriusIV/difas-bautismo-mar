@@ -33,6 +33,47 @@ function parsearFlag(valor, defecto = 0) {
   return defecto;
 }
 
+function normalizarRequisitosEntrada(valor) {
+  const lista = Array.isArray(valor) ? valor : [];
+  return lista
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      return String(item?.texto || "").trim();
+    })
+    .filter(Boolean);
+}
+
+async function asegurarTablaRequisitos(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_requisitos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actividad_id INTEGER NOT NULL,
+      texto TEXT NOT NULL,
+      orden INTEGER NOT NULL DEFAULT 0
+    )
+  `).run();
+}
+
+async function guardarRequisitosActividad(env, actividadId, requisitos) {
+  await asegurarTablaRequisitos(env);
+
+  await env.DB.prepare(`
+    DELETE FROM actividad_requisitos
+    WHERE actividad_id = ?
+  `).bind(actividadId).run();
+
+  for (let i = 0; i < requisitos.length; i += 1) {
+    await env.DB.prepare(`
+      INSERT INTO actividad_requisitos (
+        actividad_id,
+        texto,
+        orden
+      )
+      VALUES (?, ?, ?)
+    `).bind(actividadId, requisitos[i], i + 1).run();
+  }
+}
+
 function validarActividad(data) {
   const nombre = limpiarTexto(data.nombre);
   const tipo = limpiarTexto(data.tipo).toUpperCase();
@@ -165,7 +206,8 @@ function construirPayload(body, admin_id) {
     patron_recurrencia: normalizarNullable(body.patron_recurrencia),
     usa_enlace_externo: parsearFlag(body.usa_enlace_externo, 0),
     enlace_externo_url: normalizarNullable(body.enlace_externo_url),
-    borrador_tecnico: parsearFlag(body.borrador_tecnico, 0)
+    borrador_tecnico: parsearFlag(body.borrador_tecnico, 0),
+    requisitos_particulares: normalizarRequisitosEntrada(body.requisitos_particulares)
   };
 }
 
@@ -263,6 +305,11 @@ export async function onRequestPost(context) {
 
     if ((result?.meta?.changes || 0) === 0) {
       return json({ ok: false, error: "No se pudo crear la actividad." }, 500);
+    }
+
+    const actividadId = Number(result?.meta?.last_row_id || 0);
+    if (actividadId > 0) {
+      await guardarRequisitosActividad(env, actividadId, p.requisitos_particulares);
     }
 
     return json({
@@ -469,6 +516,8 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: "No se pudo actualizar la actividad." }, 500);
     }
 
+    await guardarRequisitosActividad(env, id, p.requisitos_particulares);
+
     return json({
       ok: true,
       mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
@@ -516,6 +565,12 @@ export async function onRequestDelete(context) {
 
     await env.DB.prepare(`
       DELETE FROM franjas
+      WHERE actividad_id = ?
+    `).bind(id).run();
+
+    await asegurarTablaRequisitos(env);
+    await env.DB.prepare(`
+      DELETE FROM actividad_requisitos
       WHERE actividad_id = ?
     `).bind(id).run();
 

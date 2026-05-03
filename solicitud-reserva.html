@@ -960,6 +960,15 @@
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor || "").trim());
     }
 
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     async function comprobarSesion() {
       const res = await fetch("/api/usuario/session", {
         credentials: "include"
@@ -1010,6 +1019,25 @@
 
       elemento.style.display = "block";
       elemento.innerHTML = `<strong>${etiqueta}:</strong> ${texto}`;
+    }
+
+    function renderRequisitosSolicitud() {
+      const contenedor = document.getElementById("resumenExplicativo");
+      if (!contenedor) return;
+
+      const requisitos = Array.isArray(actividadActual?.requisitos_particulares)
+        ? actividadActual.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean)
+        : [];
+
+      if (!requisitos.length) {
+        contenedor.textContent = "Esta solicitud no tiene requisitos particulares adicionales definidos en este momento.";
+        return;
+      }
+
+      contenedor.innerHTML = `
+        <strong>Requisitos particulares de esta actividad:</strong>
+        <ul>${requisitos.map((texto) => `<li>${escapeHtml(texto)}</li>`).join("")}</ul>
+      `;
     }
 
     async function cargarActividad() {
@@ -1070,6 +1098,7 @@
         textoFechas = `${actividadActual.fecha_inicio || ""}${actividadActual.fecha_inicio && actividadActual.fecha_fin ? " - " : ""}${actividadActual.fecha_fin || ""}`;
       }
       actualizarDatoActividad("fechasEvento", "Fechas", textoFechas);
+      renderRequisitosSolicitud();
     }
 
     async function cargarFranjas() {

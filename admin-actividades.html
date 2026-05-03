@@ -1357,6 +1357,98 @@
       text-align: center;
     }
 
+    .requisitos-contexto {
+      margin-top: 2px;
+      margin-bottom: 8px;
+    }
+
+    .requisitos-actividad-nombre {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .requisitos-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0 12px;
+    }
+
+    .requisitos-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .tabla-requisitos {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .tabla-requisitos th,
+    .tabla-requisitos td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .tabla-requisitos th {
+      background: #f2f6fb;
+      color: #334250;
+      font-weight: 600;
+    }
+
+    .tabla-requisitos tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tabla-requisitos .col-orden {
+      width: 48px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .tabla-requisitos .col-acciones {
+      width: 88px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .tabla-requisitos .celda-orden,
+    .tabla-requisitos .celda-acciones {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .input-requisito {
+      width: 100%;
+      min-height: 76px;
+      resize: vertical;
+      font: inherit;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #1e2a36;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .input-requisito:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(33, 99, 222, 0.12);
+    }
+
+    .tabla-requisitos-vacia {
+      margin-top: 10px;
+    }
+
     .fila-compacta-config-final {
       grid-template-columns: 180px 180px 140px 160px;
     }
@@ -1516,6 +1608,11 @@
 
       .campo-franja-acciones {
         justify-content: flex-start;
+      }
+
+      .tabla-requisitos .col-orden,
+      .tabla-requisitos .col-acciones {
+        width: auto;
       }
     }
 
@@ -1918,6 +2015,33 @@
             </div>
           </section>
 
+          <section class="step-pane" data-step="3">
+            <h3 class="step-title">Requisitos particulares</h3>
+            <p class="step-help">Añade aquí los requisitos específicos que debe conocer el solicitante antes de tramitar la actividad.</p>
+
+            <div class="requisitos-contexto">
+              <div class="requisitos-actividad-nombre" id="requisitosActividadNombre">Nueva actividad</div>
+            </div>
+            <div class="requisitos-divider"></div>
+
+            <div class="requisitos-toolbar">
+              <button type="button" class="btn-mini" id="btnAgregarRequisito">Añadir requisito</button>
+            </div>
+
+            <table class="tabla-requisitos" aria-label="Tabla de requisitos particulares">
+              <thead>
+                <tr>
+                  <th class="col-orden">#</th>
+                  <th>Requisito</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaRequisitosBody"></tbody>
+            </table>
+
+            <div id="tablaRequisitosVacia" class="sin-franjas tabla-requisitos-vacia">Todavía no hay requisitos particulares definidos para esta actividad.</div>
+          </section>
+
         </form>
 
         <div class="modal-confirmacion-salida" id="modalSalidaSinGuardar" aria-hidden="true">
@@ -2015,6 +2139,7 @@
     let franjasCache = [];
     let actividadEsBorradorTecnico = false;
     let franjaSeleccionadaId = null;
+    let requisitosParticulares = [];
 
     let imagenOriginalId = "";
     let imagenOriginalUrl = "";
@@ -2756,6 +2881,98 @@ async function manejarCambioCriticoCampo(id) {
   return true;
 }
 
+function crearRequisitoLocal(texto = "") {
+  return {
+    id: `req-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    texto: String(texto || "").trim()
+  };
+}
+
+function normalizarListaRequisitos(lista) {
+  return Array.isArray(lista)
+    ? lista
+        .map((item) => {
+          if (typeof item === "string") return item.trim();
+          return String(item?.texto || "").trim();
+        })
+        .filter(Boolean)
+    : [];
+}
+
+function obtenerRequisitosParticularesFormulario() {
+  return requisitosParticulares
+    .map((item) => String(item?.texto || "").trim())
+    .filter(Boolean);
+}
+
+function actualizarTituloRequisitos() {
+  const el = document.getElementById("requisitosActividadNombre");
+  if (!el) return;
+  el.textContent =
+    document.getElementById("titulo_publico").value.trim() ||
+    document.getElementById("nombre").value.trim() ||
+    "Nueva actividad";
+}
+
+function renderTablaRequisitos() {
+  const tbody = document.getElementById("tablaRequisitosBody");
+  const vacia = document.getElementById("tablaRequisitosVacia");
+  if (!tbody || !vacia) return;
+
+  tbody.innerHTML = "";
+
+  if (!requisitosParticulares.length) {
+    vacia.classList.remove("oculto");
+    return;
+  }
+
+  vacia.classList.add("oculto");
+
+  requisitosParticulares.forEach((requisito, index) => {
+    const tr = document.createElement("tr");
+
+    const tdOrden = document.createElement("td");
+    tdOrden.className = "celda-orden";
+    tdOrden.textContent = String(index + 1);
+
+    const tdTexto = document.createElement("td");
+    const textarea = document.createElement("textarea");
+    textarea.className = "input-requisito";
+    textarea.rows = 3;
+    textarea.placeholder = "Escribe aquí un requisito particular de esta actividad.";
+    textarea.value = requisito.texto || "";
+    textarea.addEventListener("input", () => {
+      requisitosParticulares[index].texto = textarea.value;
+      marcarCambiosPendientesActividad();
+    });
+    tdTexto.appendChild(textarea);
+
+    const tdAcciones = document.createElement("td");
+    tdAcciones.className = "celda-acciones";
+    const btnEliminar = document.createElement("button");
+    btnEliminar.type = "button";
+    btnEliminar.className = "btn-mini peligro";
+    btnEliminar.textContent = "Eliminar";
+    btnEliminar.addEventListener("click", () => {
+      requisitosParticulares.splice(index, 1);
+      marcarCambiosPendientesActividad();
+      renderTablaRequisitos();
+    });
+    tdAcciones.appendChild(btnEliminar);
+
+    tr.append(tdOrden, tdTexto, tdAcciones);
+    tbody.appendChild(tr);
+  });
+}
+
+function cargarRequisitosActividad(actividad) {
+  requisitosParticulares = normalizarListaRequisitos(actividad?.requisitos_particulares).map((texto) =>
+    crearRequisitoLocal(texto)
+  );
+  renderTablaRequisitos();
+  actualizarTituloRequisitos();
+}
+
     function rellenarFormulario(actividad) {
   cargandoActividad = true;
 
@@ -2794,6 +3011,7 @@ async function manejarCambioCriticoCampo(id) {
     document.getElementById("tituloFormulario").textContent = "Editar actividad";
 
     registrarImagenOriginalDesdeFormulario();
+    cargarRequisitosActividad(actividad);
     sincronizarTogglesPanelConfiguracion();
     actualizarBotonEliminar();
     actualizarVisibilidadFormulario();
@@ -2802,13 +3020,14 @@ async function manejarCambioCriticoCampo(id) {
     actualizarEstadoFranjasUI();
   } finally {
     cargandoActividad = false;
-  }
+    }
 }
 
     async function cargarActividadSiEsEdicion() {
       actividadEditandoId = getActividadIdURL();
       if (!actividadEditandoId) {
         registrarImagenOriginalDesdeFormulario();
+        cargarRequisitosActividad(null);
         actualizarBotonEliminar();
         limpiarCambiosPendientesActividad();
         return;
@@ -2841,7 +3060,7 @@ async function manejarCambioCriticoCampo(id) {
     }
 
     function getPasoFlowActividad() {
-  return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2] : [0, 2];
+  return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2, 3] : [0, 2, 3];
 }
 
 function normalizarPasoSegunFlujo(pasoDeseado) {
@@ -2953,12 +3172,13 @@ function actualizarVisibilidadFormulario() {
       const elImagen = document.getElementById("previewImagen");
       const elMeta = document.getElementById("previewMeta");
       const elTexto = document.getElementById("previewTexto");
-      const direccionDiv = document.getElementById("previewDireccion");
+        const direccionDiv = document.getElementById("previewDireccion");
 
-      document.getElementById("tituloActividadContexto").textContent =
-        tituloPublico || nombre || "Nueva actividad";
+        document.getElementById("tituloActividadContexto").textContent =
+          tituloPublico || nombre || "Nueva actividad";
+        actualizarTituloRequisitos();
 
-      if (titulo) {
+        if (titulo) {
         elTitulo.innerHTML = "";
         if (usaEnlaceExterno && enlaceUrl) {
           const enlaceTitulo = document.createElement("a");
@@ -3719,18 +3939,19 @@ async function borrarFranja(id) {
         usa_franjas: document.getElementById("usa_franjas").value,
         requiere_reserva: document.getElementById("requiere_reserva").value,
         aforo_limitado: document.getElementById("aforo_limitado").value,
-        provincia: document.getElementById("provincia").value.trim(),
-        es_recurrente: document.getElementById("es_recurrente").value,
-        patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
-        usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
-        enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
-        direccion_postal: document.getElementById("direccion_postal").value.trim(),
-        latitud: document.getElementById("latitud").value.trim(),
-        longitud: document.getElementById("longitud").value.trim(),
-        zoom_mapa: document.getElementById("zoom_mapa").value.trim(),
-        borrador_tecnico: borradorTecnico
-      };
-    }
+          provincia: document.getElementById("provincia").value.trim(),
+          es_recurrente: document.getElementById("es_recurrente").value,
+          patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
+          usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
+          enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
+          direccion_postal: document.getElementById("direccion_postal").value.trim(),
+          latitud: document.getElementById("latitud").value.trim(),
+          longitud: document.getElementById("longitud").value.trim(),
+          zoom_mapa: document.getElementById("zoom_mapa").value.trim(),
+          borrador_tecnico: borradorTecnico,
+          requisitos_particulares: obtenerRequisitosParticularesFormulario()
+        };
+      }
 
     async function guardarActividad(event) {
       if (event) event.preventDefault();
@@ -4152,14 +4373,19 @@ function retrocederPaso() {
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
-      document.getElementById("btnAceptarMensajeActividad").addEventListener("click", aceptarMensajeErrorActividad);
-      document.getElementById("btnCancelarMensajeActividad").addEventListener("click", cancelarMensajeErrorActividad);
-      document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
-      document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
-      document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
-      document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
-      document.getElementById("btnEditarFranjaSeleccionada").addEventListener("click", editarFranjaSeleccionada);
-      document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
+        document.getElementById("btnAceptarMensajeActividad").addEventListener("click", aceptarMensajeErrorActividad);
+        document.getElementById("btnCancelarMensajeActividad").addEventListener("click", cancelarMensajeErrorActividad);
+        document.getElementById("btnAnterior").addEventListener("click", retrocederPaso);
+        document.getElementById("btnSiguiente").addEventListener("click", avanzarPaso);
+        document.getElementById("btnAgregarRequisito").addEventListener("click", () => {
+          requisitosParticulares.push(crearRequisitoLocal(""));
+          marcarCambiosPendientesActividad();
+          renderTablaRequisitos();
+        });
+        document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
+        document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
+        document.getElementById("btnEditarFranjaSeleccionada").addEventListener("click", editarFranjaSeleccionada);
+        document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
       document.getElementById("btnCerrarModalSalida").addEventListener("click", cerrarModalSalidaSinGuardar);
       document.getElementById("btnSalirSinGuardar").addEventListener("click", async () => {
         await salirSinGuardarActividad();
@@ -4326,11 +4552,13 @@ function retrocederPaso() {
         app.style.display = "block";
       }
 
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      actualizarBotonEliminar();
-      renderListaFranjas();
-      renderPreviewFranjas();
+        actualizarVisibilidadFormulario();
+        actualizarPreview();
+        actualizarBotonEliminar();
+        renderTablaRequisitos();
+        actualizarTituloRequisitos();
+        renderListaFranjas();
+        renderPreviewFranjas();
       CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
       mostrarPaso(0);
 

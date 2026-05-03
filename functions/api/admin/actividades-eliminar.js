@@ -137,14 +137,23 @@ export async function onRequestPost(context) {
       WHERE actividad_id = ?
     `).bind(id).run();
 
-    await env.DB.prepare(`
-      DELETE FROM franjas
-      WHERE actividad_id = ?
-    `).bind(id).run();
+      await env.DB.prepare(`
+        DELETE FROM franjas
+        WHERE actividad_id = ?
+      `).bind(id).run();
 
-    const result = await env.DB.prepare(`
-      DELETE FROM actividades
-      WHERE id = ?
+      try {
+        await env.DB.prepare(`
+          DELETE FROM actividad_requisitos
+          WHERE actividad_id = ?
+        `).bind(id).run();
+      } catch (_) {
+        // La tabla puede no existir todavía en entornos sin requisitos particulares.
+      }
+
+      const result = await env.DB.prepare(`
+        DELETE FROM actividades
+        WHERE id = ?
     `).bind(id).run();
 
     if ((result?.meta?.changes || 0) === 0) {
