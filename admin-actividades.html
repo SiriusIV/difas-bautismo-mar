@@ -1357,27 +1357,31 @@
       text-align: center;
     }
 
-    .requisitos-contexto {
-      margin-top: 2px;
+    .requisitos-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
-    .requisitos-actividad-nombre {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--brand);
+    .requisitos-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
     }
 
     .requisitos-divider {
       height: 1px;
       background: var(--border);
-      margin: 8px 0 12px;
+      margin: 0 0 12px;
     }
 
-    .requisitos-toolbar {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 10px;
+    .tabla-requisitos-wrap {
+      max-height: 248px;
+      overflow-y: auto;
+      border-radius: 10px;
     }
 
     .tabla-requisitos {
@@ -1428,15 +1432,19 @@
 
     .input-requisito {
       width: 100%;
-      min-height: 76px;
-      resize: vertical;
+      min-height: 40px;
+      height: 40px;
+      resize: none;
       font: inherit;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 9px 12px;
       color: #1e2a36;
       background: #fff;
       box-sizing: border-box;
+      line-height: 1.35;
+      overflow: hidden;
+      white-space: nowrap;
     }
 
     .input-requisito:focus {
@@ -2016,28 +2024,27 @@
           </section>
 
           <section class="step-pane" data-step="3">
-            <h3 class="step-title">Requisitos particulares</h3>
-            <p class="step-help">Añade aquí los requisitos específicos que debe conocer el solicitante antes de tramitar la actividad.</p>
-
-            <div class="requisitos-contexto">
-              <div class="requisitos-actividad-nombre" id="requisitosActividadNombre">Nueva actividad</div>
+            <div class="requisitos-head">
+              <h3 class="step-title">Requisitos particulares</h3>
+              <div class="requisitos-toolbar">
+                <button type="button" class="btn-mini" id="btnAgregarRequisito">Añadir requisito</button>
+              </div>
             </div>
+            <p class="step-help">Añade aquí los requisitos específicos que debe conocer el solicitante antes de tramitar la actividad.</p>
             <div class="requisitos-divider"></div>
 
-            <div class="requisitos-toolbar">
-              <button type="button" class="btn-mini" id="btnAgregarRequisito">Añadir requisito</button>
+            <div class="tabla-requisitos-wrap">
+              <table class="tabla-requisitos" aria-label="Tabla de requisitos particulares">
+                <thead>
+                  <tr>
+                    <th class="col-orden">#</th>
+                    <th>Requisito</th>
+                    <th class="col-acciones">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaRequisitosBody"></tbody>
+              </table>
             </div>
-
-            <table class="tabla-requisitos" aria-label="Tabla de requisitos particulares">
-              <thead>
-                <tr>
-                  <th class="col-orden">#</th>
-                  <th>Requisito</th>
-                  <th class="col-acciones">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tablaRequisitosBody"></tbody>
-            </table>
 
             <div id="tablaRequisitosVacia" class="sin-franjas tabla-requisitos-vacia">Todavía no hay requisitos particulares definidos para esta actividad.</div>
           </section>
@@ -2938,7 +2945,7 @@ function renderTablaRequisitos() {
     const tdTexto = document.createElement("td");
     const textarea = document.createElement("textarea");
     textarea.className = "input-requisito";
-    textarea.rows = 3;
+    textarea.rows = 1;
     textarea.placeholder = "Escribe aquí un requisito particular de esta actividad.";
     textarea.value = requisito.texto || "";
     textarea.addEventListener("input", () => {
