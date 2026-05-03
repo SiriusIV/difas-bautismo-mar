@@ -114,11 +114,36 @@
     }
 
     .mensaje {
+      position: relative;
       margin-top: 16px;
       margin-bottom: 18px;
-      padding: 12px;
+      padding: 12px 42px 12px 12px;
       border-radius: 6px;
       display: none;
+    }
+
+    .mensaje-texto {
+      display: block;
+      line-height: 1.45;
+    }
+
+    .mensaje-cerrar {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 26px;
+      height: 26px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: currentColor;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
     }
 
     .mensaje.error {
@@ -334,6 +359,7 @@
       height: 200px;
       min-height: 0;
       object-fit: cover;
+      object-position: center 62%;
       border-radius: 12px;
       border: 1px solid #d9e2eb;
       background: #edf3fb;
@@ -681,7 +707,10 @@
       </div>
     </div>
 
-    <div id="mensaje" class="mensaje"></div>
+    <div id="mensaje" class="mensaje">
+      <span id="mensajeTexto" class="mensaje-texto"></span>
+      <button type="button" id="btnCerrarMensaje" class="mensaje-cerrar" aria-label="Cerrar aviso">×</button>
+    </div>
 
     <div class="formulario-solicitud">
       <form id="formularioSolicitud">
@@ -722,12 +751,12 @@
 
             <div class="fila">
               <label for="telefono">Teléfono de contacto <span class="campo-obligatorio">*</span></label>
-              <input type="tel" id="telefono" name="telefono" required>
+              <input type="tel" id="telefono" name="telefono" inputmode="tel" autocomplete="tel" placeholder="Ej.: 981123456" required>
             </div>
 
             <div class="fila">
               <label for="email">Correo electrónico de contacto <span class="campo-obligatorio">*</span></label>
-              <input type="email" id="email" name="email" required>
+              <input type="email" id="email" name="email" inputmode="email" autocomplete="email" placeholder="nombre@dominio.es" required>
             </div>
           </div>
         </div>
@@ -864,16 +893,18 @@
 
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
+      const mensajeTexto = document.getElementById("mensajeTexto");
       mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
-      mensaje.textContent = texto;
+      mensajeTexto.textContent = texto;
     }
 
     function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
+      const mensajeTexto = document.getElementById("mensajeTexto");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
-      mensaje.textContent = "";
+      mensajeTexto.textContent = "";
     }
 
     function calcularMinutosConsolidacion(plazas) {
@@ -917,6 +948,15 @@
     function confirmarSalidaSinEnviar() {
       if (!haySolicitudSinEnviar()) return true;
       return window.confirm("La solicitud no ha sido enviada. Si sale sin enviar, se perderán los cambios.");
+    }
+
+    function telefonoValido(valor) {
+      const limpio = String(valor || "").replace(/[\s().-]/g, "");
+      return /^[+]?\d{9,15}$/.test(limpio);
+    }
+
+    function emailValido(valor) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor || "").trim());
     }
 
     async function comprobarSesion() {
@@ -1132,6 +1172,14 @@
         return { ok: false, error: "Debe completar todos los datos obligatorios." };
       }
 
+      if (!telefonoValido(telefono)) {
+        return { ok: false, error: "Debe indicar un teléfono de contacto válido." };
+      }
+
+      if (!emailValido(email)) {
+        return { ok: false, error: "Debe indicar un correo electrónico de contacto válido." };
+      }
+
       if (!Number.isInteger(plazas) || plazas <= 0) {
         return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
       }
@@ -1261,9 +1309,27 @@
 
       const form = document.getElementById("formularioSolicitud");
       const enlacePortal = document.querySelector('a[href="portal.html"].btn-enlace-icono');
+      const campoTelefono = document.getElementById("telefono");
+      const campoEmail = document.getElementById("email");
+
+      document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
 
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
       document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
+
+      campoTelefono.addEventListener("blur", function () {
+        const valor = campoTelefono.value.trim();
+        if (!valor) return;
+        if (telefonoValido(valor)) return;
+        mostrarMensaje("error", "El formato del teléfono de contacto no es válido.");
+      });
+
+      campoEmail.addEventListener("blur", function () {
+        const valor = campoEmail.value.trim();
+        if (!valor) return;
+        if (emailValido(valor)) return;
+        mostrarMensaje("error", "El formato del correo electrónico de contacto no es válido.");
+      });
 
       form.addEventListener("input", function (e) {
         const objetivo = e.target;
