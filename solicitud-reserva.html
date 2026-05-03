@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Solicitud de reserva</title>
   <style>
+    :root {
+      --color-fondo: #f4f6f8;
+      --color-panel: #fff;
+      --color-borde: rgba(221,228,234,0.95);
+      --color-borde-input: #c9cfd6;
+      --color-primario: #123a63;
+      --color-secundario: #4a5a6a;
+      --color-texto: #222;
+      --color-resumen-fondo: #eef4ff;
+      --color-resumen-borde: #c9dcff;
+      --color-resumen-texto: #1d4f91;
+      --radio-panel: 18px;
+      --radio-campo: 10px;
+      --sombra-panel: 0 4px 18px rgba(0,0,0,0.08);
+      --gap-bloques: 10px;
+      --gap-campos: 16px;
+    }
+
     html, body {
       min-height: 100%;
     }
@@ -15,10 +33,10 @@
         linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
         linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
         url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
-        #f4f6f8;
+        var(--color-fondo);
       background-blend-mode: normal, screen, normal;
       margin: 0;
-      color: #222;
+      color: var(--color-texto);
       overflow-x: hidden;
       font-size: 14px;
     }
@@ -95,15 +113,6 @@
       display: none !important;
     }
 
-    .panel {
-      background: rgba(255,255,255,0.92);
-      border: 1px solid rgba(221,228,234,0.95);
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 22px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-    }
-
     .mensaje {
       margin-top: 16px;
       margin-bottom: 18px;
@@ -139,22 +148,22 @@
 
     .formulario-solicitud {
       display: grid;
-      gap: 10px;
+      gap: var(--gap-bloques);
       margin: 0;
     }
 
     #formularioSolicitud {
       margin: 0;
       display: grid;
-      gap: 10px;
+      gap: var(--gap-bloques);
     }
 
     .solicitud-bloque {
-      background: #fff;
-      border: 1px solid rgba(221,228,234,0.95);
-      border-radius: 18px;
+      background: var(--color-panel);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio-panel);
       padding: 18px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      box-shadow: var(--sombra-panel);
     }
 
     .solicitud-bloque-top {
@@ -176,7 +185,7 @@
     .dato-actividad-titulo {
       font-size: 18px;
       font-weight: 700;
-      color: #123a63;
+      color: var(--color-primario);
       line-height: 1.2;
     }
 
@@ -185,7 +194,7 @@
     }
 
     .dato-actividad strong {
-      color: #123a63;
+      color: var(--color-primario);
     }
 
     .acciones-circulares {
@@ -202,7 +211,7 @@
       height: 38px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
-      background: #fff;
+      background: var(--color-panel);
       color: #5b6b7c;
       display: inline-flex;
       align-items: center;
@@ -229,26 +238,16 @@
       display: block;
     }
 
-    .fila-doble {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .campo-oculto {
-      display: none;
-    }
-
     .fila-contacto {
       display: grid;
       grid-template-columns: 1.05fr 0.8fr 1.15fr;
-      gap: 16px;
+      gap: var(--gap-campos);
     }
 
     .fila-solicitud {
       display: grid;
       grid-template-columns: 592px minmax(280px, 1fr);
-      gap: 16px;
+      gap: var(--gap-campos);
       align-items: start;
     }
 
@@ -327,11 +326,11 @@
     input, textarea, select {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid #c9cfd6;
-      border-radius: 10px;
+      border: 1px solid var(--color-borde-input);
+      border-radius: var(--radio-campo);
       font-size: 14px;
       box-sizing: border-box;
-      background: #fff;
+      background: var(--color-panel);
     }
 
     textarea {
@@ -385,14 +384,10 @@
       background: #565e64;
     }
 
-    .panel-resumen {
-      display: block;
-    }
-
     .tarjeta-resumen {
-      background: #eef4ff;
-      border: 1px solid #c9dcff;
-      color: #1d4f91;
+      background: var(--color-resumen-fondo);
+      border: 1px solid var(--color-resumen-borde);
+      color: var(--color-resumen-texto);
       border-radius: 14px;
       padding: 14px 16px;
       line-height: 1.6;
@@ -513,7 +508,6 @@
 
     @media (max-width: 900px) {
       .solicitud-bloque-top,
-      .fila-doble,
       .fila-contacto,
       .fila-solicitud,
       .modal-reserva-grid {
@@ -587,96 +581,94 @@
 
     <div id="mensaje" class="mensaje"></div>
 
-    <div class="formulario-solicitud" data-layout-actualizado="1">
-  <form id="formularioSolicitud">
-    <input type="hidden" id="centro" name="centro" required>
+    <div class="formulario-solicitud">
+      <form id="formularioSolicitud">
+        <input type="hidden" id="centro" name="centro" required>
 
-    <div class="solicitud-bloque solicitud-bloque-top">
-      <div class="datos-actividad-solicitud">
-        <div id="tituloSolicitudBloque" class="dato-actividad-titulo">Actividad</div>
-        <div id="organizadorSolicitud" class="dato-actividad" style="display:none;"></div>
-        <div id="lugarSolicitud" class="dato-actividad" style="display:none;"></div>
-      </div>
+        <div class="solicitud-bloque solicitud-bloque-top">
+          <div class="datos-actividad-solicitud">
+            <div id="tituloSolicitudBloque" class="dato-actividad-titulo">Actividad</div>
+            <div id="organizadorSolicitud" class="dato-actividad" style="display:none;"></div>
+            <div id="lugarSolicitud" class="dato-actividad" style="display:none;"></div>
+          </div>
 
-      <div class="acciones-circulares">
-        <button type="submit" id="btnPrepararEnvio" class="btn-icono-redondo" title="Enviar solicitud" aria-label="Enviar solicitud">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 2 11 13"></path>
-            <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
-          </svg>
-        </button>
-        <a href="portal.html" class="btn-enlace-icono" title="Volver al portal" aria-label="Volver al portal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 10.5 12 3l9 7.5"></path>
-            <path d="M5.5 9.5V21h13V9.5"></path>
-          </svg>
-        </a>
-      </div>
-    </div>
-
-    <div class="solicitud-bloque">
-      <div class="fila-contacto">
-        <div class="fila">
-          <label for="contacto">Persona de contacto</label>
-          <input type="text" id="contacto" name="contacto" required>
+          <div class="acciones-circulares">
+            <button type="submit" id="btnPrepararEnvio" class="btn-icono-redondo" title="Enviar solicitud" aria-label="Enviar solicitud">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2 11 13"></path>
+                <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
+              </svg>
+            </button>
+            <a href="portal.html" class="btn-enlace-icono" title="Volver al portal" aria-label="Volver al portal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5"></path>
+                <path d="M5.5 9.5V21h13V9.5"></path>
+              </svg>
+            </a>
+          </div>
         </div>
 
-        <div class="fila">
-          <label for="telefono">Teléfono de contacto</label>
-          <input type="tel" id="telefono" name="telefono" required>
-        </div>
-
-        <div class="fila">
-          <label for="email">Correo electrónico de contacto</label>
-          <input type="email" id="email" name="email" required>
-        </div>
-      </div>
-    </div>
-
-    <div class="solicitud-bloque">
-      <div class="fila-solicitud">
-        <div class="columna-solicitud-izquierda">
-          <div class="fila-franja-plazas">
-            <div class="fila campo-franja">
-              <label for="franja">Franja horaria</label>
-              <select id="franja" name="franja" required>
-                <option value="">Cargando franjas...</option>
-              </select>
-              <div id="infoFranja" class="info-franja"></div>
+        <div class="solicitud-bloque">
+          <div class="fila-contacto">
+            <div class="fila">
+              <label for="contacto">Persona de contacto</label>
+              <input type="text" id="contacto" name="contacto" required>
             </div>
 
-            <div class="campo-plazas">
-              <div class="fila">
-                <label for="plazasSolicitadas">Plazas reservadas</label>
-                <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+            <div class="fila">
+              <label for="telefono">Teléfono de contacto</label>
+              <input type="tel" id="telefono" name="telefono" required>
+            </div>
+
+            <div class="fila">
+              <label for="email">Correo electrónico de contacto</label>
+              <input type="email" id="email" name="email" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="solicitud-bloque">
+          <div class="fila-solicitud">
+            <div class="columna-solicitud-izquierda">
+              <div class="fila-franja-plazas">
+                <div class="fila campo-franja">
+                  <label for="franja">Franja horaria</label>
+                  <select id="franja" name="franja" required>
+                    <option value="">Cargando franjas...</option>
+                  </select>
+                  <div id="infoFranja" class="info-franja"></div>
+                </div>
+
+                <div class="campo-plazas">
+                  <div class="fila">
+                    <label for="plazasSolicitadas">Plazas reservadas</label>
+                    <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fila campo-observaciones">
+                <label for="observaciones">Observaciones</label>
+                <textarea id="observaciones" name="observaciones"></textarea>
               </div>
             </div>
-          </div>
 
-          <div class="fila campo-observaciones">
-            <label for="observaciones">Observaciones</label>
-            <textarea id="observaciones" name="observaciones"></textarea>
+            <div class="panel-imagen-reserva">
+              <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
+            </div>
           </div>
         </div>
+      </form>
 
-        <div class="panel-imagen-reserva">
-          <img id="imagenReservaActividad" class="imagen-reserva-actividad oculta" src="" alt="Imagen de la actividad">
+      <div class="solicitud-bloque">
+        <div class="tarjeta-resumen">
+          <span class="tarjeta-titulo">Resumen de reserva</span>
+          <div id="resumenReserva">
+            Seleccione una franja e indique el número de plazas reservadas.
+          </div>
         </div>
       </div>
     </div>
-  </form>
-
-  <div class="solicitud-bloque">
-    <div class="panel-resumen">
-      <div class="tarjeta-resumen">
-        <span class="tarjeta-titulo">Resumen de reserva</span>
-        <div id="resumenReserva">
-          Seleccione una franja e indique el número de plazas reservadas.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
   <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Confirmación de envío</h3>
@@ -816,8 +808,19 @@
       centro.readOnly = true;
     }
 
-    function reorganizarFormularioSolicitud() {
-      return;
+    function actualizarDatoActividad(id, etiqueta, valor) {
+      const elemento = document.getElementById(id);
+      if (!elemento) return;
+
+      const texto = String(valor || "").trim();
+      if (!texto) {
+        elemento.style.display = "none";
+        elemento.textContent = "";
+        return;
+      }
+
+      elemento.style.display = "block";
+      elemento.innerHTML = `<strong>${etiqueta}:</strong> ${texto}`;
     }
 
     async function cargarActividad() {
@@ -864,55 +867,22 @@
         }
       }
 
-      const organizadorEl = document.getElementById("organizadorEvento");
-      const organizadorSolicitudEl = document.getElementById("organizadorSolicitud");
       const organizador = String(actividadActual.organizador_publico || "").trim();
-      if (organizador) {
-        organizadorEl.style.display = "block";
-        organizadorEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
-        if (organizadorSolicitudEl) {
-          organizadorSolicitudEl.style.display = "block";
-          organizadorSolicitudEl.innerHTML = `<strong>Organiza:</strong> ${organizador}`;
-        }
-      } else {
-        organizadorEl.style.display = "none";
-        organizadorEl.textContent = "";
-        if (organizadorSolicitudEl) {
-          organizadorSolicitudEl.style.display = "none";
-          organizadorSolicitudEl.textContent = "";
-        }
-      }
+      actualizarDatoActividad("organizadorEvento", "Organiza", organizador);
+      actualizarDatoActividad("organizadorSolicitud", "Organiza", organizador);
 
-      const lugarEl = document.getElementById("lugarEvento");
-      const lugarSolicitudEl = document.getElementById("lugarSolicitud");
       const lugar = String(actividadActual.lugar || "").trim();
-      if (lugar) {
-        lugarEl.style.display = "block";
-        lugarEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
-        if (lugarSolicitudEl) {
-          lugarSolicitudEl.style.display = "block";
-          lugarSolicitudEl.innerHTML = `<strong>Lugar:</strong> ${lugar}`;
-        }
-      } else {
-        lugarEl.style.display = "none";
-        lugarEl.textContent = "";
-        if (lugarSolicitudEl) {
-          lugarSolicitudEl.style.display = "none";
-          lugarSolicitudEl.textContent = "";
-        }
-      }
+      actualizarDatoActividad("lugarEvento", "Lugar", lugar);
+      actualizarDatoActividad("lugarSolicitud", "Lugar", lugar);
 
-      const fechasEl = document.getElementById("fechasEvento");
+      let textoFechas = "";
       if (
         actividadActual.tipo === "TEMPORAL" &&
         (actividadActual.fecha_inicio || actividadActual.fecha_fin)
       ) {
-        fechasEl.style.display = "block";
-        fechasEl.innerHTML = `<strong>Fechas:</strong> ${actividadActual.fecha_inicio || ""}${actividadActual.fecha_inicio && actividadActual.fecha_fin ? " - " : ""}${actividadActual.fecha_fin || ""}`;
-      } else {
-        fechasEl.style.display = "none";
-        fechasEl.textContent = "";
+        textoFechas = `${actividadActual.fecha_inicio || ""}${actividadActual.fecha_inicio && actividadActual.fecha_fin ? " - " : ""}${actividadActual.fecha_fin || ""}`;
       }
+      actualizarDatoActividad("fechasEvento", "Fechas", textoFechas);
     }
 
     async function cargarFranjas() {
@@ -1138,8 +1108,6 @@
     document.addEventListener("DOMContentLoaded", async function () {
       const sesionOk = await comprobarSesion();
       if (!sesionOk) return;
-
-      reorganizarFormularioSolicitud();
 
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
       document.getElementById("plazasSolicitadas").addEventListener("input", actualizarResumenPantalla);
