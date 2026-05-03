@@ -63,6 +63,7 @@ async function obtenerReservasCalendario(env, filtros) {
   const binds = [];
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  where.push("(date(f.fecha) >= date('now') OR UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA')");
 
   if (filtros.start) {
     where.push("f.fecha >= ?");
