@@ -10,67 +10,77 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
       margin: 0;
       padding: 0;
       color: #222;
+      overflow-x: hidden;
     }
 
     .contenedor {
-      max-width: 1400px;
-      margin: 20px auto;
-      background: #ffffff;
-      padding: 28px;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      max-width: 1240px;
+      margin: 0 auto;
+      background: transparent;
+      padding: 16px 20px 20px;
+      border-radius: 0;
+      box-shadow: none;
     }
 
     h1 {
       margin: 0;
-      font-size: 28px;
+      font-size: 24px;
+      color: #123a63;
+      line-height: 1.15;
     }
 
     h2 {
-      margin: 8px 0 0;
-      font-size: 18px;
+      margin: 4px 0 0;
+      font-size: 14px;
       font-weight: normal;
+      color: #4a5a6a;
     }
 
     .cabecera {
       position: relative;
-      min-height: 150px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid #d9e0e7;
-      padding-bottom: 16px;
+      min-height: 96px;
+      margin-bottom: 10px;
+      border-bottom: none;
+      padding: 2px 0 8px;
+      background: transparent;
     }
 
     .logo {
       position: absolute;
       left: 0;
       top: 0;
-      max-width: 110px;
+      width: 77px;
       height: auto;
       transition: opacity 0.12s ease;
     }
-    .logo.logo-admin-personal { max-width: 110px; }
+    .logo.logo-admin-personal { width: 77px; }
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
       text-align: center;
-      padding: 0 220px 0 220px;
+      padding: 0 150px 0 150px;
     }
 
     .subactividad {
-      margin-top: 10px;
-      font-size: 15px;
-      color: #333;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #4a5a6a;
       text-align: center;
     }
 
     .nav-admin {
-      margin-top: 22px;
+      margin-top: 14px;
       display: inline-flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
@@ -85,7 +95,7 @@
       background: #fff;
       color: #1e2a36;
       text-decoration: none;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1;
       transition: all 0.15s ease;
       cursor: pointer;
@@ -109,13 +119,13 @@
       right: 0;
       top: 0;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
     .btn-icono {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
@@ -135,16 +145,17 @@
     }
 
     .btn-icono svg {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
     }
 
     .panel {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 18px;
-      margin-bottom: 24px;
+      background: #fff;
+      border: 1px solid rgba(221,228,234,0.95);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     .mensaje {
@@ -178,8 +189,8 @@
 
     .filtros {
       display: grid;
-      grid-template-columns: 260px 320px 180px 180px;
-      gap: 14px;
+      grid-template-columns: 240px 290px 156px 176px;
+      gap: 10px;
       align-items: end;
     }
 
@@ -196,6 +207,10 @@
       color: #1d4f91;
       border: 1px solid #c9dcff;
       font-weight: 600;
+      min-height: 40px;
+      height: 40px;
+      padding: 8px 12px;
+      font-size: 13px;
     }
 
     .selector-vista button.activo {
@@ -214,21 +229,23 @@
       gap: 8px;
       font-weight: bold;
       margin: 0;
-      min-height: 42px;
+      min-height: 40px;
+      font-size: 13px;
     }
 
     label {
       display: block;
       font-weight: bold;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
+      font-size: 13px;
     }
 
     select, input, button, .btn-enlace {
       width: 100%;
-      padding: 10px;
+      padding: 9px 10px;
       border: 1px solid #c9cfd6;
       border-radius: 6px;
-      font-size: 15px;
+      font-size: 13px;
       box-sizing: border-box;
     }
 
@@ -271,34 +288,34 @@
     .resumen-estados {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .tarjeta-estado {
       background: #fff;
       border: 1px solid #dde4ea;
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px 11px;
     }
 
     .tarjeta-estado .etiqueta {
-      font-size: 13px;
+      font-size: 12px;
       color: #555;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .tarjeta-estado .valor {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: bold;
     }
 
     .leyenda {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 14px;
-      font-size: 14px;
+      margin-bottom: 10px;
+      font-size: 12px;
     }
 
     .leyenda-item {
@@ -316,8 +333,8 @@
 
     #calendar {
       background: white;
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 8px;
     }
 
     .fc .fc-toolbar.fc-header-toolbar {
@@ -333,7 +350,7 @@
     }
 
     .fc .fc-toolbar-title {
-      font-size: 1.9rem;
+      font-size: 1.45rem;
     }
 
     .fc .fc-button {
