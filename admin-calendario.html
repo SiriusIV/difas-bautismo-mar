@@ -968,8 +968,6 @@
       vistaCalendarioActual = vista === "actividades" ? "actividades" : "reservas";
 
       const esVistaActividades = vistaCalendarioActual === "actividades";
-      document.getElementById("btnVistaSolicitudes").classList.toggle("activo", !esVistaActividades);
-      document.getElementById("btnVistaActividades").classList.toggle("activo", esVistaActividades);
       const btnVistaSolicitudesSec = document.getElementById("btnVistaSolicitudesSecundario");
       const btnVistaActividadesSec = document.getElementById("btnVistaActividadesSecundario");
       if (btnVistaSolicitudesSec) btnVistaSolicitudesSec.classList.toggle("activo", !esVistaActividades);
@@ -1372,12 +1370,6 @@
       await aplicarLogoCabeceraAdmin();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
-      document.getElementById("btnVistaSolicitudes").addEventListener("click", function() {
-        aplicarVistaCalendario("reservas");
-      });
-      document.getElementById("btnVistaActividades").addEventListener("click", function() {
-        aplicarVistaCalendario("actividades");
-      });
       document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", function() {
         aplicarVistaCalendario("reservas");
       });
