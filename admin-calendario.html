@@ -354,18 +354,20 @@
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+      margin-bottom: 0;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .tarjeta-estado {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 10px;
-      padding: 6px 9px;
-      min-width: 108px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      min-width: auto;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 5px;
     }
 
@@ -374,12 +376,14 @@
       color: #555;
       margin-bottom: 0;
       line-height: 1;
+      font-weight: 600;
     }
 
     .tarjeta-estado .valor {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
       line-height: 1;
+      color: #123a63;
     }
 
     .leyenda {
@@ -661,6 +665,24 @@
               </select>
             </div>
           </div>
+          <div class="resumen-estados" id="bloqueResumenEstados">
+            <div class="tarjeta-estado">
+              <div class="etiqueta">Pendientes:</div>
+              <div class="valor" id="contadorPendientes">0</div>
+            </div>
+            <div class="tarjeta-estado">
+              <div class="etiqueta">Confirmadas:</div>
+              <div class="valor" id="contadorConfirmadas">0</div>
+            </div>
+            <div class="tarjeta-estado">
+              <div class="etiqueta">Suspendidas:</div>
+              <div class="valor" id="contadorSuspendidas">0</div>
+            </div>
+            <div class="tarjeta-estado">
+              <div class="etiqueta">Rechazadas:</div>
+              <div class="valor" id="contadorRechazadas">0</div>
+            </div>
+          </div>
           <div class="bloque-vista">
             <div class="selector-vista">
               <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
@@ -668,24 +690,6 @@
             </div>
           </div>
         </div>
-        <div class="resumen-estados" id="bloqueResumenEstados">
-          <div class="tarjeta-estado">
-            <div class="etiqueta">Pendientes</div>
-            <div class="valor" id="contadorPendientes">0</div>
-        </div>
-        <div class="tarjeta-estado">
-          <div class="etiqueta">Confirmadas</div>
-          <div class="valor" id="contadorConfirmadas">0</div>
-        </div>
-        <div class="tarjeta-estado">
-          <div class="etiqueta">Suspendidas</div>
-          <div class="valor" id="contadorSuspendidas">0</div>
-        </div>
-        <div class="tarjeta-estado">
-          <div class="etiqueta">Rechazadas</div>
-          <div class="valor" id="contadorRechazadas">0</div>
-        </div>
-      </div>
 
         <div class="leyenda" id="bloqueLeyendaReservas">
           <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
