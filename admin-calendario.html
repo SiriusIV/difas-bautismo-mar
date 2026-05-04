@@ -46,27 +46,24 @@
     }
 
     .cabecera {
-      position: relative;
-      min-height: 98px;
+      min-height: 108px;
       margin-bottom: 10px;
       padding: 2px 0 8px;
       background: transparent;
     }
 
     .bloque-marca {
-      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 18px;
+      width: fit-content;
+      margin: 0 auto;
       min-width: 0;
-      min-height: 98px;
+      min-height: 108px;
     }
 
     .logo {
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
       width: 88px;
       height: auto;
       transition: opacity 0.12s ease;
@@ -77,10 +74,14 @@
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
-      width: 100%;
       text-align: center;
       min-width: 0;
-      padding: 0 120px;
+      padding: 0;
+    }
+
+    .cabecera-centro h1,
+    .cabecera-centro h2 {
+      text-align: left;
     }
 
     .subactividad {
@@ -480,30 +481,14 @@
     @media (max-width: 1200px) {
       .bloque-marca {
         align-items: center;
-      }
-
-      .cabecera-centro {
-        padding: 0 108px;
+        gap: 16px;
       }
     }
 
     @media (max-width: 1100px) {
-      .cabecera {
-        min-height: 86px;
-      }
-
-      .bloque-marca {
-        min-height: 86px;
-      }
-
-      .logo,
-      .logo.logo-admin-personal {
-        width: 76px;
-      }
-
-      .cabecera-centro {
-        padding: 0 92px;
-      }
+      .cabecera { min-height: 92px; }
+      .bloque-marca { min-height: 92px; gap: 14px; }
+      .logo, .logo.logo-admin-personal { width: 72px; }
 
       .filtros {
         grid-template-columns: 1fr;
@@ -1148,6 +1133,8 @@
     document.addEventListener("DOMContentLoaded", async function () {
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
+      document.getElementById("app").style.display = "block";
+      document.getElementById("app").style.visibility = "hidden";
       await aplicarLogoCabeceraAdmin();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
@@ -1170,8 +1157,8 @@
         crearCalendario();
         activarRecargaAutomaticaFiltros();
         await actualizarContadores();
-        document.getElementById("app").style.display = "block";
         document.getElementById("app").style.visibility = "visible";
+        calendar.updateSize();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
         document.getElementById("app").style.display = "block";
