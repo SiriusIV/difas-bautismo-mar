@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -46,81 +46,45 @@
     }
 
     .cabecera {
-      position: relative;
-      min-height: 96px;
       margin-bottom: 10px;
-      border-bottom: none;
       padding: 2px 0 8px;
       background: transparent;
     }
 
+    .bloque-marca {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      min-width: 0;
+    }
+
     .logo {
-      position: absolute;
-      left: 0;
-      top: 0;
       width: 77px;
       height: auto;
       transition: opacity 0.12s ease;
+      display: block;
+      flex: 0 0 auto;
     }
     .logo.logo-admin-personal { width: 77px; }
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
-      text-align: center;
-      padding: 0 150px 0 150px;
+      text-align: left;
+      min-width: 0;
     }
 
     .subactividad {
-      margin-top: 8px;
+      margin-top: 6px;
       font-size: 13px;
       color: #4a5a6a;
-      text-align: center;
+      text-align: left;
     }
 
-    .nav-admin {
-      margin-top: 14px;
-      display: inline-flex;
+    .acciones-principales {
+      display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .nav-admin a,
-    .nav-admin span {
-      display: inline-block;
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
-      color: #1e2a36;
-      text-decoration: none;
-      font-size: 13px;
-      line-height: 1;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-
-    .nav-admin a:hover {
-      background: #f7f9fb;
-      color: #0b5ed7;
-      border-color: #9fb2c7;
-    }
-
-    .nav-admin .activo {
-      background: #0b5ed7;
-      color: #fff;
-      border-color: #0b5ed7;
-      cursor: default;
-    }
-
-    .cabecera-acciones {
-      position: absolute;
-      right: 0;
-      top: 0;
-      display: flex;
-      gap: 8px;
-      align-items: center;
     }
 
     .btn-icono {
@@ -147,6 +111,30 @@
     .btn-icono svg {
       width: 16px;
       height: 16px;
+    }
+
+    .btn-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .btn-chip:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
     }
 
     .panel {
@@ -217,6 +205,20 @@
       background: #0b5ed7;
       color: #fff;
       border-color: #0b5ed7;
+    }
+
+    .fila-superior-filtros {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .bloque-vista {
+      width: 100%;
+      max-width: 446px;
     }
 
     .oculto {
@@ -465,30 +467,22 @@
     .estado.suspendida { background: #b7791f; }
 
     @media (max-width: 1200px) {
-      .cabecera-centro {
-        padding: 120px 0 0 0;
-      }
-
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 12px auto;
-      }
-
-      .cabecera-acciones {
-        position: static;
-        justify-content: center;
-        margin-top: 14px;
-      }
-
-      .cabecera {
-        min-height: auto;
+      .bloque-marca {
+        align-items: center;
       }
     }
 
     @media (max-width: 1100px) {
       .filtros {
         grid-template-columns: 1fr;
+      }
+
+      .fila-superior-filtros {
+        align-items: stretch;
+      }
+
+      .bloque-vista {
+        max-width: none;
       }
 
       .fila-estado {
@@ -511,63 +505,44 @@
   </style>
 </head>
 <body>
-  <div class="contenedor" id="app" style="display:none;">
+  <div class="contenedor" id="app" style="display:none; visibility:hidden;">
     <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo logo-pendiente">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo" class="logo logo-pendiente">
 
-      <div class="cabecera-centro">
-        <h1 id="tituloEvento">Cargando evento...</h1>
-        <h2 id="subtituloEvento">Calendario administrativo</h2>
-        <div class="subactividad">Bautismos de mar</div>
-
-        <div class="nav-admin">
-          <a href="admin-reservas.html">Reservas</a>
-          <span class="activo">Calendario</span>
+        <div class="cabecera-centro">
+          <h1 id="tituloEvento">Cargando evento...</h1>
+          <h2 id="subtituloEvento">Calendario administrativo</h2>
+          <div class="subactividad">Bautismos de mar</div>
         </div>
-      </div>
-
-      <div class="cabecera-acciones">
-        <button
-          type="button"
-          id="btnRecargarIcono"
-          class="btn-icono"
-          title="Recargar calendario"
-          aria-label="Recargar calendario"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-            <polyline points="21 3 21 9 15 9"></polyline>
-          </svg>
-        </button>
-
-        <button
-          type="button"
-          id="btnCerrarSesion"
-          class="btn-icono"
-          title="Cerrar sesión"
-          aria-label="Cerrar sesión"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-        </button>
       </div>
     </div>
 
     <div id="mensaje" class="mensaje"></div>
 
       <div class="panel">
-        <div class="filtros">
-          <div>
+        <div class="fila-superior-filtros">
+          <div class="acciones-principales">
+            <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5"></path>
+                <path d="M5 9.5V21h14V9.5"></path>
+              </svg>
+            </a>
+            <a href="admin-reservas.html" class="btn-chip">Panel de reservas</a>
+            <a href="mis-actividades.html" class="btn-chip">Panel de actividades</a>
+          </div>
+
+          <div class="bloque-vista">
             <label>Vista</label>
             <div class="selector-vista">
               <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
               <button type="button" id="btnVistaActividades">Actividades programadas</button>
             </div>
           </div>
+        </div>
 
+        <div class="filtros">
           <div id="bloqueFiltroEstado">
             <label for="filtroEstado">Estado</label>
             <select id="filtroEstado">
@@ -614,7 +589,7 @@
           <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
           <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
           <span class="leyenda-item oculto" id="leyendaActividadDisponible"><span class="leyenda-color" style="background:#0b5ed7;"></span>DISPONIBLE</span>
-          <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÚLTIMAS PLAZAS</span>
+          <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÃšLTIMAS PLAZAS</span>
           <span class="leyenda-item oculto" id="leyendaActividadCompleta"><span class="leyenda-color" style="background:#dc3545;"></span>COMPLETA</span>
           <span class="leyenda-item oculto" id="leyendaActividadFinalizada"><span class="leyenda-color" style="background:#5f6d7a;"></span>FINALIZADA</span>
         </div>
@@ -729,7 +704,7 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
+          throw new Error(data.error || "No se pudo cargar la configuraciÃ³n del evento.");
         }
 
         const config = data.config || {};
@@ -925,9 +900,9 @@
           <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
           <strong>Centro:</strong> ${p.centro || ""}<br>
           <strong>Contacto:</strong> ${p.contacto || ""}<br>
-          <strong>Teléfono:</strong> ${p.telefono || ""}<br>
+          <strong>TelÃ©fono:</strong> ${p.telefono || ""}<br>
           <strong>Email:</strong> ${p.email || ""}<br>
-          <strong>Franja:</strong> ${p.fecha} · ${p.hora_inicio} - ${p.hora_fin}<br>
+          <strong>Franja:</strong> ${p.fecha} Â· ${p.hora_inicio} - ${p.hora_fin}<br>
           <strong>Capacidad de franja:</strong> ${p.capacidad || 0}
         </div>
 
@@ -974,10 +949,10 @@
         return;
       }
 
-      let textoConfirmacion = "¿Desea ejecutar esta acción?";
-      if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
-      if (accion === "rechazar") textoConfirmacion = "¿Desea rechazar esta solicitud?";
-      if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
+      let textoConfirmacion = "Â¿Desea ejecutar esta acciÃ³n?";
+      if (accion === "confirmar") textoConfirmacion = "Â¿Desea confirmar esta solicitud?";
+      if (accion === "rechazar") textoConfirmacion = "Â¿Desea rechazar esta solicitud?";
+      if (accion === "reabrir") textoConfirmacion = "Â¿Desea reabrir esta solicitud y dejarla pendiente?";
 
       const confirmar = window.confirm(textoConfirmacion);
       if (!confirmar) return;
@@ -1006,17 +981,19 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo ejecutar la acción.");
+          mostrarMensaje("error", data.error || "No se pudo ejecutar la acciÃ³n.");
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "Acción realizada correctamente.");
+        mostrarMensaje("ok", data.mensaje || "AcciÃ³n realizada correctamente.");
         cerrarModalEvento();
         calendar.refetchEvents();
         await actualizarContadores();
+        document.getElementById("app").style.display = "block";
+        document.getElementById("app").style.visibility = "visible";
 
       } catch (error) {
-        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
+        mostrarMensaje("error", error.message || "Error de conexiÃ³n con el servidor.");
       } finally {
         accionEnCurso = false;
         document.getElementById("btnAplicarEstado").disabled = false;
@@ -1061,7 +1038,7 @@
           today: "Hoy",
           month: "Mes",
           week: "Semana",
-          day: "Día",
+          day: "DÃ­a",
           list: "Lista"
         },
         nowIndicator: true,
@@ -1137,23 +1114,13 @@
       if (!ok) return;
       await aplicarLogoCabeceraAdmin();
 
-      document.getElementById("app").style.display = "block";
-      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
-      document.getElementById("btnAplicarEstado").addEventListener("click", ejecutarAccionDesdeModal);
       document.getElementById("btnVistaSolicitudes").addEventListener("click", function() {
         aplicarVistaCalendario("reservas");
       });
       document.getElementById("btnVistaActividades").addEventListener("click", function() {
         aplicarVistaCalendario("actividades");
       });
-
-      document.getElementById("btnRecargarIcono").addEventListener("click", async function() {
-        limpiarMensaje();
-        calendar.refetchEvents();
-        await actualizarContadores();
-      });
-
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
           cerrarModalEvento();
@@ -1167,8 +1134,12 @@
         crearCalendario();
         activarRecargaAutomaticaFiltros();
         await actualizarContadores();
+        document.getElementById("app").style.display = "block";
+        document.getElementById("app").style.visibility = "visible";
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
+        document.getElementById("app").style.display = "block";
+        document.getElementById("app").style.visibility = "visible";
       }
     });
   </script>
