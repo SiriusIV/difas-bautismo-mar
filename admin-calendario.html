@@ -408,6 +408,9 @@
       margin-bottom: 10px;
       font-size: 12px;
       justify-content: center;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .leyenda-item {
@@ -476,12 +479,29 @@
       margin-bottom: 0.85em;
       gap: 14px;
       flex-wrap: nowrap;
+      justify-content: center;
     }
 
     .fc-toolbar-chunk {
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .fc .fc-toolbar-chunk:first-child {
+      flex: 1 1 0;
+      justify-content: flex-start;
+    }
+
+    .fc .fc-toolbar-chunk:nth-child(2) {
+      flex: 0 1 auto;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .fc .fc-toolbar-chunk:last-child {
+      flex: 1 1 0;
+      justify-content: flex-end;
     }
 
     .fc .fc-toolbar-title {
@@ -658,7 +678,7 @@
 
       <div class="panel">
         <div class="fila-superior-filtros">
-          <div class="panel-titulo-central">Calendario de actividades y solicitudes</div>
+          <div class="panel-titulo-central">Calendario de actividades y reservas</div>
 
           <div class="panel-acciones-derecha">
             <a href="admin-reservas.html" class="btn-chip">Panel de reservas</a>
