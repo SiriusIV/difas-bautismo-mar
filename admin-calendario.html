@@ -258,24 +258,13 @@
       min-width: 0;
     }
 
-    .cabecera-calendario-titulo {
-      font-size: 20px;
-      font-weight: 600;
-      color: #123a63;
-      line-height: 1.15;
-      text-align: left;
-      padding-bottom: 4px;
-      flex: 0 1 auto;
-      min-width: 0;
-    }
-
     .bloque-filtro-estado {
-      width: 240px;
+      width: 248px;
       flex: 0 0 auto;
     }
 
     .bloque-vista {
-      width: 100%;
+      width: auto;
       max-width: 446px;
       margin-left: auto;
     }
@@ -347,9 +336,11 @@
     }
 
     .resumen-estados {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
       margin-bottom: 12px;
     }
 
@@ -357,18 +348,25 @@
       background: #fff;
       border: 1px solid #dde4ea;
       border-radius: 10px;
-      padding: 10px 11px;
+      padding: 8px 10px;
+      min-width: 126px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .tarjeta-estado .etiqueta {
       font-size: 12px;
       color: #555;
-      margin-bottom: 4px;
+      margin-bottom: 0;
+      line-height: 1;
     }
 
     .tarjeta-estado .valor {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
+      line-height: 1;
     }
 
     .leyenda {
@@ -377,6 +375,7 @@
       flex-wrap: wrap;
       margin-bottom: 10px;
       font-size: 12px;
+      justify-content: center;
     }
 
     .leyenda-item {
@@ -403,11 +402,20 @@
       white-space: normal;
       line-height: 1.1;
       text-transform: lowercase;
+      font-size: 12px;
+      padding: 2px 3px;
+    }
+
+    .fc .fc-timegrid-slot-label-cushion,
+    .fc .fc-timegrid-axis-cushion,
+    .fc .fc-daygrid-day-number {
+      font-size: 12px;
     }
 
     .fc .fc-timegrid-event .fc-event-main,
     .fc .fc-daygrid-event .fc-event-main {
       padding: 2px 4px;
+      font-size: 11px;
     }
 
     .fc .fc-timegrid-event .fc-event-time,
@@ -433,7 +441,7 @@
     }
 
     .fc .fc-toolbar.fc-header-toolbar {
-      margin-bottom: 1.1em;
+      margin-bottom: 0.85em;
       gap: 10px;
       flex-wrap: nowrap;
     }
@@ -445,13 +453,13 @@
     }
 
     .fc .fc-toolbar-title {
-      font-size: 1.45rem;
+      font-size: 1.25rem;
     }
 
     .fc .fc-button {
       width: auto;
-      padding: 0.5em 0.85em;
-      font-size: 0.95rem;
+      padding: 0.42em 0.78em;
+      font-size: 0.86rem;
     }
 
     .modal-fondo {
@@ -618,7 +626,6 @@
       <div class="panel" id="panelResumenReservas">
         <div class="cabecera-calendario-panel">
           <div class="cabecera-calendario-izquierda">
-            <div class="cabecera-calendario-titulo">Calendario administrativo</div>
             <div id="bloqueFiltroEstado" class="bloque-filtro-estado">
               <label for="filtroEstado">Estado</label>
               <select id="filtroEstado">
@@ -631,7 +638,6 @@
             </div>
           </div>
           <div class="bloque-vista">
-            <label>Vista</label>
             <div class="selector-vista">
               <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
               <button type="button" id="btnVistaActividades">Actividades programadas</button>
