@@ -295,6 +295,16 @@
       justify-self: end;
     }
 
+    .cabecera-calendario-panel .bloque-vista {
+      display: none;
+    }
+
+    .bloque-vista-calendario {
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+    }
+
     .oculto {
       display: none !important;
     }
@@ -372,6 +382,7 @@
       min-width: 0;
       align-self: center;
       justify-self: center;
+      transform: translateX(-42px);
     }
 
     .tarjeta-estado {
@@ -489,19 +500,22 @@
     }
 
     .fc .fc-toolbar-chunk:first-child {
-      flex: 1 1 0;
+      flex: 0 0 auto;
       justify-content: flex-start;
+      order: 2;
     }
 
     .fc .fc-toolbar-chunk:nth-child(2) {
       flex: 0 1 auto;
       justify-content: center;
       min-width: 0;
+      order: 1;
     }
 
     .fc .fc-toolbar-chunk:last-child {
       flex: 1 1 0;
       justify-content: flex-end;
+      order: 3;
     }
 
     .fc .fc-toolbar-title {
@@ -515,14 +529,46 @@
       min-width: 58px;
     }
 
+    .fc .fc-button-primary {
+      background: #fff;
+      color: #1e2a36;
+      border: 1px solid #bfc9d4;
+      box-shadow: none;
+    }
+
+    .fc .fc-button-primary:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .fc .fc-button-primary:not(:disabled).fc-button-active,
+    .fc .fc-button-primary:not(:disabled):active {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
+    }
+
     .fc .fc-button-group {
       display: inline-flex;
       gap: 8px;
     }
 
     .fc .fc-button-group > .fc-button {
-      border-radius: 6px !important;
+      border-radius: 999px !important;
       margin: 0 !important;
+    }
+
+    .fc .fc-prev-button,
+    .fc .fc-next-button {
+      min-width: 36px;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 999px !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .modal-fondo {
@@ -746,6 +792,13 @@
           <span class="leyenda-item oculto" id="leyendaActividadFinalizada"><span class="leyenda-color" style="background:#5f6d7a;"></span>FINALIZADA</span>
         </div>
 
+        <div class="bloque-vista-calendario">
+          <div class="selector-vista">
+            <button type="button" id="btnVistaSolicitudesSecundario" class="activo">Solicitudes</button>
+            <button type="button" id="btnVistaActividadesSecundario">Actividades</button>
+          </div>
+        </div>
+
       <div id="calendar"></div>
     </div>
   </div>
@@ -880,6 +933,10 @@
       const esVistaActividades = vistaCalendarioActual === "actividades";
       document.getElementById("btnVistaSolicitudes").classList.toggle("activo", !esVistaActividades);
       document.getElementById("btnVistaActividades").classList.toggle("activo", esVistaActividades);
+      const btnVistaSolicitudesSec = document.getElementById("btnVistaSolicitudesSecundario");
+      const btnVistaActividadesSec = document.getElementById("btnVistaActividadesSecundario");
+      if (btnVistaSolicitudesSec) btnVistaSolicitudesSec.classList.toggle("activo", !esVistaActividades);
+      if (btnVistaActividadesSec) btnVistaActividadesSec.classList.toggle("activo", esVistaActividades);
       document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
       document.getElementById("bloqueResumenEstados").classList.toggle("oculto", esVistaActividades);
       document.getElementById("leyendaActividadDisponible").classList.toggle("oculto", !esVistaActividades);
@@ -1177,9 +1234,9 @@
         firstDay: 1,
         height: "auto",
         headerToolbar: {
-          left: "prev,next",
+          left: "",
           center: "title",
-          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek,prev,next"
         },
         buttonText: {
           today: "Hoy",
@@ -1266,6 +1323,12 @@
         aplicarVistaCalendario("reservas");
       });
       document.getElementById("btnVistaActividades").addEventListener("click", function() {
+        aplicarVistaCalendario("actividades");
+      });
+      document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", function() {
+        aplicarVistaCalendario("reservas");
+      });
+      document.getElementById("btnVistaActividadesSecundario").addEventListener("click", function() {
         aplicarVistaCalendario("actividades");
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
