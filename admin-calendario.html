@@ -46,38 +46,49 @@
     }
 
     .cabecera {
+      position: relative;
+      min-height: 98px;
       margin-bottom: 10px;
       padding: 2px 0 8px;
       background: transparent;
     }
 
     .bloque-marca {
+      position: relative;
       display: flex;
-      align-items: flex-start;
-      gap: 14px;
+      align-items: center;
+      justify-content: center;
       min-width: 0;
+      min-height: 98px;
     }
 
     .logo {
-      width: 77px;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 88px;
       height: auto;
       transition: opacity 0.12s ease;
       display: block;
       flex: 0 0 auto;
     }
-    .logo.logo-admin-personal { width: 77px; }
+    .logo.logo-admin-personal { width: 88px; }
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
-      text-align: left;
+      width: 100%;
+      text-align: center;
       min-width: 0;
+      padding: 0 120px;
     }
 
     .subactividad {
+      display: none;
       margin-top: 6px;
       font-size: 13px;
       color: #4a5a6a;
-      text-align: left;
+      text-align: center;
     }
 
     .acciones-principales {
@@ -470,9 +481,30 @@
       .bloque-marca {
         align-items: center;
       }
+
+      .cabecera-centro {
+        padding: 0 108px;
+      }
     }
 
     @media (max-width: 1100px) {
+      .cabecera {
+        min-height: 86px;
+      }
+
+      .bloque-marca {
+        min-height: 86px;
+      }
+
+      .logo,
+      .logo.logo-admin-personal {
+        width: 76px;
+      }
+
+      .cabecera-centro {
+        padding: 0 92px;
+      }
+
       .filtros {
         grid-template-columns: 1fr;
       }
@@ -511,9 +543,9 @@
         <img src="logo.png" alt="Logo" class="logo logo-pendiente">
 
         <div class="cabecera-centro">
-          <h1 id="tituloEvento">Cargando evento...</h1>
-          <h2 id="subtituloEvento">Calendario administrativo</h2>
-          <div class="subactividad">Bautismos de mar</div>
+          <h1 id="tituloEvento">Actividades Públicas Institucionales</h1>
+          <h2 id="subtituloEvento">Calendario de solicitudes y reservas</h2>
+          <div class="subactividad"></div>
         </div>
       </div>
     </div>
@@ -709,12 +741,16 @@
 
         const config = data.config || {};
 
-        document.title = "Calendario administrativo";
-        document.getElementById("tituloEvento").textContent = config.nombre_evento || "Evento no configurado";
-        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
+        document.title = "Actividades Públicas Institucionales";
+        document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
+        document.getElementById("subtituloEvento").textContent = "Calendario de solicitudes y reservas";
+        document.querySelector(".subactividad").textContent = "";
       } catch (error) {
         console.error(error);
-        document.getElementById("tituloEvento").textContent = "Evento no disponible";
+        document.title = "Actividades Públicas Institucionales";
+        document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
+        document.getElementById("subtituloEvento").textContent = "Calendario de solicitudes y reservas";
+        document.querySelector(".subactividad").textContent = "";
       }
     }
 
