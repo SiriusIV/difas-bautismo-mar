@@ -56,7 +56,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 18px;
+      gap: 50px;
       width: fit-content;
       margin: 0 auto;
       min-width: 0;
@@ -64,17 +64,17 @@
     }
 
     .logo {
-      width: 88px;
+      width: 101px;
       height: auto;
       transition: opacity 0.12s ease;
       display: block;
       flex: 0 0 auto;
     }
-    .logo.logo-admin-personal { width: 88px; }
+    .logo.logo-admin-personal { width: 101px; }
     .logo.logo-pendiente { opacity: 0; }
 
     .cabecera-centro {
-      text-align: center;
+      text-align: left;
       min-width: 0;
       padding: 0;
     }
@@ -187,13 +187,6 @@
       border: 1px solid #c9dcff;
     }
 
-    .filtros {
-      display: grid;
-      grid-template-columns: 240px 290px 156px 176px;
-      gap: 10px;
-      align-items: end;
-    }
-
     .selector-vista {
       display: flex;
       gap: 8px;
@@ -225,13 +218,13 @@
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
 
     .panel-titulo-central {
       flex: 1 1 auto;
-      text-align: center;
-      font-size: 22px;
+      text-align: left;
+      font-size: 20px;
       font-weight: 600;
       color: #123a63;
       line-height: 1.15;
@@ -247,11 +240,6 @@
       flex: 0 0 auto;
     }
 
-    .bloque-vista {
-      width: 100%;
-      max-width: 446px;
-    }
-
     .cabecera-calendario-panel {
       display: flex;
       align-items: end;
@@ -259,6 +247,37 @@
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 10px;
+    }
+
+    .cabecera-calendario-izquierda {
+      display: flex;
+      align-items: end;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .cabecera-calendario-titulo {
+      font-size: 20px;
+      font-weight: 600;
+      color: #123a63;
+      line-height: 1.15;
+      text-align: left;
+      padding-bottom: 4px;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .bloque-filtro-estado {
+      width: 240px;
+      flex: 0 0 auto;
+    }
+
+    .bloque-vista {
+      width: 100%;
+      max-width: 446px;
+      margin-left: auto;
     }
 
     .oculto {
@@ -377,6 +396,13 @@
       background: white;
       border-radius: 10px;
       padding: 8px;
+      min-height: 780px;
+    }
+
+    .fc .fc-col-header-cell-cushion {
+      white-space: normal;
+      line-height: 1.1;
+      text-transform: lowercase;
     }
 
     .fc .fc-timegrid-event .fc-event-main,
@@ -423,6 +449,7 @@
     }
 
     .fc .fc-button {
+      width: auto;
       padding: 0.5em 0.85em;
       font-size: 0.95rem;
     }
@@ -516,14 +543,18 @@
     @media (max-width: 1100px) {
       .cabecera { min-height: 92px; }
       .bloque-marca { min-height: 92px; gap: 14px; }
-      .logo, .logo.logo-admin-personal { width: 72px; }
-
-      .filtros {
-        grid-template-columns: 1fr;
-      }
+      .logo, .logo.logo-admin-personal { width: 82px; }
 
       .fila-superior-filtros {
         align-items: stretch;
+      }
+
+      .cabecera-calendario-izquierda {
+        align-items: stretch;
+      }
+
+      .bloque-filtro-estado {
+        width: 100%;
       }
 
       .bloque-vista {
@@ -550,14 +581,14 @@
   </style>
 </head>
 <body>
-  <div class="contenedor" id="app" style="display:none; visibility:hidden;">
+  <div class="contenedor" id="app" style="display:none; opacity:0;">
     <div class="cabecera">
       <div class="bloque-marca">
         <img src="logo.png" alt="Logo" class="logo logo-pendiente">
 
         <div class="cabecera-centro">
           <h1 id="tituloEvento">Actividades Públicas Institucionales</h1>
-          <h2 id="subtituloEvento">Calendario de solicitudes y reservas</h2>
+          <h2 id="subtituloEvento">Calendario administrativo</h2>
           <div class="subactividad"></div>
         </div>
       </div>
@@ -567,38 +598,38 @@
 
       <div class="panel">
         <div class="fila-superior-filtros">
-          <div class="panel-titulo-central">Calendario administrativo</div>
+          <div class="panel-titulo-central">Calendario de solicitudes y reservas</div>
 
           <div class="panel-acciones-derecha">
-            <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 10.5 12 3l9 7.5"></path>
-                <path d="M5 9.5V21h14V9.5"></path>
-              </svg>
-            </a>
             <a href="admin-reservas.html" class="btn-chip">Panel de reservas</a>
             <a href="mis-actividades.html" class="btn-chip">Panel de actividades</a>
+            <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5L12 3l9 7.5"></path>
+                <path d="M5 9.5V21h14V9.5"></path>
+                <path d="M9 21v-6h6v6"></path>
+              </svg>
+            </a>
           </div>
 
-        </div>
-
-        <div class="filtros">
-          <div id="bloqueFiltroEstado">
-            <label for="filtroEstado">Estado</label>
-            <select id="filtroEstado">
-              <option value="">PENDIENTE + CONFIRMADA</option>
-              <option value="PENDIENTE">Solo PENDIENTE</option>
-              <option value="CONFIRMADA">Solo CONFIRMADA</option>
-              <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
-              <option value="RECHAZADA">Solo RECHAZADA</option>
-            </select>
-          </div>
         </div>
       </div>
 
       <div class="panel" id="panelResumenReservas">
         <div class="cabecera-calendario-panel">
-          <div></div>
+          <div class="cabecera-calendario-izquierda">
+            <div class="cabecera-calendario-titulo">Calendario administrativo</div>
+            <div id="bloqueFiltroEstado" class="bloque-filtro-estado">
+              <label for="filtroEstado">Estado</label>
+              <select id="filtroEstado">
+                <option value="">PENDIENTE + CONFIRMADA</option>
+                <option value="PENDIENTE">Solo PENDIENTE</option>
+                <option value="CONFIRMADA">Solo CONFIRMADA</option>
+                <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
+                <option value="RECHAZADA">Solo RECHAZADA</option>
+              </select>
+            </div>
+          </div>
           <div class="bloque-vista">
             <label>Vista</label>
             <div class="selector-vista">
@@ -754,13 +785,13 @@
 
         document.title = "Actividades Públicas Institucionales";
         document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
-        document.getElementById("subtituloEvento").textContent = "Calendario de solicitudes y reservas";
+        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
         document.querySelector(".subactividad").textContent = "";
       } catch (error) {
         console.error(error);
         document.title = "Actividades Públicas Institucionales";
         document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
-        document.getElementById("subtituloEvento").textContent = "Calendario de solicitudes y reservas";
+        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
         document.querySelector(".subactividad").textContent = "";
       }
     }
@@ -1032,7 +1063,7 @@
         calendar.refetchEvents();
         await actualizarContadores();
         document.getElementById("app").style.display = "block";
-        document.getElementById("app").style.visibility = "visible";
+        document.getElementById("app").style.opacity = "1";
 
       } catch (error) {
         mostrarMensaje("error", error.message || "Error de conexiÃ³n con el servidor.");
@@ -1076,13 +1107,17 @@
           today: "Hoy",
           month: "Mes",
           week: "Semana",
-          day: "DÃ­a",
+          day: "Dia",
           list: "Lista"
+        },
+        dayHeaderFormat: {
+          weekday: "short",
+          day: "numeric"
         },
         nowIndicator: true,
         allDaySlot: false,
-        slotMinTime: "08:00:00",
-        slotMaxTime: "22:00:00",
+        slotMinTime: "07:00:00",
+        slotMaxTime: "24:00:00",
         eventTimeFormat: {
           hour: "2-digit",
           minute: "2-digit",
@@ -1145,7 +1180,7 @@
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
       document.getElementById("app").style.display = "block";
-      document.getElementById("app").style.visibility = "hidden";
+      document.getElementById("app").style.opacity = "0";
       await aplicarLogoCabeceraAdmin();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
@@ -1165,22 +1200,29 @@
         await cargarConfigEvento();
         aplicarVistaCalendario("reservas", { recargar: false });
         fechaInicialCalendario = await obtenerFechaInicialConEventos();
-        crearCalendario();
-        activarRecargaAutomaticaFiltros();
-        await actualizarContadores();
-        document.getElementById("app").style.visibility = "visible";
         requestAnimationFrame(() => {
+          crearCalendario();
           if (calendar) {
             calendar.updateSize();
-            setTimeout(() => {
-              try { calendar.updateSize(); } catch (_) {}
-            }, 60);
+            if (fechaInicialCalendario) {
+              calendar.gotoDate(fechaInicialCalendario);
+            }
           }
+          document.getElementById("app").style.opacity = "1";
         });
+        activarRecargaAutomaticaFiltros();
+        await actualizarContadores();
+        setTimeout(() => {
+          try {
+            if (calendar) {
+              calendar.updateSize();
+            }
+          } catch (_) {}
+        }, 80);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
         document.getElementById("app").style.display = "block";
-        document.getElementById("app").style.visibility = "visible";
+        document.getElementById("app").style.opacity = "1";
       }
     });
   </script>
