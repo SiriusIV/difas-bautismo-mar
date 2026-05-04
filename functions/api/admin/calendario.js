@@ -1,4 +1,5 @@
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { getAdminSession } from "./_auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -163,6 +164,7 @@ async function obtenerFranjasProgramadasCalendario(env, filtros) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      a.admin_id,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       COALESCE(a.organizador_publico, '') AS organizador_publico,
       COALESCE(a.lugar, '') AS lugar
@@ -216,6 +218,11 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json({ ok: false, error: "No autorizado." }, { status: 401 });
+    }
+
     await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
 
@@ -245,6 +252,7 @@ export async function onRequestGet(context) {
         const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.id)) || 0);
         const disponibles = Math.max(capacidad - bloqueoFranja, 0);
         const color = colorActividadProgramada(row, disponibles);
+        const editableActividad = session.rol === "SUPERADMIN" || Number(row.admin_id || 0) === Number(session.usuario_id || 0);
         const estadoActividad = esFranjaFinalizada(row.fecha, row.hora_fin)
           ? "FINALIZADA"
           : (capacidad > 0 && disponibles <= 0)
@@ -273,7 +281,8 @@ export async function onRequestGet(context) {
             hora_fin: row.hora_fin,
             capacidad,
             disponibles,
-            estado_actividad: estadoActividad
+            estado_actividad: estadoActividad,
+            editable_actividad: editableActividad
           }
         };
       });

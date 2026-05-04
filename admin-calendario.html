@@ -337,6 +337,33 @@
       padding: 8px;
     }
 
+    .fc .fc-timegrid-event .fc-event-main,
+    .fc .fc-daygrid-event .fc-event-main {
+      padding: 2px 4px;
+    }
+
+    .fc .fc-timegrid-event .fc-event-time,
+    .fc .fc-daygrid-event .fc-event-time {
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .fc .fc-timegrid-event .fc-event-title,
+    .fc .fc-daygrid-event .fc-event-title {
+      white-space: normal;
+      overflow: visible;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .fc .fc-event.evento-actividad-editable {
+      cursor: pointer;
+    }
+
+    .fc .fc-event.evento-actividad-noeditable {
+      cursor: default;
+    }
+
     .fc .fc-toolbar.fc-header-toolbar {
       margin-bottom: 1.1em;
       gap: 10px;
@@ -857,6 +884,9 @@
       const estadoClass = String(p.estado || "").toLowerCase();
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
+        if (!p.editable_actividad) {
+          return;
+        }
         const actividadId = Number(p.actividad_id || 0);
         if (actividadId > 0) {
           window.location.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
@@ -1068,6 +1098,11 @@
             mostrarMensaje("error", error.message || "No se pudo cargar el calendario.");
             failureCallback(error);
           }
+        },
+        eventClassNames: function(arg) {
+          const p = arg.event.extendedProps || {};
+          if ((p.tipo_evento || "") !== "ACTIVIDAD_PROGRAMADA") return [];
+          return [p.editable_actividad ? "evento-actividad-editable" : "evento-actividad-noeditable"];
         },
         eventClick: function(info) {
           abrirModalEvento(info);
