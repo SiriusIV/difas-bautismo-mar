@@ -435,10 +435,11 @@
     .toolbar-rango-calendario {
       min-width: 0;
       justify-self: stretch;
-    }
-
-    .toolbar-rango-calendario .fc-header-toolbar {
-      margin-bottom: 0;
+      text-align: center;
+      font-size: 1.25rem;
+      color: #55657a;
+      line-height: 1.2;
+      font-weight: 500;
     }
 
     .leyenda-item {
@@ -503,40 +504,6 @@
       cursor: default;
     }
 
-    .fc .fc-toolbar.fc-header-toolbar {
-      margin-bottom: 0.85em;
-      gap: 14px;
-      flex-wrap: nowrap;
-      justify-content: center;
-    }
-
-    .fc-toolbar-chunk {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .fc .fc-toolbar-chunk:first-child {
-      display: none;
-    }
-
-    .fc .fc-toolbar-chunk:nth-child(2) {
-      flex: 1 1 auto;
-      justify-content: center;
-      min-width: 0;
-      order: 1;
-    }
-
-    .fc .fc-toolbar-chunk:last-child {
-      flex: 0 0 auto;
-      justify-content: flex-end;
-      order: 2;
-    }
-
-    .fc .fc-toolbar-title {
-      font-size: 1.25rem;
-    }
-
     .fc .fc-button {
       width: auto;
       padding: 0.42em 0.78em;
@@ -562,16 +529,6 @@
       background: #0b5ed7;
       color: #fff;
       border-color: #0b5ed7;
-    }
-
-    .fc .fc-button-group {
-      display: inline-flex;
-      gap: 8px;
-    }
-
-    .fc .fc-button-group > .fc-button {
-      border-radius: 999px !important;
-      margin: 0 !important;
     }
 
     .btn-nav-calendario {
@@ -600,6 +557,41 @@
       width: 16px;
       height: 16px;
       display: block;
+    }
+
+    .acciones-vista-calendario {
+      display: inline-flex;
+      gap: 8px;
+      justify-self: end;
+      align-items: center;
+    }
+
+    .btn-modo-calendario {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1.1;
+      transition: all 0.15s ease;
+    }
+
+    .btn-modo-calendario:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-modo-calendario.activo {
+      background: #0b5ed7;
+      color: #fff;
+      border-color: #0b5ed7;
     }
 
     .modal-fondo {
@@ -834,7 +826,14 @@
             <button type="button" id="btnVistaSolicitudesSecundario" class="activo">Solicitudes</button>
             <button type="button" id="btnVistaActividadesSecundario">Actividades</button>
           </div>
-          <div class="toolbar-rango-calendario"></div>
+          <div class="toolbar-rango-calendario" id="rangoCalendario"></div>
+          <div class="acciones-vista-calendario">
+            <button type="button" class="btn-modo-calendario" id="btnHoyCalendario">Hoy</button>
+            <button type="button" class="btn-modo-calendario" id="btnMesCalendario">Mes</button>
+            <button type="button" class="btn-modo-calendario activo" id="btnSemanaCalendario">Semana</button>
+            <button type="button" class="btn-modo-calendario" id="btnDiaCalendario">Dia</button>
+            <button type="button" class="btn-modo-calendario" id="btnListaCalendario">Lista</button>
+          </div>
         </div>
 
       <div id="calendar"></div>
@@ -1262,6 +1261,27 @@
       return `/api/admin/calendario?${params.toString()}`;
     }
 
+    function actualizarEtiquetaRango(info) {
+      const host = document.getElementById("rangoCalendario");
+      if (!host || !info?.view) return;
+      const titulo = String(info.view.title || "").trim();
+      host.textContent = titulo;
+    }
+
+    function actualizarBotonesModoCalendario() {
+      const tipo = calendar?.view?.type || "";
+      const mapa = {
+        btnMesCalendario: tipo === "dayGridMonth",
+        btnSemanaCalendario: tipo === "timeGridWeek",
+        btnDiaCalendario: tipo === "timeGridDay",
+        btnListaCalendario: tipo === "listWeek"
+      };
+      Object.entries(mapa).forEach(([id, activo]) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle("activo", !!activo);
+      });
+    }
+
     function crearCalendario() {
       const calendarEl = document.getElementById("calendar");
 
@@ -1271,18 +1291,7 @@
         locale: "es",
         firstDay: 1,
         height: "auto",
-        headerToolbar: {
-          left: "",
-          center: "title",
-          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek"
-        },
-        buttonText: {
-          today: "Hoy",
-          month: "Mes",
-          week: "Semana",
-          day: "Dia",
-          list: "Lista"
-        },
+        headerToolbar: false,
         dayHeaderFormat: {
           weekday: "short",
           day: "numeric"
@@ -1329,16 +1338,16 @@
         },
         eventClick: function(info) {
           abrirModalEvento(info);
+        },
+        datesSet: function(info) {
+          actualizarEtiquetaRango(info);
+          actualizarBotonesModoCalendario();
         }
       });
 
       calendar.render();
-
-      const toolbarHost = document.querySelector(".toolbar-rango-calendario");
-      const headerToolbar = calendarEl.querySelector(".fc-header-toolbar");
-      if (toolbarHost && headerToolbar) {
-        toolbarHost.replaceChildren(headerToolbar);
-      }
+      actualizarEtiquetaRango({ view: calendar.view });
+      actualizarBotonesModoCalendario();
 
       if (fechaInicialCalendario) {
         calendar.gotoDate(fechaInicialCalendario);
@@ -1380,6 +1389,21 @@
       });
       document.getElementById("btnNextCalendario").addEventListener("click", function() {
         if (calendar) calendar.next();
+      });
+      document.getElementById("btnHoyCalendario").addEventListener("click", function() {
+        if (calendar) calendar.today();
+      });
+      document.getElementById("btnMesCalendario").addEventListener("click", function() {
+        if (calendar) calendar.changeView("dayGridMonth");
+      });
+      document.getElementById("btnSemanaCalendario").addEventListener("click", function() {
+        if (calendar) calendar.changeView("timeGridWeek");
+      });
+      document.getElementById("btnDiaCalendario").addEventListener("click", function() {
+        if (calendar) calendar.changeView("timeGridDay");
+      });
+      document.getElementById("btnListaCalendario").addEventListener("click", function() {
+        if (calendar) calendar.changeView("listWeek");
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
