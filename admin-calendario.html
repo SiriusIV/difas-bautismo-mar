@@ -188,23 +188,28 @@
     }
 
     .selector-vista {
-      display: flex;
-      gap: 10px;
+      display: inline-flex;
+      gap: 0;
       align-items: center;
+      border: 1px solid #c9dcff;
+      border-radius: 999px;
+      background: #f7faff;
+      padding: 3px;
     }
 
     .selector-vista button {
       flex: 0 0 auto;
       width: auto;
-      background: #fff;
+      background: transparent;
       color: #1d4f91;
-      border: 1px solid #c9dcff;
+      border: 0;
       font-weight: 600;
-      min-height: 40px;
-      height: 40px;
-      padding: 7px 10px;
+      min-height: 34px;
+      height: 34px;
+      padding: 6px 12px;
       font-size: 12px;
       line-height: 1.1;
+      border-radius: 999px;
     }
 
     .selector-vista button.activo {
@@ -254,12 +259,14 @@
     }
 
     .cabecera-calendario-panel {
+      position: relative;
       display: grid;
       grid-template-columns: auto 1fr auto;
       align-items: center;
       column-gap: 20px;
       row-gap: 10px;
       margin-bottom: 10px;
+      min-height: 40px;
     }
 
     .cabecera-calendario-izquierda {
@@ -287,21 +294,18 @@
       width: 248px;
     }
 
-    .bloque-vista {
-      width: auto;
-      max-width: none;
-      margin-left: 0;
-      flex: 0 0 auto;
+    .navegacion-superior-calendario {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       justify-self: end;
     }
 
-    .cabecera-calendario-panel .bloque-vista {
-      display: none;
-    }
-
     .bloque-vista-calendario {
-      display: flex;
-      justify-content: flex-start;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      column-gap: 16px;
       margin-bottom: 10px;
     }
 
@@ -381,8 +385,12 @@
       flex: 1 1 auto;
       min-width: 0;
       align-self: center;
-      justify-self: center;
-      transform: translateX(-42px);
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: max-content;
+      max-width: calc(100% - 620px);
     }
 
     .tarjeta-estado {
@@ -422,6 +430,15 @@
       width: fit-content;
       margin-left: auto;
       margin-right: auto;
+    }
+
+    .toolbar-rango-calendario {
+      min-width: 0;
+      justify-self: stretch;
+    }
+
+    .toolbar-rango-calendario .fc-header-toolbar {
+      margin-bottom: 0;
     }
 
     .leyenda-item {
@@ -500,22 +517,20 @@
     }
 
     .fc .fc-toolbar-chunk:first-child {
-      flex: 0 0 auto;
-      justify-content: flex-start;
-      order: 2;
+      display: none;
     }
 
     .fc .fc-toolbar-chunk:nth-child(2) {
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       justify-content: center;
       min-width: 0;
       order: 1;
     }
 
     .fc .fc-toolbar-chunk:last-child {
-      flex: 1 1 0;
+      flex: 0 0 auto;
       justify-content: flex-end;
-      order: 3;
+      order: 2;
     }
 
     .fc .fc-toolbar-title {
@@ -559,16 +574,32 @@
       margin: 0 !important;
     }
 
-    .fc .fc-prev-button,
-    .fc .fc-next-button {
-      min-width: 36px;
+    .btn-nav-calendario {
       width: 36px;
       height: 36px;
-      padding: 0;
-      border-radius: 999px !important;
+      min-width: 36px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+
+    .btn-nav-calendario:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-nav-calendario svg {
+      width: 16px;
+      height: 16px;
+      display: block;
     }
 
     .modal-fondo {
@@ -773,11 +804,17 @@
               <div class="valor" id="contadorRechazadas">0</div>
             </div>
           </div>
-          <div class="bloque-vista">
-            <div class="selector-vista">
-              <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
-              <button type="button" id="btnVistaActividades">Actividades</button>
-            </div>
+          <div class="navegacion-superior-calendario">
+            <button type="button" class="btn-nav-calendario" id="btnPrevCalendario" aria-label="Anterior" title="Anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+            </button>
+            <button type="button" class="btn-nav-calendario" id="btnNextCalendario" aria-label="Siguiente" title="Siguiente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"></path>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -797,6 +834,7 @@
             <button type="button" id="btnVistaSolicitudesSecundario" class="activo">Solicitudes</button>
             <button type="button" id="btnVistaActividadesSecundario">Actividades</button>
           </div>
+          <div class="toolbar-rango-calendario"></div>
         </div>
 
       <div id="calendar"></div>
@@ -1236,7 +1274,7 @@
         headerToolbar: {
           left: "",
           center: "title",
-          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek,prev,next"
+          right: "today,dayGridMonth,timeGridWeek,timeGridDay,listWeek"
         },
         buttonText: {
           today: "Hoy",
@@ -1296,6 +1334,12 @@
 
       calendar.render();
 
+      const toolbarHost = document.querySelector(".toolbar-rango-calendario");
+      const headerToolbar = calendarEl.querySelector(".fc-header-toolbar");
+      if (toolbarHost && headerToolbar) {
+        toolbarHost.replaceChildren(headerToolbar);
+      }
+
       if (fechaInicialCalendario) {
         calendar.gotoDate(fechaInicialCalendario);
       }
@@ -1330,6 +1374,12 @@
       });
       document.getElementById("btnVistaActividadesSecundario").addEventListener("click", function() {
         aplicarVistaCalendario("actividades");
+      });
+      document.getElementById("btnPrevCalendario").addEventListener("click", function() {
+        if (calendar) calendar.prev();
+      });
+      document.getElementById("btnNextCalendario").addEventListener("click", function() {
+        if (calendar) calendar.next();
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
