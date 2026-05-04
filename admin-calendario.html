@@ -228,9 +228,37 @@
       margin-bottom: 10px;
     }
 
+    .panel-titulo-central {
+      flex: 1 1 auto;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      color: #123a63;
+      line-height: 1.15;
+      padding-bottom: 4px;
+    }
+
+    .panel-acciones-derecha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+    }
+
     .bloque-vista {
       width: 100%;
       max-width: 446px;
+    }
+
+    .cabecera-calendario-panel {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
     .oculto {
@@ -539,7 +567,9 @@
 
       <div class="panel">
         <div class="fila-superior-filtros">
-          <div class="acciones-principales">
+          <div class="panel-titulo-central">Calendario administrativo</div>
+
+          <div class="panel-acciones-derecha">
             <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 10.5 12 3l9 7.5"></path>
@@ -550,13 +580,6 @@
             <a href="mis-actividades.html" class="btn-chip">Panel de actividades</a>
           </div>
 
-          <div class="bloque-vista">
-            <label>Vista</label>
-            <div class="selector-vista">
-              <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
-              <button type="button" id="btnVistaActividades">Actividades programadas</button>
-            </div>
-          </div>
         </div>
 
         <div class="filtros">
@@ -570,17 +593,20 @@
               <option value="RECHAZADA">Solo RECHAZADA</option>
             </select>
           </div>
-
-          <div id="bloqueChkRechazadas">
-            <label class="checkbox-label">
-              <input type="checkbox" id="chkRechazadas">
-              Incluir rechazadas
-            </label>
-          </div>
         </div>
       </div>
 
       <div class="panel" id="panelResumenReservas">
+        <div class="cabecera-calendario-panel">
+          <div></div>
+          <div class="bloque-vista">
+            <label>Vista</label>
+            <div class="selector-vista">
+              <button type="button" id="btnVistaSolicitudes" class="activo">Solicitudes</button>
+              <button type="button" id="btnVistaActividades">Actividades programadas</button>
+            </div>
+          </div>
+        </div>
         <div class="resumen-estados" id="bloqueResumenEstados">
           <div class="tarjeta-estado">
             <div class="etiqueta">Pendientes</div>
@@ -746,7 +772,6 @@
       document.getElementById("btnVistaSolicitudes").classList.toggle("activo", !esVistaActividades);
       document.getElementById("btnVistaActividades").classList.toggle("activo", esVistaActividades);
       document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
-      document.getElementById("bloqueChkRechazadas").classList.toggle("oculto", esVistaActividades);
       document.getElementById("bloqueResumenEstados").classList.toggle("oculto", esVistaActividades);
       document.getElementById("leyendaActividadDisponible").classList.toggle("oculto", !esVistaActividades);
       document.getElementById("leyendaActividadUltimas").classList.toggle("oculto", !esVistaActividades);
@@ -769,12 +794,8 @@
 
         if (vistaCalendarioActual === "reservas") {
           const estado = document.getElementById("filtroEstado").value;
-          const incluirRechazadas = document.getElementById("chkRechazadas").checked;
-
           if (estado) {
             params.set("estado", estado);
-          } else if (incluirRechazadas) {
-            params.set("incluir_rechazadas", "1");
           }
         }
 
@@ -1029,12 +1050,8 @@
 
       if (vistaCalendarioActual === "reservas") {
         const estado = document.getElementById("filtroEstado").value;
-        const incluirRechazadas = document.getElementById("chkRechazadas").checked;
-
         if (estado) {
           params.set("estado", estado);
-        } else if (incluirRechazadas) {
-          params.set("incluir_rechazadas", "1");
         }
       }
 
@@ -1122,12 +1139,6 @@
         await actualizarContadores();
       });
 
-      document.getElementById("chkRechazadas").addEventListener("change", async () => {
-        if (vistaCalendarioActual !== "reservas") return;
-        limpiarMensaje();
-        calendar.refetchEvents();
-        await actualizarContadores();
-      });
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
@@ -1158,7 +1169,14 @@
         activarRecargaAutomaticaFiltros();
         await actualizarContadores();
         document.getElementById("app").style.visibility = "visible";
-        calendar.updateSize();
+        requestAnimationFrame(() => {
+          if (calendar) {
+            calendar.updateSize();
+            setTimeout(() => {
+              try { calendar.updateSize(); } catch (_) {}
+            }, 60);
+          }
+        });
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
         document.getElementById("app").style.display = "block";
