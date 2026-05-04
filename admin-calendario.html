@@ -1359,7 +1359,7 @@
       const ok = await comprobarSesionAdmin();
       if (!ok) return;
       document.getElementById("app").style.display = "block";
-      document.getElementById("app").style.opacity = "0";
+      document.getElementById("app").style.opacity = "1";
       await aplicarLogoCabeceraAdmin();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
@@ -1392,14 +1392,20 @@
         aplicarVistaCalendario("reservas", { recargar: false });
         fechaInicialCalendario = await obtenerFechaInicialConEventos();
         requestAnimationFrame(() => {
-          crearCalendario();
-          if (calendar) {
-            calendar.updateSize();
-            if (fechaInicialCalendario) {
-              calendar.gotoDate(fechaInicialCalendario);
+          try {
+            crearCalendario();
+            if (calendar) {
+              calendar.updateSize();
+              if (fechaInicialCalendario) {
+                calendar.gotoDate(fechaInicialCalendario);
+              }
             }
+          } catch (error) {
+            console.error(error);
+            mostrarMensaje("error", error.message || "No se pudo mostrar el calendario.");
+          } finally {
+            document.getElementById("app").style.opacity = "1";
           }
-          document.getElementById("app").style.opacity = "1";
         });
         activarRecargaAutomaticaFiltros();
         await actualizarContadores();
