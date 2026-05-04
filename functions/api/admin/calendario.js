@@ -20,7 +20,20 @@ function colorEstado(estado) {
   return "#0b5ed7";
 }
 
-function colorActividadProgramada() {
+function esFranjaFinalizada(fecha, horaFin) {
+  if (!fecha || !horaFin) return false;
+  const d = new Date(`${fecha}T${horaFin}`);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getTime() < Date.now();
+}
+
+function colorActividadProgramada(row, disponibles) {
+  const capacidad = Number(row.capacidad || 0);
+  if (esFranjaFinalizada(row.fecha, row.hora_fin)) return "#5f6d7a";
+  if (capacidad > 0 && Number(disponibles) <= 0) return "#dc3545";
+  if (capacidad > 0 && Number(disponibles) > 0 && Number(disponibles) <= Math.ceil(capacidad / 4)) {
+    return "#d97706";
+  }
   return "#0b5ed7";
 }
 
@@ -231,7 +244,14 @@ export async function onRequestGet(context) {
         const capacidad = Number(row.capacidad || 0);
         const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.id)) || 0);
         const disponibles = Math.max(capacidad - bloqueoFranja, 0);
-        const color = colorActividadProgramada();
+        const color = colorActividadProgramada(row, disponibles);
+        const estadoActividad = esFranjaFinalizada(row.fecha, row.hora_fin)
+          ? "FINALIZADA"
+          : (capacidad > 0 && disponibles <= 0)
+            ? "COMPLETA"
+            : (capacidad > 0 && disponibles > 0 && disponibles <= Math.ceil(capacidad / 4))
+              ? "ÚLTIMAS PLAZAS"
+              : "DISPONIBLE";
 
         return {
           id: `actividad-${row.id}`,
@@ -252,7 +272,8 @@ export async function onRequestGet(context) {
             hora_inicio: row.hora_inicio,
             hora_fin: row.hora_fin,
             capacidad,
-            disponibles
+            disponibles,
+            estado_actividad: estadoActividad
           }
         };
       });

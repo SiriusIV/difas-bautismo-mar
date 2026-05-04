@@ -834,13 +834,19 @@
       const estadoClass = String(p.estado || "").toLowerCase();
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
-        document.getElementById("modalTitulo").textContent = p.actividad || info.event.title || "Actividad programada";
+        const actividadId = Number(p.actividad_id || 0);
+        if (actividadId > 0) {
+          window.location.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
+          return;
+        }
+        document.getElementById("modalTitulo").textContent = p.actividad_nombre || info.event.title || "Actividad programada";
         document.getElementById("modalDetalle").innerHTML = `
           <div class="detalle-bloque">
-            <strong>Organiza:</strong> ${p.organizador || ""}<br>
+            <strong>Organiza:</strong> ${p.organizador_publico || ""}<br>
             <strong>Lugar:</strong> ${p.lugar || ""}<br>
             <strong>Fecha:</strong> ${p.fecha || ""}<br>
             <strong>Horario:</strong> ${p.hora_inicio || ""} - ${p.hora_fin || ""}<br>
+            <strong>Estado:</strong> ${p.estado_actividad || "DISPONIBLE"}<br>
             <strong>Capacidad:</strong> ${p.capacidad || 0}<br>
             <strong>Plazas disponibles:</strong> ${p.disponibles || 0}
           </div>
