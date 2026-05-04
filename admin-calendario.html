@@ -254,26 +254,37 @@
     }
 
     .cabecera-calendario-panel {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      column-gap: 20px;
+      row-gap: 10px;
       margin-bottom: 10px;
     }
 
     .cabecera-calendario-izquierda {
       display: flex;
-      align-items: end;
-      gap: 16px;
-      flex-wrap: wrap;
-      flex: 1 1 auto;
+      align-items: center;
+      gap: 12px;
       min-width: 0;
     }
 
     .bloque-filtro-estado {
-      width: 248px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: auto;
       flex: 0 0 auto;
+    }
+
+    .bloque-filtro-estado label {
+      margin-bottom: 0;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .bloque-filtro-estado select {
+      width: 248px;
     }
 
     .bloque-vista {
@@ -281,6 +292,7 @@
       max-width: none;
       margin-left: 0;
       flex: 0 0 auto;
+      justify-self: end;
     }
 
     .oculto {
@@ -353,12 +365,13 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 14px;
+      gap: 20px;
       flex-wrap: wrap;
       margin-bottom: 0;
       flex: 1 1 auto;
       min-width: 0;
-      align-self: end;
+      align-self: center;
+      justify-self: center;
     }
 
     .tarjeta-estado {
@@ -374,7 +387,7 @@
     }
 
     .tarjeta-estado .etiqueta {
-      font-size: 13px;
+      font-size: 14px;
       color: #555;
       margin-bottom: 0;
       line-height: 1;
@@ -382,7 +395,7 @@
     }
 
     .tarjeta-estado .valor {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       line-height: 1;
       color: #123a63;
@@ -587,6 +600,10 @@
         align-items: stretch;
       }
 
+      .cabecera-calendario-panel {
+        grid-template-columns: 1fr;
+      }
+
       .cabecera-calendario-izquierda {
         align-items: stretch;
       }
@@ -595,8 +612,13 @@
         width: 100%;
       }
 
+      .bloque-filtro-estado select {
+        width: 100%;
+      }
+
       .bloque-vista {
         max-width: none;
+        justify-self: stretch;
       }
 
       .fila-estado {
