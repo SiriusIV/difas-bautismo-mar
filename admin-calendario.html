@@ -569,7 +569,10 @@
           <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
           <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
           <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
-          <span class="leyenda-item oculto" id="leyendaActividadProgramada"><span class="leyenda-color" style="background:#0b5ed7;"></span>ACTIVIDAD PROGRAMADA</span>
+          <span class="leyenda-item oculto" id="leyendaActividadDisponible"><span class="leyenda-color" style="background:#0b5ed7;"></span>DISPONIBLE</span>
+          <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÚLTIMAS PLAZAS</span>
+          <span class="leyenda-item oculto" id="leyendaActividadCompleta"><span class="leyenda-color" style="background:#dc3545;"></span>COMPLETA</span>
+          <span class="leyenda-item oculto" id="leyendaActividadFinalizada"><span class="leyenda-color" style="background:#5f6d7a;"></span>FINALIZADA</span>
         </div>
 
       <div id="calendar"></div>
@@ -704,8 +707,11 @@
       document.getElementById("btnVistaActividades").classList.toggle("activo", esVistaActividades);
       document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
       document.getElementById("bloqueChkRechazadas").classList.toggle("oculto", esVistaActividades);
-      document.getElementById("panelResumenReservas").classList.toggle("oculto", esVistaActividades);
-      document.getElementById("leyendaActividadProgramada").classList.toggle("oculto", !esVistaActividades);
+      document.getElementById("bloqueResumenEstados").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaActividadDisponible").classList.toggle("oculto", !esVistaActividades);
+      document.getElementById("leyendaActividadUltimas").classList.toggle("oculto", !esVistaActividades);
+      document.getElementById("leyendaActividadCompleta").classList.toggle("oculto", !esVistaActividades);
+      document.getElementById("leyendaActividadFinalizada").classList.toggle("oculto", !esVistaActividades);
 
       if (recargar && calendar) {
         limpiarMensaje();
