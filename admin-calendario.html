@@ -514,6 +514,31 @@
       overflow: visible;
     }
 
+    #calendar.vista-dia-activa .fc .fc-timegrid-col.fc-day-today,
+    #calendar.vista-dia-activa .fc .fc-timegrid-col-bg .fc-day-today,
+    #calendar.vista-dia-activa .fc .fc-scrollgrid-section-body td.fc-day-today {
+      background: #fff !important;
+    }
+
+    #calendar.vista-dia-activa .fc .fc-timegrid-now-indicator-line {
+      border-color: #d39e00 !important;
+      border-width: 2px 0 0;
+      position: relative;
+      z-index: 3;
+    }
+
+    #calendar.vista-dia-activa .fc .fc-timegrid-now-indicator-line::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -10px;
+      height: 20px;
+      background: rgba(255, 227, 130, 0.32);
+      z-index: -1;
+      pointer-events: none;
+    }
+
     #panelResumenReservas.vista-actividades #calendar {
       padding-bottom: 0;
     }
@@ -1360,6 +1385,7 @@
         calendarEl.style.minHeight = esVistaMes ? "0" : "240px";
         calendarEl.classList.toggle("vista-mes-completa", esVistaMes);
         calendarEl.classList.toggle("vista-con-scroll", !esVistaMes);
+        calendarEl.classList.toggle("vista-dia-activa", info.view.type === "timeGridDay");
       }
     }
 
@@ -1401,6 +1427,7 @@
         firstDay: 1,
         height: "auto",
         headerToolbar: false,
+        noEventsText: "No existen eventos",
         dayHeaderFormat: {
           weekday: "short",
           day: "numeric"
