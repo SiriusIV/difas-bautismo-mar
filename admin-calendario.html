@@ -496,14 +496,32 @@
       border-radius: 10px;
       padding: 8px;
       min-height: 0;
-      height: clamp(320px, 34vh, 400px);
-      max-height: clamp(320px, 34vh, 400px);
+    }
+
+    #calendar.vista-con-scroll {
+      height: clamp(240px, 26vh, 300px);
+      max-height: clamp(240px, 26vh, 300px);
       overflow-y: auto;
       overflow-x: hidden;
     }
 
+    #calendar.vista-mes-completa {
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
     #panelResumenReservas.vista-actividades #calendar {
       padding-bottom: 0;
+    }
+
+    #calendar.vista-mes-completa .fc .fc-view-harness,
+    #calendar.vista-mes-completa .fc .fc-view-harness-active,
+    #calendar.vista-mes-completa .fc .fc-dayGridMonth-view,
+    #calendar.vista-mes-completa .fc .fc-daygrid-body,
+    #calendar.vista-mes-completa .fc .fc-scrollgrid-sync-table {
+      height: auto !important;
+      min-height: 0 !important;
     }
 
     #panelResumenReservas.vista-actividades .fc .fc-view-harness,
@@ -1334,7 +1352,10 @@
       host.textContent = titulo;
       const calendarEl = document.getElementById("calendar");
       if (calendarEl) {
-        calendarEl.style.minHeight = info.view.type === "dayGridMonth" ? "0" : "780px";
+        const esVistaMes = info.view.type === "dayGridMonth";
+        calendarEl.style.minHeight = esVistaMes ? "0" : "240px";
+        calendarEl.classList.toggle("vista-mes-completa", esVistaMes);
+        calendarEl.classList.toggle("vista-con-scroll", !esVistaMes);
       }
     }
 
