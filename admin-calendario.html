@@ -305,6 +305,24 @@
       justify-self: end;
     }
 
+    #panelResumenReservas.vista-actividades .navegacion-superior-calendario {
+      grid-column: 1 / -1;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      justify-self: stretch;
+      gap: 0;
+    }
+
+    #panelResumenReservas.vista-actividades #btnPrevCalendario {
+      justify-self: start;
+    }
+
+    #panelResumenReservas.vista-actividades #btnNextCalendario {
+      justify-self: end;
+    }
+
     .bloque-vista-calendario {
       display: grid;
       grid-template-columns: auto 1fr auto;
@@ -478,7 +496,8 @@
       border-radius: 10px;
       padding: 8px;
       min-height: 0;
-      max-height: 68vh;
+      height: clamp(420px, 45vh, 520px);
+      max-height: clamp(420px, 45vh, 520px);
       overflow-y: auto;
       overflow-x: hidden;
     }
