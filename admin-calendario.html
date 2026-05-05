@@ -345,6 +345,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
+      margin-top: -8px;
       margin-bottom: 10px;
     }
 
@@ -522,9 +523,13 @@
       overflow: visible;
     }
 
+    #calendar.vista-dia-activa .fc-theme-standard td.fc-day-today,
+    #calendar.vista-dia-activa .fc-theme-standard th.fc-day-today,
     #calendar.vista-dia-activa .fc .fc-timegrid-col.fc-day-today,
     #calendar.vista-dia-activa .fc .fc-timegrid-col-bg .fc-day-today,
-    #calendar.vista-dia-activa .fc .fc-scrollgrid-section-body td.fc-day-today {
+    #calendar.vista-dia-activa .fc .fc-scrollgrid-section-body td.fc-day-today,
+    #calendar.vista-dia-activa .fc .fc-timegrid-col-frame,
+    #calendar.vista-dia-activa .fc .fc-timegrid-col-bg {
       background: #fff !important;
     }
 
@@ -647,12 +652,12 @@
     }
 
     .btn-nav-calendario {
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
+      width: auto;
+      height: auto;
+      min-width: 0;
+      border-radius: 0;
+      border: 0;
+      background: transparent;
       color: #4a5a6a;
       display: inline-flex;
       align-items: center;
@@ -660,12 +665,12 @@
       cursor: pointer;
       padding: 0;
       transition: all 0.15s ease;
+      box-shadow: none;
     }
 
     .btn-nav-calendario:hover {
-      background: #f7f9fb;
+      background: transparent;
       color: #0b5ed7;
-      border-color: #9fb2c7;
     }
 
     .btn-nav-calendario svg {
@@ -675,8 +680,8 @@
     }
 
     .btn-nav-calendario img {
-      width: 16px;
-      height: 16px;
+      width: 24px;
+      height: 24px;
       display: block;
     }
 
