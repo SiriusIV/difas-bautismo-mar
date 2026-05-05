@@ -235,16 +235,15 @@
     }
 
     .fila-superior-filtros {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: end;
-      justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
       margin-bottom: 0;
     }
 
     .panel-titulo-central {
-      flex: 1 1 auto;
+      min-width: 0;
       text-align: left;
       font-size: 20px;
       font-weight: 600;
@@ -253,13 +252,23 @@
       padding-bottom: 4px;
     }
 
+    .panel-rango-central {
+      min-width: 0;
+      text-align: center;
+      font-size: 1.22rem;
+      color: #55657a;
+      line-height: 1.2;
+      font-weight: 500;
+      align-self: center;
+      padding-bottom: 2px;
+    }
+
     .panel-acciones-derecha {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
       justify-content: flex-end;
-      flex: 0 0 auto;
+      min-width: 0;
     }
 
     .cabecera-calendario-panel {
@@ -324,10 +333,10 @@
     }
 
     .bloque-vista-calendario {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
+      display: flex;
       align-items: center;
-      column-gap: 16px;
+      justify-content: space-between;
+      gap: 16px;
       margin-bottom: 10px;
     }
 
@@ -469,13 +478,7 @@
     }
 
     .toolbar-rango-calendario {
-      min-width: 0;
-      justify-self: stretch;
-      text-align: center;
-      font-size: 1.25rem;
-      color: #55657a;
-      line-height: 1.2;
-      font-weight: 500;
+      display: none;
     }
 
     .leyenda-item {
@@ -827,10 +830,11 @@
       <div class="panel">
         <div class="fila-superior-filtros">
           <div class="panel-titulo-central">Calendario de actividades y reservas</div>
+          <div class="panel-rango-central" id="rangoCalendario"></div>
 
           <div class="panel-acciones-derecha">
-            <a href="admin-reservas.html" class="btn-chip">Panel de reservas</a>
-            <a href="mis-actividades.html" class="btn-chip">Panel de actividades</a>
+            <a href="admin-reservas.html" class="btn-chip">Reservas</a>
+            <a href="mis-actividades.html" class="btn-chip">Actividades</a>
             <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 10.5L12 3l9 7.5"></path>
@@ -907,7 +911,7 @@
             <button type="button" id="btnVistaSolicitudesSecundario" class="activo">Solicitudes</button>
             <button type="button" id="btnVistaActividadesSecundario">Actividades</button>
           </div>
-          <div class="toolbar-rango-calendario" id="rangoCalendario"></div>
+          <div class="toolbar-rango-calendario" aria-hidden="true"></div>
           <div class="acciones-vista-calendario">
             <button type="button" class="btn-modo-calendario" id="btnHoyCalendario">Hoy</button>
             <button type="button" class="btn-modo-calendario" id="btnMesCalendario">Mes</button>
