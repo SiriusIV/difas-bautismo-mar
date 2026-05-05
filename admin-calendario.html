@@ -254,13 +254,21 @@
 
     .panel-rango-central {
       min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      align-self: center;
+      padding-bottom: 2px;
+    }
+
+    .panel-rango-texto {
+      min-width: 240px;
       text-align: center;
       font-size: 1.22rem;
       color: #55657a;
       line-height: 1.2;
       font-weight: 500;
-      align-self: center;
-      padding-bottom: 2px;
     }
 
     .panel-acciones-derecha {
@@ -666,6 +674,12 @@
       display: block;
     }
 
+    .btn-nav-calendario img {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
     .acciones-vista-calendario {
       display: inline-flex;
       gap: 8px;
@@ -855,7 +869,15 @@
       <div class="panel">
         <div class="fila-superior-filtros">
           <div class="panel-titulo-central">Calendario de actividades y reservas</div>
-          <div class="panel-rango-central" id="rangoCalendario"></div>
+          <div class="panel-rango-central">
+            <button type="button" class="btn-nav-calendario" id="btnPrevCalendario" aria-label="Anterior" title="Anterior">
+              <img src="assets/icono-calendario-retroceso.svg" alt="">
+            </button>
+            <div class="panel-rango-texto" id="rangoCalendario"></div>
+            <button type="button" class="btn-nav-calendario" id="btnNextCalendario" aria-label="Siguiente" title="Siguiente">
+              <img src="assets/icono-calendario-avance.svg" alt="">
+            </button>
+          </div>
 
           <div class="panel-acciones-derecha">
             <a href="admin-reservas.html" class="btn-chip">Reservas</a>
@@ -903,18 +925,6 @@
               <div class="etiqueta">Rechazadas:</div>
               <div class="valor" id="contadorRechazadas">0</div>
             </div>
-          </div>
-          <div class="navegacion-superior-calendario">
-            <button type="button" class="btn-nav-calendario" id="btnPrevCalendario" aria-label="Anterior" title="Anterior">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 18l-6-6 6-6"></path>
-              </svg>
-            </button>
-            <button type="button" class="btn-nav-calendario" id="btnNextCalendario" aria-label="Siguiente" title="Siguiente">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 6l6 6-6 6"></path>
-              </svg>
-            </button>
           </div>
         </div>
 
