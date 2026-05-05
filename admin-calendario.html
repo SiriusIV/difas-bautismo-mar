@@ -439,7 +439,10 @@
 
     .leyenda-inferior-host {
       margin-top: 10px;
-      padding-bottom: 6px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+      display: flex;
+      justify-content: center;
     }
 
     .leyenda-inferior-host .leyenda {
@@ -475,6 +478,9 @@
       border-radius: 10px;
       padding: 8px;
       min-height: 0;
+      max-height: 68vh;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     #panelResumenReservas.vista-actividades #calendar {
@@ -1318,23 +1324,12 @@
       const hostSuperior = document.getElementById("leyendaSuperiorHost");
       const hostInferior = document.getElementById("leyendaInferiorHost");
       if (!leyenda || !hostSuperior || !hostInferior) return;
-
-      const esMesActividades =
-        vistaCalendarioActual === "actividades" &&
-        calendar &&
-        calendar.view &&
-        calendar.view.type === "dayGridMonth";
-
-      if (esMesActividades) {
-        hostInferior.classList.remove("oculto");
-        if (leyenda.parentElement !== hostInferior) {
-          hostInferior.appendChild(leyenda);
-        }
-      } else {
-        hostInferior.classList.add("oculto");
-        if (leyenda.parentElement !== hostSuperior) {
-          hostSuperior.appendChild(leyenda);
-        }
+      hostInferior.classList.remove("oculto");
+      if (leyenda.parentElement !== hostInferior) {
+        hostInferior.appendChild(leyenda);
+      }
+      if (hostSuperior.childElementCount === 0) {
+        hostSuperior.classList.add("oculto");
       }
     }
 
