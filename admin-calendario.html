@@ -908,9 +908,9 @@
           </div>
 
           <div class="panel-acciones-derecha">
-            <a href="admin-reservas.html" class="btn-chip">Reservas</a>
-            <a href="mis-actividades.html" class="btn-chip">Actividades</a>
-            <a href="portal.html" class="btn-icono" title="Volver al portal" aria-label="Volver al portal">
+            <a href="admin-reservas.html" class="btn-chip" id="btnAccesoReservas">Reservas</a>
+            <a href="mis-actividades.html" class="btn-chip" id="btnAccesoActividades">Actividades</a>
+            <a href="portal.html" class="btn-icono" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 10.5L12 3l9 7.5"></path>
                 <path d="M5 9.5V21h14V9.5"></path>
@@ -1022,13 +1022,21 @@
     let accionEnCurso = false;
     let fechaInicialCalendario = null;
     let vistaCalendarioActual = "reservas";
+    let usuarioCalendario = null;
+
+    function esAdminCalendario() {
+      const rol = String(usuarioCalendario?.rol || "").toUpperCase();
+      return rol === "ADMIN" || rol === "SUPERADMIN";
+    }
+
+    function esSolicitanteCalendario() {
+      return String(usuarioCalendario?.rol || "").toUpperCase() === "SOLICITANTE";
+    }
     async function aplicarLogoCabeceraAdmin() {
       const logo = document.querySelector(".logo");
       if (!logo) return;
       try {
-        const response = await fetch("/api/usuario/session", { credentials: "same-origin" });
-        const data = await response.json().catch(() => null);
-        const user = data?.user;
+        const user = usuarioCalendario || null;
         const logoUsuario = String(user?.logo_url || "").trim();
         logo.classList.remove("logo-admin-personal");
         if (logoUsuario) logo.src = logoUsuario;
@@ -1039,12 +1047,11 @@
     }
 
     function redirigirLogin() {
-      const next = encodeURIComponent(window.location.pathname);
-      window.location.href = `admin-login.html?next=${next}`;
+      window.location.href = "portal.html";
     }
 
-    async function comprobarSesionAdmin() {
-      const response = await fetch("/api/admin/session", {
+    async function comprobarSesionCalendario() {
+      const response = await fetch("/api/usuario/session", {
         method: "GET",
         credentials: "same-origin"
       });
@@ -1054,7 +1061,35 @@
         return false;
       }
 
+      const data = await response.json().catch(() => null);
+      const user = data?.user || null;
+      const rol = String(user?.rol || "").toUpperCase();
+      if (!user || !["ADMIN", "SUPERADMIN", "SOLICITANTE"].includes(rol)) {
+        redirigirLogin();
+        return false;
+      }
+
+      usuarioCalendario = user;
       return true;
+    }
+
+    function aplicarRolPantallaCalendario() {
+      const btnReservas = document.getElementById("btnAccesoReservas");
+      const btnActividades = document.getElementById("btnAccesoActividades");
+      const btnPortal = document.getElementById("btnVolverPortal");
+      const subtitulo = document.getElementById("subtituloEvento");
+
+      if (esSolicitanteCalendario()) {
+        if (btnReservas) btnReservas.href = "usuario-panel.html";
+        if (btnActividades) btnActividades.href = "portal.html";
+        if (btnPortal) btnPortal.href = "portal.html";
+        if (subtitulo) subtitulo.textContent = "Calendario de actividades y solicitudes";
+      } else {
+        if (btnReservas) btnReservas.href = "admin-reservas.html";
+        if (btnActividades) btnActividades.href = "mis-actividades.html";
+        if (btnPortal) btnPortal.href = "portal.html";
+        if (subtitulo) subtitulo.textContent = "Calendario administrativo";
+      }
     }
 
     async function cerrarSesion() {
@@ -1102,13 +1137,13 @@
 
         document.title = "Actividades Públicas Institucionales";
         document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
-        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
+        aplicarRolPantallaCalendario();
         document.querySelector(".subactividad").textContent = "";
       } catch (error) {
         console.error(error);
         document.title = "Actividades Públicas Institucionales";
         document.getElementById("tituloEvento").textContent = "Actividades Públicas Institucionales";
-        document.getElementById("subtituloEvento").textContent = "Calendario administrativo";
+        aplicarRolPantallaCalendario();
         document.querySelector(".subactividad").textContent = "";
       }
     }
@@ -1291,11 +1326,13 @@
       const observaciones = p.observaciones && String(p.observaciones).trim()
         ? p.observaciones
         : "Sin observaciones";
+      const modoSolicitante = esSolicitanteCalendario();
 
-      document.getElementById("modalTitulo").textContent = p.codigo_reserva || "Detalle de solicitud";
+      document.getElementById("modalTitulo").textContent = p.codigo_reserva || p.actividad_nombre || "Detalle de solicitud";
       document.getElementById("modalDetalle").innerHTML = `
         <div class="detalle-bloque">
           <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
+          <strong>Actividad:</strong> ${p.actividad_nombre || "Actividad"}<br>
           <strong>Centro:</strong> ${p.centro || ""}<br>
           <strong>Contacto:</strong> ${p.contacto || ""}<br>
           <strong>TelÃ©fono:</strong> ${p.telefono || ""}<br>
@@ -1318,11 +1355,13 @@
 
       btnEditar.href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
       btnAsistentes.href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
-      bloqueEstado.classList.remove("oculto");
-      btnEditar.classList.remove("oculto");
-      btnAsistentes.classList.remove("oculto");
+      bloqueEstado.classList.toggle("oculto", modoSolicitante);
+      btnEditar.classList.toggle("oculto", !p.token_edicion);
+      btnAsistentes.classList.toggle("oculto", !p.token_edicion);
 
-      cargarSelectorEstado(p.estado);
+      if (!modoSolicitante) {
+        cargarSelectorEstado(p.estado);
+      }
 
       document.getElementById("modalEvento").classList.add("activo");
       document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
@@ -1336,6 +1375,10 @@
 
     async function ejecutarAccionDesdeModal() {
       if (!eventoSeleccionado || accionEnCurso) return;
+      if (!esAdminCalendario()) {
+        cerrarModalEvento();
+        return;
+      }
       if ((eventoSeleccionado.extendedProps?.tipo_evento || "RESERVA") !== "RESERVA") {
         cerrarModalEvento();
         return;
@@ -1541,9 +1584,10 @@
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ok = await comprobarSesionAdmin();
+      const ok = await comprobarSesionCalendario();
       if (!ok) return;
       await aplicarLogoCabeceraAdmin();
+      aplicarRolPantallaCalendario();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
       document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", function() {

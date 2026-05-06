@@ -1,5 +1,5 @@
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
-import { getAdminSession } from "./_auth.js";
+import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -10,6 +10,22 @@ function json(data, init = {}) {
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
+}
+
+async function getCalendarSession(request, env) {
+  const session = await getUserSession(request, env.SECRET_KEY);
+  if (!session) return null;
+
+  const rol = String(session.rol || "").toUpperCase();
+  if (!["ADMIN", "SUPERADMIN", "SOLICITANTE"].includes(rol)) {
+    return null;
+  }
+
+  return {
+    username: session.email || "",
+    usuario_id: Number(session.id || 0),
+    rol
+  };
 }
 
 function colorEstado(estado) {
@@ -76,12 +92,17 @@ function calcularBloqueoActualReserva(row) {
   return Number(row.asistentes_cargados || 0);
 }
 
-async function obtenerReservasCalendario(env, filtros) {
+async function obtenerReservasCalendario(env, filtros, session) {
   const where = [];
   const binds = [];
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
   where.push("(date(f.fecha) >= date('now') OR UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA')");
+
+  if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
+    where.push("r.usuario_id = ?");
+    binds.push(Number(session?.usuario_id || 0));
+  }
 
   if (filtros.start) {
     where.push("f.fecha >= ?");
@@ -116,12 +137,16 @@ async function obtenerReservasCalendario(env, filtros) {
       r.telefono,
       r.email,
       r.observaciones,
+      r.usuario_id,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
       f.fecha,
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      f.actividad_id,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      a.admin_id,
       COALESCE((
         SELECT COUNT(*)
         FROM visitantes v
@@ -130,6 +155,8 @@ async function obtenerReservasCalendario(env, filtros) {
     FROM reservas r
     INNER JOIN franjas f
       ON f.id = r.franja_id
+    INNER JOIN actividades a
+      ON a.id = f.actividad_id
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
     ORDER BY f.fecha ASC, f.hora_inicio ASC, r.fecha_solicitud ASC
   `;
@@ -218,7 +245,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
-    const session = await getAdminSession(request, env);
+    const session = await getCalendarSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, { status: 401 });
     }
@@ -287,7 +314,7 @@ export async function onRequestGet(context) {
         };
       });
     } else {
-      const rows = await obtenerReservasCalendario(env, filtros);
+      const rows = await obtenerReservasCalendario(env, filtros, session);
       const franjaIds = [...new Set(rows.map((r) => Number(r.franja_id)).filter(Boolean))];
       const bloqueoPorFranja = await obtenerBloqueoPorFranja(env, franjaIds);
 
@@ -309,6 +336,10 @@ export async function onRequestGet(context) {
           extendedProps: {
             tipo_evento: "RESERVA",
             id: row.id,
+            usuario_id: Number(row.usuario_id || 0),
+            actividad_id: Number(row.actividad_id || 0),
+            actividad_nombre: row.actividad_nombre || "Actividad",
+            admin_id: Number(row.admin_id || 0),
             franja_id: row.franja_id,
             codigo_reserva: row.codigo_reserva,
             token_edicion: row.token_edicion || "",
