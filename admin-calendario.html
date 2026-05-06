@@ -639,6 +639,24 @@
       font-weight: 600;
     }
 
+    .fc .fc-list-event.evento-dia-vacio {
+      cursor: default;
+    }
+
+    .fc .fc-list-event.evento-dia-vacio td {
+      padding-top: 4px;
+      padding-bottom: 4px;
+      background: #fff;
+    }
+
+    .fc .fc-list-event.evento-dia-vacio .fc-list-event-time,
+    .fc .fc-list-event.evento-dia-vacio .fc-list-event-title {
+      color: transparent !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      padding: 0 !important;
+    }
+
     .fc .fc-event.evento-actividad-editable {
       cursor: pointer;
     }
@@ -1458,7 +1476,9 @@
     function actualizarEtiquetaRango(info) {
       const host = document.getElementById("rangoCalendario");
       if (!host || !info?.view) return;
-      const titulo = String(info.view.title || "").trim();
+      const titulo = info.view.type === "listContinuo"
+        ? "Lista continua"
+        : String(info.view.title || "").trim();
       host.textContent = titulo;
       const calendarEl = document.getElementById("calendar");
       if (calendarEl) {
@@ -1484,13 +1504,57 @@
       }
     }
 
+    function formatearFechaIsoLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function crearMarcadoresListaContinua(eventos, fetchInfo) {
+      const inicio = new Date(fetchInfo.start);
+      const fin = new Date(fetchInfo.end);
+      if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return [];
+
+      const diasConEventos = new Set(
+        eventos
+          .map((evento) => String(evento?.start || "").slice(0, 10))
+          .filter(Boolean)
+      );
+
+      const marcadores = [];
+      const cursor = new Date(inicio);
+      while (cursor < fin) {
+        const iso = formatearFechaIsoLocal(cursor);
+        if (!diasConEventos.has(iso)) {
+          marcadores.push({
+            id: `placeholder-${vistaCalendarioActual}-${iso}`,
+            title: " ",
+            start: `${iso}T00:00:00`,
+            allDay: true,
+            display: "auto",
+            backgroundColor: "transparent",
+            borderColor: "transparent",
+            textColor: "transparent",
+            extendedProps: {
+              tipo_evento: "DIA_VACIO_LISTA",
+              placeholder_lista: true
+            }
+          });
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return marcadores;
+    }
+
     function actualizarBotonesModoCalendario() {
       const tipo = calendar?.view?.type || "";
       const mapa = {
         btnMesCalendario: tipo === "dayGridMonth",
         btnSemanaCalendario: tipo === "timeGridWeek",
         btnDiaCalendario: tipo === "timeGridDay",
-        btnListaCalendario: tipo === "listWeek"
+        btnListaCalendario: tipo === "listContinuo"
       };
       Object.entries(mapa).forEach(([id, activo]) => {
         const btn = document.getElementById(id);
@@ -1509,6 +1573,21 @@
         height: "auto",
         headerToolbar: false,
         noEventsText: "No existen eventos",
+        views: {
+          listContinuo: {
+            type: "list",
+            buttonText: "Lista",
+            visibleRange(currentDate) {
+              const start = new Date(currentDate);
+              start.setDate(start.getDate() - 180);
+              start.setHours(0, 0, 0, 0);
+              const end = new Date(currentDate);
+              end.setDate(end.getDate() + 181);
+              end.setHours(0, 0, 0, 0);
+              return { start, end };
+            }
+          }
+        },
         dayHeaderFormat: {
           weekday: "short",
           day: "numeric"
@@ -1541,7 +1620,14 @@
               throw new Error(data.error || "No se pudieron cargar los eventos.");
             }
 
-            successCallback(data.eventos || []);
+            const eventosBase = Array.isArray(data.eventos) ? data.eventos : [];
+            if (fetchInfo.view.type === "listContinuo") {
+              const placeholders = crearMarcadoresListaContinua(eventosBase, fetchInfo);
+              successCallback([...eventosBase, ...placeholders]);
+              return;
+            }
+
+            successCallback(eventosBase);
           } catch (error) {
             console.error(error);
             mostrarMensaje("error", error.message || "No se pudo cargar el calendario.");
@@ -1550,10 +1636,14 @@
         },
         eventClassNames: function(arg) {
           const p = arg.event.extendedProps || {};
+          if (p.placeholder_lista) return ["evento-dia-vacio"];
           if ((p.tipo_evento || "") !== "ACTIVIDAD_PROGRAMADA") return [];
           return [p.editable_actividad ? "evento-actividad-editable" : "evento-actividad-noeditable"];
         },
         eventClick: function(info) {
+          if (info.event.extendedProps?.placeholder_lista) {
+            return;
+          }
           abrirModalEvento(info);
         },
         datesSet: function(info) {
@@ -1615,7 +1705,7 @@
         if (calendar) calendar.changeView("timeGridDay");
       });
       document.getElementById("btnListaCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("listWeek");
+        if (calendar) calendar.changeView("listContinuo");
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
