@@ -1624,10 +1624,11 @@
 
     function centrarListaEnProximoEvento() {
       if (!calendar || String(calendar.view?.type || "") !== "listContinuo") return;
-      const contenedor = document.getElementById("calendar");
-      if (!contenedor) return;
+      const root = document.getElementById("calendar");
+      if (!root) return;
 
-      const filas = [...contenedor.querySelectorAll(".fc-list-event:not(.evento-dia-vacio)")];
+      const contenedor = root.querySelector(".fc-scroller, .fc-list") || root;
+      const filas = [...root.querySelectorAll(".fc-list-event:not(.evento-dia-vacio)")];
       if (!filas.length) {
         contenedor.scrollTop = 0;
         return;
@@ -1640,7 +1641,12 @@
       });
 
       if (!objetivo) objetivo = filas[0];
-      const top = Math.max((objetivo.offsetTop || 0) - Math.round(contenedor.clientHeight * 0.22), 0);
+      const objetivoTop = objetivo.getBoundingClientRect().top;
+      const contenedorTop = contenedor.getBoundingClientRect().top;
+      const top = Math.max(
+        contenedor.scrollTop + (objetivoTop - contenedorTop) - Math.round(contenedor.clientHeight * 0.22),
+        0
+      );
       contenedor.scrollTop = top;
     }
 
@@ -1661,10 +1667,10 @@
             buttonText: "Lista",
             visibleRange(currentDate) {
               const start = new Date(currentDate);
-              start.setDate(start.getDate() - 180);
+              start.setDate(start.getDate() - 30);
               start.setHours(0, 0, 0, 0);
               const end = new Date(currentDate);
-              end.setDate(end.getDate() + 181);
+              end.setDate(end.getDate() + 335);
               end.setHours(0, 0, 0, 0);
               return { start, end };
             }
@@ -1738,9 +1744,12 @@
           actualizarEtiquetaRango(info);
           actualizarBotonesModoCalendario();
           reubicarLeyendaSegunVista();
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             centrarListaEnProximoEvento();
-          }, 0);
+            setTimeout(() => {
+              centrarListaEnProximoEvento();
+            }, 60);
+          });
         }
       });
 
