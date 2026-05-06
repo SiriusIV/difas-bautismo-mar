@@ -1994,7 +1994,9 @@ function actualizarBotonSolicitarSegunFranja() {
     function actualizarIconoNotificacionesPortal() {
       const btn = document.getElementById("btnNotificacionesSesion");
       const badge = document.getElementById("badgeNotificacionesSesion");
-      const total = Number(notificacionesNoLeidas || 0) + Number((notificacionesOperativasPortal || []).length || 0);
+      const unreadDb = (notificacionesPortal || []).filter((item) => !item.leida).length;
+      const unreadOperativas = (notificacionesOperativasPortal || []).filter((item) => !item.leida).length;
+      const total = Math.max(Number(notificacionesNoLeidas || 0), unreadDb) + unreadOperativas;
       btn.classList.toggle("tiene-no-leidas", total > 0);
       badge.classList.toggle("activo", total > 0);
       badge.textContent = total > 99 ? "99+" : String(total || 0);
@@ -2187,7 +2189,10 @@ function actualizarBotonSolicitarSegunFranja() {
           throw new Error(data?.error || "No se pudieron cargar las notificaciones.");
         }
         notificacionesPortal = Array.isArray(data?.items) ? data.items : [];
-        notificacionesNoLeidas = Number(data?.unread || 0);
+        notificacionesNoLeidas = Math.max(
+          Number(data?.unread || 0),
+          notificacionesPortal.filter((item) => !item.leida).length
+        );
         await cargarNotificacionesOperativasPortal();
         actualizarIconoNotificacionesPortal();
         renderizarNotificacionesPortal();
