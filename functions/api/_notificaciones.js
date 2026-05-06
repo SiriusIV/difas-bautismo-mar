@@ -2,6 +2,28 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+async function asegurarTablaNotificaciones(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS notificaciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      rol_destino TEXT,
+      tipo TEXT,
+      titulo TEXT NOT NULL,
+      mensaje TEXT,
+      url_destino TEXT,
+      leida INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      leida_at TEXT
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_created
+    ON notificaciones (usuario_id, created_at DESC, id DESC)
+  `).run();
+}
+
 function esErrorColumnaAusente(error, columna) {
   const texto = limpiarTexto(error?.message || error || "").toLowerCase();
   return texto.includes("no column named") && texto.includes(String(columna || "").toLowerCase());
@@ -322,6 +344,7 @@ export async function crearNotificacion(env, {
     return { ok: false, error: "Faltan datos para crear la notificación." };
   }
 
+  await asegurarTablaNotificaciones(env);
   return await insertarNotificacionCompatible(env, {
     usuario_id: id,
     rol_destino: limpiarTexto(rolDestino).toUpperCase() || null,
@@ -337,6 +360,7 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
   const limiteSeguro = Math.max(1, Math.min(100, Number(limit || 25)));
   if (!id) return { total: 0, unread: 0, items: [] };
 
+  await asegurarTablaNotificaciones(env);
   const whereNoLeidas = soloNoLeidas ? "AND COALESCE(leida, 0) = 0" : "";
 
   const rows = await listarNotificacionesCompatible(env, id, limiteSeguro, whereNoLeidas);
@@ -380,6 +404,8 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
   const id = Number(notificacionId || 0);
   if (!userId || !id) return { ok: false, error: "Identificador inválido." };
 
+  await asegurarTablaNotificaciones(env);
+  await asegurarTablaNotificaciones(env);
   let result;
   try {
     result = await env.DB.prepare(`
