@@ -1293,6 +1293,19 @@
       }
     }
 
+    async function irAVistaConProximoEvento(tipoVista) {
+      if (!calendar) return;
+      const fechaObjetivo = await obtenerFechaProximoEvento();
+      if (fechaObjetivo) {
+        if (tipoVista === "listContinuo") {
+          fechaObjetivoLista = fechaObjetivo;
+        }
+        calendar.changeView(tipoVista, fechaObjetivo);
+        return;
+      }
+      calendar.changeView(tipoVista);
+    }
+
     async function actualizarContadores() {
       if (vistaCalendarioActual !== "reservas") {
         document.getElementById("contadorPendientes").textContent = "0";
@@ -1681,10 +1694,10 @@
             buttonText: "Lista",
             visibleRange(currentDate) {
               const start = new Date(currentDate);
-              start.setDate(start.getDate() - 30);
+              start.setDate(start.getDate() - 4);
               start.setHours(0, 0, 0, 0);
               const end = new Date(currentDate);
-              end.setDate(end.getDate() + 335);
+              end.setDate(end.getDate() + 365);
               end.setHours(0, 0, 0, 0);
               return { start, end };
             }
@@ -1809,24 +1822,17 @@
       document.getElementById("btnHoyCalendario").addEventListener("click", function() {
         if (calendar) calendar.changeView("timeGridDay", new Date());
       });
-      document.getElementById("btnMesCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("dayGridMonth");
+      document.getElementById("btnMesCalendario").addEventListener("click", async function() {
+        await irAVistaConProximoEvento("dayGridMonth");
       });
-      document.getElementById("btnSemanaCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("timeGridWeek");
+      document.getElementById("btnSemanaCalendario").addEventListener("click", async function() {
+        await irAVistaConProximoEvento("timeGridWeek");
       });
-      document.getElementById("btnDiaCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("timeGridDay");
+      document.getElementById("btnDiaCalendario").addEventListener("click", async function() {
+        await irAVistaConProximoEvento("timeGridDay");
       });
       document.getElementById("btnListaCalendario").addEventListener("click", async function() {
-        if (!calendar) return;
-        const fechaObjetivo = await obtenerFechaProximoEvento();
-        fechaObjetivoLista = fechaObjetivo || null;
-        if (fechaObjetivo) {
-          calendar.changeView("listContinuo", fechaObjetivo);
-          return;
-        }
-        calendar.changeView("listContinuo");
+        await irAVistaConProximoEvento("listContinuo");
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
@@ -1837,7 +1843,7 @@
       try {
         await cargarConfigEvento();
         aplicarVistaCalendario("reservas", { recargar: false });
-        fechaInicialCalendario = await obtenerFechaInicialConEventos();
+        fechaInicialCalendario = await obtenerFechaProximoEvento();
         requestAnimationFrame(() => {
           try {
             crearCalendario();
