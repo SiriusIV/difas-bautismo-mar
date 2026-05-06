@@ -655,7 +655,7 @@
 
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-time,
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
-      padding-left: 18px;
+      padding-left: 34px;
     }
 
     .fc .fc-list-event.evento-dia-vacio .fc-list-event-time,
@@ -1247,6 +1247,51 @@
       }
     }
 
+    async function obtenerFechaProximoEvento() {
+      try {
+        const params = new URLSearchParams();
+        params.set("start", "2000-01-01");
+        params.set("end", "2100-12-31");
+        params.set("vista", vistaCalendarioActual);
+
+        if (vistaCalendarioActual === "reservas") {
+          const estado = document.getElementById("filtroEstado").value;
+          if (estado) {
+            params.set("estado", estado);
+          }
+        }
+
+        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return null;
+        }
+
+        const data = await response.json();
+        if (!response.ok || !data.ok) return null;
+
+        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
+        if (!eventos.length) return null;
+
+        const ahora = Date.now();
+        const normalizados = eventos
+          .map((evento) => ({
+            start: String(evento?.start || ""),
+            ts: new Date(evento?.start || "").getTime()
+          }))
+          .filter((evento) => evento.start && !Number.isNaN(evento.ts))
+          .sort((a, b) => a.ts - b.ts);
+
+        const proximo = normalizados.find((evento) => evento.ts >= ahora) || normalizados[0];
+        return proximo?.start ? proximo.start.slice(0, 10) : null;
+      } catch {
+        return null;
+      }
+    }
+
     async function actualizarContadores() {
       if (vistaCalendarioActual !== "reservas") {
         document.getElementById("contadorPendientes").textContent = "0";
@@ -1750,8 +1795,14 @@
       document.getElementById("btnDiaCalendario").addEventListener("click", function() {
         if (calendar) calendar.changeView("timeGridDay");
       });
-      document.getElementById("btnListaCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("listContinuo");
+      document.getElementById("btnListaCalendario").addEventListener("click", async function() {
+        if (!calendar) return;
+        const fechaObjetivo = await obtenerFechaProximoEvento();
+        if (fechaObjetivo) {
+          calendar.changeView("listContinuo", fechaObjetivo);
+          return;
+        }
+        calendar.changeView("listContinuo");
       });
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
