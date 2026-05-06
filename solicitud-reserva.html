@@ -892,6 +892,10 @@
       return Number.isInteger(id) && id > 0 ? id : null;
     }
 
+    function actividadUsaFranjas() {
+      return Number(actividadActual?.usa_franjas || 0) === 1;
+    }
+
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
       const mensajeTexto = document.getElementById("mensajeTexto");
@@ -1040,6 +1044,25 @@
       `;
     }
 
+    function actualizarEstadoCampoFranja() {
+      const selectFranja = document.getElementById("franja");
+      const labelFranja = document.querySelector('label[for="franja"]');
+      if (!selectFranja || !labelFranja) return;
+
+      const usaFranjas = actividadUsaFranjas();
+      labelFranja.innerHTML = usaFranjas
+        ? 'Franja horaria <span class="campo-obligatorio">*</span>'
+        : "Franja horaria";
+      selectFranja.required = usaFranjas;
+      selectFranja.disabled = !usaFranjas;
+
+      if (!usaFranjas) {
+        franjasCache = [];
+        selectFranja.innerHTML = '<option value="">No aplica para esta actividad</option>';
+        selectFranja.value = "";
+      }
+    }
+
     async function cargarActividad() {
       const actividad_id = getActividadId();
 
@@ -1099,6 +1122,7 @@
       }
       actualizarDatoActividad("fechasEvento", "Fechas", textoFechas);
       renderRequisitosSolicitud();
+      actualizarEstadoCampoFranja();
     }
 
     async function cargarFranjas() {
@@ -1106,6 +1130,12 @@
 
       if (!actividad_id) {
         throw new Error("No se ha indicado la actividad.");
+      }
+
+      if (!actividadUsaFranjas()) {
+        actualizarEstadoCampoFranja();
+        actualizarResumenPantalla();
+        return;
       }
 
       const response = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad_id)}`, {
@@ -1150,12 +1180,28 @@
     }
 
     function actualizarResumenPantalla() {
+      const usaFranjas = actividadUsaFranjas();
       const franja = obtenerFranjaSeleccionada();
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
 
       const infoFranja = document.getElementById("infoFranja");
       const resumenReserva = document.getElementById("resumenReserva");
       const plazasDisponibles = document.getElementById("plazasDisponibles");
+      const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
+      const nombreActividad = actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-";
+
+      if (!usaFranjas) {
+        infoFranja.textContent = "Esta actividad no utiliza franjas horarias.";
+        plazasDisponibles.value = "-";
+        resumenReserva.innerHTML = `
+          <strong>Actividad:</strong> ${nombreActividad}<br>
+          <strong>Modalidad de reserva:</strong> Sin franja horaria<br>
+          <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+          <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+        `;
+        return;
+      }
+
       if (!franja) {
         infoFranja.textContent = "";
         plazasDisponibles.value = "-";
@@ -1165,8 +1211,6 @@
 
       const disponibles = Number(franja.disponibles || 0);
       const capacidad = Number(franja.capacidad || 0);
-      const ocupadas = Number(franja.ocupadas || 0);
-      const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
 
       infoFranja.textContent = "";
@@ -1187,6 +1231,7 @@
       const telefono = document.getElementById("telefono").value.trim();
       const email = document.getElementById("email").value.trim();
       const franja = document.getElementById("franja").value;
+      const usaFranjas = actividadUsaFranjas();
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
       const observaciones = document.getElementById("observaciones").value.trim();
 
@@ -1198,8 +1243,12 @@
         return { ok: false, error: "Esta actividad no admite reservas." };
       }
 
-      if (!centro || !contacto || !telefono || !email || !franja) {
+      if (!centro || !contacto || !telefono || !email) {
         return { ok: false, error: "Debe completar todos los datos obligatorios." };
+      }
+
+      if (usaFranjas && !franja) {
+        return { ok: false, error: "Debe seleccionar una franja horaria." };
       }
 
       if (!telefonoValido(telefono)) {
@@ -1214,12 +1263,15 @@
         return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
       }
 
-      const franjaSel = obtenerFranjaSeleccionada();
-      if (!franjaSel) {
-        return { ok: false, error: "La franja seleccionada no es válida." };
+      let franjaSel = null;
+      if (usaFranjas) {
+        franjaSel = obtenerFranjaSeleccionada();
+        if (!franjaSel) {
+          return { ok: false, error: "La franja seleccionada no es válida." };
+        }
       }
 
-      if (plazas > Number(franjaSel.disponibles || 0)) {
+      if (usaFranjas && plazas > Number(franjaSel.disponibles || 0)) {
         return {
           ok: false,
           error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${franjaSel.disponibles}. Solicitadas: ${plazas}.`
@@ -1234,7 +1286,7 @@
           contacto,
           telefono,
           email,
-          franja,
+          franja: usaFranjas ? franja : null,
           plazas_solicitadas: plazas,
           observaciones
         }
@@ -1243,12 +1295,15 @@
 
     function abrirModalConfirmacion(datos) {
       const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
+      const textoCierre = actividadUsaFranjas()
+        ? "Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria."
+        : "Además, se permitirá ampliar la lista de asistentes conforme a las reglas de disponibilidad de esta actividad.";
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
         Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
         El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
         Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
-        Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.
+        ${textoCierre}
       `;
 
       document.getElementById("modalConfirmacionEnvio").classList.add("activo");
@@ -1303,7 +1358,10 @@
         limpiarSolicitudPendiente();
         cerrarModalConfirmacion();
         mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
-        await cargarFranjas();
+        if (actividadUsaFranjas()) {
+          await cargarFranjas();
+        }
+        actualizarResumenPantalla();
         abrirModalAsistentes();
 
       } catch (error) {

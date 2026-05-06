@@ -170,6 +170,42 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     .first();
 }
 
+async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion) {
+  const sql = `
+    SELECT
+      r.id,
+      r.codigo_reserva,
+      r.estado
+    FROM reservas r
+    WHERE r.actividad_id = ?
+      AND r.franja_id IS NULL
+      AND UPPER(TRIM(r.centro)) = ?
+      AND (
+        r.estado = 'CONFIRMADA'
+        OR (
+          r.estado = 'PENDIENTE'
+          AND (
+            (
+              r.prereserva_expira_en IS NOT NULL
+              AND datetime('now') <= datetime(r.prereserva_expira_en)
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM visitantes v
+              WHERE v.reserva_id = r.id
+              LIMIT 1
+            )
+          )
+        )
+      )
+    LIMIT 1
+  `;
+
+  return await env.DB.prepare(sql)
+    .bind(actividadId, centroComparacion)
+    .first();
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -186,7 +222,10 @@ export async function onRequestPost(context) {
     const telefono = limpiarTexto(data.telefono);
     const email = limpiarTexto(data.email);
     const observaciones = limpiarTexto(data.observaciones);
-    const franjaId = parseInt(data.franja, 10);
+    const franjaRaw = data.franja;
+    const franjaId = franjaRaw == null || String(franjaRaw).trim() === ""
+      ? null
+      : parseInt(franjaRaw, 10);
     const plazasReservadas = parseInt(data.plazas_solicitadas, 10);
 
     if (!Number.isInteger(actividadId) || actividadId <= 0) {   
@@ -211,7 +250,8 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
     { status: 400 }
   );
 }
-    
+    const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
+
     if (!centro || !contacto || !telefono || !email) {
       return json(
         { ok: false, error: "Faltan datos obligatorios del solicitante." },
@@ -226,7 +266,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       );
     }
 
-    if (!Number.isInteger(franjaId) || franjaId <= 0) {
+    if (usaFranjas && (!Number.isInteger(franjaId) || franjaId <= 0)) {
       return json(
         { ok: false, error: "La franja horaria indicada no es válida." },
         { status: 400 }
@@ -240,24 +280,36 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       );
     }
 
-    const franja = await obtenerFranja(env, franjaId);
-
-    if (!franja) {
-      return json(
-        { ok: false, error: "La franja seleccionada no existe." },
-        { status: 404 }
-      );
-    }
-
-    if (Number(franja.actividad_id || 0) !== actividadId) {
-      return json(
-        { ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." },
-        { status: 400 }
-      );
-    }
-
     const centroComparacion = normalizarCentroComparacion(centro);
-    const duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
+    let franja = null;
+    let duplicada = null;
+    let capacidad = null;
+    let disponibles = null;
+
+    if (usaFranjas) {
+      franja = await obtenerFranja(env, franjaId);
+
+      if (!franja) {
+        return json(
+          { ok: false, error: "La franja seleccionada no existe." },
+          { status: 404 }
+        );
+      }
+
+      if (Number(franja.actividad_id || 0) !== actividadId) {
+        return json(
+          { ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." },
+          { status: 400 }
+        );
+      }
+
+      duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
+      const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
+      capacidad = Number(franja.capacidad || 0);
+      disponibles = Math.max(capacidad - ocupadas, 0);
+    } else {
+      duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion);
+    }
 
     if (duplicada) {
       return json(
@@ -269,11 +321,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       );
     }
 
-    const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
-    const capacidad = Number(franja.capacidad || 0);
-    const disponibles = Math.max(capacidad - ocupadas, 0);
-
-    if (plazasReservadas > disponibles) {
+    if (usaFranjas && plazasReservadas > disponibles) {
       return json(
         {
           ok: false,
@@ -386,16 +434,16 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       codigo_reserva: reservaCreada.codigo_reserva,
       token_edicion: reservaCreada.token_edicion,
       estado: reservaCreada.estado,
-      franja: {
+      franja: franja ? {
         id: franja.id,
         actividad_id: franja.actividad_id,
         fecha: franja.fecha,
         hora_inicio: franja.hora_inicio,
         hora_fin: franja.hora_fin,
         capacidad
-      },
+      } : null,
       plazas_reservadas: plazasReservadas,
-      plazas_disponibles_restantes: Math.max(disponibles - plazasReservadas, 0),
+      plazas_disponibles_restantes: usaFranjas ? Math.max(disponibles - plazasReservadas, 0) : null,
       minutos_consolidacion: minutosConsolidacion,
       prereserva_expira_en: reservaCreada.prereserva_expira_en,
       usuario_id: reservaCreada.usuario_id,
