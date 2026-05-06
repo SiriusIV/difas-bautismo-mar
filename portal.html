@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Actividades PÃºblicas Institucionales</title>
+  <title>Actividades Públicas Institucionales</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link
@@ -1317,9 +1317,9 @@
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
-        <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente" id="logoCabeceraPortal">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabeceraPortal">
         <div class="titulos-cabecera">
-          <h1>Actividades PÃºblicas Institucionales</h1>
+          <h1>Actividades Públicas Institucionales</h1>
           <h2 id="subtituloCabecera">Armada</h2>
         </div>
       </div>
@@ -1364,8 +1364,8 @@
           class="nav-btn-icon"
           type="button"
           onclick="logoutActual()"
-          title="Cerrar sesiÃ³n"
-          aria-label="Cerrar sesiÃ³n"
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -1402,7 +1402,7 @@
         <div class="filtro-panel-der">
           <div id="accionesPublicas" class="accionesPublicas">
             <div id="franjaAvisoPortal" class="aviso-login">
-              Iniciar sesiÃ³n para solicitar una actividad.
+              Iniciar sesión para solicitar una actividad.
             </div>
             <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
           </div>
@@ -1480,7 +1480,7 @@
 
 <div class="bloque-programacion">
   <div id="tablaFranjasWrap" class="tabla-franjas">
-    <h4>ProgramaciÃ³n</h4>
+    <h4>Programación</h4>
     <table>
       <thead>
         <tr>
@@ -1488,7 +1488,7 @@
           <th>Fecha</th>
           <th>Inicio</th>
           <th>Fin</th>
-          <th>SituaciÃ³n (plazas disponibles)</th>
+          <th>Situación (plazas disponibles)</th>
         </tr>
       </thead>
       <tbody id="tablaFranjasBody"></tbody>
@@ -1521,14 +1521,14 @@
       </div>
 
       <div class="campo">
-        <label for="passwordLogin">ContraseÃ±a</label>
+        <label for="passwordLogin">Contraseña</label>
         <div class="campo-password-wrap">
           <input type="password" id="passwordLogin" autocomplete="new-password">
           <button type="button" class="btn-ver-password" id="btnVerPassword">Ver</button>
         </div>
       </div>
 
-      <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">Â¿Has olvidado tu contraseÃ±a?</a>
+      <a class="enlace-pequeno" href="#" onclick="recuperarPassword(event)">¿Has olvidado tu contraseña?</a>
 
       <div class="acciones-acceso">
         <button class="btn" onclick="loginUsuario()">Entrar</button>
@@ -1538,7 +1538,7 @@
       <div id="mensajeLogin" class="mensaje"></div>
 
       <div class="texto-final">
-        Â¿AÃºn no tienes usuario?
+        ¿Aún no tienes usuario?
         <a href="#" onclick="irRegistro()">Crear cuenta</a>
       </div>
     </div>
@@ -1546,7 +1546,7 @@
 
   <div id="modalDocumentacionPendiente" class="modal-fondo" aria-hidden="true">
     <div class="modal-login" style="max-width: 640px;">
-      <h3>DocumentaciÃ³n obligatoria pendiente</h3>
+      <h3>Documentación obligatoria pendiente</h3>
       <p id="textoModalDocumentacionPendiente" style="margin: 0 0 18px; color: #4a5a6a; line-height: 1.6;"></p>
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-admin" id="btnCancelarModalDocumentacionPendiente">Cancelar solicitud</button>
@@ -1560,17 +1560,17 @@
       <div class="modal-notificaciones-head">
         <h3>Notificaciones</h3>
         <div class="modal-notificaciones-acciones-head">
-          <button class="btn-cerrar-modal-plano" id="btnCerrarModalNotificaciones" type="button" aria-label="Cerrar notificaciones" title="Cerrar">Ã—</button>
+          <button class="btn-cerrar-modal-plano" id="btnCerrarModalNotificaciones" type="button" aria-label="Cerrar notificaciones" title="Cerrar">×</button>
         </div>
       </div>
-      <p class="modal-notificaciones-subtitulo">Documentos pendientes de revisiÃ³n y otros avisos recientes.</p>
+      <p class="modal-notificaciones-subtitulo">Documentos pendientes de revisión y otros avisos recientes.</p>
       <div class="tabla-notificaciones-wrap">
         <table class="tabla-notificaciones">
           <thead>
             <tr>
               <th class="col-notificacion-fecha">Fecha</th>
               <th class="col-notificacion-accion">Visto</th>
-              <th class="col-notificacion-principal">NotificaciÃ³n</th>
+              <th class="col-notificacion-principal">Notificación</th>
             </tr>
           </thead>
           <tbody id="listaNotificacionesPortal"></tbody>
@@ -1682,8 +1682,8 @@
       if (Number.isNaN(fecha.getTime())) return fechaISO;
 
       const dias = [
-        "domingo", "lunes", "martes", "miÃ©rcoles",
-        "jueves", "viernes", "sÃ¡bado"
+        "domingo", "lunes", "martes", "miércoles",
+        "jueves", "viernes", "sábado"
       ];
 
       const meses = [
@@ -1711,7 +1711,7 @@
         return `de ${formatearFechaLargaES(fechaInicioISO)} a ${formatearFechaLargaES(fechaFinISO)}`;
       }
 
-      const dias = ["domingo", "lunes", "martes", "miÃ©rcoles", "jueves", "viernes", "sÃ¡bado"];
+      const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
       const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
       if (yyyyInicio === yyyyFin && mmInicio === mmFin && ddInicio === ddFin) {
@@ -1800,7 +1800,7 @@ async function cargarFranjasActividad(actividad) {
       });
 
     const filas = franjasActividadActual.map(f => {
-      let estadoTexto = "ï¿½";
+      let estadoTexto = "�";
       let estadoClase = "";
 
       if (f.finalizada) {
@@ -1850,7 +1850,7 @@ async function cargarFranjasActividad(actividad) {
     });
 
     if (nota) {
-      nota.textContent = "Las plazas disponibles estÃ¡n sujetas a variaciones por cancelaciÃ³n de reservas confirmadas.";
+      nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas.";
       nota.style.display = "block";
     }
 
@@ -1905,7 +1905,7 @@ function actualizarBotonSolicitarSegunFranja() {
 
   if (!franja || !franja.seleccionable) {
     btnSolicitar.disabled = true;
-    btnSolicitar.title = "La franja seleccionada no estÃ¡ disponible.";
+    btnSolicitar.title = "La franja seleccionada no está disponible.";
     return;
   }
 
@@ -1954,7 +1954,7 @@ function actualizarBotonSolicitarSegunFranja() {
       } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
         texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
       } else if (rol === "SECRETARIA") {
-        texto.textContent = `SecretarÃ­a: ${(nombre || centro || "").toUpperCase()}`;
+        texto.textContent = `Secretaría: ${(nombre || centro || "").toUpperCase()}`;
       } else {
         texto.textContent = "";
       }
@@ -2073,7 +2073,7 @@ function actualizarBotonSolicitarSegunFranja() {
 
       if (subtitulo) {
         subtitulo.textContent = unread > 0
-          ? `Tienes ${unread} notificaciÃ³n${unread === 1 ? "" : "es"} pendiente${unread === 1 ? "" : "s"} de leer.`
+          ? `Tienes ${unread} notificación${unread === 1 ? "" : "es"} pendiente${unread === 1 ? "" : "s"} de leer.`
           : "No tienes notificaciones pendientes de leer.";
       }
 
@@ -2094,11 +2094,11 @@ function actualizarBotonSolicitarSegunFranja() {
               data-notificacion-leida="${String(item.id || "")}"
               title="Marcar como vista"
               aria-label="Marcar como vista">
-              <span class="check-notificacion-marca">âœ“</span>
+              <span class="check-notificacion-marca">✓</span>
             </button>
           `);
         }
-        const titulo = String(item.titulo || "NotificaciÃ³n").trim();
+        const titulo = String(item.titulo || "Notificación").trim();
         const contenidoPrincipal = item.url_destino
           ? `
             <a href="${item.url_destino}" class="notificacion-enlace" data-notificacion-ir="${String(item.id || "")}">
@@ -2171,26 +2171,26 @@ function actualizarBotonSolicitarSegunFranja() {
 
               const totalRechazados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "RECHAZADO").length;
               const totalValidados = alertas.filter((item) => String(item?.estado || "").toUpperCase() === "VALIDADO").length;
-              let titulo = "Cambio en la documentaciÃ³n";
+              let titulo = "Cambio en la documentación";
               if (alertas.length === 1) {
                 const unica = alertas[0] || {};
                 const nombreDocumento = String(unica?.nombre_documento || "Documento").trim();
                 const estadoDocumento = String(unica?.estado || "").toUpperCase();
                 if (estadoDocumento === "RECHAZADO") {
-                  titulo = `${nombreDocumento} Â· Rechazado`;
+                  titulo = `${nombreDocumento} · Rechazado`;
                 } else if (estadoDocumento === "VALIDADO") {
-                  titulo = `${nombreDocumento} Â· Validado`;
+                  titulo = `${nombreDocumento} · Validado`;
                 } else if (estadoDocumento === "NO_ACTUALIZADO") {
-                  titulo = `${nombreDocumento} Â· Desactualizado`;
+                  titulo = `${nombreDocumento} · Desactualizado`;
                 } else {
-                  titulo = `${nombreDocumento} Â· Actualizado`;
+                  titulo = `${nombreDocumento} · Actualizado`;
                 }
               } else if (alertas.some((item) => String(item?.estado || "").toUpperCase() === "NO_ACTUALIZADO")) {
-                titulo = "DocumentaciÃ³n desactualizada";
+                titulo = "Documentación desactualizada";
               } else if (totalRechazados > 0 && totalValidados === 0) {
-                titulo = "DocumentaciÃ³n rechazada";
+                titulo = "Documentación rechazada";
               } else if (totalValidados > 0 && totalRechazados === 0) {
-                titulo = "DocumentaciÃ³n validada";
+                titulo = "Documentación validada";
               }
 
               return {
@@ -2729,18 +2729,18 @@ function obtenerActividadesFiltradas() {
 
       if (esSecretaria()) {
         if (!adminsSecretariaAsociados) {
-          return "Esta secretarÃ­a todavÃ­a no tiene administradores adscritos. En cuanto los tenga, aquÃ­ podrÃ¡s consultar sus actividades activas y visibles.";
+          return "Esta secretaría todavía no tiene administradores adscritos. En cuanto los tenga, aquí podrás consultar sus actividades activas y visibles.";
         }
 
         if (!hayActividades) {
-          return "No hay actividades activas y visibles asociadas actualmente a los administradores adscritos a esta secretarÃ­a.";
+          return "No hay actividades activas y visibles asociadas actualmente a los administradores adscritos a esta secretaría.";
         }
 
         if (adminSecretariaSeleccionado || programaSeleccionado) {
-          return "No hay actividades disponibles con los filtros seleccionados para esta secretarÃ­a.";
+          return "No hay actividades disponibles con los filtros seleccionados para esta secretaría.";
         }
 
-      return "No hay actividades disponibles actualmente para esta secretarÃ­a.";
+      return "No hay actividades disponibles actualmente para esta secretaría.";
       }
 
       if (esAdmin()) {
@@ -2757,7 +2757,7 @@ function obtenerActividadesFiltradas() {
         return "No hay actividades disponibles con los filtros seleccionados.";
       }
 
-      return "No hay actividades pÃºblicas disponibles en este momento.";
+      return "No hay actividades públicas disponibles en este momento.";
     }
 
     function renderizarEstadoVacioPortal() {
@@ -2792,7 +2792,7 @@ function obtenerActividadesFiltradas() {
           detalleImagen.classList.remove("oculta");
         };
       }
-      detalleImagen.alt = "Buque alejÃ¡ndose en el horizonte";
+      detalleImagen.alt = "Buque alejándose en el horizonte";
       btnSolicitar.style.display = "none";
       btnEditar.style.display = "none";
       btnReservas.style.display = "none";
@@ -2939,7 +2939,7 @@ function obtenerActividadesFiltradas() {
         plazasDisponibles > 0 &&
         plazasDisponibles <= Math.ceil(plazasTotales / 4)
       ) {
-        return { texto: "ÃšLTIMAS PLAZAS", clase: "ultimas" };
+        return { texto: "ÚLTIMAS PLAZAS", clase: "ultimas" };
       }
 
       return null;
@@ -3011,7 +3011,7 @@ function renderMapaActividad(a) {
     attribution: "&copy; OpenStreetMap"
   }).addTo(mapaActividad);
 
-  const lugar = a.lugar || "UbicaciÃ³n";
+  const lugar = a.lugar || "Ubicación";
 
   marcadorActividad = L.marker([lat, lng], {
     icon: obtenerIconoMarcadorLeaflet()
@@ -3113,7 +3113,7 @@ function renderMapaActividad(a) {
 
 if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
   textoDetalle += (textoDetalle ? "\n\n" : "") +
-    "No hay plazas disponibles actualmente. La disponibilidad puede variar en funciÃ³n de la asignaciÃ³n o liberaciÃ³n de las reservas existentes.";
+    "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
 }
 
       document.getElementById("detalleTexto").textContent = textoDetalle;
@@ -3321,16 +3321,16 @@ function cerrarModalDocumentacionPendiente() {
 function abrirModalDocumentacionPendiente(data) {
   const adminNombre = data?.admin?.nombre_publico || data?.admin?.nombre || "el organizador de esta actividad";
   const estado = String(data?.estado_efectivo || "").toUpperCase();
-  let texto = `Antes de solicitar esta actividad, debes regularizar la documentaciÃ³n preceptiva exigida por ${adminNombre}.`;
+  let texto = `Antes de solicitar esta actividad, debes regularizar la documentación preceptiva exigida por ${adminNombre}.`;
 
   if (estado === "NO_INICIADO" || estado === "NO_COMPLETADO" || estado === "NO_ENVIADO") {
-    texto = `No has remitido toda la documentaciÃ³n preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
+    texto = `No has remitido toda la documentación preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
   } else if (estado === "NO_ACTUALIZADO") {
-    texto = `La documentaciÃ³n exigida por ${adminNombre} no estÃ¡ actualizada y debes volver a presentarla antes de poder solicitar esta actividad.`;
+    texto = `La documentación exigida por ${adminNombre} no está actualizada y debes volver a presentarla antes de poder solicitar esta actividad.`;
   } else if (estado === "RECHAZADA") {
-    texto = `La documentaciÃ³n presentada para ${adminNombre} ha sido rechazada y debes corregirla antes de poder solicitar esta actividad.`;
+    texto = `La documentación presentada para ${adminNombre} ha sido rechazada y debes corregirla antes de poder solicitar esta actividad.`;
   } else if (estado === "EN_REVISION") {
-    texto = `La documentaciÃ³n exigida por ${adminNombre} ya ha sido presentada, pero todavÃ­a estÃ¡ pendiente de revisiÃ³n y validaciÃ³n manual.`;
+    texto = `La documentación exigida por ${adminNombre} ya ha sido presentada, pero todavía está pendiente de revisión y validación manual.`;
   }
 
   document.getElementById("textoModalDocumentacionPendiente").textContent = texto;
@@ -3354,7 +3354,7 @@ async function comprobarDocumentacionYRedirigir() {
 
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.ok) {
-      alert(data?.error || "No se pudo comprobar la documentaciÃ³n requerida para esta actividad.");
+      alert(data?.error || "No se pudo comprobar la documentación requerida para esta actividad.");
       return;
     }
 
@@ -3365,7 +3365,7 @@ async function comprobarDocumentacionYRedirigir() {
 
     continuarSolicitudActividad();
   } catch (error) {
-    alert("No se pudo comprobar la documentaciÃ³n requerida para esta actividad.");
+    alert("No se pudo comprobar la documentación requerida para esta actividad.");
   }
 }
 
@@ -3411,7 +3411,7 @@ function continuarSolicitudActividad() {
         await comprobarSesionUsuario();
         await cargarActividades();
       } else {
-        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesiÃ³n.");
+        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
       }
     }
 
@@ -3443,7 +3443,7 @@ function continuarSolicitudActividad() {
 
     function recuperarPassword(event) {
       event.preventDefault();
-      alert("RecuperaciÃ³n de contraseÃ±a pendiente de implementar.");
+      alert("Recuperación de contraseña pendiente de implementar.");
     }
 
     function irRegistro() {
@@ -3599,5 +3599,6 @@ if (filtroAdminSecretaria) {
   </script>
 </body>
 </html>
+
 
 
