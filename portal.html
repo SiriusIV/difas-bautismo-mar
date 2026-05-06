@@ -2102,6 +2102,35 @@ function actualizarBotonSolicitarSegunFranja() {
         .filter(Boolean);
     }
 
+    function construirNotificacionesOperativasReservaAdminCancelada(lista, vistas) {
+      const ahora = Date.now();
+      const ventanaMs = 1000 * 60 * 60 * 72;
+      return (Array.isArray(lista) ? lista : [])
+        .map((reserva) => {
+          const idReserva = Number(reserva?.id || 0);
+          const actividadId = Number(reserva?.actividad_id || 0);
+          const fechaModificacion = String(reserva?.fecha_modificacion || "").trim();
+          const fechaRef = fechaModificacion || String(reserva?.fecha_solicitud || "").trim() || "sin-fecha";
+          const ts = fechaModificacion ? new Date(fechaModificacion.replace(" ", "T")).getTime() : NaN;
+          if (!idReserva || !fechaModificacion || Number.isNaN(ts) || (ahora - ts) > ventanaMs) return null;
+          const idOperativa = `operativa-reserva-admin-cancelada-${idReserva}-${fechaRef}`;
+          if (vistas.includes(idOperativa)) return null;
+
+          return {
+            id: idOperativa,
+            operativa: true,
+            leida: false,
+            titulo: "Solicitud anulada por el solicitante",
+            mensaje: "",
+            url_destino: actividadId > 0
+              ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
+              : "/admin-reservas.html",
+            created_at: fechaModificacion
+          };
+        })
+        .filter(Boolean);
+    }
+
     function actualizarIconoNotificacionesPortal() {
       const btn = document.getElementById("btnNotificacionesSesion");
       const badge = document.getElementById("badgeNotificacionesSesion");
@@ -2286,6 +2315,15 @@ function actualizarBotonSolicitarSegunFranja() {
           const dataReservas = await resReservas.json().catch(() => null);
           if (resReservas.ok && dataReservas?.ok) {
             operativas.push(...construirNotificacionesOperativasReservaAdmin(dataReservas?.reservas, vistas));
+          }
+
+          const resCanceladas = await fetch(`/api/admin/reservas?estado=CANCELADA&_ts=${Date.now()}`, {
+            credentials: "include",
+            cache: "no-store"
+          });
+          const dataCanceladas = await resCanceladas.json().catch(() => null);
+          if (resCanceladas.ok && dataCanceladas?.ok) {
+            operativas.push(...construirNotificacionesOperativasReservaAdminCancelada(dataCanceladas?.reservas, vistas));
           }
         } else if (esSolicitante()) {
           const resReservas = await fetch(`/api/usuario/reservas?_ts=${Date.now()}`, {

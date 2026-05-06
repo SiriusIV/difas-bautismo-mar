@@ -64,7 +64,9 @@ async function obtenerReservas(env, filtros) {
   const where = [];
   const binds = [];
 
-  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  if (String(filtros.estado || "").toUpperCase() !== "CANCELADA") {
+    where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  }
 
   if (filtros.fechaInicio) {
     where.push("f.fecha >= ?");

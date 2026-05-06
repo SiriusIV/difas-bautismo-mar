@@ -222,7 +222,11 @@ export async function onRequestPost(context) {
 
     const deleteResult = await session
       .prepare(`
-        DELETE FROM reservas
+        UPDATE reservas
+        SET estado = 'CANCELADA',
+            plazas_prereservadas = 0,
+            prereserva_expira_en = NULL,
+            fecha_modificacion = datetime('now')
         WHERE id = ?
       `)
       .bind(reserva.id)
