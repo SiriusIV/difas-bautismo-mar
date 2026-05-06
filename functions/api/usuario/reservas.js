@@ -40,6 +40,14 @@ function calcularPlazasReservadasPendientes(row) {
   return Math.max(pre - asignadas, 0);
 }
 
+function tieneProgramacionValida(row) {
+  return !!(
+    String(row?.fecha || "").trim() &&
+    String(row?.hora_inicio || "").trim() &&
+    String(row?.hora_fin || "").trim()
+  );
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -86,7 +94,7 @@ export async function onRequestGet(context) {
       ORDER BY f.fecha DESC, f.hora_inicio DESC, r.fecha_solicitud DESC
     `).bind(user.id).all();
 
-    const rows = result.results || [];
+    const rows = (result.results || []).filter(tieneProgramacionValida);
 
     const data = rows.map(row => ({
       id: row.id,

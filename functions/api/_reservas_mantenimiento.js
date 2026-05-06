@@ -7,7 +7,8 @@ function estadoIncluidoEnHistorico(estado) {
 }
 
 async function asegurarTablaHistorico(env) {
-  await env.DB.prepare(`
+  const db = env.DB.withSession("first-primary");
+  await db.prepare(`
     CREATE TABLE IF NOT EXISTS reservas_estadisticas_historico (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       reserva_id INTEGER NOT NULL UNIQUE,
@@ -25,7 +26,8 @@ async function asegurarTablaHistorico(env) {
 }
 
 async function rechazarReservasSuspendidasVencidas(env) {
-  const rows = await env.DB.prepare(`
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
     SELECT r.id
     FROM reservas r
     LEFT JOIN franjas f
@@ -52,19 +54,20 @@ async function rechazarReservasSuspendidasVencidas(env) {
   const ids = (rows?.results || []).map((row) => Number(row.id || 0)).filter(Boolean);
   if (!ids.length) return 0;
 
-  const sentencias = ids.map((id) => env.DB.prepare(`
+  const sentencias = ids.map((id) => db.prepare(`
     UPDATE reservas
     SET estado = 'RECHAZADA',
         fecha_modificacion = datetime('now')
     WHERE id = ?
   `).bind(id));
 
-  await env.DB.batch(sentencias);
+  await db.batch(sentencias);
   return ids.length;
 }
 
 async function obtenerReservasFinalizadas(env) {
-  const rows = await env.DB.prepare(`
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
     SELECT
       r.id,
       r.estado,
@@ -105,10 +108,11 @@ async function obtenerReservasFinalizadas(env) {
 }
 
 async function guardarHistorico(env, reservas) {
+  const db = env.DB.withSession("first-primary");
   const candidatas = (reservas || []).filter((row) => estadoIncluidoEnHistorico(row.estado));
   if (!candidatas.length) return 0;
 
-  const sentencias = candidatas.map((row) => env.DB.prepare(`
+  const sentencias = candidatas.map((row) => db.prepare(`
     INSERT OR IGNORE INTO reservas_estadisticas_historico (
       reserva_id,
       actividad_id,
@@ -133,31 +137,33 @@ async function guardarHistorico(env, reservas) {
     Number(row.asistentes_total || 0)
   ));
 
-  await env.DB.batch(sentencias);
+  await db.batch(sentencias);
   return candidatas.length;
 }
 
 async function borrarReservasFinalizadas(env, reservas) {
+  const db = env.DB.withSession("first-primary");
   const ids = (reservas || []).map((row) => Number(row.id || 0)).filter(Boolean);
   if (!ids.length) return 0;
 
-  const sentenciasVisitantes = ids.map((id) => env.DB.prepare(`
+  const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes
     WHERE reserva_id = ?
   `).bind(id));
-  await env.DB.batch(sentenciasVisitantes);
+  await db.batch(sentenciasVisitantes);
 
-  const sentenciasReservas = ids.map((id) => env.DB.prepare(`
+  const sentenciasReservas = ids.map((id) => db.prepare(`
     DELETE FROM reservas
     WHERE id = ?
   `).bind(id));
-  await env.DB.batch(sentenciasReservas);
+  await db.batch(sentenciasReservas);
 
   return ids.length;
 }
 
 async function borrarFranjasDeActividadesVencidas(env) {
-  const result = await env.DB.prepare(`
+  const db = env.DB.withSession("first-primary");
+  const result = await db.prepare(`
     DELETE FROM franjas
     WHERE actividad_id IN (
       SELECT id
@@ -171,9 +177,53 @@ async function borrarFranjasDeActividadesVencidas(env) {
   return Number(result?.meta?.changes || 0);
 }
 
+async function obtenerReservasResidualesLegacy(env) {
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
+    SELECT
+      r.id
+    FROM reservas r
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    WHERE r.actividad_id IS NULL
+       OR a.id IS NULL
+       OR r.franja_id IS NULL
+       OR f.id IS NULL
+       OR TRIM(COALESCE(f.fecha, '')) = ''
+       OR TRIM(COALESCE(f.hora_inicio, '')) = ''
+       OR TRIM(COALESCE(f.hora_fin, '')) = ''
+  `).all();
+
+  return rows?.results || [];
+}
+
+async function borrarReservasResidualesLegacy(env, reservas) {
+  const db = env.DB.withSession("first-primary");
+  const ids = (reservas || []).map((row) => Number(row.id || 0)).filter(Boolean);
+  if (!ids.length) return 0;
+
+  const sentenciasVisitantes = ids.map((id) => db.prepare(`
+    DELETE FROM visitantes
+    WHERE reserva_id = ?
+  `).bind(id));
+  await db.batch(sentenciasVisitantes);
+
+  const sentenciasReservas = ids.map((id) => db.prepare(`
+    DELETE FROM reservas
+    WHERE id = ?
+  `).bind(id));
+  await db.batch(sentenciasReservas);
+
+  return ids.length;
+}
+
 export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorico(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
+  const residualesLegacy = await obtenerReservasResidualesLegacy(env);
+  const residualesEliminadas = await borrarReservasResidualesLegacy(env, residualesLegacy);
   const finalizadas = await obtenerReservasFinalizadas(env);
   const archivadas = await guardarHistorico(env, finalizadas);
   const eliminadas = await borrarReservasFinalizadas(env, finalizadas);
@@ -182,6 +232,7 @@ export async function ejecutarMantenimientoReservas(env) {
   return {
     ok: true,
     rechazadas_automaticamente: rechazadasAutomaticamente,
+    residuos_legacy_eliminados: residualesEliminadas,
     archivadas,
     eliminadas,
     franjas_eliminadas_por_fin_actividad: franjasEliminadas

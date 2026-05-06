@@ -1057,7 +1057,7 @@
     }
 
     async function anularSolicitudSeleccionada() {
-      if (!reservaSeleccionada || !reservaSeleccionada.token_edicion) return;
+      if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
       if (!window.confirm(`¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
 
@@ -1067,7 +1067,10 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ token_edicion: reservaSeleccionada.token_edicion })
+          body: JSON.stringify({
+            token_edicion: reservaSeleccionada.token_edicion || "",
+            reserva_id: Number(reservaSeleccionada.id || 0)
+          })
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
