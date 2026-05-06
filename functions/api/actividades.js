@@ -154,8 +154,7 @@ export async function onRequestGet(context) {
           COALESCE(aff.tiene_franjas_recurrentes, 0) AS tiene_franjas_recurrentes,
           aff.ultima_franja_fin,
           CASE
-            WHEN a.aforo_limitado = 1
-                 AND a.usa_franjas = 1
+            WHEN a.usa_franjas = 1
                  AND COALESCE(at.plazas_totales, 0) > 0
                  AND (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) <= 0
               THEN 1
@@ -280,8 +279,7 @@ export async function onRequestGet(context) {
         COALESCE(aff.tiene_franjas_recurrentes, 0) AS tiene_franjas_recurrentes,
         aff.ultima_franja_fin,
         CASE
-          WHEN a.aforo_limitado = 1
-               AND a.usa_franjas = 1
+          WHEN a.usa_franjas = 1
                AND COALESCE(at.plazas_totales, 0) > 0
                AND (COALESCE(at.plazas_totales, 0) - COALESCE(at.plazas_ocupadas, 0)) <= 0
             THEN 1

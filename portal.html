@@ -1786,7 +1786,7 @@ async function cargarFranjasActividad(actividad) {
         }
 
         const finalizada = !!fechaHoraFin && fechaHoraFin.getTime() < ahora.getTime();
-        const completa = Number(actividad.aforo_limitado || 0) === 1 && disponibles !== null && disponibles <= 0;
+        const completa = Number(actividad.usa_franjas || 0) === 1 && disponibles !== null && disponibles <= 0;
 
         return {
           ...f,
@@ -2919,8 +2919,8 @@ function obtenerActividadesFiltradas() {
     }
 
     function obtenerBadgeEstadoActividad(actividad) {
-      const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
-      const completa = aforoLimitado && Number(actividad?.completa_calculada || 0) === 1;
+      const usaFranjas = Number(actividad?.usa_franjas || 0) === 1;
+      const completa = usaFranjas && Number(actividad?.completa_calculada || 0) === 1;
       const tieneFranjasRecurrentes = Number(actividad?.tiene_franjas_recurrentes || 0) === 1;
       const ultimaFranjaFin = parsearFechaHoraActividad(actividad?.ultima_franja_fin);
       if (!tieneFranjasRecurrentes && ultimaFranjaFin && ultimaFranjaFin.getTime() < Date.now()) {
@@ -3111,7 +3111,7 @@ function renderMapaActividad(a) {
 
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
 
-if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
   textoDetalle += (textoDetalle ? "\n\n" : "") +
     "No hay plazas disponibles actualmente. La disponibilidad puede variar en función de la asignación o liberación de las reservas existentes.";
 }
@@ -3140,7 +3140,7 @@ if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) ===
       franjaSeleccionadaPortalId = null;
       franjasActividadActual = [];
 
-      if (Number(a.aforo_limitado || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
+      if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1) {
         btnSolicitar.disabled = true;
         btnSolicitar.title = "Actividad sin plazas disponibles actualmente";
       } else {
@@ -3300,7 +3300,7 @@ function solicitarActividadActual() {
   if (!actividadSeleccionada) return;
 
   if (
-    Number(actividadSeleccionada.aforo_limitado || 0) === 1 &&
+      Number(actividadSeleccionada.usa_franjas || 0) === 1 &&
     Number(actividadSeleccionada.completa_calculada || 0) === 1
   ) {
     return;
