@@ -2,6 +2,14 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function esErrorColumnaDuplicada(error) {
+  const texto = limpiarTexto(error?.message || error || "").toLowerCase();
+  return (
+    texto.includes("duplicate column name") ||
+    texto.includes("duplicate column")
+  );
+}
+
 async function asegurarTablaNotificaciones(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS notificaciones (
@@ -18,10 +26,43 @@ async function asegurarTablaNotificaciones(env) {
     )
   `).run();
 
-  await env.DB.prepare(`
-    CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_created
-    ON notificaciones (usuario_id, created_at DESC, id DESC)
-  `).run();
+  const columnasOpcionales = [
+    "ALTER TABLE notificaciones ADD COLUMN rol_destino TEXT",
+    "ALTER TABLE notificaciones ADD COLUMN tipo TEXT",
+    "ALTER TABLE notificaciones ADD COLUMN mensaje TEXT",
+    "ALTER TABLE notificaciones ADD COLUMN url_destino TEXT",
+    "ALTER TABLE notificaciones ADD COLUMN leida INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE notificaciones ADD COLUMN created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    "ALTER TABLE notificaciones ADD COLUMN leida_at TEXT"
+  ];
+
+  for (const sql of columnasOpcionales) {
+    try {
+      await env.DB.prepare(sql).run();
+    } catch (error) {
+      if (!esErrorColumnaDuplicada(error)) {
+        const mensaje = limpiarTexto(error?.message || error || "").toLowerCase();
+        if (!mensaje.includes("cannot add a column with non-constant default")) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  try {
+    await env.DB.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_created
+      ON notificaciones (usuario_id, created_at DESC, id DESC)
+    `).run();
+  } catch (error) {
+    if (!hayErrorEsquemaNotificaciones(error)) {
+      throw error;
+    }
+    await env.DB.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_id
+      ON notificaciones (usuario_id, id DESC)
+    `).run();
+  }
 }
 
 function esErrorColumnaAusente(error, columna) {
