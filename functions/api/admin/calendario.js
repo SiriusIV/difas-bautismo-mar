@@ -165,13 +165,17 @@ async function obtenerReservasCalendario(env, filtros, session) {
   return result.results || [];
 }
 
-async function obtenerFranjasProgramadasCalendario(env, filtros) {
+async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
   const where = [
     "f.fecha IS NOT NULL",
     "f.hora_inicio IS NOT NULL",
     "f.hora_fin IS NOT NULL"
   ];
   const binds = [];
+
+  if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
+    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(f.hora_fin) >= time('now')))");
+  }
 
   if (filtros.start) {
     where.push("f.fecha >= ?");
@@ -270,7 +274,7 @@ export async function onRequestGet(context) {
     let eventos = [];
 
     if (filtros.vista === "actividades") {
-      const rows = await obtenerFranjasProgramadasCalendario(env, filtros);
+      const rows = await obtenerFranjasProgramadasCalendario(env, filtros, session);
       const franjaIds = [...new Set(rows.map((r) => Number(r.id)).filter(Boolean))];
       const bloqueoPorFranja = await obtenerBloqueoPorFranja(env, franjaIds);
 
