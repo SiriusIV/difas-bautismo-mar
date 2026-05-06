@@ -2933,12 +2933,12 @@ function obtenerActividadesFiltradas() {
 
       const plazasTotales = Number(actividad?.plazas_totales || 0);
       const plazasDisponibles = Number(actividad?.plazas_disponibles || 0);
-      if (
-        aforoLimitado &&
-        plazasTotales > 0 &&
-        plazasDisponibles > 0 &&
-        plazasDisponibles <= Math.ceil(plazasTotales / 4)
-      ) {
+        if (
+          usaFranjas &&
+          plazasTotales > 0 &&
+          plazasDisponibles > 0 &&
+          plazasDisponibles <= Math.ceil(plazasTotales / 4)
+        ) {
         return { texto: "ÚLTIMAS PLAZAS", clase: "ultimas" };
       }
 
