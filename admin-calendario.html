@@ -1181,7 +1181,7 @@
       }
     }
 
-    function aplicarVistaCalendario(vista, { recargar = true } = {}) {
+    async function aplicarVistaCalendario(vista, { recargar = true } = {}) {
       vistaCalendarioActual = vista === "actividades" ? "actividades" : "reservas";
       const panelCalendario = document.getElementById("panelResumenReservas");
 
@@ -1204,6 +1204,11 @@
 
       if (recargar && calendar) {
         limpiarMensaje();
+        const fechaObjetivo = await obtenerFechaProximoEvento();
+        if (fechaObjetivo) {
+          fechaObjetivoLista = fechaObjetivo;
+          calendar.gotoDate(fechaObjetivo);
+        }
         calendar.refetchEvents();
         void actualizarContadores();
       }
@@ -1807,11 +1812,11 @@
       aplicarRolPantallaCalendario();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
-      document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", function() {
-        aplicarVistaCalendario("reservas");
+      document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", async function() {
+        await aplicarVistaCalendario("reservas");
       });
-      document.getElementById("btnVistaActividadesSecundario").addEventListener("click", function() {
-        aplicarVistaCalendario("actividades");
+      document.getElementById("btnVistaActividadesSecundario").addEventListener("click", async function() {
+        await aplicarVistaCalendario("actividades");
       });
       document.getElementById("btnPrevCalendario").addEventListener("click", function() {
         if (calendar) calendar.prev();
@@ -1842,7 +1847,7 @@
 
       try {
         await cargarConfigEvento();
-        aplicarVistaCalendario("reservas", { recargar: false });
+        await aplicarVistaCalendario("reservas", { recargar: false });
         fechaInicialCalendario = await obtenerFechaProximoEvento();
         requestAnimationFrame(() => {
           try {
