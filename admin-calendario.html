@@ -1055,6 +1055,7 @@
     let fechaInicialCalendario = null;
     let vistaCalendarioActual = "reservas";
     let usuarioCalendario = null;
+    let fechaObjetivoLista = null;
 
     function esAdminCalendario() {
       const rol = String(usuarioCalendario?.rol || "").toUpperCase();
@@ -1628,6 +1629,19 @@
       if (!root) return;
 
       const contenedor = root.querySelector(".fc-scroller, .fc-list") || root;
+      const fechaObjetivo = fechaObjetivoLista || formatearFechaIsoLocal(calendar.getDate());
+      const cabeceraDia = root.querySelector(`.fc-list-day[data-date="${fechaObjetivo}"]`);
+      if (cabeceraDia) {
+        const objetivoTop = cabeceraDia.getBoundingClientRect().top;
+        const contenedorTop = contenedor.getBoundingClientRect().top;
+        const top = Math.max(
+          contenedor.scrollTop + (objetivoTop - contenedorTop) - 96,
+          0
+        );
+        contenedor.scrollTop = top;
+        return;
+      }
+
       const filas = [...root.querySelectorAll(".fc-list-event:not(.evento-dia-vacio)")];
       if (!filas.length) {
         contenedor.scrollTop = 0;
@@ -1807,6 +1821,7 @@
       document.getElementById("btnListaCalendario").addEventListener("click", async function() {
         if (!calendar) return;
         const fechaObjetivo = await obtenerFechaProximoEvento();
+        fechaObjetivoLista = fechaObjetivo || null;
         if (fechaObjetivo) {
           calendar.changeView("listContinuo", fechaObjetivo);
           return;
