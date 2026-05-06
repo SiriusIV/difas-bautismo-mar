@@ -26,7 +26,15 @@ async function asegurarTablaNotificaciones(env) {
 
 function esErrorColumnaAusente(error, columna) {
   const texto = limpiarTexto(error?.message || error || "").toLowerCase();
-  return texto.includes("no column named") && texto.includes(String(columna || "").toLowerCase());
+  const nombreColumna = String(columna || "").toLowerCase();
+  return (
+    texto.includes(nombreColumna) &&
+    (
+      texto.includes("no column named") ||
+      texto.includes("has no column named") ||
+      texto.includes("no such column")
+    )
+  );
 }
 
 function hayErrorEsquemaNotificaciones(error) {
@@ -404,7 +412,6 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
   const id = Number(notificacionId || 0);
   if (!userId || !id) return { ok: false, error: "Identificador inválido." };
 
-  await asegurarTablaNotificaciones(env);
   await asegurarTablaNotificaciones(env);
   let result;
   try {
