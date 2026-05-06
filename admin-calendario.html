@@ -1621,7 +1621,8 @@
             }
 
             const eventosBase = Array.isArray(data.eventos) ? data.eventos : [];
-            if (fetchInfo.view.type === "listContinuo") {
+            const tipoVistaActual = String(calendar?.view?.type || "");
+            if (tipoVistaActual === "listContinuo") {
               const placeholders = crearMarcadoresListaContinua(eventosBase, fetchInfo);
               successCallback([...eventosBase, ...placeholders]);
               return;
