@@ -1799,6 +1799,54 @@ async function cargarFranjasActividad(actividad) {
         };
       });
 
+    const plazasTotalesActividad = franjasActividadActual.reduce((acc, f) => {
+      const capacidad = f.capacidad == null ? 0 : Number(f.capacidad || 0);
+      return acc + Math.max(capacidad, 0);
+    }, 0);
+    const plazasDisponiblesActividad = franjasActividadActual.reduce((acc, f) => {
+      const disponibles = f.disponibles == null ? 0 : Number(f.disponibles || 0);
+      return acc + Math.max(disponibles, 0);
+    }, 0);
+    const completaCalculadaActividad =
+      Number(actividad.usa_franjas || 0) === 1 &&
+      plazasTotalesActividad > 0 &&
+      plazasDisponiblesActividad <= 0
+        ? 1
+        : 0;
+
+    let actividadActualizada = false;
+    actividadesCache = (actividadesCache || []).map((item) => {
+      if (Number(item?.id) !== Number(actividad.id)) return item;
+      const plazasTotalesPrevias = Number(item?.plazas_totales || 0);
+      const plazasDisponiblesPrevias = Number(item?.plazas_disponibles || 0);
+      const completaPrevia = Number(item?.completa_calculada || 0);
+      if (
+        plazasTotalesPrevias === plazasTotalesActividad &&
+        plazasDisponiblesPrevias === plazasDisponiblesActividad &&
+        completaPrevia === completaCalculadaActividad
+      ) {
+        return item;
+      }
+      actividadActualizada = true;
+      return {
+        ...item,
+        plazas_totales: plazasTotalesActividad,
+        plazas_disponibles: plazasDisponiblesActividad,
+        plazas_ocupadas: Math.max(plazasTotalesActividad - plazasDisponiblesActividad, 0),
+        completa_calculada: completaCalculadaActividad
+      };
+    });
+
+    if (actividadSeleccionada && Number(actividadSeleccionada.id) === Number(actividad.id)) {
+      actividadSeleccionada = {
+        ...actividadSeleccionada,
+        plazas_totales: plazasTotalesActividad,
+        plazas_disponibles: plazasDisponiblesActividad,
+        plazas_ocupadas: Math.max(plazasTotalesActividad - plazasDisponiblesActividad, 0),
+        completa_calculada: completaCalculadaActividad
+      };
+    }
+
     const filas = franjasActividadActual.map(f => {
       let estadoTexto = "�";
       let estadoClase = "";
@@ -1855,6 +1903,9 @@ async function cargarFranjasActividad(actividad) {
     }
 
     actualizarBotonSolicitarSegunFranja();
+    if (actividadActualizada) {
+      renderizarActividades();
+    }
   } catch (_) {
     franjasActividadActual = [];
     franjaSeleccionadaPortalId = null;
