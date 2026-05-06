@@ -649,6 +649,15 @@
       background: #fff;
     }
 
+    .fc .fc-list-day-cushion {
+      font-weight: 700;
+    }
+
+    .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-time,
+    .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
+      padding-left: 18px;
+    }
+
     .fc .fc-list-event.evento-dia-vacio .fc-list-event-time,
     .fc .fc-list-event.evento-dia-vacio .fc-list-event-title {
       color: transparent !important;
@@ -759,6 +768,11 @@
       background: #0b5ed7;
       color: #fff;
       border-color: #0b5ed7;
+    }
+
+    .panel-rango-central.oculto-lista {
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .modal-fondo {
@@ -1476,10 +1490,11 @@
     function actualizarEtiquetaRango(info) {
       const host = document.getElementById("rangoCalendario");
       if (!host || !info?.view) return;
-      const titulo = info.view.type === "listContinuo"
-        ? "Lista continua"
-        : String(info.view.title || "").trim();
+      const esLista = info.view.type === "listContinuo";
+      const titulo = esLista ? "" : String(info.view.title || "").trim();
       host.textContent = titulo;
+      const panelRango = document.querySelector(".panel-rango-central");
+      if (panelRango) panelRango.classList.toggle("oculto-lista", esLista);
       const calendarEl = document.getElementById("calendar");
       if (calendarEl) {
         const esVistaMes = info.view.type === "dayGridMonth";
@@ -1562,6 +1577,28 @@
       });
     }
 
+    function centrarListaEnProximoEvento() {
+      if (!calendar || String(calendar.view?.type || "") !== "listContinuo") return;
+      const contenedor = document.getElementById("calendar");
+      if (!contenedor) return;
+
+      const filas = [...contenedor.querySelectorAll(".fc-list-event:not(.evento-dia-vacio)")];
+      if (!filas.length) {
+        contenedor.scrollTop = 0;
+        return;
+      }
+
+      const ahora = Date.now();
+      let objetivo = filas.find((fila) => {
+        const ts = Number(fila.dataset.eventStartTs || 0);
+        return ts && ts >= ahora;
+      });
+
+      if (!objetivo) objetivo = filas[0];
+      const top = Math.max((objetivo.offsetTop || 0) - Math.round(contenedor.clientHeight * 0.22), 0);
+      contenedor.scrollTop = top;
+    }
+
     function crearCalendario() {
       const calendarEl = document.getElementById("calendar");
 
@@ -1641,6 +1678,11 @@
           if ((p.tipo_evento || "") !== "ACTIVIDAD_PROGRAMADA") return [];
           return [p.editable_actividad ? "evento-actividad-editable" : "evento-actividad-noeditable"];
         },
+        eventDidMount: function(arg) {
+          if (arg?.el && arg?.event?.start) {
+            arg.el.dataset.eventStartTs = String(arg.event.start.getTime());
+          }
+        },
         eventClick: function(info) {
           if (info.event.extendedProps?.placeholder_lista) {
             return;
@@ -1651,6 +1693,9 @@
           actualizarEtiquetaRango(info);
           actualizarBotonesModoCalendario();
           reubicarLeyendaSegunVista();
+          setTimeout(() => {
+            centrarListaEnProximoEvento();
+          }, 0);
         }
       });
 
