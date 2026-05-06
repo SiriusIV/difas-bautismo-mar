@@ -549,6 +549,14 @@
         <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
       </div>
       <div class="barra-navegacion-der">
+        <button type="button" class="btn-icono" id="btnCalendario" title="Calendario" aria-label="Calendario">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </button>
         <button type="button" class="btn-icono" id="btnPortal" title="Portal" aria-label="Portal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 10.5L12 3l9 7.5"></path>
@@ -1096,11 +1104,16 @@
       location.href = "portal.html";
     }
 
+    function irCalendario() {
+      location.href = "admin-calendario.html";
+    }
+
     document.getElementById("filtroActividad").addEventListener("change", aplicarFiltros);
     document.getElementById("filtroEstado").addEventListener("change", aplicarFiltros);
     document.getElementById("filtroFecha").addEventListener("change", aplicarFiltros);
     document.getElementById("filtroBuscar").addEventListener("input", aplicarFiltros);
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
+    document.getElementById("btnCalendario").addEventListener("click", irCalendario);
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
