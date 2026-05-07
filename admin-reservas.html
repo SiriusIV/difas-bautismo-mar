@@ -185,6 +185,19 @@
       if (partes.length !== 3) return texto;
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
     }
+    function parsearFechaHoraReserva(fechaIso, horaTexto) {
+      const fecha = String(fechaIso || "").trim();
+      const hora = String(horaTexto || "").trim();
+      if (!fecha) return null;
+      const fechaHora = new Date(`${fecha}T${hora || "00:00"}:00`);
+      if (Number.isNaN(fechaHora.getTime())) return null;
+      return fechaHora;
+    }
+    function reservaYaPasada(reserva) {
+      const fechaFin = parsearFechaHoraReserva(reserva?.fecha, reserva?.hora_fin);
+      if (!fechaFin) return false;
+      return fechaFin.getTime() < Date.now();
+    }
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
@@ -223,7 +236,7 @@
       return params.toString();
     }
     function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
-    function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnEditarSeleccion").disabled = !hay; document.getElementById("btnAsistentesSeleccion").disabled = !hay; document.getElementById("btnConfirmarSeleccion").disabled = !hay || reservaSeleccionada.estado !== "PENDIENTE"; document.getElementById("btnRechazarSeleccion").disabled = !hay || !["PENDIENTE", "SUSPENDIDA"].includes(reservaSeleccionada.estado); }
+    function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; const pasada = hay ? reservaYaPasada(reservaSeleccionada) : false; document.getElementById("btnEditarSeleccion").disabled = !hay; document.getElementById("btnAsistentesSeleccion").disabled = !hay; document.getElementById("btnConfirmarSeleccion").disabled = !hay || reservaSeleccionada.estado !== "PENDIENTE"; document.getElementById("btnRechazarSeleccion").disabled = !hay || pasada || !["PENDIENTE", "SUSPENDIDA", "CONFIRMADA"].includes(reservaSeleccionada.estado); }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function abrirModalObservaciones(id) { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return; document.getElementById("modalObservacionesTitulo").textContent = `Observaciones · ${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones; document.getElementById("modalObservaciones").classList.add("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false"); }
     function cerrarModalObservaciones() { document.getElementById("modalObservaciones").classList.remove("activo"); document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true"); }
