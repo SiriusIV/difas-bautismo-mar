@@ -109,6 +109,50 @@ function construirCorreoSolicitanteEliminacionPorCaducidad(contexto = {}) {
   return { asunto, texto, html };
 }
 
+function construirCorreoSolicitanteCaducidadParcial(contexto = {}) {
+  const contacto = limpiarTexto(contexto?.contacto || "");
+  const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+  const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
+  const codigo = limpiarTexto(contexto?.codigo_reserva || "");
+  const organizador = nombreVisibleAdmin({
+    nombre_publico: contexto?.admin_nombre_publico,
+    nombre: contexto?.admin_nombre,
+    localidad: contexto?.admin_localidad
+  });
+  const programacion = formatearProgramacionReserva(contexto);
+  const asignadas = Number(contexto?.asistentes_total || 0);
+  const reservadasOriginales = Number(contexto?.plazas_prereservadas || 0);
+  const liberadas = Math.max(reservadasOriginales - asignadas, 0);
+  const asunto = "[Reservas] Prereserva caducada y solicitud mantenida";
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha agotado el tiempo de prereserva. Se mantienen ${asignadas} plaza(s) ya asignada(s) y ${liberadas} plaza(s) no asignada(s) han vuelto a quedar disponibles.`;
+  const aclaracion = "No necesitas crear una nueva solicitud complementaria. Si la actividad sigue teniendo plazas disponibles, puedes editar esta misma solicitud y añadir directamente, en tiempo real, nuevas plazas nominales sobre la reserva existente.";
+
+  const texto = [
+    saludo,
+    "",
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Organiza: ${organizador}`,
+    `Programación: ${programacion}`,
+    "",
+    aclaracion
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>${escaparHtml(saludo)}</p>
+    <p>${escaparHtml(mensaje)}</p>
+    <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
+    <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
+    <p>${escaparHtml(aclaracion)}</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
 async function asegurarTablaHistorico(env) {
   const db = env.DB.withSession("first-primary");
   await db.prepare(`
@@ -278,6 +322,40 @@ async function crearAvisosEliminacionReservaCaducada(env, reserva = {}) {
   await Promise.all(tareas);
 }
 
+async function crearAvisosCaducidadParcialSolicitante(env, reserva = {}) {
+  const usuarioId = Number(reserva.usuario_id || 0);
+  const solicitanteEmail = limpiarTexto(reserva.email || "");
+  const tareas = [];
+
+  if (usuarioId > 0) {
+    tareas.push(
+      crearNotificacion(env, {
+        usuarioId,
+        rolDestino: "SOLICITANTE",
+        tipo: "RESERVA",
+        titulo: "Prereserva caducada parcialmente",
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} mantiene las plazas ya asignadas y libera automáticamente las no asignadas. Puedes seguir ampliándola sobre esta misma solicitud si aún quedan plazas disponibles.`,
+        urlDestino: "/usuario-panel.html"
+      }).catch(() => ({ ok: false }))
+    );
+  }
+
+  if (solicitanteEmail) {
+    const correoSolicitante = construirCorreoSolicitanteCaducidadParcial(reserva);
+    tareas.push(
+      enviarEmail(env, {
+        to: solicitanteEmail,
+        subject: correoSolicitante.asunto,
+        text: correoSolicitante.texto,
+        html: correoSolicitante.html
+      }).catch(() => ({ ok: false }))
+    );
+  }
+
+  if (!tareas.length) return;
+  await Promise.all(tareas);
+}
+
 async function normalizarPrereservasExpiradas(env) {
   const db = env.DB.withSession("first-primary");
   const reservas = await obtenerReservasPrereservaExpirada(env);
@@ -309,7 +387,13 @@ async function normalizarPrereservasExpiradas(env) {
         Number(reserva.id || 0)
       ).run();
 
-      consolidadas += Number(updateResult?.meta?.changes || 0) > 0 ? 1 : 0;
+      if (Number(updateResult?.meta?.changes || 0) > 0) {
+        consolidadas += 1;
+        await crearAvisosCaducidadParcialSolicitante(env, {
+          ...reserva,
+          asistentes_total: asistentesTotal
+        });
+      }
       continue;
     }
 
