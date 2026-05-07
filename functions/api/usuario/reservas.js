@@ -110,6 +110,8 @@ export async function onRequestGet(context) {
       hora_inicio: row.hora_inicio,
       hora_fin: row.hora_fin,
       plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
+      prereserva_expira_en: row.prereserva_expira_en || "",
+      prereserva_vigente: esPrereservaVigente(row),
       plazas_pendientes: calcularPlazasReservadasPendientes(row),
       plazas_asignadas: calcularPlazasAsignadas(row)
     }));

@@ -262,6 +262,11 @@
       min-width: 126px;
       text-align: center;
     }
+    th.tiempo-col, td.tiempo-col {
+      width: 140px;
+      min-width: 140px;
+      text-align: center;
+    }
     th.fecha-col, td.fecha-col {
       width: 90px;
       min-width: 90px;
@@ -356,6 +361,23 @@
     .plazas-linea {
       display: block;
       white-space: nowrap;
+    }
+    .tiempo-restante {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 92px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e7f0ff;
+      color: #1d4f91;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tiempo-restante.finalizada {
+      background: #f3e8e8;
+      color: #9b1c1c;
     }
     .modal-fondo {
       position: fixed;
@@ -641,6 +663,7 @@
               <th class="sel-col"></th>
               <th class="obs-col"></th>
               <th class="actividad-col">Actividad</th>
+              <th class="tiempo-col">Tiempo restante</th>
               <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha</th>
               <th class="horario-col">Horario</th>
@@ -673,6 +696,7 @@
     let reservasActuales = [];
     let reservaSeleccionada = null;
     let nombreUsuarioPanel = "Usuario";
+    let temporizadorRecargaPanel = null;
 
     function normalizarEstadoReserva(estado) {
       const valor = String(estado || "").trim().toUpperCase();
@@ -746,6 +770,45 @@
       const partes = texto.split("-");
       if (partes.length !== 3) return texto;
       return `${partes[2].slice(-2)}/${partes[1].slice(-2)}/${partes[0].slice(-2)}`;
+    }
+
+    function parsearFechaServidor(fechaTexto) {
+      const texto = String(fechaTexto || "").trim();
+      if (!texto) return null;
+      const normalizada = texto.includes("T") ? texto : texto.replace(" ", "T");
+      const fecha = new Date(`${normalizada}Z`);
+      if (Number.isNaN(fecha.getTime())) return null;
+      return fecha;
+    }
+
+    function formatearTiempoRestante(reserva) {
+      const pendientes = Number(reserva?.plazas_pendientes || 0);
+      const expiraEn = parsearFechaServidor(reserva?.prereserva_expira_en);
+
+      if (pendientes <= 0 || !expiraEn) {
+        return { texto: "", finalizada: false };
+      }
+
+      const diferenciaMs = expiraEn.getTime() - Date.now();
+      if (diferenciaMs <= 0 || !reserva?.prereserva_vigente) {
+        return { texto: "Finalizada", finalizada: true };
+      }
+
+      const totalMinutos = Math.max(1, Math.ceil(diferenciaMs / 60000));
+      const horas = Math.floor(totalMinutos / 60);
+      const minutos = totalMinutos % 60;
+
+      if (horas > 0) {
+        return {
+          texto: `${horas} h ${String(minutos).padStart(2, "0")} min`,
+          finalizada: false
+        };
+      }
+
+      return {
+        texto: `${totalMinutos} min`,
+        finalizada: false
+      };
     }
 
     function pintarResumen(lista) {
@@ -971,13 +1034,14 @@
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
         actualizarBotones();
         return;
       }
 
       tbody.innerHTML = lista.map((r) => {
         const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
+        const tiempoRestante = formatearTiempoRestante(r);
         return `
           <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}">
             <td class="sel-col">
@@ -995,6 +1059,11 @@
               ` : ``}
             </td>
             <td class="actividad-col"><div class="actividad-nombre">${r.actividad || ""}</div></td>
+            <td class="tiempo-col">
+              ${tiempoRestante.texto
+                ? `<span class="tiempo-restante${tiempoRestante.finalizada ? " finalizada" : ""}">${escapeHtml(tiempoRestante.texto)}</span>`
+                : ""}
+            </td>
             <td class="estado-col">
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
                 <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
@@ -1014,8 +1083,8 @@
       actualizarBotones();
     }
 
-    async function cargarPanel() {
-      limpiarMensaje();
+    async function cargarPanel({ silencioso = false } = {}) {
+      if (!silencioso) limpiarMensaje();
       try {
         const res = await fetch("/api/usuario/reservas", {
           credentials: "include"
@@ -1037,8 +1106,20 @@
         pintarResumen(filtradas);
         pintarReservas(filtradas);
       } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudieron cargar las reservas.");
+        if (!silencioso) {
+          mostrarMensaje("error", error.message || "No se pudieron cargar las reservas.");
+        }
       }
+    }
+
+    function iniciarRecargaAutomaticaPanel() {
+      if (temporizadorRecargaPanel) {
+        clearInterval(temporizadorRecargaPanel);
+      }
+      temporizadorRecargaPanel = window.setInterval(() => {
+        if (document.hidden) return;
+        cargarPanel({ silencioso: true });
+      }, 60000);
     }
 
     function aplicarFiltros() {
@@ -1134,6 +1215,7 @@
       await cargarSesionCabecera();
       actualizarTituloPanel();
       await cargarPanel();
+      iniciarRecargaAutomaticaPanel();
     })();
   </script>
 </body>
