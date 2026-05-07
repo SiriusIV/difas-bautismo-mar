@@ -221,7 +221,7 @@
     .tabla-wrap { overflow-x: auto; }
     table {
       width: 100%;
-      min-width: 960px;
+      min-width: 910px;
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
@@ -254,33 +254,59 @@
       text-align: center;
     }
     th.actividad-col, td.actividad-col {
-      width: 320px;
-      min-width: 320px;
+      width: 290px;
+      min-width: 290px;
     }
     th.estado-col, td.estado-col {
+      width: 114px;
+      min-width: 114px;
+      text-align: center;
+    }
+    th.tiempo-col, td.tiempo-col {
       width: 126px;
       min-width: 126px;
       text-align: center;
     }
-    th.tiempo-col, td.tiempo-col {
-      width: 140px;
-      min-width: 140px;
-      text-align: center;
-    }
     th.fecha-col, td.fecha-col {
-      width: 90px;
-      min-width: 90px;
+      width: 82px;
+      min-width: 82px;
       text-align: center;
     }
     th.horario-col, td.horario-col {
-      width: 120px;
-      min-width: 120px;
+      width: 106px;
+      min-width: 106px;
       text-align: center;
     }
     th.plazas-col, td.plazas-col {
-      width: 190px;
-      min-width: 190px;
+      width: 166px;
+      min-width: 166px;
       text-align: center;
+    }
+    .encabezado-columna {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .icono-info-tabla {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border: 1px solid #a9bdd4;
+      border-radius: 999px;
+      background: #fff;
+      color: #1d4f91;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .icono-info-tabla:hover {
+      background: #f4f8ff;
+      border-color: #7ea0c7;
     }
     .actividad-nombre {
       font-weight: 700;
@@ -663,7 +689,12 @@
               <th class="sel-col"></th>
               <th class="obs-col"></th>
               <th class="actividad-col">Actividad</th>
-              <th class="tiempo-col">Tiempo restante</th>
+              <th class="tiempo-col">
+                <span class="encabezado-columna">
+                  <span>Tiempo restante</span>
+                  <button type="button" class="icono-info-tabla" id="btnInfoTiempoRestante" aria-label="Informacion sobre tiempo restante" title="Informacion sobre tiempo restante">i</button>
+                </span>
+              </th>
               <th class="estado-col">Estado</th>
               <th class="fecha-col">Fecha</th>
               <th class="horario-col">Horario</th>
@@ -782,16 +813,20 @@
     }
 
     function formatearTiempoRestante(reserva) {
-      const pendientes = Number(reserva?.plazas_pendientes || 0);
       const expiraEn = parsearFechaServidor(reserva?.prereserva_expira_en);
+      const pendientes = Number(reserva?.plazas_pendientes || 0);
 
-      if (pendientes <= 0 || !expiraEn) {
+      if (!expiraEn) {
         return { texto: "", finalizada: false };
       }
 
       const diferenciaMs = expiraEn.getTime() - Date.now();
       if (diferenciaMs <= 0 || !reserva?.prereserva_vigente) {
-        return { texto: "Finalizada", finalizada: true };
+        return { texto: "Expirada", finalizada: true };
+      }
+
+      if (pendientes <= 0) {
+        return { texto: "", finalizada: false };
       }
 
       const totalMinutos = Math.max(1, Math.ceil(diferenciaMs / 60000));
@@ -903,6 +938,29 @@
     function cerrarModalObservaciones() {
       document.getElementById("modalObservaciones").classList.remove("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
+    }
+
+    function abrirModalTiempoRestante() {
+      document.getElementById("modalObservacionesTitulo").textContent = "Tiempo restante";
+      document.getElementById("modalObservacionesSubtitulo").textContent = "Informacion sobre la asignacion de plazas";
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      estadoSuperior.hidden = true;
+      estadoSuperior.innerHTML = "";
+      document.getElementById("modalObservacionesContenido").innerHTML = `
+        <div class="estado-modal-bloque">
+          <p class="estado-modal-linea">Este tiempo restante indica el plazo disponible para realizar las asignaciones nominales de las plazas reservadas.</p>
+        </div>
+        <div class="estado-modal-observaciones">
+          <strong>Que ocurre cuando finaliza</strong>
+          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podras seguir asignando plazas mientras queden plazas disponibles en la actividad. A partir de ese momento ya no existira garantia de reserva previa sobre esas plazas.</div>
+        </div>
+      `;
+      document.getElementById("modalObservacionesAcciones").innerHTML = `
+        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
+      `;
+      document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
+      document.getElementById("modalObservaciones").classList.add("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
     }
 
     function escapeHtml(texto) {
@@ -1203,6 +1261,7 @@
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
     document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitudSeleccionada);
+    document.getElementById("btnInfoTiempoRestante").addEventListener("click", abrirModalTiempoRestante);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
     });

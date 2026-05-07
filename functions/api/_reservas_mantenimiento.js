@@ -378,7 +378,6 @@ async function normalizarPrereservasExpiradas(env) {
         SET
           personas = ?,
           plazas_prereservadas = ?,
-          prereserva_expira_en = NULL,
           fecha_modificacion = datetime('now')
         WHERE id = ?
       `).bind(
