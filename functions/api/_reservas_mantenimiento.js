@@ -252,6 +252,11 @@ async function obtenerReservasPrereservaExpirada(env) {
     WHERE r.prereserva_expira_en IS NOT NULL
       AND datetime(r.prereserva_expira_en) < datetime('now')
       AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND COALESCE((
+        SELECT COUNT(*)
+        FROM visitantes v
+        WHERE v.reserva_id = r.id
+      ), 0) < COALESCE(r.plazas_prereservadas, 0)
   `).all();
 
   return rows?.results || [];
