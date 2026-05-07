@@ -974,7 +974,11 @@
 
     function descripcionEstadoReserva(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
+      const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
       if (estado === "CONFIRMADA") {
+        if (observacionesAdmin) {
+          return `Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador. Motivo indicado: ${observacionesAdmin}`;
+        }
         return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
       }
       if (estado === "PENDIENTE") {
@@ -984,6 +988,9 @@
         return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
       }
       if (estado === "RECHAZADA") {
+        if (observacionesAdmin) {
+          return `Tu solicitud ha sido rechazada por el administrador. Motivo indicado: ${observacionesAdmin}`;
+        }
         return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
       }
       if (estado === "CANCELADA") {
@@ -1050,10 +1057,10 @@
           <p class="estado-modal-linea">${escapeHtml(descripcion)}</p>
         </div>
         ${
-          normalizarEstadoReserva(reserva.estado) !== "CONFIRMADA"
+          observaciones
             ? `<div class="estado-modal-observaciones">
-                <strong>Observaciones</strong>
-                <div class="estado-modal-observaciones-texto">${escapeHtml(observaciones || "No hay observaciones adicionales registradas para esta solicitud.")}</div>
+                <strong>Observaciones del administrador</strong>
+                <div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div>
               </div>`
             : ""
         }
