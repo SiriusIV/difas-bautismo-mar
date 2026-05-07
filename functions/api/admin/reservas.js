@@ -15,6 +15,24 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function esErrorColumnaDuplicada(error) {
+  const texto = limpiarTexto(error?.message || error || "").toLowerCase();
+  return texto.includes("duplicate column name") || texto.includes("duplicate column");
+}
+
+async function asegurarColumnaObservacionesAdmin(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE reservas
+      ADD COLUMN observaciones_admin TEXT
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) {
+      throw error;
+    }
+  }
+}
+
 function likeValue(valor) {
   return `%${valor}%`;
 }
@@ -111,6 +129,7 @@ async function obtenerReservas(env, filtros) {
       r.telefono,
       r.email,
       r.observaciones,
+      COALESCE(r.observaciones_admin, '') AS observaciones_admin,
       r.fecha_solicitud,
       r.fecha_modificacion,
       r.plazas_prereservadas,
@@ -272,6 +291,8 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       r.contacto,
       r.email,
       r.observaciones,
+      COALESCE(r.observaciones_admin, '') AS observaciones_admin,
+      r.estado,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
@@ -313,7 +334,7 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
     mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisión del organizador.`;
   }
 
-  const observaciones = limpiarTexto(contexto?.observaciones || "");
+  const observacionesAdmin = limpiarTexto(contexto?.observaciones_admin || "");
   const texto = [
     saludo,
     "",
@@ -322,7 +343,7 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
     `Actividad: ${actividad}`,
     codigo ? `Código de solicitud: ${codigo}` : "",
     `Organiza: ${organizador}`,
-    observaciones && nuevoEstado === "RECHAZADA" ? `Observaciones: ${observaciones}` : "",
+    observacionesAdmin ? `Observaciones del administrador: ${observacionesAdmin}` : "",
     "",
     "Puedes consultar el detalle actualizado desde tu panel de usuario."
   ].filter(Boolean).join("\n");
@@ -333,7 +354,7 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
     <p><strong>Actividad:</strong> ${escaparHtmlCorreo(actividad)}</p>
     ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtmlCorreo(codigo)}</p>` : ""}
     <p><strong>Organiza:</strong> ${escaparHtmlCorreo(organizador)}</p>
-    ${observaciones && nuevoEstado === "RECHAZADA" ? `<p><strong>Observaciones:</strong> ${escaparHtmlCorreo(observaciones)}</p>` : ""}
+    ${observacionesAdmin ? `<p><strong>Observaciones del administrador:</strong> ${escaparHtmlCorreo(observacionesAdmin)}</p>` : ""}
     <p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>
   `;
 
@@ -401,6 +422,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaObservacionesAdmin(env);
     await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
@@ -454,6 +476,7 @@ export async function onRequestGet(context) {
       telefono: row.telefono || "",
       email: row.email || "",
       observaciones: row.observaciones || "",
+      observaciones_admin: row.observaciones_admin || "",
       fecha_solicitud: row.fecha_solicitud,
       fecha_modificacion: row.fecha_modificacion,
       fecha: row.fecha,
@@ -506,6 +529,7 @@ export async function onRequestPatch(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaObservacionesAdmin(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json(
@@ -517,6 +541,7 @@ export async function onRequestPatch(context) {
     const body = await request.json();
     const id = Number(body.id || 0);
     const accion = limpiarTexto(body.accion || "").toLowerCase();
+    const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
 
     if (!id || !accion) {
       return json(
@@ -536,6 +561,7 @@ export async function onRequestPatch(context) {
     }
 
     await checkAdminActividad(env, session.usuario_id, actividadId);
+    const estadoActual = limpiarTexto(contextoReserva?.estado || "").toUpperCase();
 
     let nuevoEstado = null;
     if (accion === "confirmar") nuevoEstado = "CONFIRMADA";
@@ -549,11 +575,27 @@ export async function onRequestPatch(context) {
       );
     }
 
+    const requiereObservaciones =
+      (estadoActual === "CONFIRMADA" && nuevoEstado === "RECHAZADA") ||
+      (estadoActual === "RECHAZADA" && nuevoEstado === "CONFIRMADA");
+
+    if (requiereObservaciones && !observacionesAdmin) {
+      return json(
+        { ok: false, error: "Debe indicar observaciones administrativas para este cambio de estado." },
+        { status: 400 }
+      );
+    }
+
     const result = await env.DB.prepare(`
       UPDATE reservas
-      SET estado = ?, fecha_modificacion = datetime('now')
+      SET estado = ?,
+          observaciones_admin = CASE
+            WHEN ? <> '' THEN ?
+            ELSE observaciones_admin
+          END,
+          fecha_modificacion = datetime('now')
       WHERE id = ?
-    `).bind(nuevoEstado, id).run();
+    `).bind(nuevoEstado, observacionesAdmin, observacionesAdmin, id).run();
 
     if ((result?.meta?.changes || 0) === 0) {
       return json(
@@ -564,15 +606,19 @@ export async function onRequestPatch(context) {
 
     let notificacionSolicitante = { ok: false, skipped: true, error: "" };
     let correoSolicitante = { ok: false, skipped: true, error: "" };
+    const contextoNotificacion = {
+      ...contextoReserva,
+      observaciones_admin: observacionesAdmin || contextoReserva?.observaciones_admin || ""
+    };
     try {
       if (nuevoEstado === "CONFIRMADA") {
-        notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoReserva);
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoNotificacion);
       } else if (nuevoEstado === "RECHAZADA") {
-        notificacionSolicitante = await crearNotificacionSolicitanteReservaRechazada(env, contextoReserva);
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaRechazada(env, contextoNotificacion);
       } else if (nuevoEstado === "PENDIENTE") {
-        notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoReserva);
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoNotificacion);
       }
-      correoSolicitante = await enviarCorreoSolicitanteCambioEstado(env, contextoReserva, nuevoEstado);
+      correoSolicitante = await enviarCorreoSolicitanteCambioEstado(env, contextoNotificacion, nuevoEstado);
     } catch (errorNotificacion) {
       notificacionSolicitante = {
         ok: false,

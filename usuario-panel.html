@@ -1037,7 +1037,7 @@
       const estadoTexto = textoEstadoVisible(reserva.estado);
       const estadoClase = claseEstado(reserva.estado);
       const descripcion = descripcionEstadoReserva(reserva);
-      const observaciones = String(reserva.observaciones || "").trim();
+      const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
 
       document.getElementById("modalObservacionesTitulo").textContent = "Estado de la solicitud";

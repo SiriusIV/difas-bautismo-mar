@@ -12,6 +12,24 @@ function estadoBloqueaPlazas(estado) {
   return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
+function esErrorColumnaDuplicada(error) {
+  const texto = String(error?.message || error || "").trim().toLowerCase();
+  return texto.includes("duplicate column name") || texto.includes("duplicate column");
+}
+
+async function asegurarColumnaObservacionesAdmin(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE reservas
+      ADD COLUMN observaciones_admin TEXT
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) {
+      throw error;
+    }
+  }
+}
+
 function normalizarEstadoReserva(estado) {
   const valor = String(estado || "").trim().toUpperCase();
   if (valor === "CONDICIONADA_DOCUMENTACION") return "SUSPENDIDA";
@@ -53,6 +71,7 @@ export async function onRequestGet(context) {
 
   try {
     await ejecutarMantenimientoReservas(env);
+    await asegurarColumnaObservacionesAdmin(env);
     const user = await getUserSession(request, env.SECRET_KEY);
 
     if (!user || !user.id) {
@@ -66,6 +85,7 @@ export async function onRequestGet(context) {
         r.estado,
         r.token_edicion,
         r.observaciones,
+        COALESCE(r.observaciones_admin, '') AS observaciones_admin,
         r.fecha_solicitud,
         r.fecha_modificacion,
         a.admin_id,
@@ -102,6 +122,7 @@ export async function onRequestGet(context) {
       estado: normalizarEstadoReserva(row.estado),
       token_edicion: row.token_edicion || "",
       observaciones: row.observaciones || "",
+      observaciones_admin: row.observaciones_admin || "",
       admin_id: Number(row.admin_id || 0),
       actividad: row.actividad || "Actividad",
       fecha_solicitud: row.fecha_solicitud || "",
