@@ -262,6 +262,19 @@
       min-width: 114px;
       text-align: center;
     }
+    .encabezado-estado {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .encabezado-estado-icono {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      opacity: 0.8;
+      flex: 0 0 auto;
+    }
     th.tiempo-col, td.tiempo-col {
       width: 126px;
       min-width: 126px;
@@ -695,7 +708,12 @@
                   <button type="button" class="icono-info-tabla" id="btnInfoTiempoRestante" aria-label="Informacion sobre tiempo restante" title="Informacion sobre tiempo restante">i</button>
                 </span>
               </th>
-              <th class="estado-col">Estado</th>
+              <th class="estado-col">
+                <span class="encabezado-estado">
+                  <img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="encabezado-estado-icono">
+                  <span>Estado</span>
+                </span>
+              </th>
               <th class="fecha-col">Fecha</th>
               <th class="horario-col">Horario</th>
               <th class="plazas-col">Plazas</th>
