@@ -2049,6 +2049,11 @@ function actualizarBotonSolicitarSegunFranja() {
           const fechaSolicitud = String(reserva?.fecha_solicitud || "").trim();
           const fechaModificacion = String(reserva?.fecha_modificacion || "").trim();
           const cambioReal = fechaModificacion && fechaSolicitud && fechaModificacion !== fechaSolicitud;
+          const prereservaExpiraEn = String(reserva?.prereserva_expira_en || "").trim();
+          const prereservaVigente = Number(reserva?.prereserva_vigente || 0) === 1;
+          const huboPrereserva = !!prereservaExpiraEn;
+          const plazasPendientes = Number(reserva?.plazas_pendientes || 0);
+          const prereservaExpirada = huboPrereserva && !prereservaVigente;
 
           if (!(estado === "CONFIRMADA" || estado === "RECHAZADA" || estado === "SUSPENDIDA" || (estado === "PENDIENTE" && cambioReal))) {
             return null;
@@ -2063,7 +2068,12 @@ function actualizarBotonSolicitarSegunFranja() {
           if (estado === "CONFIRMADA") titulo = "Solicitud aceptada";
           if (estado === "RECHAZADA") titulo = "Solicitud rechazada";
           if (estado === "SUSPENDIDA") titulo = "Solicitud suspendida";
-          if (estado === "PENDIENTE" && cambioReal) titulo = "Solicitud reabierta";
+          if (estado === "PENDIENTE" && cambioReal) {
+            titulo = "Solicitud reabierta";
+            if (prereservaExpirada && plazasPendientes <= 0) {
+              titulo = "Ha expirado el tiempo disponible para la asignacion de plazas";
+            }
+          }
 
           return {
             id: idOperativa,
