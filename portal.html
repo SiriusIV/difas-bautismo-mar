@@ -2344,6 +2344,27 @@ function actualizarBotonSolicitarSegunFranja() {
           if (resReservas.ok && dataReservas?.ok) {
             operativas.push(...construirNotificacionesOperativasReservaSolicitante(dataReservas?.data, vistas));
           }
+
+          const resAvisos = await fetch(`/api/usuario/avisos-operativos?limit=25&_ts=${Date.now()}`, {
+            credentials: "include",
+            cache: "no-store"
+          });
+          const dataAvisos = await resAvisos.json().catch(() => null);
+          if (resAvisos.ok && dataAvisos?.ok) {
+            operativas.push(...(Array.isArray(dataAvisos?.items) ? dataAvisos.items : []).map((item) => {
+              const idOperativa = `operativa-aviso-usuario-${String(item?.id || "")}`;
+              if (!item?.id || vistas.includes(idOperativa)) return null;
+              return {
+                id: idOperativa,
+                operativa: true,
+                leida: false,
+                titulo: String(item?.titulo || "Aviso").trim() || "Aviso",
+                mensaje: String(item?.mensaje || "").trim(),
+                url_destino: String(item?.url_destino || "/usuario-panel.html").trim() || "/usuario-panel.html",
+                created_at: String(item?.created_at || "").trim() || new Date().toISOString()
+              };
+            }).filter(Boolean));
+          }
         }
       } catch {}
 

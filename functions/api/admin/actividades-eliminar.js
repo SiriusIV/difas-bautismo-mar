@@ -1,5 +1,6 @@
 ﻿import { getAdminSession } from "./_auth.js";
 import { crearNotificacion } from "../_notificaciones.js";
+import { crearAvisoUsuario } from "../_avisos_usuario.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 
@@ -260,6 +261,27 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
   return resultado;
 }
 
+async function crearAvisoOperativoBorradorEliminado(env, reserva, observacionesAdmin) {
+  const usuarioId = Number(reserva?.usuario_id || 0);
+  if (!(usuarioId > 0)) {
+    return { ok: false, skipped: true, error: "Borrador sin usuario asociado." };
+  }
+
+  const actividad = limpiarTexto(reserva?.actividad_nombre || "la actividad");
+  const codigo = limpiarTexto(reserva?.codigo_reserva || "");
+  const motivo = limpiarTexto(observacionesAdmin);
+  const mensajeBase = `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador y tu borrador ha sido eliminado.`;
+  const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
+
+  return await crearAvisoUsuario(env, {
+    usuarioId,
+    tipo: "RESERVA",
+    titulo: "Actividad anulada",
+    mensaje,
+    urlDestino: "/usuario-panel.html"
+  });
+}
+
 async function enviarCorreoActividadAnulada(env, reserva, observacionesAdmin) {
   const destinatario = limpiarTexto(reserva?.email || "");
   if (!destinatario) {
@@ -345,7 +367,9 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       }
 
       try {
-        const notificacion = await crearNotificacionActividadAnulada(env, reserva, observacionesAdmin);
+        const notificacion = esBorrador
+          ? await crearAvisoOperativoBorradorEliminado(env, reserva, observacionesAdmin)
+          : await crearNotificacionActividadAnulada(env, reserva, observacionesAdmin);
         if (notificacion?.ok) {
           resultado.notificaciones_creadas += 1;
         } else if (!notificacion?.skipped) {
@@ -505,4 +529,5 @@ export async function onRequestPost(context) {
     );
   }
 }
+
 
