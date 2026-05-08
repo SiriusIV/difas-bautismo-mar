@@ -270,6 +270,18 @@
       border-color: #9fb2c7;
     }
 
+    .btn-icono-redondo.btn-secundario {
+      background: #fff;
+      color: #5b6b7c;
+      border: 1px solid #bfc9d4;
+    }
+
+    .btn-icono-redondo.btn-secundario:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
     .btn-icono-redondo svg,
     .btn-enlace-icono svg {
       width: 17px;
@@ -891,6 +903,9 @@
     let franjaIdInicial = null;
 
     function getActividadId() {
+      if (Number.isInteger(Number(actividadActual?.id || 0)) && Number(actividadActual.id) > 0) {
+        return Number(actividadActual.id);
+      }
       if (Number.isInteger(actividadIdActual) && actividadIdActual > 0) return actividadIdActual;
       const params = new URLSearchParams(window.location.search);
       const id = parseInt(params.get("actividad_id") || "", 10);
@@ -1142,6 +1157,7 @@
 
       const actividades = Array.isArray(data.actividades) ? data.actividades : [];
       actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
+      actividadIdActual = Number(actividad_id || 0) > 0 ? Number(actividad_id) : null;
 
       if (!actividadActual) {
         throw new Error("La actividad no está disponible.");
@@ -1285,7 +1301,7 @@
     }
 
     function validarDatosFormulario() {
-      const actividad_id = getActividadId();
+      const actividad_id = Number(actividadActual?.id || getActividadId() || 0) || null;
       const centro = document.getElementById("centro").value.trim();
       const contacto = document.getElementById("contacto").value.trim();
       const telefono = document.getElementById("telefono").value.trim();
