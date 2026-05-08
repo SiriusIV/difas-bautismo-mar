@@ -1,5 +1,10 @@
 import { getAdminSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import {
+  asegurarColumnaObservacionesAdmin,
+  obtenerSituacionReservasActividad,
+  rechazarReservasPorAnulacionActividad
+} from "./actividades-eliminar.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -172,13 +177,14 @@ function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
   const visiblePortal = parsearFlag(body.visible_portal, 1);
+  const activa = parsearFlag(body.activa, 1);
 
   return {
     nombre: limpiarTexto(body.nombre),
     tipo,
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
-    activa: visiblePortal,
+    activa,
 
     titulo_publico: normalizarNullable(body.titulo_publico),
     subtitulo_publico: normalizarNullable(body.subtitulo_publico),
@@ -194,7 +200,7 @@ function construirPayload(body, admin_id) {
     imagen_url: normalizarNullable(body.imagen_url),
     imagen_id: normalizarNullable(body.imagen_id),
 
-    visible_portal: visiblePortal,
+    visible_portal: activa === 0 ? 0 : visiblePortal,
     orden_portal: parsearEntero(body.orden_portal, 0),
     organizador_publico: normalizarNullable(body.organizador_publico),
     usa_franjas: parsearFlag(body.usa_franjas, 1),
@@ -239,6 +245,9 @@ export async function onRequestPost(context) {
     }
 
     const p = construirPayload(body, admin_id);
+    if (Number(p.activa || 0) === 0) {
+      p.visible_portal = 0;
+    }
 
     const result = await env.DB.prepare(`
       INSERT INTO actividades (
@@ -365,6 +374,10 @@ export async function onRequestPut(context) {
     }
 
     const p = construirPayload(body, admin_id);
+    const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
+    const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
+    const activaActual = Number(actual.activa ?? actual.visible_portal ?? 1) === 1 ? 1 : 0;
+    const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
 
     // ===============================
     // VALIDACIONES DE NEGOCIO
@@ -448,6 +461,32 @@ export async function onRequestPut(context) {
       }, 400);
     }
 
+    if (activaActual === 1 && activaNueva === 0) {
+      p.visible_portal = 0;
+
+      if (solicitudesVivas > 0 && !confirmadoAnulacion) {
+        const situacion = await obtenerSituacionReservasActividad(env, id);
+        return json({
+          ok: false,
+          requiere_confirmacion: true,
+          requiere_observaciones: true,
+          resumen: situacion,
+          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) activa(s) en estado pendiente, aceptada o suspendida. Si la desactivas, todas pasarán automáticamente a rechazada y se notificará individualmente a cada solicitante afectado.`
+        }, 200);
+      }
+
+      if (solicitudesVivas > 0 && !observacionesAdmin) {
+        return json({
+          ok: false,
+          error: "Debes indicar el motivo de la desactivación para rechazar automáticamente las solicitudes afectadas."
+        }, 400);
+      }
+    }
+
+    if (activaActual === 0 && activaNueva === 1) {
+      p.visible_portal = 1;
+    }
+
     const result = await env.DB.prepare(`
       UPDATE actividades
       SET
@@ -516,10 +555,17 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: "No se pudo actualizar la actividad." }, 500);
     }
 
+    let resumenAnulacion = null;
+    if (activaActual === 1 && activaNueva === 0 && solicitudesVivas > 0) {
+      await asegurarColumnaObservacionesAdmin(env);
+      resumenAnulacion = await rechazarReservasPorAnulacionActividad(env, id, observacionesAdmin);
+    }
+
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
 
     return json({
       ok: true,
+      resumen_anulacion: resumenAnulacion,
       mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
