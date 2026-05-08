@@ -840,7 +840,7 @@
 
       const diferenciaMs = expiraEn.getTime() - Date.now();
       if (diferenciaMs <= 0 || !reserva?.prereserva_vigente) {
-        return { texto: "Expirada", finalizada: true };
+        return { texto: "Agotado", finalizada: true };
       }
 
       if (pendientes <= 0) {
