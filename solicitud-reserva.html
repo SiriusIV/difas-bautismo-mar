@@ -903,7 +903,7 @@
     let franjaIdInicial = null;
 
     function getActividadId() {
-      if (Number.isInteger(Number(actividadActual?.id || 0)) && Number(actividadActual.id) > 0) {
+      if (actividadActual && Number.isInteger(Number(actividadActual.id || 0)) && Number(actividadActual.id) > 0) {
         return Number(actividadActual.id);
       }
       if (Number.isInteger(actividadIdActual) && actividadIdActual > 0) return actividadIdActual;
