@@ -114,7 +114,7 @@ async function obtenerRequisitosActividad(env, actividadId) {
     .filter(Boolean);
 }
 
-async function obtenerReservasActivasActividad(env, actividadId) {
+async function obtenerReservasAfectadasActividad(env, actividadId) {
   const result = await env.DB.prepare(`
     SELECT
       r.id,
@@ -122,13 +122,14 @@ async function obtenerReservasActivasActividad(env, actividadId) {
       r.codigo_reserva,
       r.contacto,
       r.email,
+      r.estado,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
     WHERE r.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
     ORDER BY r.id ASC
   `).bind(actividadId).all();
 
@@ -138,6 +139,7 @@ async function obtenerReservasActivasActividad(env, actividadId) {
 async function notificarCambioRequisitosActividad(env, reservas = [], actividadNombre = "") {
   const resumen = {
     total: reservas.length,
+    suspendidas: 0,
     notificaciones_creadas: 0,
     correos_enviados: 0,
     incidencias: []
@@ -149,14 +151,36 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
       const codigo = limpiarTexto(reserva.codigo_reserva || "");
       const contacto = limpiarTexto(reserva.contacto || "");
       const organizador = limpiarTexto(reserva.organizador_nombre || "el organizador");
+      const estadoActual = limpiarTexto(reserva.estado).toUpperCase();
       const mensaje = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Revisa las condiciones antes de mantener la solicitud tal como está.`;
+
+      let mensajeFinal = mensaje;
+      if (estadoActual === "PENDIENTE" || estadoActual === "CONFIRMADA") {
+        const update = await env.DB.prepare(`
+          UPDATE reservas
+          SET estado = 'SUSPENDIDA',
+              fecha_modificacion = datetime('now')
+          WHERE id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA')
+        `).bind(reserva.id).run();
+
+        if ((update?.meta?.changes || 0) > 0) {
+          resumen.suspendidas += 1;
+        }
+
+        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud ha pasado a estado suspendida hasta que revises los requisitos actualizados.`;
+      } else if (estadoActual === "SUSPENDIDA") {
+        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa suspendida y debes revisar los requisitos actualizados.`;
+      } else if (estadoActual === "RECHAZADA") {
+        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa rechazada, pero te avisamos para que conozcas el cambio.`;
+      }
 
       const notificacion = await crearNotificacion(env, {
         usuarioId: Number(reserva.usuario_id || 0),
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Cambio en los requisitos de la actividad",
-        mensaje,
+        mensaje: mensajeFinal,
         urlDestino: "/usuario-panel.html"
       });
 
@@ -170,7 +194,7 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
         const text = [
           saludo,
           "",
-          mensaje,
+          mensajeFinal,
           "",
           `Organiza: ${organizador}`,
           "",
@@ -179,7 +203,7 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
 
         const html = `
           <p>${escaparHtml(saludo)}</p>
-          <p>${escaparHtml(mensaje)}</p>
+          <p>${escaparHtml(mensajeFinal)}</p>
           <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
           <p>Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliéndolos.</p>
         `;
@@ -508,6 +532,7 @@ export async function onRequestPut(context) {
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
     const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
+    const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
 
     // ===============================
     // VALIDACIONES DE NEGOCIO
@@ -617,14 +642,14 @@ export async function onRequestPut(context) {
       p.visible_portal = 1;
     }
 
-    if (requisitosHanCambiado && solicitudesVivas > 0 && !confirmadoCambioRequisitos) {
+    if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0 && !confirmadoCambioRequisitos) {
       return json({
         ok: false,
         requiere_confirmacion_requisitos: true,
-        total_afectadas: solicitudesVivas,
-        mensaje: solicitudesVivas === 1
-          ? "Existe 1 solicitud activa vinculada a esta actividad. Si continúas, se notificará al solicitante para que revise los requisitos actualizados."
-          : `Existen ${solicitudesVivas} solicitudes activas vinculadas a esta actividad. Si continúas, se notificará a los solicitantes para que revisen los requisitos actualizados.`
+        total_afectadas: reservasAfectadasRequisitos.length,
+        mensaje: reservasAfectadasRequisitos.length === 1
+          ? "Existe 1 solicitud vinculada a esta actividad. Si continúas, se notificará al solicitante y, si estaba pendiente o confirmada, pasará a suspendida."
+          : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continúas, se notificará a los solicitantes y las que estuvieran pendientes o confirmadas pasarán a suspendida.`
       }, 409);
     }
 
@@ -705,11 +730,10 @@ export async function onRequestPut(context) {
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
 
     let resumenCambioRequisitos = null;
-    if (requisitosHanCambiado && solicitudesVivas > 0) {
-      const reservasActivas = await obtenerReservasActivasActividad(env, id);
+    if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0) {
       resumenCambioRequisitos = await notificarCambioRequisitosActividad(
         env,
-        reservasActivas,
+        reservasAfectadasRequisitos,
         p.titulo_publico || p.nombre
       );
     }

@@ -74,7 +74,7 @@ function franjaHaCambiado(existente = {}, siguiente = {}) {
   );
 }
 
-async function obtenerReservasActivasFranja(env, franjaId) {
+async function obtenerReservasAfectadasFranja(env, franjaId) {
   const result = await env.DB.prepare(`
     SELECT
       r.id,
@@ -82,22 +82,24 @@ async function obtenerReservasActivasFranja(env, franjaId) {
       r.codigo_reserva,
       r.contacto,
       r.email,
+      r.estado,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
     WHERE r.franja_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
     ORDER BY r.id ASC
   `).bind(franjaId).all();
 
   return result?.results || [];
 }
 
-async function notificarCambioFranja(env, reservas = [], franjaAnterior = {}, franjaNueva = {}) {
+async function aplicarCambiosYNotificarFranja(env, reservas = [], franjaAnterior = {}, franjaNueva = {}) {
   const resumen = {
     total: reservas.length,
+    suspendidas: 0,
     notificaciones_creadas: 0,
     correos_enviados: 0,
     incidencias: []
@@ -111,14 +113,37 @@ async function notificarCambioFranja(env, reservas = [], franjaAnterior = {}, fr
       const codigo = normalizarTexto(reserva.codigo_reserva || "");
       const contacto = normalizarTexto(reserva.contacto || "");
       const organizador = normalizarTexto(reserva.organizador_nombre || "el organizador");
+      const estadoActual = normalizarTexto(reserva.estado).toUpperCase();
+      let mensajeFinal = "";
       const mensaje = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Revisa la nueva programación y confirma que sigue encajando con tu solicitud.`;
+
+      mensajeFinal = mensaje;
+      if (estadoActual === "PENDIENTE" || estadoActual === "CONFIRMADA") {
+        const update = await env.DB.prepare(`
+          UPDATE reservas
+          SET estado = 'SUSPENDIDA',
+              fecha_modificacion = datetime('now')
+          WHERE id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA')
+        `).bind(reserva.id).run();
+
+        if ((update?.meta?.changes || 0) > 0) {
+          resumen.suspendidas += 1;
+        }
+
+        mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud ha pasado a estado suspendida hasta que revises la nueva programación.`;
+      } else if (estadoActual === "SUSPENDIDA") {
+        mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud continúa suspendida y debes revisar la nueva programación.`;
+      } else if (estadoActual === "RECHAZADA") {
+        mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud continúa rechazada, pero te avisamos para que conozcas el cambio.`;
+      }
 
       const notificacion = await crearNotificacion(env, {
         usuarioId: Number(reserva.usuario_id || 0),
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Cambio en la franja horaria",
-        mensaje,
+        mensaje: mensajeFinal,
         urlDestino: "/usuario-panel.html"
       });
 
@@ -132,22 +157,22 @@ async function notificarCambioFranja(env, reservas = [], franjaAnterior = {}, fr
         const text = [
           saludo,
           "",
-          mensaje,
+          mensajeFinal,
           "",
           `Franja anterior: ${descripcionAnterior}`,
           `Franja actualizada: ${descripcionNueva}`,
           `Organiza: ${organizador}`,
           "",
-          "Puedes revisar el cambio desde tu panel de usuario y decidir si mantienes o anulas tu solicitud."
+          "Puedes revisar el cambio desde tu panel de usuario y decidir como proceder con tu solicitud."
         ].join("\n");
 
         const html = `
           <p>${escaparHtml(saludo)}</p>
-          <p>${escaparHtml(mensaje)}</p>
+          <p>${escaparHtml(mensajeFinal)}</p>
           <p><strong>Franja anterior:</strong> ${escaparHtml(descripcionAnterior)}</p>
           <p><strong>Franja actualizada:</strong> ${escaparHtml(descripcionNueva)}</p>
           <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
-          <p>Puedes revisar el cambio desde tu panel de usuario y decidir si mantienes o anulas tu solicitud.</p>
+          <p>Puedes revisar el cambio desde tu panel de usuario y decidir como proceder con tu solicitud.</p>
         `;
 
         const correo = await enviarEmail(env, {
@@ -696,15 +721,15 @@ export async function onRequestPut(context) {
     }
 
     const hayCambioReal = franjaHaCambiado(existente, siguienteFranja);
-    const reservasActivas = hayCambioReal ? await obtenerReservasActivasFranja(env, id) : [];
-    if (hayCambioReal && reservasActivas.length > 0 && !confirmarAfectacion) {
+    const reservasAfectadas = hayCambioReal ? await obtenerReservasAfectadasFranja(env, id) : [];
+    if (hayCambioReal && reservasAfectadas.length > 0 && !confirmarAfectacion) {
       return json({
         ok: false,
         requiere_confirmacion_afectacion: true,
-        total_afectadas: reservasActivas.length,
-        mensaje: reservasActivas.length === 1
-          ? "Existe 1 solicitud activa vinculada a esta franja. Si continúas, se notificará al solicitante para que revise la nueva franja horaria."
-          : `Existen ${reservasActivas.length} solicitudes activas vinculadas a esta franja. Si continúas, se notificará a los solicitantes para que revisen la nueva franja horaria.`
+        total_afectadas: reservasAfectadas.length,
+        mensaje: reservasAfectadas.length === 1
+          ? "Existe 1 solicitud vinculada a esta franja. Si continúas, se notificará al solicitante y, si estaba pendiente o confirmada, pasará a suspendida."
+          : `Existen ${reservasAfectadas.length} solicitudes vinculadas a esta franja. Si continúas, se notificará a los solicitantes y las que estuvieran pendientes o confirmadas pasarán a suspendida.`
       }, { status: 409 });
     }
 
@@ -738,10 +763,10 @@ export async function onRequestPut(context) {
     }
 
     let resumenAfectacion = null;
-    if (hayCambioReal && reservasActivas.length > 0) {
-      resumenAfectacion = await notificarCambioFranja(
+    if (hayCambioReal && reservasAfectadas.length > 0) {
+      resumenAfectacion = await aplicarCambiosYNotificarFranja(
         env,
-        reservasActivas,
+        reservasAfectadas,
         existente,
         siguienteFranja
       );
