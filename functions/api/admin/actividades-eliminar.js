@@ -276,7 +276,7 @@ async function crearAvisoOperativoBorradorEliminado(env, reserva, observacionesA
   return await crearAvisoUsuario(env, {
     usuarioId,
     tipo: "RESERVA",
-    titulo: "Actividad anulada",
+    titulo: "Borrador eliminado por anulación de actividad",
     mensaje,
     urlDestino: "/usuario-panel.html"
   });
