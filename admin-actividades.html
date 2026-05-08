@@ -2509,8 +2509,8 @@
           const panelGrid = document.createElement("div");
           panelGrid.className = "control-panel-grid";
 
+          const [bloqueEnlace, bloqueVisible, bloqueActiva] = controlesConfig;
           const [bloqueTipo, bloqueReserva, bloqueAforo] = controlesProgramacion;
-          const [bloqueEnlace, bloqueVisible] = controlesConfig;
 
           [
             crearFilaControlSelect(bloqueTipo),
@@ -2522,6 +2522,11 @@
           ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
 
           panel.appendChild(panelGrid);
+          const selectActivaOculto = bloqueActiva?.querySelector("#activa");
+          if (selectActivaOculto) {
+            selectActivaOculto.classList.add("oculto");
+            panel.appendChild(selectActivaOculto);
+          }
           bloqueFechas.classList.add("config-periodo");
           aside.append(panel, bloqueFechas);
           main.append(filaSuperior, filaMedia, campoDescripcion, filaEnlace);
@@ -4680,11 +4685,11 @@ function retrocederPaso() {
       document.getElementById("btnCerrarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
       document.getElementById("btnCancelarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
       document.getElementById("btnConfirmarModalAnulacionActividad").addEventListener("click", confirmarAnulacionActividadDesdeModal);
-      document.getElementById("toggleActividadActiva").addEventListener("change", () => {
+      document.getElementById("toggleActividadActiva")?.addEventListener("change", () => {
         manejarCambioActividadActiva(true);
         marcarCambiosPendientesActividad();
       });
-      document.getElementById("activa").addEventListener("change", () => {
+      document.getElementById("activa")?.addEventListener("change", () => {
         manejarCambioActividadActiva(false);
       });
       document.getElementById("btnSalirSinGuardar").addEventListener("click", async () => {
