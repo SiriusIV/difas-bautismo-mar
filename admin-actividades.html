@@ -383,12 +383,6 @@
       white-space: nowrap;
     }
 
-    .estado-actividad-valor {
-      font-size: 12px;
-      color: #5f6d7a;
-      white-space: nowrap;
-    }
-
     .contexto-acciones-grupo.pasos {
       margin-left: 6px;
       align-self: center;
@@ -1646,6 +1640,10 @@
       line-height: 1.45;
     }
 
+    .modal-aviso-desactivacion .modal-panel {
+      width: min(560px, calc(100vw - 40px));
+    }
+
     @media (max-width: 1100px) {
       .config-grid {
         grid-template-columns: 1fr;
@@ -1779,12 +1777,11 @@
               <div class="contexto-acciones">
                 <div class="contexto-acciones-grupo">
                   <div class="contexto-acciones-grupo estado-actividad">
-                    <span class="estado-actividad-label">Actividad activa</span>
+                    <span class="estado-actividad-label">Activación</span>
                     <label class="toggle-switch" for="toggleActividadActiva">
                       <input type="checkbox" id="toggleActividadActiva" aria-label="Actividad activa">
                       <span class="toggle-slider"></span>
                     </label>
-                    <span class="estado-actividad-valor" id="textoEstadoActividadCabecera">Activa</span>
                   </div>
 
                   <button type="submit" form="formActividad" class="btn-icono btn-icono-primario" id="btnGuardarActividad" title="Guardar actividad" aria-label="Guardar actividad">
@@ -2148,6 +2145,25 @@
             </div>
           </div>
         </div>
+
+        <div class="modal-confirmacion-salida modal-aviso-desactivacion" id="modalAvisoDesactivacionActividad" aria-hidden="true">
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalAvisoDesactivacionActividad">
+            <button type="button" class="modal-cerrar" id="btnCerrarModalAvisoDesactivacionActividad" aria-label="Cerrar aviso">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h4 id="tituloModalAvisoDesactivacionActividad">Desactivar actividad</h4>
+            <p>Si esta actividad tiene solicitudes vinculadas y continúas con la desactivación, esas solicitudes pasarán a estar rechazadas cuando guardes el cambio.</p>
+
+            <div class="modal-acciones">
+              <button type="button" class="btn btn-secundario" id="btnCancelarModalAvisoDesactivacionActividad">Cancelar</button>
+              <button type="button" class="btn btn-peligro" id="btnAceptarModalAvisoDesactivacionActividad">Aceptar</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="bloque-inferior">
@@ -2253,6 +2269,7 @@
     let temporizadorMensajeActividad = null;
     let formularioActividadModificado = false;
     let salidaPendienteAlPortal = false;
+    let desactivacionActividadPendiente = false;
 
     function normalizarTexto(v) {
       return String(v || "").trim();
@@ -2297,12 +2314,10 @@
     function sincronizarToggleActividadCabecera() {
       const selectActiva = document.getElementById("activa");
       const toggleActiva = document.getElementById("toggleActividadActiva");
-      const textoActiva = document.getElementById("textoEstadoActividadCabecera");
-      if (!selectActiva || !toggleActiva || !textoActiva) return;
+      if (!selectActiva || !toggleActiva) return;
 
       const activa = String(selectActiva.value) === "1";
       toggleActiva.checked = activa;
-      textoActiva.textContent = activa ? "Activa" : "Desactivada";
     }
 
     function fijarVisibilidadPortal(valor) {
@@ -2335,6 +2350,15 @@
       const toggleActiva = document.getElementById("toggleActividadActiva");
       if (!selectActiva || !toggleActiva) return;
 
+      const valorActual = String(selectActiva.value);
+      const quiereActivar = !!toggleActiva.checked;
+
+      if (origenCabecera && valorActual === "1" && !quiereActivar && !desactivacionActividadPendiente) {
+        toggleActiva.checked = true;
+        abrirModalAvisoDesactivacionActividad();
+        return;
+      }
+
       if (origenCabecera) {
         selectActiva.value = toggleActiva.checked ? "1" : "0";
       } else {
@@ -2349,6 +2373,45 @@
 
       actualizarControlVisibilidadSegunActividad();
       sincronizarToggleActividadCabecera();
+      if (origenCabecera && valorActual !== String(selectActiva.value)) {
+        marcarCambiosPendientesActividad();
+      }
+    }
+
+    function abrirModalAvisoDesactivacionActividad() {
+      const modal = document.getElementById("modalAvisoDesactivacionActividad");
+      if (!modal) return;
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalAvisoDesactivacionActividad() {
+      const modal = document.getElementById("modalAvisoDesactivacionActividad");
+      if (!modal) return;
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function confirmarAvisoDesactivacionActividad() {
+      const toggleActiva = document.getElementById("toggleActividadActiva");
+      if (!toggleActiva) {
+        cerrarModalAvisoDesactivacionActividad();
+        return;
+      }
+
+      desactivacionActividadPendiente = true;
+      toggleActiva.checked = false;
+      manejarCambioActividadActiva(true);
+      desactivacionActividadPendiente = false;
+      cerrarModalAvisoDesactivacionActividad();
+    }
+
+    function cancelarAvisoDesactivacionActividad() {
+      const toggleActiva = document.getElementById("toggleActividadActiva");
+      if (toggleActiva) {
+        toggleActiva.checked = true;
+      }
+      cerrarModalAvisoDesactivacionActividad();
     }
 
     function marcarCambiosPendientesActividad() {
@@ -4685,9 +4748,11 @@ function retrocederPaso() {
       document.getElementById("btnCerrarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
       document.getElementById("btnCancelarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
       document.getElementById("btnConfirmarModalAnulacionActividad").addEventListener("click", confirmarAnulacionActividadDesdeModal);
+      document.getElementById("btnCerrarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
+      document.getElementById("btnCancelarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
+      document.getElementById("btnAceptarModalAvisoDesactivacionActividad").addEventListener("click", confirmarAvisoDesactivacionActividad);
       document.getElementById("toggleActividadActiva")?.addEventListener("change", () => {
         manejarCambioActividadActiva(true);
-        marcarCambiosPendientesActividad();
       });
       document.getElementById("activa")?.addEventListener("change", () => {
         manejarCambioActividadActiva(false);
@@ -4714,6 +4779,12 @@ function retrocederPaso() {
       document.getElementById("modalAnulacionActividad").addEventListener("click", (event) => {
         if (event.target.id === "modalAnulacionActividad") {
           cerrarModalAnulacionActividad();
+        }
+      });
+
+      document.getElementById("modalAvisoDesactivacionActividad").addEventListener("click", (event) => {
+        if (event.target.id === "modalAvisoDesactivacionActividad") {
+          cancelarAvisoDesactivacionActividad();
         }
       });
 
