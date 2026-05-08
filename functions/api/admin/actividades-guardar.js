@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import {
   asegurarColumnaObservacionesAdmin,
@@ -153,7 +153,7 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
       const contacto = limpiarTexto(reserva.contacto || "");
       const organizador = limpiarTexto(reserva.organizador_nombre || "el organizador");
       const estadoActual = limpiarTexto(reserva.estado).toUpperCase();
-      const mensaje = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Revisa las condiciones antes de mantener la solicitud tal como está.`;
+      const mensaje = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Revisa las condiciones antes de mantener la solicitud tal como estÃ¡.`;
 
       let mensajeFinal = mensaje;
       if (estadoActual === "PENDIENTE" || estadoActual === "CONFIRMADA") {
@@ -191,7 +191,7 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
           actorRol: actor.actorRol,
           actorNombre: actor.actorNombre
         });
-        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa suspendida y debes revisar los requisitos actualizados.`;
+        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continÃºa suspendida y debes revisar los requisitos actualizados.`;
       } else if (estadoActual === "RECHAZADA") {
         await registrarEventoReserva(env, {
           reservaId: reserva.id,
@@ -203,7 +203,7 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
           actorRol: actor.actorRol,
           actorNombre: actor.actorNombre
         });
-        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa rechazada, pero te avisamos para que conozcas el cambio.`;
+        mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continÃºa rechazada, pero te avisamos para que conozcas el cambio.`;
       }
 
       const notificacion = await crearNotificacion(env, {
@@ -229,14 +229,14 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
           "",
           `Organiza: ${organizador}`,
           "",
-          "Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliéndolos."
+          "Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliÃ©ndolos."
         ].join("\n");
 
         const html = `
           <p>${escaparHtml(saludo)}</p>
           <p>${escaparHtml(mensajeFinal)}</p>
           <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
-          <p>Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliéndolos.</p>
+          <p>Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliÃ©ndolos.</p>
         `;
 
         const correo = await enviarEmail(env, {
@@ -345,10 +345,8 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COUNT(*) AS total
     FROM reservas r
-    INNER JOIN franjas f
-      ON f.id = r.franja_id
-    WHERE f.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+    WHERE r.actividad_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
   `).bind(actividad_id).first();
 
   return Number(row?.total || 0);
@@ -504,7 +502,7 @@ export async function onRequestPost(context) {
 
     return json({
       ok: true,
-      mensaje: p.borrador_tecnico ? "Borrador técnico creado correctamente." : "Actividad creada correctamente.",
+      mensaje: p.borrador_tecnico ? "Borrador tÃ©cnico creado correctamente." : "Actividad creada correctamente.",
       id: result.meta.last_row_id
     });
   } catch (error) {
@@ -528,7 +526,7 @@ export async function onRequestPut(context) {
     const id = parsearIdPositivo(body.id);
 
     if (!id) {
-      return json({ ok: false, error: "ID de actividad no válido." }, 400);
+      return json({ ok: false, error: "ID de actividad no vÃ¡lido." }, 400);
     }
 
     const actual = await obtenerActividad(env, id);
@@ -657,14 +655,14 @@ export async function onRequestPut(context) {
           requiere_confirmacion: true,
           requiere_observaciones: true,
           resumen: situacion,
-          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) activa(s) en estado pendiente, aceptada o suspendida. Si la desactivas, todas pasarán automáticamente a rechazada y se notificará individualmente a cada solicitante afectado.`
+          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si la desactivas, todas pasarÃ¡n automÃ¡ticamente a rechazada y se notificarÃ¡ individualmente a cada solicitante afectado.`
         }, 200);
       }
 
       if (solicitudesVivas > 0 && !observacionesAdmin) {
         return json({
           ok: false,
-          error: "Debes indicar el motivo de la desactivación para rechazar automáticamente las solicitudes afectadas."
+          error: "Debes indicar el motivo de la desactivaciÃ³n para rechazar automÃ¡ticamente las solicitudes afectadas."
         }, 400);
       }
     }
@@ -679,8 +677,8 @@ export async function onRequestPut(context) {
         requiere_confirmacion_requisitos: true,
         total_afectadas: reservasAfectadasRequisitos.length,
         mensaje: reservasAfectadasRequisitos.length === 1
-          ? "Existe 1 solicitud vinculada a esta actividad. Si continúas, se notificará al solicitante y, si estaba pendiente o confirmada, pasará a suspendida."
-          : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continúas, se notificará a los solicitantes y las que estuvieran pendientes o confirmadas pasarán a suspendida.`
+          ? "Existe 1 solicitud vinculada a esta actividad. Si continÃºas, se notificarÃ¡ al solicitante y, si estaba pendiente o confirmada, pasarÃ¡ a suspendida."
+          : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continÃºas, se notificarÃ¡ a los solicitantes y las que estuvieran pendientes o confirmadas pasarÃ¡n a suspendida.`
       }, 409);
     }
 
@@ -780,7 +778,7 @@ export async function onRequestPut(context) {
       ok: true,
       resumen_anulacion: resumenAnulacion,
       resumen_cambio_requisitos: resumenCambioRequisitos,
-      mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
+      mensaje: p.borrador_tecnico ? "Borrador tÃ©cnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
     return json(
@@ -803,7 +801,7 @@ export async function onRequestDelete(context) {
     const id = parsearIdPositivo(body.id);
 
     if (!id) {
-      return json({ ok: false, error: "ID de actividad no válido." }, 400);
+      return json({ ok: false, error: "ID de actividad no vÃ¡lido." }, 400);
     }
 
     const actual = await obtenerActividad(env, id);
@@ -818,7 +816,7 @@ export async function onRequestDelete(context) {
 
     if (Number(actual.borrador_tecnico || 0) !== 1) {
       return json(
-        { ok: false, error: "Solo se pueden eliminar desde aquí actividades en borrador técnico." },
+        { ok: false, error: "Solo se pueden eliminar desde aquÃ­ actividades en borrador tÃ©cnico." },
         400
       );
     }
@@ -841,17 +839,18 @@ export async function onRequestDelete(context) {
     `).bind(id).run();
 
     if ((result?.meta?.changes || 0) === 0) {
-      return json({ ok: false, error: "No se pudo eliminar el borrador técnico." }, 500);
+      return json({ ok: false, error: "No se pudo eliminar el borrador tÃ©cnico." }, 500);
     }
 
     return json({
       ok: true,
-      mensaje: "Borrador técnico eliminado correctamente."
+      mensaje: "Borrador tÃ©cnico eliminado correctamente."
     });
   } catch (error) {
     return json(
-      { ok: false, error: "Error al eliminar el borrador técnico.", detalle: error.message },
+      { ok: false, error: "Error al eliminar el borrador tÃ©cnico.", detalle: error.message },
       500
     );
   }
 }
+

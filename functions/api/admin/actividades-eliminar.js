@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
@@ -68,6 +68,7 @@ export async function obtenerSituacionReservasActividad(env, actividadId) {
 
   const rows = result?.results || [];
   const resumen = {
+    borradores: 0,
     pendientes: 0,
     confirmadas: 0,
     suspendidas: 0,
@@ -79,12 +80,13 @@ export async function obtenerSituacionReservasActividad(env, actividadId) {
 
   for (const row of rows) {
     const estado = limpiarTexto(row.estado).toUpperCase();
+    if (estado === "BORRADOR") resumen.borradores += 1;
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
     if (estado === "SUSPENDIDA") resumen.suspendidas += 1;
     if (estado === "CANCELADA") resumen.canceladas += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
-    if (["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
+    if (["BORRADOR", "PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
       resumen.totalAfectables += 1;
     }
   }
@@ -107,7 +109,7 @@ async function obtenerReservasAfectablesActividad(env, actividadId) {
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
     WHERE r.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
     ORDER BY r.id ASC
   `).bind(actividadId).all();
 
@@ -129,9 +131,15 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
   const organizador = limpiarTexto(contexto?.organizador_nombre || "el organizador");
   const contacto = limpiarTexto(contexto?.contacto || "");
   const motivo = limpiarTexto(observacionesAdmin);
+  const estado = limpiarTexto(contexto?.estado).toUpperCase();
+  const esBorrador = estado === "BORRADOR";
   const saludo = contacto ? `Hola ${contacto},` : "Hola,";
-  const asunto = "[Reservas] Actividad anulada y solicitud rechazada";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada porque la actividad ha sido anulada por ${organizador}.`;
+  const asunto = esBorrador
+    ? "[Reservas] Actividad anulada y borrador afectado"
+    : "[Reservas] Actividad anulada y solicitud rechazada";
+  const mensaje = esBorrador
+    ? `Tu borrador para ${actividad}${codigo ? ` (${codigo})` : ""} ya no puede enviarse mientras la actividad permanezca anulada por ${organizador}.`
+    : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada porque la actividad ha sido anulada por ${organizador}.`;
 
   const texto = [
     saludo,
@@ -139,9 +147,9 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     mensaje,
     "",
     `Actividad: ${actividad}`,
-    codigo ? `Código de solicitud: ${codigo}` : "",
+    codigo ? `CÃ³digo de solicitud: ${codigo}` : "",
     `Organiza: ${organizador}`,
-    motivo ? `Motivo de la anulación: ${motivo}` : "",
+    motivo ? `Motivo de la anulaciÃ³n: ${motivo}` : "",
     "",
     "Puedes consultar el estado actualizado desde tu panel de usuario."
   ].filter(Boolean).join("\n");
@@ -150,9 +158,9 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     <p>${escaparHtml(saludo)}</p>
     <p>${escaparHtml(mensaje)}</p>
     <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
-    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    ${codigo ? `<p><strong>CÃ³digo de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
     <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
-    ${motivo ? `<p><strong>Motivo de la anulación:</strong> ${escaparHtml(motivo)}</p>` : ""}
+    ${motivo ? `<p><strong>Motivo de la anulaciÃ³n:</strong> ${escaparHtml(motivo)}</p>` : ""}
     <p>Puedes consultar el estado actualizado desde tu panel de usuario.</p>
   `;
 
@@ -168,7 +176,11 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
   const actividad = limpiarTexto(reserva?.actividad_nombre || "la actividad");
   const codigo = limpiarTexto(reserva?.codigo_reserva || "");
   const motivo = limpiarTexto(observacionesAdmin);
-  const mensajeBase = `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido anulada por el organizador y tu solicitud ha pasado a rechazada.`;
+  const estado = limpiarTexto(reserva?.estado).toUpperCase();
+  const esBorrador = estado === "BORRADOR";
+  const mensajeBase = esBorrador
+    ? `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador. Tu borrador queda afectado y no podrÃ¡ enviarse mientras la actividad permanezca anulada.`
+    : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido anulada por el organizador y tu solicitud ha pasado a rechazada.`;
   const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
 
   return await crearNotificacion(env, {
@@ -212,27 +224,34 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
 
   for (const reserva of reservas) {
     try {
+      const estadoOrigen = limpiarTexto(reserva?.estado).toUpperCase();
+      const esBorrador = estadoOrigen === "BORRADOR";
       const update = await env.DB.prepare(`
         UPDATE reservas
-        SET estado = 'RECHAZADA',
+        SET estado = CASE
+              WHEN UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR' THEN 'BORRADOR'
+              ELSE 'RECHAZADA'
+            END,
             observaciones_admin = ?,
             fecha_modificacion = datetime('now')
         WHERE id = ?
-          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
       `).bind(observacionesAdmin, reserva.id).run();
 
       if ((update?.meta?.changes || 0) > 0) {
         resultado.actualizadas += 1;
-        await registrarEventoReserva(env, {
-          reservaId: reserva.id,
-          accion: "ANULACION_ACTIVIDAD",
-          estadoOrigen: reserva.estado,
-          estadoDestino: "RECHAZADA",
-          observaciones: observacionesAdmin,
-          actorUsuarioId: actor.actorUsuarioId,
-          actorRol: actor.actorRol,
-          actorNombre: actor.actorNombre
-        });
+        if (!esBorrador) {
+          await registrarEventoReserva(env, {
+            reservaId: reserva.id,
+            accion: "ANULACION_ACTIVIDAD",
+            estadoOrigen: reserva.estado,
+            estadoDestino: "RECHAZADA",
+            observaciones: observacionesAdmin,
+            actorUsuarioId: actor.actorUsuarioId,
+            actorRol: actor.actorRol,
+            actorNombre: actor.actorNombre
+          });
+        }
       }
 
       const [notificacion, correo] = await Promise.all([
@@ -244,7 +263,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       if (correo?.ok) resultado.correos_enviados += 1;
 
       if (!notificacion?.ok && !notificacion?.skipped) {
-        resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
+        resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
       }
       if (!correo?.ok && !correo?.skipped) {
         resultado.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
@@ -292,7 +311,7 @@ async function borrarActividadFisicamente(env, actividadId) {
       WHERE actividad_id = ?
     `).bind(actividadId).run();
   } catch (_) {
-    // La tabla puede no existir todavía en entornos sin requisitos particulares.
+    // La tabla puede no existir todavÃ­a en entornos sin requisitos particulares.
   }
 
   return await env.DB.prepare(`
@@ -317,7 +336,7 @@ export async function onRequestPost(context) {
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
 
     if (!id) {
-      return json({ ok: false, error: "ID de actividad no válido." }, 400);
+      return json({ ok: false, error: "ID de actividad no vÃ¡lido." }, 400);
     }
 
     const actividad = await obtenerActividad(env, id);
@@ -339,14 +358,14 @@ export async function onRequestPost(context) {
         requiere_confirmacion: true,
         requiere_observaciones: true,
         resumen: situacion,
-        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) activa(s) en estado pendiente, aceptada o suspendida. Si continúas, todas pasarán automáticamente a rechazada y se notificará individualmente a cada solicitante afectado.`
+        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continÃºas, todas pasarÃ¡n automÃ¡ticamente a rechazada y se notificarÃ¡ individualmente a cada solicitante afectado.`
       }, 200);
     }
 
     if (hayReservasAfectables && !observacionesAdmin) {
       return json({
         ok: false,
-        error: "Debes indicar el motivo de la anulación para rechazar automáticamente las solicitudes afectadas."
+        error: "Debes indicar el motivo de la anulaciÃ³n para rechazar automÃ¡ticamente las solicitudes afectadas."
       }, 400);
     }
 
@@ -389,3 +408,4 @@ export async function onRequestPost(context) {
     );
   }
 }
+

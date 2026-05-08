@@ -2698,6 +2698,7 @@
         : "Debes indicar el motivo de la anulación. Las solicitudes afectadas pasarán automáticamente a rechazadas y se notificará a cada solicitante.");
       const partesResumen = [];
       if (resumen && typeof resumen === "object") {
+        if (Number(resumen.borradores || 0) > 0) partesResumen.push(`${Number(resumen.borradores || 0)} borrador(es)`);
         if (Number(resumen.pendientes || 0) > 0) partesResumen.push(`${Number(resumen.pendientes || 0)} pendiente(s)`);
         if (Number(resumen.confirmadas || 0) > 0) partesResumen.push(`${Number(resumen.confirmadas || 0)} aceptada(s)`);
         if (Number(resumen.suspendidas || 0) > 0) partesResumen.push(`${Number(resumen.suspendidas || 0)} suspendida(s)`);

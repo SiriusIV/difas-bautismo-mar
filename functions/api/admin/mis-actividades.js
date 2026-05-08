@@ -176,7 +176,7 @@ export async function onRequestGet(context) {
           SELECT COUNT(*)
           FROM reservas r
           WHERE r.actividad_id = a.id
-            AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
         ) AS solicitudes_activas
 
       FROM actividades a

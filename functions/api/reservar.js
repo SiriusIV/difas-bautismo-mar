@@ -62,6 +62,7 @@ async function obtenerActividad(env, actividadId) {
       id,
       admin_id,
       COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre,
+      activa,
       requiere_reserva,
       usa_franjas,
       aforo_limitado
@@ -253,6 +254,12 @@ if (!actividad) {
 if (Number(actividad.requiere_reserva || 0) !== 1) {
   return json(
     { ok: false, error: "Esta actividad no admite reservas." },
+    { status: 400 }
+  );
+}
+if (Number(actividad.activa || 0) !== 1) {
+  return json(
+    { ok: false, error: "Esta actividad estÃ¡ desactivada y no admite nuevas solicitudes." },
     { status: 400 }
   );
 }
