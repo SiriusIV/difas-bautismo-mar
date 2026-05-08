@@ -19,6 +19,13 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
 function esErrorColumnaDuplicada(error) {
   const texto = limpiarTexto(error?.message || error || "").toLowerCase();
   return texto.includes("duplicate column name") || texto.includes("duplicate column");
@@ -58,7 +65,7 @@ async function obtenerActividad(env, id) {
 }
 
 export async function obtenerSituacionReservasActividad(env, actividadId) {
-  const result = await env.DB.prepare(`
+  const result = await dbPrimaria(env).prepare(`
     SELECT
       r.id,
       r.estado
@@ -95,7 +102,7 @@ export async function obtenerSituacionReservasActividad(env, actividadId) {
 }
 
 async function obtenerReservasAfectablesActividad(env, actividadId) {
-  const result = await env.DB.prepare(`
+  const result = await dbPrimaria(env).prepare(`
     SELECT
       r.id,
       r.usuario_id,
@@ -213,6 +220,9 @@ async function enviarCorreoActividadAnulada(env, reserva, observacionesAdmin) {
 }
 
 export async function rechazarReservasPorAnulacionActividad(env, actividadId, observacionesAdmin, actor = {}) {
+  const db = typeof env?.DB?.withSession === "function"
+    ? env.DB.withSession("first-primary")
+    : env.DB;
   const reservas = await obtenerReservasAfectablesActividad(env, actividadId);
   const resultado = {
     total: reservas.length,
@@ -232,29 +242,14 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       const estadoOrigen = limpiarTexto(reserva?.estado).toUpperCase();
       const esBorrador = estadoOrigen === "BORRADOR";
 
-      const [notificacion, correo] = await Promise.all([
-        crearNotificacionActividadAnulada(env, reserva, observacionesAdmin),
-        enviarCorreoActividadAnulada(env, reserva, observacionesAdmin)
-      ]);
-
-      if (notificacion?.ok) resultado.notificaciones_creadas += 1;
-      if (correo?.ok) resultado.correos_enviados += 1;
-
-      if (!notificacion?.ok && !notificacion?.skipped) {
-        resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
-      }
-      if (!correo?.ok && !correo?.skipped) {
-        resultado.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
-      }
-
       if (esBorrador) {
         await borrarHistorialReservas(env, [reserva.id]);
-        await env.DB.prepare(`
+        await db.prepare(`
           DELETE FROM visitantes
           WHERE reserva_id = ?
         `).bind(reserva.id).run();
 
-        const borrado = await env.DB.prepare(`
+        const borrado = await db.prepare(`
           DELETE FROM reservas
           WHERE id = ?
             AND UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR'
@@ -266,30 +261,53 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
         } else {
           resultado.incidencias.push(`Borrador ${reserva.id}: no se pudo eliminar tras la notificación.`);
         }
-        continue;
+      } else {
+        const update = await db.prepare(`
+          UPDATE reservas
+          SET estado = 'RECHAZADA',
+              observaciones_admin = ?,
+              fecha_modificacion = datetime('now')
+          WHERE id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+        `).bind(observacionesAdmin, reserva.id).run();
+
+        if ((update?.meta?.changes || 0) > 0) {
+          resultado.actualizadas += 1;
+          await registrarEventoReserva(env, {
+            reservaId: reserva.id,
+            accion: "ANULACION_ACTIVIDAD",
+            estadoOrigen: reserva.estado,
+            estadoDestino: "RECHAZADA",
+            observaciones: observacionesAdmin,
+            actorUsuarioId: actor.actorUsuarioId,
+            actorRol: actor.actorRol,
+            actorNombre: actor.actorNombre
+          });
+        } else {
+          resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo actualizar a rechazada.`);
+        }
       }
 
-      const update = await env.DB.prepare(`
-        UPDATE reservas
-        SET estado = 'RECHAZADA',
-            observaciones_admin = ?,
-            fecha_modificacion = datetime('now')
-        WHERE id = ?
-          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
-      `).bind(observacionesAdmin, reserva.id).run();
+      try {
+        const notificacion = await crearNotificacionActividadAnulada(env, reserva, observacionesAdmin);
+        if (notificacion?.ok) {
+          resultado.notificaciones_creadas += 1;
+        } else if (!notificacion?.skipped) {
+          resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
+        }
+      } catch (errorNotificacion) {
+        resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${errorNotificacion?.message || String(errorNotificacion || "")}`);
+      }
 
-      if ((update?.meta?.changes || 0) > 0) {
-        resultado.actualizadas += 1;
-        await registrarEventoReserva(env, {
-          reservaId: reserva.id,
-          accion: "ANULACION_ACTIVIDAD",
-          estadoOrigen: reserva.estado,
-          estadoDestino: "RECHAZADA",
-          observaciones: observacionesAdmin,
-          actorUsuarioId: actor.actorUsuarioId,
-          actorRol: actor.actorRol,
-          actorNombre: actor.actorNombre
-        });
+      try {
+        const correo = await enviarCorreoActividadAnulada(env, reserva, observacionesAdmin);
+        if (correo?.ok) {
+          resultado.correos_enviados += 1;
+        } else if (!correo?.skipped) {
+          resultado.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+        }
+      } catch (errorCorreo) {
+        resultado.incidencias.push(`Correo reserva ${reserva.id}: ${errorCorreo?.message || String(errorCorreo || "")}`);
       }
     } catch (error) {
       resultado.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);

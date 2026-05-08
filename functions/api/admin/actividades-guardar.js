@@ -41,6 +41,13 @@ function parsearFlag(valor, defecto = 0) {
   return defecto;
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
 function normalizarRequisitosEntrada(valor) {
   const lista = Array.isArray(valor) ? valor : [];
   return lista
@@ -342,7 +349,7 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
 }
 
 async function obtenerSolicitudesVivasActividad(env, actividad_id) {
-  const row = await env.DB.prepare(`
+  const row = await dbPrimaria(env).prepare(`
     SELECT COUNT(*) AS total
     FROM reservas r
     WHERE r.actividad_id = ?

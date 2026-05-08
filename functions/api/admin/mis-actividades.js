@@ -14,6 +14,13 @@ function json(data, status = 200) {
   });
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
 async function desactivarActividadesFinalizadasPorPeriodo(env) {
   await env.DB.prepare(`
     UPDATE actividades
@@ -193,7 +200,7 @@ export async function onRequestGet(context) {
 
     sql += ` ORDER BY a.orden_portal ASC, a.id ASC`;
 
-      const result = await env.DB.prepare(sql).bind(...binds).all();
+      const result = await dbPrimaria(env).prepare(sql).bind(...binds).all();
     const requisitosPorActividad = await obtenerRequisitosPorActividades(
       env,
       (result.results || []).map((a) => a.id)
