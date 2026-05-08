@@ -504,6 +504,59 @@
       line-height: 1.45;
       text-align: left;
     }
+    .historial-modal {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #dde4ea;
+    }
+    .historial-modal h4 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #123a63;
+    }
+    .historial-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .historial-item {
+      background: #fff;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .historial-cabecera {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 5px;
+    }
+    .historial-actor {
+      font-weight: 700;
+      color: #123a63;
+    }
+    .historial-fecha {
+      color: #6b7280;
+      font-size: 12px;
+    }
+    .historial-detalle {
+      color: #21374d;
+      line-height: 1.45;
+    }
+    .historial-observaciones {
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: #fff8e6;
+      border: 1px solid #f1d58b;
+      color: #5a4630;
+      line-height: 1.45;
+    }
+    .historial-vacio {
+      color: #6b7280;
+      font-size: 13px;
+    }
     .modal-acciones {
       display: flex;
       justify-content: flex-end;
@@ -989,6 +1042,33 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
     }
+    function formatearFechaHoraHistorial(fechaTexto) {
+      const texto = String(fechaTexto || "").trim();
+      if (!texto) return "";
+      const fecha = new Date(texto.replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return texto;
+      return fecha.toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" });
+    }
+    function etiquetaAccionHistorial(item = {}) {
+      const accion = String(item.accion || "").toUpperCase();
+      const origen = textoEstadoVisible(item.estado_origen);
+      const destino = textoEstadoVisible(item.estado_destino);
+      if (accion === "SOLICITUD_PRESENTADA") return `Solicitud presentada en estado ${destino || "PENDIENTE"}`;
+      if (accion === "CAMBIO_ESTADO_ADMIN") return `Cambio de estado de ${origen || "sin estado"} a ${destino || "sin estado"}`;
+      if (accion === "ANULACION_ACTIVIDAD") return "Rechazo automático por anulación de actividad";
+      if (accion === "CAMBIO_REQUISITOS") return "Revisión por cambio de requisitos";
+      if (accion === "CAMBIO_FRANJA") return "Revisión por cambio de franja";
+      if (accion === "CADUCIDAD_SUSPENSION") return "Rechazo automático por vencimiento";
+      if (origen || destino) return `${origen || "Sin estado"} -> ${destino || "Sin estado"}`;
+      return accion || "Movimiento registrado";
+    }
+    function renderHistorialReserva(historial = []) {
+      const items = Array.isArray(historial) ? historial : [];
+      if (!items.length) {
+        return `<div class="historial-modal"><h4>Historial de la solicitud</h4><div class="historial-vacio">Todavía no hay movimientos registrados para esta solicitud.</div></div>`;
+      }
+      return `<div class="historial-modal"><h4>Historial de la solicitud</h4><div class="historial-lista">${items.map((item) => `<div class="historial-item"><div class="historial-cabecera"><span class="historial-actor">${escapeHtml(item.actor_nombre || item.actor_rol || "Sistema")}</span><span class="historial-fecha">${escapeHtml(formatearFechaHoraHistorial(item.fecha_evento))}</span></div><div class="historial-detalle">${escapeHtml(etiquetaAccionHistorial(item))}</div>${item.observaciones ? `<div class="historial-observaciones">${escapeHtml(item.observaciones)}</div>` : ""}</div>`).join("")}</div></div>`;
+    }
 
     function descripcionEstadoReserva(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
@@ -1082,6 +1162,7 @@
               </div>`
             : ""
         }
+        ${renderHistorialReserva(reserva.historial_estados || [])}
       `;
 
       const accionesHtml = acciones.map((accion, indice) => `

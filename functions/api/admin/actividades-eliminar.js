@@ -1,6 +1,7 @@
 import { getAdminSession } from "./_auth.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
+import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -195,7 +196,7 @@ async function enviarCorreoActividadAnulada(env, reserva, observacionesAdmin) {
   });
 }
 
-export async function rechazarReservasPorAnulacionActividad(env, actividadId, observacionesAdmin) {
+export async function rechazarReservasPorAnulacionActividad(env, actividadId, observacionesAdmin, actor = {}) {
   const reservas = await obtenerReservasAfectablesActividad(env, actividadId);
   const resultado = {
     total: reservas.length,
@@ -222,6 +223,16 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
 
       if ((update?.meta?.changes || 0) > 0) {
         resultado.actualizadas += 1;
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "ANULACION_ACTIVIDAD",
+          estadoOrigen: reserva.estado,
+          estadoDestino: "RECHAZADA",
+          observaciones: observacionesAdmin,
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
       }
 
       const [notificacion, correo] = await Promise.all([
@@ -247,6 +258,15 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
 }
 
 async function borrarActividadFisicamente(env, actividadId) {
+  await asegurarTablaHistorialReservas(env);
+  const reservasActividad = await env.DB.prepare(`
+    SELECT id
+    FROM reservas
+    WHERE actividad_id = ?
+  `).bind(actividadId).all();
+  const reservaIds = (reservasActividad?.results || []).map((row) => Number(row.id || 0)).filter(Boolean);
+  await borrarHistorialReservas(env, reservaIds);
+
   await env.DB.prepare(`
     DELETE FROM visitantes
     WHERE reserva_id IN (
@@ -331,7 +351,10 @@ export async function onRequestPost(context) {
     }
 
     if (hayReservasAfectables) {
-      const rechazoMasivo = await rechazarReservasPorAnulacionActividad(env, id, observacionesAdmin);
+      const rechazoMasivo = await rechazarReservasPorAnulacionActividad(env, id, observacionesAdmin, {
+        actorUsuarioId: session.usuario_id,
+        actorRol: rol
+      });
       const result = await borrarActividadFisicamente(env, id);
 
       if ((result?.meta?.changes || 0) === 0) {

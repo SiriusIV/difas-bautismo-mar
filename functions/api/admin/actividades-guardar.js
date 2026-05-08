@@ -7,6 +7,7 @@ import {
 } from "./actividades-eliminar.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
+import { registrarEventoReserva } from "../_reservas_historial.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -136,7 +137,7 @@ async function obtenerReservasAfectadasActividad(env, actividadId) {
   return result?.results || [];
 }
 
-async function notificarCambioRequisitosActividad(env, reservas = [], actividadNombre = "") {
+async function notificarCambioRequisitosActividad(env, reservas = [], actividadNombre = "", actor = {}) {
   const resumen = {
     total: reservas.length,
     suspendidas: 0,
@@ -166,12 +167,42 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
 
         if ((update?.meta?.changes || 0) > 0) {
           resumen.suspendidas += 1;
+          await registrarEventoReserva(env, {
+            reservaId: reserva.id,
+            accion: "CAMBIO_REQUISITOS",
+            estadoOrigen: estadoActual,
+            estadoDestino: "SUSPENDIDA",
+            observaciones: "La actividad ha actualizado sus requisitos particulares.",
+            actorUsuarioId: actor.actorUsuarioId,
+            actorRol: actor.actorRol,
+            actorNombre: actor.actorNombre
+          });
         }
 
         mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud ha pasado a estado suspendida hasta que revises los requisitos actualizados.`;
       } else if (estadoActual === "SUSPENDIDA") {
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "CAMBIO_REQUISITOS",
+          estadoOrigen: "SUSPENDIDA",
+          estadoDestino: "SUSPENDIDA",
+          observaciones: "La actividad ha actualizado sus requisitos particulares.",
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
         mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa suspendida y debes revisar los requisitos actualizados.`;
       } else if (estadoActual === "RECHAZADA") {
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "CAMBIO_REQUISITOS",
+          estadoOrigen: "RECHAZADA",
+          estadoDestino: "RECHAZADA",
+          observaciones: "La actividad ha actualizado sus requisitos particulares.",
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
         mensajeFinal = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Tu solicitud continúa rechazada, pero te avisamos para que conozcas el cambio.`;
       }
 
@@ -724,7 +755,10 @@ export async function onRequestPut(context) {
     let resumenAnulacion = null;
     if (activaActual === 1 && activaNueva === 0 && solicitudesVivas > 0) {
       await asegurarColumnaObservacionesAdmin(env);
-      resumenAnulacion = await rechazarReservasPorAnulacionActividad(env, id, observacionesAdmin);
+      resumenAnulacion = await rechazarReservasPorAnulacionActividad(env, id, observacionesAdmin, {
+        actorUsuarioId: session.usuario_id,
+        actorRol: rol
+      });
     }
 
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
@@ -734,7 +768,11 @@ export async function onRequestPut(context) {
       resumenCambioRequisitos = await notificarCambioRequisitosActividad(
         env,
         reservasAfectadasRequisitos,
-        p.titulo_publico || p.nombre
+        p.titulo_publico || p.nombre,
+        {
+          actorUsuarioId: session.usuario_id,
+          actorRol: rol
+        }
       );
     }
 

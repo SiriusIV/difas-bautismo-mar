@@ -1,6 +1,7 @@
 import { getUserSession } from "./usuario/_auth.js";
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { crearNotificacion } from "./_notificaciones.js";
+import { registrarEventoReserva } from "./_reservas_historial.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -410,6 +411,17 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       WHERE token_edicion = ?
       LIMIT 1
     `).bind(tokenEdicion).first();
+
+    await registrarEventoReserva(env, {
+      reservaId: reservaCreada?.id,
+      accion: "SOLICITUD_PRESENTADA",
+      estadoOrigen: null,
+      estadoDestino: "PENDIENTE",
+      observaciones,
+      actorUsuarioId: usuarioId,
+      actorRol: "SOLICITANTE",
+      actorNombre: contacto || centro || "Solicitante"
+    });
 
     let notificacionAdmin = { ok: false, skipped: true, error: "" };
     try {

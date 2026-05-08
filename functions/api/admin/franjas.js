@@ -3,6 +3,7 @@ import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { checkAdminActividad } from "./_permisos.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
+import { registrarEventoReserva } from "../_reservas_historial.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -96,7 +97,7 @@ async function obtenerReservasAfectadasFranja(env, franjaId) {
   return result?.results || [];
 }
 
-async function aplicarCambiosYNotificarFranja(env, reservas = [], franjaAnterior = {}, franjaNueva = {}) {
+async function aplicarCambiosYNotificarFranja(env, reservas = [], franjaAnterior = {}, franjaNueva = {}, actor = {}) {
   const resumen = {
     total: reservas.length,
     suspendidas: 0,
@@ -129,12 +130,42 @@ async function aplicarCambiosYNotificarFranja(env, reservas = [], franjaAnterior
 
         if ((update?.meta?.changes || 0) > 0) {
           resumen.suspendidas += 1;
+          await registrarEventoReserva(env, {
+            reservaId: reserva.id,
+            accion: "CAMBIO_FRANJA",
+            estadoOrigen: estadoActual,
+            estadoDestino: "SUSPENDIDA",
+            observaciones: `Programación modificada: ${descripcionAnterior} -> ${descripcionNueva}`,
+            actorUsuarioId: actor.actorUsuarioId,
+            actorRol: actor.actorRol,
+            actorNombre: actor.actorNombre
+          });
         }
 
         mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud ha pasado a estado suspendida hasta que revises la nueva programación.`;
       } else if (estadoActual === "SUSPENDIDA") {
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "CAMBIO_FRANJA",
+          estadoOrigen: "SUSPENDIDA",
+          estadoDestino: "SUSPENDIDA",
+          observaciones: `Programación modificada: ${descripcionAnterior} -> ${descripcionNueva}`,
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
         mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud continúa suspendida y debes revisar la nueva programación.`;
       } else if (estadoActual === "RECHAZADA") {
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "CAMBIO_FRANJA",
+          estadoOrigen: "RECHAZADA",
+          estadoDestino: "RECHAZADA",
+          observaciones: `Programación modificada: ${descripcionAnterior} -> ${descripcionNueva}`,
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
         mensajeFinal = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Tu solicitud continúa rechazada, pero te avisamos para que conozcas el cambio.`;
       }
 
@@ -768,7 +799,11 @@ export async function onRequestPut(context) {
         env,
         reservasAfectadas,
         existente,
-        siguienteFranja
+        siguienteFranja,
+        {
+          actorUsuarioId: session.usuario_id,
+          actorRol: "ADMIN"
+        }
       );
     }
 

@@ -3,6 +3,7 @@ import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
+import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -423,6 +424,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarTablaHistorialReservas(env);
     await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
@@ -462,6 +464,7 @@ export async function onRequestGet(context) {
       obtenerFranjas(env, filtros),
       obtenerSolicitantes(env, filtros)
     ]);
+    const historialMap = await obtenerHistorialReservas(env, rows.map((row) => row.id));
 
     const reservas = rows.map(row => ({
       id: row.id,
@@ -488,7 +491,8 @@ export async function onRequestGet(context) {
       plazas_reservadas: calcularPlazasReservadasPendientes(row),
       plazas_asignadas: calcularPlazasAsignadas(row),
       alumnos: Number(row.alumnos || 0),
-      profesores: Number(row.profesores || 0)
+      profesores: Number(row.profesores || 0),
+      historial_estados: historialMap.get(Number(row.id)) || []
     }));
 
     const resumen = resumirReservas(rows);
@@ -530,6 +534,7 @@ export async function onRequestPatch(context) {
 
   try {
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarTablaHistorialReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json(
@@ -603,6 +608,16 @@ export async function onRequestPatch(context) {
         { status: 404 }
       );
     }
+
+    await registrarEventoReserva(env, {
+      reservaId: id,
+      accion: "CAMBIO_ESTADO_ADMIN",
+      estadoOrigen: estadoActual,
+      estadoDestino: nuevoEstado,
+      observaciones: observacionesAdmin || contextoReserva?.observaciones_admin || "",
+      actorUsuarioId: session.usuario_id,
+      actorRol: await getRolUsuario(env, session.usuario_id)
+    });
 
     let notificacionSolicitante = { ok: false, skipped: true, error: "" };
     let correoSolicitante = { ok: false, skipped: true, error: "" };

@@ -1,5 +1,6 @@
 import { getUserSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { asegurarTablaHistorialReservas, obtenerHistorialReservas } from "../_reservas_historial.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -72,6 +73,7 @@ export async function onRequestGet(context) {
   try {
     await ejecutarMantenimientoReservas(env);
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarTablaHistorialReservas(env);
     const user = await getUserSession(request, env.SECRET_KEY);
 
     if (!user || !user.id) {
@@ -115,6 +117,7 @@ export async function onRequestGet(context) {
     `).bind(user.id).all();
 
     const rows = (result.results || []).filter(tieneProgramacionValida);
+    const historialMap = await obtenerHistorialReservas(env, rows.map((row) => row.id));
 
     const data = rows.map(row => ({
       id: row.id,
@@ -134,7 +137,8 @@ export async function onRequestGet(context) {
       prereserva_expira_en: row.prereserva_expira_en || "",
       prereserva_vigente: esPrereservaVigente(row),
       plazas_pendientes: calcularPlazasReservadasPendientes(row),
-      plazas_asignadas: calcularPlazasAsignadas(row)
+      plazas_asignadas: calcularPlazasAsignadas(row),
+      historial_estados: historialMap.get(Number(row.id)) || []
     }));
 
     return json({ ok: true, data });

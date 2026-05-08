@@ -1,5 +1,6 @@
 import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
+import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -201,14 +202,26 @@ async function rechazarReservasSuspendidasVencidas(env) {
   const ids = (rows?.results || []).map((row) => Number(row.id || 0)).filter(Boolean);
   if (!ids.length) return 0;
 
-  const sentencias = ids.map((id) => db.prepare(`
-    UPDATE reservas
-    SET estado = 'RECHAZADA',
-        fecha_modificacion = datetime('now')
-    WHERE id = ?
-  `).bind(id));
+  for (const id of ids) {
+    const update = await db.prepare(`
+      UPDATE reservas
+      SET estado = 'RECHAZADA',
+          fecha_modificacion = datetime('now')
+      WHERE id = ?
+    `).bind(id).run();
 
-  await db.batch(sentencias);
+    if (Number(update?.meta?.changes || 0) > 0) {
+      await registrarEventoReserva(env, {
+        reservaId: id,
+        accion: "CADUCIDAD_SUSPENSION",
+        estadoOrigen: "SUSPENDIDA",
+        estadoDestino: "RECHAZADA",
+        observaciones: "La solicitud suspendida ha vencido sin regularización antes de la actividad.",
+        actorRol: "SISTEMA",
+        actorNombre: "Sistema"
+      });
+    }
+  }
   return ids.length;
 }
 
@@ -406,6 +419,8 @@ async function normalizarPrereservasExpiradas(env) {
       WHERE reserva_id = ?
     `).bind(Number(reserva.id || 0)).run();
 
+    await borrarHistorialReservas(env, [Number(reserva.id || 0)]);
+
     const deleteResult = await db.prepare(`
       DELETE FROM reservas
       WHERE id = ?
@@ -504,6 +519,8 @@ async function borrarReservasFinalizadas(env, reservas) {
   const ids = (reservas || []).map((row) => Number(row.id || 0)).filter(Boolean);
   if (!ids.length) return 0;
 
+  await borrarHistorialReservas(env, ids);
+
   const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes
     WHERE reserva_id = ?
@@ -567,6 +584,8 @@ async function borrarReservasResidualesLegacy(env, reservas) {
   const ids = (reservas || []).map((row) => Number(row.id || 0)).filter(Boolean);
   if (!ids.length) return 0;
 
+  await borrarHistorialReservas(env, ids);
+
   const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes
     WHERE reserva_id = ?
@@ -584,6 +603,7 @@ async function borrarReservasResidualesLegacy(env, reservas) {
 
 export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorico(env);
+  await asegurarTablaHistorialReservas(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
   const prereservasExpiradas = await normalizarPrereservasExpiradas(env);
   const residualesLegacy = await obtenerReservasResidualesLegacy(env);
