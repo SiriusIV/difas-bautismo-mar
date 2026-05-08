@@ -135,10 +135,10 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
   const esBorrador = estado === "BORRADOR";
   const saludo = contacto ? `Hola ${contacto},` : "Hola,";
   const asunto = esBorrador
-    ? "[Reservas] Actividad anulada y borrador afectado"
+    ? "[Reservas] Actividad anulada y borrador eliminado"
     : "[Reservas] Actividad anulada y solicitud rechazada";
   const mensaje = esBorrador
-    ? `Tu borrador para ${actividad}${codigo ? ` (${codigo})` : ""} ya no puede enviarse mientras la actividad permanezca anulada por ${organizador}.`
+    ? `Tu borrador para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminado porque la actividad ha sido anulada por ${organizador}.`
     : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada porque la actividad ha sido anulada por ${organizador}.`;
 
   const texto = [
@@ -151,7 +151,9 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     `Organiza: ${organizador}`,
     motivo ? `Motivo de la anulaciÃ³n: ${motivo}` : "",
     "",
-    "Puedes consultar el estado actualizado desde tu panel de usuario."
+    esBorrador
+      ? "Ya no es necesario realizar ninguna otra acción sobre este borrador."
+      : "Puedes consultar el estado actualizado desde tu panel de usuario."
   ].filter(Boolean).join("\n");
 
   const html = `
@@ -161,7 +163,9 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     ${codigo ? `<p><strong>CÃ³digo de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
     <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
     ${motivo ? `<p><strong>Motivo de la anulaciÃ³n:</strong> ${escaparHtml(motivo)}</p>` : ""}
-    <p>Puedes consultar el estado actualizado desde tu panel de usuario.</p>
+    <p>${escaparHtml(esBorrador
+      ? "Ya no es necesario realizar ninguna otra acción sobre este borrador."
+      : "Puedes consultar el estado actualizado desde tu panel de usuario.")}</p>
   `;
 
   return { asunto, texto, html };
@@ -179,7 +183,7 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
   const estado = limpiarTexto(reserva?.estado).toUpperCase();
   const esBorrador = estado === "BORRADOR";
   const mensajeBase = esBorrador
-    ? `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador. Tu borrador queda afectado y no podrÃ¡ enviarse mientras la actividad permanezca anulada.`
+    ? `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador y tu borrador ha sido eliminado.`
     : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido anulada por el organizador y tu solicitud ha pasado a rechazada.`;
   const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
 
@@ -213,6 +217,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
   const resultado = {
     total: reservas.length,
     actualizadas: 0,
+    borradores_eliminados: 0,
     notificaciones_creadas: 0,
     correos_enviados: 0,
     incidencias: []
@@ -226,33 +231,6 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
     try {
       const estadoOrigen = limpiarTexto(reserva?.estado).toUpperCase();
       const esBorrador = estadoOrigen === "BORRADOR";
-      const update = await env.DB.prepare(`
-        UPDATE reservas
-        SET estado = CASE
-              WHEN UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR' THEN 'BORRADOR'
-              ELSE 'RECHAZADA'
-            END,
-            observaciones_admin = ?,
-            fecha_modificacion = datetime('now')
-        WHERE id = ?
-          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
-      `).bind(observacionesAdmin, reserva.id).run();
-
-      if ((update?.meta?.changes || 0) > 0) {
-        resultado.actualizadas += 1;
-        if (!esBorrador) {
-          await registrarEventoReserva(env, {
-            reservaId: reserva.id,
-            accion: "ANULACION_ACTIVIDAD",
-            estadoOrigen: reserva.estado,
-            estadoDestino: "RECHAZADA",
-            observaciones: observacionesAdmin,
-            actorUsuarioId: actor.actorUsuarioId,
-            actorRol: actor.actorRol,
-            actorNombre: actor.actorNombre
-          });
-        }
-      }
 
       const [notificacion, correo] = await Promise.all([
         crearNotificacionActividadAnulada(env, reserva, observacionesAdmin),
@@ -267,6 +245,51 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       }
       if (!correo?.ok && !correo?.skipped) {
         resultado.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+      }
+
+      if (esBorrador) {
+        await borrarHistorialReservas(env, [reserva.id]);
+        await env.DB.prepare(`
+          DELETE FROM visitantes
+          WHERE reserva_id = ?
+        `).bind(reserva.id).run();
+
+        const borrado = await env.DB.prepare(`
+          DELETE FROM reservas
+          WHERE id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR'
+        `).bind(reserva.id).run();
+
+        if ((borrado?.meta?.changes || 0) > 0) {
+          resultado.borradores_eliminados += 1;
+          resultado.actualizadas += 1;
+        } else {
+          resultado.incidencias.push(`Borrador ${reserva.id}: no se pudo eliminar tras la notificación.`);
+        }
+        continue;
+      }
+
+      const update = await env.DB.prepare(`
+        UPDATE reservas
+        SET estado = 'RECHAZADA',
+            observaciones_admin = ?,
+            fecha_modificacion = datetime('now')
+        WHERE id = ?
+          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      `).bind(observacionesAdmin, reserva.id).run();
+
+      if ((update?.meta?.changes || 0) > 0) {
+        resultado.actualizadas += 1;
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "ANULACION_ACTIVIDAD",
+          estadoOrigen: reserva.estado,
+          estadoDestino: "RECHAZADA",
+          observaciones: observacionesAdmin,
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
       }
     } catch (error) {
       resultado.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);
@@ -358,7 +381,7 @@ export async function onRequestPost(context) {
         requiere_confirmacion: true,
         requiere_observaciones: true,
         resumen: situacion,
-        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continÃºas, todas pasarÃ¡n automÃ¡ticamente a rechazada y se notificarÃ¡ individualmente a cada solicitante afectado.`
+        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continÃºas, los borradores se eliminarÃ¡n y el resto de solicitudes pasarÃ¡n automÃ¡ticamente a rechazada. Se notificarÃ¡ individualmente a cada solicitante afectado.`
       }, 200);
     }
 

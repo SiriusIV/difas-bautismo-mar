@@ -655,7 +655,7 @@ export async function onRequestPut(context) {
           requiere_confirmacion: true,
           requiere_observaciones: true,
           resumen: situacion,
-          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si la desactivas, todas pasarÃ¡n automÃ¡ticamente a rechazada y se notificarÃ¡ individualmente a cada solicitante afectado.`
+          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si la desactivas, los borradores se eliminarÃ¡n y el resto de solicitudes pasarÃ¡n automÃ¡ticamente a rechazada. Se notificarÃ¡ individualmente a cada solicitante afectado.`
         }, 200);
       }
 
