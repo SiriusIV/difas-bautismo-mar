@@ -194,14 +194,70 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
     : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido anulada por el organizador y tu solicitud ha pasado a rechazada.`;
   const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
 
-  return await crearNotificacion(env, {
+  const payload = {
     usuarioId,
     rolDestino: "SOLICITANTE",
     tipo: "RESERVA",
     titulo: "Actividad anulada",
     mensaje,
     urlDestino: "/usuario-panel.html"
-  });
+  };
+
+  const resultado = await crearNotificacion(env, payload);
+  if (resultado?.ok || resultado?.skipped) {
+    return resultado;
+  }
+
+  try {
+    const db = dbPrimaria(env);
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS notificaciones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        rol_destino TEXT,
+        tipo TEXT,
+        titulo TEXT NOT NULL,
+        mensaje TEXT,
+        url_destino TEXT,
+        leida INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        leida_at TEXT
+      )
+    `).run();
+
+    const insert = await db.prepare(`
+      INSERT INTO notificaciones (
+        usuario_id,
+        rol_destino,
+        tipo,
+        titulo,
+        mensaje,
+        url_destino,
+        leida,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+    `).bind(
+      usuarioId,
+      "SOLICITANTE",
+      "RESERVA",
+      "Actividad anulada",
+      mensaje,
+      "/usuario-panel.html"
+    ).run();
+
+    if (Number(insert?.meta?.changes || 0) > 0) {
+      return { ok: true, fallback: true };
+    }
+  } catch (fallbackError) {
+    return {
+      ok: false,
+      skipped: false,
+      error: `${resultado?.error || "No se pudo crear la notificación."} Fallback: ${fallbackError?.message || String(fallbackError || "")}`
+    };
+  }
+
+  return resultado;
 }
 
 async function enviarCorreoActividadAnulada(env, reserva, observacionesAdmin) {
