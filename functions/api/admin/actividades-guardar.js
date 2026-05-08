@@ -5,6 +5,8 @@ import {
   obtenerSituacionReservasActividad,
   rechazarReservasPorAnulacionActividad
 } from "./actividades-eliminar.js";
+import { crearNotificacion } from "../_notificaciones.js";
+import { enviarEmail } from "../_email.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -77,6 +79,130 @@ async function guardarRequisitosActividad(env, actividadId, requisitos) {
       VALUES (?, ?, ?)
     `).bind(actividadId, requisitos[i], i + 1).run();
   }
+}
+
+function requisitosSonIguales(listaA = [], listaB = []) {
+  if (listaA.length !== listaB.length) return false;
+  for (let i = 0; i < listaA.length; i += 1) {
+    if (String(listaA[i] || "").trim() !== String(listaB[i] || "").trim()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function obtenerRequisitosActividad(env, actividadId) {
+  await asegurarTablaRequisitos(env);
+  const result = await env.DB.prepare(`
+    SELECT texto
+    FROM actividad_requisitos
+    WHERE actividad_id = ?
+    ORDER BY orden ASC, id ASC
+  `).bind(actividadId).all();
+
+  return (result?.results || [])
+    .map((row) => limpiarTexto(row.texto))
+    .filter(Boolean);
+}
+
+async function obtenerReservasActivasActividad(env, actividadId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.contacto,
+      r.email,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    WHERE r.actividad_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+    ORDER BY r.id ASC
+  `).bind(actividadId).all();
+
+  return result?.results || [];
+}
+
+async function notificarCambioRequisitosActividad(env, reservas = [], actividadNombre = "") {
+  const resumen = {
+    total: reservas.length,
+    notificaciones_creadas: 0,
+    correos_enviados: 0,
+    incidencias: []
+  };
+
+  for (const reserva of reservas) {
+    try {
+      const actividad = limpiarTexto(actividadNombre || reserva.actividad_nombre || "la actividad");
+      const codigo = limpiarTexto(reserva.codigo_reserva || "");
+      const contacto = limpiarTexto(reserva.contacto || "");
+      const organizador = limpiarTexto(reserva.organizador_nombre || "el organizador");
+      const mensaje = `Se han actualizado los requisitos de ${actividad}${codigo ? ` asociados a tu solicitud (${codigo})` : ""}. Revisa las condiciones antes de mantener la solicitud tal como está.`;
+
+      const notificacion = await crearNotificacion(env, {
+        usuarioId: Number(reserva.usuario_id || 0),
+        rolDestino: "SOLICITANTE",
+        tipo: "RESERVA",
+        titulo: "Cambio en los requisitos de la actividad",
+        mensaje,
+        urlDestino: "/usuario-panel.html"
+      });
+
+      if (notificacion?.ok) {
+        resumen.notificaciones_creadas += 1;
+      }
+
+      const destinatario = limpiarTexto(reserva.email || "");
+      if (destinatario) {
+        const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+        const text = [
+          saludo,
+          "",
+          mensaje,
+          "",
+          `Organiza: ${organizador}`,
+          "",
+          "Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliéndolos."
+        ].join("\n");
+
+        const html = `
+          <p>${escaparHtml(saludo)}</p>
+          <p>${escaparHtml(mensaje)}</p>
+          <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
+          <p>Te recomendamos revisar de nuevo los requisitos particulares de la actividad para comprobar que sigues cumpliéndolos.</p>
+        `;
+
+        const correo = await enviarEmail(env, {
+          to: destinatario,
+          subject: "[Reservas] Cambio en los requisitos de la actividad",
+          text,
+          html
+        });
+
+        if (correo?.ok) {
+          resumen.correos_enviados += 1;
+        } else if (!correo?.skipped) {
+          resumen.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+        }
+      }
+    } catch (error) {
+      resumen.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);
+    }
+  }
+
+  return resumen;
 }
 
 function validarActividad(data) {
@@ -376,8 +502,12 @@ export async function onRequestPut(context) {
     const p = construirPayload(body, admin_id);
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
+    const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
     const activaActual = Number(actual.activa ?? actual.visible_portal ?? 1) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
+    const requisitosActuales = await obtenerRequisitosActividad(env, id);
+    const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
+    const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
 
     // ===============================
     // VALIDACIONES DE NEGOCIO
@@ -487,6 +617,17 @@ export async function onRequestPut(context) {
       p.visible_portal = 1;
     }
 
+    if (requisitosHanCambiado && solicitudesVivas > 0 && !confirmadoCambioRequisitos) {
+      return json({
+        ok: false,
+        requiere_confirmacion_requisitos: true,
+        total_afectadas: solicitudesVivas,
+        mensaje: solicitudesVivas === 1
+          ? "Existe 1 solicitud activa vinculada a esta actividad. Si continúas, se notificará al solicitante para que revise los requisitos actualizados."
+          : `Existen ${solicitudesVivas} solicitudes activas vinculadas a esta actividad. Si continúas, se notificará a los solicitantes para que revisen los requisitos actualizados.`
+      }, 409);
+    }
+
     const result = await env.DB.prepare(`
       UPDATE actividades
       SET
@@ -563,9 +704,20 @@ export async function onRequestPut(context) {
 
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
 
+    let resumenCambioRequisitos = null;
+    if (requisitosHanCambiado && solicitudesVivas > 0) {
+      const reservasActivas = await obtenerReservasActivasActividad(env, id);
+      resumenCambioRequisitos = await notificarCambioRequisitosActividad(
+        env,
+        reservasActivas,
+        p.titulo_publico || p.nombre
+      );
+    }
+
     return json({
       ok: true,
       resumen_anulacion: resumenAnulacion,
+      resumen_cambio_requisitos: resumenCambioRequisitos,
       mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {

@@ -4083,6 +4083,37 @@ function editarFranja(id) {
 
       const data = await res.json();
 
+      if (data?.requiere_confirmacion_afectacion) {
+        mostrarMensaje(
+          "aviso",
+          data?.mensaje || "Este cambio requiere confirmación.",
+          {
+            confirmable: true,
+            onAccept: async () => {
+              const payloadConfirmado = { ...payload, confirmar_afectacion: true };
+              const resFinal = await fetch("/api/admin/franjas", {
+                method: esEdicion ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify(payloadConfirmado)
+              });
+
+              const dataFinal = await resFinal.json().catch(() => null);
+              if (!resFinal.ok || !dataFinal?.ok) {
+                mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la franja.");
+                return;
+              }
+
+              await cargarFranjas();
+              limpiarFormularioFranja();
+              renderPreviewFranjas();
+              mostrarMensaje("ok", dataFinal.mensaje || "Franja guardada correctamente.");
+            }
+          }
+        );
+        return;
+      }
+
       if (!res.ok || !data.ok) {
         mostrarMensaje("error", data.error || "No se pudo guardar la franja.");
         return;
@@ -4291,6 +4322,50 @@ async function borrarFranja(id) {
           textoBase: data?.mensaje || "La desactivación requiere confirmación.",
           resumen: data?.resumen || null
         });
+        return false;
+      }
+
+      if (data?.requiere_confirmacion_requisitos) {
+        mostrarMensaje(
+          "aviso",
+          data?.mensaje || "Este cambio requiere confirmación.",
+          {
+            confirmable: true,
+            onAccept: async () => {
+              const payloadConfirmado = { ...payload, confirmado_cambio_requisitos: true };
+              const resFinal = await fetch("/api/admin/actividades-guardar", {
+                method: esEdicion ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify(payloadConfirmado)
+              });
+
+              const dataFinal = await resFinal.json().catch(() => null);
+              if (!resFinal.ok || !dataFinal?.ok) {
+                mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la actividad.");
+                return;
+              }
+
+              if (!esEdicion && dataFinal.id) {
+                document.getElementById("actividadId").value = dataFinal.id;
+                history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(dataFinal.id)}`);
+                document.getElementById("tituloFormulario").textContent = "Editar actividad";
+                actualizarBotonEliminar();
+              }
+
+              await cargarActividades();
+              const avisoBorrado = await procesarImagenesPendientesPostGuardado();
+              actividadEsBorradorTecnico = false;
+              limpiarCambiosPendientesActividad();
+              mostrarMensaje(
+                "ok",
+                avisoBorrado
+                  ? `${dataFinal.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
+                  : (dataFinal.mensaje || "Actividad guardada correctamente.")
+              );
+            }
+          }
+        );
         return false;
       }
 

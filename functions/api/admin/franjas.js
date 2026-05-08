@@ -1,6 +1,8 @@
 import { requireAdminSession, getAdminSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { checkAdminActividad } from "./_permisos.js";
+import { crearNotificacion } from "../_notificaciones.js";
+import { enviarEmail } from "../_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -43,6 +45,130 @@ function haFinalizadoFranja(row, ahora = new Date()) {
   const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
   if (Number.isNaN(fechaHoraFin.getTime())) return false;
   return fechaHoraFin.getTime() < ahora.getTime();
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function descripcionFranja(row = {}) {
+  if (Number(row.es_recurrente || 0) === 1) {
+    return `${normalizarTexto(row.patron_recurrencia)} · ${normalizarTexto(row.hora_inicio)}-${normalizarTexto(row.hora_fin)}`.trim();
+  }
+  return `${normalizarTexto(row.fecha)} · ${normalizarTexto(row.hora_inicio)}-${normalizarTexto(row.hora_fin)}`.trim();
+}
+
+function franjaHaCambiado(existente = {}, siguiente = {}) {
+  return (
+    normalizarTexto(existente.fecha) !== normalizarTexto(siguiente.fecha) ||
+    normalizarTexto(existente.hora_inicio) !== normalizarTexto(siguiente.hora_inicio) ||
+    normalizarTexto(existente.hora_fin) !== normalizarTexto(siguiente.hora_fin) ||
+    String(Number(existente.capacidad ?? "")) !== String(Number(siguiente.capacidad ?? "")) ||
+    Number(existente.es_recurrente || 0) !== Number(siguiente.es_recurrente || 0) ||
+    normalizarTexto(existente.patron_recurrencia) !== normalizarTexto(siguiente.patron_recurrencia)
+  );
+}
+
+async function obtenerReservasActivasFranja(env, franjaId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.contacto,
+      r.email,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    WHERE r.franja_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+    ORDER BY r.id ASC
+  `).bind(franjaId).all();
+
+  return result?.results || [];
+}
+
+async function notificarCambioFranja(env, reservas = [], franjaAnterior = {}, franjaNueva = {}) {
+  const resumen = {
+    total: reservas.length,
+    notificaciones_creadas: 0,
+    correos_enviados: 0,
+    incidencias: []
+  };
+
+  for (const reserva of reservas) {
+    try {
+      const descripcionAnterior = descripcionFranja(franjaAnterior);
+      const descripcionNueva = descripcionFranja(franjaNueva);
+      const actividad = normalizarTexto(reserva.actividad_nombre || "la actividad");
+      const codigo = normalizarTexto(reserva.codigo_reserva || "");
+      const contacto = normalizarTexto(reserva.contacto || "");
+      const organizador = normalizarTexto(reserva.organizador_nombre || "el organizador");
+      const mensaje = `La franja horaria de tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada. Revisa la nueva programación y confirma que sigue encajando con tu solicitud.`;
+
+      const notificacion = await crearNotificacion(env, {
+        usuarioId: Number(reserva.usuario_id || 0),
+        rolDestino: "SOLICITANTE",
+        tipo: "RESERVA",
+        titulo: "Cambio en la franja horaria",
+        mensaje,
+        urlDestino: "/usuario-panel.html"
+      });
+
+      if (notificacion?.ok) {
+        resumen.notificaciones_creadas += 1;
+      }
+
+      const destinatario = normalizarTexto(reserva.email || "");
+      if (destinatario) {
+        const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+        const text = [
+          saludo,
+          "",
+          mensaje,
+          "",
+          `Franja anterior: ${descripcionAnterior}`,
+          `Franja actualizada: ${descripcionNueva}`,
+          `Organiza: ${organizador}`,
+          "",
+          "Puedes revisar el cambio desde tu panel de usuario y decidir si mantienes o anulas tu solicitud."
+        ].join("\n");
+
+        const html = `
+          <p>${escaparHtml(saludo)}</p>
+          <p>${escaparHtml(mensaje)}</p>
+          <p><strong>Franja anterior:</strong> ${escaparHtml(descripcionAnterior)}</p>
+          <p><strong>Franja actualizada:</strong> ${escaparHtml(descripcionNueva)}</p>
+          <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
+          <p>Puedes revisar el cambio desde tu panel de usuario y decidir si mantienes o anulas tu solicitud.</p>
+        `;
+
+        const correo = await enviarEmail(env, {
+          to: destinatario,
+          subject: "[Reservas] Cambio en la franja horaria de tu solicitud",
+          text,
+          html
+        });
+
+        if (correo?.ok) {
+          resumen.correos_enviados += 1;
+        } else if (!correo?.skipped) {
+          resumen.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+        }
+      }
+    } catch (error) {
+      resumen.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);
+    }
+  }
+
+  return resumen;
 }
 
 function validarDatosFranja({
@@ -465,6 +591,7 @@ export async function onRequestPut(context) {
     const capacidad = parsearCapacidad(data.capacidad);
     const es_recurrente = parsearFlag(data.es_recurrente, 0);
     const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
+    const confirmarAfectacion = data.confirmar_afectacion === true || data.confirmar_afectacion === 1 || data.confirmar_afectacion === "1";
 
     if (!id) {
       return json({ ok: false, error: "ID de franja no válido." }, { status: 400 });
@@ -483,6 +610,14 @@ export async function onRequestPut(context) {
 
     const actividad = await obtenerActividad(env, existente.actividad_id);
     const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+    const siguienteFranja = {
+      fecha: es_recurrente === 1 ? null : fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad: aforo_limitado === 1 ? capacidad : null,
+      es_recurrente,
+      patron_recurrencia: es_recurrente === 1 ? patron_recurrencia : null
+    };
 
     const errorValidacion = validarDatosFranja({
       fecha,
@@ -560,6 +695,19 @@ export async function onRequestPut(context) {
       }
     }
 
+    const hayCambioReal = franjaHaCambiado(existente, siguienteFranja);
+    const reservasActivas = hayCambioReal ? await obtenerReservasActivasFranja(env, id) : [];
+    if (hayCambioReal && reservasActivas.length > 0 && !confirmarAfectacion) {
+      return json({
+        ok: false,
+        requiere_confirmacion_afectacion: true,
+        total_afectadas: reservasActivas.length,
+        mensaje: reservasActivas.length === 1
+          ? "Existe 1 solicitud activa vinculada a esta franja. Si continúas, se notificará al solicitante para que revise la nueva franja horaria."
+          : `Existen ${reservasActivas.length} solicitudes activas vinculadas a esta franja. Si continúas, se notificará a los solicitantes para que revisen la nueva franja horaria.`
+      }, { status: 409 });
+    }
+
     const updateResult = await env.DB.prepare(`
       UPDATE franjas
       SET
@@ -589,11 +737,22 @@ export async function onRequestPut(context) {
       );
     }
 
+    let resumenAfectacion = null;
+    if (hayCambioReal && reservasActivas.length > 0) {
+      resumenAfectacion = await notificarCambioFranja(
+        env,
+        reservasActivas,
+        existente,
+        siguienteFranja
+      );
+    }
+
     const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
 
     return json({
       ok: true,
       mensaje: "Franja actualizada correctamente.",
+      resumen_afectacion: resumenAfectacion,
       franjas
     });
   } catch (error) {
