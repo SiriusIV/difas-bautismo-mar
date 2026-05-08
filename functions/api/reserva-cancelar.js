@@ -1,6 +1,7 @@
 import { getUserSession } from "./usuario/_auth.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
+import { borrarHistorialReservas } from "./_reservas_historial.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -171,6 +172,40 @@ export async function onRequestPost(context) {
         { ok: false, error: "La solicitud no corresponde al usuario autenticado." },
         { status: 403 }
       );
+    }
+
+    if (String(reserva.estado || "").toUpperCase() === "BORRADOR") {
+      await borrarHistorialReservas(env, [reserva.id]);
+      await session
+        .prepare(`
+          DELETE FROM visitantes
+          WHERE reserva_id = ?
+        `)
+        .bind(reserva.id)
+        .run();
+
+      const deleteDraft = await session
+        .prepare(`
+          DELETE FROM reservas
+          WHERE id = ?
+            AND usuario_id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR'
+        `)
+        .bind(reserva.id, user.id)
+        .run();
+
+      if ((deleteDraft?.meta?.changes || 0) === 0) {
+        return Response.json(
+          { ok: false, error: "No se pudo eliminar el borrador." },
+          { status: 500 }
+        );
+      }
+
+      return Response.json({
+        ok: true,
+        mensaje: "Borrador eliminado correctamente.",
+        estado: "ELIMINADO"
+      });
     }
 
     let notificacionAdmin = { ok: false, skipped: true, error: "" };

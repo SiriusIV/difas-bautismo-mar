@@ -59,6 +59,10 @@ function calcularPlazasReservadasPendientes(row) {
 }
 
 function tieneProgramacionValida(row) {
+  const estado = normalizarEstadoReserva(row?.estado);
+  const usaFranjas = Number(row?.usa_franjas || 0) === 1;
+  if (estado === "BORRADOR") return true;
+  if (!usaFranjas) return true;
   return !!(
     String(row?.fecha || "").trim() &&
     String(row?.hora_inicio || "").trim() &&
@@ -88,7 +92,10 @@ export async function onRequestGet(context) {
         COALESCE(r.observaciones_admin, '') AS observaciones_admin,
         r.fecha_solicitud,
         r.fecha_modificacion,
+        r.actividad_id,
+        r.franja_id,
         a.admin_id,
+        COALESCE(a.usa_franjas, 1) AS usa_franjas,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
         CASE
@@ -111,7 +118,12 @@ export async function onRequestGet(context) {
       LEFT JOIN actividades a ON r.actividad_id = a.id
       WHERE r.usuario_id = ?
         AND UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'
-      ORDER BY f.fecha DESC, f.hora_inicio DESC, r.fecha_solicitud DESC
+      ORDER BY
+        CASE WHEN UPPER(TRIM(COALESCE(r.estado, ''))) = 'BORRADOR' THEN 0 ELSE 1 END ASC,
+        f.fecha DESC,
+        f.hora_inicio DESC,
+        r.fecha_solicitud DESC,
+        r.id DESC
     `).bind(user.id).all();
 
     const rows = (result.results || []).filter(tieneProgramacionValida);
@@ -121,15 +133,18 @@ export async function onRequestGet(context) {
       codigo_reserva: row.codigo_reserva,
       estado: normalizarEstadoReserva(row.estado),
       token_edicion: row.token_edicion || "",
+      actividad_id: Number(row.actividad_id || 0),
+      franja_id: Number(row.franja_id || 0) || null,
       observaciones: row.observaciones || "",
       observaciones_admin: row.observaciones_admin || "",
       admin_id: Number(row.admin_id || 0),
       actividad: row.actividad || "Actividad",
+      usa_franjas: Number(row.usa_franjas || 0),
       fecha_solicitud: row.fecha_solicitud || "",
       fecha_modificacion: row.fecha_modificacion || "",
-      fecha: row.fecha,
-      hora_inicio: row.hora_inicio,
-      hora_fin: row.hora_fin,
+      fecha: row.fecha || "",
+      hora_inicio: row.hora_inicio || "",
+      hora_fin: row.hora_fin || "",
       plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
       prereserva_expira_en: row.prereserva_expira_en || "",
       prereserva_vigente: esPrereservaVigente(row),

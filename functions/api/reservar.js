@@ -43,6 +43,10 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
+function accionEsGuardarBorrador(valor) {
+  return limpiarTexto(valor).toLowerCase() === "guardar_borrador";
+}
+
 async function obtenerFechaExpiracionSQLite(env, minutos) {
   const row = await env.DB.prepare(`
     SELECT datetime('now', '+' || ? || ' minutes') AS expira
@@ -223,6 +227,7 @@ export async function onRequestPost(context) {
     const telefono = limpiarTexto(data.telefono);
     const email = limpiarTexto(data.email);
     const observaciones = limpiarTexto(data.observaciones);
+    const guardarComoBorrador = accionEsGuardarBorrador(data.accion);
     const franjaRaw = data.franja;
     const franjaId = franjaRaw == null || String(franjaRaw).trim() === ""
       ? null
@@ -312,7 +317,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion);
     }
 
-    if (duplicada) {
+    if (!guardarComoBorrador && duplicada) {
       return json(
         {
           ok: false,
@@ -335,9 +340,11 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
     const codigoReserva = generarCodigoReserva();
     const tokenEdicion = generarToken();
     const minutosConsolidacion = calcularMinutosConsolidacion(plazasReservadas);
-    const prereservaExpiraEn = await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
+    const prereservaExpiraEn = guardarComoBorrador
+      ? null
+      : await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
 
-    if (!prereservaExpiraEn) {
+    if (!guardarComoBorrador && !prereservaExpiraEn) {
       return json(
         { ok: false, error: "No se pudo calcular la expiración de la prereserva." },
         { status: 500 }
@@ -363,7 +370,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
         usuario_id
       )
       VALUES (
-        ?, ?, ?, ?, 'PENDIENTE',
+        ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?,
         datetime('now'),
@@ -378,6 +385,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
         actividadId,
         codigoReserva,
         tokenEdicion,
+        guardarComoBorrador ? "BORRADOR" : "PENDIENTE",
         centro,
         contacto,
         telefono,
@@ -412,37 +420,41 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       LIMIT 1
     `).bind(tokenEdicion).first();
 
-    await registrarEventoReserva(env, {
-      reservaId: reservaCreada?.id,
-      accion: "SOLICITUD_PRESENTADA",
-      estadoOrigen: null,
-      estadoDestino: "PENDIENTE",
-      observaciones,
-      actorUsuarioId: usuarioId,
-      actorRol: "SOLICITANTE",
-      actorNombre: contacto || centro || "Solicitante"
-    });
+    if (!guardarComoBorrador) {
+      await registrarEventoReserva(env, {
+        reservaId: reservaCreada?.id,
+        accion: "SOLICITUD_PRESENTADA",
+        estadoOrigen: null,
+        estadoDestino: "PENDIENTE",
+        observaciones,
+        actorUsuarioId: usuarioId,
+        actorRol: "SOLICITANTE",
+        actorNombre: contacto || centro || "Solicitante"
+      });
+    }
 
     let notificacionAdmin = { ok: false, skipped: true, error: "" };
-    try {
-      notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
-        adminId: actividad.admin_id,
-        actividadId,
-        actividadNombre: actividad.actividad_nombre || "Actividad",
-        centro,
-        codigoReserva: reservaCreada?.codigo_reserva || codigoReserva
-      });
-    } catch (errorNotificacion) {
-      notificacionAdmin = {
-        ok: false,
-        skipped: true,
-        error: errorNotificacion?.message || String(errorNotificacion || "")
-      };
+    if (!guardarComoBorrador) {
+      try {
+        notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
+          adminId: actividad.admin_id,
+          actividadId,
+          actividadNombre: actividad.actividad_nombre || "Actividad",
+          centro,
+          codigoReserva: reservaCreada?.codigo_reserva || codigoReserva
+        });
+      } catch (errorNotificacion) {
+        notificacionAdmin = {
+          ok: false,
+          skipped: true,
+          error: errorNotificacion?.message || String(errorNotificacion || "")
+        };
+      }
     }
 
     return json({
       ok: true,
-      mensaje: "Solicitud creada correctamente.",
+      mensaje: guardarComoBorrador ? "Borrador guardado correctamente." : "Solicitud creada correctamente.",
       codigo_reserva: reservaCreada.codigo_reserva,
       token_edicion: reservaCreada.token_edicion,
       estado: reservaCreada.estado,
@@ -456,7 +468,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
       } : null,
       plazas_reservadas: plazasReservadas,
       plazas_disponibles_restantes: usaFranjas ? Math.max(disponibles - plazasReservadas, 0) : null,
-      minutos_consolidacion: minutosConsolidacion,
+      minutos_consolidacion: guardarComoBorrador ? 0 : minutosConsolidacion,
       prereserva_expira_en: reservaCreada.prereserva_expira_en,
       usuario_id: reservaCreada.usuario_id,
       notificacion_admin: {

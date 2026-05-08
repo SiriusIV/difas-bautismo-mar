@@ -58,6 +58,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
     SELECT
       r.id,
       r.franja_id,
+      r.actividad_id,
       r.codigo_reserva,
       r.token_edicion,
       r.estado,
@@ -78,6 +79,8 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      COALESCE(a.usa_franjas, 1) AS usa_franjas,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
 
       COALESCE((
         SELECT COUNT(*)
@@ -86,8 +89,10 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       ), 0) AS asistentes_cargados
 
     FROM reservas r
-    INNER JOIN franjas f
+    LEFT JOIN franjas f
       ON f.id = r.franja_id
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
     WHERE r.token_edicion = ?
     LIMIT 1
   `;
@@ -142,7 +147,9 @@ export async function onRequestGet(context) {
     }
 
     const capacidad = Number(reserva.capacidad || 0);
-    const ocupadas = await obtenerBloqueoTotalFranja(env, reserva.franja_id);
+    const ocupadas = Number(reserva.franja_id || 0) > 0
+      ? await obtenerBloqueoTotalFranja(env, reserva.franja_id)
+      : 0;
     const disponibles = Math.max(capacidad - ocupadas, 0);
 
     const plazasAsignadas = calcularPlazasAsignadas(reserva);
@@ -154,6 +161,8 @@ export async function onRequestGet(context) {
       reserva: {
         id: reserva.id,
         franja_id: reserva.franja_id,
+        actividad_id: reserva.actividad_id,
+        actividad_nombre: reserva.actividad_nombre || "Actividad",
         codigo_reserva: reserva.codigo_reserva,
         token_edicion: reserva.token_edicion,
         estado: reserva.estado,
@@ -172,10 +181,11 @@ export async function onRequestGet(context) {
         fecha_solicitud: reserva.fecha_solicitud,
         fecha_modificacion: reserva.fecha_modificacion,
 
-        fecha: reserva.fecha,
-        hora_inicio: reserva.hora_inicio,
-        hora_fin: reserva.hora_fin,
+        fecha: reserva.fecha || "",
+        hora_inicio: reserva.hora_inicio || "",
+        hora_fin: reserva.hora_fin || "",
         capacidad,
+        usa_franjas: Number(reserva.usa_franjas || 0),
 
         asistentes_cargados: Number(reserva.asistentes_cargados || 0),
         plazas_asignadas: plazasAsignadas,

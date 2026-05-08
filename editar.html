@@ -624,6 +624,10 @@
       }
 
       reservaActual = data.reserva;
+      if (String(reservaActual.estado || "").toUpperCase() === "BORRADOR") {
+        window.location.href = `solicitud-reserva.html?token=${encodeURIComponent(tokenEdicion)}`;
+        return false;
+      }
       reservadasPendientesOriginales = Number(reservaActual.plazas_reservadas || 0);
 
       document.getElementById("btnGestionarAsistentesNav").href = `asistentes.html?token=${encodeURIComponent(tokenEdicion)}`;

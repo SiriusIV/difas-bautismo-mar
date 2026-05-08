@@ -97,6 +97,7 @@ async function obtenerReservasCalendario(env, filtros, session) {
   const binds = [];
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'");
   where.push("(date(f.fecha) >= date('now') OR UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA')");
 
   if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {

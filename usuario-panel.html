@@ -339,6 +339,7 @@
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.suspendida { background: #b7791f; }
+    .estado-badge.borrador { background: #5f6d7a; }
     .estado-badge.cancelada { background: #6c757d; }
     .estado-trigger {
       border: none;
@@ -643,6 +644,7 @@
           <label for="filtroEstado">Estado</label>
           <select id="filtroEstado">
             <option value="">Todos</option>
+            <option value="BORRADOR">Borrador</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="CONFIRMADA">Confirmada</option>
             <option value="SUSPENDIDA">Suspendida</option>
@@ -755,6 +757,7 @@
 
     function claseEstado(estado) {
       const e = normalizarEstadoReserva(estado).toLowerCase();
+      if (e === "borrador") return "borrador";
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
@@ -765,6 +768,7 @@
 
     function textoEstadoVisible(estado) {
       const e = normalizarEstadoReserva(estado);
+      if (e === "BORRADOR") return "Borrador";
       if (e === "PENDIENTE") return "Pendiente";
       if (e === "CONFIRMADA") return "Confirmada";
       if (e === "SUSPENDIDA") return "Suspendida";
@@ -831,6 +835,9 @@
     }
 
     function formatearTiempoRestante(reserva) {
+      if (normalizarEstadoReserva(reserva?.estado) === "BORRADOR") {
+        return { texto: "", finalizada: false };
+      }
       const expiraEn = parsearFechaServidor(reserva?.prereserva_expira_en);
       const pendientes = Number(reserva?.plazas_pendientes || 0);
 
@@ -865,6 +872,7 @@
     }
 
     function pintarResumen(lista) {
+      const borradores = lista.filter((r) => normalizarEstadoReserva(r.estado) === "BORRADOR").length;
       const pendientes = lista.filter((r) => normalizarEstadoReserva(r.estado) === "PENDIENTE").length;
       const confirmadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "CONFIRMADA").length;
       const suspendidas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "SUSPENDIDA").length;
@@ -872,6 +880,8 @@
 
       document.getElementById("resumenPanel").innerHTML = `
         <span>Total reservas: ${lista.length}</span>
+        <span>|</span>
+        <span>Borradores: ${borradores}</span>
         <span>|</span>
         <span>Pendientes: ${pendientes}</span>
         <span>|</span>
@@ -924,8 +934,9 @@
 
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
+      const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
       document.getElementById("btnEditar").disabled = !hay;
-      document.getElementById("btnAsistentes").disabled = !hay;
+      document.getElementById("btnAsistentes").disabled = !hay || estado === "BORRADOR";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
     }
 
@@ -992,6 +1003,9 @@
     function descripcionEstadoReserva(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
+      if (estado === "BORRADOR") {
+        return "Esta solicitud está guardada como borrador. Todavía no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
+      }
       if (estado === "CONFIRMADA") {
         if (observacionesAdmin) {
           return `Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador. Motivo indicado: ${observacionesAdmin}`;
@@ -1019,6 +1033,16 @@
     function construirAccionesEstado(reserva) {
       const acciones = [];
       const estado = normalizarEstadoReserva(reserva?.estado);
+      if (estado === "BORRADOR") {
+        if (reserva?.token_edicion) {
+          acciones.push({
+            label: "Editar borrador",
+            principal: true,
+            onClick: () => editarReserva(reserva.token_edicion, estado)
+          });
+        }
+        return acciones;
+      }
       if (estado === "SUSPENDIDA") {
         if (Number(reserva?.admin_id || 0) > 0) {
           acciones.push({
@@ -1036,7 +1060,7 @@
         acciones.push({
           label: "Editar solicitud",
           principal: true,
-          onClick: () => editarReserva(reserva.token_edicion)
+          onClick: () => editarReserva(reserva.token_edicion, estado)
         });
         acciones.push({
           label: "Gestionar asistentes",
@@ -1218,7 +1242,11 @@
       aplicarFiltros();
     }
 
-    function editarReserva(token) {
+    function editarReserva(token, estado = "") {
+      if (normalizarEstadoReserva(estado) === "BORRADOR") {
+        location.href = `solicitud-reserva.html?token=${encodeURIComponent(token)}`;
+        return;
+      }
       location.href = `editar.html?token=${encodeURIComponent(token)}`;
     }
 
@@ -1278,7 +1306,7 @@
     document.getElementById("btnCalendario").addEventListener("click", irCalendario);
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
-      if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion);
+      if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion, reservaSeleccionada.estado);
     });
     document.getElementById("btnAsistentes").addEventListener("click", () => {
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);

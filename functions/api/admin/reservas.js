@@ -85,6 +85,7 @@ async function obtenerReservas(env, filtros) {
 
   if (String(filtros.estado || "").toUpperCase() !== "CANCELADA") {
     where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+    where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'");
   }
 
   if (filtros.fechaInicio) {
@@ -184,6 +185,7 @@ async function obtenerSolicitantes(env, filtros) {
   const binds = [];
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'");
   where.push("TRIM(COALESCE(r.centro, '')) <> ''");
 
   if (!filtros.esSuperadmin) {
@@ -248,6 +250,7 @@ async function obtenerFranjas(env, filtros = {}) {
       FROM reservas r
       WHERE r.franja_id = f.id
         AND UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'
+        AND UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'
     )
   `);
 

@@ -727,6 +727,13 @@
           </div>
 
           <div class="acciones-circulares">
+            <button type="button" id="btnGuardarBorrador" class="btn-icono-redondo btn-secundario" title="Guardar como borrador" aria-label="Guardar como borrador">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
+                <path d="M17 21v-8H7v8"></path>
+                <path d="M7 3v5h8"></path>
+              </svg>
+            </button>
             <button type="submit" id="btnPrepararEnvio" class="btn-icono-redondo" title="Enviar solicitud" aria-label="Enviar solicitud">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M22 2 11 13"></path>
@@ -879,17 +886,28 @@
     let reservaCreada = null;
     let datosPendientesEnvio = null;
     let solicitudPendienteEnvio = false;
+    let tokenBorrador = "";
+    let actividadIdActual = null;
+    let franjaIdInicial = null;
 
     function getActividadId() {
+      if (Number.isInteger(actividadIdActual) && actividadIdActual > 0) return actividadIdActual;
       const params = new URLSearchParams(window.location.search);
       const id = parseInt(params.get("actividad_id") || "", 10);
       return Number.isInteger(id) && id > 0 ? id : null;
     }
 
     function getFranjaId() {
+      if (Number.isInteger(franjaIdInicial) && franjaIdInicial > 0) return franjaIdInicial;
       const params = new URLSearchParams(window.location.search);
       const id = parseInt(params.get("franja_id") || "", 10);
       return Number.isInteger(id) && id > 0 ? id : null;
+    }
+
+    function getTokenEdicion() {
+      if (tokenBorrador) return tokenBorrador;
+      const params = new URLSearchParams(window.location.search);
+      return String(params.get("token") || "").trim();
     }
 
     function actividadUsaFranjas() {
@@ -920,6 +938,7 @@
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
+      if (e === "borrador") return "cancelada";
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
@@ -929,6 +948,7 @@
     }
 
     function textoEstadoModal(estado) {
+      if (estado === "BORRADOR") return "BORRADOR";
       if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
       if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
@@ -1010,6 +1030,30 @@
       document.getElementById("subtituloEvento").textContent = centro.value || "Centro solicitante";
     }
 
+    async function cargarBorradorExistente() {
+      const token = getTokenEdicion();
+      if (!token) return null;
+
+      const res = await fetch(`/api/reserva?token=${encodeURIComponent(token)}`, {
+        credentials: "include"
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok || !data?.reserva) {
+        throw new Error(data?.error || "No se pudo recuperar el borrador.");
+      }
+
+      if (String(data.reserva.estado || "").toUpperCase() !== "BORRADOR") {
+        window.location.href = `editar.html?token=${encodeURIComponent(token)}`;
+        return null;
+      }
+
+      tokenBorrador = token;
+      actividadIdActual = Number(data.reserva.actividad_id || 0) || null;
+      franjaIdInicial = Number(data.reserva.franja_id || 0) || null;
+      return data.reserva;
+    }
+
     function actualizarDatoActividad(id, etiqueta, valor) {
       const elemento = document.getElementById(id);
       if (!elemento) return;
@@ -1042,6 +1086,22 @@
         <strong>Requisitos particulares de esta actividad:</strong>
         <ul>${requisitos.map((texto) => `<li>${escapeHtml(texto)}</li>`).join("")}</ul>
       `;
+    }
+
+    function aplicarDatosBorradorEnFormulario(reserva) {
+      if (!reserva) return;
+      document.getElementById("contacto").value = reserva.contacto || "";
+      document.getElementById("telefono").value = reserva.telefono || "";
+      document.getElementById("email").value = reserva.email || "";
+      document.getElementById("observaciones").value = reserva.observaciones || "";
+      document.getElementById("plazasSolicitadas").value = Number(reserva.plazas_prereservadas || 0) > 0
+        ? String(Number(reserva.plazas_prereservadas || 0))
+        : "";
+      if (actividadUsaFranjas() && Number(reserva.franja_id || 0) > 0) {
+        document.getElementById("franja").value = String(reserva.franja_id);
+      }
+      actualizarResumenPantalla();
+      limpiarSolicitudPendiente();
     }
 
     function actualizarEstadoCampoFranja() {
@@ -1293,6 +1353,74 @@
       };
     }
 
+    function actualizarUrlBorrador(token) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("actividad_id");
+      url.searchParams.delete("franja_id");
+      url.searchParams.set("token", token);
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    async function guardarBorrador() {
+      if (envioEnCurso) return;
+
+      limpiarMensaje();
+      const validacion = validarDatosFormulario();
+      if (!validacion.ok) {
+        mostrarMensaje("error", validacion.error);
+        return;
+      }
+
+      try {
+        envioEnCurso = true;
+        document.getElementById("btnGuardarBorrador").disabled = true;
+        document.getElementById("btnPrepararEnvio").disabled = true;
+
+        const payload = {
+          ...validacion.datos,
+          accion: "guardar_borrador"
+        };
+
+        const endpoint = getTokenEdicion() ? "/api/reserva-actualizar" : "/api/reservar";
+        if (getTokenEdicion()) {
+          payload.token_edicion = getTokenEdicion();
+          payload.plazas_reservadas = payload.plazas_solicitadas;
+          delete payload.plazas_solicitadas;
+        }
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo guardar el borrador.");
+        }
+
+        tokenBorrador = data.token_edicion || getTokenEdicion();
+        if (tokenBorrador) {
+          actualizarUrlBorrador(tokenBorrador);
+        }
+        reservaCreada = null;
+        datosPendientesEnvio = null;
+        limpiarSolicitudPendiente();
+        mostrarMensaje("ok", data.mensaje || "Borrador guardado correctamente.");
+        if (actividadUsaFranjas()) {
+          await cargarFranjas();
+        }
+        actualizarResumenPantalla();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo guardar el borrador.");
+      } finally {
+        envioEnCurso = false;
+        document.getElementById("btnGuardarBorrador").disabled = false;
+        document.getElementById("btnPrepararEnvio").disabled = false;
+      }
+    }
+
     function abrirModalConfirmacion(datos) {
       const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
       const textoCierre = actividadUsaFranjas()
@@ -1340,12 +1468,24 @@
         document.getElementById("btnConfirmarEnvio").disabled = true;
         document.getElementById("btnCancelarEnvio").disabled = true;
         document.getElementById("btnPrepararEnvio").disabled = true;
+        document.getElementById("btnGuardarBorrador").disabled = true;
 
-        const response = await fetch("/api/reservar", {
+        const payload = { ...datosPendientesEnvio };
+        const token = getTokenEdicion();
+        let endpoint = "/api/reservar";
+        if (token) {
+          endpoint = "/api/reserva-actualizar";
+          payload.token_edicion = token;
+          payload.accion = "enviar_borrador";
+          payload.plazas_reservadas = payload.plazas_solicitadas;
+          delete payload.plazas_solicitadas;
+        }
+
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(datosPendientesEnvio)
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -1357,6 +1497,7 @@
         reservaCreada = data;
         limpiarSolicitudPendiente();
         cerrarModalConfirmacion();
+        tokenBorrador = "";
         mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
         if (actividadUsaFranjas()) {
           await cargarFranjas();
@@ -1372,6 +1513,7 @@
         document.getElementById("btnConfirmarEnvio").disabled = false;
         document.getElementById("btnCancelarEnvio").disabled = false;
         document.getElementById("btnPrepararEnvio").disabled = false;
+        document.getElementById("btnGuardarBorrador").disabled = false;
       }
     }
 
@@ -1399,6 +1541,7 @@
       const enlacePortal = document.querySelector('a[href="portal.html"].btn-enlace-icono');
       const campoTelefono = document.getElementById("telefono");
       const campoEmail = document.getElementById("email");
+      const btnGuardarBorrador = document.getElementById("btnGuardarBorrador");
 
       document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
 
@@ -1447,6 +1590,8 @@
         abrirModalConfirmacion(validacion.datos);
       });
 
+      btnGuardarBorrador.addEventListener("click", guardarBorrador);
+
       if (enlacePortal) {
         enlacePortal.addEventListener("click", function (e) {
           if (confirmarSalidaSinEnviar()) return;
@@ -1472,9 +1617,16 @@
       });
 
       try {
+        const borradorExistente = await cargarBorradorExistente();
         await precargarDatosSolicitante();
         await cargarActividad();
         await cargarFranjas();
+        aplicarDatosBorradorEnFormulario(borradorExistente);
+        if (borradorExistente) {
+          document.getElementById("tituloEvento").textContent = "Edicion de borrador";
+          document.getElementById("btnPrepararEnvio").title = "Enviar borrador";
+          document.getElementById("btnPrepararEnvio").setAttribute("aria-label", "Enviar borrador");
+        }
       } catch (error) {
         console.error(error);
       mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
