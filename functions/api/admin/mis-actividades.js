@@ -171,7 +171,13 @@ export async function onRequestGet(context) {
           SELECT MAX(CASE WHEN COALESCE(f.es_recurrente, 0) = 1 THEN 1 ELSE 0 END)
           FROM franjas f
           WHERE f.actividad_id = a.id
-        ) AS tiene_franjas_recurrentes
+        ) AS tiene_franjas_recurrentes,
+        (
+          SELECT COUNT(*)
+          FROM reservas r
+          WHERE r.actividad_id = a.id
+            AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+        ) AS solicitudes_activas
 
       FROM actividades a
       LEFT JOIN usuarios u

@@ -2320,6 +2320,12 @@
       toggleActiva.checked = activa;
     }
 
+    function obtenerActividadEditadaCache() {
+      const id = Number(document.getElementById("actividadId")?.value || 0);
+      if (!(id > 0)) return null;
+      return actividadesCache.find((actividad) => Number(actividad?.id || 0) === id) || null;
+    }
+
     function fijarVisibilidadPortal(valor) {
       const selectVisible = document.getElementById("visible_portal");
       if (!selectVisible) return;
@@ -2352,10 +2358,12 @@
 
       const valorActual = String(selectActiva.value);
       const quiereActivar = !!toggleActiva.checked;
+      const actividadActual = obtenerActividadEditadaCache();
+      const totalSolicitudesActivas = Number(actividadActual?.solicitudes_activas || 0);
 
-      if (origenCabecera && valorActual === "1" && !quiereActivar && !desactivacionActividadPendiente) {
+      if (origenCabecera && valorActual === "1" && !quiereActivar && !desactivacionActividadPendiente && totalSolicitudesActivas > 0) {
         toggleActiva.checked = true;
-        abrirModalAvisoDesactivacionActividad();
+        abrirModalAvisoDesactivacionActividad(totalSolicitudesActivas);
         return;
       }
 
@@ -2378,9 +2386,16 @@
       }
     }
 
-    function abrirModalAvisoDesactivacionActividad() {
+    function abrirModalAvisoDesactivacionActividad(totalSolicitudesActivas = 0) {
       const modal = document.getElementById("modalAvisoDesactivacionActividad");
+      const texto = modal?.querySelector("p");
       if (!modal) return;
+      if (texto) {
+        const total = Number(totalSolicitudesActivas || 0);
+        texto.textContent = total === 1
+          ? "Existe 1 solicitud vinculada a esta actividad y, si continúas con la desactivación, esa solicitud pasará a estar rechazada cuando guardes el cambio."
+          : `Existen ${total} solicitudes vinculadas a esta actividad y, si continúas con la desactivación, esas solicitudes pasarán a estar rechazadas cuando guardes el cambio.`;
+      }
       modal.classList.add("activo");
       modal.setAttribute("aria-hidden", "false");
     }
