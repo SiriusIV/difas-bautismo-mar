@@ -2,6 +2,13 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
 function esErrorColumnaDuplicada(error) {
   const texto = limpiarTexto(error?.message || error || "").toLowerCase();
   return (
@@ -11,7 +18,7 @@ function esErrorColumnaDuplicada(error) {
 }
 
 async function asegurarTablaNotificaciones(env) {
-  await env.DB.prepare(`
+  await dbPrimaria(env).prepare(`
     CREATE TABLE IF NOT EXISTS notificaciones (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario_id INTEGER NOT NULL,
@@ -38,7 +45,7 @@ async function asegurarTablaNotificaciones(env) {
 
   for (const sql of columnasOpcionales) {
     try {
-      await env.DB.prepare(sql).run();
+        await dbPrimaria(env).prepare(sql).run();
     } catch (error) {
       if (!esErrorColumnaDuplicada(error)) {
         const mensaje = limpiarTexto(error?.message || error || "").toLowerCase();
@@ -50,7 +57,7 @@ async function asegurarTablaNotificaciones(env) {
   }
 
   try {
-    await env.DB.prepare(`
+    await dbPrimaria(env).prepare(`
       CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_created
       ON notificaciones (usuario_id, created_at DESC, id DESC)
     `).run();
@@ -58,7 +65,7 @@ async function asegurarTablaNotificaciones(env) {
     if (!hayErrorEsquemaNotificaciones(error)) {
       throw error;
     }
-    await env.DB.prepare(`
+    await dbPrimaria(env).prepare(`
       CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario_id
       ON notificaciones (usuario_id, id DESC)
     `).run();
@@ -205,7 +212,7 @@ async function insertarNotificacionCompatible(env, valores) {
           ${variante.columnas.join(", ")}
         ) VALUES (${placeholders})
       `;
-      await env.DB.prepare(sql).bind(...variante.binds).run();
+      await dbPrimaria(env).prepare(sql).bind(...variante.binds).run();
       return { ok: true };
     } catch (error) {
       ultimoError = error;
@@ -367,7 +374,7 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
   let ultimoError = null;
   for (const sql of variantes) {
     try {
-      return await env.DB.prepare(sql).bind(usuarioId, limiteSeguro).all();
+      return await dbPrimaria(env).prepare(sql).bind(usuarioId, limiteSeguro).all();
     } catch (error) {
       ultimoError = error;
       if (!hayErrorEsquemaNotificaciones(error)) {
@@ -415,7 +422,7 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
   const rows = await listarNotificacionesCompatible(env, id, limiteSeguro, whereNoLeidas);
   let unreadRow = null;
   try {
-    unreadRow = await env.DB.prepare(`
+    unreadRow = await dbPrimaria(env).prepare(`
       SELECT COUNT(*) AS total
       FROM notificaciones
       WHERE usuario_id = ?
@@ -456,7 +463,7 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
   await asegurarTablaNotificaciones(env);
   let result;
   try {
-    result = await env.DB.prepare(`
+    result = await dbPrimaria(env).prepare(`
       UPDATE notificaciones
       SET
         leida = 1,
@@ -469,7 +476,7 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
       throw error;
     }
     try {
-      result = await env.DB.prepare(`
+      result = await dbPrimaria(env).prepare(`
         UPDATE notificaciones
         SET leida = 1
         WHERE id = ?
@@ -492,7 +499,7 @@ export async function marcarTodasLasNotificacionesLeidas(env, usuarioId) {
 
   let result;
   try {
-    result = await env.DB.prepare(`
+    result = await dbPrimaria(env).prepare(`
       UPDATE notificaciones
       SET
         leida = 1,
@@ -505,7 +512,7 @@ export async function marcarTodasLasNotificacionesLeidas(env, usuarioId) {
       throw error;
     }
     try {
-      result = await env.DB.prepare(`
+      result = await dbPrimaria(env).prepare(`
         UPDATE notificaciones
         SET leida = 1
         WHERE usuario_id = ?

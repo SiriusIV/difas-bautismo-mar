@@ -82,7 +82,11 @@ export async function onRequestGet(context) {
       return json({ ok: false, authenticated: false }, 401);
     }
 
-    const result = await env.DB.prepare(`
+    const db = typeof env?.DB?.withSession === "function"
+      ? env.DB.withSession("first-primary")
+      : env.DB;
+
+    const result = await db.prepare(`
       SELECT
         r.id,
         r.codigo_reserva,
