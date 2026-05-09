@@ -24,11 +24,10 @@
     body {
       font-family: Arial, sans-serif;
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
-        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
-        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        linear-gradient(180deg, rgba(244,246,248,0.84) 0%, rgba(244,246,248,0.90) 100%),
+        url("assets/fondo_cabecera.png") top center / cover no-repeat,
         var(--color-fondo);
-      background-blend-mode: normal, screen, normal;
+      background-blend-mode: normal, normal;
       margin: 0;
       color: var(--color-texto);
       overflow-x: hidden;
@@ -99,20 +98,55 @@
       text-align: left;
     }
 
-    .nav-admin {
-      margin-top: 14px;
-      display: inline-flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-start;
+    .bloque-contexto {
+      background: var(--color-panel);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio-panel);
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: var(--sombra-panel);
+      display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
     }
 
-    .nav-btn {
+    .bloque-contexto-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 280px;
+    }
+
+    .bloque-contexto-etiqueta {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1d4f91;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .bloque-contexto-titulo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-primario);
+      line-height: 1.2;
+    }
+
+    .bloque-contexto-acciones {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn-nav-icono {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      padding: 8px 16px;
+      gap: 10px;
+      padding: 10px 14px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
@@ -120,17 +154,20 @@
       text-decoration: none;
       font-size: 14px;
       line-height: 1;
+      box-shadow: 0 4px 12px rgba(18,58,99,0.08);
       transition: all 0.15s ease;
     }
 
-    .nav-btn:hover {
+    .btn-nav-icono:hover {
       background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
     }
 
-    .nav-btn.activo {
-      background: #0b5ed7;
-      color: #fff;
-      border-color: #0b5ed7;
+    .btn-nav-icono svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
     }
 
     .mensaje {
@@ -231,6 +268,22 @@
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 14px;
+    }
+
+    .panel-cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .panel-cabecera-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-primario);
+      margin: 0;
     }
 
     .btn-icono {
@@ -451,8 +504,20 @@
         gap: 12px;
       }
 
-      .nav-admin {
-        display: flex;
+      .bloque-contexto {
+        align-items: flex-start;
+      }
+
+      .bloque-contexto-acciones {
+        justify-content: flex-start;
+      }
+
+      .panel-cabecera {
+        align-items: flex-start;
+      }
+
+      .barra-acciones {
+        justify-content: flex-start;
       }
     }
   </style>
@@ -465,15 +530,8 @@
           <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
 
           <div class="cabecera-centro">
-            <h1 id="tituloEvento">DIFAS 2026</h1>
-            <h2>Bautismos de mar</h2>
-            <div class="sublinea">Panel de gestión de asistentes</div>
-
-            <div class="nav-admin">
-              <a href="portal.html" class="nav-btn" data-nav-target="portal.html">Portal</a>
-              <a href="usuario-panel.html" class="nav-btn activo" data-nav-target="usuario-panel.html">Mis reservas</a>
-              <a href="#" id="btnEditarReservaNav" class="nav-btn" data-nav-dynamic="editar">Editar</a>
-            </div>
+            <h1 id="tituloEvento">Actividades públicas institucionales</h1>
+            <h2 id="subtituloCabecera">Usuario</h2>
           </div>
         </div>
       </div>
@@ -481,48 +539,60 @@
 
     <div id="mensaje" class="mensaje"></div>
 
-    <div class="bloques-superiores">
-      <div class="bloque-wrap">
-        <div class="bloque-titulo-externo">Reserva actual</div>
-        <div id="bloqueReserva" class="bloque-info">
-          Cargando datos...
-        </div>
+    <div class="bloque-contexto">
+      <div class="bloque-contexto-info">
+        <div class="bloque-contexto-etiqueta">Panel de asistentes</div>
+        <div id="panelActividadNombre" class="bloque-contexto-titulo">Cargando actividad...</div>
       </div>
 
-      <div class="bloque-wrap">
-        <div class="bloque-titulo-externo">Resumen de la reserva</div>
-        <div id="bloqueResumen" class="bloque-info">
-          Cargando datos...
-        </div>
+      <div class="bloque-contexto-acciones">
+        <a href="portal.html" class="btn-nav-icono" data-nav-target="portal.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5L12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
+          </svg>
+          <span>Portal</span>
+        </a>
+        <a href="usuario-panel.html" class="btn-nav-icono" data-nav-target="usuario-panel.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"></path>
+            <path d="M21 12H9"></path>
+          </svg>
+          <span>Volver a reservas</span>
+        </a>
       </div>
     </div>
 
     <div class="panel">
-      <div class="barra-acciones">
-        <button type="button" id="btnEliminarSeleccionado" class="btn-icono eliminar" title="Eliminar asistente seleccionado" aria-label="Eliminar asistente seleccionado" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14H6L5 6"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-        </button>
+      <div class="panel-cabecera">
+        <h3 class="panel-cabecera-titulo">Listado de asistentes</h3>
+        <div class="barra-acciones">
+          <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+          </button>
 
-        <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
+          <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
 
-        <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-        </button>
+          <button type="button" id="btnEliminarSeleccionado" class="btn-icono eliminar" title="Eliminar asistente seleccionado" aria-label="Eliminar asistente seleccionado" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="tabla-wrap">
@@ -537,6 +607,22 @@
           </thead>
           <tbody id="cuerpoAsistentes"></tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="bloques-superiores">
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Reserva actual</div>
+        <div id="bloqueReserva" class="bloque-info">
+          Cargando datos...
+        </div>
+      </div>
+
+      <div class="bloque-wrap">
+        <div class="bloque-titulo-externo">Resumen de la reserva</div>
+        <div id="bloqueResumen" class="bloque-info">
+          Cargando datos...
+        </div>
       </div>
     </div>
   </div>
@@ -667,20 +753,18 @@
     }
 
     async function cargarConfigEvento() {
+      document.title = "Panel de asistentes";
+      document.getElementById("tituloEvento").textContent = "Actividades públicas institucionales";
+    }
+
+    async function cargarSesionCabecera() {
       try {
-        const response = await fetch("/api/config-evento");
-        const data = await response.json();
-
-        if (!response.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
-        }
-
-        const config = data.config || {};
-        document.title = config.subtitulo_evento || "Gestión de asistentes";
-        document.getElementById("tituloEvento").textContent = config.nombre_evento || "DIFAS 2026";
-      } catch (error) {
-        console.error(error);
-      }
+        const response = await fetch("/api/usuario/session", { credentials: "include" });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok || !data?.authenticated || !data?.user) return;
+        const nombre = data.user.centro || data.user.nombre || data.user.email || "Usuario";
+        document.getElementById("subtituloCabecera").textContent = nombre;
+      } catch (_) {}
     }
 
     async function cargarReserva() {
@@ -701,7 +785,10 @@
       }
 
       reservaActual = data.reserva;
-      document.getElementById("btnEditarReservaNav").href = `editar.html?token=${encodeURIComponent(tokenEdicion)}`;
+      document.getElementById("panelActividadNombre").textContent =
+        reservaActual.actividad_titulo_publico ||
+        reservaActual.actividad_nombre ||
+        "Actividad";
       return true;
     }
 
@@ -1060,11 +1147,6 @@
         });
       });
 
-      document.getElementById("btnEditarReservaNav").addEventListener("click", function (e) {
-        e.preventDefault();
-        navegarConProteccion(`editar.html?token=${encodeURIComponent(tokenEdicion)}`);
-      });
-
       window.addEventListener("beforeunload", function (e) {
         if (!hayCambiosSinGuardar) return;
         e.preventDefault();
@@ -1072,7 +1154,7 @@
       });
 
       try {
-        await cargarConfigEvento();
+        await Promise.all([cargarConfigEvento(), cargarSesionCabecera()]);
         const ok = await cargarReserva();
         if (!ok) return;
         await cargarVisitantes();
