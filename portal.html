@@ -2145,9 +2145,15 @@ function actualizarBotonSolicitarSegunFranja() {
     function actualizarIconoNotificacionesPortal() {
       const btn = document.getElementById("btnNotificacionesSesion");
       const badge = document.getElementById("badgeNotificacionesSesion");
-      const unreadDb = (notificacionesPortal || []).filter((item) => !item.leida).length;
-      const unreadOperativas = (notificacionesOperativasPortal || []).filter((item) => !item.leida).length;
-      const total = Math.max(Number(notificacionesNoLeidas || 0), unreadDb) + unreadOperativas;
+      const modalAbierto = document.getElementById("modalNotificacionesPortal")?.classList.contains("activo");
+      let total = 0;
+      if (modalAbierto && Array.isArray(notificacionesModalPortal) && notificacionesModalPortal.length) {
+        total = notificacionesModalPortal.filter((item) => !item.leida).length;
+      } else {
+        const unreadDb = (notificacionesPortal || []).filter((item) => !item.leida).length;
+        const unreadOperativas = (notificacionesOperativasPortal || []).filter((item) => !item.leida).length;
+        total = Math.max(Number(notificacionesNoLeidas || 0), unreadDb) + unreadOperativas;
+      }
       btn.classList.toggle("tiene-no-leidas", total > 0);
       badge.classList.toggle("activo", total > 0);
       badge.textContent = total > 99 ? "99+" : String(total || 0);
@@ -2182,8 +2188,9 @@ function actualizarBotonSolicitarSegunFranja() {
           <button
             type="button"
             class="check-notificacion ${item.leida ? "marcado" : ""}"
-            ${item.leida ? "disabled" : `data-notificacion-leida="${String(item.id || "")}" title="Marcar como vista" aria-label="Marcar como vista"`}
-            ${item.leida ? 'title="Notificación ya vista" aria-label="Notificación ya vista"' : ""}>
+            data-notificacion-leida="${String(item.id || "")}"
+            title="${item.leida ? "Marcar como pendiente" : "Marcar como vista"}"
+            aria-label="${item.leida ? "Marcar como pendiente" : "Marcar como vista"}">
             <span class="check-notificacion-marca">✓</span>
           </button>
         `];
@@ -2415,42 +2422,51 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     function contarNotificacionesPendientesPortal() {
+      if (Array.isArray(notificacionesModalPortal) && notificacionesModalPortal.length) {
+        return notificacionesModalPortal.filter((item) => !item.leida).length;
+      }
       return [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
         .filter((item) => !item.leida)
         .length;
     }
 
-    function aplicarNotificacionVistaEnMemoriaPortal(notificacionId) {
+    function alternarNotificacionVistaEnModalPortal(notificacionId) {
       const idTexto = String(notificacionId || "").trim();
       if (!idTexto) return;
-      let actualizada = false;
-      notificacionesOperativasPortal = (notificacionesOperativasPortal || []).map((item) => {
-        if (String(item.id || "") !== idTexto || item.leida) return item;
-        actualizada = true;
-        return { ...item, leida: true };
-      });
-      notificacionesPortal = (notificacionesPortal || []).map((item) => {
-        if (String(item.id || "") !== idTexto || item.leida) return item;
-        actualizada = true;
-        return { ...item, leida: true };
-      });
       notificacionesModalPortal = (notificacionesModalPortal || []).map((item) => {
-        if (String(item.id || "") !== idTexto || item.leida) return item;
-        return { ...item, leida: true };
+        if (String(item.id || "") !== idTexto) return item;
+        return { ...item, leida: !item.leida };
       });
-      if (actualizada) {
-        notificacionesNoLeidas = (notificacionesPortal || []).filter((item) => !item.leida).length;
-        actualizarIconoNotificacionesPortal();
+      actualizarIconoNotificacionesPortal();
+    }
+
+    async function sincronizarNotificacionesMarcadasModalPortal() {
+      const idsMarcadas = Array.from(new Set(
+        (notificacionesModalPortal || [])
+          .filter((item) => item.leida)
+          .map((item) => String(item.id || "").trim())
+          .filter(Boolean)
+      ));
+
+      for (const id of idsMarcadas) {
+        await marcarNotificacionComoVistaPortal(id, { recargar: false });
+      }
+
+      if (idsMarcadas.length) {
+        await cargarNotificacionesPortal();
       }
     }
 
     async function cerrarModalNotificacionesPortal() {
+      await sincronizarNotificacionesMarcadasModalPortal();
       notificacionesModalPortal = [];
       document.getElementById("modalNotificacionesPortal").classList.remove("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
+      actualizarIconoNotificacionesPortal();
     }
 
-    async function marcarNotificacionComoVistaPortal(notificacionId) {
+    async function marcarNotificacionComoVistaPortal(notificacionId, opciones = {}) {
+      const recargar = opciones?.recargar !== false;
       const idTexto = String(notificacionId || "").trim();
       if (!idTexto) return;
       const operativa = (notificacionesOperativasPortal || []).find((item) => String(item.id || "") === idTexto);
@@ -2460,7 +2476,9 @@ function actualizarBotonSolicitarSegunFranja() {
           vistas.push(idTexto);
           guardarNotificacionesOperativasVistas(vistas);
         }
-        await cargarNotificacionesPortal();
+        if (recargar) {
+          await cargarNotificacionesPortal();
+        }
         return;
       }
 
@@ -2472,7 +2490,9 @@ function actualizarBotonSolicitarSegunFranja() {
         credentials: "include",
         body: JSON.stringify({ notificacion_id: id })
       });
-      await cargarNotificacionesPortal();
+      if (recargar) {
+        await cargarNotificacionesPortal();
+      }
     }
 
     async function marcarTodasLasNotificacionesComoVistasPortal() {
@@ -3617,9 +3637,7 @@ function continuarSolicitudActividad() {
       if (btnLeer) {
         const id = String(btnLeer.dataset.notificacionLeida || "");
         if (!id) return;
-        aplicarNotificacionVistaEnMemoriaPortal(id);
-        renderizarNotificacionesPortal();
-        await marcarNotificacionComoVistaPortal(id);
+        alternarNotificacionVistaEnModalPortal(id);
         renderizarNotificacionesPortal();
         return;
       }
@@ -3631,9 +3649,11 @@ function continuarSolicitudActividad() {
         const item = [...(notificacionesModalPortal || []), ...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
           .find((row) => String(row.id || "") === id);
         if (!item) return;
-        if (!item.leida) {
-          aplicarNotificacionVistaEnMemoriaPortal(id);
-          await marcarNotificacionComoVistaPortal(id);
+        if (!item.leida && Array.isArray(notificacionesModalPortal) && notificacionesModalPortal.length) {
+          notificacionesModalPortal = notificacionesModalPortal.map((row) => {
+            if (String(row.id || "") !== id) return row;
+            return { ...row, leida: true };
+          });
         }
         await cerrarModalNotificacionesPortal();
         if (item.url_destino) {
