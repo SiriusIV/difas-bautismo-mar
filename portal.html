@@ -3615,6 +3615,7 @@ function continuarSolicitudActividad() {
         if (quedanPendientes <= 0) {
           actualizarIconoNotificacionesPortal();
           await marcarNotificacionComoVistaPortal(id);
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
           await cerrarModalNotificacionesPortal();
           return;
         }
