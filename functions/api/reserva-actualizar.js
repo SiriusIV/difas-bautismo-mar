@@ -321,7 +321,9 @@ export async function onRequestPost(context) {
     }
 
     const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
-    const esBorrador = String(reservaActual.estado || "").toUpperCase() === "BORRADOR";
+    const estadoActual = String(reservaActual.estado || "").toUpperCase();
+    const esBorrador = estadoActual === "BORRADOR";
+    const reenviarRechazada = estadoActual === "RECHAZADA";
     const guardarBorrador = esBorrador && (accion === "" || accion === "guardar_borrador");
     const enviarBorrador = esBorrador && accion === "enviar_borrador";
 
@@ -337,7 +339,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Esta actividad no utiliza franjas horarias." }, { status: 400 });
     }
 
-    if (!esBorrador && !["RECHAZADA"].includes(String(reservaActual.estado || "").toUpperCase())) {
+    if (!esBorrador && !reenviarRechazada) {
       return json({ ok: false, error: "La solicitud no puede modificarse en su estado actual." }, { status: 400 });
     }
 
@@ -549,6 +551,107 @@ export async function onRequestPost(context) {
     }
 
     const totalBloqueadoNuevo = asistentesCargados + plazasSolicitadas;
+
+    if (reenviarRechazada) {
+      const minutosConsolidacion = calcularMinutosConsolidacion(totalBloqueadoNuevo);
+      const prereservaExpiraEn = totalBloqueadoNuevo > 0
+        ? await obtenerFechaExpiracionSQLite(env, minutosConsolidacion)
+        : null;
+
+      if (totalBloqueadoNuevo > 0 && !prereservaExpiraEn) {
+        return json({ ok: false, error: "No se pudo calcular la expiración de la prereserva." }, { status: 500 });
+      }
+
+      const updateResult = await env.DB.prepare(`
+        UPDATE reservas
+        SET
+          franja_id = ?,
+          centro = ?,
+          contacto = ?,
+          telefono = ?,
+          email = ?,
+          personas = ?,
+          plazas_prereservadas = ?,
+          prereserva_expira_en = ?,
+          observaciones = ?,
+          estado = 'PENDIENTE',
+          fecha_solicitud = datetime('now'),
+          fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `).bind(
+        franjaIdNueva,
+        centro,
+        contacto,
+        telefono,
+        email,
+        totalBloqueadoNuevo,
+        totalBloqueadoNuevo,
+        prereservaExpiraEn,
+        observaciones,
+        reservaActual.id
+      ).run();
+
+      if ((updateResult?.meta?.changes || 0) === 0) {
+        return json({ ok: false, error: "No se pudo reenviar la solicitud." }, { status: 500 });
+      }
+
+      await registrarEventoReserva(env, {
+        reservaId: reservaActual.id,
+        accion: "SOLICITUD_REENVIADA",
+        estadoOrigen: "RECHAZADA",
+        estadoDestino: "PENDIENTE",
+        observaciones,
+        actorUsuarioId: reservaActual.usuario_id,
+        actorRol: "SOLICITANTE",
+        actorNombre: contacto || centro || "Solicitante"
+      });
+
+      let notificacionAdmin = { ok: false, skipped: true, error: "" };
+      try {
+        notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
+          adminId: actividad.admin_id,
+          actividadId: reservaActual.actividad_id,
+          actividadNombre: actividad.actividad_nombre || "Actividad",
+          centro,
+          codigoReserva: reservaActual.codigo_reserva
+        });
+      } catch (errorNotificacion) {
+        notificacionAdmin = {
+          ok: false,
+          skipped: true,
+          error: errorNotificacion?.message || String(errorNotificacion || "")
+        };
+      }
+
+      const franjaFinal = usaFranjas && franjaIdNueva
+        ? await obtenerDisponibilidadFranja(env, franjaIdNueva)
+        : null;
+
+      return json({
+        ok: true,
+        estado: "PENDIENTE",
+        mensaje: "Solicitud reenviada correctamente y pendiente de nueva validación.",
+        codigo_reserva: reservaActual.codigo_reserva,
+        token_edicion: tokenEdicion,
+        minutos_consolidacion: minutosConsolidacion,
+        prereserva_expira_en: prereservaExpiraEn,
+        plazas_asignadas: asistentesCargados,
+        plazas_reservadas: plazasSolicitadas,
+        plazas_bloqueadas_total: totalBloqueadoNuevo,
+        franja: franjaFinal ? {
+          id: franjaFinal.id,
+          fecha: franjaFinal.fecha,
+          hora_inicio: franjaFinal.hora_inicio,
+          hora_fin: franjaFinal.hora_fin
+        } : null,
+        disponibles_despues: franjaFinal ? Number(franjaFinal.disponibles || 0) : null,
+        notificacion_admin: {
+          creada: !!notificacionAdmin.ok,
+          error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
+        }
+      });
+    }
+
     let sqlUpdate;
     let bindValues;
 

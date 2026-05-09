@@ -942,6 +942,10 @@
       return !!reservaExistente && !esReservaBorrador(reservaExistente);
     }
 
+    function esModoReenvioRechazada() {
+      return normalizarEstadoReserva(reservaExistente?.estado) === "RECHAZADA";
+    }
+
     function permiteEdicionDesdePantalla(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       return estado === "BORRADOR" || estado === "RECHAZADA";
@@ -1221,6 +1225,11 @@
 
       tituloEvento.textContent = "Edicion de solicitud";
       btnGuardarBorrador.style.display = "none";
+      if (esModoReenvioRechazada()) {
+        btnPrepararEnvio.title = "Reenviar solicitud";
+        btnPrepararEnvio.setAttribute("aria-label", "Reenviar solicitud");
+        return;
+      }
       btnPrepararEnvio.title = "Guardar cambios";
       btnPrepararEnvio.setAttribute("aria-label", "Guardar cambios");
     }
@@ -1468,7 +1477,8 @@
         return { ok: false, error: "Debe indicar un correo electrónico de contacto válido." };
       }
 
-      if (!Number.isInteger(plazas) || (esModoEdicionReserva() ? plazas < 0 : plazas <= 0)) {
+      const permiteCeroPendientes = esModoEdicionReserva() && !esModoReenvioRechazada();
+      if (!Number.isInteger(plazas) || (permiteCeroPendientes ? plazas < 0 : plazas <= 0)) {
         return {
           ok: false,
           error: esModoEdicionReserva()
@@ -1605,6 +1615,25 @@
         const data = await response.json().catch(() => null);
         if (!response.ok || !data?.ok) {
           throw new Error(data?.error || "No se pudo actualizar la solicitud.");
+        }
+
+        if (String(data.estado || "").toUpperCase() === "PENDIENTE") {
+          reservaCreada = {
+            codigo_reserva: data.codigo_reserva || "",
+            estado: data.estado || "PENDIENTE",
+            token_edicion: data.token_edicion || getTokenEdicion()
+          };
+          limpiarSolicitudPendiente();
+          mostrarMensaje("ok", data.mensaje || "Solicitud reenviada correctamente.");
+          if (actividadUsaFranjas()) {
+            await cargarFranjas();
+          }
+          actualizarResumenPantalla();
+          abrirModalAsistentes();
+          window.setTimeout(() => {
+            window.location.href = "usuario-panel.html";
+          }, 1200);
+          return;
         }
 
         const reservaActualizada = await cargarReservaExistente();
