@@ -896,6 +896,7 @@
     let franjasCache = [];
     let envioEnCurso = false;
     let reservaCreada = null;
+    let reservaExistente = null;
     let datosPendientesEnvio = null;
     let solicitudPendienteEnvio = false;
     let tokenBorrador = "";
@@ -927,6 +928,23 @@
 
     function actividadUsaFranjas() {
       return Number(actividadActual?.usa_franjas || 0) === 1;
+    }
+
+    function normalizarEstadoReserva(estado) {
+      return String(estado || "").trim().toUpperCase();
+    }
+
+    function esReservaBorrador(reserva) {
+      return normalizarEstadoReserva(reserva?.estado) === "BORRADOR";
+    }
+
+    function esModoEdicionReserva() {
+      return !!reservaExistente && !esReservaBorrador(reservaExistente);
+    }
+
+    function permiteEdicionDesdePantalla(reserva) {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      return estado === "BORRADOR" || estado === "PENDIENTE" || estado === "CONFIRMADA";
     }
 
     function mostrarMensaje(tipo, texto) {
@@ -1045,7 +1063,7 @@
       document.getElementById("subtituloEvento").textContent = centro.value || "Centro solicitante";
     }
 
-    async function cargarBorradorExistente() {
+    async function cargarReservaExistente() {
       const token = getTokenEdicion();
       if (!token) return null;
 
@@ -1055,17 +1073,17 @@
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.ok || !data?.reserva) {
-        throw new Error(data?.error || "No se pudo recuperar el borrador.");
+        throw new Error(data?.error || "No se pudo recuperar la solicitud.");
       }
 
-      if (String(data.reserva.estado || "").toUpperCase() !== "BORRADOR") {
-        window.location.href = `editar.html?token=${encodeURIComponent(token)}`;
-        return null;
+      if (!permiteEdicionDesdePantalla(data.reserva)) {
+        throw new Error("Esta solicitud no admite edición desde esta pantalla.");
       }
 
       tokenBorrador = token;
       actividadIdActual = Number(data.reserva.actividad_id || 0) || null;
       franjaIdInicial = Number(data.reserva.franja_id || 0) || null;
+      reservaExistente = esReservaBorrador(data.reserva) ? null : data.reserva;
       return data.reserva;
     }
 
@@ -1103,20 +1121,63 @@
       `;
     }
 
-    function aplicarDatosBorradorEnFormulario(reserva) {
+    function aplicarDatosReservaEnFormulario(reserva) {
       if (!reserva) return;
       document.getElementById("contacto").value = reserva.contacto || "";
       document.getElementById("telefono").value = reserva.telefono || "";
       document.getElementById("email").value = reserva.email || "";
       document.getElementById("observaciones").value = reserva.observaciones || "";
-      document.getElementById("plazasSolicitadas").value = Number(reserva.plazas_prereservadas || 0) > 0
-        ? String(Number(reserva.plazas_prereservadas || 0))
-        : "";
+      const plazasFormulario = esReservaBorrador(reserva)
+        ? Number(reserva.plazas_prereservadas || 0)
+        : Number(reserva.plazas_reservadas || 0);
+      document.getElementById("plazasSolicitadas").value = String(Math.max(plazasFormulario, 0));
       if (actividadUsaFranjas() && Number(reserva.franja_id || 0) > 0) {
         document.getElementById("franja").value = String(reserva.franja_id);
       }
       actualizarResumenPantalla();
       limpiarSolicitudPendiente();
+    }
+
+    function obtenerDisponiblesFormulario(franja) {
+      const disponiblesBase = Number(franja?.disponibles || 0);
+      if (!esModoEdicionReserva()) {
+        return disponiblesBase;
+      }
+
+      if (Number(franja?.id || 0) !== Number(reservaExistente?.franja_id || 0)) {
+        return disponiblesBase;
+      }
+
+      return disponiblesBase + Number(reservaExistente?.plazas_bloqueadas_actualmente || 0);
+    }
+
+    function configurarPantallaSegunModo(reserva) {
+      const btnGuardarBorrador = document.getElementById("btnGuardarBorrador");
+      const btnPrepararEnvio = document.getElementById("btnPrepararEnvio");
+      const tituloEvento = document.getElementById("tituloEvento");
+      if (!btnGuardarBorrador || !btnPrepararEnvio || !tituloEvento) return;
+
+      btnGuardarBorrador.style.display = "";
+      btnGuardarBorrador.disabled = false;
+      btnPrepararEnvio.title = "Enviar solicitud";
+      btnPrepararEnvio.setAttribute("aria-label", "Enviar solicitud");
+
+      if (!reserva) {
+        tituloEvento.textContent = "Solicitud de actividad";
+        return;
+      }
+
+      if (esReservaBorrador(reserva)) {
+        tituloEvento.textContent = "Edicion de borrador";
+        btnPrepararEnvio.title = "Enviar borrador";
+        btnPrepararEnvio.setAttribute("aria-label", "Enviar borrador");
+        return;
+      }
+
+      tituloEvento.textContent = "Edicion de solicitud";
+      btnGuardarBorrador.style.display = "none";
+      btnPrepararEnvio.title = "Guardar cambios";
+      btnPrepararEnvio.setAttribute("aria-label", "Guardar cambios");
     }
 
     function actualizarEstadoCampoFranja() {
@@ -1158,6 +1219,26 @@
       const actividades = Array.isArray(data.actividades) ? data.actividades : [];
       actividadActual = actividades.find(a => Number(a.id) === Number(actividad_id)) || null;
       actividadIdActual = Number(actividad_id || 0) > 0 ? Number(actividad_id) : null;
+
+      if (!actividadActual) {
+        const reservaReferencia = getTokenEdicion() ? await cargarReservaExistente() : null;
+        if (reservaReferencia && Number(reservaReferencia.actividad_id || 0) === Number(actividad_id)) {
+          actividadActual = {
+            id: Number(reservaReferencia.actividad_id || 0),
+            nombre: reservaReferencia.actividad_nombre || "Actividad",
+            titulo_publico: reservaReferencia.actividad_nombre || "Actividad",
+            tipo: reservaReferencia.fecha ? "TEMPORAL" : "PERMANENTE",
+            fecha_inicio: reservaReferencia.fecha || "",
+            fecha_fin: reservaReferencia.fecha || "",
+            lugar: "",
+            imagen_url: "",
+            organizador_publico: "",
+            usa_franjas: Number(reservaReferencia.usa_franjas || 0),
+            requiere_reserva: 1,
+            requisitos_particulares: []
+          };
+        }
+      }
 
       if (!actividadActual) {
         throw new Error("La actividad no está disponible.");
@@ -1259,12 +1340,19 @@
       const usaFranjas = actividadUsaFranjas();
       const franja = obtenerFranjaSeleccionada();
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
+      const plazasPendientes = Number.isInteger(plazas) && plazas > 0 ? plazas : 0;
+      const plazasAsignadas = Number(reservaExistente?.plazas_asignadas || 0);
+      const esEdicion = esModoEdicionReserva();
 
       const infoFranja = document.getElementById("infoFranja");
       const resumenReserva = document.getElementById("resumenReserva");
       const plazasDisponibles = document.getElementById("plazasDisponibles");
-      const minutos = calcularMinutosConsolidacion(plazas > 0 ? plazas : 0);
+      const minutos = calcularMinutosConsolidacion(plazasPendientes);
       const nombreActividad = actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-";
+      const etiquetaPlazas = esEdicion ? "Plazas pendientes por reservar" : "Plazas reservadas";
+      const detalleAsignadas = esEdicion
+        ? `<br><strong>Plazas ya asignadas:</strong> ${plazasAsignadas}`
+        : "";
 
       if (!usaFranjas) {
         infoFranja.textContent = "Esta actividad no utiliza franjas horarias.";
@@ -1272,7 +1360,7 @@
         resumenReserva.innerHTML = `
           <strong>Actividad:</strong> ${nombreActividad}<br>
           <strong>Modalidad de reserva:</strong> Sin franja horaria<br>
-          <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+          <strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
           <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
         `;
         return;
@@ -1285,7 +1373,7 @@
         return;
       }
 
-      const disponibles = Number(franja.disponibles || 0);
+      const disponibles = obtenerDisponiblesFormulario(franja);
       const capacidad = Number(franja.capacidad || 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
 
@@ -1295,7 +1383,7 @@
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
         <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
-        <strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; <strong>Plazas reservadas:</strong> ${plazas > 0 ? plazas : 0}<br>
+        <strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; <strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
       `;
     }
@@ -1335,8 +1423,13 @@
         return { ok: false, error: "Debe indicar un correo electrónico de contacto válido." };
       }
 
-      if (!Number.isInteger(plazas) || plazas <= 0) {
-        return { ok: false, error: "Debe indicar un número válido de plazas reservadas." };
+      if (!Number.isInteger(plazas) || (esModoEdicionReserva() ? plazas < 0 : plazas <= 0)) {
+        return {
+          ok: false,
+          error: esModoEdicionReserva()
+            ? "Debe indicar un número válido de plazas pendientes por reservar."
+            : "Debe indicar un número válido de plazas reservadas."
+        };
       }
 
       let franjaSel = null;
@@ -1347,11 +1440,17 @@
         }
       }
 
-      if (usaFranjas && plazas > Number(franjaSel.disponibles || 0)) {
-        return {
-          ok: false,
-          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${franjaSel.disponibles}. Solicitadas: ${plazas}.`
-        };
+      if (usaFranjas) {
+        const disponiblesOperacion = obtenerDisponiblesFormulario(franjaSel);
+        const plazasTotalesSolicitadas = esModoEdicionReserva()
+          ? Number(reservaExistente?.plazas_asignadas || 0) + plazas
+          : plazas;
+        if (plazasTotalesSolicitadas > disponiblesOperacion) {
+          return {
+            ok: false,
+            error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operación: ${disponiblesOperacion}. Solicitadas: ${plazasTotalesSolicitadas}.`
+          };
+        }
       }
 
       return {
@@ -1433,6 +1532,46 @@
       } finally {
         envioEnCurso = false;
         document.getElementById("btnGuardarBorrador").disabled = false;
+        document.getElementById("btnPrepararEnvio").disabled = false;
+      }
+    }
+
+    async function guardarCambiosReserva(datos) {
+      if (envioEnCurso || !esModoEdicionReserva()) return;
+
+      try {
+        envioEnCurso = true;
+        document.getElementById("btnPrepararEnvio").disabled = true;
+
+        const payload = {
+          ...datos,
+          token_edicion: getTokenEdicion(),
+          plazas_reservadas: datos.plazas_solicitadas
+        };
+        delete payload.plazas_solicitadas;
+
+        const response = await fetch("/api/reserva-actualizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo actualizar la solicitud.");
+        }
+
+        const reservaActualizada = await cargarReservaExistente();
+        await cargarActividad();
+        await cargarFranjas();
+        aplicarDatosReservaEnFormulario(reservaActualizada);
+        limpiarSolicitudPendiente();
+        mostrarMensaje("ok", data.mensaje || "Solicitud actualizada correctamente.");
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo actualizar la solicitud.");
+      } finally {
+        envioEnCurso = false;
         document.getElementById("btnPrepararEnvio").disabled = false;
       }
     }
@@ -1602,6 +1741,11 @@
           return;
         }
 
+        if (esModoEdicionReserva()) {
+          guardarCambiosReserva(validacion.datos);
+          return;
+        }
+
         datosPendientesEnvio = validacion.datos;
         abrirModalConfirmacion(validacion.datos);
       });
@@ -1633,16 +1777,12 @@
       });
 
       try {
-        const borradorExistente = await cargarBorradorExistente();
+        const reservaInicial = await cargarReservaExistente();
         await precargarDatosSolicitante();
         await cargarActividad();
         await cargarFranjas();
-        aplicarDatosBorradorEnFormulario(borradorExistente);
-        if (borradorExistente) {
-          document.getElementById("tituloEvento").textContent = "Edicion de borrador";
-          document.getElementById("btnPrepararEnvio").title = "Enviar borrador";
-          document.getElementById("btnPrepararEnvio").setAttribute("aria-label", "Enviar borrador");
-        }
+        aplicarDatosReservaEnFormulario(reservaInicial);
+        configurarPantallaSegunModo(reservaInicial);
       } catch (error) {
         console.error(error);
       mostrarMensaje("error", error.message || "No se pudo inicializar la página.");
