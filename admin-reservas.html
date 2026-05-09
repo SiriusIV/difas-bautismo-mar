@@ -6,8 +6,22 @@
   <title>Panel de reservas</title>
   <style>
     html, body { height: 100%; }
-    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #222; display: flex; flex-direction: column; overflow: hidden; font-size: 14px; }
-    .cabecera-global { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 18px 20px 14px; flex: 0 0 auto; z-index: 20; }
+    body {
+      font-family: Arial, sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
+      margin: 0;
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .cabecera-global { background: transparent; box-shadow: none; padding: 18px 20px 14px; flex: 0 0 auto; z-index: 20; }
     .cabecera-global-inner { max-width: 1108px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
     .bloque-marca { display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap; text-align: left; }
 .logo-cabecera { width: 101px; height: auto; display: block; transition: opacity 0.12s ease; }

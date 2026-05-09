@@ -1804,6 +1804,14 @@
               </div>
 
               <div class="contexto-acciones-grupo portal-acceso">
+                <a class="btn-icono" href="admin-calendario.html" id="btnIrCalendarioAdminActividad" title="Calendario administrativo" aria-label="Calendario administrativo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </a>
                 <a class="btn-icono" href="portal.html" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 10.5L12 3l9 7.5"></path>
@@ -2816,6 +2824,13 @@
       return Number.isInteger(v) && v > 0 ? v : null;
     }
 
+    function actualizarEnlaceCalendarioActividad() {
+      const btn = document.getElementById("btnIrCalendarioAdminActividad");
+      if (!btn) return;
+      const actividadId = String(document.getElementById("actividadId")?.value || "").trim();
+      btn.href = actividadId ? `admin-calendario.html?actividad_id=${encodeURIComponent(actividadId)}` : "admin-calendario.html";
+    }
+
     function bloquearPantallaPorErrorActividad() {
   pantallaBloqueadaPorErrorActividad = true;
   document.body.classList.add("pantalla-bloqueada");
@@ -3254,7 +3269,7 @@ function cargarRequisitosActividad(actividad) {
 }
 
     function rellenarFormulario(actividad) {
-  cargandoActividad = true;
+    cargandoActividad = true;
 
   try {
     setValor("actividadId", actividad.id || "");
@@ -3264,7 +3279,8 @@ function cargarRequisitosActividad(actividad) {
     setValor("fecha_inicio", actividad.fecha_inicio || "");
     setValor("fecha_fin", actividad.fecha_fin || "");
     setValor("activa", String(actividad.activa ?? 1));
-    setValor("titulo_publico", actividad.titulo_publico || "");
+      actualizarEnlaceCalendarioActividad();
+      setValor("titulo_publico", actividad.titulo_publico || "");
     setValor("subtitulo_publico", actividad.subtitulo_publico || "");
     setValor("descripcion_corta", actividad.descripcion_corta || "");
     setValor("lugar", actividad.lugar || "");
@@ -4351,6 +4367,7 @@ async function borrarFranja(id) {
                 document.getElementById("actividadId").value = dataFinal.id;
                 history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(dataFinal.id)}`);
                 document.getElementById("tituloFormulario").textContent = "Editar actividad";
+                actualizarEnlaceCalendarioActividad();
                 actualizarBotonEliminar();
               }
 
@@ -4375,6 +4392,7 @@ async function borrarFranja(id) {
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
+          actualizarEnlaceCalendarioActividad();
           actualizarBotonEliminar();
         }
 
@@ -4432,6 +4450,7 @@ async function borrarFranja(id) {
         document.getElementById("actividadId").value = data.id;
         history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
+        actualizarEnlaceCalendarioActividad();
         actualizarBotonEliminar();
       }
 
@@ -4832,6 +4851,7 @@ function retrocederPaso() {
           renderTablaRequisitos();
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
+        actualizarEnlaceCalendarioActividad();
         document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
         document.getElementById("btnEditarFranjaSeleccionada").addEventListener("click", editarFranjaSeleccionada);
         document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
