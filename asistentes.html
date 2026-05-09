@@ -5,73 +5,113 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de asistentes</title>
   <style>
+    :root {
+      --color-fondo: #f4f6f8;
+      --color-panel: #fff;
+      --color-borde: rgba(221,228,234,0.95);
+      --color-borde-input: #c9cfd6;
+      --color-primario: #123a63;
+      --color-secundario: #4a5a6a;
+      --color-texto: #222;
+      --color-resumen-fondo: #eef4ff;
+      --color-resumen-borde: #c9dcff;
+      --color-resumen-texto: #1d4f91;
+      --radio-panel: 18px;
+      --radio-campo: 10px;
+      --sombra-panel: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        var(--color-fondo);
+      background-blend-mode: normal, screen, normal;
       margin: 0;
-      padding: 0;
-      color: #222;
+      color: var(--color-texto);
+      overflow-x: hidden;
+      font-size: 14px;
     }
 
     .contenedor {
-      max-width: 1150px;
-      margin: 40px auto;
-      background: #ffffff;
-      padding: 28px;
-      border-radius: 10px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    h2 {
-      margin: 8px 0 0;
-      font-size: 18px;
-      font-weight: normal;
+      max-width: 1108px;
+      margin: 0 auto;
+      padding: 0 16px 32px;
     }
 
     .cabecera {
       position: relative;
-      min-height: 150px;
+      background: transparent;
+      box-shadow: none;
+      padding: 18px 20px 14px;
       margin-bottom: 18px;
-      border-bottom: 1px solid #d9e0e7;
-      padding-bottom: 18px;
+      z-index: 20;
     }
 
-    .logo {
-      position: absolute;
-      left: 0;
-      top: 0;
-      max-width: 110px;
-      height: auto;
-    }
-
-    .cabecera-centro {
-      text-align: center;
-      padding: 0 180px;
-    }
-
-    .sublinea {
-      margin-top: 10px;
-      font-size: 15px;
-      color: #444;
-      text-align: center;
-    }
-
-    .nav-admin {
-      margin-top: 22px;
-      display: inline-flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    .cabecera-inner {
+      max-width: 1108px;
+      margin: 0 auto;
+      display: flex;
       justify-content: center;
       align-items: center;
     }
 
+    .bloque-marca {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+
+    .logo-cabecera {
+      width: 77px;
+      height: auto;
+      display: block;
+    }
+
+    .cabecera-centro {
+      text-align: left;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #123a63;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+
+    h2 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      font-weight: normal;
+      color: #4a5a6a;
+    }
+
+    .sublinea {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #4a5a6a;
+      text-align: left;
+    }
+
+    .nav-admin {
+      margin-top: 14px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
     .nav-btn {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 8px 16px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
@@ -125,8 +165,8 @@
     .bloques-superiores {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
     .bloque-wrap {
@@ -136,20 +176,21 @@
     }
 
     .bloque-titulo-externo {
-      font-size: 18px;
-      font-weight: bold;
-      color: #1d4f91;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-primario);
       padding-left: 2px;
     }
 
     .bloque-info {
-      background: #eef4ff;
-      border: 1px solid #c9dcff;
-      color: #1d4f91;
+      background: var(--color-resumen-fondo);
+      border: 1px solid var(--color-resumen-borde);
+      color: var(--color-resumen-texto);
       padding: 14px;
-      border-radius: 8px;
-      line-height: 1.75;
-      min-height: 170px;
+      border-radius: var(--radio-panel);
+      line-height: 1.65;
+      min-height: 148px;
+      box-shadow: var(--sombra-panel);
     }
 
     .estado-badge {
@@ -175,11 +216,12 @@
     }
 
     .panel {
-      background: #f7f9fb;
-      border: 1px solid #dde4ea;
-      border-radius: 8px;
+      background: var(--color-panel);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio-panel);
       padding: 18px;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
+      box-shadow: var(--sombra-panel);
     }
 
     .barra-acciones {
@@ -188,12 +230,12 @@
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
 
     .btn-icono {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       border-radius: 999px;
       border: 1px solid #bfc9d4;
       background: #fff;
@@ -204,6 +246,7 @@
       cursor: pointer;
       transition: all 0.15s ease;
       padding: 0;
+      box-shadow: 0 4px 12px rgba(18,58,99,0.08);
     }
 
     .btn-icono:hover {
@@ -265,15 +308,16 @@
       width: 100%;
       border-collapse: collapse;
       background: #fff;
-      border-radius: 8px;
+      border-radius: 14px;
       overflow: hidden;
       min-width: 860px;
       table-layout: fixed;
+      border: 1px solid #dde4ea;
     }
 
     th, td {
       border-bottom: 1px solid #dde4ea;
-      padding: 12px 10px;
+      padding: 10px 10px;
       text-align: left;
       vertical-align: middle;
     }
@@ -281,7 +325,8 @@
     th {
       background: #eef4ff;
       color: #1d4f91;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 13px;
     }
 
     th.sel-col, td.sel-col {
@@ -303,11 +348,12 @@
 
     input[type="text"], select {
       width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #c9cfd6;
-      border-radius: 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-borde-input);
+      border-radius: var(--radio-campo);
       font-size: 14px;
       box-sizing: border-box;
+      background: #fff;
     }
 
     .fila-seleccionada {
@@ -333,7 +379,7 @@
       background: #fff;
       width: 100%;
       max-width: 520px;
-      border-radius: 12px;
+      border-radius: 18px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
     }
@@ -384,18 +430,16 @@
         grid-template-columns: 1fr;
       }
 
+      .cabecera-inner {
+        justify-content: flex-start;
+      }
+
+      .bloque-marca {
+        gap: 20px;
+      }
+
       .cabecera-centro {
-        padding: 120px 0 0 0;
-      }
-
-      .logo {
-        position: static;
-        display: block;
-        margin: 0 auto 12px auto;
-      }
-
-      .cabecera {
-        min-height: auto;
+        text-align: left;
       }
 
       .barra-acciones {
@@ -416,17 +460,21 @@
 <body>
   <div class="contenedor">
     <div class="cabecera">
-      <img src="logo.png" alt="Logo" class="logo">
+      <div class="cabecera-inner">
+        <div class="bloque-marca">
+          <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
 
-      <div class="cabecera-centro">
-        <h1 id="tituloEvento">DIFAS 2026</h1>
-        <h2>Bautismos de mar</h2>
-        <div class="sublinea">Panel de gestión de asistentes</div>
+          <div class="cabecera-centro">
+            <h1 id="tituloEvento">DIFAS 2026</h1>
+            <h2>Bautismos de mar</h2>
+            <div class="sublinea">Panel de gestión de asistentes</div>
 
-        <div class="nav-admin">
-          <a href="portal.html" class="nav-btn" data-nav-target="portal.html">Portal</a>
-          <a href="usuario-panel.html" class="nav-btn activo" data-nav-target="usuario-panel.html">Mis reservas</a>
-          <a href="#" id="btnEditarReservaNav" class="nav-btn" data-nav-dynamic="editar">Editar</a>
+            <div class="nav-admin">
+              <a href="portal.html" class="nav-btn" data-nav-target="portal.html">Portal</a>
+              <a href="usuario-panel.html" class="nav-btn activo" data-nav-target="usuario-panel.html">Mis reservas</a>
+              <a href="#" id="btnEditarReservaNav" class="nav-btn" data-nav-dynamic="editar">Editar</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
