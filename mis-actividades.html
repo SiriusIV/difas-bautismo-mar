@@ -29,7 +29,12 @@
 
     body {
       font-family: Arial, sans-serif;
-      background: var(--bg);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        var(--bg);
+      background-blend-mode: normal, screen, normal;
       margin: 0;
       color: var(--text);
       display: flex;
@@ -39,8 +44,8 @@
     }
 
     .cabecera {
-      background: #ffffff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      background: transparent;
+      box-shadow: none;
       padding: 18px 20px 14px;
       position: sticky;
       top: 0;
