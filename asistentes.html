@@ -743,7 +743,22 @@
     }
 
     function solicitudEditable() {
-      return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+      return reservaActual && ["BORRADOR", "PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+    }
+
+    function obtenerMaximoPermitidoActual() {
+      if (!reservaActual) return 0;
+
+      const capacidadFranja = Number(reservaActual.capacidad || 0);
+      const disponiblesGlobalesBackend = Number(reservaActual.disponibles || 0);
+      const bloqueoActualBackend = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
+
+      const bloqueoOtrasReservas = Math.max(
+        capacidadFranja - disponiblesGlobalesBackend - bloqueoActualBackend,
+        0
+      );
+
+      return Math.max(capacidadFranja - bloqueoOtrasReservas, 0);
     }
 
     function etiquetaPerfil(valor) {
@@ -1159,7 +1174,7 @@
       const btnGuardar = document.getElementById("btnGuardarAsistentes");
       const btnAnadir = document.getElementById("btnAnadirFila");
 
-      const maximoPermitido = Math.max(capacidadFranja - bloqueoOtrasReservas, 0);
+      const maximoPermitido = obtenerMaximoPermitidoActual();
 
       if (!solicitudEditable()) {
         btnGuardar.disabled = true;
@@ -1524,6 +1539,11 @@
         const importados = await extraerFilasDesdeXlsx(file);
         if (!importados.length) {
           throw new Error("La plantilla no contiene filas de asistentes completas para importar.");
+        }
+
+        const maximoPermitido = obtenerMaximoPermitidoActual();
+        if (importados.length > maximoPermitido) {
+          throw new Error(`La plantilla contiene ${importados.length} asistentes y el máximo disponible ahora para esta solicitud es ${maximoPermitido}. Corrige el archivo antes de importarlo.`);
         }
 
         if (hayCambiosSinGuardar || validarVisitantesDeTabla().completos.length > 0) {

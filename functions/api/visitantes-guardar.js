@@ -238,7 +238,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (!["PENDIENTE", "CONFIRMADA"].includes(reserva.estado)) {
+    if (!["BORRADOR", "PENDIENTE", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase())) {
       return json(
         { ok: false, error: "La solicitud no permite gestionar asistentes en su estado actual." },
         { status: 400 }
