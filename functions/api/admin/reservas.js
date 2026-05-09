@@ -584,7 +584,7 @@ export async function onRequestPatch(context) {
     }
 
     const requiereObservaciones =
-      (estadoActual === "CONFIRMADA" && nuevoEstado === "RECHAZADA") ||
+      nuevoEstado === "RECHAZADA" ||
       (estadoActual === "RECHAZADA" && nuevoEstado === "CONFIRMADA");
 
     if (requiereObservaciones && !observacionesAdmin) {
