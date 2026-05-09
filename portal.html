@@ -2178,19 +2178,15 @@ function actualizarBotonSolicitarSegunFranja() {
       items.forEach((item) => {
         const row = document.createElement("tr");
         row.className = item.leida ? "" : "no-leida";
-        const accionesVisto = [];
-        if (!item.leida) {
-          accionesVisto.push(`
-            <button
-              type="button"
-              class="check-notificacion"
-              data-notificacion-leida="${String(item.id || "")}"
-              title="Marcar como vista"
-              aria-label="Marcar como vista">
-              <span class="check-notificacion-marca">✓</span>
-            </button>
-          `);
-        }
+        const accionesVisto = [`
+          <button
+            type="button"
+            class="check-notificacion ${item.leida ? "marcado" : ""}"
+            ${item.leida ? "disabled" : `data-notificacion-leida="${String(item.id || "")}" title="Marcar como vista" aria-label="Marcar como vista"`}
+            ${item.leida ? 'title="Notificación ya vista" aria-label="Notificación ya vista"' : ""}>
+            <span class="check-notificacion-marca">✓</span>
+          </button>
+        `];
         const titulo = String(item.titulo || "Notificación").trim();
         const contenidoPrincipal = item.url_destino
           ? `
