@@ -1602,6 +1602,7 @@
     let adminsSecretariaAsociados = 0;
     let notificacionesPortal = [];
     let notificacionesOperativasPortal = [];
+    let notificacionesModalPortal = [];
     let notificacionesNoLeidas = 0;
     const STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS = "portal_notificaciones_operativas_vistas";
     let carruselResetTimeout = null;
@@ -2157,8 +2158,10 @@ function actualizarBotonSolicitarSegunFranja() {
       const lista = document.getElementById("listaNotificacionesPortal");
       const subtitulo = document.querySelector(".modal-notificaciones-subtitulo");
       lista.innerHTML = "";
-      const items = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
-        .filter((item) => !item.leida);
+      const items = (notificacionesModalPortal && notificacionesModalPortal.length)
+        ? [...notificacionesModalPortal]
+        : [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
+            .filter((item) => !item.leida);
       const unread = items.filter((item) => !item.leida).length;
 
       if (subtitulo) {
@@ -2407,6 +2410,9 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     function abrirModalNotificacionesPortal() {
+      notificacionesModalPortal = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
+        .filter((item) => !item.leida)
+        .map((item) => ({ ...item }));
       renderizarNotificacionesPortal();
       document.getElementById("modalNotificacionesPortal").classList.add("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "false");
@@ -2432,6 +2438,10 @@ function actualizarBotonSolicitarSegunFranja() {
         actualizada = true;
         return { ...item, leida: true };
       });
+      notificacionesModalPortal = (notificacionesModalPortal || []).map((item) => {
+        if (String(item.id || "") !== idTexto || item.leida) return item;
+        return { ...item, leida: true };
+      });
       if (actualizada) {
         notificacionesNoLeidas = (notificacionesPortal || []).filter((item) => !item.leida).length;
         actualizarIconoNotificacionesPortal();
@@ -2439,6 +2449,7 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     async function cerrarModalNotificacionesPortal() {
+      notificacionesModalPortal = [];
       document.getElementById("modalNotificacionesPortal").classList.remove("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
     }
@@ -3611,21 +3622,9 @@ function continuarSolicitudActividad() {
         const id = String(btnLeer.dataset.notificacionLeida || "");
         if (!id) return;
         aplicarNotificacionVistaEnMemoriaPortal(id);
-        const quedanPendientes = contarNotificacionesPendientesPortal();
-        if (quedanPendientes <= 0) {
-          actualizarIconoNotificacionesPortal();
-          await marcarNotificacionComoVistaPortal(id);
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-          await cerrarModalNotificacionesPortal();
-          return;
-        }
         renderizarNotificacionesPortal();
         await marcarNotificacionComoVistaPortal(id);
-        if (contarNotificacionesPendientesPortal() <= 0) {
-          await cerrarModalNotificacionesPortal();
-        } else {
-          renderizarNotificacionesPortal();
-        }
+        renderizarNotificacionesPortal();
         return;
       }
 
