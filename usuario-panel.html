@@ -936,7 +936,7 @@
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
       document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
-      document.getElementById("btnAsistentes").disabled = !hay || estado === "BORRADOR";
+      document.getElementById("btnAsistentes").disabled = !hay || estado === "CANCELADA" || estado === "RECHAZADA";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
     }
 

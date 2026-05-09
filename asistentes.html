@@ -784,6 +784,15 @@
       return inicial + opciones.map((op) => `<option value="${op.value}" ${actual === op.value ? "selected" : ""}>${op.label}</option>`).join("");
     }
 
+    function normalizarClaveNombreAsistente(valor) {
+      return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    }
+
     function formatearFechaHoraLocal(valor) {
       if (!valor) return "";
 
@@ -960,6 +969,7 @@
     function validarVisitantesDeTabla() {
       const errores = [];
       const completos = [];
+      const nombresVistos = new Map();
 
       obtenerFilasTabla().forEach((tr, indice) => {
         const visitante = {
@@ -983,6 +993,16 @@
         if (faltantes.length) {
           errores.push(`Fila ${visitante.filaVisual}: falta ${faltantes.join(", ")}.`);
           return;
+        }
+
+        const claveNombre = normalizarClaveNombreAsistente(visitante.nombre_completo);
+        if (claveNombre) {
+          const filaPrevia = nombresVistos.get(claveNombre);
+          if (filaPrevia) {
+            errores.push(`Fila ${visitante.filaVisual}: el asistente "${visitante.nombre_completo}" está repetido (ya aparece en la fila ${filaPrevia}).`);
+            return;
+          }
+          nombresVistos.set(claveNombre, visitante.filaVisual);
         }
 
         completos.push(visitante);
@@ -1472,6 +1492,7 @@
 
       const errores = [];
       const importados = [];
+      const nombresImportados = new Map();
 
       filas.slice(indiceCabecera + 1).forEach((fila) => {
         const nombre = String(fila.A || "").trim();
@@ -1506,6 +1527,14 @@
         }
         if (!perfil || !ensenanza || !edad) return;
 
+        const claveNombre = normalizarClaveNombreAsistente(nombre);
+        const filaPrevia = nombresImportados.get(claveNombre);
+        if (filaPrevia) {
+          errores.push(`Fila ${fila.numero}: el asistente "${nombre}" está repetido en la plantilla (ya aparece en la fila ${filaPrevia}).`);
+          return;
+        }
+        nombresImportados.set(claveNombre, fila.numero);
+
         importados.push({
           nombre_completo: nombre,
           perfil_asistente: perfil,
@@ -1536,6 +1565,11 @@
 
       try {
         limpiarMensaje();
+        const estadoActualTabla = validarVisitantesDeTabla();
+        if (estadoActualTabla.errores.length) {
+          throw new Error(`Corrige antes las filas incompletas o repetidas de la tabla actual. ${estadoActualTabla.errores.join(" ")}`);
+        }
+
         const importados = await extraerFilasDesdeXlsx(file);
         if (!importados.length) {
           throw new Error("La plantilla no contiene filas de asistentes completas para importar.");
@@ -1546,15 +1580,35 @@
           throw new Error(`La plantilla contiene ${importados.length} asistentes y el máximo disponible ahora para esta solicitud es ${maximoPermitido}. Corrige el archivo antes de importarlo.`);
         }
 
-        if (hayCambiosSinGuardar || validarVisitantesDeTabla().completos.length > 0) {
-          const confirmar = window.confirm("La importación sustituirá la tabla actual de asistentes no guardada. ¿Deseas continuar?");
-          if (!confirmar) return;
+        const yaCargados = estadoActualTabla.completos;
+        const nombresExistentes = new Set(
+          yaCargados.map((v) => normalizarClaveNombreAsistente(v.nombre_completo)).filter(Boolean)
+        );
+        const repetidos = [];
+        const nuevos = [];
+
+        importados.forEach((visitante) => {
+          const clave = normalizarClaveNombreAsistente(visitante.nombre_completo);
+          if (nombresExistentes.has(clave)) {
+            repetidos.push(visitante.nombre_completo);
+            return;
+          }
+          nombresExistentes.add(clave);
+          nuevos.push(visitante);
+        });
+
+        if (!nuevos.length) {
+          throw new Error("Todos los asistentes de la plantilla ya estaban cargados en la solicitud. No se ha añadido ninguno nuevo.");
         }
 
-        visitantesActuales = importados;
+        visitantesActuales = [...yaCargados, ...nuevos];
         renderizarVisitantes();
         marcarCambiosPendientes();
-        mostrarMensaje("ok", `Se han cargado ${importados.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+        if (repetidos.length) {
+          mostrarMensaje("aviso", `Se han añadido ${nuevos.length} asistentes nuevos desde la plantilla y se han omitido ${repetidos.length} repetidos que ya estaban cargados en la solicitud. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+        } else {
+          mostrarMensaje("ok", `Se han añadido ${nuevos.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+        }
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo importar la plantilla de asistentes.");
       }
