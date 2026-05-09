@@ -198,6 +198,15 @@
       color: #123a63;
       line-height: 1.2;
     }
+    .franja-sesion-nav {
+      display: none;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .franja-sesion-nav .nav-btn {
+      padding: 7px 13px;
+    }
     .franja-sesion-spacer { flex: 1 1 auto; }
     .btn-notificaciones {
       display: none;
@@ -1346,6 +1355,14 @@
         </button>
         <div id="textoSesion" class="franja-sesion-texto"></div>
         <div class="franja-sesion-spacer"></div>
+        <div id="barraUsuario" class="barra-usuario franja-sesion-nav">
+          <button class="nav-btn activo" onclick="irPanelUsuario()">Mis reservas</button>
+        </div>
+        <div id="barraSecretaria" class="barra-secretaria franja-sesion-nav"></div>
+        <div id="barraAdmin" class="barra-admin franja-sesion-nav">
+          <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+          <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
+        </div>
         <button
           id="btnNotificacionesSesion"
           class="nav-btn-icon btn-notificaciones"
@@ -1405,17 +1422,6 @@
               Iniciar sesión para solicitar una actividad.
             </div>
             <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
-          </div>
-
-<div id="barraUsuario" class="barra-usuario">
-  <button class="nav-btn activo" onclick="irPanelUsuario()">Mi panel de reservas</button>
-</div>
-
-<div id="barraSecretaria" class="barra-secretaria"></div>
-
-          <div id="barraAdmin" class="barra-admin">
-            <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
-            <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
           </div>
         </div>
       </div>
