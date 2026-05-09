@@ -3611,6 +3611,13 @@ function continuarSolicitudActividad() {
         const id = String(btnLeer.dataset.notificacionLeida || "");
         if (!id) return;
         aplicarNotificacionVistaEnMemoriaPortal(id);
+        const quedanPendientes = contarNotificacionesPendientesPortal();
+        if (quedanPendientes <= 0) {
+          actualizarIconoNotificacionesPortal();
+          await marcarNotificacionComoVistaPortal(id);
+          await cerrarModalNotificacionesPortal();
+          return;
+        }
         renderizarNotificacionesPortal();
         await marcarNotificacionComoVistaPortal(id);
         if (contarNotificacionesPendientesPortal() <= 0) {
