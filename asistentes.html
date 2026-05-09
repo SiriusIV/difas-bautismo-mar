@@ -173,9 +173,10 @@
     .mensaje {
       margin-top: 16px;
       margin-bottom: 18px;
-      padding: 12px;
+      padding: 12px 42px 12px 12px;
       border-radius: 6px;
       display: none;
+      position: relative;
     }
 
     .mensaje.error {
@@ -245,12 +246,38 @@
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
+    .estado-badge.borrador { background: #5f6d7a; color: #fff; }
 
     .resumen-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px;
       align-items: start;
+    }
+
+    .resumen-grid-reserva {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      align-items: stretch;
+    }
+
+    .resumen-col {
+      min-width: 0;
+    }
+
+    .resumen-grid-reserva .resumen-col {
+      padding: 0 12px;
+      border-left: 1px solid rgba(29,79,145,0.18);
+    }
+
+    .resumen-grid-reserva .resumen-col:first-child {
+      padding-left: 0;
+      border-left: none;
+    }
+
+    .resumen-grid-reserva .resumen-col:last-child {
+      padding-right: 0;
     }
 
     .panel {
@@ -502,6 +529,32 @@
       background: #565e64;
     }
 
+    .mensaje-cerrar {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.8;
+    }
+
+    .mensaje-cerrar:hover {
+      background: rgba(0,0,0,0.06);
+      opacity: 1;
+    }
+
     @media (max-width: 1000px) {
       .bloques-superiores {
         grid-template-columns: 1fr;
@@ -526,6 +579,16 @@
       .resumen-grid {
         grid-template-columns: 1fr;
         gap: 12px;
+      }
+
+      .resumen-grid-reserva {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .resumen-grid-reserva .resumen-col {
+        padding: 0;
+        border-left: none;
       }
 
       .bloque-contexto {
@@ -570,7 +633,7 @@
       </div>
     </div>
 
-    <div id="mensaje" class="mensaje"></div>
+    <div id="mensaje" class="mensaje"><button type="button" id="btnCerrarMensaje" class="mensaje-cerrar" aria-label="Cerrar aviso">×</button><span id="mensajeTexto"></span></div>
 
     <div class="bloque-contexto">
       <div class="bloque-contexto-info">
@@ -719,6 +782,7 @@
 
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
+      if (e === "borrador") return "borrador";
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "rechazada") return "rechazada";
@@ -815,16 +879,18 @@
 
     function mostrarMensaje(tipo, texto) {
       const mensaje = document.getElementById("mensaje");
+      const mensajeTexto = document.getElementById("mensajeTexto");
       mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
-      mensaje.textContent = texto;
+      mensajeTexto.textContent = texto;
     }
 
     function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
+      const mensajeTexto = document.getElementById("mensajeTexto");
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
-      mensaje.textContent = "";
+      mensajeTexto.textContent = "";
     }
 
     function marcarCambiosPendientes() {
@@ -1152,7 +1218,7 @@
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
-        <div class="resumen-grid">
+        <div class="resumen-grid-reserva">
           <div class="resumen-col">
             <strong>Plazas</strong><br>
             Reservadas pendientes: ${reservadasPendientes}<br>
@@ -1660,6 +1726,7 @@
 
       document.getElementById("btnEliminarSeleccionado").addEventListener("click", eliminarFilaSeleccionada);
       document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
+      document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
       configurarImportacionAsistentes();
 
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
