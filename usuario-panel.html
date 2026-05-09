@@ -839,7 +839,6 @@
         return { texto: "", finalizada: false };
       }
       const expiraEn = parsearFechaServidor(reserva?.prereserva_expira_en);
-      const pendientes = Number(reserva?.plazas_pendientes || 0);
 
       if (!expiraEn) {
         return { texto: "", finalizada: false };
@@ -848,10 +847,6 @@
       const diferenciaMs = expiraEn.getTime() - Date.now();
       if (diferenciaMs <= 0 || !reserva?.prereserva_vigente) {
         return { texto: "Agotado", finalizada: true };
-      }
-
-      if (pendientes <= 0) {
-        return { texto: "", finalizada: false };
       }
 
       const totalMinutos = Math.max(1, Math.ceil(diferenciaMs / 60000));
