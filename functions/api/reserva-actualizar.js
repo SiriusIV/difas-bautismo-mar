@@ -1,5 +1,6 @@
 ﻿import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
+import { getUserSession } from "./usuario/_auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -262,6 +263,14 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    const user = await getUserSession(request, env.SECRET_KEY);
+    if (!user?.id) {
+      return json(
+        { ok: false, authenticated: false, error: "Debes iniciar sesión para modificar esta solicitud." },
+        { status: 401 }
+      );
+    }
+
     const data = await request.json();
 
     const tokenEdicion = limpiarTexto(data.token_edicion);
@@ -302,6 +311,10 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "No existe ninguna reserva con ese token." }, { status: 404 });
     }
 
+    if (Number(reservaActual.usuario_id || 0) !== Number(user.id || 0)) {
+      return json({ ok: false, error: "Solo el solicitante originador puede modificar esta solicitud." }, { status: 403 });
+    }
+
     const actividad = await obtenerActividad(env, reservaActual.actividad_id);
     if (!actividad || Number(actividad.requiere_reserva || 0) !== 1) {
       return json({ ok: false, error: "La actividad asociada ya no admite reservas." }, { status: 400 });
@@ -324,7 +337,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Esta actividad no utiliza franjas horarias." }, { status: 400 });
     }
 
-    if (!esBorrador && !["PENDIENTE", "CONFIRMADA", "SUSPENDIDA", "RECHAZADA"].includes(String(reservaActual.estado || "").toUpperCase())) {
+    if (!esBorrador && !["RECHAZADA"].includes(String(reservaActual.estado || "").toUpperCase())) {
       return json({ ok: false, error: "La solicitud no puede modificarse en su estado actual." }, { status: 400 });
     }
 

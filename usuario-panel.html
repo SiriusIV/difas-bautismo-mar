@@ -935,7 +935,7 @@
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
-      document.getElementById("btnEditar").disabled = !hay;
+      document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
       document.getElementById("btnAsistentes").disabled = !hay || estado === "BORRADOR";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
     }
@@ -1056,12 +1056,17 @@
         return acciones;
       }
 
+      if (estado === "RECHAZADA") {
+        if (reserva?.token_edicion) {
+          acciones.push({
+            label: "Editar solicitud",
+            principal: true,
+            onClick: () => editarReserva(reserva.token_edicion, estado)
+          });
+        }
+      }
+
       if (reserva?.token_edicion && estado !== "CANCELADA" && estado !== "CONFIRMADA") {
-        acciones.push({
-          label: "Editar solicitud",
-          principal: true,
-          onClick: () => editarReserva(reserva.token_edicion, estado)
-        });
         acciones.push({
           label: "Gestionar asistentes",
           onClick: () => abrirAsistentes(reserva.token_edicion)
