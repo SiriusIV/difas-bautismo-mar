@@ -1682,6 +1682,19 @@
       contenedor.scrollTop = top;
     }
 
+    function formatearCabeceraDiaCalendario(arg) {
+      const tipoVista = String(arg?.view?.type || "");
+      const fecha = arg?.date || new Date();
+      if (tipoVista === "dayGridMonth") {
+        const texto = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
+        return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : "";
+      }
+      return new Intl.DateTimeFormat("es-ES", {
+        weekday: "short",
+        day: "numeric"
+      }).format(fecha);
+    }
+
     function crearCalendario() {
       const calendarEl = document.getElementById("calendar");
 
@@ -1708,10 +1721,7 @@
             }
           }
         },
-        dayHeaderFormat: {
-          weekday: "short",
-          day: "numeric"
-        },
+        dayHeaderContent: formatearCabeceraDiaCalendario,
         nowIndicator: true,
         allDaySlot: false,
         slotMinTime: "07:00:00",
