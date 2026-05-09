@@ -3628,7 +3628,7 @@ function continuarSolicitudActividad() {
       if (btnIr) {
         e.preventDefault();
         const id = String(btnIr.dataset.notificacionIr || "");
-        const item = [...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
+        const item = [...(notificacionesModalPortal || []), ...(notificacionesOperativasPortal || []), ...(notificacionesPortal || [])]
           .find((row) => String(row.id || "") === id);
         if (!item) return;
         if (!item.leida) {
