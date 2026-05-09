@@ -9,14 +9,62 @@ function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
 }
 
-function normalizarTipoAsistente(valor) {
+function normalizarPerfilAsistente(valor) {
   const v = String(valor || "").trim().toUpperCase();
-  return v === "PROFESOR" ? "PROFESOR" : "ALUMNO";
+  if (!v) return "";
+  if (v === "ALUMNO") return "ALUMNO";
+  if (v === "RESPONSABLE_GRUPO") return "RESPONSABLE_GRUPO";
+  if (v === "GENERAL") return "GENERAL";
+  if (v === "PROFESOR") return "RESPONSABLE_GRUPO";
+  return "";
 }
 
 function normalizarCategoriaEdad(valor) {
   const v = String(valor || "").trim().toUpperCase();
-  return v === "MENOR_10" ? "MENOR_10" : "MAYOR_10";
+  if (!v) return "";
+  if (v === "DE_3_A_5") return "DE_3_A_5";
+  if (v === "DE_6_A_10" || v === "MENOR_10") return "DE_6_A_10";
+  if (v === "DE_10_A_15") return "DE_10_A_15";
+  if (v === "MAYOR_DE_15") return "MAYOR_DE_15";
+  return "";
+}
+
+function normalizarNivelEnsenanza(valor) {
+  const v = String(valor || "").trim().toUpperCase();
+  if (!v) return "";
+  if (v === "NO_CORRESPONDE") return "NO_CORRESPONDE";
+  if (v === "INFANTIL") return "INFANTIL";
+  if (v === "PRIMARIA") return "PRIMARIA";
+  if (v === "SECUNDARIA") return "SECUNDARIA";
+  if (v === "BACHILLER_FP") return "BACHILLER_FP";
+  if (v === "ESTUDIOS_SUPERIORES") return "ESTUDIOS_SUPERIORES";
+  return "";
+}
+
+async function asegurarEsquemaVisitantes(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS visitantes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reserva_id INTEGER NOT NULL,
+      nombre_completo TEXT NOT NULL,
+      tipo_asistente TEXT,
+      perfil_asistente TEXT,
+      nivel_ensenanza TEXT,
+      categoria_edad TEXT
+    )
+  `).run();
+
+  const columnas = await listarColumnasVisitantes(env);
+  const alterPendientes = [];
+  if (!columnas.includes("perfil_asistente")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN perfil_asistente TEXT`);
+  }
+  if (!columnas.includes("nivel_ensenanza")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nivel_ensenanza TEXT`);
+  }
+  for (const sentencia of alterPendientes) {
+    await env.DB.prepare(sentencia).run();
+  }
 }
 
 async function obtenerReservaPorToken(env, tokenEdicion) {
@@ -61,25 +109,35 @@ async function borrarVisitantesDeReserva(env, reservaId) {
 
 async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) {
   const tieneTipoAsistente = columnasVisitantes.includes("tipo_asistente");
+  const tienePerfilAsistente = columnasVisitantes.includes("perfil_asistente");
+  const tieneNivelEnsenanza = columnasVisitantes.includes("nivel_ensenanza");
 
-  if (tieneTipoAsistente) {
+  if (tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza) {
     const sql = `
       INSERT INTO visitantes (
         reserva_id,
         nombre_completo,
-        tipo_asistente,
+        ${tieneTipoAsistente ? "tipo_asistente," : ""}
+        ${tienePerfilAsistente ? "perfil_asistente," : ""}
+        ${tieneNivelEnsenanza ? "nivel_ensenanza," : ""}
         categoria_edad
-      )
-      VALUES (?, ?, ?, ?)
+      ) VALUES (?, ?, ${tieneTipoAsistente ? "?," : ""} ${tienePerfilAsistente ? "?," : ""} ${tieneNivelEnsenanza ? "?," : ""} ?)
     `;
 
+    const bind = [reservaId, visitante.nombre_completo];
+    if (tieneTipoAsistente) {
+      bind.push(visitante.perfil_asistente === "ALUMNO" ? "ALUMNO" : "PROFESOR");
+    }
+    if (tienePerfilAsistente) {
+      bind.push(visitante.perfil_asistente);
+    }
+    if (tieneNivelEnsenanza) {
+      bind.push(visitante.nivel_ensenanza);
+    }
+    bind.push(visitante.categoria_edad);
+
     return await env.DB.prepare(sql)
-      .bind(
-        reservaId,
-        visitante.nombre_completo,
-        visitante.tipo_asistente,
-        visitante.categoria_edad
-      )
+      .bind(...bind)
       .run();
   }
 
@@ -188,16 +246,23 @@ export async function onRequestPost(context) {
     }
 
     const visitantesNormalizados = visitantesEntrada
-      .map(v => ({
+      .map((v, index) => ({
+        fila: index + 1,
         nombre_completo: limpiarTexto(v.nombre_completo),
-        tipo_asistente: normalizarTipoAsistente(v.tipo_asistente),
+        perfil_asistente: normalizarPerfilAsistente(v.perfil_asistente ?? v.tipo_asistente),
+        nivel_ensenanza: normalizarNivelEnsenanza(v.nivel_ensenanza),
         categoria_edad: normalizarCategoriaEdad(v.categoria_edad)
       }))
-      .filter(v => v.nombre_completo !== "")
-      .map(v => ({
-        ...v,
-        categoria_edad: v.tipo_asistente === "PROFESOR" ? "MAYOR_10" : v.categoria_edad
-      }));
+      .filter(v => v.nombre_completo !== "");
+
+    for (const visitante of visitantesNormalizados) {
+      if (!visitante.nombre_completo || !visitante.perfil_asistente || !visitante.nivel_ensenanza || !visitante.categoria_edad) {
+        return json(
+          { ok: false, error: `La fila ${visitante.fila} de asistentes no está completa.` },
+          { status: 400 }
+        );
+      }
+    }
 
     const franja = await obtenerCapacidadFranja(env, reserva.franja_id);
 
@@ -224,6 +289,7 @@ export async function onRequestPost(context) {
       );
     }
 
+    await asegurarEsquemaVisitantes(env);
     const columnasVisitantes = await listarColumnasVisitantes(env);
 
     await borrarVisitantesDeReserva(env, reserva.id);
@@ -234,10 +300,13 @@ export async function onRequestPost(context) {
 
     await actualizarReservaTrasGuardar(env, reserva.id);
 
-    const alumnos = visitantesNormalizados.filter(v => v.tipo_asistente === "ALUMNO").length;
-    const profesores = visitantesNormalizados.filter(v => v.tipo_asistente === "PROFESOR").length;
-    const mayores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_10").length;
-    const menores10 = visitantesNormalizados.filter(v => v.categoria_edad === "MENOR_10").length;
+    const alumnos = visitantesNormalizados.filter(v => v.perfil_asistente === "ALUMNO").length;
+    const responsablesGrupo = visitantesNormalizados.filter(v => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
+    const generales = visitantesNormalizados.filter(v => v.perfil_asistente === "GENERAL").length;
+    const de3a5 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_3_A_5").length;
+    const de6a10 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_6_A_10").length;
+    const de10a15 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_10_A_15").length;
+    const mayores15 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_DE_15").length;
 
     return json({
       ok: true,
@@ -251,9 +320,13 @@ export async function onRequestPost(context) {
       plazas_prereservadas_historicas: Number(reserva.plazas_prereservadas || 0),
       plazas_asignadas: totalDeseado,
       alumnos,
-      profesores,
-      mayores10,
-      menores10
+      responsables_grupo: responsablesGrupo,
+      generales,
+      profesores: responsablesGrupo,
+      de_3_a_5: de3a5,
+      de_6_a_10: de6a10,
+      de_10_a_15: de10a15,
+      mayor_de_15: mayores15
     });
   } catch (error) {
     return json(

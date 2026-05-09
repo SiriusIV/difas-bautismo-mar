@@ -286,6 +286,51 @@
       margin: 0;
     }
 
+    .importador-asistentes {
+      background: #f7fbff;
+      border: 1px dashed #9fb7d1;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .importador-titulo {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-primario);
+      margin: 0;
+    }
+
+    .importador-texto {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #4a5a6a;
+      margin: 0;
+    }
+
+    .importador-zona {
+      border: 1px dashed #7aa7e8;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.82);
+      padding: 18px;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .importador-zona.activa {
+      background: #eef6ff;
+      border-color: #0b5ed7;
+    }
+
+    .importador-acciones {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .btn-icono {
       width: 44px;
       height: 44px;
@@ -388,15 +433,19 @@
     }
 
     th.nombre-col, td.nombre-col {
-      width: 46%;
+      width: 38%;
     }
 
     th.tipo-col, td.tipo-col {
+      width: 18%;
+    }
+
+    th.ens-col, td.ens-col {
       width: 22%;
     }
 
     th.edad-col, td.edad-col {
-      width: 22%;
+      width: 18%;
     }
 
     input[type="text"], select {
@@ -595,13 +644,26 @@
         </div>
       </div>
 
+      <div class="importador-asistentes">
+        <h4 class="importador-titulo">Importación desde plantilla Excel</h4>
+        <p class="importador-texto">Puedes seleccionar o arrastrar el archivo oficial de asistentes. La aplicación validará que cada fila usada tenga cubiertos los cuatro campos obligatorios antes de volcarla a la tabla.</p>
+        <div id="zonaImportacionAsistentes" class="importador-zona">
+          <p class="importador-texto">Arrastra aquí la plantilla <strong>.xlsx</strong> o usa el botón para seleccionarla.</p>
+          <div class="importador-acciones">
+            <button type="button" id="btnSeleccionarArchivoAsistentes" class="btn-modal">Seleccionar archivo</button>
+          </div>
+          <input type="file" id="inputImportarAsistentes" accept=".xlsx" hidden>
+        </div>
+      </div>
+
       <div class="tabla-wrap">
         <table>
           <thead>
             <tr>
               <th class="sel-col"></th>
               <th class="nombre-col">Nombre completo</th>
-              <th class="tipo-col">Tipo</th>
+              <th class="tipo-col">Perfil</th>
+              <th class="ens-col">Enseñanza</th>
               <th class="edad-col">Edad</th>
             </tr>
           </thead>
@@ -649,6 +711,28 @@
     let hayCambiosSinGuardar = false;
     let destinoPendienteNavegacion = null;
 
+    const OPCIONES_PERFIL = [
+      { value: "ALUMNO", label: "Alumno" },
+      { value: "RESPONSABLE_GRUPO", label: "Responsable de grupo" },
+      { value: "GENERAL", label: "General" }
+    ];
+
+    const OPCIONES_ENSENANZA = [
+      { value: "NO_CORRESPONDE", label: "No corresponde" },
+      { value: "INFANTIL", label: "Infantil" },
+      { value: "PRIMARIA", label: "Primaria" },
+      { value: "SECUNDARIA", label: "Secundaria" },
+      { value: "BACHILLER_FP", label: "Bachiller/FP" },
+      { value: "ESTUDIOS_SUPERIORES", label: "Estudios Superiores" }
+    ];
+
+    const OPCIONES_EDAD = [
+      { value: "DE_3_A_5", label: "de 3 a 5 años" },
+      { value: "DE_6_A_10", label: "de 6 a 10 años" },
+      { value: "DE_10_A_15", label: "de 10 a 15 años" },
+      { value: "MAYOR_DE_15", label: "mayor de 15 años" }
+    ];
+
     function claseEstadoBadge(estado) {
       const e = String(estado || "").toLowerCase();
       if (e === "pendiente") return "pendiente";
@@ -660,6 +744,29 @@
 
     function solicitudEditable() {
       return reservaActual && ["PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+    }
+
+    function etiquetaPerfil(valor) {
+      const item = OPCIONES_PERFIL.find((op) => op.value === String(valor || "").trim().toUpperCase());
+      return item ? item.label : "Alumno";
+    }
+
+    function etiquetaEnsenanza(valor) {
+      const item = OPCIONES_ENSENANZA.find((op) => op.value === String(valor || "").trim().toUpperCase());
+      return item ? item.label : "No corresponde";
+    }
+
+    function etiquetaEdad(valor) {
+      const item = OPCIONES_EDAD.find((op) => op.value === String(valor || "").trim().toUpperCase());
+      return item ? item.label : "mayor de 15 años";
+    }
+
+    function crearOpcionesSelect(opciones, valorSeleccionado, placeholder) {
+      const actual = String(valorSeleccionado || "").trim().toUpperCase();
+      const inicial = placeholder
+        ? `<option value="">${placeholder}</option>`
+        : "";
+      return inicial + opciones.map((op) => `<option value="${op.value}" ${actual === op.value ? "selected" : ""}>${op.label}</option>`).join("");
     }
 
     function formatearFechaHoraLocal(valor) {
@@ -829,13 +936,44 @@
       return obtenerFilasTabla().map(tr => ({
         filaId: tr.dataset.filaId,
         nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
-        tipo_asistente: tr.querySelector(".tipo-asistente")?.value || "ALUMNO",
-        categoria_edad: tr.querySelector(".categoria-asistente")?.value || "MAYOR_10"
+        perfil_asistente: tr.querySelector(".perfil-asistente")?.value || "",
+        nivel_ensenanza: tr.querySelector(".ensenanza-asistente")?.value || "",
+        categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
       }));
     }
 
-    function obtenerVisitantesValidosDeTabla() {
-      return obtenerVisitantesDeTabla().filter(v => v.nombre_completo !== "");
+    function validarVisitantesDeTabla() {
+      const errores = [];
+      const completos = [];
+
+      obtenerFilasTabla().forEach((tr, indice) => {
+        const visitante = {
+          filaId: tr.dataset.filaId,
+          filaVisual: indice + 1,
+          nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
+          perfil_asistente: tr.querySelector(".perfil-asistente")?.value || "",
+          nivel_ensenanza: tr.querySelector(".ensenanza-asistente")?.value || "",
+          categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
+        };
+
+        const activa = !!(visitante.nombre_completo || visitante.perfil_asistente || visitante.nivel_ensenanza || visitante.categoria_edad);
+        if (!activa) return;
+
+        const faltantes = [];
+        if (!visitante.nombre_completo) faltantes.push("Nombre completo");
+        if (!visitante.perfil_asistente) faltantes.push("Perfil");
+        if (!visitante.nivel_ensenanza) faltantes.push("Enseñanza");
+        if (!visitante.categoria_edad) faltantes.push("Edad");
+
+        if (faltantes.length) {
+          errores.push(`Fila ${visitante.filaVisual}: falta ${faltantes.join(", ")}.`);
+          return;
+        }
+
+        completos.push(visitante);
+      });
+
+      return { completos, errores };
     }
 
     function actualizarBotonEliminar() {
@@ -870,22 +1008,7 @@
       actualizarBotonEliminar();
     }
 
-    function ajustarEdadSegunTipo(tr) {
-      const tipo = tr.querySelector(".tipo-asistente");
-      const edad = tr.querySelector(".categoria-asistente");
-      if (!tipo || !edad) return;
-
-      if (tipo.value === "PROFESOR") {
-        edad.value = "MAYOR_10";
-        edad.disabled = true;
-      } else {
-        if (solicitudEditable()) {
-          edad.disabled = false;
-        }
-      }
-    }
-
-    function crearFila(asistente = { nombre_completo: "", tipo_asistente: "ALUMNO", categoria_edad: "MAYOR_10" }) {
+    function crearFila(asistente = { nombre_completo: "", perfil_asistente: "", nivel_ensenanza: "", categoria_edad: "" }) {
       const tbody = document.getElementById("cuerpoAsistentes");
       const tr = document.createElement("tr");
       const filaId = crearIdFila();
@@ -901,15 +1024,18 @@
           <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
         </td>
         <td class="tipo-col">
-          <select class="tipo-asistente" ${editable ? "" : "disabled"}>
-            <option value="ALUMNO" ${asistente.tipo_asistente === "ALUMNO" ? "selected" : ""}>Alumno</option>
-            <option value="PROFESOR" ${asistente.tipo_asistente === "PROFESOR" ? "selected" : ""}>Profesor</option>
+          <select class="perfil-asistente" ${editable ? "" : "disabled"}>
+            ${crearOpcionesSelect(OPCIONES_PERFIL, asistente.perfil_asistente, "Seleccione perfil")}
+          </select>
+        </td>
+        <td class="ens-col">
+          <select class="ensenanza-asistente" ${editable ? "" : "disabled"}>
+            ${crearOpcionesSelect(OPCIONES_ENSENANZA, asistente.nivel_ensenanza, "Seleccione enseñanza")}
           </select>
         </td>
         <td class="edad-col">
           <select class="categoria-asistente" ${editable ? "" : "disabled"}>
-            <option value="MAYOR_10" ${asistente.categoria_edad === "MAYOR_10" ? "selected" : ""}>Mayor de 10 años</option>
-            <option value="MENOR_10" ${asistente.categoria_edad === "MENOR_10" ? "selected" : ""}>Menor de 10 años</option>
+            ${crearOpcionesSelect(OPCIONES_EDAD, asistente.categoria_edad, "Seleccione edad")}
           </select>
         </td>
       `;
@@ -923,8 +1049,12 @@
         recalcularResumenEnPantalla();
       });
 
-      tr.querySelector(".tipo-asistente").addEventListener("change", function () {
-        ajustarEdadSegunTipo(tr);
+      tr.querySelector(".perfil-asistente").addEventListener("change", function () {
+        marcarCambiosPendientes();
+        recalcularResumenEnPantalla();
+      });
+
+      tr.querySelector(".ensenanza-asistente").addEventListener("change", function () {
         marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
@@ -934,7 +1064,6 @@
         recalcularResumenEnPantalla();
       });
 
-      ajustarEdadSegunTipo(tr);
       tbody.appendChild(tr);
     }
 
@@ -956,7 +1085,8 @@
     function recalcularResumenEnPantalla() {
       if (!reservaActual) return;
 
-      const visitantesValidos = obtenerVisitantesValidosDeTabla();
+      const validacion = validarVisitantesDeTabla();
+      const visitantesValidos = validacion.completos;
       const totalAsignadas = visitantesValidos.length;
 
       const reservaOriginal = Number(reservaActual.plazas_prereservadas || 0);
@@ -984,10 +1114,13 @@
         0
       );
 
-      const alumnos = visitantesValidos.filter(v => v.tipo_asistente === "ALUMNO").length;
-      const profesores = visitantesValidos.filter(v => v.tipo_asistente === "PROFESOR").length;
-      const mayores = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_10").length;
-      const menores = visitantesValidos.filter(v => v.categoria_edad === "MENOR_10").length;
+      const alumnos = visitantesValidos.filter(v => v.perfil_asistente === "ALUMNO").length;
+      const responsables = visitantesValidos.filter(v => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
+      const generales = visitantesValidos.filter(v => v.perfil_asistente === "GENERAL").length;
+      const de3a5 = visitantesValidos.filter(v => v.categoria_edad === "DE_3_A_5").length;
+      const de6a10 = visitantesValidos.filter(v => v.categoria_edad === "DE_6_A_10").length;
+      const de10a15 = visitantesValidos.filter(v => v.categoria_edad === "DE_10_A_15").length;
+      const mayores15 = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_DE_15").length;
 
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
@@ -1008,11 +1141,17 @@
             Disponibles en la franja: ${disponiblesFranja}
           </div>
           <div class="resumen-col">
-            <strong>Desglose</strong><br>
+            <strong>Perfiles</strong><br>
             Alumnos: ${alumnos}<br>
-            Profesores: ${profesores}<br>
-            Mayores de 10 años: ${mayores}<br>
-            Menores de 10 años: ${menores}
+            Responsables de grupo: ${responsables}<br>
+            Generales: ${generales}
+          </div>
+          <div class="resumen-col">
+            <strong>Edades</strong><br>
+            de 3 a 5 años: ${de3a5}<br>
+            de 6 a 10 años: ${de6a10}<br>
+            de 10 a 15 años: ${de10a15}<br>
+            mayores de 15 años: ${mayores15}
           </div>
         </div>
       `;
@@ -1025,6 +1164,13 @@
       if (!solicitudEditable()) {
         btnGuardar.disabled = true;
         btnAnadir.disabled = true;
+        actualizarBotonEliminar();
+        return;
+      }
+
+      if (validacion.errores.length) {
+        btnGuardar.disabled = true;
+        btnAnadir.disabled = false;
         actualizarBotonEliminar();
         return;
       }
@@ -1053,18 +1199,20 @@
 
       obtenerFilasTabla().forEach(tr => {
         const nombre = tr.querySelector(".nombre-asistente");
-        const tipo = tr.querySelector(".tipo-asistente");
+        const perfil = tr.querySelector(".perfil-asistente");
+        const ensenanza = tr.querySelector(".ensenanza-asistente");
         const categoria = tr.querySelector(".categoria-asistente");
         const selector = tr.querySelector(".selector-fila");
 
         if (nombre) nombre.disabled = !editable;
-        if (tipo) tipo.disabled = !editable;
+        if (perfil) perfil.disabled = !editable;
+        if (ensenanza) ensenanza.disabled = !editable;
         if (selector) selector.disabled = !editable;
-
-        ajustarEdadSegunTipo(tr);
 
         if (!editable && categoria) {
           categoria.disabled = true;
+        } else if (categoria) {
+          categoria.disabled = false;
         }
       });
 
@@ -1076,10 +1224,17 @@
 
       limpiarMensaje();
 
-      const visitantes = obtenerVisitantesValidosDeTabla().map(v => ({
+      const validacion = validarVisitantesDeTabla();
+      if (validacion.errores.length) {
+        mostrarMensaje("error", validacion.errores.join(" "));
+        return;
+      }
+
+      const visitantes = validacion.completos.map(v => ({
         nombre_completo: v.nombre_completo,
-        tipo_asistente: v.tipo_asistente,
-        categoria_edad: v.tipo_asistente === "PROFESOR" ? "MAYOR_10" : v.categoria_edad
+        perfil_asistente: v.perfil_asistente,
+        nivel_ensenanza: v.nivel_ensenanza,
+        categoria_edad: v.categoria_edad
       }));
 
       try {
@@ -1120,6 +1275,323 @@
       }
     }
 
+    function normalizarTextoImportacion(valor) {
+      return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    }
+
+    function normalizarPerfilImportado(valor) {
+      const texto = normalizarTextoImportacion(valor);
+      if (texto === "alumno") return "ALUMNO";
+      if (texto === "responsable de grupo") return "RESPONSABLE_GRUPO";
+      if (texto === "general") return "GENERAL";
+      return "";
+    }
+
+    function normalizarEnsenanzaImportada(valor) {
+      const texto = normalizarTextoImportacion(valor);
+      if (texto === "no corresponde") return "NO_CORRESPONDE";
+      if (texto === "infantil") return "INFANTIL";
+      if (texto === "primaria") return "PRIMARIA";
+      if (texto === "secundaria") return "SECUNDARIA";
+      if (texto === "bachiller/fp") return "BACHILLER_FP";
+      if (texto === "estudios superiores") return "ESTUDIOS_SUPERIORES";
+      return "";
+    }
+
+    function normalizarEdadImportada(valor) {
+      const texto = normalizarTextoImportacion(valor);
+      if (texto === "de 3 a 5 anos") return "DE_3_A_5";
+      if (texto === "de 6 a 10 anos") return "DE_6_A_10";
+      if (texto === "de 10 a 15 anos") return "DE_10_A_15";
+      if (texto === "mayor de 15 anos") return "MAYOR_DE_15";
+      return "";
+    }
+
+    function obtenerColumnaDesdeRef(ref) {
+      const match = String(ref || "").match(/^[A-Z]+/i);
+      return match ? match[0].toUpperCase() : "";
+    }
+
+    async function inflarDeflateRaw(bytes) {
+      if (typeof DecompressionStream === "undefined") {
+        throw new Error("Este navegador no soporta la importación directa del archivo Excel. Prueba con un navegador actualizado.");
+      }
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      const buffer = await new Response(stream).arrayBuffer();
+      return new Uint8Array(buffer);
+    }
+
+    async function leerEntradasZipXlsx(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      let eocd = -1;
+      for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+        if (view.getUint32(i, true) === 0x06054b50) {
+          eocd = i;
+          break;
+        }
+      }
+      if (eocd < 0) {
+        throw new Error("El archivo Excel no tiene una estructura ZIP válida.");
+      }
+
+      const centralOffset = view.getUint32(eocd + 16, true);
+      const decoder = new TextDecoder("utf-8");
+      const entradas = new Map();
+      let pos = centralOffset;
+
+      while (pos + 46 <= bytes.length && view.getUint32(pos, true) === 0x02014b50) {
+        const metodo = view.getUint16(pos + 10, true);
+        const compSize = view.getUint32(pos + 20, true);
+        const nameLen = view.getUint16(pos + 28, true);
+        const extraLen = view.getUint16(pos + 30, true);
+        const commentLen = view.getUint16(pos + 32, true);
+        const localOffset = view.getUint32(pos + 42, true);
+        const nombre = decoder.decode(bytes.slice(pos + 46, pos + 46 + nameLen));
+
+        const localNameLen = view.getUint16(localOffset + 26, true);
+        const localExtraLen = view.getUint16(localOffset + 28, true);
+        const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+        const comprimido = bytes.slice(dataStart, dataStart + compSize);
+
+        let contenido;
+        if (metodo === 0) {
+          contenido = comprimido;
+        } else if (metodo === 8) {
+          contenido = await inflarDeflateRaw(comprimido);
+        } else {
+          throw new Error(`El archivo Excel usa un método de compresión no soportado (${metodo}).`);
+        }
+
+        entradas.set(nombre, contenido);
+        pos += 46 + nameLen + extraLen + commentLen;
+      }
+
+      return entradas;
+    }
+
+    function leerXmlDesdeEntrada(bytes) {
+      const texto = new TextDecoder("utf-8").decode(bytes);
+      return new DOMParser().parseFromString(texto, "application/xml");
+    }
+
+    function leerValorCeldaExcel(celda, sharedStrings) {
+      const tipo = celda.getAttribute("t") || "";
+      if (tipo === "s") {
+        const idx = Number(celda.getElementsByTagName("v")[0]?.textContent || -1);
+        return idx >= 0 ? (sharedStrings[idx] || "") : "";
+      }
+      if (tipo === "inlineStr") {
+        const textos = Array.from(celda.getElementsByTagName("t")).map((n) => n.textContent || "");
+        return textos.join("");
+      }
+      return celda.getElementsByTagName("v")[0]?.textContent || "";
+    }
+
+    async function extraerFilasDesdeXlsx(file) {
+      const entradas = await leerEntradasZipXlsx(await file.arrayBuffer());
+      const workbookBytes = entradas.get("xl/workbook.xml");
+      const relsBytes = entradas.get("xl/_rels/workbook.xml.rels");
+      if (!workbookBytes || !relsBytes) {
+        throw new Error("No se pudo localizar la estructura interna del libro Excel.");
+      }
+
+      const sharedStringsBytes = entradas.get("xl/sharedStrings.xml");
+      const sharedStrings = [];
+      if (sharedStringsBytes) {
+        const sharedDoc = leerXmlDesdeEntrada(sharedStringsBytes);
+        Array.from(sharedDoc.getElementsByTagName("si")).forEach((si) => {
+          const textos = Array.from(si.getElementsByTagName("t")).map((n) => n.textContent || "");
+          sharedStrings.push(textos.join(""));
+        });
+      }
+
+      const workbookDoc = leerXmlDesdeEntrada(workbookBytes);
+      const relsDoc = leerXmlDesdeEntrada(relsBytes);
+      const primeraHoja = workbookDoc.getElementsByTagName("sheet")[0];
+      if (!primeraHoja) {
+        throw new Error("La plantilla no contiene hojas con datos.");
+      }
+
+      const relId =
+        primeraHoja.getAttribute("r:id") ||
+        primeraHoja.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+      const relaciones = Array.from(relsDoc.getElementsByTagName("Relationship"));
+      const relacion = relaciones.find((rel) => rel.getAttribute("Id") === relId);
+      if (!relacion) {
+        throw new Error("No se pudo localizar la hoja de trabajo principal.");
+      }
+
+      const target = String(relacion.getAttribute("Target") || "").replace(/^\/+/, "");
+      const rutaHoja = target.startsWith("xl/") ? target : `xl/${target}`;
+      const hojaBytes = entradas.get(rutaHoja);
+      if (!hojaBytes) {
+        throw new Error("No se pudo leer la hoja principal de la plantilla.");
+      }
+
+      const hojaDoc = leerXmlDesdeEntrada(hojaBytes);
+      const filas = Array.from(hojaDoc.getElementsByTagName("row")).map((row) => {
+        const data = { numero: Number(row.getAttribute("r") || 0) };
+        Array.from(row.getElementsByTagName("c")).forEach((c) => {
+          const col = obtenerColumnaDesdeRef(c.getAttribute("r") || "");
+          data[col] = leerValorCeldaExcel(c, sharedStrings).trim();
+        });
+        return data;
+      });
+
+      const indiceCabecera = filas.findIndex((fila) =>
+        normalizarTextoImportacion(fila.A) === "nombre y apellidos" &&
+        normalizarTextoImportacion(fila.B) === "perfil" &&
+        normalizarTextoImportacion(fila.C) === "ensenanza" &&
+        normalizarTextoImportacion(fila.D) === "edad"
+      );
+
+      if (indiceCabecera < 0) {
+        throw new Error("No se encontró la fila de encabezados esperada en la plantilla.");
+      }
+
+      const errores = [];
+      const importados = [];
+
+      filas.slice(indiceCabecera + 1).forEach((fila) => {
+        const nombre = String(fila.A || "").trim();
+        const perfilTexto = String(fila.B || "").trim();
+        const ensenanzaTexto = String(fila.C || "").trim();
+        const edadTexto = String(fila.D || "").trim();
+        const activa = !!(nombre || perfilTexto || ensenanzaTexto || edadTexto);
+        if (!activa) return;
+
+        const faltantes = [];
+        if (!nombre) faltantes.push("Nombre y Apellidos");
+        if (!perfilTexto) faltantes.push("Perfil");
+        if (!ensenanzaTexto) faltantes.push("Enseñanza");
+        if (!edadTexto) faltantes.push("Edad");
+        if (faltantes.length) {
+          errores.push(`Fila ${fila.numero}: falta ${faltantes.join(", ")}.`);
+          return;
+        }
+
+        const perfil = normalizarPerfilImportado(perfilTexto);
+        const ensenanza = normalizarEnsenanzaImportada(ensenanzaTexto);
+        const edad = normalizarEdadImportada(edadTexto);
+
+        if (!perfil) {
+          errores.push(`Fila ${fila.numero}: el valor de Perfil no es válido.`);
+        }
+        if (!ensenanza) {
+          errores.push(`Fila ${fila.numero}: el valor de Enseñanza no es válido.`);
+        }
+        if (!edad) {
+          errores.push(`Fila ${fila.numero}: el valor de Edad no es válido.`);
+        }
+        if (!perfil || !ensenanza || !edad) return;
+
+        importados.push({
+          nombre_completo: nombre,
+          perfil_asistente: perfil,
+          nivel_ensenanza: ensenanza,
+          categoria_edad: edad
+        });
+      });
+
+      if (errores.length) {
+        throw new Error(errores.join(" "));
+      }
+
+      return importados;
+    }
+
+    async function importarAsistentesDesdeArchivo(file) {
+      if (!solicitudEditable()) {
+        mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
+        return;
+      }
+
+      if (!file) return;
+      const extensionValida = /\.xlsx$/i.test(file.name || "");
+      if (!extensionValida) {
+        mostrarMensaje("error", "Debes seleccionar la plantilla de asistentes en formato .xlsx.");
+        return;
+      }
+
+      try {
+        limpiarMensaje();
+        const importados = await extraerFilasDesdeXlsx(file);
+        if (!importados.length) {
+          throw new Error("La plantilla no contiene filas de asistentes completas para importar.");
+        }
+
+        if (hayCambiosSinGuardar || validarVisitantesDeTabla().completos.length > 0) {
+          const confirmar = window.confirm("La importación sustituirá la tabla actual de asistentes no guardada. ¿Deseas continuar?");
+          if (!confirmar) return;
+        }
+
+        visitantesActuales = importados;
+        renderizarVisitantes();
+        marcarCambiosPendientes();
+        mostrarMensaje("ok", `Se han cargado ${importados.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo importar la plantilla de asistentes.");
+      }
+    }
+
+    function configurarImportacionAsistentes() {
+      const boton = document.getElementById("btnSeleccionarArchivoAsistentes");
+      const input = document.getElementById("inputImportarAsistentes");
+      const zona = document.getElementById("zonaImportacionAsistentes");
+
+      if (!boton || !input || !zona) return;
+
+      boton.addEventListener("click", function () {
+        if (!solicitudEditable()) {
+          mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
+          return;
+        }
+        input.click();
+      });
+
+      input.addEventListener("change", async function () {
+        const file = input.files && input.files[0];
+        if (file) {
+          await importarAsistentesDesdeArchivo(file);
+        }
+        input.value = "";
+      });
+
+      ["dragenter", "dragover"].forEach((evento) => {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!solicitudEditable()) return;
+          zona.classList.add("activa");
+        });
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((evento) => {
+        zona.addEventListener(evento, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          zona.classList.remove("activa");
+        });
+      });
+
+      zona.addEventListener("drop", async function (e) {
+        if (!solicitudEditable()) {
+          mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
+          return;
+        }
+        const file = e.dataTransfer?.files?.[0];
+        if (file) {
+          await importarAsistentesDesdeArchivo(file);
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("btnAnadirFila").addEventListener("click", function () {
         if (!solicitudEditable()) return;
@@ -1130,6 +1602,7 @@
 
       document.getElementById("btnEliminarSeleccionado").addEventListener("click", eliminarFilaSeleccionada);
       document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
+      configurarImportacionAsistentes();
 
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
       document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);
