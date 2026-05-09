@@ -81,6 +81,13 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       f.capacidad,
       COALESCE(a.usa_franjas, 1) AS usa_franjas,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_titulo_publico,
+      COALESCE(a.organizador_publico, '') AS actividad_organizador_publico,
+      COALESCE(a.lugar, '') AS actividad_lugar,
+      COALESCE(a.imagen_url, '') AS actividad_imagen_url,
+      COALESCE(a.tipo, '') AS actividad_tipo,
+      COALESCE(a.fecha_inicio, '') AS actividad_fecha_inicio,
+      COALESCE(a.fecha_fin, '') AS actividad_fecha_fin,
 
       COALESCE((
         SELECT COUNT(*)
@@ -163,6 +170,13 @@ export async function onRequestGet(context) {
         franja_id: reserva.franja_id,
         actividad_id: reserva.actividad_id,
         actividad_nombre: reserva.actividad_nombre || "Actividad",
+        actividad_titulo_publico: reserva.actividad_titulo_publico || reserva.actividad_nombre || "Actividad",
+        actividad_organizador_publico: reserva.actividad_organizador_publico || "",
+        actividad_lugar: reserva.actividad_lugar || "",
+        actividad_imagen_url: reserva.actividad_imagen_url || "",
+        actividad_tipo: reserva.actividad_tipo || "",
+        actividad_fecha_inicio: reserva.actividad_fecha_inicio || "",
+        actividad_fecha_fin: reserva.actividad_fecha_fin || "",
         codigo_reserva: reserva.codigo_reserva,
         token_edicion: reserva.token_edicion,
         estado: reserva.estado,

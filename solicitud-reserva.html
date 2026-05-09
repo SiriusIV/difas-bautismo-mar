@@ -944,7 +944,7 @@
 
     function permiteEdicionDesdePantalla(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
-      return estado === "BORRADOR" || estado === "PENDIENTE" || estado === "CONFIRMADA";
+      return estado === "BORRADOR" || estado === "PENDIENTE" || estado === "CONFIRMADA" || estado === "SUSPENDIDA";
     }
 
     function mostrarMensaje(tipo, texto) {
@@ -1060,7 +1060,52 @@
       const centro = document.getElementById("centro");
       centro.value = perfil.centro || perfil.nombre_publico || perfil.nombre || "";
       centro.readOnly = true;
-      document.getElementById("subtituloEvento").textContent = centro.value || "Centro solicitante";
+      document.getElementById("subtituloEvento").textContent =
+        perfil.nombre_publico || perfil.nombre || centro.value || "Solicitante";
+    }
+
+    function aplicarContextoVisualReserva(reserva) {
+      if (!reserva) return;
+
+      const tituloActividad = String(
+        reserva.actividad_titulo_publico ||
+        reserva.actividad_nombre ||
+        ""
+      ).trim();
+      if (tituloActividad) {
+        document.title = `${tituloActividad} - Solicitud`;
+        document.getElementById("tituloSolicitudBloque").textContent = tituloActividad;
+      }
+
+      const subtitulo = String(reserva.centro || reserva.contacto || "").trim();
+      if (subtitulo) {
+        document.getElementById("subtituloEvento").textContent = subtitulo;
+      }
+
+      const imagenReservaActividad = document.getElementById("imagenReservaActividad");
+      if (imagenReservaActividad) {
+        const srcImagen = String(reserva.actividad_imagen_url || "").trim();
+        if (srcImagen) {
+          imagenReservaActividad.src = srcImagen;
+          imagenReservaActividad.classList.remove("oculta");
+        }
+      }
+
+      actualizarDatoActividad("organizadorEvento", "Organiza", reserva.actividad_organizador_publico || "");
+      actualizarDatoActividad("organizadorSolicitud", "Organiza", reserva.actividad_organizador_publico || "");
+      actualizarDatoActividad("lugarEvento", "Lugar", reserva.actividad_lugar || "");
+      actualizarDatoActividad("lugarSolicitud", "Lugar", reserva.actividad_lugar || "");
+
+      let textoFechas = "";
+      if (
+        String(reserva.actividad_tipo || "").toUpperCase() === "TEMPORAL" &&
+        (reserva.actividad_fecha_inicio || reserva.actividad_fecha_fin)
+      ) {
+        textoFechas = `${reserva.actividad_fecha_inicio || ""}${reserva.actividad_fecha_inicio && reserva.actividad_fecha_fin ? " - " : ""}${reserva.actividad_fecha_fin || ""}`;
+      } else if (reserva.fecha) {
+        textoFechas = reserva.fecha;
+      }
+      actualizarDatoActividad("fechasEvento", "Fechas", textoFechas);
     }
 
     async function cargarReservaExistente() {
@@ -1226,13 +1271,13 @@
           actividadActual = {
             id: Number(reservaReferencia.actividad_id || 0),
             nombre: reservaReferencia.actividad_nombre || "Actividad",
-            titulo_publico: reservaReferencia.actividad_nombre || "Actividad",
-            tipo: reservaReferencia.fecha ? "TEMPORAL" : "PERMANENTE",
-            fecha_inicio: reservaReferencia.fecha || "",
-            fecha_fin: reservaReferencia.fecha || "",
-            lugar: "",
-            imagen_url: "",
-            organizador_publico: "",
+            titulo_publico: reservaReferencia.actividad_titulo_publico || reservaReferencia.actividad_nombre || "Actividad",
+            tipo: reservaReferencia.actividad_tipo || (reservaReferencia.fecha ? "TEMPORAL" : "PERMANENTE"),
+            fecha_inicio: reservaReferencia.actividad_fecha_inicio || reservaReferencia.fecha || "",
+            fecha_fin: reservaReferencia.actividad_fecha_fin || reservaReferencia.fecha || "",
+            lugar: reservaReferencia.actividad_lugar || "",
+            imagen_url: reservaReferencia.actividad_imagen_url || "",
+            organizador_publico: reservaReferencia.actividad_organizador_publico || "",
             usa_franjas: Number(reservaReferencia.usa_franjas || 0),
             requiere_reserva: 1,
             requisitos_particulares: []
@@ -1778,6 +1823,7 @@
 
       try {
         const reservaInicial = await cargarReservaExistente();
+        aplicarContextoVisualReserva(reservaInicial);
         await precargarDatosSolicitante();
         await cargarActividad();
         await cargarFranjas();

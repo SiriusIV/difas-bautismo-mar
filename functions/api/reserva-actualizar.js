@@ -324,7 +324,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Esta actividad no utiliza franjas horarias." }, { status: 400 });
     }
 
-    if (!esBorrador && !["PENDIENTE", "CONFIRMADA"].includes(String(reservaActual.estado || "").toUpperCase())) {
+    if (!esBorrador && !["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(reservaActual.estado || "").toUpperCase())) {
       return json({ ok: false, error: "La solicitud no puede modificarse en su estado actual." }, { status: 400 });
     }
 
