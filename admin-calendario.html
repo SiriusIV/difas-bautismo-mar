@@ -651,6 +651,17 @@
 
     .fc .fc-list-day-cushion {
       font-weight: 700;
+      text-align: left;
+    }
+
+    .fc .fc-list-day th,
+    .fc .fc-list-day td,
+    .fc .fc-list-day-cushion a {
+      text-align: left;
+    }
+
+    .fc .fc-list-day-side-text {
+      display: none;
     }
 
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-time,
@@ -1710,6 +1721,12 @@
           listContinuo: {
             type: "list",
             buttonText: "Lista",
+            listDayFormat: {
+              weekday: "long",
+              day: "numeric",
+              month: "long"
+            },
+            listDaySideFormat: false,
             visibleRange(currentDate) {
               const start = new Date(currentDate);
               start.setDate(start.getDate() - 4);
