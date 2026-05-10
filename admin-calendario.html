@@ -199,6 +199,8 @@
       border-radius: 999px;
       background: #f7faff;
       padding: 3px;
+      width: max-content;
+      justify-self: start;
     }
 
     .selector-vista button {
@@ -597,7 +599,7 @@
     .fc .fc-col-header-cell-cushion {
       white-space: normal;
       line-height: 1.1;
-      text-transform: lowercase;
+      text-transform: none;
       font-size: 12px;
       padding: 2px 3px;
     }
@@ -999,7 +1001,7 @@
             <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
             <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
             <span class="leyenda-item oculto" id="leyendaActividadDisponible"><span class="leyenda-color" style="background:#0b5ed7;"></span>DISPONIBLE</span>
-            <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÃšLTIMAS PLAZAS</span>
+            <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÚLTIMAS PLAZAS</span>
             <span class="leyenda-item oculto" id="leyendaActividadCompleta"><span class="leyenda-color" style="background:#dc3545;"></span>COMPLETA</span>
             <span class="leyenda-item oculto" id="leyendaActividadFinalizada"><span class="leyenda-color" style="background:#5f6d7a;"></span>FINALIZADA</span>
           </div>
@@ -1581,10 +1583,10 @@
       const host = document.getElementById("rangoCalendario");
       if (!host || !info?.view) return;
       const esLista = info.view.type === "listContinuo";
-      const titulo = esLista ? "" : String(info.view.title || "").trim();
+      const titulo = esLista ? obtenerAnioVisibleListaCalendario() : String(info.view.title || "").trim();
       host.textContent = titulo;
       const panelRango = document.getElementById("toolbarRangoCalendario");
-      if (panelRango) panelRango.classList.toggle("oculto-lista", esLista);
+      if (panelRango) panelRango.classList.toggle("oculto-lista", false);
       const calendarEl = document.getElementById("calendar");
       if (calendarEl) {
         const esVistaMes = info.view.type === "dayGridMonth";
@@ -1708,17 +1710,62 @@
       contenedor.scrollTop = top;
     }
 
-    function formatearCabeceraDiaCalendario(arg) {
-      const tipoVista = String(arg?.view?.type || "");
-      const fecha = arg?.date || new Date();
-      if (tipoVista === "dayGridMonth") {
-        const texto = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
-        return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : "";
+    function capitalizarTextoCalendario(texto) {
+      const limpio = String(texto || "").trim();
+      return limpio ? limpio.charAt(0).toUpperCase() + limpio.slice(1) : "";
+    }
+
+    function construirTextoDiaSemanaCompleto(fecha) {
+      const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
+      const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
+      return `${capitalizarTextoCalendario(weekday)} ${day}`;
+    }
+
+    function construirTextoDiaListaCompleto(fecha) {
+      const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
+      const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
+      const month = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(fecha);
+      return `${capitalizarTextoCalendario(weekday)} ${day} de ${month}`;
+    }
+
+    function obtenerAnioVisibleListaCalendario() {
+      const root = document.getElementById("calendar");
+      const contenedor = root?.querySelector(".fc-scroller, .fc-list");
+      const cabeceras = [...(root?.querySelectorAll(".fc-list-day[data-date]") || [])];
+      const rectContenedor = contenedor?.getBoundingClientRect?.();
+      const primeraVisible = cabeceras.find((cabecera) => {
+        if (!rectContenedor) return true;
+        const rect = cabecera.getBoundingClientRect();
+        return rect.bottom >= rectContenedor.top + 8;
+      }) || cabeceras[0];
+      const fechaBase = primeraVisible?.dataset?.date || formatearFechaIsoLocal(calendar?.getDate?.() || new Date());
+      const anio = String(fechaBase || "").slice(0, 4);
+      return anio || String(new Date().getFullYear());
+    }
+
+    function actualizarRangoListaSegunScroll() {
+      if (!calendar || String(calendar.view?.type || "") !== "listContinuo") return;
+      const host = document.getElementById("rangoCalendario");
+      if (!host) return;
+      host.textContent = obtenerAnioVisibleListaCalendario();
+    }
+
+    function vincularScrollListaCalendario() {
+      const root = document.getElementById("calendar");
+      const contenedor = root?.querySelector(".fc-scroller, .fc-list");
+      if (!contenedor) return;
+      if (contenedor._onListaScrollCalendario) {
+        contenedor.removeEventListener("scroll", contenedor._onListaScrollCalendario);
       }
-      return new Intl.DateTimeFormat("es-ES", {
-        weekday: "short",
-        day: "numeric"
-      }).format(fecha);
+      const handler = () => actualizarRangoListaSegunScroll();
+      contenedor._onListaScrollCalendario = handler;
+      contenedor.addEventListener("scroll", handler, { passive: true });
+      actualizarRangoListaSegunScroll();
+    }
+
+    function formatearCabeceraDiaCalendario(arg) {
+      const fecha = arg?.date || new Date();
+      return construirTextoDiaSemanaCompleto(fecha);
     }
 
     function crearCalendario() {
@@ -1736,10 +1783,8 @@
           listContinuo: {
             type: "list",
             buttonText: "Lista",
-            listDayFormat: {
-              weekday: "long",
-              day: "numeric",
-              month: "long"
+            listDayHeaderContent: function(arg) {
+              return construirTextoDiaListaCompleto(arg.date || new Date());
             },
             listDaySideFormat: false,
             visibleRange(currentDate) {
@@ -1819,8 +1864,10 @@
           actualizarBotonesModoCalendario();
           reubicarLeyendaSegunVista();
           requestAnimationFrame(() => {
+            vincularScrollListaCalendario();
             centrarListaEnProximoEvento();
             setTimeout(() => {
+              vincularScrollListaCalendario();
               centrarListaEnProximoEvento();
             }, 60);
           });
