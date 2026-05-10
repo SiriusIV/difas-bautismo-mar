@@ -947,7 +947,7 @@
 
           <div class="panel-acciones-derecha">
             <a href="admin-reservas.html" class="btn-chip" id="btnAccesoReservas">Reservas</a>
-            <a href="mis-actividades.html" class="btn-chip" id="btnAccesoActividades">Actividades</a>
+            <a href="mis-actividades.html" class="btn-chip oculto" id="btnAccesoActividades">Actividades</a>
             <a href="portal.html" class="btn-icono" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 10.5L12 3l9 7.5"></path>
@@ -1737,18 +1737,9 @@
       return `${capitalizarTextoCalendario(weekday)} ${day} de ${month}`;
     }
 
-    function obtenerMesAnioVisibleListaCalendario() {
-      const root = document.getElementById("calendar");
-      const contenedor = root?.querySelector(".fc-scroller, .fc-list");
-      const cabeceras = [...(root?.querySelectorAll(".fc-list-day[data-date]") || [])];
-      const rectContenedor = contenedor?.getBoundingClientRect?.();
-      const primeraVisible = cabeceras.find((cabecera) => {
-        if (!rectContenedor) return true;
-        const rect = cabecera.getBoundingClientRect();
-        return rect.bottom >= rectContenedor.top + 8;
-      }) || cabeceras[0];
-      const fechaBase = primeraVisible?.dataset?.date || formatearFechaIsoLocal(calendar?.getDate?.() || new Date());
-      const fecha = new Date(`${fechaBase}T00:00:00`);
+    function obtenerMesAnioVisibleListaCalendario(baseDate = null) {
+      const fechaBase = baseDate || calendar?.getDate?.() || new Date();
+      const fecha = fechaBase instanceof Date ? fechaBase : new Date(`${fechaBase}T00:00:00`);
       if (Number.isNaN(fecha.getTime())) {
         return new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(new Date());
       }
@@ -1761,20 +1752,7 @@
       if (!calendar || String(calendar.view?.type || "") !== "listContinuo") return;
       const host = document.getElementById("rangoCalendario");
       if (!host) return;
-      host.textContent = obtenerMesAnioVisibleListaCalendario();
-    }
-
-    function vincularScrollListaCalendario() {
-      const root = document.getElementById("calendar");
-      const contenedor = root?.querySelector(".fc-scroller, .fc-list");
-      if (!contenedor) return;
-      if (contenedor._onListaScrollCalendario) {
-        contenedor.removeEventListener("scroll", contenedor._onListaScrollCalendario);
-      }
-      const handler = () => actualizarRangoListaSegunScroll();
-      contenedor._onListaScrollCalendario = handler;
-      contenedor.addEventListener("scroll", handler, { passive: true });
-      actualizarRangoListaSegunScroll();
+      host.textContent = obtenerMesAnioVisibleListaCalendario(calendar.getDate());
     }
 
     function formatearCabeceraDiaCalendario(arg) {
@@ -1878,10 +1856,8 @@
           actualizarBotonesModoCalendario();
           reubicarLeyendaSegunVista();
           requestAnimationFrame(() => {
-            vincularScrollListaCalendario();
             centrarListaEnProximoEvento();
             setTimeout(() => {
-              vincularScrollListaCalendario();
               centrarListaEnProximoEvento();
             }, 60);
           });
@@ -1922,10 +1898,20 @@
         await aplicarVistaCalendario("actividades");
       });
       document.getElementById("btnPrevCalendario").addEventListener("click", function() {
-        if (calendar) calendar.prev();
+        if (!calendar) return;
+        if (String(calendar.view?.type || "") === "listContinuo") {
+          calendar.incrementDate({ months: -1 });
+          return;
+        }
+        calendar.prev();
       });
       document.getElementById("btnNextCalendario").addEventListener("click", function() {
-        if (calendar) calendar.next();
+        if (!calendar) return;
+        if (String(calendar.view?.type || "") === "listContinuo") {
+          calendar.incrementDate({ months: 1 });
+          return;
+        }
+        calendar.next();
       });
       document.getElementById("btnHoyCalendario").addEventListener("click", function() {
         if (calendar) calendar.changeView("timeGridDay", new Date());
