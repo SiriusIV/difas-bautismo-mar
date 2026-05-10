@@ -198,6 +198,44 @@
       align-items: center;
     }
 
+    .atajo-reservas-solicitud {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      grid-column: 1;
+      justify-self: start;
+    }
+
+    .btn-mis-reservas {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-mis-reservas:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-mis-reservas svg {
+      width: 15px;
+      height: 15px;
+      display: block;
+      flex: 0 0 auto;
+    }
+
     .datos-actividad-solicitud {
       display: flex;
       flex-direction: column;
@@ -730,6 +768,14 @@
         <input type="hidden" id="centro" name="centro" required>
 
         <div class="solicitud-bloque solicitud-bloque-top">
+          <div class="atajo-reservas-solicitud">
+            <a href="usuario-panel.html" id="btnIrMisReservas" class="btn-mis-reservas" title="Ir a mis reservas" aria-label="Ir a mis reservas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+              </svg>
+              <span>Mis reservas</span>
+            </a>
+          </div>
           <div class="datos-actividad-solicitud">
             <div id="tituloSolicitudBloque" class="dato-actividad-titulo">Actividad</div>
             <div class="datos-actividad-meta">
@@ -1788,7 +1834,8 @@
       if (!sesionOk) return;
 
       const form = document.getElementById("formularioSolicitud");
-      const enlacePortal = document.querySelector('a[href="portal.html"].btn-enlace-icono');
+        const enlacePortal = document.querySelector('a[href="portal.html"].btn-enlace-icono');
+        const enlaceMisReservas = document.getElementById("btnIrMisReservas");
       const campoTelefono = document.getElementById("telefono");
       const campoEmail = document.getElementById("email");
       const btnGuardarBorrador = document.getElementById("btnGuardarBorrador");
@@ -1847,12 +1894,19 @@
 
       btnGuardarBorrador.addEventListener("click", guardarBorrador);
 
-      if (enlacePortal) {
-        enlacePortal.addEventListener("click", function (e) {
-          if (confirmarSalidaSinEnviar()) return;
-          e.preventDefault();
-        });
-      }
+        if (enlacePortal) {
+          enlacePortal.addEventListener("click", function (e) {
+            if (confirmarSalidaSinEnviar()) return;
+            e.preventDefault();
+          });
+        }
+
+        if (enlaceMisReservas) {
+          enlaceMisReservas.addEventListener("click", function (e) {
+            if (confirmarSalidaSinEnviar()) return;
+            e.preventDefault();
+          });
+        }
 
       window.addEventListener("beforeunload", function (e) {
         if (!haySolicitudSinEnviar()) return;
