@@ -1145,13 +1145,6 @@
       solicitudPendienteEnvio = false;
     }
 
-    function deshabilitarAccionesFormularioTrasCerrarModal() {
-      const btnGuardar = document.getElementById("btnGuardarBorrador");
-      const btnEnviar = document.getElementById("btnPrepararEnvio");
-      if (btnGuardar && btnGuardar.style.display !== "none") btnGuardar.disabled = true;
-      if (btnEnviar) btnEnviar.disabled = true;
-    }
-
     function haySolicitudSinEnviar() {
       if (reservaCreada) return false;
       return solicitudPendienteEnvio;
@@ -2023,16 +2016,12 @@
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
       document.getElementById("btnCerrarModalConfirmacionSuperior").addEventListener("click", function () {
         datosPendientesEnvio = null;
-        limpiarSolicitudPendiente();
         cerrarModalConfirmacion();
-        deshabilitarAccionesFormularioTrasCerrarModal();
       });
       document.getElementById("modalConfirmacionEnvio").addEventListener("click", function (e) {
         if (e.target.id === "modalConfirmacionEnvio") {
           datosPendientesEnvio = null;
-          limpiarSolicitudPendiente();
           cerrarModalConfirmacion();
-          deshabilitarAccionesFormularioTrasCerrarModal();
         }
       });
       
