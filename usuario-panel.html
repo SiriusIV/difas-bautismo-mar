@@ -525,10 +525,31 @@
       text-align: left;
     }
     .confirmacion-envio-contenido .estado-modal-bloque {
-      padding: 12px 14px;
+      padding: 10px 12px;
     }
     .confirmacion-envio-contenido .estado-modal-linea + .estado-modal-linea {
-      margin-top: 8px;
+      margin-top: 4px;
+    }
+    .confirmacion-envio-contenido .estado-modal-linea {
+      line-height: 1.35;
+    }
+    .mensaje-modal-panel {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d5e1ef;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .mensaje-modal-panel.ok {
+      background: #edf7ee;
+      border-color: #b7dec0;
+      color: #1f5d32;
+    }
+    .mensaje-modal-panel.error {
+      background: #fff0f0;
+      border-color: #efc2c2;
+      color: #9b1c1c;
     }
     .btn-modal-icono {
       display: inline-flex;
@@ -1020,6 +1041,7 @@
           <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
           <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
+        <div id="mensajeConfirmacionEnvio" class="mensaje-modal-panel" hidden></div>
       `;
       document.getElementById("modalObservacionesAcciones").innerHTML = `
         <button type="button" class="btn-modal btn-modal-principal btn-modal-icono" id="btnConfirmarEnvioSolicitud">
@@ -1035,6 +1057,14 @@
       });
       document.getElementById("modalObservaciones").classList.add("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+    }
+
+    function mostrarMensajeConfirmacionEnvio(tipo, texto) {
+      const el = document.getElementById("mensajeConfirmacionEnvio");
+      if (!el) return;
+      el.hidden = false;
+      el.className = `mensaje-modal-panel ${tipo}`;
+      el.textContent = texto;
     }
 
     function abrirModalTiempoRestante() {
@@ -1373,12 +1403,12 @@
               throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
             }
 
-            cerrarModalObservaciones();
-            mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente.");
+            mostrarMensajeConfirmacionEnvio("ok", data.mensaje || "Solicitud enviada correctamente.");
+            document.getElementById("modalObservacionesAcciones").innerHTML = "";
             reservaSeleccionada = null;
             await cargarPanel();
           } catch (error) {
-            mostrarMensaje("error", error.message || "No se pudo enviar la solicitud.");
+            mostrarMensajeConfirmacionEnvio("error", error.message || "No se pudo enviar la solicitud.");
             if (btnConfirmar) btnConfirmar.disabled = false;
           } finally {
             actualizarBotones();
