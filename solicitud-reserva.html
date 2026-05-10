@@ -1728,6 +1728,19 @@
         if (tokenBorrador) {
           actualizarUrlBorrador(tokenBorrador);
         }
+        reservaExistente = {
+          ...(reservaExistente || {}),
+          token_edicion: tokenBorrador || getTokenEdicion(),
+          actividad_id: validacion.datos.actividad_id,
+          franja_id: validacion.datos.franja ? Number(validacion.datos.franja) : null,
+          contacto: validacion.datos.contacto,
+          telefono: validacion.datos.telefono,
+          email: validacion.datos.email,
+          observaciones: validacion.datos.observaciones,
+          plazas_prereservadas: validacion.datos.plazas_solicitadas,
+          plazas_reservadas: validacion.datos.plazas_solicitadas,
+          estado: "BORRADOR"
+        };
         reservaCreada = null;
         datosPendientesEnvio = null;
         limpiarSolicitudPendiente();
@@ -1735,6 +1748,7 @@
         if (actividadUsaFranjas()) {
           await cargarFranjas();
         }
+        configurarPantallaSegunModo(reservaExistente);
         actualizarResumenPantalla();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo guardar el borrador.");
