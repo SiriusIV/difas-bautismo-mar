@@ -1004,7 +1004,10 @@
 
   <div id="modalAsistentes" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3 id="tituloModalAsistentes">Asistentes</h3>
+      <div class="modal-encabezado">
+        <h3 id="tituloModalAsistentes">Asistentes</h3>
+        <button type="button" id="btnCerrarModalAsistentesSuperior" class="modal-cerrar-superior" aria-label="Cerrar">X</button>
+      </div>
 
       <div class="bloque">
         <div class="modal-reserva-grid">
@@ -1024,7 +1027,7 @@
         </div>
       </div>
 
-      <div class="acciones">
+      <div class="acciones" id="accionesModalAsistentes">
         <button type="button" id="btnImportarLista">Importar lista de asistentes</button>
         <button type="button" id="btnAbrirGestionAsistentes" class="btn-secundario">Abrir formulario de gestión de asistentes</button>
         <button type="button" id="btnCerrarModalAsistentes" class="btn-secundario">Cerrar</button>
@@ -1373,12 +1376,14 @@
       }
 
       tituloEvento.textContent = "Edicion de solicitud";
-      btnGuardarBorrador.style.display = "none";
       if (esModoReenvioRechazada()) {
+        btnGuardarBorrador.style.display = "";
+        btnGuardarBorrador.disabled = false;
         btnPrepararEnvio.title = "Reenviar solicitud";
         btnPrepararEnvio.setAttribute("aria-label", "Reenviar solicitud");
         return;
       }
+      btnGuardarBorrador.style.display = "none";
       btnPrepararEnvio.title = "Guardar cambios";
       btnPrepararEnvio.setAttribute("aria-label", "Guardar cambios");
     }
@@ -1843,17 +1848,20 @@
       badge.className = `estado-badge ${claseEstadoBadge(reservaCreada.estado)}`;
       badge.textContent = textoEstadoModal(reservaCreada.estado);
       const ayuda = document.getElementById("textoAyudaModalAsistentes");
+      const acciones = document.getElementById("accionesModalAsistentes");
 
       if (modoModalAsistentes === "reenvio") {
         if (titulo) titulo.textContent = "Solicitud reenviada";
         if (ayuda) {
           ayuda.textContent = "La solicitud ha vuelto a quedar pendiente de validación con su mismo código de reserva. Puedes revisar o completar la lista de asistentes antes de salir.";
         }
+        if (acciones) acciones.style.display = "none";
       } else {
         if (titulo) titulo.textContent = "Asistentes";
         if (ayuda) {
           ayuda.textContent = "Puede importar una lista de asistentes o abrir el formulario de gestión manual.";
         }
+        if (acciones) acciones.style.display = "";
       }
 
       document.getElementById("modalAsistentes").classList.add("activo");
@@ -2034,6 +2042,7 @@
       document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
       document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
       document.getElementById("btnCerrarModalAsistentes").addEventListener("click", cerrarModalAsistentes);
+      document.getElementById("btnCerrarModalAsistentesSuperior").addEventListener("click", cerrarModalAsistentes);
 
       document.getElementById("modalAsistentes").addEventListener("click", function (e) {
         if (e.target.id === "modalAsistentes") cerrarModalAsistentes();

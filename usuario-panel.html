@@ -992,7 +992,7 @@
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
-      document.getElementById("btnEnviarSolicitud").disabled = !hay || estado !== "BORRADOR";
+      document.getElementById("btnEnviarSolicitud").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
       document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
       document.getElementById("btnAsistentes").disabled = !hay || estado === "CANCELADA" || estado === "RECHAZADA";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
@@ -1357,9 +1357,13 @@
     async function enviarSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const estado = normalizarEstadoReserva(reservaSeleccionada.estado);
-      if (estado !== "BORRADOR") return;
+      if (!["BORRADOR", "RECHAZADA"].includes(estado)) return;
       if (!reservaSeleccionada.token_edicion) {
         mostrarMensaje("error", "El borrador seleccionado no incluye un token de edición válido.");
+        return;
+      }
+      if (estado === "RECHAZADA") {
+        editarReserva(reservaSeleccionada.token_edicion, estado);
         return;
       }
 
