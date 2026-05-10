@@ -598,6 +598,40 @@
       padding: 24px;
     }
 
+    .modal-encabezado {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .modal-encabezado h3 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .modal-cerrar-superior {
+      border: none;
+      background: transparent;
+      color: #5c7088;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      margin: 2px 0 0 auto;
+      flex: 0 0 auto;
+      transition: color .16s ease, opacity .16s ease;
+    }
+
+    .modal-cerrar-superior:hover {
+      color: #173a63;
+      opacity: 1;
+    }
+
     .modal h3 {
       margin-top: 0;
       margin-bottom: 12px;
@@ -624,6 +658,42 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
+      justify-content: flex-end;
+    }
+
+    .confirmacion-envio-texto {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      line-height: 1.34;
+    }
+
+    .confirmacion-envio-texto p {
+      margin: 0;
+    }
+
+    .confirmacion-envio-mensaje {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d5e1ef;
+      font-size: 14px;
+      line-height: 1.35;
+      display: none;
+    }
+
+    .confirmacion-envio-mensaje.ok {
+      display: block;
+      background: #edf7ee;
+      border-color: #b7dec0;
+      color: #1f5d32;
+    }
+
+    .confirmacion-envio-mensaje.error {
+      display: block;
+      background: #fff0f0;
+      border-color: #efc2c2;
+      color: #9b1c1c;
     }
 
     .modal-reserva-grid {
@@ -894,15 +964,18 @@
     </div>
   <div id="modalConfirmacionEnvio" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Confirmación de envío</h3>
+      <div class="modal-encabezado">
+        <h3>Confirmación de envío</h3>
+        <button type="button" id="btnCerrarModalConfirmacionSuperior" class="modal-cerrar-superior" aria-label="Cerrar">X</button>
+      </div>
 
       <div class="bloque">
-        <p id="textoConfirmacionEnvio"></p>
+        <div id="textoConfirmacionEnvio" class="confirmacion-envio-texto"></div>
+        <div id="mensajeConfirmacionEnvio" class="confirmacion-envio-mensaje"></div>
       </div>
 
       <div class="acciones">
         <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
-        <button type="button" id="btnCancelarEnvio" class="btn-secundario">Cancelar envío</button>
       </div>
     </div>
   </div>
@@ -1704,11 +1777,18 @@
         : "Además, se permitirá ampliar la lista de asistentes conforme a las reglas de disponibilidad de esta actividad.";
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
-        Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.<br><br>
-        El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.<br><br>
-        Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.<br><br>
-        ${textoCierre}
+        <p>Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con <span class="resaltado">${datos.plazas_solicitadas}</span> plazas reservadas.</p>
+        <p>El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.</p>
+        <p>Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
+        <p>${textoCierre}</p>
       `;
+      const mensaje = document.getElementById("mensajeConfirmacionEnvio");
+      mensaje.className = "confirmacion-envio-mensaje";
+      mensaje.textContent = "";
+      document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = `
+        <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
+      `;
+      document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
 
       document.getElementById("modalConfirmacionEnvio").classList.add("activo");
       document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "false");
@@ -1717,6 +1797,13 @@
     function cerrarModalConfirmacion() {
       document.getElementById("modalConfirmacionEnvio").classList.remove("activo");
       document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "true");
+    }
+
+    function mostrarMensajeModalConfirmacion(tipo, texto) {
+      const mensaje = document.getElementById("mensajeConfirmacionEnvio");
+      if (!mensaje) return;
+      mensaje.className = `confirmacion-envio-mensaje ${tipo}`;
+      mensaje.textContent = texto;
     }
 
     function abrirModalAsistentes() {
@@ -1762,7 +1849,6 @@
       try {
         envioEnCurso = true;
         document.getElementById("btnConfirmarEnvio").disabled = true;
-        document.getElementById("btnCancelarEnvio").disabled = true;
         document.getElementById("btnPrepararEnvio").disabled = true;
         document.getElementById("btnGuardarBorrador").disabled = true;
 
@@ -1792,31 +1878,22 @@
 
         reservaCreada = data;
         limpiarSolicitudPendiente();
-        cerrarModalConfirmacion();
         tokenBorrador = "";
-        mostrarMensaje("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        mostrarMensajeModalConfirmacion("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
         if (actividadUsaFranjas()) {
           await cargarFranjas();
         }
         actualizarResumenPantalla();
-        abrirModalAsistentes();
 
       } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo crear la solicitud.");
-        cerrarModalConfirmacion();
+        mostrarMensajeModalConfirmacion("error", error.message || "No se pudo crear la solicitud.");
       } finally {
         envioEnCurso = false;
         document.getElementById("btnConfirmarEnvio").disabled = false;
-        document.getElementById("btnCancelarEnvio").disabled = false;
         document.getElementById("btnPrepararEnvio").disabled = false;
         document.getElementById("btnGuardarBorrador").disabled = false;
       }
-    }
-
-    function cancelarEnvioSolicitud() {
-      datosPendientesEnvio = null;
-      cerrarModalConfirmacion();
-      mostrarMensaje("aviso", "El envío de la solicitud ha sido cancelado.");
     }
 
     function abrirGestionAsistentes() {
@@ -1915,7 +1992,16 @@
       });
 
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
-      document.getElementById("btnCancelarEnvio").addEventListener("click", cancelarEnvioSolicitud);
+      document.getElementById("btnCerrarModalConfirmacionSuperior").addEventListener("click", function () {
+        datosPendientesEnvio = null;
+        cerrarModalConfirmacion();
+      });
+      document.getElementById("modalConfirmacionEnvio").addEventListener("click", function (e) {
+        if (e.target.id === "modalConfirmacionEnvio") {
+          datosPendientesEnvio = null;
+          cerrarModalConfirmacion();
+        }
+      });
       
       document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
       document.getElementById("btnAbrirGestionAsistentes").addEventListener("click", abrirGestionAsistentes);
