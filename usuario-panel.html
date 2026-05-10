@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -464,6 +464,27 @@
       align-items: flex-end;
       justify-content: flex-start;
     }
+    .modal-cerrar-superior {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #c7d3df;
+      background: #fff;
+      color: #173a63;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .16s ease, border-color .16s ease, color .16s ease;
+      flex: 0 0 auto;
+    }
+    .modal-cerrar-superior:hover {
+      background: #f4f7fb;
+      border-color: #9fb2c7;
+      color: #0f2f55;
+    }
     .modal-contenido {
       white-space: normal;
       word-break: break-word;
@@ -504,6 +525,21 @@
       color: #5a4630;
       line-height: 1.45;
       text-align: left;
+    }
+    .confirmacion-envio-contenido .estado-modal-bloque {
+      padding: 12px 14px;
+    }
+    .confirmacion-envio-contenido .estado-modal-linea + .estado-modal-linea {
+      margin-top: 8px;
+    }
+    .btn-modal-icono {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-modal-icono svg {
+      width: 16px;
+      height: 16px;
     }
     .modal-acciones {
       display: flex;
@@ -741,6 +777,7 @@
           <div id="modalObservacionesSubtitulo" class="modal-subtitulo"></div>
         </div>
         <div id="modalEstadoSuperior" class="modal-estado-superior" hidden></div>
+        <button type="button" class="modal-cerrar-superior" id="btnCerrarModalObservacionesSuperior" aria-label="Cerrar">X</button>
       </div>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
       <div id="modalObservacionesAcciones" class="modal-acciones">
@@ -971,6 +1008,37 @@
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
     }
 
+    function abrirModalConfirmacionEnvio(reserva, onConfirmar) {
+      document.getElementById("modalObservacionesTitulo").textContent = "ConfirmaciÃ³n de envÃ­o";
+      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Solicitud";
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      estadoSuperior.hidden = true;
+      estadoSuperior.innerHTML = "";
+      document.getElementById("modalObservacionesContenido").className = "modal-contenido confirmacion-envio-contenido";
+      document.getElementById("modalObservacionesContenido").innerHTML = `
+        <div class="estado-modal-bloque">
+          <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${Number(reserva.plazas_prereservadas || 0)}</strong> plazas reservadas.</p>
+          <p class="estado-modal-linea">El tiempo de consolidaciÃ³n calculado para esta solicitud serÃ¡ de <strong>${Number(reserva.minutos_restantes_prereserva || 0)} minutos</strong> y comenzarÃ¡ a contar a partir del momento en que confirme el envÃ­o.</p>
+          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverÃ¡n a quedar disponibles.</p>
+          <p class="estado-modal-linea">AdemÃ¡s, se permitirÃ¡ ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
+        </div>
+      `;
+      document.getElementById("modalObservacionesAcciones").innerHTML = `
+        <button type="button" class="btn-modal btn-modal-principal btn-modal-icono" id="btnConfirmarEnvioSolicitud">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"></path>
+            <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
+          </svg>
+          <span>Enviar solicitud</span>
+        </button>
+      `;
+      document.getElementById("btnConfirmarEnvioSolicitud").addEventListener("click", async () => {
+        await onConfirmar();
+      });
+      document.getElementById("modalObservaciones").classList.add("activo");
+      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+    }
+
     function abrirModalTiempoRestante() {
       document.getElementById("modalObservacionesTitulo").textContent = "Tiempo restante";
       document.getElementById("modalObservacionesSubtitulo").textContent = "Informacion sobre la asignacion de plazas";
@@ -983,7 +1051,7 @@
         </div>
         <div class="estado-modal-observaciones">
           <strong>Importante</strong>
-          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podras seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existira garantia de reserva previa sobre las plazas añadidas tras haber finalizado el tiempo disponible para la asignacion.</div>
+          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podras seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existira garantia de reserva previa sobre las plazas aÃ±adidas tras haber finalizado el tiempo disponible para la asignacion.</div>
         </div>
       `;
       document.getElementById("modalObservacionesAcciones").innerHTML = `
@@ -1006,30 +1074,30 @@
       const estado = normalizarEstadoReserva(reserva?.estado);
       const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
       if (estado === "BORRADOR") {
-        return "Esta solicitud está guardada como borrador. Todavía no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
+        return "Esta solicitud estÃ¡ guardada como borrador. TodavÃ­a no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
       }
       if (estado === "CONFIRMADA") {
         if (observacionesAdmin) {
           return `Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador. Motivo indicado: ${observacionesAdmin}`;
         }
-        return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
+        return "La solicitud ha sido aceptada y ya no requiere ninguna correcciÃ³n por tu parte.";
       }
       if (estado === "PENDIENTE") {
-        return "La solicitud sigue en proceso de revisión. Si lo necesitas, puedes actualizar sus datos o la relación de asistentes.";
+        return "La solicitud sigue en proceso de revisiÃ³n. Si lo necesitas, puedes actualizar sus datos o la relaciÃ³n de asistentes.";
       }
       if (estado === "SUSPENDIDA") {
-        return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
+        return "La solicitud estÃ¡ suspendida porque la documentaciÃ³n obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
       }
       if (estado === "RECHAZADA") {
         if (observacionesAdmin) {
           return `Tu solicitud ha sido rechazada por el administrador. Motivo indicado: ${observacionesAdmin}`;
         }
-        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
+        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la informaciÃ³n necesaria para volver a dejarla en proceso.";
       }
       if (estado === "CANCELADA") {
-        return "La solicitud está anulada y ya no admite cambios.";
+        return "La solicitud estÃ¡ anulada y ya no admite cambios.";
       }
-      return "Consulta el estado actual de tu solicitud y corrige la información necesaria si procede.";
+      return "Consulta el estado actual de tu solicitud y corrige la informaciÃ³n necesaria si procede.";
     }
 
     function construirAccionesEstado(reserva) {
@@ -1048,7 +1116,7 @@
       if (estado === "SUSPENDIDA") {
         if (Number(reserva?.admin_id || 0) > 0) {
           acciones.push({
-            label: "Ir a documentación",
+            label: "Ir a documentaciÃ³n",
             principal: true,
             onClick: () => {
               location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
@@ -1076,7 +1144,7 @@
       }
       if (Number(reserva?.admin_id || 0) > 0 && estado !== "CONFIRMADA" && estado !== "CANCELADA") {
         acciones.push({
-          label: "Ir a documentación",
+          label: "Ir a documentaciÃ³n",
           onClick: () => {
             location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
           }
@@ -1269,7 +1337,6 @@
         mostrarMensaje("error", "El borrador seleccionado no incluye un token de edición válido.");
         return;
       }
-      if (!window.confirm("¿Deseas enviar esta solicitud ahora para que pase a pendiente de validación?")) return;
 
       limpiarMensaje();
       const btnEnviar = document.getElementById("btnEnviarSolicitud");
@@ -1286,43 +1353,55 @@
         }
 
         const reserva = detalleData.reserva;
-        const payload = {
-          token_edicion: reservaSeleccionada.token_edicion,
-          accion: "enviar_borrador",
-          centro: reserva.centro || "",
-          contacto: reserva.contacto || "",
-          telefono: reserva.telefono || "",
-          email: reserva.email || "",
-          observaciones: reserva.observaciones || "",
-          franja: reserva.franja_id == null ? "" : reserva.franja_id,
-          plazas_reservadas: Number(reserva.plazas_prereservadas || 0)
-        };
+        abrirModalConfirmacionEnvio(reserva, async () => {
+          const btnConfirmar = document.getElementById("btnConfirmarEnvioSolicitud");
+          if (btnConfirmar) btnConfirmar.disabled = true;
+          try {
+            const payload = {
+              token_edicion: reservaSeleccionada.token_edicion,
+              accion: "enviar_borrador",
+              centro: reserva.centro || "",
+              contacto: reserva.contacto || "",
+              telefono: reserva.telefono || "",
+              email: reserva.email || "",
+              observaciones: reserva.observaciones || "",
+              franja: reserva.franja_id == null ? "" : reserva.franja_id,
+              plazas_reservadas: Number(reserva.plazas_prereservadas || 0)
+            };
 
-        const response = await fetch("/api/reserva-actualizar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload)
+            const response = await fetch("/api/reserva-actualizar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify(payload)
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data?.ok) {
+              throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
+            }
+
+            cerrarModalObservaciones();
+            mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente.");
+            reservaSeleccionada = null;
+            await cargarPanel();
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo enviar la solicitud.");
+            if (btnConfirmar) btnConfirmar.disabled = false;
+          } finally {
+            actualizarBotones();
+          }
         });
-        const data = await response.json().catch(() => null);
-        if (!response.ok || !data?.ok) {
-          throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
-        }
-
-        mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente.");
-        reservaSeleccionada = null;
-        await cargarPanel();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo enviar la solicitud.");
       } finally {
+        if (btnEnviar) btnEnviar.disabled = false;
         actualizarBotones();
       }
     }
-
-    async function anularSolicitudSeleccionada() {
+async function anularSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
-      if (!window.confirm(`¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
+      if (!window.confirm(`Â¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
 
       limpiarMensaje();
       try {
@@ -1379,6 +1458,7 @@
     });
     document.getElementById("btnAnularSolicitud").addEventListener("click", anularSolicitudSeleccionada);
     document.getElementById("btnInfoTiempoRestante").addEventListener("click", abrirModalTiempoRestante);
+    document.getElementById("btnCerrarModalObservacionesSuperior").addEventListener("click", cerrarModalObservaciones);
     document.getElementById("modalObservaciones").addEventListener("click", function (e) {
       if (e.target.id === "modalObservaciones") cerrarModalObservaciones();
     });
@@ -1396,3 +1476,4 @@
   </script>
 </body>
 </html>
+
