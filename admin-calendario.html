@@ -1139,13 +1139,22 @@
       const subtitulo = document.getElementById("subtituloEvento");
 
       if (esSolicitanteCalendario()) {
-        if (btnReservas) btnReservas.href = "usuario-panel.html";
-        if (btnActividades) btnActividades.href = "portal.html";
+        if (btnReservas) {
+          btnReservas.href = "usuario-panel.html";
+          btnReservas.textContent = "Mis reservas";
+        }
+        if (btnActividades) btnActividades.classList.add("oculto");
         if (btnPortal) btnPortal.href = "portal.html";
         if (subtitulo) subtitulo.textContent = "Calendario de actividades y solicitudes";
       } else {
-        if (btnReservas) btnReservas.href = "admin-reservas.html";
-        if (btnActividades) btnActividades.href = "mis-actividades.html";
+        if (btnReservas) {
+          btnReservas.href = "admin-reservas.html";
+          btnReservas.textContent = "Reservas";
+        }
+        if (btnActividades) {
+          btnActividades.href = "mis-actividades.html";
+          btnActividades.classList.remove("oculto");
+        }
         if (btnPortal) btnPortal.href = "portal.html";
         if (subtitulo) subtitulo.textContent = "Calendario administrativo";
       }
@@ -1583,7 +1592,7 @@
       const host = document.getElementById("rangoCalendario");
       if (!host || !info?.view) return;
       const esLista = info.view.type === "listContinuo";
-      const titulo = esLista ? obtenerAnioVisibleListaCalendario() : String(info.view.title || "").trim();
+      const titulo = esLista ? obtenerMesAnioVisibleListaCalendario() : String(info.view.title || "").trim();
       host.textContent = titulo;
       const panelRango = document.getElementById("toolbarRangoCalendario");
       if (panelRango) panelRango.classList.toggle("oculto-lista", false);
@@ -1728,7 +1737,7 @@
       return `${capitalizarTextoCalendario(weekday)} ${day} de ${month}`;
     }
 
-    function obtenerAnioVisibleListaCalendario() {
+    function obtenerMesAnioVisibleListaCalendario() {
       const root = document.getElementById("calendar");
       const contenedor = root?.querySelector(".fc-scroller, .fc-list");
       const cabeceras = [...(root?.querySelectorAll(".fc-list-day[data-date]") || [])];
@@ -1739,15 +1748,20 @@
         return rect.bottom >= rectContenedor.top + 8;
       }) || cabeceras[0];
       const fechaBase = primeraVisible?.dataset?.date || formatearFechaIsoLocal(calendar?.getDate?.() || new Date());
-      const anio = String(fechaBase || "").slice(0, 4);
-      return anio || String(new Date().getFullYear());
+      const fecha = new Date(`${fechaBase}T00:00:00`);
+      if (Number.isNaN(fecha.getTime())) {
+        return new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(new Date());
+      }
+      return capitalizarTextoCalendario(
+        new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(fecha)
+      );
     }
 
     function actualizarRangoListaSegunScroll() {
       if (!calendar || String(calendar.view?.type || "") !== "listContinuo") return;
       const host = document.getElementById("rangoCalendario");
       if (!host) return;
-      host.textContent = obtenerAnioVisibleListaCalendario();
+      host.textContent = obtenerMesAnioVisibleListaCalendario();
     }
 
     function vincularScrollListaCalendario() {
