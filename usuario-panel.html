@@ -465,25 +465,23 @@
       justify-content: flex-start;
     }
     .modal-cerrar-superior {
-      width: 36px;
-      height: 36px;
-      border-radius: 999px;
-      border: 1px solid #c7d3df;
-      background: #fff;
-      color: #173a63;
+      border: none;
+      background: transparent;
+      color: #5c7088;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1;
       cursor: pointer;
-      transition: background .16s ease, border-color .16s ease, color .16s ease;
+      padding: 0;
+      margin: 2px 0 0 auto;
+      transition: color .16s ease, opacity .16s ease;
       flex: 0 0 auto;
     }
     .modal-cerrar-superior:hover {
-      background: #f4f7fb;
-      border-color: #9fb2c7;
-      color: #0f2f55;
+      color: #173a63;
+      opacity: 1;
     }
     .modal-contenido {
       white-space: normal;
@@ -1009,7 +1007,7 @@
     }
 
     function abrirModalConfirmacionEnvio(reserva, onConfirmar) {
-      document.getElementById("modalObservacionesTitulo").textContent = "ConfirmaciÃ³n de envÃ­o";
+      document.getElementById("modalObservacionesTitulo").textContent = "Confirmación de envío";
       document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Solicitud";
       const estadoSuperior = document.getElementById("modalEstadoSuperior");
       estadoSuperior.hidden = true;
@@ -1018,9 +1016,9 @@
       document.getElementById("modalObservacionesContenido").innerHTML = `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${Number(reserva.plazas_prereservadas || 0)}</strong> plazas reservadas.</p>
-          <p class="estado-modal-linea">El tiempo de consolidaciÃ³n calculado para esta solicitud serÃ¡ de <strong>${Number(reserva.minutos_restantes_prereserva || 0)} minutos</strong> y comenzarÃ¡ a contar a partir del momento en que confirme el envÃ­o.</p>
-          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverÃ¡n a quedar disponibles.</p>
-          <p class="estado-modal-linea">AdemÃ¡s, se permitirÃ¡ ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
+          <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${Number(reserva.minutos_restantes_prereserva || 0)} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
+          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
+          <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
       `;
       document.getElementById("modalObservacionesAcciones").innerHTML = `
@@ -1051,7 +1049,7 @@
         </div>
         <div class="estado-modal-observaciones">
           <strong>Importante</strong>
-          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podras seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existira garantia de reserva previa sobre las plazas aÃ±adidas tras haber finalizado el tiempo disponible para la asignacion.</div>
+          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podrás seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirá garantía de reserva previa sobre las plazas añadidas tras haber finalizado el tiempo disponible para la asignación.</div>
         </div>
       `;
       document.getElementById("modalObservacionesAcciones").innerHTML = `
@@ -1074,28 +1072,28 @@
       const estado = normalizarEstadoReserva(reserva?.estado);
       const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
       if (estado === "BORRADOR") {
-        return "Esta solicitud estÃ¡ guardada como borrador. TodavÃ­a no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
+        return "Esta solicitud está guardada como borrador. Todavía no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
       }
       if (estado === "CONFIRMADA") {
         if (observacionesAdmin) {
           return `Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador. Motivo indicado: ${observacionesAdmin}`;
         }
-        return "La solicitud ha sido aceptada y ya no requiere ninguna correcciÃ³n por tu parte.";
+        return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
       }
       if (estado === "PENDIENTE") {
-        return "La solicitud sigue en proceso de revisiÃ³n. Si lo necesitas, puedes actualizar sus datos o la relaciÃ³n de asistentes.";
+        return "La solicitud sigue en proceso de revisión. Si lo necesitas, puedes actualizar sus datos o la relación de asistentes.";
       }
       if (estado === "SUSPENDIDA") {
-        return "La solicitud estÃ¡ suspendida porque la documentaciÃ³n obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
+        return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
       }
       if (estado === "RECHAZADA") {
         if (observacionesAdmin) {
           return `Tu solicitud ha sido rechazada por el administrador. Motivo indicado: ${observacionesAdmin}`;
         }
-        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la informaciÃ³n necesaria para volver a dejarla en proceso.";
+        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
       }
       if (estado === "CANCELADA") {
-        return "La solicitud estÃ¡ anulada y ya no admite cambios.";
+        return "La solicitud está anulada y ya no admite cambios.";
       }
       return "Consulta el estado actual de tu solicitud y corrige la informaciÃ³n necesaria si procede.";
     }
@@ -1116,7 +1114,7 @@
       if (estado === "SUSPENDIDA") {
         if (Number(reserva?.admin_id || 0) > 0) {
           acciones.push({
-            label: "Ir a documentaciÃ³n",
+            label: "Ir a documentación",
             principal: true,
             onClick: () => {
               location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
@@ -1144,7 +1142,7 @@
       }
       if (Number(reserva?.admin_id || 0) > 0 && estado !== "CONFIRMADA" && estado !== "CANCELADA") {
         acciones.push({
-          label: "Ir a documentaciÃ³n",
+          label: "Ir a documentación",
           onClick: () => {
             location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
           }
@@ -1186,10 +1184,7 @@
         <button type="button" class="btn-modal${accion.principal ? " btn-modal-principal" : ""}" data-accion-estado="${indice}">${escapeHtml(accion.label)}</button>
       `).join("");
 
-      document.getElementById("modalObservacionesAcciones").innerHTML = `
-        ${accionesHtml}
-        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
-      `;
+      document.getElementById("modalObservacionesAcciones").innerHTML = accionesHtml;
 
       acciones.forEach((accion, indice) => {
         const boton = document.querySelector(`[data-accion-estado="${indice}"]`);
@@ -1200,8 +1195,6 @@
           });
         }
       });
-      document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
-
       document.getElementById("modalObservaciones").classList.add("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
     }
