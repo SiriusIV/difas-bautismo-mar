@@ -576,6 +576,7 @@ export async function onRequestPost(context) {
           plazas_prereservadas = ?,
           prereserva_expira_en = ?,
           observaciones = ?,
+          observaciones_admin = NULL,
           estado = 'PENDIENTE',
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
