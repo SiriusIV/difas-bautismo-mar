@@ -323,8 +323,9 @@ export async function onRequestPost(context) {
     const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
     const estadoActual = String(reservaActual.estado || "").toUpperCase();
     const esBorrador = estadoActual === "BORRADOR";
-    const reenviarRechazada = estadoActual === "RECHAZADA";
-    const guardarBorrador = esBorrador && (accion === "" || accion === "guardar_borrador");
+    const esRechazada = estadoActual === "RECHAZADA";
+    const reenviarRechazada = esRechazada && accion !== "guardar_borrador";
+    const guardarBorrador = (esBorrador || esRechazada) && (accion === "" || accion === "guardar_borrador");
     const enviarBorrador = esBorrador && accion === "enviar_borrador";
 
     if (Number(actividad.activa || 0) !== 1 && !guardarBorrador) {
@@ -339,7 +340,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Esta actividad no utiliza franjas horarias." }, { status: 400 });
     }
 
-    if (!esBorrador && !reenviarRechazada) {
+    if (!esBorrador && !esRechazada) {
       return json({ ok: false, error: "La solicitud no puede modificarse en su estado actual." }, { status: 400 });
     }
 
@@ -434,9 +435,10 @@ export async function onRequestPost(context) {
           plazas_prereservadas = ?,
           prereserva_expira_en = NULL,
           observaciones = ?,
+          estado = 'BORRADOR',
           fecha_modificacion = datetime('now')
         WHERE id = ?
-          AND UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR'
+          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('BORRADOR', 'RECHAZADA')
       `).bind(
         franjaIdNueva,
         centro,
@@ -456,7 +458,7 @@ export async function onRequestPost(context) {
       return json({
         ok: true,
         estado: "BORRADOR",
-        mensaje: "Borrador actualizado correctamente.",
+        mensaje: "Borrador guardado correctamente.",
         franja: franjaNueva ? {
           id: franjaNueva.id,
           fecha: franjaNueva.fecha,
