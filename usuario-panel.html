@@ -1013,11 +1013,13 @@
       const estadoSuperior = document.getElementById("modalEstadoSuperior");
       estadoSuperior.hidden = true;
       estadoSuperior.innerHTML = "";
-      document.getElementById("modalObservacionesContenido").textContent = reserva.observaciones;
-      document.getElementById("modalObservacionesAcciones").innerHTML = `
-        <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
+      document.getElementById("modalObservacionesContenido").className = "modal-contenido";
+      document.getElementById("modalObservacionesContenido").innerHTML = `
+        <div class="estado-modal-observaciones">
+          <div class="estado-modal-observaciones-texto">${escapeHtml(reserva.observaciones)}</div>
+        </div>
       `;
-      document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
+      document.getElementById("modalObservacionesAcciones").innerHTML = "";
       document.getElementById("modalObservaciones").classList.add("activo");
       document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
     }
