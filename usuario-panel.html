@@ -465,33 +465,38 @@
       justify-content: flex-start;
     }
     .modal-cerrar-superior {
-      border: none;
-      background: transparent;
-      color: #5c7088;
+      width: 30px;
+      height: 30px;
+      border: 1px solid #c9d6e4;
+      border-radius: 999px;
+      background: #fff;
+      color: #4f647d;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 15px;
+      font-weight: 700;
       line-height: 1;
       cursor: pointer;
       padding: 0;
       margin: 2px 0 0 auto;
-      transition: color .16s ease, opacity .16s ease;
+      transition: border-color .16s ease, color .16s ease, background .16s ease;
       flex: 0 0 auto;
     }
     .modal-cerrar-superior:hover {
       color: #173a63;
-      opacity: 1;
+      border-color: #adc0d3;
+      background: #f8fbff;
     }
     .modal-contenido {
       white-space: normal;
       word-break: break-word;
     }
     .estado-modal-badge {
-      font-size: 15px;
-      padding: 7px 16px;
+      font-size: 13px;
+      padding: 6px 14px;
       line-height: 1;
-      min-width: 132px;
+      min-width: 112px;
       text-align: center;
     }
     .estado-modal-bloque {
@@ -1165,6 +1170,7 @@
             onClick: () => editarReserva(reserva.token_edicion, estado)
           });
         }
+        return acciones;
       }
 
       if (reserva?.token_edicion && estado !== "CANCELADA" && estado !== "CONFIRMADA") {
