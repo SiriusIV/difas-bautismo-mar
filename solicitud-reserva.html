@@ -320,6 +320,22 @@
       border-color: #9fb2c7;
     }
 
+    .btn-icono-redondo:disabled {
+      background: #f7f9fb !important;
+      color: #9aa7b5 !important;
+      border-color: #d6dde5 !important;
+      cursor: not-allowed;
+      pointer-events: none;
+      box-shadow: none;
+    }
+
+    .btn-icono-redondo:disabled:hover {
+      background: #f7f9fb !important;
+      color: #9aa7b5 !important;
+      border-color: #d6dde5 !important;
+      transform: none;
+    }
+
     .btn-icono-redondo svg,
     .btn-enlace-icono svg {
       width: 17px;
@@ -628,7 +644,7 @@
     }
 
     .modal-cerrar-superior:hover {
-      color: #173a63;
+      color: #5c7088;
       opacity: 1;
     }
 
@@ -1117,10 +1133,23 @@
 
     function marcarSolicitudPendiente() {
       solicitudPendienteEnvio = true;
+      if (!envioEnCurso) {
+        const btnGuardar = document.getElementById("btnGuardarBorrador");
+        const btnEnviar = document.getElementById("btnPrepararEnvio");
+        if (btnGuardar && btnGuardar.style.display !== "none") btnGuardar.disabled = false;
+        if (btnEnviar) btnEnviar.disabled = false;
+      }
     }
 
     function limpiarSolicitudPendiente() {
       solicitudPendienteEnvio = false;
+    }
+
+    function deshabilitarAccionesFormularioTrasCerrarModal() {
+      const btnGuardar = document.getElementById("btnGuardarBorrador");
+      const btnEnviar = document.getElementById("btnPrepararEnvio");
+      if (btnGuardar && btnGuardar.style.display !== "none") btnGuardar.disabled = true;
+      if (btnEnviar) btnEnviar.disabled = true;
     }
 
     function haySolicitudSinEnviar() {
@@ -1994,12 +2023,16 @@
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
       document.getElementById("btnCerrarModalConfirmacionSuperior").addEventListener("click", function () {
         datosPendientesEnvio = null;
+        limpiarSolicitudPendiente();
         cerrarModalConfirmacion();
+        deshabilitarAccionesFormularioTrasCerrarModal();
       });
       document.getElementById("modalConfirmacionEnvio").addEventListener("click", function (e) {
         if (e.target.id === "modalConfirmacionEnvio") {
           datosPendientesEnvio = null;
+          limpiarSolicitudPendiente();
           cerrarModalConfirmacion();
+          deshabilitarAccionesFormularioTrasCerrarModal();
         }
       });
       
