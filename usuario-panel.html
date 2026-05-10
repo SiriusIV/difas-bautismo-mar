@@ -897,7 +897,8 @@
     }
 
     function formatearTiempoRestante(reserva) {
-      if (normalizarEstadoReserva(reserva?.estado) === "BORRADOR") {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) {
         return { texto: "", finalizada: false };
       }
       const expiraEn = parsearFechaServidor(reserva?.prereserva_expira_en);

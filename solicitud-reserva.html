@@ -1328,7 +1328,8 @@
       document.getElementById("telefono").value = reserva.telefono || "";
       document.getElementById("email").value = reserva.email || "";
       document.getElementById("observaciones").value = reserva.observaciones || "";
-      const plazasFormulario = esReservaBorrador(reserva)
+      const estadoReserva = normalizarEstadoReserva(reserva?.estado);
+      const plazasFormulario = (estadoReserva === "BORRADOR" || estadoReserva === "RECHAZADA")
         ? Number(reserva.plazas_prereservadas || 0)
         : Number(reserva.plazas_reservadas || 0);
       document.getElementById("plazasSolicitadas").value = String(Math.max(plazasFormulario, 0));
