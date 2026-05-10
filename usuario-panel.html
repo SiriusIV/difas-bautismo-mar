@@ -671,6 +671,12 @@
       <div class="resumen-linea">
         <div class="resumen" id="resumenPanel"></div>
         <div class="acciones-superiores">
+          <button type="button" class="btn-icono" id="btnEnviarSolicitud" title="Enviar solicitud" aria-label="Enviar solicitud" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 2 11 13"></path>
+              <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
+            </svg>
+          </button>
           <button type="button" class="btn-icono" id="btnEditar" title="Editar reserva" aria-label="Editar reserva" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 20h9"></path>
@@ -930,6 +936,7 @@
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
+      document.getElementById("btnEnviarSolicitud").disabled = !hay || estado !== "BORRADOR";
       document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
       document.getElementById("btnAsistentes").disabled = !hay || estado === "CANCELADA" || estado === "RECHAZADA";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
@@ -1254,6 +1261,64 @@
       location.href = `asistentes.html?token=${encodeURIComponent(token)}`;
     }
 
+    async function enviarSolicitudSeleccionada() {
+      if (!reservaSeleccionada) return;
+      const estado = normalizarEstadoReserva(reservaSeleccionada.estado);
+      if (estado !== "BORRADOR") return;
+      if (!reservaSeleccionada.token_edicion) {
+        mostrarMensaje("error", "El borrador seleccionado no incluye un token de edición válido.");
+        return;
+      }
+      if (!window.confirm("¿Deseas enviar esta solicitud ahora para que pase a pendiente de validación?")) return;
+
+      limpiarMensaje();
+      const btnEnviar = document.getElementById("btnEnviarSolicitud");
+
+      try {
+        if (btnEnviar) btnEnviar.disabled = true;
+
+        const detalleResponse = await fetch(`/api/reserva?token=${encodeURIComponent(reservaSeleccionada.token_edicion)}`, {
+          credentials: "include"
+        });
+        const detalleData = await detalleResponse.json().catch(() => null);
+        if (!detalleResponse.ok || !detalleData?.ok || !detalleData?.reserva) {
+          throw new Error(detalleData?.error || "No se pudo recuperar el borrador seleccionado.");
+        }
+
+        const reserva = detalleData.reserva;
+        const payload = {
+          token_edicion: reservaSeleccionada.token_edicion,
+          accion: "enviar_borrador",
+          centro: reserva.centro || "",
+          contacto: reserva.contacto || "",
+          telefono: reserva.telefono || "",
+          email: reserva.email || "",
+          observaciones: reserva.observaciones || "",
+          franja: reserva.franja_id == null ? "" : reserva.franja_id,
+          plazas_reservadas: Number(reserva.plazas_prereservadas || 0)
+        };
+
+        const response = await fetch("/api/reserva-actualizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
+        }
+
+        mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente.");
+        reservaSeleccionada = null;
+        await cargarPanel();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo enviar la solicitud.");
+      } finally {
+        actualizarBotones();
+      }
+    }
+
     async function anularSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
@@ -1308,6 +1373,7 @@
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion, reservaSeleccionada.estado);
     });
+    document.getElementById("btnEnviarSolicitud").addEventListener("click", enviarSolicitudSeleccionada);
     document.getElementById("btnAsistentes").addEventListener("click", () => {
       if (reservaSeleccionada) abrirAsistentes(reservaSeleccionada.token_edicion);
     });
