@@ -1371,10 +1371,6 @@
         mostrarMensaje("error", "El borrador seleccionado no incluye un token de edición válido.");
         return;
       }
-      if (estado === "RECHAZADA") {
-        editarReserva(reservaSeleccionada.token_edicion, estado);
-        return;
-      }
 
       limpiarMensaje();
       const btnEnviar = document.getElementById("btnEnviarSolicitud");
@@ -1397,7 +1393,7 @@
           try {
             const payload = {
               token_edicion: reservaSeleccionada.token_edicion,
-              accion: "enviar_borrador",
+              accion: estado === "RECHAZADA" ? "reenviar_solicitud" : "enviar_borrador",
               centro: reserva.centro || "",
               contacto: reserva.contacto || "",
               telefono: reserva.telefono || "",

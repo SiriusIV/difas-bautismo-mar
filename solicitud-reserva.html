@@ -1770,6 +1770,7 @@
         const payload = {
           ...datos,
           token_edicion: getTokenEdicion(),
+          accion: esModoReenvioRechazada() ? "reenviar_solicitud" : "",
           plazas_reservadas: datos.plazas_solicitadas
         };
         delete payload.plazas_solicitadas;
