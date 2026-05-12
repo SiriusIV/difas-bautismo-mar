@@ -218,11 +218,13 @@
       top: 1px;
       right: 1px;
       bottom: 1px;
-      width: 28px;
+      width: 18px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s ease;
     }
 
     .campo-plazas-spin {
@@ -237,6 +239,7 @@
       padding: 0;
       line-height: 1;
       pointer-events: auto;
+      font-size: 9px;
     }
 
     .campo-plazas-spin:hover {
@@ -250,6 +253,11 @@
 
     #plazasSolicitadas.plazas-excedidas ~ .campo-plazas-spinner .campo-plazas-spin {
       color: #7f1d1d;
+    }
+
+    .campo-plazas-control:hover .campo-plazas-spinner,
+    .campo-plazas-control:focus-within .campo-plazas-spinner {
+      opacity: 1;
     }
 
     .formulario-solicitud {
