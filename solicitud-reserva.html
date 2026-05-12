@@ -1012,7 +1012,7 @@
     <div class="modal">
       <div class="modal-encabezado">
         <h3 id="tituloModalAsistentes">Asistentes</h3>
-        <button type="button" id="btnCerrarModalAsistentesSuperior" class="modal-cerrar-superior" aria-label="Cerrar">X</button>
+        <button type="button" id="btnCerrarModalAsistentesSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
       </div>
 
       <div class="bloque">
@@ -1813,10 +1813,6 @@
           };
           limpiarSolicitudPendiente();
           mostrarMensaje("ok", data.mensaje || "Solicitud reenviada correctamente.");
-          if (actividadUsaFranjas()) {
-            await cargarFranjas();
-          }
-          actualizarResumenPantalla();
           modoModalAsistentes = "reenvio";
           redireccionPendienteTrasModalAsistentes = "usuario-panel.html";
           abrirModalAsistentes();
