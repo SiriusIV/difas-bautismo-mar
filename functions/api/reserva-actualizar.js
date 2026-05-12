@@ -345,6 +345,7 @@ export async function onRequestPost(context) {
     }
 
     const asistentesCargados = await contarAsistentes(env, reservaActual.id);
+    const totalReenvioRechazada = Math.max(asistentesCargados, plazasSolicitadas);
     const centroComparacion = normalizarCentroComparacion(centro);
 
     let franjaNueva = null;
@@ -409,7 +410,9 @@ export async function onRequestPost(context) {
 
       const totalSolicitado = esBorrador
         ? plazasSolicitadas
-        : asistentesCargados + plazasSolicitadas;
+        : esRechazada
+          ? totalReenvioRechazada
+          : asistentesCargados + plazasSolicitadas;
 
       if (totalSolicitado > disponiblesEditables) {
         return json(
@@ -552,7 +555,9 @@ export async function onRequestPost(context) {
       });
     }
 
-    const totalBloqueadoNuevo = asistentesCargados + plazasSolicitadas;
+    const totalBloqueadoNuevo = reenviarRechazada
+      ? totalReenvioRechazada
+      : asistentesCargados + plazasSolicitadas;
 
     if (reenviarRechazada) {
       const minutosConsolidacion = calcularMinutosConsolidacion(totalBloqueadoNuevo);

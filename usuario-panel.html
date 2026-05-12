@@ -903,6 +903,12 @@
       return fecha;
     }
 
+    function calcularMinutosConsolidacion(plazasReservadas) {
+      const plazas = Number(plazasReservadas || 0);
+      if (!Number.isFinite(plazas) || plazas <= 0) return 20;
+      return 20 + (plazas * 3);
+    }
+
     function formatearTiempoRestante(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) {
@@ -1038,6 +1044,11 @@
     }
 
     function abrirModalConfirmacionEnvio(reserva, onConfirmar) {
+      const plazasReenvio = Math.max(
+        Number(reserva?.asistentes_cargados || 0),
+        Number(reserva?.plazas_prereservadas || 0)
+      );
+      const minutosConsolidacion = calcularMinutosConsolidacion(plazasReenvio);
       document.getElementById("modalObservacionesTitulo").textContent = "Confirmación de envío";
       document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Solicitud";
       const estadoSuperior = document.getElementById("modalEstadoSuperior");
@@ -1046,8 +1057,8 @@
       document.getElementById("modalObservacionesContenido").className = "modal-contenido confirmacion-envio-contenido";
       document.getElementById("modalObservacionesContenido").innerHTML = `
         <div class="estado-modal-bloque">
-          <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${Number(reserva.plazas_prereservadas || 0)}</strong> plazas reservadas.</p>
-          <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${Number(reserva.minutos_restantes_prereserva || 0)} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
+          <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${plazasReenvio}</strong> plazas reservadas.</p>
+          <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${minutosConsolidacion} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
           <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
           <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
