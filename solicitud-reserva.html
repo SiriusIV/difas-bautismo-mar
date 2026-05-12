@@ -1650,7 +1650,7 @@
       const titulo = document.getElementById("tituloResumenReserva");
       if (!titulo) return;
       const esBorradorActual = !!tokenBorrador || normalizarEstadoReserva(reservaExistente?.estado) === "BORRADOR";
-      titulo.textContent = esBorradorActual ? "Resumen de borrador de reserva" : "Resumen de reserva";
+      titulo.textContent = esBorradorActual ? "Resumen de borrador de solicitud" : "Resumen de solicitud";
     }
 
     function actualizarResumenPantalla() {
@@ -1667,7 +1667,7 @@
       const plazasDisponibles = document.getElementById("plazasDisponibles");
       const minutos = calcularMinutosConsolidacion(plazasPendientes);
       const nombreActividad = actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-";
-      const etiquetaPlazas = esEdicion ? "Plazas pendientes por reservar" : "Plazas reservadas";
+      const etiquetaPlazas = esEdicion ? "Plazas pendientes por reservar" : "Plazas pre-reservadas";
       const detalleAsignadas = esEdicion
         ? `<br><strong>Plazas ya asignadas:</strong> ${plazasAsignadas}`
         : "";
