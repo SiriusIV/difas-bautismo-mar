@@ -1061,7 +1061,7 @@
       <div class="solicitud-bloque">
         <div class="resumen-grid">
           <div class="tarjeta-resumen">
-            <span class="tarjeta-titulo">Resumen de reserva</span>
+            <span class="tarjeta-titulo" id="tituloResumenReserva">Resumen de reserva</span>
             <div id="resumenReserva">
               Seleccione una franja e indique el número de plazas reservadas.
             </div>
@@ -1646,7 +1646,15 @@
       campoPlazas.classList.toggle("plazas-excedidas", !!excede);
     }
 
+    function actualizarTituloResumenReserva() {
+      const titulo = document.getElementById("tituloResumenReserva");
+      if (!titulo) return;
+      const esBorradorActual = !!tokenBorrador || normalizarEstadoReserva(reservaExistente?.estado) === "BORRADOR";
+      titulo.textContent = esBorradorActual ? "Resumen de borrador de reserva" : "Resumen de reserva";
+    }
+
     function actualizarResumenPantalla() {
+      actualizarTituloResumenReserva();
       const usaFranjas = actividadUsaFranjas();
       const franja = obtenerFranjaSeleccionada();
       const plazas = parseInt(document.getElementById("plazasSolicitadas").value || "0", 10);
