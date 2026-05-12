@@ -189,36 +189,67 @@
     }
 
     #plazasSolicitadas {
-      appearance: auto;
-      -webkit-appearance: auto;
-    }
-
-    #plazasSolicitadas::-webkit-textfield-decoration-container {
-      background: transparent;
-    }
-
-    #plazasSolicitadas.plazas-excedidas::-webkit-textfield-decoration-container {
-      background: #fde8e8;
+      appearance: textfield;
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+      padding-right: 34px;
     }
 
     #plazasSolicitadas::-webkit-outer-spin-button,
     #plazasSolicitadas::-webkit-inner-spin-button {
+      -webkit-appearance: none;
       margin: 0;
+    }
+
+    .campo-plazas-control {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 118px;
+    }
+
+    .campo-plazas-control input {
+      max-width: none !important;
+      width: 100%;
+    }
+
+    .campo-plazas-spinner {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      bottom: 1px;
+      width: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .campo-plazas-spin {
+      flex: 1 1 50%;
+      border: none;
       background: transparent;
+      color: #5b6b7c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      pointer-events: auto;
     }
 
-    #plazasSolicitadas.plazas-excedidas::-webkit-outer-spin-button,
-    #plazasSolicitadas.plazas-excedidas::-webkit-inner-spin-button {
-      background: #fde8e8;
+    .campo-plazas-spin:hover {
+      background: transparent !important;
+      color: #123a63;
     }
 
-    #plazasSolicitadas.plazas-excedidas:hover::-webkit-outer-spin-button,
-    #plazasSolicitadas.plazas-excedidas:hover::-webkit-inner-spin-button,
-    #plazasSolicitadas.plazas-excedidas:focus::-webkit-outer-spin-button,
-    #plazasSolicitadas.plazas-excedidas:focus::-webkit-inner-spin-button,
-    #plazasSolicitadas.plazas-excedidas::-webkit-inner-spin-button:hover,
-    #plazasSolicitadas.plazas-excedidas::-webkit-inner-spin-button:active {
-      background: #fde8e8;
+    .campo-plazas-spin:active {
+      background: transparent !important;
+    }
+
+    #plazasSolicitadas.plazas-excedidas ~ .campo-plazas-spinner .campo-plazas-spin {
+      color: #7f1d1d;
     }
 
     .formulario-solicitud {
@@ -995,7 +1026,13 @@
                 <div class="campo-plazas">
                   <div class="fila">
                     <label for="plazasSolicitadas">Plazas reservadas <span class="campo-obligatorio">*</span></label>
-                    <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+                    <div class="campo-plazas-control">
+                      <input type="number" id="plazasSolicitadas" name="plazasSolicitadas" min="1" step="1" required>
+                      <div class="campo-plazas-spinner" aria-hidden="true">
+                        <button type="button" class="campo-plazas-spin" id="btnPlazasMas" tabindex="-1" aria-label="Aumentar plazas reservadas">▲</button>
+                        <button type="button" class="campo-plazas-spin" id="btnPlazasMenos" tabindex="-1" aria-label="Reducir plazas reservadas">▼</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2041,6 +2078,31 @@
         if (!valor) return;
         if (emailValido(valor)) return;
         mostrarMensaje("error", "El formato del correo electrónico de contacto no es válido.");
+      });
+
+      const campoPlazas = document.getElementById("plazasSolicitadas");
+      const btnPlazasMas = document.getElementById("btnPlazasMas");
+      const btnPlazasMenos = document.getElementById("btnPlazasMenos");
+
+      function notificarCambioPlazas() {
+        campoPlazas.dispatchEvent(new Event("input", { bubbles: true }));
+        campoPlazas.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      btnPlazasMas?.addEventListener("click", function () {
+        campoPlazas.stepUp();
+        notificarCambioPlazas();
+      });
+
+      btnPlazasMenos?.addEventListener("click", function () {
+        const valorActual = parseInt(campoPlazas.value || "0", 10);
+        const minimo = parseInt(campoPlazas.min || "1", 10);
+        if (Number.isInteger(valorActual) && valorActual <= minimo) {
+          campoPlazas.value = String(minimo);
+        } else {
+          campoPlazas.stepDown();
+        }
+        notificarCambioPlazas();
       });
 
       form.addEventListener("input", function (e) {
