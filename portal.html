@@ -2056,14 +2056,16 @@ function actualizarBotonSolicitarSegunFranja() {
           const fechaSolicitud = String(reserva?.fecha_solicitud || "").trim();
           const fechaModificacion = String(reserva?.fecha_modificacion || "").trim();
           const cambioReal = fechaModificacion && fechaSolicitud && fechaModificacion !== fechaSolicitud;
+          const ultimoActorRol = String(reserva?.ultimo_actor_rol || "").trim().toUpperCase();
           const prereservaExpiraEn = String(reserva?.prereserva_expira_en || "").trim();
           const prereservaVigente = Number(reserva?.prereserva_vigente || 0) === 1;
           const huboPrereserva = !!prereservaExpiraEn;
           const plazasPendientes = Number(reserva?.plazas_pendientes || 0);
           const plazasReservadas = Number(reserva?.plazas_reservadas_historicas || reserva?.plazas_prereservadas || 0);
           const prereservaExpirada = huboPrereserva && !prereservaVigente;
+          const reaperturaPropiaSolicitante = estado === "PENDIENTE" && cambioReal && ultimoActorRol === "SOLICITANTE";
 
-          if (!(estado === "CONFIRMADA" || estado === "RECHAZADA" || estado === "SUSPENDIDA" || (estado === "PENDIENTE" && cambioReal))) {
+          if (!(estado === "CONFIRMADA" || estado === "RECHAZADA" || estado === "SUSPENDIDA" || (estado === "PENDIENTE" && cambioReal && !reaperturaPropiaSolicitante))) {
             return null;
           }
 

@@ -1,3 +1,5 @@
+import { registrarEventoReserva } from "./_reservas_historial.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -75,7 +77,10 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.estado,
       r.franja_id,
       r.plazas_prereservadas,
-      r.prereserva_expira_en
+      r.prereserva_expira_en,
+      r.usuario_id,
+      r.centro,
+      r.contacto
     FROM reservas r
     WHERE r.token_edicion = ?
     LIMIT 1
@@ -299,6 +304,16 @@ export async function onRequestPost(context) {
     }
 
     await actualizarReservaTrasGuardar(env, reserva.id);
+    await registrarEventoReserva(env, {
+      reservaId: reserva.id,
+      accion: "ASISTENTES_ACTUALIZADOS",
+      estadoOrigen: reserva.estado,
+      estadoDestino: reserva.estado,
+      observaciones: `Total asistentes: ${totalDeseado}`,
+      actorUsuarioId: reserva.usuario_id,
+      actorRol: "SOLICITANTE",
+      actorNombre: reserva.contacto || reserva.centro || "Solicitante"
+    });
 
     const alumnos = visitantesNormalizados.filter(v => v.perfil_asistente === "ALUMNO").length;
     const responsablesGrupo = visitantesNormalizados.filter(v => v.perfil_asistente === "RESPONSABLE_GRUPO").length;

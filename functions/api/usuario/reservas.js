@@ -1,5 +1,6 @@
 import { getUserSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { asegurarTablaHistorialReservas } from "../_reservas_historial.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -76,6 +77,7 @@ export async function onRequestGet(context) {
   try {
     await ejecutarMantenimientoReservas(env);
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarTablaHistorialReservas(env);
     const user = await getUserSession(request, env.SECRET_KEY);
 
     if (!user || !user.id) {
@@ -116,6 +118,27 @@ export async function onRequestGet(context) {
           FROM visitantes v
           WHERE v.reserva_id = r.id
         ), 0) AS asistentes_cargados,
+        (
+          SELECT h.actor_usuario_id
+          FROM reservas_historial_estados h
+          WHERE h.reserva_id = r.id
+          ORDER BY h.fecha_evento DESC, h.id DESC
+          LIMIT 1
+        ) AS ultimo_actor_usuario_id,
+        COALESCE((
+          SELECT h.actor_rol
+          FROM reservas_historial_estados h
+          WHERE h.reserva_id = r.id
+          ORDER BY h.fecha_evento DESC, h.id DESC
+          LIMIT 1
+        ), '') AS ultimo_actor_rol,
+        COALESCE((
+          SELECT h.accion
+          FROM reservas_historial_estados h
+          WHERE h.reserva_id = r.id
+          ORDER BY h.fecha_evento DESC, h.id DESC
+          LIMIT 1
+        ), '') AS ultima_accion_historial,
         COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad
       FROM reservas r
       LEFT JOIN franjas f ON r.franja_id = f.id
@@ -153,7 +176,10 @@ export async function onRequestGet(context) {
       prereserva_expira_en: row.prereserva_expira_en || "",
       prereserva_vigente: esPrereservaVigente(row),
       plazas_pendientes: calcularPlazasReservadasPendientes(row),
-      plazas_asignadas: calcularPlazasAsignadas(row)
+      plazas_asignadas: calcularPlazasAsignadas(row),
+      ultimo_actor_usuario_id: Number(row.ultimo_actor_usuario_id || 0),
+      ultimo_actor_rol: String(row.ultimo_actor_rol || "").trim().toUpperCase(),
+      ultima_accion_historial: String(row.ultima_accion_historial || "").trim().toUpperCase()
     }));
 
     return json({ ok: true, data });
