@@ -176,6 +176,12 @@
       margin-bottom: 18px;
     }
 
+    #plazasSolicitadas.plazas-excedidas {
+      background: #fde8e8;
+      border-color: #e3a1a1;
+      color: #7f1d1d;
+    }
+
     .formulario-solicitud {
       display: grid;
       gap: var(--gap-bloques);
@@ -1545,6 +1551,12 @@
       return franjasCache.find(f => Number(f.id) === id) || null;
     }
 
+    function actualizarAlertaVisualPlazas(excede) {
+      const campoPlazas = document.getElementById("plazasSolicitadas");
+      if (!campoPlazas) return;
+      campoPlazas.classList.toggle("plazas-excedidas", !!excede);
+    }
+
     function actualizarResumenPantalla() {
       const usaFranjas = actividadUsaFranjas();
       const franja = obtenerFranjaSeleccionada();
@@ -1564,6 +1576,7 @@
         : "";
 
       if (!usaFranjas) {
+        actualizarAlertaVisualPlazas(false);
         infoFranja.textContent = "Esta actividad no utiliza franjas horarias.";
         plazasDisponibles.value = "-";
         resumenReserva.innerHTML = `
@@ -1576,6 +1589,7 @@
       }
 
       if (!franja) {
+        actualizarAlertaVisualPlazas(false);
         infoFranja.textContent = "";
         plazasDisponibles.value = "-";
         resumenReserva.textContent = "Seleccione una franja e indique el número de plazas reservadas.";
@@ -1585,6 +1599,10 @@
       const disponibles = obtenerDisponiblesFormulario(franja);
       const capacidad = Number(franja.capacidad || 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
+      const plazasTotalesSolicitadas = esEdicion
+        ? Number(reservaExistente?.plazas_asignadas || 0) + plazasPendientes
+        : plazasPendientes;
+      actualizarAlertaVisualPlazas(plazasTotalesSolicitadas > disponibles);
 
       infoFranja.textContent = "";
       plazasDisponibles.value = String(disponibles);
