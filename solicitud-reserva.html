@@ -639,24 +639,27 @@
     }
 
     .modal-cerrar-superior {
-      border: none;
-      background: transparent;
-      color: #5c7088;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid #cfd9e4;
+      background: #fff;
+      color: #5b6b7c;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 14px;
       line-height: 1;
       cursor: pointer;
       padding: 0;
       margin: 2px 0 0 auto;
       flex: 0 0 auto;
-      transition: color .16s ease, opacity .16s ease;
     }
 
     .modal-cerrar-superior:hover {
-      background: transparent !important;
-      color: #5c7088;
+      background: #f7f9fb !important;
+      color: #0b5ed7 !important;
+      border-color: #9fb2c7;
       opacity: 1;
     }
 
@@ -1812,7 +1815,6 @@
             token_edicion: data.token_edicion || getTokenEdicion()
           };
           limpiarSolicitudPendiente();
-          mostrarMensaje("ok", data.mensaje || "Solicitud reenviada correctamente.");
           modoModalAsistentes = "reenvio";
           redireccionPendienteTrasModalAsistentes = "usuario-panel.html";
           abrirModalAsistentes();
