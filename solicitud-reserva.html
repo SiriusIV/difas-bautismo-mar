@@ -2043,10 +2043,7 @@
         tokenBorrador = "";
         mostrarMensajeModalConfirmacion("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
         document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
-        if (actividadUsaFranjas()) {
-          await cargarFranjas();
-        }
-        actualizarResumenPantalla();
+        window.location.href = "usuario-panel.html";
 
       } catch (error) {
         mostrarMensajeModalConfirmacion("error", error.message || "No se pudo crear la solicitud.");
