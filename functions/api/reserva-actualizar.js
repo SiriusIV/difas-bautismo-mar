@@ -438,6 +438,7 @@ export async function onRequestPost(context) {
           plazas_prereservadas = ?,
           prereserva_expira_en = NULL,
           observaciones = ?,
+          observaciones_admin = NULL,
           estado = 'BORRADOR',
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -490,6 +491,7 @@ export async function onRequestPost(context) {
           plazas_prereservadas = ?,
           prereserva_expira_en = ?,
           observaciones = ?,
+          observaciones_admin = NULL,
           estado = 'PENDIENTE',
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')

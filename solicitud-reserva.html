@@ -1143,6 +1143,7 @@
     let franjaIdInicial = null;
     let redireccionPendienteTrasModalAsistentes = "";
     let modoModalAsistentes = "alta";
+    let redireccionPendienteTrasConfirmacion = "";
 
     function getActividadId() {
       if (actividadActual && Number.isInteger(Number(actividadActual.id || 0)) && Number(actividadActual.id) > 0) {
@@ -1956,6 +1957,11 @@
     function cerrarModalConfirmacion() {
       document.getElementById("modalConfirmacionEnvio").classList.remove("activo");
       document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "true");
+      const destino = redireccionPendienteTrasConfirmacion;
+      redireccionPendienteTrasConfirmacion = "";
+      if (destino) {
+        window.location.href = destino;
+      }
     }
 
     function mostrarMensajeModalConfirmacion(tipo, texto) {
@@ -2043,7 +2049,7 @@
         tokenBorrador = "";
         mostrarMensajeModalConfirmacion("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
         document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
-        window.location.href = "usuario-panel.html";
+        redireccionPendienteTrasConfirmacion = "usuario-panel.html";
 
       } catch (error) {
         mostrarMensajeModalConfirmacion("error", error.message || "No se pudo crear la solicitud.");
