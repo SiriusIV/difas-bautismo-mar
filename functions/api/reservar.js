@@ -178,6 +178,10 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     .first();
 }
 
+function franjaTieneCapacidadLimitada(actividad, franja) {
+  return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
+}
+
 async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion) {
   const sql = `
     SELECT
@@ -320,9 +324,11 @@ if (Number(actividad.activa || 0) !== 1) {
       }
 
       duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
-      const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
-      capacidad = Number(franja.capacidad || 0);
-      disponibles = Math.max(capacidad - ocupadas, 0);
+      if (franjaTieneCapacidadLimitada(actividad, franja)) {
+        const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
+        capacidad = Number(franja.capacidad || 0);
+        disponibles = Math.max(capacidad - ocupadas, 0);
+      }
     } else {
       duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion);
       if (Number(actividad.aforo_limitado || 0) === 1) {
@@ -336,13 +342,18 @@ if (Number(actividad.activa || 0) !== 1) {
       return json(
         {
           ok: false,
-          error: "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe modificar la existente, no crear una segunda."
+          error: usaFranjas
+            ? "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe modificar la existente, no crear una segunda."
+            : "Ya existe una solicitud activa para este centro en esta actividad. Debe modificar la existente, no crear una segunda."
         },
         { status: 409 }
       );
     }
 
-    if ((usaFranjas || Number(actividad.aforo_limitado || 0) === 1) && plazasReservadas > disponibles) {
+    if (
+      ((usaFranjas && disponibles !== null) || (!usaFranjas && Number(actividad.aforo_limitado || 0) === 1))
+      && plazasReservadas > disponibles
+    ) {
       return json(
         {
           ok: false,
@@ -484,7 +495,7 @@ if (Number(actividad.activa || 0) !== 1) {
         capacidad
       } : null,
       plazas_reservadas: plazasReservadas,
-      plazas_disponibles_restantes: usaFranjas ? Math.max(disponibles - plazasReservadas, 0) : null,
+      plazas_disponibles_restantes: disponibles === null ? null : Math.max(disponibles - plazasReservadas, 0),
       minutos_consolidacion: guardarComoBorrador ? 0 : minutosConsolidacion,
       prereserva_expira_en: reservaCreada.prereserva_expira_en,
       usuario_id: reservaCreada.usuario_id,

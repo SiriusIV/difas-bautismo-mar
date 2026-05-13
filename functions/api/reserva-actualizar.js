@@ -188,6 +188,10 @@ async function obtenerDisponibilidadFranja(env, franjaId) {
   return await env.DB.prepare(sql).bind(franjaId).first();
 }
 
+function franjaTieneCapacidadLimitada(actividad, franja) {
+  return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
+}
+
 async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, centroComparacion, reservaIdExcluir) {
   const sql = `
     SELECT
@@ -364,9 +368,11 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." }, { status: 400 });
       }
 
-      disponibilidadActual = await obtenerDisponibilidadFranja(env, franjaIdNueva);
-      if (!disponibilidadActual) {
-        return json({ ok: false, error: "No se pudo calcular la disponibilidad actual de la franja." }, { status: 400 });
+      if (franjaTieneCapacidadLimitada(actividad, franjaNueva)) {
+        disponibilidadActual = await obtenerDisponibilidadFranja(env, franjaIdNueva);
+        if (!disponibilidadActual) {
+          return json({ ok: false, error: "No se pudo calcular la disponibilidad actual de la franja." }, { status: 400 });
+        }
       }
     } else if (Number(actividad.aforo_limitado || 0) === 1) {
       disponiblesSinFranja = Math.max(
@@ -404,7 +410,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    if (usaFranjas) {
+    if (usaFranjas && franjaTieneCapacidadLimitada(actividad, franjaNueva)) {
       let disponiblesEditables = Number(disponibilidadActual?.disponibles || 0);
 
       if (!esBorrador && Number(franjaIdNueva) === Number(reservaActual.franja_id)) {
@@ -662,7 +668,7 @@ export async function onRequestPost(context) {
         };
       }
 
-      const franjaFinal = usaFranjas && franjaIdNueva
+      const franjaFinal = usaFranjas && franjaIdNueva && franjaTieneCapacidadLimitada(actividad, franjaNueva)
         ? await obtenerDisponibilidadFranja(env, franjaIdNueva)
         : null;
 
@@ -757,7 +763,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "No se pudo actualizar la solicitud." }, { status: 500 });
     }
 
-    const franjaFinal = usaFranjas && franjaIdNueva
+    const franjaFinal = usaFranjas && franjaIdNueva && franjaTieneCapacidadLimitada(actividad, franjaNueva)
       ? await obtenerDisponibilidadFranja(env, franjaIdNueva)
       : null;
 

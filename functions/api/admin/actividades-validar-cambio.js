@@ -1,5 +1,6 @@
 import { getAdminSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -21,6 +22,12 @@ function parsearFlag(valor, defecto = 0) {
   if (valor === true || valor === 1 || valor === "1") return 1;
   if (valor === false || valor === 0 || valor === "0") return 0;
   return defecto;
+}
+
+function parsearEnteroPositivoONull(valor) {
+  if (valor === null || valor === undefined || String(valor).trim() === "") return null;
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 async function obtenerRol(env, usuario_id) {
@@ -75,6 +82,39 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   return Number(row?.comprometidas || 0);
 }
 
+async function obtenerPlazasComprometidasSinFranja(env, actividad_id) {
+  const row = await env.DB.prepare(`
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          CASE
+            WHEN r.prereserva_expira_en IS NOT NULL
+                 AND datetime('now') <= datetime(r.prereserva_expira_en)
+              THEN MAX(
+                COALESCE(r.plazas_prereservadas, 0),
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                ), 0)
+              )
+            ELSE COALESCE((
+              SELECT COUNT(*)
+              FROM visitantes v
+              WHERE v.reserva_id = r.id
+            ), 0)
+          END
+        ELSE 0
+      END
+    ), 0) AS comprometidas
+    FROM reservas r
+    WHERE r.actividad_id = ?
+      AND r.franja_id IS NULL
+  `).bind(actividad_id).first();
+
+  return Number(row?.comprometidas || 0);
+}
+
 async function obtenerSolicitudesVivasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COUNT(*) AS total
@@ -98,7 +138,8 @@ function construirEstadoPropuesto(body, actual) {
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin ?? actual.fecha_fin) : null,
     usa_franjas: parsearFlag(body.usa_franjas, Number(actual.usa_franjas || 0)),
     requiere_reserva: parsearFlag(body.requiere_reserva, Number(actual.requiere_reserva || 0)),
-    aforo_limitado: parsearFlag(body.aforo_limitado, Number(actual.aforo_limitado || 0))
+    aforo_limitado: parsearFlag(body.aforo_limitado, Number(actual.aforo_limitado || 0)),
+    aforo_maximo: parsearEnteroPositivoONull(body.aforo_maximo ?? actual.aforo_maximo)
   };
 }
 
@@ -129,6 +170,7 @@ export async function onRequestPost(context) {
 
   try {
     await ejecutarMantenimientoReservas(env);
+    await asegurarColumnaAforoMaximo(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -234,6 +276,27 @@ export async function onRequestPost(context) {
         ok: false,
         error: "No puedes desactivar las franjas porque existen solicitudes activas asociadas a esta actividad."
       }, 200);
+    }
+
+    if (
+      solicitudesVivas > 0 &&
+      Number(p.aforo_limitado || 0) === 1 &&
+      Number(p.usa_franjas || 0) === 0
+    ) {
+      if (!(Number(p.aforo_maximo || 0) > 0)) {
+        return json({
+          ok: false,
+          error: "Debe indicar un aforo máximo válido mientras la actividad tenga aforo limitado sin franjas."
+        }, 200);
+      }
+
+      const comprometidasSinFranja = await obtenerPlazasComprometidasSinFranja(env, id);
+      if (Number(p.aforo_maximo || 0) < comprometidasSinFranja) {
+        return json({
+          ok: false,
+          error: `No puedes fijar un aforo máximo inferior a las plazas ya comprometidas sin franja (${comprometidasSinFranja}).`
+        }, 200);
+      }
     }
 
     return json({ ok: true }, 200);

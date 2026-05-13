@@ -82,6 +82,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       f.hora_fin,
       f.capacidad,
       COALESCE(a.usa_franjas, 1) AS usa_franjas,
+      COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
       COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_titulo_publico,
@@ -158,13 +159,16 @@ export async function onRequestGet(context) {
     }
 
     const usaFranjas = Number(reserva.usa_franjas || 0) === 1;
+    const aforoLimitado = Number(reserva.aforo_limitado || 0) === 1;
     const capacidad = usaFranjas
-      ? Number(reserva.capacidad || 0)
-      : Number(reserva.aforo_maximo || 0);
-    const ocupadas = Number(reserva.franja_id || 0) > 0
-      ? await obtenerBloqueoTotalFranja(env, reserva.franja_id)
-      : await obtenerBloqueoActividadSinFranja(env, reserva.actividad_id, reserva.id);
-    const disponibles = Math.max(capacidad - ocupadas, 0);
+      ? (aforoLimitado ? Number(reserva.capacidad || 0) : null)
+      : (aforoLimitado ? Number(reserva.aforo_maximo || 0) : null);
+    const ocupadas = usaFranjas
+      ? (aforoLimitado ? await obtenerBloqueoTotalFranja(env, reserva.franja_id) : 0)
+      : (aforoLimitado ? await obtenerBloqueoActividadSinFranja(env, reserva.actividad_id, reserva.id) : 0);
+    const disponibles = aforoLimitado && capacidad !== null
+      ? Math.max(capacidad - ocupadas, 0)
+      : null;
 
     const plazasAsignadas = calcularPlazasAsignadas(reserva);
     const plazasReservadasPendientes = calcularPlazasReservadasPendientes(reserva);
@@ -206,6 +210,7 @@ export async function onRequestGet(context) {
         hora_inicio: reserva.hora_inicio || "",
         hora_fin: reserva.hora_fin || "",
         capacidad,
+        aforo_limitado: Number(reserva.aforo_limitado || 0),
         aforo_maximo: Number(reserva.aforo_maximo || 0),
         usa_franjas: Number(reserva.usa_franjas || 0),
 

@@ -1,4 +1,5 @@
 import { registrarEventoReserva } from "./_reservas_historial.js";
+import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -76,12 +77,18 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.codigo_reserva,
       r.estado,
       r.franja_id,
+      r.actividad_id,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
       r.usuario_id,
       r.centro,
-      r.contacto
+      r.contacto,
+      COALESCE(a.usa_franjas, 1) AS usa_franjas,
+      COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
+      COALESCE(a.aforo_maximo, 0) AS aforo_maximo
     FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
     WHERE r.token_edicion = ?
     LIMIT 1
   `;
@@ -102,7 +109,7 @@ async function obtenerCapacidadFranja(env, franjaId) {
 
 async function listarColumnasVisitantes(env) {
   const result = await env.DB.prepare(`PRAGMA table_info(visitantes)`).all();
-  return (result.results || []).map(c => String(c.name || ""));
+  return (result.results || []).map((c) => String(c.name || ""));
 }
 
 async function borrarVisitantesDeReserva(env, reservaId) {
@@ -141,9 +148,7 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
     }
     bind.push(visitante.categoria_edad);
 
-    return await env.DB.prepare(sql)
-      .bind(...bind)
-      .run();
+    return await env.DB.prepare(sql).bind(...bind).run();
   }
 
   const sql = `
@@ -156,24 +161,16 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
   `;
 
   return await env.DB.prepare(sql)
-    .bind(
-      reservaId,
-      visitante.nombre_completo,
-      visitante.categoria_edad
-    )
+    .bind(reservaId, visitante.nombre_completo, visitante.categoria_edad)
     .run();
 }
 
 async function actualizarReservaTrasGuardar(env, reservaId) {
-  const sql = `
+  return await env.DB.prepare(`
     UPDATE reservas
     SET fecha_modificacion = datetime('now')
     WHERE id = ?
-  `;
-
-  return await env.DB.prepare(sql)
-    .bind(reservaId)
-    .run();
+  `).bind(reservaId).run();
 }
 
 function calcularBloqueoReserva(row) {
@@ -181,7 +178,7 @@ function calcularBloqueoReserva(row) {
   const prereservadas = Number(row.plazas_prereservadas || 0);
   const estado = String(row.estado || "").toUpperCase();
 
-  if (!["PENDIENTE", "CONFIRMADA"].includes(estado)) {
+  if (!["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
     return 0;
   }
 
@@ -214,14 +211,18 @@ async function obtenerBloqueoDeOtrasReservas(env, franjaId, reservaIdActual) {
 
   const result = await env.DB.prepare(sql).bind(franjaId, reservaIdActual).all();
   const rows = result.results || [];
-
   return rows.reduce((acc, row) => acc + calcularBloqueoReserva(row), 0);
+}
+
+function reservaUsaAforoLimitado(reserva = {}) {
+  return Number(reserva.aforo_limitado || 0) === 1;
 }
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     const data = await request.json();
 
     const tokenEdicion = limpiarTexto(data.token_edicion);
@@ -235,7 +236,6 @@ export async function onRequestPost(context) {
     }
 
     const reserva = await obtenerReservaPorToken(env, tokenEdicion);
-
     if (!reserva) {
       return json(
         { ok: false, error: "No existe ninguna solicitud con ese token." },
@@ -258,7 +258,7 @@ export async function onRequestPost(context) {
         nivel_ensenanza: normalizarNivelEnsenanza(v.nivel_ensenanza),
         categoria_edad: normalizarCategoriaEdad(v.categoria_edad)
       }))
-      .filter(v => v.nombre_completo !== "");
+      .filter((v) => v.nombre_completo !== "");
 
     for (const visitante of visitantesNormalizados) {
       if (!visitante.nombre_completo || !visitante.perfil_asistente || !visitante.nivel_ensenanza || !visitante.categoria_edad) {
@@ -269,26 +269,38 @@ export async function onRequestPost(context) {
       }
     }
 
-    const franja = await obtenerCapacidadFranja(env, reserva.franja_id);
+    let capacidadFranja = null;
+    let ocupadasPorOtros = 0;
+    let maximoPermitidoParaEstaReserva = null;
 
-    if (!franja) {
-      return json(
-        { ok: false, error: "La franja asociada a la solicitud no existe." },
-        { status: 404 }
-      );
+    if (Number(reserva.franja_id || 0) > 0) {
+      const franja = await obtenerCapacidadFranja(env, reserva.franja_id);
+      if (!franja) {
+        return json(
+          { ok: false, error: "La franja asociada a la solicitud no existe." },
+          { status: 404 }
+        );
+      }
+
+      if (reservaUsaAforoLimitado(reserva) && franja.capacidad != null) {
+        capacidadFranja = Number(franja.capacidad || 0);
+        ocupadasPorOtros = await obtenerBloqueoDeOtrasReservas(env, reserva.franja_id, reserva.id);
+        maximoPermitidoParaEstaReserva = Math.max(capacidadFranja - ocupadasPorOtros, 0);
+      }
+    } else if (reservaUsaAforoLimitado(reserva)) {
+      capacidadFranja = Number(reserva.aforo_maximo || 0);
+      ocupadasPorOtros = await obtenerBloqueoActividadSinFranja(env, reserva.actividad_id, reserva.id);
+      maximoPermitidoParaEstaReserva = Math.max(capacidadFranja - ocupadasPorOtros, 0);
     }
 
-    const capacidadFranja = Number(franja.capacidad || 0);
-    const ocupadasPorOtros = await obtenerBloqueoDeOtrasReservas(env, reserva.franja_id, reserva.id);
-
-    const maximoPermitidoParaEstaReserva = Math.max(capacidadFranja - ocupadasPorOtros, 0);
     const totalDeseado = visitantesNormalizados.length;
-
-    if (totalDeseado > maximoPermitidoParaEstaReserva) {
+    if (maximoPermitidoParaEstaReserva !== null && totalDeseado > maximoPermitidoParaEstaReserva) {
       return json(
         {
           ok: false,
-          error: `No hay plazas suficientes en la franja. Máximo asignable ahora para esta solicitud: ${maximoPermitidoParaEstaReserva}. Se intentan guardar ${totalDeseado}.`
+          error: Number(reserva.franja_id || 0) > 0
+            ? `No hay plazas suficientes en la franja. Máximo asignable ahora para esta solicitud: ${maximoPermitidoParaEstaReserva}. Se intentan guardar ${totalDeseado}.`
+            : `No hay plazas suficientes en la actividad. Máximo asignable ahora para esta solicitud: ${maximoPermitidoParaEstaReserva}. Se intentan guardar ${totalDeseado}.`
         },
         { status: 400 }
       );
@@ -296,7 +308,6 @@ export async function onRequestPost(context) {
 
     await asegurarEsquemaVisitantes(env);
     const columnasVisitantes = await listarColumnasVisitantes(env);
-
     await borrarVisitantesDeReserva(env, reserva.id);
 
     for (const visitante of visitantesNormalizados) {
@@ -315,13 +326,13 @@ export async function onRequestPost(context) {
       actorNombre: reserva.contacto || reserva.centro || "Solicitante"
     });
 
-    const alumnos = visitantesNormalizados.filter(v => v.perfil_asistente === "ALUMNO").length;
-    const responsablesGrupo = visitantesNormalizados.filter(v => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
-    const generales = visitantesNormalizados.filter(v => v.perfil_asistente === "GENERAL").length;
-    const de3a5 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_3_A_5").length;
-    const de6a10 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_6_A_10").length;
-    const de10a15 = visitantesNormalizados.filter(v => v.categoria_edad === "DE_10_A_15").length;
-    const mayores15 = visitantesNormalizados.filter(v => v.categoria_edad === "MAYOR_DE_15").length;
+    const alumnos = visitantesNormalizados.filter((v) => v.perfil_asistente === "ALUMNO").length;
+    const responsablesGrupo = visitantesNormalizados.filter((v) => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
+    const generales = visitantesNormalizados.filter((v) => v.perfil_asistente === "GENERAL").length;
+    const de3a5 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_3_A_5").length;
+    const de6a10 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_6_A_10").length;
+    const de10a15 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_10_A_15").length;
+    const mayores15 = visitantesNormalizados.filter((v) => v.categoria_edad === "MAYOR_DE_15").length;
 
     return json({
       ok: true,

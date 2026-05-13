@@ -1437,7 +1437,10 @@
     }
 
     function obtenerDisponiblesFormulario(franja) {
-      const disponiblesBase = Number(franja?.disponibles || 0);
+      if (franja?.disponibles == null) {
+        return null;
+      }
+      const disponiblesBase = Number(franja.disponibles || 0);
       if (!esModoEdicionReserva()) {
         return disponiblesBase;
       }
@@ -1539,6 +1542,8 @@
             imagen_url: reservaReferencia.actividad_imagen_url || "",
             organizador_publico: reservaReferencia.actividad_organizador_publico || "",
             usa_franjas: Number(reservaReferencia.usa_franjas || 0),
+            aforo_limitado: Number(reservaReferencia.aforo_limitado || 0),
+            aforo_maximo: Number(reservaReferencia.aforo_maximo || 0),
             requiere_reserva: 1,
             requisitos_particulares: []
           };
@@ -1704,20 +1709,25 @@
       }
 
       const disponibles = obtenerDisponiblesFormulario(franja);
-      const capacidad = Number(franja.capacidad || 0);
+      const capacidad = franja.capacidad == null ? null : Number(franja.capacidad || 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
       const plazasTotalesSolicitadas = esEdicion
         ? Number(reservaExistente?.plazas_asignadas || 0) + plazasPendientes
         : plazasPendientes;
-      actualizarAlertaVisualPlazas(plazasTotalesSolicitadas > disponibles);
+      const controlaAforoFranja = disponibles !== null;
+      actualizarAlertaVisualPlazas(controlaAforoFranja && plazasTotalesSolicitadas > disponibles);
 
       infoFranja.textContent = "";
-      plazasDisponibles.value = String(disponibles);
+      plazasDisponibles.value = disponibles === null ? "Sin límite" : String(disponibles);
+
+      const lineaCapacidad = controlaAforoFranja
+        ? `<strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; `
+        : `<strong>Capacidad:</strong> Sin límite &nbsp;&nbsp; `;
 
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
         <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
-        <strong>Plazas disponibles:</strong> ${disponibles} &nbsp;&nbsp; <strong>Total plazas:</strong> ${capacidad} &nbsp;&nbsp; <strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
+        ${lineaCapacidad}<strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
       `;
     }
@@ -1780,7 +1790,7 @@
         const plazasTotalesSolicitadas = esModoEdicionReserva()
           ? Number(reservaExistente?.plazas_asignadas || 0) + plazas
           : plazas;
-        if (plazasTotalesSolicitadas > disponiblesOperacion) {
+        if (disponiblesOperacion !== null && plazasTotalesSolicitadas > disponiblesOperacion) {
           return {
             ok: false,
             error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operación: ${disponiblesOperacion}. Solicitadas: ${plazasTotalesSolicitadas}.`
