@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de reservas</title>
+  <title>Panel de solicitudes</title>
   <style>
     html, body { min-height: 100%; }
     body {
@@ -670,7 +670,7 @@
   <div class="contenedor">
     <div class="barra-navegacion">
       <div class="barra-navegacion-izq">
-        <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
+        <span class="panel-titulo" id="subactividadActual">Panel de solicitudes</span>
       </div>
       <div class="barra-navegacion-der">
         <button type="button" class="btn-icono" id="btnCalendario" title="Calendario" aria-label="Calendario">
@@ -868,7 +868,7 @@
     }
 
     function actualizarTituloPanel() {
-      document.getElementById("subactividadActual").textContent = `Panel de reservas de ${String(nombreUsuarioPanel || "Usuario").toUpperCase()}`;
+      document.getElementById("subactividadActual").textContent = `Panel de solicitudes de ${String(nombreUsuarioPanel || "Usuario").toUpperCase()}`;
     }
 
     async function cargarSesionCabecera() {
@@ -950,7 +950,7 @@
       const rechazadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "RECHAZADA").length;
 
       document.getElementById("resumenPanel").innerHTML = `
-        <span>Total reservas: ${lista.length}</span>
+        <span>Total solicitudes: ${lista.length}</span>
         <span>|</span>
         <span>Borradores: ${borradores}</span>
         <span>|</span>
@@ -1298,8 +1298,8 @@
             <td class="fecha-col">${formatearFechaCorta(r.fecha)}</td>
             <td class="horario-col">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</td>
             <td class="plazas-col">
-              <span class="plazas-linea">Reservadas: ${Number(r.plazas_reservadas_historicas || 0)}</span>
-              <span class="plazas-linea">Pendientes: ${Number(r.plazas_pendientes || 0)}</span>
+              <span class="plazas-linea">Pre-reservadas: ${Number(r.plazas_reservadas_historicas || 0)}</span>
+              <span class="plazas-linea">Pre-reservadas pendientes: ${Number(r.plazas_pendientes || 0)}</span>
               <span class="plazas-linea">Asignadas: ${Number(r.plazas_asignadas || 0)}</span>
             </td>
           </tr>
