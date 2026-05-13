@@ -511,6 +511,19 @@
     .tabla-organizadores tr:last-child td { border-bottom: none; }
     .tabla-organizadores tr.fila-seleccionada td { background: #f5f9ff; }
     .tabla-organizadores th:last-child, .tabla-organizadores td:last-child { text-align: center; }
+    .encabezado-columna-clicable {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .encabezado-columna-clicable-icono {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      opacity: 0.8;
+      flex: 0 0 auto;
+    }
     .indicador-expediente { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
     .indicador-expediente.circulo { border-radius: 999px; border: 1px solid transparent; }
     .indicador-expediente.verde { background: #1f9d4d; border-color: #15783a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18); }
@@ -717,7 +730,7 @@
                 <span>Cambiar contraseña</span>
               </button>
               <button type="submit" class="btn-guardar-icono" id="btnGuardar" title="Guardar cambios" aria-label="Guardar cambios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg></button>
-              <button type="button" class="btn-icono" id="btnPortal" title="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5L12 4l9 7.5"></path><path d="M5 10.5V20h14v-9.5"></path></svg></button>
+              <button type="button" class="btn-icono" id="btnPortal" title="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></button>
             </div>
           </div>
           <div class="fila oculto" id="filaAdminCuentaNombre">
@@ -918,7 +931,12 @@
                 <th class="col-seleccion"></th>
                 <th>Organizador</th>
                 <th>Estado</th>
-                <th>Ver Documentos</th>
+                <th>
+                  <span class="encabezado-columna-clicable">
+                    <img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="encabezado-columna-clicable-icono">
+                    <span>Ver Documentos</span>
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody id="tablaEstadoDocumentacionBody"></tbody>
