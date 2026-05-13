@@ -831,6 +831,10 @@
     function obtenerMaximoPermitidoActual() {
       if (!reservaActual) return 0;
 
+      if (Number(reservaActual.aforo_limitado || 0) !== 1) {
+        return Number.POSITIVE_INFINITY;
+      }
+
       const capacidadFranja = Number(reservaActual.capacidad || 0);
       const disponiblesGlobalesBackend = Number(reservaActual.disponibles || 0);
       const bloqueoActualBackend = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
@@ -1232,15 +1236,16 @@
 
       const reservaOriginal = Number(reservaActual.plazas_prereservadas || 0);
       const prereservaVigente = !!reservaActual.prereserva_vigente;
+      const usaFranjas = Number(reservaActual.usa_franjas || 0) === 1;
+      const aforoLimitado = Number(reservaActual.aforo_limitado || 0) === 1;
       const capacidadFranja = Number(reservaActual.capacidad || 0);
 
       const disponiblesGlobalesBackend = Number(reservaActual.disponibles || 0);
       const bloqueoActualBackend = Number(reservaActual.plazas_bloqueadas_actualmente || 0);
 
-      const bloqueoOtrasReservas = Math.max(
-        capacidadFranja - disponiblesGlobalesBackend - bloqueoActualBackend,
-        0
-      );
+      const bloqueoOtrasReservas = aforoLimitado
+        ? Math.max(capacidadFranja - disponiblesGlobalesBackend - bloqueoActualBackend, 0)
+        : 0;
 
       const reservadasPendientes = prereservaVigente
         ? Math.max(reservaOriginal - totalAsignadas, 0)
@@ -1250,10 +1255,9 @@
         ? Math.max(reservaOriginal, totalAsignadas)
         : totalAsignadas;
 
-      const disponiblesFranja = Math.max(
-        capacidadFranja - bloqueoOtrasReservas - plazasBloqueadasActualmenteLocal,
-        0
-      );
+      const disponiblesFranja = aforoLimitado
+        ? Math.max(capacidadFranja - bloqueoOtrasReservas - plazasBloqueadasActualmenteLocal, 0)
+        : null;
 
       const alumnos = visitantesValidos.filter(v => v.perfil_asistente === "ALUMNO").length;
       const responsables = visitantesValidos.filter(v => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
@@ -1265,21 +1269,32 @@
 
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
+      const lineaFranja = usaFranjas
+        ? `<strong>Franja horaria asignada:</strong><br>
+        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
+        : "";
+      const lineaLimite = aforoLimitado
+        ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}`
+        : "";
+      const resumenPlazas = aforoLimitado
+        ? `Pre-reservadas pendientes: ${reservadasPendientes}<br>
+            Asignadas: ${totalAsignadas}<br>
+            ${usaFranjas ? `Disponibles en la franja: ${disponiblesFranja}` : `Disponibles en la actividad: ${disponiblesFranja}`}`
+        : `Solicitadas: ${reservaOriginal}<br>
+            Asignadas: ${totalAsignadas}`;
+
       document.getElementById("bloqueReserva").innerHTML = `
         <strong>Código de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
-        <strong>Franja horaria asignada:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}
+        ${lineaFranja}
+        ${lineaLimite}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
         <div class="resumen-grid-reserva">
           <div class="resumen-col">
             <strong>Plazas</strong><br>
-            Pre-reservadas pendientes: ${reservadasPendientes}<br>
-            Asignadas: ${totalAsignadas}<br>
-            Disponibles en la franja: ${disponiblesFranja}
+            ${resumenPlazas}
           </div>
           <div class="resumen-col">
             <strong>Perfiles</strong><br>
@@ -1316,10 +1331,12 @@
         return;
       }
 
-      if (totalAsignadas > maximoPermitido) {
+      if (Number.isFinite(maximoPermitido) && totalAsignadas > maximoPermitido) {
         mostrarMensaje(
           "error",
-          `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
+          Number(reservaActual.usa_franjas || 0) === 1
+            ? `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
+            : `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta solicitud (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la actividad.`
         );
         btnGuardar.disabled = true;
         btnAnadir.disabled = true;
@@ -1328,7 +1345,7 @@
           limpiarMensaje();
         }
         btnGuardar.disabled = envioEnCurso;
-        btnAnadir.disabled = totalAsignadas >= maximoPermitido;
+        btnAnadir.disabled = Number.isFinite(maximoPermitido) ? totalAsignadas >= maximoPermitido : false;
       }
 
       actualizarBotonEliminar();
@@ -1684,7 +1701,7 @@
         }
 
         const maximoPermitido = obtenerMaximoPermitidoActual();
-        if (importados.length > maximoPermitido) {
+        if (Number.isFinite(maximoPermitido) && importados.length > maximoPermitido) {
           throw new Error(`La plantilla contiene ${importados.length} asistentes y el máximo disponible ahora para esta solicitud es ${maximoPermitido}. Corrige el archivo antes de importarlo.`);
         }
 
