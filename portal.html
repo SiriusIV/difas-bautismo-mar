@@ -2063,9 +2063,10 @@ function actualizarBotonSolicitarSegunFranja() {
           const plazasPendientes = Number(reserva?.plazas_pendientes || 0);
           const plazasReservadas = Number(reserva?.plazas_reservadas_historicas || reserva?.plazas_prereservadas || 0);
           const prereservaExpirada = huboPrereserva && !prereservaVigente;
+          const avisoCaducidadAutomatica = estado === "PENDIENTE" && cambioReal && prereservaExpirada && plazasPendientes <= 0;
           const reaperturaPropiaSolicitante = estado === "PENDIENTE" && cambioReal && ultimoActorRol === "SOLICITANTE";
 
-          if (!(estado === "CONFIRMADA" || estado === "RECHAZADA" || estado === "SUSPENDIDA" || (estado === "PENDIENTE" && cambioReal && !reaperturaPropiaSolicitante))) {
+          if (!(estado === "CONFIRMADA" || estado === "RECHAZADA" || estado === "SUSPENDIDA" || (estado === "PENDIENTE" && cambioReal && (avisoCaducidadAutomatica || !reaperturaPropiaSolicitante)))) {
             return null;
           }
 
@@ -2080,7 +2081,7 @@ function actualizarBotonSolicitarSegunFranja() {
           if (estado === "SUSPENDIDA") titulo = "Solicitud suspendida";
           if (estado === "PENDIENTE" && cambioReal) {
             titulo = "Solicitud reabierta";
-            if (prereservaExpirada && plazasPendientes <= 0) {
+            if (avisoCaducidadAutomatica) {
               titulo = `Ha finalizado el tiempo para asignación de plazas pre-reservadas. Plazas reservadas ${plazasReservadas}`;
             }
           }

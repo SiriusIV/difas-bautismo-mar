@@ -406,6 +406,15 @@ async function normalizarPrereservasExpiradas(env) {
 
       if (Number(updateResult?.meta?.changes || 0) > 0) {
         consolidadas += 1;
+        await registrarEventoReserva(env, {
+          reservaId: Number(reserva.id || 0),
+          accion: "CADUCIDAD_PRERESERVA_PARCIAL",
+          estadoOrigen: reserva.estado,
+          estadoDestino: reserva.estado,
+          observaciones: `Ha finalizado el tiempo para asignación de plazas pre-reservadas. Plazas reservadas ${Number(reserva.plazas_prereservadas || 0)}`,
+          actorRol: "SISTEMA",
+          actorNombre: "Sistema"
+        });
         await crearAvisosCaducidadParcialSolicitante(env, {
           ...reserva,
           asistentes_total: asistentesTotal
