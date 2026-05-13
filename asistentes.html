@@ -21,18 +21,31 @@
       --sombra-panel: 0 4px 18px rgba(0,0,0,0.08);
     }
 
+    html, body {
+      min-height: 100%;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
-        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
-        url("assets/fondo_cabecera.png") center top / cover no-repeat fixed,
-        var(--color-fondo);
-      background-blend-mode: normal, screen, normal;
+      position: relative;
+      background: var(--color-fondo);
       margin: 0;
       color: var(--color-texto);
       overflow-x: hidden;
       font-size: 14px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") center top / cover no-repeat;
+      background-blend-mode: normal, screen, normal;
+      z-index: -1;
+      pointer-events: none;
     }
 
     .contenedor {
@@ -215,10 +228,17 @@
     }
 
     .bloque-titulo-externo {
+      display: inline-flex;
+      align-items: center;
       font-size: 13px;
       font-weight: 700;
       color: var(--color-primario);
-      padding-left: 10px;
+      margin-left: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(201,220,255,0.95);
+      box-shadow: 0 4px 12px rgba(18,58,99,0.07);
     }
 
     .bloque-info {
