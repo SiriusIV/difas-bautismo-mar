@@ -326,16 +326,17 @@
       padding: 10px 12px;
       margin-bottom: 10px;
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(230px, 0.8fr);
-      gap: 12px;
+      grid-template-columns: minmax(0, 2.25fr) minmax(168px, 0.75fr);
+      gap: 10px;
       align-items: stretch;
     }
 
     .importador-contenido {
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 8px;
+      justify-content: flex-start;
+      align-self: center;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -348,7 +349,7 @@
 
     .importador-texto {
       font-size: 12px;
-      line-height: 1.4;
+      line-height: 1.35;
       color: #4a5a6a;
       margin: 0;
     }
@@ -357,15 +358,15 @@
       border: 1px dashed #7aa7e8;
       border-radius: 12px;
       background: rgba(255,255,255,0.82);
-      padding: 12px 14px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       align-items: stretch;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       text-align: left;
       transition: all 0.15s ease;
-      min-height: 112px;
+      min-height: 92px;
     }
 
     .importador-zona.activa {
@@ -375,7 +376,7 @@
 
     .importador-acciones {
       display: flex;
-      justify-content: flex-start;
+      justify-content: center;
       gap: 8px;
       flex-wrap: wrap;
       flex: 0 0 auto;
@@ -631,6 +632,10 @@
       .importador-zona {
         min-height: 0;
       }
+
+      .importador-acciones {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
@@ -708,8 +713,10 @@
       </div>
 
       <div class="importador-asistentes">
+        <div class="importador-contenido">
         <h4 class="importador-titulo">Importación desde plantilla Excel</h4>
         <p class="importador-texto">Puedes seleccionar o arrastrar el archivo oficial de asistentes. La aplicación validará que cada fila usada tenga cubiertos los cuatro campos obligatorios antes de volcarla a la tabla.</p>
+        </div>
         <div id="zonaImportacionAsistentes" class="importador-zona">
           <p class="importador-texto">Arrastra aquí la plantilla <strong>.xlsx</strong> o usa el botón para seleccionarla.</p>
           <div class="importador-acciones">
