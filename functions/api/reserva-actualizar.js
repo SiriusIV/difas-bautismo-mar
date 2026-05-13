@@ -1,6 +1,7 @@
 ﻿import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { getUserSession } from "./usuario/_auth.js";
+import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -47,7 +48,8 @@ async function obtenerActividad(env, actividadId) {
       activa,
       requiere_reserva,
       usa_franjas,
-      aforo_limitado
+      aforo_limitado,
+      COALESCE(aforo_maximo, 0) AS aforo_maximo
     FROM actividades
     WHERE id = ?
     LIMIT 1
@@ -263,6 +265,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     const user = await getUserSession(request, env.SECRET_KEY);
     if (!user?.id) {
       return json(
@@ -350,6 +353,7 @@ export async function onRequestPost(context) {
 
     let franjaNueva = null;
     let disponibilidadActual = null;
+    let disponiblesSinFranja = null;
     if (usaFranjas) {
       franjaNueva = await obtenerFranja(env, franjaIdNueva);
       if (!franjaNueva) {
@@ -364,6 +368,11 @@ export async function onRequestPost(context) {
       if (!disponibilidadActual) {
         return json({ ok: false, error: "No se pudo calcular la disponibilidad actual de la franja." }, { status: 400 });
       }
+    } else if (Number(actividad.aforo_limitado || 0) === 1) {
+      disponiblesSinFranja = Math.max(
+        Number(actividad.aforo_maximo || 0) - await obtenerBloqueoActividadSinFranja(env, reservaActual.actividad_id, reservaActual.id),
+        0
+      );
     }
 
     const necesitaControlDuplicada = !guardarBorrador;
@@ -419,6 +428,26 @@ export async function onRequestPost(context) {
           {
             ok: false,
             error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operaciÃ³n: ${disponiblesEditables}. Solicitadas: ${totalSolicitado}.`
+          },
+          { status: 400 }
+        );
+      }
+    } else if (Number(actividad.aforo_limitado || 0) === 1) {
+      const disponiblesEditables = disponiblesSinFranja + (
+        (!esBorrador && !esRechazada)
+          ? Number(reservaActual.plazas_prereservadas || 0)
+          : 0
+      );
+      const totalSolicitado = esBorrador
+        ? plazasSolicitadas
+        : esRechazada
+          ? totalReenvioRechazada
+          : asistentesCargados + plazasSolicitadas;
+      if (totalSolicitado > disponiblesEditables) {
+        return json(
+          {
+            ok: false,
+            error: `No hay plazas suficientes en la actividad. Disponibles para esta operación: ${disponiblesEditables}. Solicitadas: ${totalSolicitado}.`
           },
           { status: 400 }
         );

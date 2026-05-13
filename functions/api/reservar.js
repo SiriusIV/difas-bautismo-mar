@@ -1,4 +1,5 @@
 import { getUserSession } from "./usuario/_auth.js";
+import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
@@ -65,7 +66,8 @@ async function obtenerActividad(env, actividadId) {
       activa,
       requiere_reserva,
       usa_franjas,
-      aforo_limitado
+      aforo_limitado,
+      COALESCE(aforo_maximo, 0) AS aforo_maximo
     FROM actividades
     WHERE id = ?
     LIMIT 1
@@ -216,6 +218,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     await ejecutarMantenimientoReservas(env);
     const sessionUser = await getUserSession(request, env.SECRET_KEY);
     const usuarioId = sessionUser?.id || null;
@@ -322,6 +325,11 @@ if (Number(actividad.activa || 0) !== 1) {
       disponibles = Math.max(capacidad - ocupadas, 0);
     } else {
       duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion);
+      if (Number(actividad.aforo_limitado || 0) === 1) {
+        capacidad = Number(actividad.aforo_maximo || 0);
+        const ocupadas = await obtenerBloqueoActividadSinFranja(env, actividadId);
+        disponibles = Math.max(capacidad - ocupadas, 0);
+      }
     }
 
     if (!guardarComoBorrador && duplicada) {
@@ -334,11 +342,13 @@ if (Number(actividad.activa || 0) !== 1) {
       );
     }
 
-    if (usaFranjas && plazasReservadas > disponibles) {
+    if ((usaFranjas || Number(actividad.aforo_limitado || 0) === 1) && plazasReservadas > disponibles) {
       return json(
         {
           ok: false,
-          error: `No hay plazas suficientes en la franja seleccionada. Disponibles: ${disponibles}. Solicitadas: ${plazasReservadas}.`
+          error: usaFranjas
+            ? `No hay plazas suficientes en la franja seleccionada. Disponibles: ${disponibles}. Solicitadas: ${plazasReservadas}.`
+            : `No hay plazas suficientes en la actividad. Disponibles: ${disponibles}. Solicitadas: ${plazasReservadas}.`
         },
         { status: 400 }
       );

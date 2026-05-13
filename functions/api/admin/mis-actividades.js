@@ -1,6 +1,7 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -68,6 +69,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
     await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
@@ -98,6 +100,7 @@ export async function onRequestGet(context) {
         a.usa_franjas,
         a.requiere_reserva,
         a.aforo_limitado,
+        COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
         a.provincia,
         a.es_recurrente,
         a.patron_recurrencia,
@@ -116,39 +119,38 @@ export async function onRequestGet(context) {
         a.zoom_mapa,
 
         /* plazas totales */
-        (
-          SELECT COALESCE(SUM(f.capacidad), 0)
-          FROM franjas f
-          WHERE f.actividad_id = a.id
-        ) AS plazas_totales,
-
-        /* plazas ocupadas reales */
-        (
-          SELECT COALESCE(SUM(
-            CASE
-              WHEN r.prereserva_expira_en IS NOT NULL
-                   AND datetime('now') <= r.prereserva_expira_en
-              THEN r.plazas_prereservadas
-              ELSE (
-                SELECT COUNT(*)
-                FROM visitantes v
-                WHERE v.reserva_id = r.id
-              )
-            END
-          ), 0)
-          FROM reservas r
-          WHERE r.actividad_id = a.id
-        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
-        ) AS plazas_ocupadas,
-
-        /* plazas disponibles */
-        (
-          (
+        CASE
+          WHEN a.aforo_limitado = 1 AND COALESCE(a.usa_franjas, 0) = 0
+            THEN COALESCE(a.aforo_maximo, 0)
+          ELSE (
             SELECT COALESCE(SUM(f.capacidad), 0)
             FROM franjas f
             WHERE f.actividad_id = a.id
-          ) -
-          (
+          )
+        END AS plazas_totales,
+
+        /* plazas ocupadas reales */
+        CASE
+          WHEN a.aforo_limitado = 1 AND COALESCE(a.usa_franjas, 0) = 0
+            THEN (
+              SELECT COALESCE(SUM(
+                CASE
+                  WHEN r.prereserva_expira_en IS NOT NULL
+                       AND datetime('now') <= r.prereserva_expira_en
+                  THEN r.plazas_prereservadas
+                  ELSE (
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  )
+                END
+              ), 0)
+              FROM reservas r
+              WHERE r.actividad_id = a.id
+                AND r.franja_id IS NULL
+                AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            )
+          ELSE (
             SELECT COALESCE(SUM(
               CASE
                 WHEN r.prereserva_expira_en IS NOT NULL
@@ -163,9 +165,59 @@ export async function onRequestGet(context) {
             ), 0)
             FROM reservas r
             WHERE r.actividad_id = a.id
-        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+              AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
           )
-        ) AS plazas_disponibles,
+        END AS plazas_ocupadas,
+
+        /* plazas disponibles */
+        CASE
+          WHEN a.aforo_limitado = 1 AND COALESCE(a.usa_franjas, 0) = 0
+            THEN MAX(
+              COALESCE(a.aforo_maximo, 0) - (
+                SELECT COALESCE(SUM(
+                  CASE
+                    WHEN r.prereserva_expira_en IS NOT NULL
+                         AND datetime('now') <= r.prereserva_expira_en
+                    THEN r.plazas_prereservadas
+                    ELSE (
+                      SELECT COUNT(*)
+                      FROM visitantes v
+                      WHERE v.reserva_id = r.id
+                    )
+                  END
+                ), 0)
+                FROM reservas r
+                WHERE r.actividad_id = a.id
+                  AND r.franja_id IS NULL
+                  AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+              ),
+              0
+            )
+          ELSE (
+            (
+              SELECT COALESCE(SUM(f.capacidad), 0)
+              FROM franjas f
+              WHERE f.actividad_id = a.id
+            ) -
+            (
+              SELECT COALESCE(SUM(
+                CASE
+                  WHEN r.prereserva_expira_en IS NOT NULL
+                       AND datetime('now') <= r.prereserva_expira_en
+                  THEN r.plazas_prereservadas
+                  ELSE (
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  )
+                END
+              ), 0)
+              FROM reservas r
+              WHERE r.actividad_id = a.id
+                AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            )
+          )
+        END AS plazas_disponibles,
         (
           SELECT MAX(datetime(f.fecha || ' ' || f.hora_fin))
           FROM franjas f
@@ -207,15 +259,15 @@ export async function onRequestGet(context) {
     );
     const actividades = (result.results || []).map((a) => ({
         ...a,
+        aforo_maximo: Number(a.aforo_maximo || 0),
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
         plazas_disponibles: Number(a.plazas_disponibles || 0),
         requisitos_particulares: requisitosPorActividad.get(Number(a.id || 0)) || [],
         completa_calculada:
           Number(a.aforo_limitado || 0) === 1 &&
-          Number(a.usa_franjas || 0) === 1 &&
-        Number(a.plazas_totales || 0) > 0 &&
-        Number(a.plazas_disponibles || 0) <= 0
+          Number(a.plazas_totales || 0) > 0 &&
+          Number(a.plazas_disponibles || 0) <= 0
           ? 1
           : 0
     }));

@@ -649,6 +649,34 @@
       min-width: 0;
     }
 
+    .control-row-input-aforo {
+      width: 92px;
+      min-width: 92px;
+      max-width: 92px;
+      height: 34px;
+      padding: 6px 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 10px;
+      background: #fff;
+      color: #22313f;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .control-row-input-aforo:focus {
+      outline: none;
+      border-color: #9fb7d3;
+      box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.10);
+    }
+
+    .control-row-aforo .control-row-label {
+      flex: 1 1 auto;
+    }
+
+    .control-row-aforo.aforo-maximo-oculto .control-row-input-aforo {
+      display: none;
+    }
+
     .select-inline {
       width: 156px;
       min-width: 156px;
@@ -1937,6 +1965,11 @@
                   <option value="0">No</option>
                 </select>
               </div>
+
+              <div id="bloqueAforoMaximoGeneral" class="oculto">
+                <label for="aforo_maximo">Aforo máximo</label>
+                <input type="number" id="aforo_maximo" value="" min="1" step="1" class="input-mini">
+              </div>
             </div>
 
             <div class="subbloque subbloque-periodo-actividad config-periodo-card" id="bloqueFechas">
@@ -2530,6 +2563,57 @@
               return fila;
             };
 
+            const crearFilaControlAforo = (bloqueToggle, bloqueAforoMaximo) => {
+              const label = bloqueToggle?.querySelector("label");
+              const select = bloqueToggle?.querySelector("select");
+              const inputAforo = bloqueAforoMaximo?.querySelector("#aforo_maximo");
+              if (!label || !select) return bloqueToggle;
+
+              const fila = document.createElement("div");
+              fila.className = "control-row toggle-pending control-row-aforo";
+              fila.dataset.control = "aforo-maximo";
+
+              const texto = document.createElement("span");
+              texto.className = "control-row-label";
+              texto.textContent = label.textContent.trim();
+
+              const input = inputAforo || document.createElement("input");
+              input.type = "number";
+              input.id = input.id || "aforo_maximo";
+              input.min = "1";
+              input.step = "1";
+              input.classList.add("control-row-input-aforo");
+
+              const toggle = document.createElement("label");
+              toggle.className = "toggle-switch";
+
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = String(select.value) === "1";
+              checkbox.setAttribute("aria-label", label.textContent.trim());
+
+              const slider = document.createElement("span");
+              slider.className = "toggle-slider";
+
+              checkbox.addEventListener("change", () => {
+                guardarValorPrevioCampoCritico(select.id);
+                select.value = checkbox.checked ? "1" : "0";
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+              });
+
+              select.addEventListener("change", () => {
+                checkbox.checked = String(select.value) === "1";
+                fila.classList.remove("toggle-pending");
+                actualizarVisibilidadAforoMaximoUI();
+              });
+
+              select.classList.add("oculto");
+              if (bloqueAforoMaximo) bloqueAforoMaximo.classList.add("oculto");
+              toggle.append(checkbox, slider);
+              fila.append(texto, input, toggle, select);
+              return fila;
+            };
+
             const crearFilaControlToggleDirecto = (select, labelText) => {
               if (!select) return null;
 
@@ -2598,12 +2682,12 @@
           panelGrid.className = "control-panel-grid";
 
           const [bloqueEnlace, bloqueVisible, bloqueActiva] = controlesConfig;
-          const [bloqueTipo, bloqueReserva, bloqueAforo] = controlesProgramacion;
+          const [bloqueTipo, bloqueReserva, bloqueAforo, bloqueAforoMaximo] = controlesProgramacion;
 
           [
             crearFilaControlSelect(bloqueTipo),
             crearFilaControlToggle(bloqueReserva),
-            crearFilaControlToggle(bloqueAforo),
+            crearFilaControlAforo(bloqueAforo, bloqueAforoMaximo),
             crearFilaControlToggleDirecto(selectUsaFranjas, "Con franjas horarias"),
             crearFilaControlToggle(bloqueEnlace),
             crearFilaControlToggle(bloqueVisible)
@@ -3120,7 +3204,8 @@ async function validarCambioCriticoActividad() {
     fecha_fin: document.getElementById("fecha_fin").value,
     usa_franjas: document.getElementById("usa_franjas").value,
     requiere_reserva: document.getElementById("requiere_reserva").value,
-    aforo_limitado: document.getElementById("aforo_limitado").value
+    aforo_limitado: document.getElementById("aforo_limitado").value,
+    aforo_maximo: document.getElementById("aforo_maximo").value
   };
 
   const res = await fetch("/api/admin/actividades-validar-cambio", {
@@ -3294,6 +3379,7 @@ function cargarRequisitosActividad(actividad) {
     setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
     setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
     setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
+    setValor("aforo_maximo", actividad.aforo_maximo == null ? "" : String(actividad.aforo_maximo));
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
@@ -3406,8 +3492,24 @@ function actualizarVisibilidadFormulario() {
   aviso.classList.add("oculto");
 
   actualizarEstadoFranjasUI();
+  actualizarVisibilidadAforoMaximoUI();
   if (!getPasoFlowActividad().includes(pasoActual)) {
     mostrarPaso(normalizarPasoSegunFlujo(pasoActual));
+  }
+}
+
+function actualizarVisibilidadAforoMaximoUI() {
+  const aforoLimitado = document.getElementById("aforo_limitado")?.value === "1";
+  const usaFranjas = document.getElementById("usa_franjas")?.value === "1";
+  const inputAforo = document.getElementById("aforo_maximo");
+  const filaAforo = document.querySelector('.control-row-aforo[data-control="aforo-maximo"] .control-row-input-aforo')?.closest(".control-row-aforo");
+  const mostrar = aforoLimitado && !usaFranjas;
+
+  if (inputAforo) {
+    inputAforo.disabled = !mostrar;
+  }
+  if (filaAforo) {
+    filaAforo.classList.toggle("aforo-maximo-oculto", !mostrar);
   }
 }
 
@@ -4268,7 +4370,8 @@ async function borrarFranja(id) {
         usa_franjas: document.getElementById("usa_franjas").value,
         requiere_reserva: document.getElementById("requiere_reserva").value,
         aforo_limitado: document.getElementById("aforo_limitado").value,
-          provincia: document.getElementById("provincia").value.trim(),
+        aforo_maximo: document.getElementById("aforo_maximo").value,
+        provincia: document.getElementById("provincia").value.trim(),
           es_recurrente: document.getElementById("es_recurrente").value,
           patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
           usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
@@ -4311,6 +4414,14 @@ async function borrarFranja(id) {
       if (payload.usa_franjas === "1" && payload.es_recurrente === "1" && !payload.patron_recurrencia) {
         mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
         return false;
+      }
+
+      if (payload.aforo_limitado === "1" && payload.usa_franjas !== "1") {
+        const aforoMaximo = parseInt(payload.aforo_maximo || "", 10);
+        if (!Number.isInteger(aforoMaximo) || aforoMaximo <= 0) {
+          mostrarMensaje("error", "Debes indicar un aforo máximo válido cuando la actividad tenga aforo limitado y no utilice franjas horarias.");
+          return false;
+        }
       }
 
       const tieneLat = payload.latitud !== "";
@@ -4981,6 +5092,7 @@ function retrocederPaso() {
         "patron_recurrencia",
         "visible_portal",
         "orden_portal",
+        "aforo_maximo",
         "provincia",
         "titulo_publico",
         "subtitulo_publico",

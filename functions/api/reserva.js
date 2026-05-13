@@ -1,4 +1,5 @@
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
+import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -61,6 +62,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.actividad_id,
       r.codigo_reserva,
       r.token_edicion,
+      r.usuario_id,
       r.estado,
       r.centro,
       r.contacto,
@@ -80,6 +82,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       f.hora_fin,
       f.capacidad,
       COALESCE(a.usa_franjas, 1) AS usa_franjas,
+      COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_titulo_publico,
       COALESCE(a.organizador_publico, '') AS actividad_organizador_publico,
@@ -133,6 +136,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
@@ -153,10 +157,13 @@ export async function onRequestGet(context) {
       );
     }
 
-    const capacidad = Number(reserva.capacidad || 0);
+    const usaFranjas = Number(reserva.usa_franjas || 0) === 1;
+    const capacidad = usaFranjas
+      ? Number(reserva.capacidad || 0)
+      : Number(reserva.aforo_maximo || 0);
     const ocupadas = Number(reserva.franja_id || 0) > 0
       ? await obtenerBloqueoTotalFranja(env, reserva.franja_id)
-      : 0;
+      : await obtenerBloqueoActividadSinFranja(env, reserva.actividad_id, reserva.id);
     const disponibles = Math.max(capacidad - ocupadas, 0);
 
     const plazasAsignadas = calcularPlazasAsignadas(reserva);
@@ -199,6 +206,7 @@ export async function onRequestGet(context) {
         hora_inicio: reserva.hora_inicio || "",
         hora_fin: reserva.hora_fin || "",
         capacidad,
+        aforo_maximo: Number(reserva.aforo_maximo || 0),
         usa_franjas: Number(reserva.usa_franjas || 0),
 
         asistentes_cargados: Number(reserva.asistentes_cargados || 0),

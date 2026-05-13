@@ -8,6 +8,7 @@ import {
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
+import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -33,6 +34,11 @@ function parsearIdPositivo(valor) {
 function parsearEntero(valor, defecto = 0) {
   const n = parseInt(valor, 10);
   return Number.isInteger(n) ? n : defecto;
+}
+
+function parsearEnteroPositivoONull(valor) {
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 function parsearFlag(valor, defecto = 0) {
@@ -293,6 +299,14 @@ function validarActividad(data) {
     }
   }
 
+  const usaFranjas = parsearFlag(data.usa_franjas, 1);
+  const aforoLimitado = parsearFlag(data.aforo_limitado, 1);
+  const aforoMaximo = parsearEnteroPositivoONull(data.aforo_maximo);
+
+  if (aforoLimitado === 1 && usaFranjas === 0 && !(aforoMaximo > 0)) {
+    return "Debes indicar un aforo máximo válido cuando la actividad tenga aforo limitado y no utilice franjas horarias.";
+  }
+
   return null;
 }
 
@@ -308,6 +322,7 @@ async function obtenerRol(env, usuario_id) {
 }
 
 async function obtenerActividad(env, id) {
+  await asegurarColumnaAforoMaximo(env);
   return await env.DB.prepare(`
     SELECT *
     FROM actividades
@@ -393,6 +408,7 @@ function construirPayload(body, admin_id) {
     admin_id,
     requiere_reserva: parsearFlag(body.requiere_reserva, 1),
     aforo_limitado: parsearFlag(body.aforo_limitado, 1),
+    aforo_maximo: parsearEnteroPositivoONull(body.aforo_maximo),
     provincia: normalizarNullable(body.provincia),
     es_recurrente: parsearFlag(body.es_recurrente, 0),
     patron_recurrencia: normalizarNullable(body.patron_recurrencia),
@@ -407,6 +423,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
@@ -459,6 +476,7 @@ export async function onRequestPost(context) {
         admin_id,
         requiere_reserva,
         aforo_limitado,
+        aforo_maximo,
         provincia,
         es_recurrente,
         patron_recurrencia,
@@ -466,7 +484,7 @@ export async function onRequestPost(context) {
         enlace_externo_url,
         borrador_tecnico
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       p.nombre,
       p.tipo,
@@ -490,6 +508,7 @@ export async function onRequestPost(context) {
       p.admin_id,
       p.requiere_reserva,
       p.aforo_limitado,
+      p.aforo_limitado === 1 && p.usa_franjas === 0 ? p.aforo_maximo : null,
       p.provincia,
       p.es_recurrente,
       p.patron_recurrencia,
@@ -524,6 +543,7 @@ export async function onRequestPut(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaAforoMaximo(env);
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -714,6 +734,7 @@ export async function onRequestPut(context) {
         usa_franjas = ?,
         requiere_reserva = ?,
         aforo_limitado = ?,
+        aforo_maximo = ?,
         provincia = ?,
         es_recurrente = ?,
         patron_recurrencia = ?,
@@ -744,6 +765,7 @@ export async function onRequestPut(context) {
       p.usa_franjas,
       p.requiere_reserva,
       p.aforo_limitado,
+      p.aforo_limitado === 1 && p.usa_franjas === 0 ? p.aforo_maximo : null,
       p.provincia,
       p.es_recurrente,
       p.patron_recurrencia,

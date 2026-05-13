@@ -1672,14 +1672,23 @@
       const detalleAsignadas = esEdicion
         ? `<br><strong>Plazas ya asignadas:</strong> ${plazasAsignadas}`
         : "";
+      const aforoGeneral = Number(actividadActual?.aforo_maximo || actividadActual?.plazas_totales || 0);
+      const disponiblesGenerales = esModoEdicionReserva()
+        ? Number(reservaExistente?.disponibles || 0)
+        : Number(actividadActual?.plazas_disponibles || 0);
+      const usaAforoGeneral = !usaFranjas && Number(actividadActual?.aforo_limitado || 0) === 1;
 
       if (!usaFranjas) {
-        actualizarAlertaVisualPlazas(false);
+        const totalSolicitadoGeneral = esEdicion
+          ? Number(reservaExistente?.plazas_asignadas || 0) + plazasPendientes
+          : plazasPendientes;
+        actualizarAlertaVisualPlazas(usaAforoGeneral && totalSolicitadoGeneral > disponiblesGenerales);
         infoFranja.textContent = "Esta actividad no utiliza franjas horarias.";
-        plazasDisponibles.value = "-";
+        plazasDisponibles.value = usaAforoGeneral ? String(disponiblesGenerales) : "-";
         resumenReserva.innerHTML = `
           <strong>Actividad:</strong> ${nombreActividad}<br>
           <strong>Modalidad de reserva:</strong> Sin franja horaria<br>
+          ${usaAforoGeneral ? `<strong>Plazas disponibles:</strong> ${disponiblesGenerales} &nbsp;&nbsp; <strong>Aforo máximo:</strong> ${aforoGeneral}<br>` : ``}
           <strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
           <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
         `;
@@ -1775,6 +1784,19 @@
           return {
             ok: false,
             error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operación: ${disponiblesOperacion}. Solicitadas: ${plazasTotalesSolicitadas}.`
+          };
+        }
+      } else if (Number(actividadActual?.aforo_limitado || 0) === 1) {
+        const disponiblesOperacion = esModoEdicionReserva()
+          ? Number(reservaExistente?.disponibles || 0)
+          : Number(actividadActual?.plazas_disponibles || 0);
+        const plazasTotalesSolicitadas = esModoEdicionReserva()
+          ? Number(reservaExistente?.plazas_asignadas || 0) + plazas
+          : plazas;
+        if (plazasTotalesSolicitadas > disponiblesOperacion) {
+          return {
+            ok: false,
+            error: `No hay plazas suficientes en la actividad. Disponibles para esta operación: ${disponiblesOperacion}. Solicitadas: ${plazasTotalesSolicitadas}.`
           };
         }
       }
