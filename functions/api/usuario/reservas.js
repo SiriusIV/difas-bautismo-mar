@@ -102,6 +102,7 @@ export async function onRequestGet(context) {
         r.franja_id,
         a.admin_id,
         COALESCE(a.usa_franjas, 1) AS usa_franjas,
+        COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
         CASE
@@ -167,6 +168,7 @@ export async function onRequestGet(context) {
       admin_id: Number(row.admin_id || 0),
       actividad: row.actividad || "Actividad",
       usa_franjas: Number(row.usa_franjas || 0),
+      aforo_limitado: Number(row.aforo_limitado || 0),
       fecha_solicitud: row.fecha_solicitud || "",
       fecha_modificacion: row.fecha_modificacion || "",
       fecha: row.fecha || "",

@@ -914,6 +914,10 @@
     }
 
     function formatearTiempoRestante(reserva) {
+      if (Number(reserva?.aforo_limitado || 0) !== 1) {
+        return { texto: "", finalizada: false };
+      }
+
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) {
         return { texto: "", finalizada: false };
