@@ -476,7 +476,11 @@
       justify-content: center;
       cursor: pointer;
       padding: 0;
-      font-size: 14px;
+      font-size: 12px;
+      line-height: 1;
+      margin-top: -3px;
+      margin-right: -3px;
+    }
       line-height: 1;
       margin: 2px 0 0 auto;
       flex: 0 0 auto;
@@ -1299,7 +1303,6 @@
             <td class="horario-col">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</td>
             <td class="plazas-col">
               <span class="plazas-linea">Pre-reservadas: ${Number(r.plazas_reservadas_historicas || 0)}</span>
-              <span class="plazas-linea">Pre-reservadas pendientes: ${Number(r.plazas_pendientes || 0)}</span>
               <span class="plazas-linea">Asignadas: ${Number(r.plazas_asignadas || 0)}</span>
             </td>
           </tr>
