@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GestiÃ³n de asistentes</title>
+  <title>Gestión de asistentes</title>
   <style>
     :root {
       --color-fondo: #f4f6f8;
@@ -24,7 +24,7 @@
     body {
       font-family: Arial, sans-serif;
       background:
-        linear-gradient(180deg, rgba(244,246,248,0.84) 0%, rgba(244,246,248,0.90) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.68) 0%, rgba(244,246,248,0.76) 100%),
         url("assets/fondo_cabecera.png") top center / cover no-repeat,
         var(--color-fondo);
       background-blend-mode: normal, normal;
@@ -363,7 +363,7 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      justify-content: flex-start;
+      justify-content: center;
       gap: 10px;
       text-align: center;
       transition: all 0.15s ease;
@@ -641,14 +641,14 @@
           <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
 
           <div class="cabecera-centro">
-            <h1 id="tituloEvento">Actividades pÃºblicas institucionales</h1>
+            <h1 id="tituloEvento">Actividades públicas institucionales</h1>
             <h2 id="subtituloCabecera">Usuario</h2>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="mensaje" class="mensaje"><button type="button" id="btnCerrarMensaje" class="mensaje-cerrar" aria-label="Cerrar aviso">Ã—</button><span id="mensajeTexto"></span></div>
+    <div id="mensaje" class="mensaje"><button type="button" id="btnCerrarMensaje" class="mensaje-cerrar" aria-label="Cerrar aviso">×</button><span id="mensajeTexto"></span></div>
 
     <div class="bloque-contexto">
       <div class="bloque-contexto-info">
@@ -687,7 +687,7 @@
             </svg>
           </button>
 
-          <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="AÃ±adir asistente" aria-label="AÃ±adir asistente">
+          <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -708,11 +708,11 @@
 
       <div class="importador-asistentes">
         <div class="importador-contenido">
-        <h4 class="importador-titulo">ImportaciÃ³n desde plantilla Excel</h4>
-        <p class="importador-texto">Puedes seleccionar o arrastrar el archivo oficial de asistentes. La aplicaciÃ³n validarÃ¡ que cada fila usada tenga cubiertos los cuatro campos obligatorios antes de volcarla a la tabla.</p>
+        <h4 class="importador-titulo">Importación desde plantilla Excel</h4>
+        <p class="importador-texto">Puedes seleccionar o arrastrar el archivo oficial de asistentes. La aplicación validará que cada fila usada tenga cubiertos los cuatro campos obligatorios antes de volcarla a la tabla.</p>
         </div>
         <div id="zonaImportacionAsistentes" class="importador-zona">
-          <p class="importador-texto">Arrastra aquÃ­ el archivo con la plantilla <strong>.xlsx</strong> o pincha para seleccionarla.</p>
+          <p class="importador-texto">Arrastra aquí el archivo con la plantilla <strong>.xlsx</strong> o pincha para seleccionarla.</p>
           <input type="file" id="inputImportarAsistentes" accept=".xlsx" hidden>
         </div>
       </div>
@@ -724,7 +724,7 @@
               <th class="sel-col"></th>
               <th class="nombre-col">Nombre completo</th>
               <th class="tipo-col">Perfil</th>
-              <th class="ens-col">EnseÃ±anza</th>
+              <th class="ens-col">Enseñanza</th>
               <th class="edad-col">Edad</th>
             </tr>
           </thead>
@@ -753,8 +753,8 @@
   <div id="modalConfirmarSalida" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Cambios sin guardar</h3>
-      <p>Ha realizado cambios en la lista de asistentes y aÃºn no los ha guardado.</p>
-      <p>Si continÃºa, perderÃ¡ esos cambios.</p>
+      <p>Ha realizado cambios en la lista de asistentes y aún no los ha guardado.</p>
+      <p>Si continúa, perderá esos cambios.</p>
       <div class="acciones">
         <button type="button" id="btnConfirmarSalida" class="btn-modal">Aceptar</button>
         <button type="button" id="btnCancelarSalida" class="btn-modal secundario">Cancelar</button>
@@ -790,10 +790,10 @@
     ];
 
     const OPCIONES_EDAD = [
-      { value: "DE_3_A_5", label: "de 3 a 5 aÃ±os" },
-      { value: "DE_6_A_10", label: "de 6 a 10 aÃ±os" },
-      { value: "DE_10_A_15", label: "de 10 a 15 aÃ±os" },
-      { value: "MAYOR_DE_15", label: "mayor de 15 aÃ±os" }
+      { value: "DE_3_A_5", label: "de 3 a 5 años" },
+      { value: "DE_6_A_10", label: "de 6 a 10 años" },
+      { value: "DE_10_A_15", label: "de 10 a 15 años" },
+      { value: "MAYOR_DE_15", label: "mayor de 15 años" }
     ];
 
     function claseEstadoBadge(estado) {
@@ -837,7 +837,7 @@
 
     function etiquetaEdad(valor) {
       const item = OPCIONES_EDAD.find((op) => op.value === String(valor || "").trim().toUpperCase());
-      return item ? item.label : "mayor de 15 aÃ±os";
+      return item ? item.label : "mayor de 15 años";
     }
 
     function crearOpcionesSelect(opciones, valorSeleccionado, placeholder) {
@@ -973,7 +973,7 @@
 
     async function cargarConfigEvento() {
       document.title = "Panel de asistentes";
-      document.getElementById("tituloEvento").textContent = "Actividades pÃºblicas institucionales";
+      document.getElementById("tituloEvento").textContent = "Actividades públicas institucionales";
     }
 
     async function cargarSesionCabecera() {
@@ -991,7 +991,7 @@
       tokenEdicion = params.get("token") || "";
 
       if (!tokenEdicion) {
-        mostrarMensaje("error", "Falta el token de ediciÃ³n en la URL.");
+        mostrarMensaje("error", "Falta el token de edición en la URL.");
         return false;
       }
 
@@ -1017,9 +1017,9 @@
 
       if (!response.ok || !data.ok) {
         if (reservaActual && reservaActual.estado === "CANCELADA") {
-          mostrarMensaje("aviso", "La solicitud estÃ¡ cancelada. No se permite gestionar asistentes.");
+          mostrarMensaje("aviso", "La solicitud está cancelada. No se permite gestionar asistentes.");
         } else if (reservaActual && reservaActual.estado === "RECHAZADA") {
-          mostrarMensaje("error", "La solicitud estÃ¡ rechazada. No se permite gestionar asistentes.");
+          mostrarMensaje("error", "La solicitud está rechazada. No se permite gestionar asistentes.");
         } else {
           mostrarMensaje("error", data.error || "No se pudieron cargar los asistentes.");
         }
@@ -1075,7 +1075,7 @@
         const faltantes = [];
         if (!visitante.nombre_completo) faltantes.push("Nombre completo");
         if (!visitante.perfil_asistente) faltantes.push("Perfil");
-        if (!visitante.nivel_ensenanza) faltantes.push("EnseÃ±anza");
+        if (!visitante.nivel_ensenanza) faltantes.push("Enseñanza");
         if (!visitante.categoria_edad) faltantes.push("Edad");
 
         if (faltantes.length) {
@@ -1087,7 +1087,7 @@
         if (claveNombre) {
           const filaPrevia = nombresVistos.get(claveNombre);
           if (filaPrevia) {
-            errores.push(`Fila ${visitante.filaVisual}: el asistente "${visitante.nombre_completo}" estÃ¡ repetido (ya aparece en la fila ${filaPrevia}).`);
+            errores.push(`Fila ${visitante.filaVisual}: el asistente "${visitante.nombre_completo}" está repetido (ya aparece en la fila ${filaPrevia}).`);
             return;
           }
           nombresVistos.set(claveNombre, visitante.filaVisual);
@@ -1153,7 +1153,7 @@
         </td>
         <td class="ens-col">
           <select class="ensenanza-asistente" ${editable ? "" : "disabled"}>
-            ${crearOpcionesSelect(OPCIONES_ENSENANZA, asistente.nivel_ensenanza, "Seleccione enseÃ±anza")}
+            ${crearOpcionesSelect(OPCIONES_ENSENANZA, asistente.nivel_ensenanza, "Seleccione enseñanza")}
           </select>
         </td>
         <td class="edad-col">
@@ -1248,11 +1248,11 @@
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
       document.getElementById("bloqueReserva").innerHTML = `
-        <strong>CÃ³digo de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
+        <strong>Código de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         <strong>Franja horaria asignada:</strong><br>
         ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>
-        <strong>Hora lÃ­mite de asignaciÃ³n de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}
+        <strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
@@ -1271,10 +1271,10 @@
           </div>
           <div class="resumen-col">
             <strong>Edades</strong><br>
-            de 3 a 5 aÃ±os: ${de3a5}<br>
-            de 6 a 10 aÃ±os: ${de6a10}<br>
-            de 10 a 15 aÃ±os: ${de10a15}<br>
-            mayores de 15 aÃ±os: ${mayores15}
+            de 3 a 5 años: ${de3a5}<br>
+            de 6 a 10 años: ${de6a10}<br>
+            de 10 a 15 años: ${de10a15}<br>
+            mayores de 15 años: ${mayores15}
           </div>
         </div>
       `;
@@ -1301,7 +1301,7 @@
       if (totalAsignadas > maximoPermitido) {
         mostrarMensaje(
           "error",
-          `No puede asignar mÃ¡s asistentes (${totalAsignadas}) que el mÃ¡ximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
+          `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
         );
         btnGuardar.disabled = true;
         btnAnadir.disabled = true;
@@ -1392,7 +1392,7 @@
 
       } catch (error) {
         console.error(error);
-        mostrarMensaje("error", "Error de conexiÃ³n con el servidor.");
+        mostrarMensaje("error", "Error de conexión con el servidor.");
       } finally {
         envioEnCurso = false;
         document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
@@ -1444,7 +1444,7 @@
 
     async function inflarDeflateRaw(bytes) {
       if (typeof DecompressionStream === "undefined") {
-        throw new Error("Este navegador no soporta la importaciÃ³n directa del archivo Excel. Prueba con un navegador actualizado.");
+        throw new Error("Este navegador no soporta la importación directa del archivo Excel. Prueba con un navegador actualizado.");
       }
       const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
       const buffer = await new Response(stream).arrayBuffer();
@@ -1462,7 +1462,7 @@
         }
       }
       if (eocd < 0) {
-        throw new Error("El archivo Excel no tiene una estructura ZIP vÃ¡lida.");
+        throw new Error("El archivo Excel no tiene una estructura ZIP válida.");
       }
 
       const centralOffset = view.getUint32(eocd + 16, true);
@@ -1490,7 +1490,7 @@
         } else if (metodo === 8) {
           contenido = await inflarDeflateRaw(comprimido);
         } else {
-          throw new Error(`El archivo Excel usa un mÃ©todo de compresiÃ³n no soportado (${metodo}).`);
+          throw new Error(`El archivo Excel usa un método de compresión no soportado (${metodo}).`);
         }
 
         entradas.set(nombre, contenido);
@@ -1577,7 +1577,7 @@
       );
 
       if (indiceCabecera < 0) {
-        throw new Error("No se encontrÃ³ la fila de encabezados esperada en la plantilla.");
+        throw new Error("No se encontró la fila de encabezados esperada en la plantilla.");
       }
 
       const errores = [];
@@ -1595,7 +1595,7 @@
         const faltantes = [];
         if (!nombre) faltantes.push("Nombre y Apellidos");
         if (!perfilTexto) faltantes.push("Perfil");
-        if (!ensenanzaTexto) faltantes.push("EnseÃ±anza");
+        if (!ensenanzaTexto) faltantes.push("Enseñanza");
         if (!edadTexto) faltantes.push("Edad");
         if (faltantes.length) {
           errores.push(`Fila ${fila.numero}: falta ${faltantes.join(", ")}.`);
@@ -1607,20 +1607,20 @@
         const edad = normalizarEdadImportada(edadTexto);
 
         if (!perfil) {
-          errores.push(`Fila ${fila.numero}: el valor de Perfil no es vÃ¡lido.`);
+          errores.push(`Fila ${fila.numero}: el valor de Perfil no es válido.`);
         }
         if (!ensenanza) {
-          errores.push(`Fila ${fila.numero}: el valor de EnseÃ±anza no es vÃ¡lido.`);
+          errores.push(`Fila ${fila.numero}: el valor de Enseñanza no es válido.`);
         }
         if (!edad) {
-          errores.push(`Fila ${fila.numero}: el valor de Edad no es vÃ¡lido.`);
+          errores.push(`Fila ${fila.numero}: el valor de Edad no es válido.`);
         }
         if (!perfil || !ensenanza || !edad) return;
 
         const claveNombre = normalizarClaveNombreAsistente(nombre);
         const filaPrevia = nombresImportados.get(claveNombre);
         if (filaPrevia) {
-          errores.push(`Fila ${fila.numero}: el asistente "${nombre}" estÃ¡ repetido en la plantilla (ya aparece en la fila ${filaPrevia}).`);
+          errores.push(`Fila ${fila.numero}: el asistente "${nombre}" está repetido en la plantilla (ya aparece en la fila ${filaPrevia}).`);
           return;
         }
         nombresImportados.set(claveNombre, fila.numero);
@@ -1667,7 +1667,7 @@
 
         const maximoPermitido = obtenerMaximoPermitidoActual();
         if (importados.length > maximoPermitido) {
-          throw new Error(`La plantilla contiene ${importados.length} asistentes y el mÃ¡ximo disponible ahora para esta solicitud es ${maximoPermitido}. Corrige el archivo antes de importarlo.`);
+          throw new Error(`La plantilla contiene ${importados.length} asistentes y el máximo disponible ahora para esta solicitud es ${maximoPermitido}. Corrige el archivo antes de importarlo.`);
         }
 
         const yaCargados = estadoActualTabla.completos;
@@ -1688,16 +1688,16 @@
         });
 
         if (!nuevos.length) {
-          throw new Error("Todos los asistentes de la plantilla ya estaban cargados en la solicitud. No se ha aÃ±adido ninguno nuevo.");
+          throw new Error("Todos los asistentes de la plantilla ya estaban cargados en la solicitud. No se ha añadido ninguno nuevo.");
         }
 
         visitantesActuales = [...yaCargados, ...nuevos];
         renderizarVisitantes();
         marcarCambiosPendientes();
         if (repetidos.length) {
-          mostrarMensaje("aviso", `Se han aÃ±adido ${nuevos.length} asistentes nuevos desde la plantilla y se han omitido ${repetidos.length} repetidos que ya estaban cargados en la solicitud. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+          mostrarMensaje("aviso", `Se han añadido ${nuevos.length} asistentes nuevos desde la plantilla y se han omitido ${repetidos.length} repetidos que ya estaban cargados en la solicitud. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
         } else {
-          mostrarMensaje("ok", `Se han aÃ±adido ${nuevos.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+          mostrarMensaje("ok", `Se han añadido ${nuevos.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
         }
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo importar la plantilla de asistentes.");
@@ -1807,7 +1807,7 @@
         await cargarVisitantes();
       } catch (error) {
         console.error(error);
-        mostrarMensaje("error", "Error al cargar la pÃ¡gina de asistentes.");
+        mostrarMensaje("error", "Error al cargar la página de asistentes.");
       }
     });
   </script>
