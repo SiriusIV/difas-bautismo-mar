@@ -762,6 +762,8 @@
     let contadorFilas = 0;
     let hayCambiosSinGuardar = false;
     let destinoPendienteNavegacion = null;
+    let temporizadorMensaje = null;
+    let tipoMensajeActivo = "";
 
     const OPCIONES_PERFIL = [
       { value: "ALUMNO", label: "Alumno" },
@@ -882,20 +884,42 @@
       return formatearFechaHoraLocal(valor);
     }
 
-    function mostrarMensaje(tipo, texto) {
+    function cancelarTemporizadorMensaje() {
+      if (temporizadorMensaje) {
+        clearTimeout(temporizadorMensaje);
+        temporizadorMensaje = null;
+      }
+    }
+
+    function mostrarMensaje(tipo, texto, opciones = {}) {
       const mensaje = document.getElementById("mensaje");
       const mensajeTexto = document.getElementById("mensajeTexto");
+      const btnCerrar = document.getElementById("btnCerrarMensaje");
+      const autocierreMs = Number(opciones?.autocierreMs || 0);
+      cancelarTemporizadorMensaje();
+      tipoMensajeActivo = tipo;
       mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
       mensajeTexto.textContent = texto;
+      btnCerrar.style.display = tipo === "error" ? "inline-flex" : "none";
+
+      if (autocierreMs > 0 && tipo !== "error") {
+        temporizadorMensaje = window.setTimeout(() => {
+          limpiarMensaje();
+        }, autocierreMs);
+      }
     }
 
     function limpiarMensaje() {
       const mensaje = document.getElementById("mensaje");
       const mensajeTexto = document.getElementById("mensajeTexto");
+      const btnCerrar = document.getElementById("btnCerrarMensaje");
+      cancelarTemporizadorMensaje();
+      tipoMensajeActivo = "";
       mensaje.className = "mensaje";
       mensaje.style.display = "none";
       mensajeTexto.textContent = "";
+      btnCerrar.style.display = "none";
     }
 
     function marcarCambiosPendientes() {
@@ -1273,7 +1297,9 @@
         btnGuardar.disabled = true;
         btnAnadir.disabled = true;
       } else {
-        limpiarMensaje();
+        if (tipoMensajeActivo === "error") {
+          limpiarMensaje();
+        }
         btnGuardar.disabled = envioEnCurso;
         btnAnadir.disabled = totalAsignadas >= maximoPermitido;
       }
@@ -1350,7 +1376,7 @@
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "Asistentes guardados correctamente.");
+        mostrarMensaje("ok", data.mensaje || "Asistentes guardados correctamente.", { autocierreMs: 4000 });
         await cargarReserva();
         await cargarVisitantes();
         limpiarCambiosPendientes();
