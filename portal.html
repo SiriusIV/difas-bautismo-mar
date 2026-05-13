@@ -2215,14 +2215,17 @@ function actualizarBotonSolicitarSegunFranja() {
           </button>
         `];
         const titulo = String(item.titulo || "Notificación").trim();
+        const tituloHtml = titulo.startsWith("Ha finalizado el tiempo para asignación de plazas pre-reservadas.")
+          ? titulo.replace(". Plazas reservadas ", ".<br>Plazas reservadas ")
+          : titulo;
         const contenidoPrincipal = item.url_destino
           ? `
             <a href="${item.url_destino}" class="notificacion-enlace" data-notificacion-ir="${String(item.id || "")}">
-              <div class="notificacion-titulo">${titulo}</div>
+              <div class="notificacion-titulo">${tituloHtml}</div>
             </a>
           `
           : `
-            <div class="notificacion-titulo">${titulo}</div>
+            <div class="notificacion-titulo">${tituloHtml}</div>
           `;
         row.innerHTML = `
           <td class="col-notificacion-fecha"><span class="notificacion-fecha">${formatearFechaNotificacion(item.created_at || "")}</span></td>
