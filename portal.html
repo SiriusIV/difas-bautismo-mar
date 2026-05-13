@@ -1259,6 +1259,11 @@
     display: none;
     }
 
+    .tabla-franjas.tabla-franjas-informativa th.col-seleccion,
+    .tabla-franjas.tabla-franjas-informativa td.col-seleccion {
+      display: none;
+    }
+
     
 
     @media (max-width: 980px) {
@@ -1500,11 +1505,11 @@
     <table>
       <thead>
         <tr>
-          <th class="col-seleccion"></th>
+          <th class="col-seleccion" id="thSeleccionFranja"></th>
           <th>Fecha</th>
           <th>Inicio</th>
           <th>Fin</th>
-          <th>Situación (plazas disponibles)</th>
+          <th id="thSituacionFranja">Situación (plazas disponibles)</th>
         </tr>
       </thead>
       <tbody id="tablaFranjasBody"></tbody>
@@ -1760,12 +1765,22 @@ async function cargarFranjasActividad(actividad) {
   const wrap = document.getElementById("tablaFranjasWrap");
   const body = document.getElementById("tablaFranjasBody");
   const nota = document.getElementById("notaFranjasPortal");
+  const thSituacion = document.getElementById("thSituacionFranja");
+  const requiereReserva = Number(actividad?.requiere_reserva || 0) === 1;
+  const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
 
   actividadFranjasSolicitada = actividad?.id || null;
   franjaSeleccionadaPortalId = null;
   franjasActividadActual = [];
   wrap.style.display = "none";
   body.innerHTML = "";
+  wrap.classList.remove("tabla-franjas-informativa");
+
+  if (thSituacion) {
+    thSituacion.textContent = requiereReserva
+      ? "Situación (plazas disponibles)"
+      : (aforoLimitado ? "Situación (aforo máximo)" : "Situación");
+  }
 
   if (nota) {
     nota.textContent = "";
@@ -1776,6 +1791,10 @@ async function cargarFranjasActividad(actividad) {
 
   if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
     return;
+  }
+
+  if (!requiereReserva) {
+    wrap.classList.add("tabla-franjas-informativa");
   }
 
   try {
@@ -1865,11 +1884,17 @@ async function cargarFranjasActividad(actividad) {
     }
 
     const filas = franjasActividadActual.map(f => {
-      let estadoTexto = "�";
+      let estadoTexto = "Disponible";
       let estadoClase = "";
 
       if (f.finalizada) {
         estadoTexto = "Finalizada";
+      } else if (!requiereReserva && aforoLimitado) {
+        const capacidadFranja = f.capacidad == null ? 0 : Number(f.capacidad || 0);
+        estadoTexto = capacidadFranja > 0
+          ? `Aforo máximo: ${capacidadFranja} personas`
+          : "Aforo limitado";
+        estadoClase = "disponible";
       } else if (f.completa) {
         estadoTexto = "Completa";
         estadoClase = "completa";
@@ -1884,12 +1909,14 @@ async function cargarFranjasActividad(actividad) {
       return `
         <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"}">
           <td class="col-seleccion">
-            <input
-              type="radio"
-              name="franjaPortalSeleccionada"
-              value="${f.id}"
-              ${f.seleccionable ? "" : "disabled"}
-            >
+            ${requiereReserva ? `
+              <input
+                type="radio"
+                name="franjaPortalSeleccionada"
+                value="${f.id}"
+                ${f.seleccionable ? "" : "disabled"}
+              >
+            ` : ``}
           </td>
           <td>${textoProgramacionFranja(f)}</td>
           <td>${f.hora_inicio}</td>
@@ -1906,16 +1933,20 @@ async function cargarFranjasActividad(actividad) {
     body.innerHTML = filas;
     wrap.style.display = "block";
 
-    const radios = body.querySelectorAll('input[name="franjaPortalSeleccionada"]');
-    radios.forEach(radio => {
-      radio.addEventListener("change", () => {
-        franjaSeleccionadaPortalId = Number(radio.value) || null;
-        actualizarBotonSolicitarSegunFranja();
+    if (requiereReserva) {
+      const radios = body.querySelectorAll('input[name="franjaPortalSeleccionada"]');
+      radios.forEach(radio => {
+        radio.addEventListener("change", () => {
+          franjaSeleccionadaPortalId = Number(radio.value) || null;
+          actualizarBotonSolicitarSegunFranja();
+        });
       });
-    });
+    }
 
     if (nota) {
-      nota.textContent = "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas.";
+      nota.textContent = requiereReserva
+        ? "Las plazas disponibles están sujetas a variaciones por cancelación de reservas confirmadas."
+        : "La programación mostrada es informativa. Esta actividad no requiere solicitud previa.";
       nota.style.display = "block";
     }
 
@@ -3277,6 +3308,7 @@ function renderMapaActividad(a) {
         ${a.provincia ? `<div><strong>Localidad:</strong> ${a.provincia}</div>` : ""}
         ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearIntervaloFechaES(a.fecha_inicio, a.fecha_fin)}</div>` : ""}
         ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+        ${Number(a.requiere_reserva || 0) !== 1 && Number(a.aforo_limitado || 0) === 1 && Number(a.plazas_totales || 0) > 0 ? `<div><strong>Aforo máximo:</strong> ${Number(a.plazas_totales || 0)} personas</div>` : ""}
       `;
 
       let textoDetalle = a.descripcion_larga || a.descripcion_corta || "";
