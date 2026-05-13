@@ -2514,6 +2514,7 @@
             slider.className = "toggle-slider";
 
             checkbox.addEventListener("change", () => {
+              guardarValorPrevioCampoCritico(select.id);
               select.value = checkbox.checked ? "1" : "0";
               select.dispatchEvent(new Event("change", { bubbles: true }));
             });
@@ -2551,6 +2552,7 @@
               slider.className = "toggle-slider";
 
               checkbox.addEventListener("change", () => {
+                guardarValorPrevioCampoCritico(select.id);
                 select.value = checkbox.checked ? "1" : "0";
                 select.dispatchEvent(new Event("change", { bubbles: true }));
               });
@@ -3154,18 +3156,19 @@ async function manejarCambioCriticoCampo(id) {
   const resultado = await validarCambioCriticoActividad();
 
   if (!resultado?.ok) {
+    restaurarValorPrevioCampoCritico(id);
+    sincronizarTogglesPanelConfiguracion();
+    actualizarVisibilidadFormulario();
+    actualizarPreview();
+    renderMapaPreviewActividad();
+    renderPreviewFranjas();
+
     mostrarMensaje(
       "error",
       resultado.error || "El cambio no es válido.",
       {
         bloqueante: true,
-        onAccept: () => {
-          restaurarValorPrevioCampoCritico(id);
-          actualizarVisibilidadFormulario();
-          actualizarPreview();
-          renderMapaPreviewActividad();
-          renderPreviewFranjas();
-        }
+        onAccept: () => {}
       }
     );
 
