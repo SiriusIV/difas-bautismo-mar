@@ -2932,6 +2932,7 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
   const textoEl = document.getElementById("mensajeActividadTexto");
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
   const btnCancelar = document.getElementById("btnCancelarMensajeActividad");
+  const esErrorSimple = tipo === "error" && !opciones.bloqueante && !opciones.confirmable;
 
   if (temporizadorMensajeActividad) {
     clearTimeout(temporizadorMensajeActividad);
@@ -2944,6 +2945,8 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
 
   btnAceptar.classList.add("oculto");
   btnCancelar.classList.add("oculto");
+  btnAceptar.textContent = "Aceptar";
+  btnCancelar.textContent = "Cancelar";
   callbackAceptarMensajeActividad = null;
   callbackCancelarMensajeActividad = null;
 
@@ -2957,12 +2960,16 @@ function mostrarMensaje(tipo, texto, opciones = {}) {
     callbackAceptarMensajeActividad = typeof opciones.onAccept === "function" ? opciones.onAccept : null;
     callbackCancelarMensajeActividad = typeof opciones.onCancel === "function" ? opciones.onCancel : null;
     bloquearPantallaPorErrorActividad();
+  } else if (esErrorSimple) {
+    btnAceptar.textContent = "Cerrar";
+    btnAceptar.classList.remove("oculto");
+    bloquearPantallaPorErrorActividad();
   } else {
     desbloquearPantallaPorErrorActividad();
 
     temporizadorMensajeActividad = setTimeout(() => {
       limpiarMensaje();
-    }, 5000);
+    }, 4000);
   }
 
   document.querySelector(".app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
