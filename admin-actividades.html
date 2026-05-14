@@ -4209,6 +4209,17 @@ function editarFranja(id) {
 
       const data = await res.json();
 
+      function aplicarFranjasDevueltas(respuesta) {
+        if (Array.isArray(respuesta?.franjas)) {
+          franjasCache = respuesta.franjas;
+          renderListaFranjas();
+          renderPreviewFranjas();
+          actualizarEstadoFranjasUI();
+          return true;
+        }
+        return false;
+      }
+
       if (data?.requiere_confirmacion_afectacion) {
         mostrarMensaje(
           "aviso",
@@ -4230,7 +4241,10 @@ function editarFranja(id) {
                 return;
               }
 
-              await cargarFranjas();
+              const aplicado = aplicarFranjasDevueltas(dataFinal);
+              if (!aplicado) {
+                await cargarFranjas();
+              }
               limpiarFormularioFranja();
               renderPreviewFranjas();
               mostrarMensaje("ok", dataFinal.mensaje || "Franja guardada correctamente.");
@@ -4245,7 +4259,10 @@ function editarFranja(id) {
         return;
       }
 
-      await cargarFranjas();
+      const aplicado = aplicarFranjasDevueltas(data);
+      if (!aplicado) {
+        await cargarFranjas();
+      }
       limpiarFormularioFranja();
       renderPreviewFranjas();
       mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
