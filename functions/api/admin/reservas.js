@@ -165,7 +165,7 @@ async function obtenerReservas(env, filtros) {
       ), 0) AS profesores
 
     FROM reservas r
-    INNER JOIN franjas f
+    LEFT JOIN franjas f
       ON f.id = r.franja_id
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
