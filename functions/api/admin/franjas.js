@@ -523,7 +523,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Actividad no válida." }, { status: 400 });
     }
     
-    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+    const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
 
     const errorValidacion = validarDatosFranja({
       fecha,
