@@ -41,6 +41,13 @@ function parsearFlag(valor, defecto = 0) {
   return defecto;
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
 function haFinalizadoFranja(row, ahora = new Date()) {
   if (!row?.fecha || !row?.hora_fin) return false;
   const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
@@ -272,7 +279,7 @@ function validarDatosFranja({
 }
 
 async function obtenerActividad(env, actividad_id) {
-  return await env.DB.prepare(`
+  return await dbPrimaria(env).prepare(`
     SELECT
       id,
       nombre,
@@ -423,7 +430,7 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.hora_fin
   `;
 
-  const result = await env.DB.prepare(sql).bind(actividad_id).all();
+  const result = await dbPrimaria(env).prepare(sql).bind(actividad_id).all();
   const rows = result.results || [];
 
   let franjas = rows.map(row => {
@@ -447,7 +454,7 @@ async function obtenerResumenFranjas(env, actividad_id) {
 }
 
 async function obtenerFranjaPorId(env, id) {
-  return await env.DB.prepare(`
+  return await dbPrimaria(env).prepare(`
     SELECT
       id,
       actividad_id,
