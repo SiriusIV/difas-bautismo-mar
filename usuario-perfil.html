@@ -635,6 +635,12 @@
     .btn-accion-doc-inline:hover { opacity: 0.82; transform: translateY(-1px); }
     .btn-accion-doc-inline:disabled { opacity: 0.34; cursor: not-allowed; transform: none; }
     .btn-accion-doc-inline img { width: 20px; height: 20px; display: block; }
+    .doc-titulo-con-accion,
+    .doc-estado-con-accion { display: inline-flex; align-items: center; gap: 8px; }
+    .doc-titulo-con-accion { justify-content: flex-start; }
+    .doc-estado-con-accion { justify-content: center; }
+    .doc-titulo-con-accion .btn-accion-doc-inline,
+    .doc-estado-con-accion .btn-accion-doc-inline { flex: 0 0 auto; }
     .estado-provisional { display: block; margin-top: 4px; font-size: 11px; color: #5f6d7a; }
     .tabs-modal-detalle-linea { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-modal-detalle { display: flex; gap: 8px; }
@@ -985,7 +991,6 @@
                 <th>Versión</th>
                 <th>Última entrega</th>
                 <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadosDocumento" aria-label="Ayuda sobre los estados de documento" title="Ayuda sobre los estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
-                <th class="col-acciones-doc">Acciones</th>
               </tr>
             </thead>
             <tbody id="detalleDocumentacionBody"></tbody>
@@ -1111,6 +1116,9 @@
       <div class="campo-linea">
         <label>Observaciones</label>
         <textarea id="textoModalObservacionesDocumento" style="width:100%; min-height:120px; resize:vertical; padding:9px 10px; border:1px solid #c9cfd6; border-radius:8px; font-size:13px; line-height:1.6; color:#4a5a6a;"></textarea>
+      </div>
+      <div class="modal-acciones oculto" id="accionesSubidaModalObservacionesDocumento">
+        <button type="button" class="btn btn-suave" id="btnSubirDesdeModalObservacionesDocumento">Subir documento</button>
       </div>
       <div class="modal-acciones oculto" id="accionesModalObservacionesDocumento">
         <button type="button" class="btn btn-suave" id="btnCancelarObservacionesDocumento">Cancelar</button>
@@ -1437,6 +1445,11 @@
       return String(documento?.estado_documento || "NO_INICIADO").toUpperCase();
     }
 
+    function admiteNuevaRemisionDocumento(estado) {
+      const valor = String(estado || "").toUpperCase();
+      return valor !== "VALIDADA" && valor !== "VALIDADO";
+    }
+
     function tieneCambiosPendientesDetalle() {
       return detalleCambiosPendientes.size > 0;
     }
@@ -1477,6 +1490,8 @@
       const editable = !!opciones?.editable;
       const textarea = document.getElementById("textoModalObservacionesDocumento");
       const acciones = document.getElementById("accionesModalObservacionesDocumento");
+      const accionesSubida = document.getElementById("accionesSubidaModalObservacionesDocumento");
+      const permiteSubida = !editable && !!documento?.id && admiteNuevaRemisionDocumento(estadoBruto);
 
       contextoModalObservacionesDocumento = editable
         ? {
@@ -1490,6 +1505,7 @@
       textarea.value = observaciones;
       textarea.readOnly = !editable;
       acciones.classList.toggle("oculto", !editable);
+      accionesSubida.classList.toggle("oculto", !permiteSubida);
       document.getElementById("modalObservacionesDocumento").classList.add("activo");
       document.getElementById("modalObservacionesDocumento").setAttribute("aria-hidden", "false");
       setTimeout(() => {
@@ -1807,24 +1823,23 @@
         tr.innerHTML = `
           <td class="col-seleccion">${esSolicitante() ? "" : `<input type="radio" name="detalle_documento_seleccion" class="selector-doc" value="${docId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento">`}</td>
           <td class="col-documento">
-            ${documentoBase}
+            <span class="doc-titulo-con-accion">
+              <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento base" aria-label="Descargar documento base" ${doc.archivo_url ? "" : "disabled"}>
+                <img src="assets/icono-descargar-documento.svg" alt="">
+              </button>
+              <span>${documentoBase}</span>
+            </span>
             ${pendiente ? `<span class="estado-provisional">${pendiente}</span>` : ""}
           </td>
           <td>${Number(doc.version_documental || 0) > 0 ? Number(doc.version_documental || 0) : "-"}</td>
           <td class="td-fecha-entrega">${formatearFechaCorta(doc.entrega_fecha_subida || "")}</td>
-          <td><button type="button" class="estado-pill-doc ${estadoDoc}" data-estado-doc-id="${docId}">${etiquetaEstadoDocumentacion(estadoDoc)}</button></td>
-          <td class="col-acciones-doc">
-            <div class="acciones-doc-fila">
+          <td>
+            <span class="doc-estado-con-accion">
               <button type="button" class="btn-accion-doc-inline" data-doc-accion="ver" data-doc-id="${docId}" title="Ver documento remitido" aria-label="Ver documento remitido" ${doc.entrega_archivo_url && cambio?.tipo !== "eliminar" ? "" : "disabled"}>
                 <img src="assets/icono-ver-documento.svg" alt="">
               </button>
-              <button type="button" class="btn-accion-doc-inline" data-doc-accion="subir" data-doc-id="${docId}" title="Subir documento" aria-label="Subir documento">
-                <img src="assets/icono-subir-documento.svg" alt="">
-              </button>
-              <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento base" aria-label="Descargar documento base" ${doc.archivo_url ? "" : "disabled"}>
-                <img src="assets/icono-descargar-documento.svg" alt="">
-              </button>
-            </div>
+              <button type="button" class="estado-pill-doc ${estadoDoc}" data-estado-doc-id="${docId}" data-estado-doc-actual="${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</button>
+            </span>
           </td>
         `;
         body.appendChild(tr);
@@ -3640,14 +3655,23 @@
           verDocumentoDetalle(doc);
           return;
         }
-        if (accion === "subir") {
-          solicitarSubidaDocumentoDetalle(doc);
-          return;
-        }
         if (accion === "descargar") {
           descargarDocumentoDetalle(doc);
           return;
         }
+      }
+
+      const btnEstado = event.target.closest("[data-estado-doc-id]");
+      if (btnEstado) {
+        const docId = Number.parseInt(btnEstado.dataset.estadoDocId || "", 10);
+        if (!Number.isInteger(docId) || docId <= 0) return;
+        seleccionarDocumentoDetallePorId(docId);
+        const doc = (detalleDocumentacionDatos || []).find((item) => Number(item.id || 0) === docId);
+        if (!doc) return;
+        abrirModalObservacionesDocumento(doc, {
+          estado: btnEstado.dataset.estadoDocActual || estadoDetalleDocumento("", doc)
+        });
+        return;
       }
 
       const selector = event.target.closest(".selector-doc");
@@ -3657,21 +3681,17 @@
       detalleDocumentacionSeleccionId = docId;
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
     });
-    document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
-      const btnEstado = event.target.closest("[data-estado-doc-id]");
-      if (!btnEstado) return;
-      const docId = Number.parseInt(btnEstado.dataset.estadoDocId || "", 10);
-      if (!Number.isInteger(docId) || docId <= 0) return;
-      seleccionarDocumentoDetallePorId(docId);
-      const doc = (detalleDocumentacionDatos || []).find((item) => Number(item.id || 0) === docId);
-      if (!doc) return;
-      abrirModalObservacionesDocumento(doc);
-    });
     document.getElementById("btnVerDesdeDetalleDocumentacion").addEventListener("click", function () {
       verDocumentoDetalle(obtenerDocumentoSeleccionadoDetalle());
     });
     document.getElementById("btnSubirDesdeDetalleDocumentacion").addEventListener("click", function () {
       solicitarSubidaDocumentoDetalle(obtenerDocumentoSeleccionadoDetalle());
+    });
+    document.getElementById("btnSubirDesdeModalObservacionesDocumento").addEventListener("click", function () {
+      const doc = obtenerDocumentoSeleccionadoDetalle();
+      if (!doc) return;
+      cerrarModalObservacionesDocumento();
+      solicitarSubidaDocumentoDetalle(doc);
     });
     document.getElementById("inputArchivoDetalleDocumentacion").addEventListener("change", function (event) {
       const doc = obtenerDocumentoSeleccionadoDetalle();
