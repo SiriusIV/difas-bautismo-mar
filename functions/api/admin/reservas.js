@@ -38,6 +38,12 @@ function likeValue(valor) {
   return `%${valor}%`;
 }
 
+function obtenerDbLectura(env) {
+  return typeof env?.DB?.withSession === "function"
+    ? env.DB.withSession("first-primary")
+    : env.DB;
+}
+
 function fechaComparableISO(fechaDdMmAaaa) {
   const texto = limpiarTexto(fechaDdMmAaaa);
   if (!texto) return null;
@@ -80,6 +86,7 @@ function calcularPlazasAsignadas(row) {
 }
 
 async function obtenerReservas(env, filtros) {
+  const db = obtenerDbLectura(env);
   const where = [];
   const binds = [];
 
@@ -176,11 +183,12 @@ async function obtenerReservas(env, filtros) {
       r.fecha_solicitud ASC
   `;
 
-  const result = await env.DB.prepare(sql).bind(...binds).all();
+  const result = await db.prepare(sql).bind(...binds).all();
   return result.results || [];
 }
 
 async function obtenerSolicitantes(env, filtros) {
+  const db = obtenerDbLectura(env);
   const where = [];
   const binds = [];
 
@@ -202,7 +210,7 @@ async function obtenerSolicitantes(env, filtros) {
     ORDER BY solicitante COLLATE NOCASE ASC
   `;
 
-  const result = await env.DB.prepare(sql).bind(...binds).all();
+  const result = await db.prepare(sql).bind(...binds).all();
   return (result.results || [])
     .map((row) => limpiarTexto(row.solicitante))
     .filter(Boolean);
@@ -230,6 +238,7 @@ function resumirReservas(rows) {
 }
 
 async function obtenerFranjas(env, filtros = {}) {
+  const db = obtenerDbLectura(env);
   let sql = `
     SELECT
       f.id,
@@ -270,12 +279,13 @@ async function obtenerFranjas(env, filtros = {}) {
 
   sql += ` ORDER BY fecha ASC, hora_inicio ASC`;
 
-  const result = await env.DB.prepare(sql).bind(...binds).all();
+  const result = await db.prepare(sql).bind(...binds).all();
   return result.results || [];
 }
 
 async function obtenerActividadIdDeReserva(env, reservaId) {
-  const result = await env.DB.prepare(`
+  const db = obtenerDbLectura(env);
+  const result = await db.prepare(`
     SELECT actividad_id
     FROM reservas
     WHERE id = ?
@@ -286,7 +296,8 @@ async function obtenerActividadIdDeReserva(env, reservaId) {
 }
 
 async function obtenerContextoNotificacionReserva(env, reservaId) {
-  return await env.DB.prepare(`
+  const db = obtenerDbLectura(env);
+  return await db.prepare(`
     SELECT
       r.id,
       r.usuario_id,
