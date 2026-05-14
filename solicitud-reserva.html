@@ -1982,13 +1982,11 @@
       `;
       document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
 
-      document.getElementById("modalConfirmacionEnvio").classList.add("activo");
-      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "false");
+      establecerVisibilidadModal("modalConfirmacionEnvio", true);
     }
 
     function cerrarModalConfirmacion() {
-      document.getElementById("modalConfirmacionEnvio").classList.remove("activo");
-      document.getElementById("modalConfirmacionEnvio").setAttribute("aria-hidden", "true");
+      establecerVisibilidadModal("modalConfirmacionEnvio", false);
       const destino = redireccionPendienteTrasConfirmacion;
       redireccionPendienteTrasConfirmacion = "";
       if (destino) {
@@ -2001,6 +1999,13 @@
       if (!mensaje) return;
       mensaje.className = `confirmacion-envio-mensaje ${tipo}`;
       mensaje.textContent = texto;
+    }
+
+    function establecerVisibilidadModal(id, activo) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.toggle("activo", !!activo);
+      modal.setAttribute("aria-hidden", activo ? "false" : "true");
     }
 
     function abrirModalAsistentes() {
@@ -2028,13 +2033,11 @@
         if (acciones) acciones.style.display = "";
       }
 
-      document.getElementById("modalAsistentes").classList.add("activo");
-      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "false");
+      establecerVisibilidadModal("modalAsistentes", true);
     }
 
     function cerrarModalAsistentes() {
-      document.getElementById("modalAsistentes").classList.remove("activo");
-      document.getElementById("modalAsistentes").setAttribute("aria-hidden", "true");
+      establecerVisibilidadModal("modalAsistentes", false);
       const destino = redireccionPendienteTrasModalAsistentes;
       redireccionPendienteTrasModalAsistentes = "";
       modoModalAsistentes = "alta";
@@ -2213,7 +2216,6 @@
         e.returnValue = "";
       });
 
-      document.getElementById("btnConfirmarEnvio").addEventListener("click", confirmarEnvioSolicitud);
       document.getElementById("btnCerrarModalConfirmacionSuperior").addEventListener("click", function () {
         datosPendientesEnvio = null;
         cerrarModalConfirmacion();

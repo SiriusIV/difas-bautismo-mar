@@ -962,18 +962,21 @@
       hayCambiosSinGuardar = false;
     }
 
+    function establecerVisibilidadModalSalida(activo) {
+      const modal = document.getElementById("modalConfirmarSalida");
+      if (!modal) return;
+      modal.classList.toggle("activo", !!activo);
+      modal.setAttribute("aria-hidden", activo ? "false" : "true");
+    }
+
     function abrirModalSalida(destino) {
       destinoPendienteNavegacion = destino;
-      const modal = document.getElementById("modalConfirmarSalida");
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalSalida(true);
     }
 
     function cerrarModalSalida() {
       destinoPendienteNavegacion = null;
-      const modal = document.getElementById("modalConfirmarSalida");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
+      establecerVisibilidadModalSalida(false);
     }
 
     function continuarNavegacion() {
@@ -1745,21 +1748,21 @@
 
       if (!input || !zona) return;
 
+      function comprobarImportacionPermitida() {
+        if (solicitudEditable()) return true;
+        mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
+        return false;
+      }
+
       zona.addEventListener("click", function () {
-        if (!solicitudEditable()) {
-          mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
-          return;
-        }
+        if (!comprobarImportacionPermitida()) return;
         input.click();
       });
 
       zona.addEventListener("keydown", function (e) {
         if (e.key !== "Enter" && e.key !== " ") return;
         e.preventDefault();
-        if (!solicitudEditable()) {
-          mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
-          return;
-        }
+        if (!comprobarImportacionPermitida()) return;
         input.click();
       });
 
@@ -1789,10 +1792,7 @@
       });
 
       zona.addEventListener("drop", async function (e) {
-        if (!solicitudEditable()) {
-          mostrarMensaje("error", "La solicitud no permite importar asistentes en su estado actual.");
-          return;
-        }
+        if (!comprobarImportacionPermitida()) return;
         const file = e.dataTransfer?.files?.[0];
         if (file) {
           await importarAsistentesDesdeArchivo(file);
