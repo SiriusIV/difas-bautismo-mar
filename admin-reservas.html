@@ -33,7 +33,8 @@
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
-    .barra-navegacion-izq { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; text-align: center; width: min(100%, 560px); pointer-events: none; }
+    .barra-navegacion-izq { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: flex-start; pointer-events: auto; z-index: 1; }
+    .barra-navegacion-centro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; text-align: center; width: min(calc(100% - 280px), 560px); pointer-events: none; }
     .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
     .nav-btn-pildora { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; white-space: nowrap; }
     .nav-btn-pildora:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
@@ -129,7 +130,7 @@
     .modal-subtitulo { margin: -6px 0 12px; font-size: 14px; font-weight: 400; color: #4a5a6a; line-height: 1.3; }
     @media (max-width: 1200px) { .filtros { grid-template-columns: 1fr 1fr; } .bloque-marca { gap: 28px; } }
     @media (max-width: 980px) { .cabecera-global-inner, .contenedor { max-width: 100%; } .barra-navegacion, .barra-navegacion-der, .nav-admin { align-items: stretch; margin-left: 0; } table, thead, tbody, th, td, tr { display: block; } thead { display: none; } tr { margin-bottom: 16px; border: 1px solid #dde4ea; border-radius: 8px; overflow: hidden; } td { border-bottom: 1px solid #eef2f6; white-space: normal !important; text-align: left !important; } table { min-width: 100%; } }
-@media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion { justify-content: center; padding-top: 16px; padding-bottom: 12px; } .barra-navegacion-izq { position: static; transform: none; width: 100%; order: -1; pointer-events: auto; } .barra-navegacion-der { width: 100%; justify-content: center; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 82px; } .logo-cabecera.logo-admin-personal { width: 82px; } }
+@media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion { justify-content: center; padding-top: 16px; padding-bottom: 12px; } .barra-navegacion-izq, .barra-navegacion-centro { position: static; transform: none; width: 100%; order: -1; pointer-events: auto; } .barra-navegacion-centro { order: 0; } .barra-navegacion-izq { justify-content: center; } .barra-navegacion-der { width: 100%; justify-content: center; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 82px; } .logo-cabecera.logo-admin-personal { width: 82px; } }
   </style>
 </head>
 <body>
@@ -155,6 +156,8 @@
             </svg>
             <span>Panel de actividades</span>
           </a>
+        </div>
+        <div class="barra-navegacion-centro">
           <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
         </div>
         <div class="barra-navegacion-der">
