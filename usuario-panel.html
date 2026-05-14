@@ -1023,28 +1023,64 @@
       actualizarBotones();
     }
 
+    function establecerVisibilidadModalObservaciones(activo) {
+      const modal = document.getElementById("modalObservaciones");
+      if (!modal) return;
+      modal.classList.toggle("activo", !!activo);
+      modal.setAttribute("aria-hidden", activo ? "false" : "true");
+    }
+
+    function resetearCabeceraModalObservaciones() {
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      if (!estadoSuperior) return;
+      estadoSuperior.hidden = true;
+      estadoSuperior.innerHTML = "";
+    }
+
+    function configurarModalObservacionesPanel({
+      titulo = "Observaciones",
+      subtitulo = "",
+      contenido = "",
+      claseContenido = "modal-contenido",
+      accionesHtml = "",
+      estadoHtml = ""
+    } = {}) {
+      document.getElementById("modalObservacionesTitulo").textContent = titulo;
+      document.getElementById("modalObservacionesSubtitulo").textContent = subtitulo;
+      const estadoSuperior = document.getElementById("modalEstadoSuperior");
+      if (estadoSuperior) {
+        if (estadoHtml) {
+          estadoSuperior.hidden = false;
+          estadoSuperior.innerHTML = estadoHtml;
+        } else {
+          resetearCabeceraModalObservaciones();
+        }
+      }
+      const contenidoEl = document.getElementById("modalObservacionesContenido");
+      contenidoEl.className = claseContenido;
+      contenidoEl.innerHTML = contenido;
+      document.getElementById("modalObservacionesAcciones").innerHTML = accionesHtml;
+    }
+
     function abrirModalObservaciones(id) {
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return;
-      document.getElementById("modalObservacionesTitulo").textContent = "Observaciones";
-      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Reserva";
-      const estadoSuperior = document.getElementById("modalEstadoSuperior");
-      estadoSuperior.hidden = true;
-      estadoSuperior.innerHTML = "";
-      document.getElementById("modalObservacionesContenido").className = "modal-contenido";
-      document.getElementById("modalObservacionesContenido").innerHTML = `
+      configurarModalObservacionesPanel({
+        titulo: "Observaciones",
+        subtitulo: reserva.actividad || "Reserva",
+        claseContenido: "modal-contenido",
+        contenido: `
         <div class="estado-modal-observaciones">
           <div class="estado-modal-observaciones-texto">${escapeHtml(reserva.observaciones)}</div>
         </div>
-      `;
-      document.getElementById("modalObservacionesAcciones").innerHTML = "";
-      document.getElementById("modalObservaciones").classList.add("activo");
-      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+      `,
+        accionesHtml: ""
+      });
+      establecerVisibilidadModalObservaciones(true);
     }
 
     function cerrarModalObservaciones() {
-      document.getElementById("modalObservaciones").classList.remove("activo");
-      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "true");
+      establecerVisibilidadModalObservaciones(false);
     }
 
     function abrirModalConfirmacionEnvio(reserva, onConfirmar) {
@@ -1053,13 +1089,11 @@
         Number(reserva?.plazas_prereservadas || 0)
       );
       const minutosConsolidacion = calcularMinutosConsolidacion(plazasReenvio);
-      document.getElementById("modalObservacionesTitulo").textContent = "Confirmación de envío";
-      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Solicitud";
-      const estadoSuperior = document.getElementById("modalEstadoSuperior");
-      estadoSuperior.hidden = true;
-      estadoSuperior.innerHTML = "";
-      document.getElementById("modalObservacionesContenido").className = "modal-contenido confirmacion-envio-contenido";
-      document.getElementById("modalObservacionesContenido").innerHTML = `
+      configurarModalObservacionesPanel({
+        titulo: "Confirmación de envío",
+        subtitulo: reserva.actividad || "Solicitud",
+        claseContenido: "modal-contenido confirmacion-envio-contenido",
+        contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${plazasReenvio}</strong> plazas reservadas.</p>
           <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${minutosConsolidacion} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
@@ -1067,8 +1101,8 @@
           <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
         <div id="mensajeConfirmacionEnvio" class="mensaje-modal-panel" hidden></div>
-      `;
-      document.getElementById("modalObservacionesAcciones").innerHTML = `
+      `,
+        accionesHtml: `
         <button type="button" class="btn-modal btn-modal-principal btn-modal-icono" id="btnConfirmarEnvioSolicitud">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M22 2 11 13"></path>
@@ -1076,12 +1110,12 @@
           </svg>
           <span>Enviar solicitud</span>
         </button>
-      `;
+      `
+      });
       document.getElementById("btnConfirmarEnvioSolicitud").addEventListener("click", async () => {
         await onConfirmar();
       });
-      document.getElementById("modalObservaciones").classList.add("activo");
-      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalObservaciones(true);
     }
 
     function mostrarMensajeConfirmacionEnvio(tipo, texto) {
@@ -1093,12 +1127,11 @@
     }
 
     function abrirModalTiempoRestante() {
-      document.getElementById("modalObservacionesTitulo").textContent = "Tiempo restante";
-      document.getElementById("modalObservacionesSubtitulo").textContent = "Informacion sobre la asignacion de plazas";
-      const estadoSuperior = document.getElementById("modalEstadoSuperior");
-      estadoSuperior.hidden = true;
-      estadoSuperior.innerHTML = "";
-      document.getElementById("modalObservacionesContenido").innerHTML = `
+      configurarModalObservacionesPanel({
+        titulo: "Tiempo restante",
+        subtitulo: "Informacion sobre la asignacion de plazas",
+        claseContenido: "modal-contenido",
+        contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">Este tiempo restante indica el plazo disponible para realizar las asignaciones nominales de las plazas reservadas.</p>
         </div>
@@ -1106,13 +1139,13 @@
           <strong>Importante</strong>
           <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podrás seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirá garantía de reserva previa sobre las plazas añadidas tras haber finalizado el tiempo disponible para la asignación.</div>
         </div>
-      `;
-      document.getElementById("modalObservacionesAcciones").innerHTML = `
+      `,
+        accionesHtml: `
         <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
-      `;
+      `
+      });
       document.getElementById("btnCerrarModalObservaciones").addEventListener("click", cerrarModalObservaciones);
-      document.getElementById("modalObservaciones").classList.add("activo");
-      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalObservaciones(true);
     }
 
     function escapeHtml(texto) {
@@ -1150,7 +1183,7 @@
       if (estado === "CANCELADA") {
         return "La solicitud está anulada y ya no admite cambios.";
       }
-      return "Consulta el estado actual de tu solicitud y corrige la informaciÃ³n necesaria si procede.";
+      return "Consulta el estado actual de tu solicitud y corrige la información necesaria si procede.";
     }
 
     function construirAccionesEstado(reserva) {
@@ -1217,12 +1250,12 @@
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
 
-      document.getElementById("modalObservacionesTitulo").textContent = "Estado de la solicitud";
-      document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad || "Reserva";
-      const estadoSuperior = document.getElementById("modalEstadoSuperior");
-      estadoSuperior.hidden = false;
-      estadoSuperior.innerHTML = `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`;
-      document.getElementById("modalObservacionesContenido").innerHTML = `
+      configurarModalObservacionesPanel({
+        titulo: "Estado de la solicitud",
+        subtitulo: reserva.actividad || "Reserva",
+        claseContenido: "modal-contenido",
+        estadoHtml: `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`,
+        contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">${escapeHtml(descripcion)}</p>
         </div>
@@ -1234,13 +1267,11 @@
               </div>`
             : ""
         }
-      `;
-
-      const accionesHtml = acciones.map((accion, indice) => `
+      `,
+        accionesHtml: acciones.map((accion, indice) => `
         <button type="button" class="btn-modal${accion.principal ? " btn-modal-principal" : ""}" data-accion-estado="${indice}">${escapeHtml(accion.label)}</button>
-      `).join("");
-
-      document.getElementById("modalObservacionesAcciones").innerHTML = accionesHtml;
+      `).join("")
+      });
 
       acciones.forEach((accion, indice) => {
         const boton = document.querySelector(`[data-accion-estado="${indice}"]`);
@@ -1251,8 +1282,7 @@
           });
         }
       });
-      document.getElementById("modalObservaciones").classList.add("activo");
-      document.getElementById("modalObservaciones").setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalObservaciones(true);
     }
 
     function pintarReservas(lista) {

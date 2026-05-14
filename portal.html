@@ -2211,6 +2211,11 @@ function actualizarBotonSolicitarSegunFranja() {
       btn.style.display = total > 0 ? "inline-flex" : "none";
     }
 
+    function refrescarInterfazNotificacionesPortal() {
+      actualizarIconoNotificacionesPortal();
+      renderizarNotificacionesPortal();
+    }
+
     function renderizarNotificacionesPortal() {
       const lista = document.getElementById("listaNotificacionesPortal");
       const subtitulo = document.querySelector(".modal-notificaciones-subtitulo");
@@ -2455,14 +2460,12 @@ function actualizarBotonSolicitarSegunFranja() {
           notificacionesPortal.filter((item) => !item.leida).length
         );
         await cargarNotificacionesOperativasPortal();
-        actualizarIconoNotificacionesPortal();
-        renderizarNotificacionesPortal();
+        refrescarInterfazNotificacionesPortal();
       } catch {
         notificacionesPortal = [];
         await cargarNotificacionesOperativasPortal();
         notificacionesNoLeidas = 0;
-        actualizarIconoNotificacionesPortal();
-        renderizarNotificacionesPortal();
+        refrescarInterfazNotificacionesPortal();
       }
     }
 
@@ -2516,7 +2519,7 @@ function actualizarBotonSolicitarSegunFranja() {
       notificacionesModalPortal = [];
       document.getElementById("modalNotificacionesPortal").classList.remove("activo");
       document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
-      actualizarIconoNotificacionesPortal();
+      refrescarInterfazNotificacionesPortal();
     }
 
     async function marcarNotificacionComoVistaPortal(notificacionId, opciones = {}) {
