@@ -293,6 +293,15 @@ function resolverAforoLimitadoActual(data, actividad) {
   return parsearFlag(data?.aforo_limitado, Number(actividad?.aforo_limitado || 0));
 }
 
+function resolverActividadActual(data, actividad = {}) {
+  return {
+    ...actividad,
+    tipo: normalizarTexto(data?.tipo_actividad || actividad?.tipo).toUpperCase() || "PERMANENTE",
+    fecha_inicio: normalizarFecha(data?.actividad_fecha_inicio || actividad?.fecha_inicio),
+    fecha_fin: normalizarFecha(data?.actividad_fecha_fin || actividad?.fecha_fin)
+  };
+}
+
 function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
   if (!actividad) {
     return "La actividad indicada no existe.";
@@ -517,12 +526,13 @@ export async function onRequestPost(context) {
 
     await checkAdminActividad(env, session.usuario_id, actividad_id);
 
-    const actividad = await obtenerActividad(env, actividad_id);
+    const actividadBase = await obtenerActividad(env, actividad_id);
 
-    if (!actividad) {
+    if (!actividadBase) {
       return json({ ok: false, error: "Actividad no válida." }, { status: 400 });
     }
     
+    const actividad = resolverActividadActual(data, actividadBase);
     const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
 
     const errorValidacion = validarDatosFranja({
@@ -668,7 +678,8 @@ export async function onRequestPut(context) {
 
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
-    const actividad = await obtenerActividad(env, existente.actividad_id);
+    const actividadBase = await obtenerActividad(env, existente.actividad_id);
+    const actividad = resolverActividadActual(data, actividadBase);
     const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
     const siguienteFranja = {
       fecha: es_recurrente === 1 ? null : fecha,
