@@ -374,6 +374,21 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
   return Number(row?.total || 0);
 }
 
+async function obtenerResumenFranjasActividad(env, actividadId) {
+  const row = await dbPrimaria(env).prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN capacidad IS NULL OR capacidad <= 0 THEN 1 ELSE 0 END) AS sin_capacidad
+    FROM franjas
+    WHERE actividad_id = ?
+  `).bind(actividadId).first();
+
+  return {
+    total: Number(row?.total || 0),
+    sin_capacidad: Number(row?.sin_capacidad || 0)
+  };
+}
+
 function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
@@ -450,6 +465,13 @@ export async function onRequestPost(context) {
     const p = construirPayload(body, admin_id);
     if (Number(p.activa || 0) === 0) {
       p.visible_portal = 0;
+    }
+
+    if (Number(p.borrador_tecnico || 0) !== 1 && Number(p.usa_franjas || 0) === 1) {
+      return json({
+        ok: false,
+        error: "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas."
+      }, 400);
     }
 
     const result = await env.DB.prepare(`
@@ -589,6 +611,7 @@ export async function onRequestPut(context) {
     const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
     const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
+    const resumenFranjas = await obtenerResumenFranjasActividad(env, id);
 
     // ===============================
     // VALIDACIONES DE NEGOCIO
@@ -670,6 +693,22 @@ export async function onRequestPut(context) {
         ok: false,
         error: "No puedes desactivar las franjas porque existen solicitudes activas asociadas a esta actividad."
       }, 400);
+    }
+
+    if (Number(p.borrador_tecnico || 0) !== 1 && Number(p.usa_franjas || 0) === 1) {
+      if (resumenFranjas.total <= 0) {
+        return json({
+          ok: false,
+          error: "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas."
+        }, 400);
+      }
+
+      if (Number(p.aforo_limitado || 0) === 1 && resumenFranjas.sin_capacidad > 0) {
+        return json({
+          ok: false,
+          error: "Todas las franjas horarias deben tener capacidad cuando la actividad tenga aforo limitado."
+        }, 400);
+      }
     }
 
     if (activaActual === 1 && activaNueva === 0) {

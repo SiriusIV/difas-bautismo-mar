@@ -4424,6 +4424,33 @@ async function borrarFranja(id) {
         }
       }
 
+      if (payload.usa_franjas === "1") {
+        if (payload.id) {
+          try {
+            await cargarFranjas();
+          } catch (_) {
+            mostrarMensaje("error", "No se pudo verificar la programación de franjas antes de guardar la actividad.");
+            return false;
+          }
+        }
+
+        if (!Array.isArray(franjasCache) || franjasCache.length <= 0) {
+          mostrarMensaje("error", "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas.");
+          return false;
+        }
+
+        if (payload.aforo_limitado === "1") {
+          const hayFranjasSinCapacidad = franjasCache.some((franja) => {
+            const capacidad = franja?.capacidad;
+            return capacidad == null || Number(capacidad) <= 0;
+          });
+          if (hayFranjasSinCapacidad) {
+            mostrarMensaje("error", "Todas las franjas horarias deben tener capacidad cuando la actividad tenga aforo limitado.");
+            return false;
+          }
+        }
+      }
+
       const tieneLat = payload.latitud !== "";
       const tieneLng = payload.longitud !== "";
 
