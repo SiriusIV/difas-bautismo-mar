@@ -310,6 +310,42 @@
       if (filtros.buscar) params.set("buscar", filtros.buscar);
       return params.toString();
     }
+    async function cargarPanel() {
+      const filtros = leerFiltros();
+      const query = construirQuery(filtros);
+      const url = query ? `/api/admin/reservas?${query}` : "/api/admin/reservas";
+
+      try {
+        limpiarMensaje();
+        const res = await fetch(url, { credentials: "same-origin" });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.detalle || data?.error || "No se pudo cargar el panel de reservas.");
+        }
+
+        pintarResumen(data.resumen || {
+          total_solicitudes: 0,
+          pendientes: 0,
+          confirmadas: 0,
+          suspendidas: 0,
+          rechazadas: 0
+        });
+        poblarSolicitantesFiltro(data.solicitantes || []);
+        pintarReservas(Array.isArray(data.reservas) ? data.reservas : []);
+      } catch (error) {
+        pintarResumen({
+          total_solicitudes: 0,
+          pendientes: 0,
+          confirmadas: 0,
+          suspendidas: 0,
+          rechazadas: 0
+        });
+        poblarSolicitantesFiltro([]);
+        pintarReservas([]);
+        mostrarMensaje("error", error?.message || "No se pudo cargar el panel de reservas.");
+      }
+    }
     function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
     function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnConfirmarSeleccion").disabled = !hay || !puedeConfirmarseReserva(reservaSeleccionada); document.getElementById("btnRechazarSeleccion").disabled = !hay || !puedeRechazarseReserva(reservaSeleccionada); }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
