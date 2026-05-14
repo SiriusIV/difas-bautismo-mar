@@ -2437,15 +2437,11 @@
           ? "Existe 1 solicitud vinculada a esta actividad y, si continúas con la desactivación, el borrador se eliminará o la solicitud pasará a estar rechazada cuando guardes el cambio."
           : `Existen ${total} solicitudes vinculadas a esta actividad y, si continúas con la desactivación, los borradores se eliminarán y el resto de solicitudes pasarán a estar rechazadas cuando guardes el cambio.`;
       }
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalActividad("modalAvisoDesactivacionActividad", true);
     }
 
     function cerrarModalAvisoDesactivacionActividad() {
-      const modal = document.getElementById("modalAvisoDesactivacionActividad");
-      if (!modal) return;
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
+      establecerVisibilidadModalActividad("modalAvisoDesactivacionActividad", false);
     }
 
     function confirmarAvisoDesactivacionActividad() {
@@ -2757,17 +2753,11 @@
     }
 
     function abrirModalSalidaSinGuardar() {
-      const modal = document.getElementById("modalSalidaSinGuardar");
-      if (!modal) return;
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalActividad("modalSalidaSinGuardar", true);
     }
 
     function cerrarModalSalidaSinGuardar() {
-      const modal = document.getElementById("modalSalidaSinGuardar");
-      if (!modal) return;
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
+      establecerVisibilidadModalActividad("modalSalidaSinGuardar", false);
       salidaPendienteAlPortal = false;
     }
 
@@ -2810,16 +2800,12 @@
       textarea.placeholder = esDesactivacion
         ? "Escribe aquí las observaciones que verán los solicitantes afectados por la desactivación."
         : "Escribe aquí las observaciones que verán los solicitantes afectados.";
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
+      establecerVisibilidadModalActividad("modalAnulacionActividad", true);
       setTimeout(() => textarea.focus(), 0);
     }
 
     function cerrarModalAnulacionActividad() {
-      const modal = document.getElementById("modalAnulacionActividad");
-      if (!modal) return;
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
+      establecerVisibilidadModalActividad("modalAnulacionActividad", false);
     }
 
     function getImagenIdActualFormulario() {
@@ -3010,6 +2996,13 @@ function cancelarMensajeErrorActividad() {
   if (typeof callback === "function") {
     callback();
   }
+}
+
+function establecerVisibilidadModalActividad(id, activo) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  modal.classList.toggle("activo", !!activo);
+  modal.setAttribute("aria-hidden", activo ? "false" : "true");
 }
 
     function redirigirLogin() {
