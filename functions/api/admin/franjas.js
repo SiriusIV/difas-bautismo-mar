@@ -289,6 +289,10 @@ async function obtenerActividad(env, actividad_id) {
     .first();
 }
 
+function resolverAforoLimitadoActual(data, actividad) {
+  return parsearFlag(data?.aforo_limitado, Number(actividad?.aforo_limitado || 0));
+}
+
 function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
   if (!actividad) {
     return "La actividad indicada no existe.";
@@ -665,7 +669,7 @@ export async function onRequestPut(context) {
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
     const actividad = await obtenerActividad(env, existente.actividad_id);
-    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+    const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
     const siguienteFranja = {
       fecha: es_recurrente === 1 ? null : fecha,
       hora_inicio,
@@ -854,7 +858,7 @@ export async function onRequestDelete(context) {
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
     const actividad = await obtenerActividad(env, existente.actividad_id);
-    const aforo_limitado = Number(actividad?.aforo_limitado || 0);
+    const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
 
 if (Number(actividad.borrador_tecnico) !== 1) {
 
