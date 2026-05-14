@@ -35,6 +35,9 @@
     .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
     .barra-navegacion-izq { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; text-align: center; width: min(100%, 560px); pointer-events: none; }
     .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
+    .nav-btn-pildora { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; white-space: nowrap; }
+    .nav-btn-pildora:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
+    .nav-btn-pildora svg { width: 15px; height: 15px; flex: 0 0 auto; }
     .barra-navegacion-der, .nav-admin, .acciones-superiores, .filtro-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .barra-navegacion-der, .nav-admin { margin-left: auto; }
     .nav-btn { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid #bfc9d4; background: #fff; color: #1e2a36; text-decoration: none; font-size: 13px; line-height: 1; transition: all 0.15s ease; cursor: pointer; }
@@ -145,6 +148,13 @@
     <div class="contenedor">
       <div class="barra-navegacion">
         <div class="barra-navegacion-izq">
+          <a class="nav-btn-pildora" id="navActividadesAdmin" href="admin-actividades.html" title="Volver al panel de actividades" aria-label="Volver al panel de actividades">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6"></path>
+              <path d="M21 12H9"></path>
+            </svg>
+            <span>Panel de actividades</span>
+          </a>
           <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
         </div>
         <div class="barra-navegacion-der">
@@ -257,7 +267,7 @@
       return ["PENDIENTE", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase());
     }
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
-    function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijo = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijo}`; }
+    function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijoCalendario = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; const sufijoActividad = actividadId ? `?id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijoCalendario}`; document.getElementById("navActividadesAdmin").href = `admin-actividades.html${sufijoActividad}`; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
     function poblarSolicitantesFiltro(solicitantes = []) {
