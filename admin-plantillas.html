@@ -9,62 +9,122 @@
     :root{--bg:#f4f6f8;--card:#fff;--border:#dde4ea;--text:#222;--muted:#5f6d7a;--brand:#123a63;--primary:#0b5ed7;--primary-dark:#094db1;--ok-bg:#eaf7ea;--ok-text:#146c2e;--ok-border:#b9e0c0;--err-bg:#fdeaea;--err-text:#9b1c1c;--err-border:#f5c2c2;--warn-bg:#fff7e6;--warn-text:#9a6700;--warn-border:#f3d08b}
     *{box-sizing:border-box} html,body{min-height:100%}
     body{font-family:Arial,sans-serif;background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.78) 12%,rgba(255,255,255,.42) 26%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.10) 100%),linear-gradient(180deg,rgba(244,246,248,.18) 0%,rgba(244,246,248,.24) 100%),url("assets/fondo_cabecera.png") top center/100% auto no-repeat,var(--bg);background-blend-mode:normal,screen,normal;margin:0;color:var(--text)}
-    .cabecera{padding:18px 20px 14px;position:sticky;top:0;z-index:50}.cabecera-inner{max-width:1120px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
-    .contenedor{max-width:1120px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:14px}
-    .barra-superior{position:relative;display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;min-height:58px;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #d9e0e7}.barra-superior-izq{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;width:min(100%,560px);text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
+    .cabecera{padding:18px 20px 14px;position:sticky;top:0;z-index:50}.cabecera-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
+    .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:14px}
+    .barra-superior{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:58px;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #d9e0e7}.barra-superior-izq,.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
     .nav-btn,.btn{display:inline-block;padding:8px 15px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#1e2a36;text-decoration:none;font-size:13px;line-height:1;cursor:pointer;transition:all .15s ease}.nav-btn:hover,.btn:hover{background:#f7f9fb}.nav-btn.activo,.btn.primario{background:var(--primary);color:#fff;border-color:var(--primary)}.btn.primario:hover{background:var(--primary-dark);border-color:var(--primary-dark)}.btn.peligro{border-radius:10px;color:#9b1c1c;border-color:#efc2c2}.btn.peligro:hover{background:#fdeaea}.btn{border-radius:10px;padding:9px 14px}
     .btn-icono{width:40px;height:40px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#4a5a6a;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;padding:0;text-decoration:none;flex:0 0 40px}.btn-icono:hover{background:#f7f9fb;color:var(--primary);border-color:#9fb2c7}.btn-icono svg{width:16px;height:16px}
+    .btn-icono-accion{width:42px;height:42px}.btn-icono-accion[disabled]{opacity:.45;cursor:not-allowed;background:#f6f8fa;color:#9aa7b4}
+    .btn-icono-guardar{color:#1554a3;border-color:#bcd0ea}
+    .btn-icono-eliminar{color:#9b1c1c;border-color:#efc2c2}
     .mensaje{margin-bottom:16px;padding:12px 14px;border-radius:10px;display:none;border:1px solid transparent;line-height:1.45;font-size:13px}.mensaje.ok{display:block;background:var(--ok-bg);color:var(--ok-text);border-color:var(--ok-border)}.mensaje.error{display:block;background:var(--err-bg);color:var(--err-text);border-color:var(--err-border)}.mensaje.aviso{display:block;background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)}.mensaje-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.mensaje-cerrar{width:28px;height:28px;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:#fff;color:inherit;font-size:16px;cursor:pointer;flex:0 0 28px}
-    .layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}.bloque{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden}.bloque+.bloque{margin-top:14px}.bloque-cabecera{padding:14px 16px 10px;border-bottom:1px solid #e6edf4;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}.bloque-cabecera h3{margin:0;font-size:16px;color:#143a63}.bloque-cabecera p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.45}.bloque-contenido{padding:14px 16px 16px}
-    .lista{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow-y:auto}.tarjeta{width:100%;border:1px solid #d9e3ed;background:#fff;border-radius:12px;padding:12px;text-align:left;cursor:pointer;transition:all .15s ease}.tarjeta:hover{border-color:#a8c1de;background:#f9fbff}.tarjeta.activa{border-color:#0b5ed7;background:#eef4ff}.tarjeta strong{display:block;font-size:14px;color:#133a63;margin-bottom:6px}.tarjeta .meta{font-size:12px;color:#5c6b7b;line-height:1.45}
-    .estado-vacio{padding:18px 16px;border:1px dashed #cdd9e5;border-radius:12px;background:#fbfdff;color:#5c6b7b;font-size:13px;line-height:1.55;text-align:center}.acciones-listado{display:flex;gap:10px;flex-wrap:wrap}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo{display:flex;flex-direction:column;gap:6px}.campo-ancho{grid-column:1/-1}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
-    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}.resumen-archivo{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f8fafc;border:1px solid #d7e2ee;font-size:12px;color:#425467;line-height:1.5}
-    .tabla-campos{width:100%;border-collapse:collapse;font-size:12px}.tabla-campos th,.tabla-campos td{padding:10px 8px;border-bottom:1px solid #e7edf4;text-align:left;vertical-align:top}.tabla-campos th{color:#36506b;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
-    .tabla-campos-select{width:100%;min-width:130px;border:1px solid #c9d5e2;border-radius:9px;padding:7px 10px;font-size:12px;background:#fff;color:#1f2937}
+    .estructura{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+    .columna-principal{display:flex;flex-direction:column;gap:16px}
+    .bloque{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden}.bloque-cabecera{padding:14px 16px 10px;border-bottom:1px solid #e6edf4;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}.bloque-cabecera h3{margin:0;font-size:16px;color:#143a63}.bloque-cabecera p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.45}.bloque-contenido{padding:14px 16px 16px}
+    .estado-vacio{padding:18px 16px;border:1px dashed #cdd9e5;border-radius:12px;background:#fbfdff;color:#5c6b7b;font-size:13px;line-height:1.55;text-align:center}
+    .campo{display:flex;flex-direction:column;gap:6px}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo-ancho{grid-column:1/-1}
+    .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
+    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
+    .resumen-archivo{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f8fafc;border:1px solid #d7e2ee;font-size:12px;color:#425467;line-height:1.5}
+    .acciones-archivo{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .tabla-campos{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}.tabla-campos th,.tabla-campos td{padding:10px 8px;border-bottom:1px solid #e7edf4;text-align:left;vertical-align:top}.tabla-campos th{color:#36506b;font-size:11px;text-transform:uppercase;letter-spacing:.03em}.tabla-campos th:first-child{color:transparent}.tabla-campos td:first-child{font-weight:600;color:#143a63;word-break:break-word}
+    .tabla-campos-select{width:100%;border:1px solid #c9d5e2;border-radius:9px;padding:7px 10px;font-size:12px;background:#fff;color:#1f2937}
+    .tabla-campos col.col-nombre{width:auto}.tabla-campos col.col-dato{width:110px}.tabla-campos col.col-obligatorio{width:84px}
     .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;border:1px solid transparent}.badge.info{background:#eef4ff;color:#1d4f91;border-color:#c9dcff}.badge.warn{background:#fff7e6;color:#9a6700;border-color:#f3d08b}
-    .pie{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid #e6edf4}.pie-der{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.texto-sesion{font-size:12px;color:#607284}.oculto{display:none!important}
-    @media(max-width:960px){.layout{grid-template-columns:1fr}}
-    @media(max-width:760px){.barra-superior{justify-content:center;padding-top:14px}.barra-superior-izq{position:static;transform:none;width:100%}.barra-superior-der{width:100%;justify-content:center;margin-left:0}.grid{grid-template-columns:1fr}.pie{flex-direction:column;align-items:stretch}}
+    .texto-sesion{font-size:12px;color:#607284}.oculto{display:none!important}
+    @media(max-width:980px){.estructura{grid-template-columns:1fr}}
+    @media(max-width:760px){.barra-superior{grid-template-columns:1fr;justify-items:center}.barra-superior-izq,.barra-superior-der{justify-content:center}.barra-superior-centro{order:-1}.grid{grid-template-columns:1fr}.resumen-encabezado{flex-direction:column}}
   </style>
 </head>
 <body>
   <header class="cabecera"><div class="cabecera-inner"><div class="bloque-marca"><img src="logo.png" alt="Logo" class="logo-cabecera logo-pendiente" id="logoCabecera"><div class="titulos-cabecera"><h1>Plantillas documentales</h1><h2 id="subtituloCabecera">Administrador</h2></div></div></div></header>
   <div class="contenedor"><div class="panel-principal">
     <div class="barra-superior">
-      <div class="barra-superior-izq">Constructor de plantillas PDF</div>
-      <div class="barra-superior-der">
+      <div class="barra-superior-izq">
         <button type="button" class="nav-btn activo" id="btnNuevaPlantilla">Nueva plantilla</button>
+        <button type="button" class="btn-icono btn-icono-accion btn-icono-eliminar" id="btnEliminarBorrador" title="Eliminar plantilla" aria-label="Eliminar plantilla" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+        <button type="button" class="btn-icono btn-icono-accion btn-icono-guardar" id="btnGuardarBorrador" title="Guardar plantilla" aria-label="Guardar plantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M9 20v-6h6v6"></path></svg></button>
+      </div>
+      <div class="barra-superior-centro">Constructor de plantillas PDF</div>
+      <div class="barra-superior-der">
         <a class="nav-btn" href="mis-actividades.html">Mis actividades</a>
         <a class="btn-icono" href="portal.html" title="Volver al portal" aria-label="Volver al portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
       </div>
     </div>
     <div id="mensaje" class="mensaje"></div>
-    <div class="layout">
-      <div>
-        <section class="bloque"><div class="bloque-cabecera"><h3>Repositorio de plantillas</h3><p>Aqui se listan las plantillas documentales ya guardadas en servidor para poder reutilizarlas, editarlas o duplicarlas.</p></div><div class="bloque-contenido"><div class="acciones-listado"><button type="button" class="btn primario" id="btnNuevaPlantillaLista">Nueva plantilla</button></div><div id="listaPlantillas" class="lista" style="margin-top:12px;"></div></div></section>
-      </div>
-      <div>
-        <section class="bloque"><div class="bloque-cabecera"><h3 id="tituloEditor">Nueva plantilla documental</h3><p id="subtituloEditor">Asocia esta plantilla a una actividad concreta del ambito del administrador.</p></div><div class="bloque-contenido">
-          <div class="grid">
-            <div class="campo"><label for="nombrePlantilla">Nombre interno de la plantilla</label><input id="nombrePlantilla" type="text" placeholder="Ej. Consentimiento bautismo de mar"></div>
-            <div class="campo"><label for="actividadPlantilla">Actividad asociada</label><select id="actividadPlantilla"><option value="">Selecciona una actividad</option></select></div>
-            <div class="campo"><label for="tipoGeneracionPlantilla">Modo de generacion</label><select id="tipoGeneracionPlantilla"><option value="ASISTENTE">Un documento por asistente</option><option value="SOLICITUD">Un documento por solicitud</option><option value="GRUPO">Un documento resumen por grupo</option></select></div>
-            <div class="campo"><label for="estadoPlantilla">Estado de la plantilla</label><select id="estadoPlantilla"><option value="ACTIVA">Activa</option><option value="PAUSA">En preparacion</option></select></div>
-            <div class="campo campo-ancho"><label for="descripcionPlantilla">Descripcion funcional</label><textarea id="descripcionPlantilla" placeholder="Describe que documento genera esta plantilla y en que escenario se utilizara."></textarea></div>
-            <div class="campo campo-ancho"><label>Plantilla PDF rellenable</label><input id="inputPdfPlantilla" type="file" accept="application/pdf" class="oculto"><button type="button" class="dropzone" id="dropzonePdfPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><rect x="4" y="16" width="16" height="4" rx="1.5"></rect></svg><strong>Importar plantilla PDF rellenable</strong><span>Arrastra aqui el archivo PDF o pincha para seleccionarlo. Al guardar la plantilla, el PDF quedara subido al repositorio documental del sistema.</span></button><div id="resumenArchivoPdf" class="resumen-archivo">Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.</div></div>
+    <div class="estructura">
+      <aside class="bloque">
+        <div class="bloque-cabecera">
+          <h3>Campos rellenables detectados</h3>
+          <p>Aqui puedes clasificar los campos del PDF y marcar si seran obligatorios en la generacion.</p>
+        </div>
+        <div class="bloque-contenido">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+            <span class="badge info" id="badgeCamposDetectados">0 campos detectados</span>
+            <span class="badge warn" id="badgeEstadoParserPdf">Listo para analizar PDF</span>
           </div>
-          <section class="bloque" style="margin-top:16px;"><div class="bloque-cabecera"><h3>Campos rellenables detectados</h3><p>Al importar la plantilla real, esta tabla se poblara automaticamente con los nombres internos de los campos del PDF.</p></div><div class="bloque-contenido"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;"><span class="badge info" id="badgeCamposDetectados">0 campos detectados</span><span class="badge warn" id="badgeEstadoParserPdf">Listo para analizar PDF</span></div><div id="estadoSinCampos" class="estado-vacio">Todavia no hay campos cargados en esta plantilla. Cuando importes un PDF rellenable real, aqui apareceran automaticamente los nombres internos de sus campos para poder mapearlos.</div><table class="tabla-campos oculto" id="tablaCamposDetectados"><thead><tr><th>Campo PDF</th><th>Tipo de campo</th><th>Dato</th><th>Obligatorio</th></tr></thead><tbody id="tablaCamposDetectadosBody"></tbody></table></div></section>
-          <section class="bloque" style="margin-top:16px;"><div class="bloque-cabecera"><h3>Constructor de correspondencias</h3><p>Esta zona se usara para decirle a cada campo del PDF que dato debe insertar la aplicacion cuando llegue el motor real de generacion.</p></div><div class="bloque-contenido"><div class="estado-vacio">El constructor queda preparado a nivel de UX. En la siguiente fase, cada campo importado se mostrara aqui con su selector de origen de datos y sus reglas de transformacion.</div></div></section>
-          <div class="pie"><span class="texto-sesion" id="textoEstadoSesion">Sin cambios pendientes en la plantilla actual.</span><div class="pie-der"><button type="button" class="btn peligro" id="btnEliminarBorrador" disabled>Eliminar plantilla</button><button type="button" class="btn" id="btnDuplicarBorrador" disabled>Duplicar plantilla</button><button type="button" class="btn primario" id="btnGuardarBorrador">Guardar plantilla</button></div></div>
-        </div></section>
+          <div id="estadoSinCampos" class="estado-vacio">Todavia no hay campos cargados en esta plantilla. Cuando importes un PDF rellenable real, aqui apareceran automaticamente los nombres internos de sus campos.</div>
+          <table class="tabla-campos oculto" id="tablaCamposDetectados">
+            <colgroup>
+              <col class="col-nombre">
+              <col class="col-dato">
+              <col class="col-obligatorio">
+            </colgroup>
+            <thead>
+              <tr><th>&nbsp;</th><th>Dato</th><th>Oblig.</th></tr>
+            </thead>
+            <tbody id="tablaCamposDetectadosBody"></tbody>
+          </table>
+        </div>
+      </aside>
+      <div class="columna-principal">
+        <section class="bloque">
+          <div class="bloque-cabecera">
+            <h3>Repositorio de plantillas</h3>
+            <p>Selecciona una plantilla ya creada para editarla o deja el formulario listo para crear una nueva.</p>
+          </div>
+          <div class="bloque-contenido">
+            <div class="campo">
+              <label for="selectorPlantillaRepositorio">Plantillas guardadas en el repositorio</label>
+              <select id="selectorPlantillaRepositorio">
+                <option value="">Nueva plantilla</option>
+              </select>
+            </div>
+          </div>
+        </section>
+        <section class="bloque">
+          <div class="bloque-cabecera">
+            <div class="resumen-encabezado">
+              <div>
+                <h3 id="tituloEditor">Nueva plantilla documental</h3>
+                <p id="subtituloEditor">Asocia esta plantilla a una actividad concreta del ambito del administrador.</p>
+              </div>
+              <span class="texto-sesion" id="textoEstadoSesion">Sin cambios pendientes en la plantilla actual.</span>
+            </div>
+          </div>
+          <div class="bloque-contenido">
+            <div class="grid">
+              <div class="campo"><label for="nombrePlantilla">Nombre interno de la plantilla</label><input id="nombrePlantilla" type="text" placeholder="Ej. Consentimiento bautismo de mar"></div>
+              <div class="campo"><label for="actividadPlantilla">Actividad asociada</label><select id="actividadPlantilla"><option value="">Selecciona una actividad</option></select></div>
+              <div class="campo"><label for="tipoGeneracionPlantilla">Modo de generacion</label><select id="tipoGeneracionPlantilla"><option value="ASISTENTE">Un documento por asistente</option><option value="SOLICITUD">Un documento por solicitud</option><option value="GRUPO">Un documento resumen por grupo</option></select></div>
+              <div class="campo"><label for="estadoPlantilla">Estado de la plantilla</label><select id="estadoPlantilla"><option value="ACTIVA">Activa</option><option value="PAUSA">En preparacion</option></select></div>
+              <div class="campo campo-ancho"><label for="descripcionPlantilla">Descripcion funcional</label><textarea id="descripcionPlantilla" placeholder="Describe que documento genera esta plantilla y en que escenario se utilizara."></textarea></div>
+              <div class="campo campo-ancho">
+                <label>Plantilla PDF rellenable</label>
+                <input id="inputPdfPlantilla" type="file" accept="application/pdf" class="oculto">
+                <button type="button" class="dropzone" id="dropzonePdfPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><rect x="4" y="16" width="16" height="4" rx="1.5"></rect></svg><strong>Importar plantilla PDF rellenable</strong><span>Arrastra aqui el archivo PDF o pincha para seleccionarlo. Al guardar la plantilla, el PDF quedara subido al repositorio documental del sistema.</span></button>
+                <div id="resumenArchivoPdf" class="resumen-archivo">Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.</div>
+                <div class="acciones-archivo">
+                  <a id="btnVerPdfPlantilla" class="btn oculto" href="#" target="_blank" rel="noopener">Ver plantilla base</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div></div>
   <script src="assets/admin-plantillas.js"></script>
 </body>
 </html>
-
-
-
-
