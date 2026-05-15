@@ -54,24 +54,21 @@ function actualizarSubtituloSegunActividad(actividadId) {
   document.getElementById("subtituloEditor").textContent = actividad ? `Asociada actualmente a ${actividad.titulo_publico || actividad.nombre || "la actividad seleccionada"}.` : "Asocia esta plantilla a una actividad concreta del ambito del administrador.";
 }
 function actualizarResumenArchivo() {
-  const el = document.getElementById("resumenArchivoPdf");
   const btnVer = document.getElementById("btnVerPdfPlantilla");
   const textoVisor = document.getElementById("textoVisorPlantilla");
   if (archivoPdfSesion?.file) {
-    el.innerHTML = `<strong>Archivo pendiente de guardar en servidor:</strong> ${escapeHtml(archivoPdfSesion.name)}<br>Tamano aproximado: ${(archivoPdfSesion.size / 1024).toFixed(1)} KB.<br>Al guardar la plantilla, este PDF se subira al repositorio documental del sistema.`;
+    textoVisor.textContent = `${archivoPdfSesion.name} esta cargado en la sesion actual y quedara subido al repositorio cuando guardes la plantilla.`;
     btnVer.classList.add("oculto");
     btnVer.removeAttribute("href");
     return;
   }
   if (plantillaActual?.archivo_url) {
-    el.innerHTML = `<strong>PDF almacenado en el repositorio:</strong> ${escapeHtml(plantillaActual.archivo_nombre || "plantilla.pdf")}<br>La plantilla ya esta disponible en servidor para previsualizacion y generacion documental desde reservas.`;
     btnVer.href = plantillaActual.archivo_url;
     textoVisor.textContent = `${plantillaActual.archivo_nombre || "plantilla.pdf"} ya esta almacenado en el repositorio documental del sistema.`;
     btnVer.classList.remove("oculto");
     return;
   }
-  el.textContent = "Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.";
-  textoVisor.textContent = "La plantilla ya esta guardada en el repositorio documental del sistema.";
+  textoVisor.textContent = "Cuando esta plantilla tenga un PDF guardado en el repositorio, podras visualizarlo desde aqui.";
   btnVer.classList.add("oculto");
   btnVer.removeAttribute("href");
 }

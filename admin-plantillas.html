@@ -19,16 +19,16 @@
     .btn-icono-guardar{color:#1554a3;border-color:#bcd0ea}
     .btn-icono-eliminar{color:#9b1c1c;border-color:#efc2c2}
     .mensaje{margin-bottom:16px;padding:12px 14px;border-radius:10px;display:none;border:1px solid transparent;line-height:1.45;font-size:13px}.mensaje.ok{display:block;background:var(--ok-bg);color:var(--ok-text);border-color:var(--ok-border)}.mensaje.error{display:block;background:var(--err-bg);color:var(--err-text);border-color:var(--err-border)}.mensaje.aviso{display:block;background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)}.mensaje-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.mensaje-cerrar{width:28px;height:28px;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:#fff;color:inherit;font-size:16px;cursor:pointer;flex:0 0 28px}
-    .estructura{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+    .estructura{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch}
     .columna-principal{display:flex;flex-direction:column;gap:16px}
     .bloque{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden}.bloque-cabecera{padding:14px 16px 10px;border-bottom:1px solid #e6edf4;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}.bloque-cabecera h3{margin:0;font-size:16px;color:#143a63}.bloque-cabecera p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.45}.bloque-contenido{padding:14px 16px 16px}
+    .bloque-campos{height:100%}.bloque-campos .bloque-contenido{display:flex;flex-direction:column;height:calc(100% - 63px)}
     .estado-vacio{padding:18px 16px;border:1px dashed #cdd9e5;border-radius:12px;background:#fbfdff;color:#5c6b7b;font-size:13px;line-height:1.55;text-align:center}
     .campo{display:flex;flex-direction:column;gap:6px}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo-ancho{grid-column:1/-1}
     .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
-    .fila-archivo{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:14px;align-items:stretch}
-    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
-    .resumen-archivo{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f8fafc;border:1px solid #d7e2ee;font-size:12px;color:#425467;line-height:1.5}
+    .fila-archivo{display:grid;grid-template-columns:minmax(0,2.35fr) minmax(210px,.95fr);gap:10px;align-items:stretch}
+    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:172px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
     .visor-plantilla{border:1px solid #d7e2ee;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#f2f7fd 100%);padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;text-decoration:none;color:#143a63;min-height:206px;transition:all .18s ease}
     .visor-plantilla:hover{border-color:#0b5ed7;background:#eef4ff}
     .visor-plantilla strong{font-size:15px;line-height:1.3}
@@ -63,7 +63,7 @@
     <section class="panel-bloque">
     <div id="mensaje" class="mensaje"></div>
     <div class="estructura">
-      <aside class="bloque">
+      <aside class="bloque bloque-campos">
         <div class="bloque-cabecera">
           <h3>Campos rellenables detectados</h3>
           <p>Aqui puedes clasificar los campos del PDF y marcar si seran obligatorios en la generacion.</p>
@@ -121,11 +121,10 @@
                 <div class="fila-archivo">
                   <div>
                     <button type="button" class="dropzone" id="dropzonePdfPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><rect x="4" y="16" width="16" height="4" rx="1.5"></rect></svg><strong>Importar plantilla PDF rellenable</strong><span>Arrastra aqui el archivo PDF o pincha para seleccionarlo. Al guardar la plantilla, el PDF quedara subido al repositorio documental del sistema.</span></button>
-                    <div id="resumenArchivoPdf" class="resumen-archivo">Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.</div>
                   </div>
                   <a id="btnVerPdfPlantilla" class="visor-plantilla oculto" href="#" target="_blank" rel="noopener">
                     <strong>Plantilla base almacenada</strong>
-                    <span id="textoVisorPlantilla">La plantilla ya esta guardada en el repositorio documental del sistema.</span>
+                    <span id="textoVisorPlantilla">Cuando esta plantilla tenga un PDF guardado en el repositorio, podras visualizarlo desde aqui.</span>
                     <small>Pincha para visualizar el PDF base</small>
                   </a>
                 </div>
