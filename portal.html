@@ -3653,6 +3653,11 @@ function continuarSolicitudActividad() {
       location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 
+    function editarRequisitosActividadActual() {
+      if (!actividadSeleccionada) return;
+      location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}&paso=3`;
+    }
+
     function verReservasActividadActual() {
       if (!actividadSeleccionada) return;
       location.href = `admin-reservas.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
@@ -3733,7 +3738,7 @@ function continuarSolicitudActividad() {
     document.getElementById("btnVerRequisitosActividad").addEventListener("click", abrirModalRequisitosActividad);
     document.getElementById("btnEditarRequisitosActividad").addEventListener("click", function () {
       cerrarModalRequisitosActividad();
-      editarActividadActual();
+      editarRequisitosActividadActual();
     });
     document.getElementById("btnCerrarModalRequisitosActividad").addEventListener("click", cerrarModalRequisitosActividad);
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);

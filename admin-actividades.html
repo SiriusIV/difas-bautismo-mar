@@ -2896,6 +2896,12 @@
       return Number.isInteger(v) && v > 0 ? v : null;
     }
 
+    function getPasoInicialURL() {
+      const params = new URLSearchParams(window.location.search);
+      const v = parseInt(params.get("paso") || "", 10);
+      return Number.isInteger(v) && v >= 0 ? v : null;
+    }
+
     function actualizarEnlaceCalendarioActividad() {
       const btn = document.getElementById("btnIrCalendarioAdminActividad");
       if (!btn) return;
@@ -5219,7 +5225,7 @@ function retrocederPaso() {
         renderListaFranjas();
         renderPreviewFranjas();
       CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);
-      mostrarPaso(0);
+      mostrarPaso(getPasoInicialURL() ?? 0);
 
       window.addEventListener("beforeunload", (event) => {
         if (!hayCambiosPendientesActividad()) return;
