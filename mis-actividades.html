@@ -570,6 +570,7 @@
 
           <div class="barra-superior-der">
             <button type="button" class="nav-btn activo" id="btnNuevaTexto">Nueva actividad</button>
+            <button type="button" class="nav-btn" id="btnPlantillasTexto">Plantillas</button>
 
             <a class="btn-icono" href="portal.html" title="Inicio" aria-label="Inicio" id="btnPortalCasa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -989,6 +990,10 @@
       location.href = "admin-actividades.html";
     }
 
+    function plantillas() {
+      location.href = "admin-plantillas.html";
+    }
+
     function editar() {
       if (!actividadSeleccionada) return;
       location.href = "admin-actividades.html?id=" + encodeURIComponent(actividadSeleccionada.id);
@@ -1065,6 +1070,7 @@
     }
 
     document.getElementById("btnNuevaTexto").addEventListener("click", nueva);
+    document.getElementById("btnPlantillasTexto").addEventListener("click", plantillas);
     document.getElementById("btnEditar").addEventListener("click", editar);
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
