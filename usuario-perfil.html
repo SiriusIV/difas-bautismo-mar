@@ -67,9 +67,30 @@
     .btn-icono:hover { background: #f7f9fb; color: var(--primary); border-color: #9fb2c7; }
     .btn-icono svg { width: 16px; height: 16px; display: block; }
     .btn-icono img { width: 16px; height: 16px; display: block; object-fit: contain; }
-    .mensaje { margin-bottom: 14px; padding: 11px 13px; border-radius: 8px; display: none; border: 1px solid transparent; line-height: 1.5; font-size: 13px; }
+    .mensaje { position: relative; margin-bottom: 14px; padding: 11px 42px 11px 13px; border-radius: 8px; display: none; border: 1px solid transparent; line-height: 1.5; font-size: 13px; }
     .mensaje.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
+    .mensaje-texto { display: block; }
+    .mensaje-cerrar {
+      position: absolute;
+      top: 8px;
+      right: 9px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.82;
+    }
+    .mensaje-cerrar:hover { background: rgba(0, 0, 0, 0.06); opacity: 1; }
     .layout { display: grid; grid-template-columns: 228px minmax(0, 1fr); gap: 14px; align-items: stretch; }
     .layout.sin-imagen { grid-template-columns: minmax(0, 1fr); }
     .bloque { background: var(--card); border-radius: 13px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 11px 14px; height: 100%; }
@@ -1247,17 +1268,40 @@
 
     function jsonMessage(id, tipo, texto) {
       const box = document.getElementById(id);
+      if (!box) return;
       box.className = "mensaje " + tipo;
-      box.textContent = texto;
+      box.innerHTML = "";
+      const textoNodo = document.createElement("span");
+      textoNodo.className = "mensaje-texto";
+      textoNodo.textContent = texto;
+      const btnCerrar = document.createElement("button");
+      btnCerrar.type = "button";
+      btnCerrar.className = "mensaje-cerrar";
+      btnCerrar.setAttribute("aria-label", "Cerrar aviso");
+      btnCerrar.textContent = "×";
+      btnCerrar.addEventListener("click", () => {
+        if (id === "mensajePassword" && temporizadorMensajePassword) {
+          clearTimeout(temporizadorMensajePassword);
+          temporizadorMensajePassword = null;
+        }
+        if (id === "mensajePerfil" && temporizadorMensajePerfil) {
+          clearTimeout(temporizadorMensajePerfil);
+          temporizadorMensajePerfil = null;
+        }
+        limpiarMensaje(id);
+      });
+      box.appendChild(textoNodo);
+      box.appendChild(btnCerrar);
     }
 
     function limpiarMensaje(id) {
       const box = document.getElementById(id);
+      if (!box) return;
       box.className = "mensaje";
-      box.textContent = "";
+      box.innerHTML = "";
     }
 
-    function mostrarMensajePasswordTemporal(tipo, texto, duracionMs = 3500) {
+    function mostrarMensajePasswordTemporal(tipo, texto, duracionMs = 4000) {
       if (temporizadorMensajePassword) {
         clearTimeout(temporizadorMensajePassword);
         temporizadorMensajePassword = null;
@@ -1265,10 +1309,12 @@
 
       jsonMessage("mensajePassword", tipo, texto);
 
-      temporizadorMensajePassword = setTimeout(() => {
-        limpiarMensaje("mensajePassword");
-        temporizadorMensajePassword = null;
-      }, duracionMs);
+      if (String(tipo || "").toLowerCase() !== "error") {
+        temporizadorMensajePassword = setTimeout(() => {
+          limpiarMensaje("mensajePassword");
+          temporizadorMensajePassword = null;
+        }, duracionMs);
+      }
     }
 
     function mostrarMensajePerfilTemporal(tipo, texto, duracionMs = 4000) {
@@ -1279,10 +1325,12 @@
 
       jsonMessage("mensajePerfil", tipo, texto);
 
-      temporizadorMensajePerfil = setTimeout(() => {
-        limpiarMensaje("mensajePerfil");
-        temporizadorMensajePerfil = null;
-      }, duracionMs);
+      if (String(tipo || "").toLowerCase() !== "error") {
+        temporizadorMensajePerfil = setTimeout(() => {
+          limpiarMensaje("mensajePerfil");
+          temporizadorMensajePerfil = null;
+        }, duracionMs);
+      }
     }
 
     function mostrarMensajeDetalle(tipo, texto) {
