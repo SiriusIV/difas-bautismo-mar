@@ -1583,6 +1583,7 @@
       <p id="subtituloModalRequisitosActividad" style="margin: 0 0 14px; color: #4a5a6a; line-height: 1.55;"></p>
       <div id="contenidoModalRequisitosActividad" style="color: #243648; line-height: 1.6;"></div>
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:18px;">
+        <button class="btn" id="btnEditarRequisitosActividad" type="button" style="display:none;">Editar requisitos</button>
         <button class="btn btn-admin" id="btnCerrarModalRequisitosActividad">Cerrar</button>
       </div>
     </div>
@@ -3282,6 +3283,7 @@ function abrirModalRequisitosActividad() {
       ${requisitos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}
     </ol>
   `;
+  document.getElementById("btnEditarRequisitosActividad").style.display = puedeEditarRequisitosActividadSeleccionada() ? "inline-block" : "none";
   document.getElementById("modalRequisitosActividad").classList.add("activo");
   document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "false");
 }
@@ -3289,6 +3291,13 @@ function abrirModalRequisitosActividad() {
 function cerrarModalRequisitosActividad() {
   document.getElementById("modalRequisitosActividad").classList.remove("activo");
   document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "true");
+}
+
+function puedeEditarRequisitosActividadSeleccionada() {
+  if (!esAdmin() || !actividadSeleccionada) return false;
+  const adminSesionId = Number(usuarioAutenticado?.id || usuarioAutenticado?.usuario_id || 0);
+  const adminActividadId = Number(actividadSeleccionada?.admin_id || 0);
+  return adminSesionId > 0 && adminActividadId > 0 && adminSesionId === adminActividadId;
 }
 
     function renderDetalle() {
@@ -3722,6 +3731,10 @@ function continuarSolicitudActividad() {
       await cerrarModalNotificacionesPortal();
     });
     document.getElementById("btnVerRequisitosActividad").addEventListener("click", abrirModalRequisitosActividad);
+    document.getElementById("btnEditarRequisitosActividad").addEventListener("click", function () {
+      cerrarModalRequisitosActividad();
+      editarActividadActual();
+    });
     document.getElementById("btnCerrarModalRequisitosActividad").addEventListener("click", cerrarModalRequisitosActividad);
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
     document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
