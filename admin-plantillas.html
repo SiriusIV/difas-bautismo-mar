@@ -12,16 +12,19 @@
     .cabecera{padding:18px 20px 14px;position:sticky;top:0;z-index:50}.cabecera-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
     .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{display:flex;flex-direction:column;gap:16px}
     .panel-bloque{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:12px 14px}
-    .barra-superior{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:52px}.barra-superior-izq,.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
+    .barra-superior{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:52px}.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
     .nav-btn,.btn{display:inline-block;padding:8px 15px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#1e2a36;text-decoration:none;font-size:13px;line-height:1;cursor:pointer;transition:all .15s ease}.nav-btn:hover,.btn:hover{background:#f7f9fb}.nav-btn.activo,.btn.primario{background:var(--primary);color:#fff;border-color:var(--primary)}.btn.primario:hover{background:var(--primary-dark);border-color:var(--primary-dark)}.btn.peligro{border-radius:10px;color:#9b1c1c;border-color:#efc2c2}.btn.peligro:hover{background:#fdeaea}.btn{border-radius:10px;padding:9px 14px}
     .btn-icono{width:40px;height:40px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#4a5a6a;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;padding:0;text-decoration:none;flex:0 0 40px}.btn-icono:hover{background:#f7f9fb;color:var(--primary);border-color:#9fb2c7}.btn-icono svg{width:16px;height:16px}
     .btn-icono-accion{width:42px;height:42px}.btn-icono-accion[disabled]{opacity:.45;cursor:not-allowed;background:#f6f8fa;color:#9aa7b4}
     .btn-icono-guardar{color:#1554a3;border-color:#bcd0ea}
     .btn-icono-eliminar{color:#9b1c1c;border-color:#efc2c2}
+    .btn-icono-nuevo{color:#0b5ed7;border-color:#bcd0ea}
     .mensaje{margin-bottom:16px;padding:12px 14px;border-radius:10px;display:none;border:1px solid transparent;line-height:1.45;font-size:13px}.mensaje.ok{display:block;background:var(--ok-bg);color:var(--ok-text);border-color:var(--ok-border)}.mensaje.error{display:block;background:var(--err-bg);color:var(--err-text);border-color:var(--err-border)}.mensaje.aviso{display:block;background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)}.mensaje-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.mensaje-cerrar{width:28px;height:28px;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:#fff;color:inherit;font-size:16px;cursor:pointer;flex:0 0 28px}
     .estructura{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch}
     .columna-principal{display:flex;flex-direction:column;gap:16px}
     .bloque{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden}.bloque-cabecera{padding:14px 16px 10px;border-bottom:1px solid #e6edf4;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}.bloque-cabecera h3{margin:0;font-size:16px;color:#143a63}.bloque-cabecera p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.45}.bloque-contenido{padding:14px 16px 16px}
+    .bloque-cabecera-barra{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .bloque-cabecera-acciones{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .bloque-campos{height:100%}.bloque-campos .bloque-contenido{display:flex;flex-direction:column;height:calc(100% - 63px);min-height:0}
     .estado-vacio{padding:18px 16px;border:1px dashed #cdd9e5;border-radius:12px;background:#fbfdff;color:#5c6b7b;font-size:13px;line-height:1.55;text-align:center}
     .campos-scroll{flex:1;min-height:0;overflow-y:auto;padding-right:4px}
@@ -41,7 +44,7 @@
     .texto-sesion{font-size:12px;color:#607284}.oculto{display:none!important}
     @media(max-width:980px){.estructura{grid-template-columns:1fr}}
     @media(max-width:860px){.fila-archivo{grid-template-columns:1fr}}
-    @media(max-width:760px){.barra-superior{grid-template-columns:1fr;justify-items:center}.barra-superior-izq,.barra-superior-der{justify-content:center}.barra-superior-centro{order:-1}.grid{grid-template-columns:1fr}.resumen-encabezado{flex-direction:column}}
+    @media(max-width:760px){.barra-superior{grid-template-columns:1fr;justify-items:center}.barra-superior-der{justify-content:center}.barra-superior-centro{justify-content:center;text-align:center}.grid{grid-template-columns:1fr}.resumen-encabezado{flex-direction:column}}
   </style>
 </head>
 <body>
@@ -49,11 +52,6 @@
   <div class="contenedor"><div class="panel-principal">
     <section class="panel-bloque">
     <div class="barra-superior">
-      <div class="barra-superior-izq">
-        <button type="button" class="nav-btn activo" id="btnNuevaPlantilla">Nueva plantilla</button>
-        <button type="button" class="btn-icono btn-icono-accion btn-icono-eliminar" id="btnEliminarBorrador" title="Eliminar plantilla" aria-label="Eliminar plantilla" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
-        <button type="button" class="btn-icono btn-icono-accion btn-icono-guardar" id="btnGuardarBorrador" title="Guardar plantilla" aria-label="Guardar plantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M9 20v-6h6v6"></path></svg></button>
-      </div>
       <div class="barra-superior-centro">Constructor de plantillas</div>
       <div class="barra-superior-der">
         <a class="nav-btn" href="mis-actividades.html">Mis actividades</a>
@@ -89,8 +87,17 @@
       <div class="columna-principal">
         <section class="bloque">
           <div class="bloque-cabecera">
-            <h3>Repositorio de plantillas</h3>
-            <p>Selecciona una plantilla ya creada para editarla o deja el formulario listo para crear una nueva.</p>
+            <div class="bloque-cabecera-barra">
+              <div>
+                <h3>Repositorio de plantillas</h3>
+                <p>Selecciona una plantilla ya creada para editarla o prepara una nueva desde este mismo bloque.</p>
+              </div>
+              <div class="bloque-cabecera-acciones">
+                <button type="button" class="btn-icono btn-icono-accion btn-icono-nuevo" id="btnNuevaPlantilla" title="Nueva plantilla" aria-label="Nueva plantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></button>
+                <button type="button" class="btn-icono btn-icono-accion btn-icono-eliminar" id="btnEliminarBorrador" title="Eliminar plantilla" aria-label="Eliminar plantilla" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+                <button type="button" class="btn-icono btn-icono-accion btn-icono-guardar" id="btnGuardarBorrador" title="Guardar plantilla" aria-label="Guardar plantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M9 20v-6h6v6"></path></svg></button>
+              </div>
+            </div>
           </div>
           <div class="bloque-contenido">
             <div class="campo">
