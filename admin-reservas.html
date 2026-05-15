@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de reservas</title>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     html, body { height: 100%; }
     body {
@@ -132,8 +134,25 @@
     .modal-cerrar-superior { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 999px; border: 1px solid #cfd9e4; background: #fff; color: #5b6b7c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 18px; line-height: 1; }
     .modal-cerrar-superior:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
     .modal-subtitulo { margin: -6px 0 12px; font-size: 14px; font-weight: 400; color: #4a5a6a; line-height: 1.3; }
+    .modal.modal-generacion-docs { max-width: 980px; }
+    .generacion-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .generacion-col { min-width: 0; }
+    .campo-libre-item { margin-bottom: 12px; }
+    .campo-libre-item:last-child { margin-bottom: 0; }
+    .campo-libre-item label { margin-bottom: 4px; }
+    .preview-panel { min-height: 560px; border: 1px solid #dde4ea; border-radius: 10px; background: #f8fafc; overflow: hidden; }
+    .preview-panel iframe { width: 100%; height: 560px; border: none; display: block; background: #fff; }
+    .preview-vacio { min-height: 560px; display: flex; align-items: center; justify-content: center; text-align: center; color: #6b7280; padding: 18px; line-height: 1.6; }
+    .resumen-generacion { background: #eef4ff; border: 1px solid #c9dcff; color: #1d4f91; border-radius: 10px; padding: 12px; font-size: 13px; line-height: 1.55; }
+    .lista-plantillas-modal { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
+    .aviso-generacion { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; display: none; }
+    .aviso-generacion.warn { display: block; background: #fff7e6; color: #9a6700; border: 1px solid #f3d08b; }
+    .aviso-generacion.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
+    .aviso-generacion.ok { display: block; background: #eaf7ea; color: #146c2e; border: 1px solid #b9e0c0; }
+    .oculto { display: none !important; }
     @media (max-width: 1200px) { .filtros { grid-template-columns: 1fr 1fr; } .bloque-marca { gap: 28px; } }
     @media (max-width: 980px) { .cabecera-global-inner, .contenedor { max-width: 100%; } .barra-navegacion, .barra-navegacion-der, .nav-admin { align-items: stretch; margin-left: 0; } table, thead, tbody, th, td, tr { display: block; } thead { display: none; } tr { margin-bottom: 16px; border: 1px solid #dde4ea; border-radius: 8px; overflow: hidden; } td { border-bottom: 1px solid #eef2f6; white-space: normal !important; text-align: left !important; } table { min-width: 100%; } }
+@media (max-width: 900px) { .generacion-grid { grid-template-columns: 1fr; } .preview-panel, .preview-panel iframe, .preview-vacio { min-height: 420px; height: 420px; } }
 @media (max-width: 700px) { .bloque-marca { flex-direction: column; text-align: center; gap: 10px; } .barra-navegacion { justify-content: center; padding-top: 16px; padding-bottom: 12px; } .barra-navegacion-izq, .barra-navegacion-centro { position: static; transform: none; width: 100%; order: -1; pointer-events: auto; } .barra-navegacion-centro { order: 0; } .barra-navegacion-izq { justify-content: center; } .barra-navegacion-der { width: 100%; justify-content: center; } .panel-titulo { font-size: 18px; } .titulos-cabecera h2 { text-align: center; } .logo-cabecera { width: 82px; } .logo-cabecera.logo-admin-personal { width: 82px; } }
   </style>
 </head>
@@ -199,6 +218,7 @@
             </select>
           </div>
           <div class="acciones-superiores">
+            <button type="button" class="nav-btn" id="btnGenerarDocumentos" disabled>Generar documentos</button>
             <button type="button" class="btn-icono" id="btnConfirmarSeleccion" title="Confirmar" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
             <button type="button" class="btn-icono" id="btnRechazarSeleccion" title="Rechazar" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
           </div>
@@ -221,12 +241,47 @@
       <div class="modal-acciones" id="modalObservacionesAcciones"><button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button></div>
     </div>
   </div>
+  <div id="modalGeneracionDocs" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-generacion-docs">
+      <button type="button" class="modal-cerrar-superior" id="btnCerrarModalGeneracionDocs" aria-label="Cerrar">×</button>
+      <h3>Generación documental</h3>
+      <div id="subtituloModalGeneracionDocs" class="modal-subtitulo"></div>
+      <div class="generacion-grid">
+        <div class="generacion-col">
+          <div class="resumen-generacion" id="resumenModalGeneracionDocs"></div>
+          <div class="campo-modal">
+            <label for="selectPlantillaGeneracion">Plantilla asociada a la actividad</label>
+            <select id="selectPlantillaGeneracion"></select>
+          </div>
+          <div class="campo-modal">
+            <label>Campos libres</label>
+            <div id="contenedorCamposLibresGeneracion"></div>
+          </div>
+          <div id="avisoGeneracionDocs" class="aviso-generacion"></div>
+        </div>
+        <div class="generacion-col">
+          <div class="preview-panel" id="previewPanelGeneracionDocs">
+            <div class="preview-vacio" id="previewVacioGeneracionDocs">Selecciona una plantilla y pulsa en <strong>Previsualizar</strong> para comprobar cómo quedará el documento con el primer asistente de la solicitud.</div>
+            <iframe id="iframePreviewGeneracionDocs" class="oculto" title="Previsualización del documento"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-modal" id="btnPrevisualizarGeneracionDocs">Previsualizar</button>
+        <button type="button" class="btn-modal btn-modal-principal" id="btnGenerarZipDocs">Generar ZIP</button>
+      </div>
+    </div>
+  </div>
   <script>
     let reservaSeleccionada = null;
     let reservasActuales = [];
     let nombreAdminPanel = "Administrador";
     let reservaModalEstado = null;
     let accionPreferidaModal = "";
+    const STORAGE_KEY_PLANTILLAS = "difas_plantillas_documentales_borradores_v1";
+    let plantillasDisponiblesReserva = [];
+    let contextoGeneracionDocs = null;
+    let pdfPreviewUrlActual = "";
     function aplicarLogoCabeceraAdmin(img, userLike = {}) {
       if (!img) return;
       img.style.width = "";
@@ -241,6 +296,28 @@
     function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
     function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
     function escapeHtml(texto) { return String(texto || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
+    function slugTexto(texto) { return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
+    function cargarPlantillasLocales() { try { const raw = localStorage.getItem(STORAGE_KEY_PLANTILLAS); const data = JSON.parse(raw || "[]"); return Array.isArray(data) ? data : []; } catch (_) { return []; } }
+    function obtenerPlantillasDeReserva(reserva) { const actividadId = Number(reserva?.actividad_id || 0); return cargarPlantillasLocales().filter((item) => Number(item?.actividad_id || 0) === actividadId && String(item?.archivo_data_url || "").startsWith("data:application/pdf")); }
+    function mostrarAvisoGeneracion(tipo, texto) { const el = document.getElementById("avisoGeneracionDocs"); el.className = `aviso-generacion ${tipo}`; el.textContent = texto; }
+    function limpiarAvisoGeneracion() { const el = document.getElementById("avisoGeneracionDocs"); el.className = "aviso-generacion"; el.textContent = ""; }
+    function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnConfirmarSeleccion").disabled = !hay || !puedeConfirmarseReserva(reservaSeleccionada); document.getElementById("btnRechazarSeleccion").disabled = !hay || !puedeRechazarseReserva(reservaSeleccionada); document.getElementById("btnGenerarDocumentos").disabled = !hay; }
+    async function cargarContextoGeneracionReserva(reserva) { const token = String(reserva?.token_edicion || "").trim(); if (!token) throw new Error("La solicitud seleccionada no tiene token de edición disponible."); const [resReserva, resVisitantes] = await Promise.all([fetch(`/api/reserva?token=${encodeURIComponent(token)}`, { credentials: "same-origin" }), fetch(`/api/visitantes?token=${encodeURIComponent(token)}`, { credentials: "same-origin" })]); const dataReserva = await resReserva.json().catch(() => null); const dataVisitantes = await resVisitantes.json().catch(() => null); if (!resReserva.ok || !dataReserva?.ok) throw new Error(dataReserva?.detalle || dataReserva?.error || "No se pudo cargar el detalle de la solicitud."); if (!resVisitantes.ok || !dataVisitantes?.ok) throw new Error(dataVisitantes?.detalle || dataVisitantes?.error || "No se pudo cargar la lista de asistentes."); return { reserva: dataReserva.reserva || {}, visitantes: Array.isArray(dataVisitantes.visitantes) ? dataVisitantes.visitantes : [] }; }
+    function obtenerPlantillaSeleccionadaGeneracion() { const id = document.getElementById("selectPlantillaGeneracion").value; return plantillasDisponiblesReserva.find((item) => item.id === id) || null; }
+    function construirResumenGeneracion(contexto) { const reserva = contexto?.reserva || {}; const total = Array.isArray(contexto?.visitantes) ? contexto.visitantes.length : 0; return `Solicitud: ${escapeHtml(reserva.codigo_reserva || "-")}<br>Actividad: ${escapeHtml(reserva.actividad_titulo_publico || reserva.actividad_nombre || "Actividad")}<br>Solicitante: ${escapeHtml(reserva.centro || "-")}<br>Asistentes cargados: ${total}`; }
+    function renderPlantillasGeneracion() { const select = document.getElementById("selectPlantillaGeneracion"); if (!plantillasDisponiblesReserva.length) { select.innerHTML = `<option value="">No hay plantillas disponibles</option>`; renderCamposLibresGeneracion(null); return; } select.innerHTML = `<option value="">Selecciona una plantilla</option>` + plantillasDisponiblesReserva.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.nombre || p.archivo_nombre || "Plantilla")}</option>`).join(""); if (plantillasDisponiblesReserva.length === 1) select.value = plantillasDisponiblesReserva[0].id; renderCamposLibresGeneracion(obtenerPlantillaSeleccionadaGeneracion()); }
+    function renderCamposLibresGeneracion(plantilla) { const cont = document.getElementById("contenedorCamposLibresGeneracion"); const libres = Array.isArray(plantilla?.campos_detectados) ? plantilla.campos_detectados.filter((c) => String(c?.modo || "VINCULADO").toUpperCase() === "LIBRE") : []; if (!libres.length) { cont.innerHTML = `<div class="estado-vacio" style="padding:12px;">Esta plantilla no tiene campos libres. La previsualización puede hacerse directamente.</div>`; return; } cont.innerHTML = libres.map((campo, index) => `<div class="campo-libre-item"><label for="campoLibre_${index}">${escapeHtml(campo.nombre || `Campo libre ${index + 1}`)}</label><input type="text" id="campoLibre_${index}" data-nombre-campo="${escapeHtml(campo.nombre || "")}" placeholder="Introduce el valor común para todos los documentos"></div>`).join(""); }
+    function obtenerValoresCamposLibres() { const valores = {}; document.querySelectorAll("#contenedorCamposLibresGeneracion [data-nombre-campo]").forEach((input) => { valores[input.dataset.nombreCampo] = String(input.value || "").trim(); }); return valores; }
+    function mapearCampoVinculado(nombreCampo, contexto, visitante) { const clave = slugTexto(nombreCampo); const reserva = contexto?.reserva || {}; const nombreVisitante = String(visitante?.nombre_completo || "").trim(); if (["nombre", "nombre_asistente", "asistente", "alumno", "participante"].includes(clave) || clave.includes("nombre_asistente") || clave.includes("nombreparticipante")) return nombreVisitante || "[Sin asistente]"; if (clave.includes("actividad") || clave.includes("titulo_actividad")) return reserva.actividad_titulo_publico || reserva.actividad_nombre || "[Actividad]"; if (clave.includes("codigo")) return reserva.codigo_reserva || "[Código]"; if (clave.includes("centro")) return reserva.centro || "[Centro]"; if (clave.includes("lugar")) return reserva.actividad_lugar || "[Lugar]"; if (clave === "fecha" || clave.includes("fecha_actividad")) return reserva.fecha || reserva.actividad_fecha_inicio || "[Fecha]"; if (clave.includes("horario") || clave.includes("hora")) return [reserva.hora_inicio, reserva.hora_fin].filter(Boolean).join(" - ") || "[Horario]"; if (clave.includes("organizador")) return reserva.actividad_organizador_publico || "[Organizador]"; if (clave.includes("estado")) return reserva.estado || "[Estado]"; if (clave.includes("perfil")) return visitante?.perfil_asistente || "[Perfil]"; return "[Pendiente de vinculación]"; }
+    function construirValoresPlantilla(plantilla, contexto, visitante, camposLibres) { const valores = {}; const noResueltos = []; for (const campo of Array.isArray(plantilla?.campos_detectados) ? plantilla.campos_detectados : []) { const nombre = String(campo?.nombre || "").trim(); if (!nombre) continue; const modo = String(campo?.modo || "VINCULADO").toUpperCase(); if (modo === "LIBRE") { valores[nombre] = String(camposLibres[nombre] || "").trim(); continue; } const valor = mapearCampoVinculado(nombre, contexto, visitante); valores[nombre] = valor; if (valor === "[Pendiente de vinculación]") noResueltos.push(nombre); } return { valores, noResueltos }; }
+    async function cargarPdfDesdeDataUrl(dataUrl) { const base64 = String(dataUrl || "").split(",")[1] || ""; const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)); return await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false }); }
+    function aplicarValorCampoPdf(field, valor) { const texto = String(valor ?? ""); const nombreClase = String(field?.constructor?.name || "").toLowerCase(); if (nombreClase.includes("checkbox")) { if (texto && texto !== "0" && texto.toLowerCase() !== "false") field.check(); else field.uncheck(); return; } if (typeof field.setText === "function") { field.setText(texto); return; } if (typeof field.select === "function") { try { field.select(texto); } catch (_) {} } }
+    async function generarPdfRelleno(plantilla, valores) { const pdfDoc = await cargarPdfDesdeDataUrl(plantilla.archivo_data_url); const form = pdfDoc.getForm(); for (const field of form.getFields()) { const nombre = field.getName(); if (Object.prototype.hasOwnProperty.call(valores, nombre)) aplicarValorCampoPdf(field, valores[nombre]); } return await pdfDoc.save(); }
+    function limpiarPreviewActual() { if (pdfPreviewUrlActual) { URL.revokeObjectURL(pdfPreviewUrlActual); pdfPreviewUrlActual = ""; } const iframe = document.getElementById("iframePreviewGeneracionDocs"); iframe.src = "about:blank"; iframe.classList.add("oculto"); document.getElementById("previewVacioGeneracionDocs").classList.remove("oculto"); }
+    async function previsualizarGeneracionDocs() { limpiarAvisoGeneracion(); const plantilla = obtenerPlantillaSeleccionadaGeneracion(); if (!plantilla) { mostrarAvisoGeneracion("error", "Debes seleccionar primero una plantilla."); return; } if (!contextoGeneracionDocs?.visitantes?.length) { mostrarAvisoGeneracion("error", "La solicitud seleccionada no tiene asistentes cargados. La previsualización requiere al menos un asistente."); return; } const camposLibres = obtenerValoresCamposLibres(); const { valores, noResueltos } = construirValoresPlantilla(plantilla, contextoGeneracionDocs, contextoGeneracionDocs.visitantes[0], camposLibres); const bytes = await generarPdfRelleno(plantilla, valores); const blob = new Blob([bytes], { type: "application/pdf" }); pdfPreviewUrlActual = URL.createObjectURL(blob); const iframe = document.getElementById("iframePreviewGeneracionDocs"); iframe.src = pdfPreviewUrlActual; iframe.classList.remove("oculto"); document.getElementById("previewVacioGeneracionDocs").classList.add("oculto"); if (noResueltos.length) mostrarAvisoGeneracion("warn", `Hay ${noResueltos.length} campo(s) vinculados todavía sin una correspondencia automática clara: ${noResueltos.join(", ")}.`); else mostrarAvisoGeneracion("ok", "Previsualización generada correctamente con el primer asistente de la solicitud."); }
+    async function generarZipDocumentos() { limpiarAvisoGeneracion(); const plantilla = obtenerPlantillaSeleccionadaGeneracion(); if (!plantilla) { mostrarAvisoGeneracion("error", "Debes seleccionar primero una plantilla."); return; } if (!contextoGeneracionDocs?.visitantes?.length) { mostrarAvisoGeneracion("error", "La solicitud seleccionada no tiene asistentes cargados."); return; } const camposLibres = obtenerValoresCamposLibres(); const zip = new window.JSZip(); const nombreBase = slugTexto(plantilla.nombre || plantilla.archivo_nombre || "documentos"); const codigo = slugTexto(contextoGeneracionDocs.reserva.codigo_reserva || "solicitud"); for (let i = 0; i < contextoGeneracionDocs.visitantes.length; i += 1) { const visitante = contextoGeneracionDocs.visitantes[i]; const { valores } = construirValoresPlantilla(plantilla, contextoGeneracionDocs, visitante, camposLibres); const bytes = await generarPdfRelleno(plantilla, valores); const nombreVisitante = slugTexto(visitante.nombre_completo || `asistente_${i + 1}`) || `asistente_${i + 1}`; zip.file(`${codigo}_${nombreBase}_${String(i + 1).padStart(2, "0")}_${nombreVisitante}.pdf`, bytes); } const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); const enlace = document.createElement("a"); enlace.href = url; enlace.download = `${codigo}_${nombreBase}.zip`; document.body.appendChild(enlace); enlace.click(); enlace.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500); mostrarAvisoGeneracion("ok", `Se ha generado un ZIP con ${contextoGeneracionDocs.visitantes.length} documento(s).`); }
+    function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; limpiarMensaje(); limpiarAvisoGeneracion(); limpiarPreviewActual(); plantillasDisponiblesReserva = obtenerPlantillasDeReserva(reservaSeleccionada); contextoGeneracionDocs = null; document.getElementById("subtituloModalGeneracionDocs").textContent = reservaSeleccionada.actividad_nombre || "Solicitud"; document.getElementById("resumenModalGeneracionDocs").innerHTML = `Cargando contexto documental de la solicitud...`; renderPlantillasGeneracion(); document.getElementById("modalGeneracionDocs").classList.add("activo"); document.getElementById("modalGeneracionDocs").setAttribute("aria-hidden", "false"); cargarContextoGeneracionReserva(reservaSeleccionada).then((contexto) => { contextoGeneracionDocs = contexto; document.getElementById("resumenModalGeneracionDocs").innerHTML = construirResumenGeneracion(contexto); if (!plantillasDisponiblesReserva.length) mostrarAvisoGeneracion("warn", "No hay plantillas locales asociadas a esta actividad con un PDF guardado. Revisa el constructor de plantillas."); }).catch((error) => { document.getElementById("resumenModalGeneracionDocs").innerHTML = "No se ha podido cargar el contexto documental de la solicitud."; mostrarAvisoGeneracion("error", error?.message || "No se pudo preparar la generación documental."); }); }
+    function cerrarModalGeneracionDocs() { limpiarPreviewActual(); document.getElementById("modalGeneracionDocs").classList.remove("activo"); document.getElementById("modalGeneracionDocs").setAttribute("aria-hidden", "true"); contextoGeneracionDocs = null; plantillasDisponiblesReserva = []; limpiarAvisoGeneracion(); }
     function formatearFechaHoraHistorial(fechaTexto) { const texto = String(fechaTexto || "").trim(); if (!texto) return ""; const fecha = new Date(texto.replace(" ", "T")); if (Number.isNaN(fecha.getTime())) return texto; return fecha.toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }); }
     function etiquetaAccionHistorial(item = {}) { const accion = String(item.accion || "").toUpperCase(); const origen = textoEstadoVisible(item.estado_origen); const destino = textoEstadoVisible(item.estado_destino); if (accion === "SOLICITUD_PRESENTADA") return `Solicitud presentada en estado ${destino || "PENDIENTE"}`; if (accion === "CAMBIO_ESTADO_ADMIN") return `Cambio manual de ${origen || "sin estado"} a ${destino || "sin estado"}`; if (accion === "ANULACION_ACTIVIDAD") return `Rechazo automático por anulación de actividad`; if (accion === "CAMBIO_REQUISITOS") return `Revisión por cambio de requisitos`; if (accion === "CAMBIO_FRANJA") return `Revisión por cambio de franja`; if (accion === "CADUCIDAD_SUSPENSION") return `Rechazo automático por vencimiento`; if (origen || destino) return `${origen || "Sin estado"} -> ${destino || "Sin estado"}`; return accion || "Movimiento registrado"; }
     function renderHistorialReserva(historial = []) { const items = Array.isArray(historial) ? historial : []; if (!items.length) return `<div class="historial-modal"><h4>Tramitación</h4><div class="historial-vacio">Todavía no hay movimientos registrados para esta solicitud.</div></div>`; return `<div class="historial-modal"><h4>Tramitación</h4><div class="historial-lista">${items.map((item) => `<div class="historial-item"><div class="historial-cabecera"><span class="historial-actor">${escapeHtml(item.actor_nombre || item.actor_rol || "Sistema")}</span><span class="historial-fecha">${escapeHtml(formatearFechaHoraHistorial(item.fecha_evento))}</span></div><div class="historial-detalle">${escapeHtml(etiquetaAccionHistorial(item))}</div>${item.observaciones ? `<div class="historial-observaciones">${escapeHtml(item.observaciones)}</div>` : ""}</div>`).join("")}</div></div>`; }
@@ -347,7 +424,6 @@
       }
     }
     function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
-    function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnConfirmarSeleccion").disabled = !hay || !puedeConfirmarseReserva(reservaSeleccionada); document.getElementById("btnRechazarSeleccion").disabled = !hay || !puedeRechazarseReserva(reservaSeleccionada); }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function establecerVisibilidadModalObservaciones(activo) { const modal = document.getElementById("modalObservaciones"); if (!modal) return; modal.classList.toggle("activo", !!activo); modal.setAttribute("aria-hidden", activo ? "false" : "true"); }
     function recargarPanelDesdeFiltros({ actualizarTitulo = false } = {}) { if (actualizarTitulo) actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); }
@@ -368,6 +444,12 @@
     
     document.getElementById("btnConfirmarSeleccion").addEventListener("click", function () { cambiarEstadoSeleccion("CONFIRMADA"); });
     document.getElementById("btnRechazarSeleccion").addEventListener("click", function () { cambiarEstadoSeleccion("RECHAZADA"); });
+    document.getElementById("btnGenerarDocumentos").addEventListener("click", abrirModalGeneracionDocs);
+    document.getElementById("btnCerrarModalGeneracionDocs").addEventListener("click", cerrarModalGeneracionDocs);
+    document.getElementById("modalGeneracionDocs").addEventListener("click", function (e) { if (e.target.id === "modalGeneracionDocs") cerrarModalGeneracionDocs(); });
+    document.getElementById("selectPlantillaGeneracion").addEventListener("change", function () { limpiarAvisoGeneracion(); limpiarPreviewActual(); renderCamposLibresGeneracion(obtenerPlantillaSeleccionadaGeneracion()); });
+    document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("click", async function () { try { await previsualizarGeneracionDocs(); } catch (error) { mostrarAvisoGeneracion("error", error?.message || "No se pudo generar la previsualización."); } });
+    document.getElementById("btnGenerarZipDocs").addEventListener("click", async function () { try { await generarZipDocumentos(); } catch (error) { mostrarAvisoGeneracion("error", error?.message || "No se pudo generar el ZIP documental."); } });
     document.getElementById("btnCerrarModalObservaciones")?.addEventListener("click", cerrarModalObservaciones); document.getElementById("btnCerrarModalObservacionesSuperior")?.addEventListener("click", cerrarModalObservaciones); asegurarBotonCerrarModalSuperior();
     document.getElementById("modalObservaciones").addEventListener("click", function (e) { if (e.target.id === "modalObservaciones") cerrarModalObservaciones(); });
     (async function init() { await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]); await cargarPanel(); })();
