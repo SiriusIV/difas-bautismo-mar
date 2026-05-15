@@ -11,8 +11,8 @@
     body{font-family:Arial,sans-serif;background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.78) 12%,rgba(255,255,255,.42) 26%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.10) 100%),linear-gradient(180deg,rgba(244,246,248,.18) 0%,rgba(244,246,248,.24) 100%),url("assets/fondo_cabecera.png") top center/100% auto no-repeat,var(--bg);background-blend-mode:normal,screen,normal;margin:0;color:var(--text)}
     .cabecera{padding:18px 20px 14px;position:sticky;top:0;z-index:50}.cabecera-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
     .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{display:flex;flex-direction:column;gap:16px}
-    .panel-bloque{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:14px}
-    .barra-superior{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:58px;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #d9e0e7}.barra-superior-izq,.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
+    .panel-bloque{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:12px 14px}
+    .barra-superior{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:52px}.barra-superior-izq,.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
     .nav-btn,.btn{display:inline-block;padding:8px 15px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#1e2a36;text-decoration:none;font-size:13px;line-height:1;cursor:pointer;transition:all .15s ease}.nav-btn:hover,.btn:hover{background:#f7f9fb}.nav-btn.activo,.btn.primario{background:var(--primary);color:#fff;border-color:var(--primary)}.btn.primario:hover{background:var(--primary-dark);border-color:var(--primary-dark)}.btn.peligro{border-radius:10px;color:#9b1c1c;border-color:#efc2c2}.btn.peligro:hover{background:#fdeaea}.btn{border-radius:10px;padding:9px 14px}
     .btn-icono{width:40px;height:40px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#4a5a6a;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;padding:0;text-decoration:none;flex:0 0 40px}.btn-icono:hover{background:#f7f9fb;color:var(--primary);border-color:#9fb2c7}.btn-icono svg{width:16px;height:16px}
     .btn-icono-accion{width:42px;height:42px}.btn-icono-accion[disabled]{opacity:.45;cursor:not-allowed;background:#f6f8fa;color:#9aa7b4}
@@ -22,11 +22,12 @@
     .estructura{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:stretch}
     .columna-principal{display:flex;flex-direction:column;gap:16px}
     .bloque{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden}.bloque-cabecera{padding:14px 16px 10px;border-bottom:1px solid #e6edf4;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}.bloque-cabecera h3{margin:0;font-size:16px;color:#143a63}.bloque-cabecera p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.45}.bloque-contenido{padding:14px 16px 16px}
-    .bloque-campos{height:100%}.bloque-campos .bloque-contenido{display:flex;flex-direction:column;height:calc(100% - 63px)}
+    .bloque-campos{height:100%}.bloque-campos .bloque-contenido{display:flex;flex-direction:column;height:calc(100% - 63px);min-height:0}
     .estado-vacio{padding:18px 16px;border:1px dashed #cdd9e5;border-radius:12px;background:#fbfdff;color:#5c6b7b;font-size:13px;line-height:1.55;text-align:center}
+    .campos-scroll{flex:1;min-height:0;overflow-y:auto;padding-right:4px}
     .campo{display:flex;flex-direction:column;gap:6px}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo-ancho{grid-column:1/-1}
-    .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
+    .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:8px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
     .fila-archivo{display:grid;grid-template-columns:minmax(0,3.45fr) minmax(220px,.8fr);gap:6px;align-items:stretch}
     .dropzone{width:100%;border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:16px;min-height:168px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
     .visor-plantilla{width:100%;border:1px solid #d7e2ee;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#f2f7fd 100%);padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;text-decoration:none;color:#143a63;min-height:168px;height:100%;text-align:center;transition:all .18s ease}
@@ -53,7 +54,7 @@
         <button type="button" class="btn-icono btn-icono-accion btn-icono-eliminar" id="btnEliminarBorrador" title="Eliminar plantilla" aria-label="Eliminar plantilla" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
         <button type="button" class="btn-icono btn-icono-accion btn-icono-guardar" id="btnGuardarBorrador" title="Guardar plantilla" aria-label="Guardar plantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M9 20v-6h6v6"></path></svg></button>
       </div>
-      <div class="barra-superior-centro">Constructor de plantillas PDF</div>
+      <div class="barra-superior-centro">Constructor de plantillas</div>
       <div class="barra-superior-der">
         <a class="nav-btn" href="mis-actividades.html">Mis actividades</a>
         <a class="btn-icono" href="portal.html" title="Volver al portal" aria-label="Volver al portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
@@ -69,18 +70,20 @@
           <p>Aqui puedes clasificar los campos del PDF y marcar si seran obligatorios en la generacion.</p>
         </div>
         <div class="bloque-contenido">
-          <div id="estadoSinCampos" class="estado-vacio">Todavia no hay campos cargados en esta plantilla. Cuando importes un PDF rellenable real, aqui apareceran automaticamente los nombres internos de sus campos.</div>
-          <table class="tabla-campos oculto" id="tablaCamposDetectados">
-            <colgroup>
-              <col class="col-nombre">
-              <col class="col-dato">
-              <col class="col-obligatorio">
-            </colgroup>
-            <thead>
-              <tr><th>&nbsp;</th><th>Dato</th><th>Oblig.</th></tr>
-            </thead>
-            <tbody id="tablaCamposDetectadosBody"></tbody>
-          </table>
+          <div class="campos-scroll">
+            <div id="estadoSinCampos" class="estado-vacio">Todavia no hay campos cargados en esta plantilla. Cuando importes un PDF rellenable real, aqui apareceran automaticamente los nombres internos de sus campos.</div>
+            <table class="tabla-campos oculto" id="tablaCamposDetectados">
+              <colgroup>
+                <col class="col-nombre">
+                <col class="col-dato">
+                <col class="col-obligatorio">
+              </colgroup>
+              <thead>
+                <tr><th>&nbsp;</th><th>Dato</th><th>Oblig.</th></tr>
+              </thead>
+              <tbody id="tablaCamposDetectadosBody"></tbody>
+            </table>
+          </div>
         </div>
       </aside>
       <div class="columna-principal">
@@ -101,7 +104,6 @@
             <div class="resumen-encabezado">
               <div>
                 <h3 id="tituloEditor">Nueva plantilla documental</h3>
-                <p id="subtituloEditor">Asocia esta plantilla a una actividad concreta del ambito del administrador.</p>
               </div>
                 <span class="texto-sesion" id="textoEstadoSesion"></span>
             </div>

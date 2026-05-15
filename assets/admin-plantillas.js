@@ -49,10 +49,7 @@ function renderCamposDetectados() {
     });
   });
 }
-function actualizarSubtituloSegunActividad(actividadId) {
-  const actividad = obtenerActividadPorId(actividadId);
-  document.getElementById("subtituloEditor").textContent = actividad ? `Asociada actualmente a ${actividad.titulo_publico || actividad.nombre || "la actividad seleccionada"}.` : "Asocia esta plantilla a una actividad concreta del ambito del administrador.";
-}
+function actualizarSubtituloSegunActividad() {}
 function actualizarResumenArchivo() {
   const btnVer = document.getElementById("btnVerPdfPlantilla");
   const textoVisor = document.getElementById("textoVisorPlantilla");
