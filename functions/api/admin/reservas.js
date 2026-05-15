@@ -34,6 +34,33 @@ async function asegurarColumnaObservacionesAdmin(env) {
   }
 }
 
+async function asegurarTablaRequisitos(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_requisitos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actividad_id INTEGER NOT NULL,
+      texto TEXT NOT NULL,
+      orden INTEGER NOT NULL DEFAULT 0
+    )
+  `).run();
+}
+
+async function obtenerRequisitosActividad(env, actividadId) {
+  const id = Number(actividadId || 0);
+  if (!(id > 0)) return [];
+  await asegurarTablaRequisitos(env);
+  const result = await env.DB.prepare(`
+    SELECT texto
+    FROM actividad_requisitos
+    WHERE actividad_id = ?
+    ORDER BY orden ASC, id ASC
+  `).bind(id).all();
+
+  return (result.results || [])
+    .map((row) => limpiarTexto(row?.texto || ""))
+    .filter(Boolean);
+}
+
 function likeValue(valor) {
   return `%${valor}%`;
 }
@@ -297,10 +324,11 @@ async function obtenerActividadIdDeReserva(env, reservaId) {
 
 async function obtenerContextoNotificacionReserva(env, reservaId) {
   const db = obtenerDbLectura(env);
-  return await db.prepare(`
+  const contexto = await db.prepare(`
     SELECT
       r.id,
       r.usuario_id,
+      r.actividad_id,
       r.codigo_reserva,
       r.centro,
       r.contacto,
@@ -316,6 +344,13 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
     WHERE r.id = ?
     LIMIT 1
   `).bind(reservaId).first();
+
+  if (!contexto) return null;
+
+  return {
+    ...contexto,
+    requisitos_particulares: await obtenerRequisitosActividad(env, contexto.actividad_id)
+  };
 }
 
 function escaparHtmlCorreo(valor) {
@@ -382,7 +417,42 @@ async function enviarCorreoSolicitanteCambioEstado(env, contexto = {}, nuevoEsta
     return { ok: false, skipped: true, error: "La solicitud no tiene correo de contacto." };
   }
 
-  const correo = construirCorreoEstadoReserva(contexto, nuevoEstado);
+  const correoBase = construirCorreoEstadoReserva(contexto, nuevoEstado);
+  const requisitos = Array.isArray(contexto?.requisitos_particulares)
+    ? contexto.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean)
+    : [];
+  const incluirRequisitos = requisitos.length > 0 && nuevoEstado !== "RECHAZADA";
+
+  const correo = !incluirRequisitos
+    ? correoBase
+    : (() => {
+        const avisoRequisitos = "Si estÃ¡s conforme con estos requisitos y puedes cumplirlos, no necesitas hacer nada mÃ¡s y la solicitud seguirÃ¡ su curso. Si no puedes asumirlos, debes anular la solicitud.";
+        const bloqueTexto = [
+          "",
+          "Requisitos particulares de la actividad:",
+          ...requisitos.map((item, index) => `${index + 1}. ${item}`),
+          "",
+          avisoRequisitos
+        ].join("\n");
+        const bloqueHtml = `
+          <p><strong>Requisitos particulares de la actividad:</strong></p>
+          <ol>${requisitos.map((item) => `<li>${escaparHtmlCorreo(item)}</li>`).join("")}</ol>
+          <p>${escaparHtmlCorreo(avisoRequisitos)}</p>
+        `;
+
+        return {
+          asunto: correoBase.asunto,
+          texto: correoBase.texto.replace(
+            "\n\nPuedes consultar el detalle actualizado desde tu panel de usuario.",
+            `${bloqueTexto}\n\nPuedes consultar el detalle actualizado desde tu panel de usuario.`
+          ),
+          html: correoBase.html.replace(
+            "<p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>",
+            `${bloqueHtml}<p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>`
+          )
+        };
+      })();
+
   return await enviarEmail(env, {
     to: destinatario,
     subject: correo.asunto,
