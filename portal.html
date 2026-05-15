@@ -1517,11 +1517,12 @@
   </div>
 </div>
 
-<div class="detalle-acciones-inferiores">
+  <div class="detalle-acciones-inferiores">
   <div class="detalle-acciones-inferiores-izq">
     <div id="notaFranjasPortal" class="nota-franjas" style="display:none;"></div>
   </div>
   <div class="detalle-acciones-inferiores-der">
+    <button id="btnVerRequisitosActividad" class="btn btn-admin" style="display:none;" type="button">Ver requisitos</button>
     <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar actividad</button>
   </div>
 </div>
@@ -1572,6 +1573,17 @@
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-admin" id="btnCancelarModalDocumentacionPendiente">Cancelar solicitud</button>
         <button class="btn" id="btnIrPerfilDesdeModalDocumentacion">Ir a mi perfil de usuario</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalRequisitosActividad" class="modal-fondo" aria-hidden="true">
+    <div class="modal-login" style="max-width: 680px;">
+      <h3>Requisitos de la actividad</h3>
+      <p id="subtituloModalRequisitosActividad" style="margin: 0 0 14px; color: #4a5a6a; line-height: 1.55;"></p>
+      <div id="contenidoModalRequisitosActividad" style="color: #243648; line-height: 1.6;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:18px;">
+        <button class="btn btn-admin" id="btnCerrarModalRequisitosActividad">Cerrar</button>
       </div>
     </div>
   </div>
@@ -3248,6 +3260,28 @@ function renderMapaActividad(a) {
   }
 }
 
+function abrirModalRequisitosActividad() {
+  const actividad = actividadSeleccionada;
+  const requisitos = Array.isArray(actividad?.requisitos_particulares)
+    ? actividad.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+  if (!actividad || !requisitos.length) return;
+
+  document.getElementById("subtituloModalRequisitosActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
+  document.getElementById("contenidoModalRequisitosActividad").innerHTML = `
+    <ol style="margin:0; padding-left: 20px;">
+      ${requisitos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}
+    </ol>
+  `;
+  document.getElementById("modalRequisitosActividad").classList.add("activo");
+  document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "false");
+}
+
+function cerrarModalRequisitosActividad() {
+  document.getElementById("modalRequisitosActividad").classList.remove("activo");
+  document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "true");
+}
+
     function renderDetalle() {
       const a = actividadSeleccionada;
 
@@ -3260,6 +3294,7 @@ function renderMapaActividad(a) {
         document.getElementById("detalleImagen").classList.add("oculta");
         document.getElementById("detalleBadgeEstado").style.display = "none";
         document.getElementById("detalleBadgeEstado").className = "badge-estado-actividad";
+        document.getElementById("btnVerRequisitosActividad").style.display = "none";
         document.getElementById("btnSolicitarActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
@@ -3330,10 +3365,13 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
       document.getElementById("detalleTexto").textContent = textoDetalle;
 
       const btnSolicitar = document.getElementById("btnSolicitarActividad");
+      const btnRequisitos = document.getElementById("btnVerRequisitosActividad");
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
       btnSolicitar.textContent = "Solicitar actividad";
+      const tieneRequisitos = Array.isArray(a.requisitos_particulares) && a.requisitos_particulares.some((item) => String(item || "").trim() !== "");
+      btnRequisitos.style.display = tieneRequisitos ? "inline-block" : "none";
       
       btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
@@ -3674,6 +3712,8 @@ function continuarSolicitudActividad() {
     document.getElementById("btnCerrarModalNotificaciones").addEventListener("click", async function () {
       await cerrarModalNotificacionesPortal();
     });
+    document.getElementById("btnVerRequisitosActividad").addEventListener("click", abrirModalRequisitosActividad);
+    document.getElementById("btnCerrarModalRequisitosActividad").addEventListener("click", cerrarModalRequisitosActividad);
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
     document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
       const adminId = Number.parseInt(this.dataset.adminId || "", 10);
@@ -3692,6 +3732,9 @@ function continuarSolicitudActividad() {
     });
     document.getElementById("modalDocumentacionPendiente").addEventListener("click", function (e) {
       if (e.target.id === "modalDocumentacionPendiente") cerrarModalDocumentacionPendiente();
+    });
+    document.getElementById("modalRequisitosActividad").addEventListener("click", function (e) {
+      if (e.target.id === "modalRequisitosActividad") cerrarModalRequisitosActividad();
     });
     document.getElementById("modalNotificacionesPortal").addEventListener("click", async function (e) {
       if (e.target.id === "modalNotificacionesPortal") await cerrarModalNotificacionesPortal();
