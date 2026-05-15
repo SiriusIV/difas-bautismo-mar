@@ -1863,6 +1863,14 @@
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                   </svg>
                 </a>
+                <button type="button" class="btn-icono" id="btnIrPlantillasActividad" title="Plantillas documentales" aria-label="Plantillas documentales">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 3h7l5 5v13H7z"></path>
+                    <path d="M14 3v5h5"></path>
+                    <path d="M10 13h6"></path>
+                    <path d="M10 17h6"></path>
+                  </svg>
+                </button>
                 <a class="btn-icono" href="portal.html" id="btnVolverPortal" title="Volver al portal" aria-label="Volver al portal">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 10.5L12 3l9 7.5"></path>
@@ -2333,6 +2341,7 @@
     let temporizadorMensajeActividad = null;
     let formularioActividadModificado = false;
     let salidaPendienteAlPortal = false;
+    let destinoSalidaPendiente = "portal.html";
     let desactivacionActividadPendiente = false;
 
     function normalizarTexto(v) {
@@ -2782,6 +2791,7 @@
     function cerrarModalSalidaSinGuardar() {
       establecerVisibilidadModalActividad("modalSalidaSinGuardar", false);
       salidaPendienteAlPortal = false;
+      destinoSalidaPendiente = "portal.html";
     }
 
     function abrirModalAnulacionActividad({ modo = "eliminar", textoBase = "", resumen = null } = {}) {
@@ -3410,6 +3420,7 @@ function cargarRequisitosActividad(actividad) {
     setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
     setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
     setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
+    actualizarAccesoPlantillasActividad();
     setValor("aforo_maximo", actividad.aforo_maximo == null ? "" : String(actividad.aforo_maximo));
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
@@ -4564,6 +4575,7 @@ async function borrarFranja(id) {
                 history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(dataFinal.id)}`);
                 document.getElementById("tituloFormulario").textContent = "Editar actividad";
                 actualizarEnlaceCalendarioActividad();
+                actualizarAccesoPlantillasActividad();
                 actualizarBotonEliminar();
               }
 
@@ -4589,6 +4601,7 @@ async function borrarFranja(id) {
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
           actualizarEnlaceCalendarioActividad();
+          actualizarAccesoPlantillasActividad();
           actualizarBotonEliminar();
         }
 
@@ -4647,6 +4660,7 @@ async function borrarFranja(id) {
         history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
         actualizarEnlaceCalendarioActividad();
+        actualizarAccesoPlantillasActividad();
         actualizarBotonEliminar();
       }
 
@@ -4661,10 +4675,11 @@ async function borrarFranja(id) {
 
     async function salirSinGuardarActividad() {
       const id = document.getElementById("actividadId").value;
+      const destino = destinoSalidaPendiente || "portal.html";
 
       if (!id) {
         await limpiarUploadTemporalSiExiste();
-        window.location.href = "portal.html";
+        window.location.href = destino;
         return;
       }
 
@@ -4684,23 +4699,59 @@ async function borrarFranja(id) {
         }
 
         await limpiarUploadTemporalSiExiste();
-        window.location.href = "portal.html";
+        window.location.href = destino;
         return;
       }
 
       await limpiarUploadTemporalSiExiste();
-      window.location.href = "portal.html";
+      window.location.href = destino;
     }
 
     function intentarSalirAlPortal(event) {
       if (event) event.preventDefault();
       limpiarMensaje();
+      destinoSalidaPendiente = "portal.html";
 
       if (!hayCambiosPendientesActividad()) {
         window.location.href = "portal.html";
         return;
       }
 
+      abrirModalSalidaSinGuardar();
+    }
+
+    function construirUrlPlantillasActividad() {
+      const id = document.getElementById("actividadId")?.value;
+      if (!id) return "admin-plantillas.html";
+      return `admin-plantillas.html?actividad_id=${encodeURIComponent(id)}`;
+    }
+
+    function actualizarAccesoPlantillasActividad() {
+      const boton = document.getElementById("btnIrPlantillasActividad");
+      if (!boton) return;
+      const id = document.getElementById("actividadId")?.value;
+      const tieneActividad = Number.parseInt(id || "", 10) > 0;
+      boton.disabled = !tieneActividad;
+      boton.title = tieneActividad ? "Plantillas documentales" : "Guarda primero la actividad para configurar sus plantillas";
+      boton.setAttribute("aria-label", boton.title);
+    }
+
+    function intentarIrAPlantillasActividad(event) {
+      if (event) event.preventDefault();
+      limpiarMensaje();
+
+      const id = document.getElementById("actividadId")?.value;
+      if (!Number.parseInt(id || "", 10)) {
+        mostrarMensaje("error", "Debes guardar primero la actividad antes de poder asociarle plantillas documentales.");
+        return;
+      }
+
+      const destino = construirUrlPlantillasActividad();
+      destinoSalidaPendiente = destino;
+      if (!hayCambiosPendientesActividad()) {
+        window.location.href = destino;
+        return;
+      }
       abrirModalSalidaSinGuardar();
     }
 
@@ -5047,7 +5098,9 @@ function retrocederPaso() {
           renderTablaRequisitos();
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
+        document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);
         actualizarEnlaceCalendarioActividad();
+        actualizarAccesoPlantillasActividad();
         document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
         document.getElementById("btnEditarFranjaSeleccionada").addEventListener("click", editarFranjaSeleccionada);
         document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
@@ -5071,10 +5124,11 @@ function retrocederPaso() {
         salidaPendienteAlPortal = true;
         const okGuardado = await guardarActividad();
         if (okGuardado) {
-          window.location.href = "portal.html";
+          window.location.href = destinoSalidaPendiente || "portal.html";
           return;
         }
         salidaPendienteAlPortal = false;
+        destinoSalidaPendiente = "portal.html";
       });
 
       document.getElementById("modalSalidaSinGuardar").addEventListener("click", (event) => {
