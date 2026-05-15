@@ -27,9 +27,9 @@
     .campo{display:flex;flex-direction:column;gap:6px}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo-ancho{grid-column:1/-1}
     .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
-    .fila-archivo{display:grid;grid-template-columns:minmax(0,2.35fr) minmax(210px,.95fr);gap:10px;align-items:stretch}
-    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:172px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
-    .visor-plantilla{border:1px solid #d7e2ee;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#f2f7fd 100%);padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;text-decoration:none;color:#143a63;min-height:206px;transition:all .18s ease}
+    .fila-archivo{display:grid;grid-template-columns:minmax(0,2.7fr) minmax(230px,.9fr);gap:10px;align-items:stretch}
+    .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:16px;min-height:168px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
+    .visor-plantilla{border:1px solid #d7e2ee;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#f2f7fd 100%);padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;text-decoration:none;color:#143a63;min-height:168px;height:100%;text-align:center;transition:all .18s ease}
     .visor-plantilla:hover{border-color:#0b5ed7;background:#eef4ff}
     .visor-plantilla strong{font-size:15px;line-height:1.3}
     .visor-plantilla span{font-size:12px;line-height:1.5;color:#536577}
@@ -91,9 +91,7 @@
           </div>
           <div class="bloque-contenido">
             <div class="campo">
-              <label for="selectorPlantillaRepositorio">Plantillas guardadas en el repositorio</label>
               <select id="selectorPlantillaRepositorio">
-                <option value="">Nueva plantilla</option>
               </select>
             </div>
           </div>
@@ -110,11 +108,11 @@
           </div>
           <div class="bloque-contenido">
             <div class="grid">
-              <div class="campo"><label for="nombrePlantilla">Nombre interno de la plantilla</label><input id="nombrePlantilla" type="text" placeholder="Ej. Consentimiento bautismo de mar"></div>
+              <div class="campo"><label for="nombrePlantilla">Nombre</label><input id="nombrePlantilla" type="text" placeholder="Ej. Consentimiento bautismo de mar"></div>
               <div class="campo"><label for="actividadPlantilla">Actividad asociada</label><select id="actividadPlantilla"><option value="">Selecciona una actividad</option></select></div>
               <div class="campo"><label for="tipoGeneracionPlantilla">Modo de generacion</label><select id="tipoGeneracionPlantilla"><option value="ASISTENTE">Un documento por asistente</option><option value="SOLICITUD">Un documento por solicitud</option><option value="GRUPO">Un documento resumen por grupo</option></select></div>
-              <div class="campo"><label for="estadoPlantilla">Estado de la plantilla</label><select id="estadoPlantilla"><option value="ACTIVA">Activa</option><option value="PAUSA">En preparacion</option></select></div>
-              <div class="campo campo-ancho"><label for="descripcionPlantilla">Descripcion funcional</label><textarea id="descripcionPlantilla" placeholder="Describe que documento genera esta plantilla y en que escenario se utilizara."></textarea></div>
+              <div class="campo"><label for="estadoPlantilla">Estado</label><select id="estadoPlantilla"><option value="ACTIVA">Activa</option><option value="PAUSA">En preparacion</option></select></div>
+              <div class="campo campo-ancho"><label for="descripcionPlantilla">Descripcion</label><textarea id="descripcionPlantilla" placeholder="Describe que documento genera esta plantilla y en que escenario se utilizara."></textarea></div>
               <div class="campo campo-ancho">
                 <label>Plantilla PDF rellenable</label>
                 <input id="inputPdfPlantilla" type="file" accept="application/pdf" class="oculto">
