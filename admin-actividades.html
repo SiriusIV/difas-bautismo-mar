@@ -1473,6 +1473,29 @@
       vertical-align: middle;
     }
 
+    .btn-requisito-eliminar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid #e6b1b1;
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-requisito-eliminar:hover {
+      background: #f9d6d6;
+      border-color: #d99191;
+      transform: translateY(-1px);
+    }
+
     .input-requisito {
       width: 100%;
       min-height: 34px;
@@ -2131,7 +2154,7 @@
                   <tr>
                     <th class="col-orden">#</th>
                     <th>Requisito</th>
-                    <th class="col-acciones">Acciones</th>
+                    <th class="col-acciones"></th>
                   </tr>
                 </thead>
                 <tbody id="tablaRequisitosBody"></tbody>
@@ -3340,8 +3363,10 @@ function renderTablaRequisitos() {
     tdAcciones.className = "celda-acciones";
     const btnEliminar = document.createElement("button");
     btnEliminar.type = "button";
-    btnEliminar.className = "btn-mini peligro";
-    btnEliminar.textContent = "Eliminar";
+    btnEliminar.className = "btn-requisito-eliminar";
+    btnEliminar.setAttribute("aria-label", "Eliminar requisito");
+    btnEliminar.setAttribute("title", "Eliminar requisito");
+    btnEliminar.textContent = "×";
     btnEliminar.addEventListener("click", () => {
       requisitosParticulares.splice(index, 1);
       marcarCambiosPendientesActividad();
