@@ -10,7 +10,8 @@
     *{box-sizing:border-box} html,body{min-height:100%}
     body{font-family:Arial,sans-serif;background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.78) 12%,rgba(255,255,255,.42) 26%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.10) 100%),linear-gradient(180deg,rgba(244,246,248,.18) 0%,rgba(244,246,248,.24) 100%),url("assets/fondo_cabecera.png") top center/100% auto no-repeat,var(--bg);background-blend-mode:normal,screen,normal;margin:0;color:var(--text)}
     .cabecera{padding:18px 20px 14px;position:sticky;top:0;z-index:50}.cabecera-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
-    .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:14px}
+    .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{display:flex;flex-direction:column;gap:16px}
+    .panel-bloque{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:14px}
     .barra-superior{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:58px;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #d9e0e7}.barra-superior-izq,.barra-superior-der{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
     .nav-btn,.btn{display:inline-block;padding:8px 15px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#1e2a36;text-decoration:none;font-size:13px;line-height:1;cursor:pointer;transition:all .15s ease}.nav-btn:hover,.btn:hover{background:#f7f9fb}.nav-btn.activo,.btn.primario{background:var(--primary);color:#fff;border-color:var(--primary)}.btn.primario:hover{background:var(--primary-dark);border-color:var(--primary-dark)}.btn.peligro{border-radius:10px;color:#9b1c1c;border-color:#efc2c2}.btn.peligro:hover{background:#fdeaea}.btn{border-radius:10px;padding:9px 14px}
     .btn-icono{width:40px;height:40px;border-radius:999px;border:1px solid #bfc9d4;background:#fff;color:#4a5a6a;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;padding:0;text-decoration:none;flex:0 0 40px}.btn-icono:hover{background:#f7f9fb;color:var(--primary);border-color:#9fb2c7}.btn-icono svg{width:16px;height:16px}
@@ -25,21 +26,27 @@
     .campo{display:flex;flex-direction:column;gap:6px}.campo label{font-size:12px;font-weight:700;color:#36506b}.campo input,.campo select,.campo textarea{width:100%;border:1px solid #c9d5e2;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1f2937;background:#fff}.campo textarea{min-height:84px;resize:vertical}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.campo-ancho{grid-column:1/-1}
     .resumen-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.resumen-encabezado h3{margin:0;font-size:18px;color:#143a63}.resumen-encabezado p{margin:4px 0 0;font-size:13px;color:#5c6b7b}
+    .fila-archivo{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:14px;align-items:stretch}
     .dropzone{border:1px dashed #a9bfd6;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:18px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;transition:all .18s ease}.dropzone:hover,.dropzone.activa{border-color:#0b5ed7;background:#eef4ff}.dropzone svg{width:24px;height:24px;color:#35506c}.dropzone strong{color:#143a63;font-size:14px}.dropzone span{color:#647587;font-size:12px;line-height:1.45;max-width:360px}
     .resumen-archivo{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f8fafc;border:1px solid #d7e2ee;font-size:12px;color:#425467;line-height:1.5}
-    .acciones-archivo{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .visor-plantilla{border:1px solid #d7e2ee;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#f2f7fd 100%);padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;text-decoration:none;color:#143a63;min-height:206px;transition:all .18s ease}
+    .visor-plantilla:hover{border-color:#0b5ed7;background:#eef4ff}
+    .visor-plantilla strong{font-size:15px;line-height:1.3}
+    .visor-plantilla span{font-size:12px;line-height:1.5;color:#536577}
+    .visor-plantilla small{font-size:12px;font-weight:700;color:#0b5ed7}
     .tabla-campos{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}.tabla-campos th,.tabla-campos td{padding:10px 8px;border-bottom:1px solid #e7edf4;text-align:left;vertical-align:top}.tabla-campos th{color:#36506b;font-size:11px;text-transform:uppercase;letter-spacing:.03em}.tabla-campos th:first-child{color:transparent}.tabla-campos td:first-child{font-weight:600;color:#143a63;word-break:break-word}
     .tabla-campos-select{width:100%;border:1px solid #c9d5e2;border-radius:9px;padding:7px 10px;font-size:12px;background:#fff;color:#1f2937}
     .tabla-campos col.col-nombre{width:auto}.tabla-campos col.col-dato{width:110px}.tabla-campos col.col-obligatorio{width:84px}
-    .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;border:1px solid transparent}.badge.info{background:#eef4ff;color:#1d4f91;border-color:#c9dcff}.badge.warn{background:#fff7e6;color:#9a6700;border-color:#f3d08b}
     .texto-sesion{font-size:12px;color:#607284}.oculto{display:none!important}
     @media(max-width:980px){.estructura{grid-template-columns:1fr}}
+    @media(max-width:860px){.fila-archivo{grid-template-columns:1fr}}
     @media(max-width:760px){.barra-superior{grid-template-columns:1fr;justify-items:center}.barra-superior-izq,.barra-superior-der{justify-content:center}.barra-superior-centro{order:-1}.grid{grid-template-columns:1fr}.resumen-encabezado{flex-direction:column}}
   </style>
 </head>
 <body>
   <header class="cabecera"><div class="cabecera-inner"><div class="bloque-marca"><img src="logo.png" alt="Logo" class="logo-cabecera logo-pendiente" id="logoCabecera"><div class="titulos-cabecera"><h1>Plantillas documentales</h1><h2 id="subtituloCabecera">Administrador</h2></div></div></div></header>
   <div class="contenedor"><div class="panel-principal">
+    <section class="panel-bloque">
     <div class="barra-superior">
       <div class="barra-superior-izq">
         <button type="button" class="nav-btn activo" id="btnNuevaPlantilla">Nueva plantilla</button>
@@ -52,6 +59,8 @@
         <a class="btn-icono" href="portal.html" title="Volver al portal" aria-label="Volver al portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
       </div>
     </div>
+    </section>
+    <section class="panel-bloque">
     <div id="mensaje" class="mensaje"></div>
     <div class="estructura">
       <aside class="bloque">
@@ -60,10 +69,6 @@
           <p>Aqui puedes clasificar los campos del PDF y marcar si seran obligatorios en la generacion.</p>
         </div>
         <div class="bloque-contenido">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
-            <span class="badge info" id="badgeCamposDetectados">0 campos detectados</span>
-            <span class="badge warn" id="badgeEstadoParserPdf">Listo para analizar PDF</span>
-          </div>
           <div id="estadoSinCampos" class="estado-vacio">Todavia no hay campos cargados en esta plantilla. Cuando importes un PDF rellenable real, aqui apareceran automaticamente los nombres internos de sus campos.</div>
           <table class="tabla-campos oculto" id="tablaCamposDetectados">
             <colgroup>
@@ -100,7 +105,7 @@
                 <h3 id="tituloEditor">Nueva plantilla documental</h3>
                 <p id="subtituloEditor">Asocia esta plantilla a una actividad concreta del ambito del administrador.</p>
               </div>
-              <span class="texto-sesion" id="textoEstadoSesion">Sin cambios pendientes en la plantilla actual.</span>
+                <span class="texto-sesion" id="textoEstadoSesion"></span>
             </div>
           </div>
           <div class="bloque-contenido">
@@ -113,10 +118,16 @@
               <div class="campo campo-ancho">
                 <label>Plantilla PDF rellenable</label>
                 <input id="inputPdfPlantilla" type="file" accept="application/pdf" class="oculto">
-                <button type="button" class="dropzone" id="dropzonePdfPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><rect x="4" y="16" width="16" height="4" rx="1.5"></rect></svg><strong>Importar plantilla PDF rellenable</strong><span>Arrastra aqui el archivo PDF o pincha para seleccionarlo. Al guardar la plantilla, el PDF quedara subido al repositorio documental del sistema.</span></button>
-                <div id="resumenArchivoPdf" class="resumen-archivo">Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.</div>
-                <div class="acciones-archivo">
-                  <a id="btnVerPdfPlantilla" class="btn oculto" href="#" target="_blank" rel="noopener">Ver plantilla base</a>
+                <div class="fila-archivo">
+                  <div>
+                    <button type="button" class="dropzone" id="dropzonePdfPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><rect x="4" y="16" width="16" height="4" rx="1.5"></rect></svg><strong>Importar plantilla PDF rellenable</strong><span>Arrastra aqui el archivo PDF o pincha para seleccionarlo. Al guardar la plantilla, el PDF quedara subido al repositorio documental del sistema.</span></button>
+                    <div id="resumenArchivoPdf" class="resumen-archivo">Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.</div>
+                  </div>
+                  <a id="btnVerPdfPlantilla" class="visor-plantilla oculto" href="#" target="_blank" rel="noopener">
+                    <strong>Plantilla base almacenada</strong>
+                    <span id="textoVisorPlantilla">La plantilla ya esta guardada en el repositorio documental del sistema.</span>
+                    <small>Pincha para visualizar el PDF base</small>
+                  </a>
                 </div>
               </div>
             </div>
@@ -124,6 +135,7 @@
         </section>
       </div>
     </div>
+    </section>
   </div></div>
   <script src="assets/admin-plantillas.js"></script>
 </body>

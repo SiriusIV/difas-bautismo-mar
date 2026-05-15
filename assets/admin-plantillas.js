@@ -16,20 +16,19 @@ function mostrarMensaje(tipo, texto) { const el = document.getElementById("mensa
 function limpiarMensaje() { const el = document.getElementById("mensaje"); el.className = "mensaje"; el.style.display = "none"; el.innerHTML = ""; if (temporizadorMensaje) { clearTimeout(temporizadorMensaje); temporizadorMensaje = null; } }
 function obtenerActividadPorId(id) { return actividadesCache.find((a) => Number(a.id) === Number(id)) || null; }
 function plantillaVacia() { return { id: null, nombre: "", descripcion: "", actividad_id: "", actividad_titulo: "", tipo_generacion: "ASISTENTE", estado: "ACTIVA", archivo_nombre: "", archivo_url: "", archivo_key: "", campos_detectados: [], created_at: "", updated_at: "" }; }
-function actualizarEstadoSesion(texto) { document.getElementById("textoEstadoSesion").textContent = texto; }
+function actualizarEstadoSesion(texto) { const el = document.getElementById("textoEstadoSesion"); if (el) el.textContent = texto; }
 function marcarCambiosPendientes() { hayCambiosSinGuardar = true; actualizarEstadoSesion("Hay cambios sin guardar en esta plantilla."); }
-function reiniciarEstadoCambios() { hayCambiosSinGuardar = false; actualizarEstadoSesion("Plantilla sincronizada con el repositorio del servidor."); }
+function reiniciarEstadoCambios() { hayCambiosSinGuardar = false; actualizarEstadoSesion(""); }
 function obtenerActividadInicialURL() { const params = new URLSearchParams(window.location.search); const raw = params.get("actividad_id") || ""; const id = Number.parseInt(raw, 10); return Number.isInteger(id) && id > 0 ? id : null; }
 function poblarSelectActividades() { const select = document.getElementById("actividadPlantilla"), valor = select.value; select.innerHTML = `<option value="">Selecciona una actividad</option>`; actividadesCache.forEach((a) => { const option = document.createElement("option"); option.value = String(a.id); option.textContent = a.titulo_publico || a.nombre || `Actividad ${a.id}`; select.appendChild(option); }); if (valor && actividadesCache.some((a) => String(a.id) === String(valor))) select.value = valor; }
 function renderSelectorPlantillas() { const select = document.getElementById("selectorPlantillaRepositorio"); if (!select) return; const valorActual = plantillaActual?.id ? String(plantillaActual.id) : ""; select.innerHTML = `<option value="">Nueva plantilla</option>`; plantillasCache.forEach((plantilla) => { const option = document.createElement("option"); option.value = String(plantilla.id); const actividad = plantilla.actividad_titulo || "Sin actividad asociada"; option.textContent = `${plantilla.nombre || "Plantilla sin nombre"} · ${actividad}`; select.appendChild(option); }); select.value = plantillasCache.some((item) => String(item.id) === valorActual) ? valorActual : ""; }
-function actualizarEstadoParserPdf(texto) { document.getElementById("badgeEstadoParserPdf").textContent = texto; }
+function actualizarEstadoParserPdf() {}
 function obtenerTipoCampoPdf(field) { const nombreClase = String(field?.constructor?.name || "").toLowerCase(); if (nombreClase.includes("textfield")) return "Texto"; if (nombreClase.includes("checkbox")) return "Casilla"; if (nombreClase.includes("radiogroup")) return "Opcion"; if (nombreClase.includes("dropdown")) return "Desplegable"; if (nombreClase.includes("optionlist")) return "Lista"; if (nombreClase.includes("button")) return "Boton"; if (nombreClase.includes("signature")) return "Firma"; return "Campo"; }
 async function extraerCamposPdf(file) { if (!window.PDFLib?.PDFDocument) throw new Error("El lector PDF del constructor no esta disponible en este momento."); const bytes = await file.arrayBuffer(); const pdfDoc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false }); return pdfDoc.getForm().getFields().map((field) => ({ nombre: field.getName(), tipo: obtenerTipoCampoPdf(field), modo: "VINCULADO", obligatorio: true })); }
 function actualizarModoCampoDetectado(index, modo) { if (!plantillaActual?.campos_detectados?.[index]) return; plantillaActual.campos_detectados[index] = { ...plantillaActual.campos_detectados[index], modo: modo === "LIBRE" ? "LIBRE" : "VINCULADO" }; marcarCambiosPendientes(); }
 function actualizarObligatorioCampoDetectado(index, obligatorio) { if (!plantillaActual?.campos_detectados?.[index]) return; plantillaActual.campos_detectados[index] = { ...plantillaActual.campos_detectados[index], obligatorio: !!obligatorio }; marcarCambiosPendientes(); }
 function renderCamposDetectados() {
   const campos = Array.isArray(plantillaActual?.campos_detectados) ? plantillaActual.campos_detectados : [];
-  document.getElementById("badgeCamposDetectados").textContent = `${campos.length} campos detectados`;
   const tabla = document.getElementById("tablaCamposDetectados");
   const vacio = document.getElementById("estadoSinCampos");
   const body = document.getElementById("tablaCamposDetectadosBody");
@@ -57,6 +56,7 @@ function actualizarSubtituloSegunActividad(actividadId) {
 function actualizarResumenArchivo() {
   const el = document.getElementById("resumenArchivoPdf");
   const btnVer = document.getElementById("btnVerPdfPlantilla");
+  const textoVisor = document.getElementById("textoVisorPlantilla");
   if (archivoPdfSesion?.file) {
     el.innerHTML = `<strong>Archivo pendiente de guardar en servidor:</strong> ${escapeHtml(archivoPdfSesion.name)}<br>Tamano aproximado: ${(archivoPdfSesion.size / 1024).toFixed(1)} KB.<br>Al guardar la plantilla, este PDF se subira al repositorio documental del sistema.`;
     btnVer.classList.add("oculto");
@@ -66,10 +66,12 @@ function actualizarResumenArchivo() {
   if (plantillaActual?.archivo_url) {
     el.innerHTML = `<strong>PDF almacenado en el repositorio:</strong> ${escapeHtml(plantillaActual.archivo_nombre || "plantilla.pdf")}<br>La plantilla ya esta disponible en servidor para previsualizacion y generacion documental desde reservas.`;
     btnVer.href = plantillaActual.archivo_url;
+    textoVisor.textContent = `${plantillaActual.archivo_nombre || "plantilla.pdf"} ya esta almacenado en el repositorio documental del sistema.`;
     btnVer.classList.remove("oculto");
     return;
   }
   el.textContent = "Todavia no has seleccionado ninguna plantilla PDF para esta plantilla documental.";
+  textoVisor.textContent = "La plantilla ya esta guardada en el repositorio documental del sistema.";
   btnVer.classList.add("oculto");
   btnVer.removeAttribute("href");
 }
