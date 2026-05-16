@@ -157,6 +157,12 @@
       gap: 10px;
       align-items: end;
     }
+    .formulario-inspeccion {
+      display: grid;
+      grid-template-columns: minmax(0, 180px) minmax(0, 180px) auto;
+      gap: 10px;
+      align-items: end;
+    }
     label {
       display: block;
       font-weight: bold;
@@ -202,9 +208,16 @@
       color: #21374d;
       min-height: 100px;
     }
+    .inspeccion-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
     @media (max-width: 980px) {
       .grid-diagnostico { grid-template-columns: 1fr 1fr; }
       .formulario-prueba { grid-template-columns: 1fr; }
+      .formulario-inspeccion { grid-template-columns: 1fr; }
+      .inspeccion-grid { grid-template-columns: 1fr; }
       .barra-navegacion-centro {
         position: static;
         transform: none;
@@ -311,6 +324,36 @@
     </div>
 
     <div class="bloque">
+      <h3>Inspección de destinatarios reales</h3>
+      <p class="texto-ayuda">
+        Aquí puedes comprobar qué correo está resolviendo realmente el sistema para una actividad o una reserva concreta. Esto ayuda a detectar si el envío falla porque el destinatario llega vacío o distinto del esperado.
+      </p>
+      <div class="formulario-inspeccion">
+        <div>
+          <label for="actividadIdInspeccion">ID de actividad</label>
+          <input type="text" id="actividadIdInspeccion" placeholder="Ej. 3" />
+        </div>
+        <div>
+          <label for="reservaIdInspeccion">ID de reserva</label>
+          <input type="text" id="reservaIdInspeccion" placeholder="Ej. 125" />
+        </div>
+        <div>
+          <button type="button" class="btn-principal" id="btnInspeccionarDestinos">Comprobar destinos</button>
+        </div>
+      </div>
+      <div class="inspeccion-grid" style="margin-top:10px;">
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">Destino de actividad</span>
+          <div class="resultado-panel" id="resultadoDestinoActividad">Todavía no se ha comprobado ninguna actividad.</div>
+        </div>
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">Destino de reserva</span>
+          <div class="resultado-panel" id="resultadoDestinoReserva">Todavía no se ha comprobado ninguna reserva.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloque">
       <h3>Resultado técnico</h3>
       <div class="resultado-panel" id="resultadoDiagnostico">Todavía no se ha ejecutado ninguna prueba.</div>
     </div>
@@ -383,6 +426,18 @@
       document.getElementById("resultadoDiagnostico").textContent = JSON.stringify(resultado, null, 2);
     }
 
+    function pintarDestino(idElemento, data, tipo) {
+      const el = document.getElementById(idElemento);
+      if (!el) return;
+      if (!data) {
+        el.textContent = tipo === "actividad"
+          ? "No se ha encontrado ninguna actividad con ese ID."
+          : "No se ha encontrado ninguna reserva con ese ID.";
+        return;
+      }
+      el.textContent = JSON.stringify(data, null, 2);
+    }
+
     async function leerRespuestaJsonSegura(response) {
       const texto = await response.text();
       let data = null;
@@ -419,6 +474,43 @@
       }
       pintarDiagnostico(data.diagnostico || {});
       pintarResultado(data);
+    }
+
+    async function inspeccionarDestinos() {
+      limpiarMensaje();
+      const boton = document.getElementById("btnInspeccionarDestinos");
+      const actividadId = limpiarTexto(document.getElementById("actividadIdInspeccion").value);
+      const reservaId = limpiarTexto(document.getElementById("reservaIdInspeccion").value);
+      const params = new URLSearchParams();
+      if (actividadId) params.set("actividad_id", actividadId);
+      if (reservaId) params.set("reserva_id", reservaId);
+      if (!params.toString()) {
+        mostrarMensaje("error", "Debes indicar al menos un ID de actividad o de reserva.");
+        return;
+      }
+
+      try {
+        boton.disabled = true;
+        const res = await fetch(`/api/admin/email-diagnostico?${params.toString()}`, { credentials: "same-origin" });
+        const { data, texto } = await leerRespuestaJsonSegura(res);
+        if (res.status === 401) {
+          location.href = "portal.html";
+          return;
+        }
+        if (!res.ok || !data?.ok) {
+          const detalle = data?.detalle || data?.error || texto || `HTTP ${res.status}`;
+          throw new Error(`No se pudieron comprobar los destinatarios. ${detalle}`.trim());
+        }
+        pintarDiagnostico(data.diagnostico || {});
+        pintarResultado(data);
+        pintarDestino("resultadoDestinoActividad", data?.destinos?.actividad || null, "actividad");
+        pintarDestino("resultadoDestinoReserva", data?.destinos?.reserva || null, "reserva");
+        mostrarMensaje("ok", "Destinatarios comprobados correctamente.");
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudieron comprobar los destinatarios.");
+      } finally {
+        boton.disabled = false;
+      }
     }
 
     async function enviarPrueba() {
@@ -463,6 +555,7 @@
 
     document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
     document.getElementById("btnEnviarPrueba").addEventListener("click", enviarPrueba);
+    document.getElementById("btnInspeccionarDestinos").addEventListener("click", inspeccionarDestinos);
 
     (async function init() {
       await cargarSesionCabecera();
