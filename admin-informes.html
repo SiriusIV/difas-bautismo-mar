@@ -450,6 +450,20 @@
       return lineas;
     }
 
+    async function capturarNodoComoPngBytes(node, backgroundColor = "#ffffff", scale = 2) {
+      if (!node) return null;
+      const canvas = await window.html2canvas(node, { backgroundColor, scale });
+      return await new Promise((resolve) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            resolve(null);
+            return;
+          }
+          resolve(new Uint8Array(await blob.arrayBuffer()));
+        }, "image/png");
+      });
+    }
+
     async function cargarSesion() {
       const res = await fetch("/api/usuario/session", { credentials: "include", cache: "no-store" });
       const data = await res.json().catch(() => null);
@@ -731,8 +745,8 @@
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const pageWidth = 841.89;
-      const pageHeight = 595.28;
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
       const margen = 34;
       const azul = rgbPdf("#123a63");
       const azulClaro = rgbPdf("#eef4ff");
@@ -742,6 +756,22 @@
 
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
       let y = pageHeight - margen;
+
+      const logoNode = document.getElementById("logoCabeceraInformes");
+      const logoBytes = await capturarNodoComoPngBytes(logoNode, null, 2);
+      if (logoBytes) {
+        const logoImg = await pdfDoc.embedPng(logoBytes);
+        const maxLogo = 62;
+        const logoScale = Math.min(maxLogo / logoImg.width, maxLogo / logoImg.height);
+        const logoWidth = logoImg.width * logoScale;
+        const logoHeight = logoImg.height * logoScale;
+        page.drawImage(logoImg, {
+          x: pageWidth - margen - logoWidth,
+          y: pageHeight - margen - logoHeight + 6,
+          width: logoWidth,
+          height: logoHeight
+        });
+      }
 
       page.drawText("Informe de actividades realizadas", {
         x: margen,
@@ -784,7 +814,7 @@
         { titulo: "Actividades", valor: String(Number(informeActual?.resumen?.total_actividades || 0)) },
         { titulo: "Asistentes", valor: String(Number(informeActual?.resumen?.total_asistentes || 0)) }
       ];
-      const anchoCard = 180;
+      const anchoCard = (pageWidth - (margen * 2) - 14) / 2;
       resumenCards.forEach((card, index) => {
         const x = margen + (index * (anchoCard + 14));
         page.drawRectangle({
@@ -840,23 +870,22 @@
 
       const chartNode = document.getElementById("graficaActividad");
       if (chartNode) {
-        const canvas = await window.html2canvas(chartNode, { backgroundColor: "#fbfcfe", scale: 2 });
-        const imageBytes = await new Promise((resolve) => canvas.toBlob(async (blob) => {
-          resolve(new Uint8Array(await blob.arrayBuffer()));
-        }, "image/png"));
-        const image = await pdfDoc.embedPng(imageBytes);
-        const maxChartWidth = pageWidth - margen * 2;
-        const maxChartHeight = 230;
-        const scale = Math.min(maxChartWidth / image.width, maxChartHeight / image.height);
-        const drawWidth = image.width * scale;
-        const drawHeight = image.height * scale;
-        page.drawImage(image, {
-          x: margen + ((maxChartWidth - drawWidth) / 2),
-          y: y - drawHeight,
-          width: drawWidth,
-          height: drawHeight
-        });
-        y -= drawHeight + 18;
+        const imageBytes = await capturarNodoComoPngBytes(chartNode, "#fbfcfe", 2);
+        if (imageBytes) {
+          const image = await pdfDoc.embedPng(imageBytes);
+          const maxChartWidth = pageWidth - margen * 2;
+          const maxChartHeight = 260;
+          const scale = Math.min(maxChartWidth / image.width, maxChartHeight / image.height);
+          const drawWidth = image.width * scale;
+          const drawHeight = image.height * scale;
+          page.drawImage(image, {
+            x: margen + ((maxChartWidth - drawWidth) / 2),
+            y: y - drawHeight,
+            width: drawWidth,
+            height: drawHeight
+          });
+          y -= drawHeight + 18;
+        }
       }
 
       let tablaPage = page;
@@ -881,7 +910,7 @@
         });
         const top = yBase - 18;
         pagina.drawRectangle({ x: margen, y: top - 18, width: pageWidth - margen * 2, height: 18, color: azulClaro });
-        const cols = [margen + 6, margen + 320, margen + 420, margen + 520, margen + 640];
+        const cols = [margen + 6, margen + 250, margen + 336, margen + 416, margen + 500];
         ["Actividad", "Realizaciones", "Asistentes", "Primera fecha", "Ultima fecha"].forEach((txt, index) => {
           pagina.drawText(txt, { x: cols[index], y: top - 12, size: 9.5, font: fontBold, color: azul });
         });
@@ -1014,3 +1043,4 @@
   </script>
 </body>
 </html>
+
