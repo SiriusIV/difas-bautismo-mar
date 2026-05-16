@@ -175,6 +175,24 @@
     .mensaje { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; display: none; font-size: 13px; }
     .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; border: 1px solid #b9e0c0; }
+    .mensaje-contenido { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .mensaje-texto { min-width: 0; }
+    .mensaje-cerrar {
+      border: 1px solid currentColor;
+      background: transparent;
+      color: inherit;
+      border-radius: 999px;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      font-size: 15px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
     @media (max-width: 920px) {
       .resumen-cards, .grafica-wrap, .filtros-grid { grid-template-columns: 1fr; }
       .barra-nav { justify-content: center; padding-top: 10px; }
@@ -337,7 +355,12 @@
       }
       el.className = "mensaje " + tipo;
       el.style.display = "block";
-      el.textContent = texto;
+      if (tipo === "error") {
+        el.innerHTML = `<div class="mensaje-contenido"><div class="mensaje-texto">${escapeHtml(texto)}</div><button type="button" class="mensaje-cerrar" id="btnCerrarMensajeInforme" aria-label="Cerrar">×</button></div>`;
+        document.getElementById("btnCerrarMensajeInforme").addEventListener("click", limpiarMensaje, { once: true });
+      } else {
+        el.textContent = texto;
+      }
       if (tipo === "ok") {
         temporizadorMensaje = setTimeout(() => {
           limpiarMensaje();
@@ -358,6 +381,10 @@
 
     function escapeHtml(texto) {
       return String(texto || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+    }
+
+    function limpiarTexto(valor) {
+      return String(valor || "").trim();
     }
 
     function aplicarLogoCabecera(img, userLike = {}) {
