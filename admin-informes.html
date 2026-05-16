@@ -135,7 +135,8 @@
     }
     .grafica-wrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
     .grafica-filtros-col { display: flex; flex-direction: column; min-height: 100%; }
-    .btn-generar-panel { margin-top: 10px; flex: 1 1 auto; min-height: 120px; }
+    .btn-generar-panel { margin-top: 10px; min-height: 92px; }
+    .btn-descarga-informe { margin-top: 10px; }
     .grafica-panel {
       border: 1px solid #dde4ea;
       border-radius: 12px;
@@ -351,12 +352,12 @@
           <label for="selectActividadGrafica" id="labelEntidadGrafica">Comparativa por actividad</label>
           <select id="selectActividadGrafica"></select>
           <div style="height:10px;"></div>
+          <button type="button" class="btn btn-cuadrado-icono btn-generar-panel" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
+            <img src="assets/icono-generar-informe.svg" alt="">
+          </button>
           <button type="button" class="btn btn-secundario btn-descarga-informe" id="btnDescargarInformePdf">
             <img src="assets/icono-descargar-informe.svg" alt="">
             <span>Descargar informe</span>
-          </button>
-          <button type="button" class="btn btn-cuadrado-icono btn-generar-panel" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
-            <img src="assets/icono-generar-informe.svg" alt="">
           </button>
           <p class="grafica-sub" id="ayudaGraficaComparativa">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
         </div>
@@ -554,6 +555,37 @@
         }
       } catch (_) {
         return null;
+      }
+    }
+
+    async function capturarLogoCabeceraPngBytes() {
+      const logoNode = document.getElementById("logoCabeceraInformes");
+      const logoSrc = String(logoNode?.currentSrc || logoNode?.src || "").trim();
+      if (!logoSrc) return null;
+      const wrap = document.createElement("div");
+      wrap.style.position = "fixed";
+      wrap.style.left = "-99999px";
+      wrap.style.top = "0";
+      wrap.style.width = "120px";
+      wrap.style.height = "120px";
+      wrap.style.display = "flex";
+      wrap.style.alignItems = "center";
+      wrap.style.justifyContent = "center";
+      wrap.style.background = "transparent";
+      const img = document.createElement("img");
+      img.src = logoSrc;
+      img.alt = "Logo administrador";
+      img.style.display = "block";
+      img.style.maxWidth = "100px";
+      img.style.maxHeight = "100px";
+      img.style.objectFit = "contain";
+      wrap.appendChild(img);
+      document.body.appendChild(wrap);
+      try {
+        await esperarImagenesCargadas(wrap);
+        return await capturarNodoComoPngBytes(wrap, null, 3);
+      } finally {
+        wrap.remove();
       }
     }
 
@@ -1106,7 +1138,8 @@
       const logoNode = document.getElementById("logoCabeceraInformes");
       const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
       const logoBytesRaster = await rasterizarImagenDesdeSrc(logoSrcDirecto);
-      const logoBytes = logoBytesRaster || (logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null);
+      const logoBytesCapturados = await capturarLogoCabeceraPngBytes();
+      const logoBytes = logoBytesCapturados || logoBytesRaster || (logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null);
       const logoOverlayBytes = logoBytes;
       const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
       const logoUrl = logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "";
