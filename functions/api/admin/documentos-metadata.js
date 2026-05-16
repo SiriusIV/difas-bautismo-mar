@@ -123,7 +123,8 @@ export async function onRequestPost(context) {
       const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
         adminId: Number(actual.admin_id || 0),
         baseUrl,
-        motivo: "documentos_actualizados"
+        motivo: "documentos_actualizados",
+        avisarCambioMarcoSinCambios: true
       });
 
       return json({
@@ -163,7 +164,8 @@ export async function onRequestPost(context) {
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId: Number(session.usuario_id || 0),
       baseUrl,
-      motivo: "documento_creado"
+      motivo: "documento_creado",
+      avisarCambioMarcoSinCambios: true
     });
 
     return json({

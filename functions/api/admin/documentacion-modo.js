@@ -317,7 +317,8 @@ export async function onRequestPost(context) {
       const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
         adminId,
         baseUrl,
-        motivo: "cambio_responsable"
+        motivo: "cambio_responsable",
+        avisarCambioMarcoSinCambios: true
       });
 
       return json({
@@ -361,7 +362,8 @@ export async function onRequestPost(context) {
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId,
       baseUrl,
-      motivo: "cambio_responsable"
+      motivo: "cambio_responsable",
+      avisarCambioMarcoSinCambios: true
     });
 
     return json({

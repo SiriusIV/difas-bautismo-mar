@@ -130,7 +130,8 @@ export async function onRequestPost(context) {
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId: Number(documento.admin_id || 0),
       baseUrl,
-      motivo: "documento_eliminado"
+      motivo: "documento_eliminado",
+      avisarCambioMarcoSinCambios: true
     });
 
     return json({

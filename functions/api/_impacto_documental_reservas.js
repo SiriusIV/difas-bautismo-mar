@@ -15,6 +15,15 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function resolverContactoReservaParaCorreo(reservas = []) {
   const primeraConCorreo = (Array.isArray(reservas) ? reservas : []).find((reserva) => limpiarTexto(reserva?.email));
   if (!primeraConCorreo) {
@@ -332,10 +341,86 @@ async function crearNotificacionReservaReactivada(env, payload) {
   });
 }
 
+function construirCorreoCambioMarcoSinCambios(payload = {}) {
+  const contacto = limpiarTexto(payload?.centro?.contacto || "");
+  const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+  const adminNombre = nombreVisibleAdmin(payload?.admin || {});
+  const motivo = limpiarTexto(payload?.motivo_texto || "Se ha actualizado la documentación obligatoria vigente.");
+  const reservas = Array.isArray(payload?.reservas) ? payload.reservas : [];
+  const pendientes = Array.isArray(payload?.documentos_pendientes) ? payload.documentos_pendientes : [];
+  const codigoReservas = reservas
+    .map((reserva) => limpiarTexto(reserva?.codigo_reserva || ""))
+    .filter(Boolean);
+  const reservasTexto = codigoReservas.length
+    ? `Reservas vinculadas: ${codigoReservas.join(", ")}`
+    : "";
+  const detallePendientes = pendientes.length
+    ? `Documentación pendiente o desactualizada: ${pendientes.map((item) => limpiarTexto(item?.nombre || "")).filter(Boolean).join(", ")}`
+    : "";
+  const asunto = `[Documentación] Actualización documental con reservas activas en ${adminNombre}`;
+  const mensaje = estadoDocumentalCompleto(payload?.estado_documental)
+    ? `La documentación obligatoria de ${adminNombre} se ha actualizado. Tus reservas activas no cambian de estado, pero conviene revisar el detalle en tu perfil.`
+    : `La documentación obligatoria de ${adminNombre} se ha actualizado. Tus reservas activas no cambian de estado por ahora, pero debes revisar el detalle documental para evitar incidencias posteriores.`;
+
+  const texto = [
+    saludo,
+    "",
+    mensaje,
+    "",
+    motivo,
+    reservasTexto,
+    detallePendientes,
+    "",
+    "Puedes revisar el detalle desde tu perfil documental."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>${saludo}</p>
+    <p>${escaparHtml(mensaje)}</p>
+    <p>${escaparHtml(motivo)}</p>
+    ${reservasTexto ? `<p><strong>Reservas vinculadas:</strong> ${escaparHtml(codigoReservas.join(", "))}</p>` : ""}
+    ${detallePendientes ? `<p><strong>Documentación pendiente o desactualizada:</strong> ${escaparHtml(pendientes.map((item) => limpiarTexto(item?.nombre || "")).filter(Boolean).join(", "))}</p>` : ""}
+    <p>Puedes revisar el detalle desde tu perfil documental.</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
+async function notificarCambioMarcoSinCambios(env, payload) {
+  const correo = construirCorreoCambioMarcoSinCambios(payload);
+  return await enviarEmail(env, {
+    to: payload?.centro?.email || "",
+    subject: correo.asunto,
+    text: correo.texto,
+    html: correo.html
+  });
+}
+
+async function crearNotificacionCambioMarcoSinCambios(env, payload) {
+  return await crearNotificacion(env, {
+    usuarioId: Number(payload?.centro?.usuario_id || 0),
+    rolDestino: "SOLICITANTE",
+    tipo: "DOCUMENTACION",
+    titulo: "Marco documental actualizado",
+    mensaje: estadoDocumentalCompleto(payload?.estado_documental)
+      ? `La documentación obligatoria de ${nombreVisibleAdmin(payload?.admin)} se ha actualizado. Tus reservas activas se mantienen, pero conviene revisar el detalle en tu perfil.`
+      : `La documentación obligatoria de ${nombreVisibleAdmin(payload?.admin)} se ha actualizado. Tus reservas activas siguen igual por ahora, pero debes revisar el detalle documental en tu perfil.`,
+    urlDestino: payload?.enlace_perfil || ""
+  });
+}
+
+function debeAvisarCambioMarcoSinCambios(motivo = "", avisarCambioMarcoSinCambios = false) {
+  if (avisarCambioMarcoSinCambios) return true;
+  return ["cambio_responsable", "documento_creado", "documento_eliminado", "documento_activado"].includes(
+    limpiarTexto(motivo).toLowerCase()
+  );
+}
+
 export async function recalcularImpactoDocumentalReservas(env, {
   adminId,
   baseUrl = "",
-  motivo = "documentos_actualizados"
+  motivo = "documentos_actualizados",
+  avisarCambioMarcoSinCambios = false
 } = {}) {
   const adminIdNumerico = Number(adminId || 0);
   if (!(adminIdNumerico > 0)) {
@@ -440,7 +525,9 @@ export async function recalcularImpactoDocumentalReservas(env, {
       }
     }
 
-      if (reservasSuspendidas.length) {
+    const debeAvisarSinCambios = debeAvisarCambioMarcoSinCambios(motivo, avisarCambioMarcoSinCambios);
+
+    if (reservasSuspendidas.length) {
         const contactoCorreo = resolverContactoReservaParaCorreo(reservasSuspendidas);
         const payloadNotificacion = {
           admin,
@@ -469,7 +556,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
       }
     }
 
-      if (reservasReactivadas.length) {
+    if (reservasReactivadas.length) {
         const contactoCorreo = resolverContactoReservaParaCorreo(reservasReactivadas);
         const payloadNotificacion = {
           admin,
@@ -490,6 +577,38 @@ export async function recalcularImpactoDocumentalReservas(env, {
         await crearNotificacionReservaReactivada(env, payloadNotificacion);
       } catch (errorNotificacionInterna) {
         console.error("No se pudo crear la notificación interna de reactivación documental.", {
+          admin_id: Number(adminIdNumerico || 0),
+          centro_usuario_id: Number(solicitante.id || 0),
+          error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+        });
+      }
+    }
+
+    if (debeAvisarSinCambios && !reservasSuspendidas.length && !reservasReactivadas.length) {
+      const contactoCorreo = resolverContactoReservaParaCorreo(reservas);
+      const payloadNotificacion = {
+        admin,
+        responsable: resolucion.responsable,
+        centro: {
+          usuario_id: Number(solicitante.id || 0),
+          centro: solicitante.centro || "",
+          contacto: contactoCorreo.contacto,
+          email: contactoCorreo.email
+        },
+        motivo_texto: motivoImpactoDocumentalTexto(motivo),
+        reservas,
+        documentos_pendientes: pendientes,
+        estado_documental: estadoGlobal,
+        enlace_perfil: enlacePerfil
+      };
+      const resultado = await notificarCambioMarcoSinCambios(env, payloadNotificacion);
+      if (resultado.ok) {
+        resumen.notificaciones_condicionadas += 1;
+      }
+      try {
+        await crearNotificacionCambioMarcoSinCambios(env, payloadNotificacion);
+      } catch (errorNotificacionInterna) {
+        console.error("No se pudo crear la notificación interna de cambio documental sin cambios de reserva.", {
           admin_id: Number(adminIdNumerico || 0),
           centro_usuario_id: Number(solicitante.id || 0),
           error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")

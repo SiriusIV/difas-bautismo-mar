@@ -2,6 +2,7 @@
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
+import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -20,6 +21,15 @@ function normalizarCentroComparacion(valor) {
 
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function calcularMinutosConsolidacion(plazasReservadas) {
@@ -42,16 +52,22 @@ function accionNormalizada(valor) {
 async function obtenerActividad(env, actividadId) {
   return await env.DB.prepare(`
     SELECT
-      id,
-      admin_id,
-      COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre,
-      activa,
-      requiere_reserva,
-      usa_franjas,
-      aforo_limitado,
-      COALESCE(aforo_maximo, 0) AS aforo_maximo
-    FROM actividades
-    WHERE id = ?
+      a.id,
+      a.admin_id,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      a.activa,
+      a.requiere_reserva,
+      a.usa_franjas,
+      a.aforo_limitado,
+      COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
+      u.email AS admin_email,
+      u.nombre AS admin_nombre,
+      u.nombre_publico AS admin_nombre_publico,
+      u.localidad AS admin_localidad
+    FROM actividades a
+    LEFT JOIN usuarios u
+      ON u.id = a.admin_id
+    WHERE a.id = ?
     LIMIT 1
   `).bind(actividadId).first();
 }
@@ -73,6 +89,85 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
     titulo: "Nueva solicitud de actividad",
     mensaje: `${centro || "Un centro"} ha solicitado ${actividadNombre || "una actividad"}${codigoReserva ? ` (${codigoReserva})` : ""}.`,
     urlDestino: actividadId ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}` : "/admin-reservas.html"
+  });
+}
+
+function construirDescripcionProgramacion(contexto = {}) {
+  const fecha = limpiarTexto(contexto?.fecha || "");
+  const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
+  const horaFin = limpiarTexto(contexto?.hora_fin || "");
+  if (fecha && horaInicio && horaFin) {
+    return `${fecha} · ${horaInicio} - ${horaFin}`;
+  }
+  if (fecha) return fecha;
+  return "";
+}
+
+function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
+  const adminNombre = nombreVisibleAdmin({
+    nombre_publico: contexto?.admin_nombre_publico,
+    nombre: contexto?.admin_nombre,
+    localidad: contexto?.admin_localidad
+  });
+  const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
+  const centro = limpiarTexto(contexto?.centro || "un centro");
+  const contacto = limpiarTexto(contexto?.contacto || "");
+  const correoContacto = limpiarTexto(contexto?.email || "");
+  const codigo = limpiarTexto(contexto?.codigo_reserva || "");
+  const plazas = Number(contexto?.plazas_prereservadas || 0);
+  const programacion = construirDescripcionProgramacion(contexto);
+  const accion = modo === "reenviada"
+    ? "ha reenviado una solicitud para"
+    : "ha presentado una nueva solicitud para";
+  const asunto = modo === "reenviada"
+    ? "[Reservas] Solicitud reenviada para revisión"
+    : "[Reservas] Nueva solicitud de actividad";
+  const mensaje = `${centro} ${accion} ${actividad}${codigo ? ` (${codigo})` : ""}.`;
+
+  const texto = [
+    `Hola ${adminNombre},`,
+    "",
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Centro solicitante: ${centro}`,
+    contacto ? `Persona de contacto: ${contacto}` : "",
+    correoContacto ? `Correo de contacto: ${correoContacto}` : "",
+    plazas > 0 ? `Plazas solicitadas: ${plazas}` : "",
+    programacion ? `Programación: ${programacion}` : "",
+    "",
+    "Puedes revisar la solicitud desde tu panel de reservas."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>Hola ${escaparHtml(adminNombre)},</p>
+    <p>${escaparHtml(mensaje)}</p>
+    <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    <p><strong>Centro solicitante:</strong> ${escaparHtml(centro)}</p>
+    ${contacto ? `<p><strong>Persona de contacto:</strong> ${escaparHtml(contacto)}</p>` : ""}
+    ${correoContacto ? `<p><strong>Correo de contacto:</strong> ${escaparHtml(correoContacto)}</p>` : ""}
+    ${plazas > 0 ? `<p><strong>Plazas solicitadas:</strong> ${escaparHtml(plazas)}</p>` : ""}
+    ${programacion ? `<p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>` : ""}
+    <p>Puedes revisar la solicitud desde tu panel de reservas.</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
+async function enviarCorreoNuevaSolicitudAdmin(env, contexto = {}, modo = "nueva") {
+  const destinatario = limpiarTexto(contexto?.admin_email || "");
+  if (!destinatario) {
+    return { ok: false, skipped: true, error: "El administrador no tiene correo de contacto." };
+  }
+
+  const correo = construirCorreoNuevaSolicitudAdmin(contexto, modo);
+  return await enviarEmail(env, {
+    to: destinatario,
+    subject: correo.asunto,
+    text: correo.texto,
+    html: correo.html
   });
 }
 
@@ -561,6 +656,7 @@ export async function onRequestPost(context) {
       });
 
       let notificacionAdmin = { ok: false, skipped: true, error: "" };
+      let correoAdmin = { ok: false, skipped: true, error: "" };
       try {
         notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
           adminId: actividad.admin_id,
@@ -569,8 +665,24 @@ export async function onRequestPost(context) {
           centro,
           codigoReserva: reservaActual.codigo_reserva
         });
+        correoAdmin = await enviarCorreoNuevaSolicitudAdmin(env, {
+          ...actividad,
+          ...reservaActual,
+          centro,
+          contacto,
+          email,
+          fecha: franjaNueva?.fecha || "",
+          hora_inicio: franjaNueva?.hora_inicio || "",
+          hora_fin: franjaNueva?.hora_fin || "",
+          plazas_prereservadas: plazasSolicitadas
+        }, "nueva");
       } catch (errorNotificacion) {
         notificacionAdmin = {
+          ok: false,
+          skipped: true,
+          error: errorNotificacion?.message || String(errorNotificacion || "")
+        };
+        correoAdmin = {
           ok: false,
           skipped: true,
           error: errorNotificacion?.message || String(errorNotificacion || "")
@@ -588,6 +700,10 @@ export async function onRequestPost(context) {
         notificacion_admin: {
           creada: !!notificacionAdmin.ok,
           error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
+        },
+        correo_admin: {
+          enviado: !!correoAdmin.ok,
+          error: correoAdmin.ok ? "" : (correoAdmin.error || "")
         }
       });
     }
@@ -652,6 +768,7 @@ export async function onRequestPost(context) {
       });
 
       let notificacionAdmin = { ok: false, skipped: true, error: "" };
+      let correoAdmin = { ok: false, skipped: true, error: "" };
       try {
         notificacionAdmin = await crearNotificacionNuevaSolicitudAdmin(env, {
           adminId: actividad.admin_id,
@@ -660,8 +777,24 @@ export async function onRequestPost(context) {
           centro,
           codigoReserva: reservaActual.codigo_reserva
         });
+        correoAdmin = await enviarCorreoNuevaSolicitudAdmin(env, {
+          ...actividad,
+          ...reservaActual,
+          centro,
+          contacto,
+          email,
+          fecha: franjaNueva?.fecha || "",
+          hora_inicio: franjaNueva?.hora_inicio || "",
+          hora_fin: franjaNueva?.hora_fin || "",
+          plazas_prereservadas: totalBloqueadoNuevo
+        }, "reenviada");
       } catch (errorNotificacion) {
         notificacionAdmin = {
+          ok: false,
+          skipped: true,
+          error: errorNotificacion?.message || String(errorNotificacion || "")
+        };
+        correoAdmin = {
           ok: false,
           skipped: true,
           error: errorNotificacion?.message || String(errorNotificacion || "")
@@ -693,6 +826,10 @@ export async function onRequestPost(context) {
         notificacion_admin: {
           creada: !!notificacionAdmin.ok,
           error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")
+        },
+        correo_admin: {
+          enviado: !!correoAdmin.ok,
+          error: correoAdmin.ok ? "" : (correoAdmin.error || "")
         }
       });
     }
