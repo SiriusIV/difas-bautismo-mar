@@ -798,6 +798,102 @@
       }).join("")}</div>`;
     }
 
+    function obtenerEntidadComparativaInformePdf() {
+      const modo = obtenerModoGrafica();
+      return modo === "programa" ? obtenerProgramaGraficaSeleccionado() : obtenerActividadGraficaSeleccionada();
+    }
+
+    function renderGraficaBarrasPdf(series = []) {
+      const datos = Array.isArray(series) ? series : [];
+      if (!datos.length) {
+        return `<div style="display:flex; align-items:center; justify-content:center; min-height:150px; border:1px dashed #d9e5f7; border-radius:12px; color:#617385; font-size:11px; background:#ffffff;">Sin datos comparativos</div>`;
+      }
+      const maximo = Math.max(1, ...datos.map((item) => Number(item.total_asistentes || 0)));
+      return `
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${datos.map((item) => {
+            const total = Number(item.total_asistentes || 0);
+            const ancho = Math.max(total > 0 ? 6 : 0, Math.round((total / maximo) * 100));
+            return `
+              <div style="display:grid; grid-template-columns:44px minmax(0, 1fr) 26px; align-items:center; gap:6px;">
+                <div style="font-weight:700; color:#36506b; font-size:10px;">${Number(item.anio || 0)}</div>
+                <div style="height:14px; border-radius:999px; background:#e8eef6; overflow:hidden;">
+                  <div style="height:100%; width:${ancho}%; border-radius:999px; background:linear-gradient(90deg, #0b5ed7 0%, #4a86e8 100%); min-width:4px;"></div>
+                </div>
+                <div style="text-align:right; font-weight:700; color:#163c67; font-size:10px;">${total}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function renderGraficaPastelPdf(series = []) {
+      const datos = Array.isArray(series) ? series : [];
+      const totalGeneral = datos.reduce((acc, item) => acc + Number(item.total_asistentes || 0), 0);
+      if (!(totalGeneral > 0)) {
+        return `<div style="display:flex; align-items:center; justify-content:center; min-height:150px; border:1px dashed #d9e5f7; border-radius:12px; color:#617385; font-size:11px; background:#ffffff;">Sin reparto anual disponible</div>`;
+      }
+      let acumulado = 0;
+      const segmentos = [];
+      const leyenda = datos.map((item, index) => {
+        const total = Number(item.total_asistentes || 0);
+        const porcentaje = (total / totalGeneral) * 100;
+        const color = paletaGrafica(index);
+        const inicio = acumulado;
+        acumulado += porcentaje;
+        segmentos.push(`${color} ${inicio.toFixed(2)}% ${acumulado.toFixed(2)}%`);
+        return `
+          <div style="display:grid; grid-template-columns:10px 34px minmax(0, 1fr); gap:6px; align-items:center; font-size:9.5px; color:#36506b;">
+            <span style="width:10px; height:10px; border-radius:3px; background:${color}; display:block;"></span>
+            <span style="font-weight:700;">${Number(item.anio || 0)}</span>
+            <span>${total} <span style="font-weight:700; color:#163c67;">(${porcentaje.toFixed(1)}%)</span></span>
+          </div>
+        `;
+      }).join("");
+      return `
+        <div style="display:grid; grid-template-columns:120px minmax(0, 1fr); gap:8px; align-items:center;">
+          <div style="width:110px; height:110px; border-radius:50%; margin:0 auto; border:1px solid #d8e2ee; background:conic-gradient(${segmentos.join(", ")});"></div>
+          <div style="display:flex; flex-direction:column; gap:6px;">${leyenda}</div>
+        </div>
+      `;
+    }
+
+    function construirConclusionesInforme(data, entidad = null) {
+      const resumen = data?.resumen || {};
+      const actividades = Array.isArray(data?.actividades) ? data.actividades : [];
+      const totalActividades = Number(resumen.total_actividades || 0);
+      const totalAsistentes = Number(resumen.total_asistentes || 0);
+      const totalRealizaciones = Number(resumen.total_realizaciones || 0);
+      const futuras = actividades.filter((item) => String(item.primera_fecha || "") > hoyLocalIso());
+      const realizadas = actividades.filter((item) => !(String(item.primera_fecha || "") > hoyLocalIso()));
+      const topActividad = actividades.slice().sort((a, b) => Number(b.total_asistentes || 0) - Number(a.total_asistentes || 0))[0] || null;
+      const media = totalActividades > 0 ? (totalAsistentes / totalActividades) : 0;
+      const series = Array.isArray(entidad?.series) ? entidad.series : [];
+      const aniosConActividad = series.filter((item) => Number(item.total_asistentes || 0) > 0);
+      const ultimoAnioConDato = aniosConActividad[aniosConActividad.length - 1] || null;
+      const maxSerie = aniosConActividad.slice().sort((a, b) => Number(b.total_asistentes || 0) - Number(a.total_asistentes || 0))[0] || null;
+
+      const frases = [];
+      frases.push(`El periodo analizado presenta ${totalActividades} actividades computadas y ${totalAsistentes} asistentes confirmados, distribuidos en ${totalRealizaciones || totalActividades} realizaciones registradas.`);
+      if (topActividad && Number(topActividad.total_asistentes || 0) > 0) {
+        frases.push(`La actividad con mayor capacidad de atracción ha sido ${topActividad.actividad_nombre}, que concentra ${Number(topActividad.total_asistentes || 0)} asistentes y marca la referencia principal del intervalo.`);
+      }
+      if (media > 0) {
+        frases.push(`La media de participación se sitúa en ${media.toFixed(1)} asistentes por actividad, lo que apunta a una respuesta ${media >= 10 ? "sólida" : media >= 5 ? "estable" : "todavía contenida"} del público en el tramo revisado.`);
+      }
+      if (maxSerie && ultimoAnioConDato) {
+        const nombreEntidad = entidad?.programa || entidad?.actividad_nombre || "La comparativa anual";
+        frases.push(`${nombreEntidad} muestra su mejor registro reciente en ${Number(maxSerie.anio || 0)}, mientras que la referencia operativa más inmediata queda fijada en ${Number(ultimoAnioConDato.anio || 0)} con ${Number(ultimoAnioConDato.total_asistentes || 0)} asistentes.`);
+      }
+      if (futuras.length) {
+        frases.push(`El balance aún no puede considerarse completamente cerrado, ya que permanecen ${futuras.length} actividades pendientes de ejecución. Si mantienen una asistencia similar a la ya observada, el volumen final del periodo debería crecer con una inercia favorable.`);
+      } else if (realizadas.length) {
+        frases.push(`Todas las actividades incluidas en el intervalo ya han sido ejecutadas, por lo que el informe ofrece una fotografía consolidada y útil para valorar rendimiento, continuidad y planificación futura.`);
+      }
+      return frases;
+    }
+
     function renderSelectorGrafica(comparativa = {}) {
       const select = document.getElementById("selectActividadGrafica");
       const label = document.getElementById("labelEntidadGrafica");
@@ -925,6 +1021,8 @@
       const tipoComparativa = String(document.getElementById("selectModoGrafica").selectedOptions?.[0]?.textContent || "-").trim();
       const tipoGrafico = String(document.getElementById("selectTipoGrafico").selectedOptions?.[0]?.textContent || "-").trim();
       const entidad = entidadComparativaActiva();
+      const entidadComparativa = obtenerEntidadComparativaInformePdf();
+      const seriesComparativa = Array.isArray(entidadComparativa?.series) ? entidadComparativa.series : [];
 
       const filtrosLineas = [
         `Intervalo: ${fechaInicio} - ${fechaFin}`,
@@ -1144,16 +1242,13 @@
       const tipoGrafico = String(document.getElementById("selectTipoGrafico").selectedOptions?.[0]?.textContent || "-").trim();
       const entidad = entidadComparativaActiva();
       const hoy = hoyLocalIso();
-      const graficaNode = document.getElementById("graficaActividad");
-      const graficaBytes = graficaNode ? await capturarNodoComoPngBytes(graficaNode, "#fbfcfe", 2) : null;
       const logoNode = document.getElementById("logoCabeceraInformes");
       const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
       const logoBytesRaster = await rasterizarImagenDesdeSrc(logoSrcDirecto);
       const logoBytesCapturados = await capturarLogoCabeceraPngBytes();
       const logoBytes = logoBytesCapturados || logoBytesRaster || (logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null);
-      const logoOverlayBytes = logoBytes;
-      const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
       const logoUrl = logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "";
+      const chartUrl = "";
 
       const stage = document.createElement("div");
       stage.style.position = "fixed";
@@ -1167,7 +1262,7 @@
       stage.style.color = "#123a63";
       stage.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
       stage.style.display = "grid";
-      stage.style.gridTemplateRows = "auto auto auto auto 1fr auto";
+      stage.style.gridTemplateRows = "auto auto auto auto auto auto";
       stage.style.rowGap = "14px";
       stage.style.overflow = "hidden";
 
@@ -1183,11 +1278,11 @@
         const fondo = esFutura ? "#fff2f0" : "#ffffff";
         return `
           <tr style="background:${fondo}; color:${color};">
-            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:left; word-break:break-word;">${escapeHtml(item.actividad_nombre || "-")}</td>
-            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_realizaciones || 0)}</td>
-            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_asistentes || 0)}</td>
-            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.primera_fecha) || "-")}</td>
-            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.ultima_fecha) || "-")}</td>
+            <td style="box-sizing:border-box; width:34%; padding:4px 3px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:left; word-break:break-word;">${escapeHtml(item.actividad_nombre || "-")}</td>
+            <td style="box-sizing:border-box; width:10%; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_realizaciones || 0)}</td>
+            <td style="box-sizing:border-box; width:10%; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_asistentes || 0)}</td>
+            <td style="box-sizing:border-box; width:23%; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.primera_fecha) || "-")}</td>
+            <td style="box-sizing:border-box; width:23%; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.ultima_fecha) || "-")}</td>
           </tr>
         `;
       }).join("");
@@ -1195,11 +1290,37 @@
       const narrativaHtml = narrativa.slice(0, 4).map((frase) => `
         <li style="margin:0 0 4px 0; line-height:1.3; color:#425466;">${escapeHtml(limpiarTexto(frase))}</li>
       `).join("");
+      const graficaBarrasPdfHtml = renderGraficaBarrasPdf(seriesComparativa);
+      const graficaPastelPdfHtml = renderGraficaPastelPdf(seriesComparativa);
+      const conclusionesHtml = construirConclusionesInforme(informeActual, entidadComparativa).slice(0, 4).map((frase) => `
+        <p style="margin:0 0 6px 0; line-height:1.42; color:#425466; font-size:10.5px;">${escapeHtml(limpiarTexto(frase))}</p>
+      `).join("");
+      const bloqueGraficaDualPdfHtml = `
+        <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;">
+            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px;">
+              <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">Barras horizontales</div>
+              ${graficaBarrasPdfHtml}
+            </div>
+            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px;">
+              <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">Gráfico circular</div>
+              ${graficaPastelPdfHtml}
+            </div>
+          </div>
+        </div>
+      `;
+      const bloqueConclusionesPdfHtml = `
+        <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Conclusiones</div>
+          <div>${conclusionesHtml}</div>
+        </div>
+      `;
 
       let stageHtml = `
-        <div style="position:relative; min-height:118px; padding-left:122px; padding-top:10px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
-          ${logoUrl ? `<img src="${logoUrl}" alt="Logo administrador" style="position:absolute; left:0; top:-12px; width:118px; height:118px; object-fit:contain;" />` : ""}
-          <div style="width:100%;">
+        <div style="position:relative; min-height:142px; padding-left:150px; padding-top:10px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
+          ${logoUrl ? `<img src="${logoUrl}" alt="Logo administrador" style="position:absolute; left:0; top:-12px; width:142px; height:142px; object-fit:contain;" />` : ""}
+          <div style="width:100%; margin-top:8px;">
             <div style="font-size:23px; font-weight:800; color:#123a63; line-height:1.08;">Informe de actividades realizadas</div>
             <div style="margin-top:7px; font-size:11px; color:#617385; line-height:1.35;">
               <div><strong>Intervalo:</strong> ${escapeHtml(`${fechaInicio} - ${fechaFin}`)}</div>
@@ -1240,10 +1361,10 @@
           <table style="width:100%; min-width:0; max-width:100%; border-collapse:collapse; table-layout:fixed;">
             <thead>
               <tr style="background:#eef4ff;">
-                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:left; width:26%;">Actividad</th>
-                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:9%;">Realizaciones</th>
-                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:9%;">Asistentes</th>
-                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">Primera fecha</th>
+                <th style="box-sizing:border-box; width:34%; padding:5px 3px; font-size:9px; color:#123a63; text-align:left;">Actividad</th>
+                <th style="box-sizing:border-box; width:10%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Realizaciones</th>
+                <th style="box-sizing:border-box; width:10%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Asistentes</th>
+                <th style="box-sizing:border-box; width:23%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Primera fecha</th>
                 <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">Última fecha</th>
               </tr>
             </thead>
@@ -1259,13 +1380,30 @@
         .replace(/grÃ¡fica/g, "gráfica")
         .replace(/estÃ¡n pendientes de ejecuciÃ³n/g, "están pendientes de ejecución")
         .replace(/Ãšltima fecha/g, "Última fecha")
+        .replace(
+          /<div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">\s*<div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual<\/div>\s*<div style="height:190px; display:flex; align-items:center; justify-content:center;">[\s\S]*?<\/div>\s*<\/div>/,
+          bloqueGraficaDualPdfHtml
+        )
+        .replace(
+          /<\/table>\s*<\/div>\s*$/,
+          `</table>
+        </div>
+
+        ${bloqueConclusionesPdfHtml}`
+        )
+        .replace(/GrÃ¡fico/g, "Gráfico")
+        .replace(/SelecciÃ³n/g, "Selección")
+        .replace(/EvaluaciÃ³n/g, "Evaluación")
+        .replace(/estÃ¡n pendientes de ejecuciÃ³n/g, "están pendientes de ejecución")
+        .replace(/Ãšltima fecha/g, "Última fecha")
         .replace('display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;', 'display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;')
         .replace('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:left;', 'padding:4px 3px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:left; word-break:break-word;')
         .replaceAll('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;', 'padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;')
-        .replace('width:40%;">Actividad</th>', 'width:31%;">Actividad</th>')
-        .replace('width:14%;">Realizaciones</th>', 'width:11%;">Realizaciones</th>')
-        .replace('width:14%;">Asistentes</th>', 'width:11%;">Asistentes</th>')
-        .replace('width:16%;">Primera fecha</th>', 'width:20%;">Primera fecha</th>')
+        .replace('width:34%;">Actividad</th>', 'width:34%;">Actividad</th>')
+        .replace('width:10%;">Realizaciones</th>', 'width:10%;">Realizaciones</th>')
+        .replace('width:10%;">Asistentes</th>', 'width:10%;">Asistentes</th>')
+        .replace('width:23%;">Primera fecha</th>', 'width:23%;">Primera fecha</th>')
+        .replace('width:18%;">Ãšltima fecha</th>', 'width:23%;">Última fecha</th>')
         .replace('width:16%;">Última fecha</th>', 'width:21%;">Última fecha</th>')
         .replaceAll('padding:6px 7px; font-size:10px; color:#123a63;', 'padding:5px 3px; font-size:9.5px; color:#123a63;');
 
