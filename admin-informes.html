@@ -1285,21 +1285,6 @@
           width: pageWidth,
           height: pageHeight
         });
-        if (logoOverlayBytes) {
-          const logoOverlay = await pdfDoc.embedPng(logoOverlayBytes);
-          const pdfScale = pageWidth / 794;
-          const logoWidth = 82 * pdfScale;
-          const logoHeight = 82 * pdfScale;
-          const logoX = 28 * pdfScale;
-          const logoTop = 24 * pdfScale;
-          page.drawImage(logoOverlay, {
-            x: logoX,
-            y: pageHeight - logoTop - logoHeight,
-            width: logoWidth,
-            height: logoHeight
-          });
-        }
-
         const bytes = await pdfDoc.save();
         const blob = new Blob([bytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
