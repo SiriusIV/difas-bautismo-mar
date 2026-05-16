@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informes de actividad</title>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     html, body { height: 100%; }
     body {
@@ -45,6 +47,8 @@
     .btn:hover, .btn-pildora:hover, .btn-icono:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
     .btn-principal { background: #0b5ed7; border-color: #0b5ed7; color: #fff; }
     .btn-principal:hover { background: #0a53be; color: #fff; border-color: #0a53be; }
+    .btn-secundario { background: #eef4ff; color: #123a63; border-color: #c9dcff; }
+    .btn-secundario:hover { background: #e2edff; color: #0b5ed7; border-color: #b6d0ff; }
     .btn-pildora { border-radius: 999px; padding: 9px 14px; display: inline-flex; align-items: center; gap: 8px; }
     .btn-pildora svg { width: 15px; height: 15px; }
     .btn-icono { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; }
@@ -282,6 +286,8 @@
           <div style="height:10px;"></div>
           <label for="selectActividadGrafica" id="labelEntidadGrafica">Comparativa por actividad</label>
           <select id="selectActividadGrafica"></select>
+          <div style="height:10px;"></div>
+          <button type="button" class="btn btn-secundario" id="btnDescargarInformePdf">Descargar PDF</button>
           <p class="grafica-sub" id="ayudaGraficaComparativa">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
         </div>
         <div class="grafica-panel">
@@ -370,6 +376,35 @@
       const month = String(ahora.getMonth() + 1).padStart(2, "0");
       const day = String(ahora.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
+    }
+
+    function rgbPdf(hex) {
+      const limpio = String(hex || "").replace("#", "");
+      const valor = limpio.length === 3
+        ? limpio.split("").map((c) => c + c).join("")
+        : limpio.padEnd(6, "0").slice(0, 6);
+      const r = parseInt(valor.slice(0, 2), 16) / 255;
+      const g = parseInt(valor.slice(2, 4), 16) / 255;
+      const b = parseInt(valor.slice(4, 6), 16) / 255;
+      return window.PDFLib.rgb(r, g, b);
+    }
+
+    function partirTextoLineas(texto, maxChars = 86) {
+      const palabras = String(texto || "").trim().split(/\s+/).filter(Boolean);
+      if (!palabras.length) return [""];
+      const lineas = [];
+      let actual = "";
+      for (const palabra of palabras) {
+        const propuesta = actual ? `${actual} ${palabra}` : palabra;
+        if (propuesta.length > maxChars && actual) {
+          lineas.push(actual);
+          actual = palabra;
+        } else {
+          actual = propuesta;
+        }
+      }
+      if (actual) lineas.push(actual);
+      return lineas;
     }
 
     async function cargarSesion() {
@@ -582,6 +617,226 @@
       renderSelectorGrafica(data?.comparativa || {});
     }
 
+    function entidadComparativaActiva() {
+      const modo = obtenerModoGrafica();
+      const item = modo === "programa" ? obtenerProgramaGraficaSeleccionado() : obtenerActividadGraficaSeleccionada();
+      if (!item) return "-";
+      return modo === "programa" ? (item.programa || "-") : (item.actividad_nombre || "-");
+    }
+
+    async function descargarInformePdf() {
+      limpiarMensaje();
+      if (!informeActual) {
+        mostrarMensaje("error", "No hay datos de informe para exportar.");
+        return;
+      }
+      if (!window.PDFLib || !window.html2canvas) {
+        mostrarMensaje("error", "No se han podido cargar las librerias necesarias para generar el PDF.");
+        return;
+      }
+
+      const { PDFDocument, StandardFonts } = window.PDFLib;
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const pageWidth = 841.89;
+      const pageHeight = 595.28;
+      const margen = 34;
+      const azul = rgbPdf("#123a63");
+      const azulClaro = rgbPdf("#eef4ff");
+      const azulBorde = rgbPdf("#c9dcff");
+      const rojo = rgbPdf("#b42318");
+      const gris = rgbPdf("#617385");
+
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      let y = pageHeight - margen;
+
+      page.drawText("Informe de actividades realizadas", {
+        x: margen,
+        y,
+        size: 20,
+        font: fontBold,
+        color: azul
+      });
+      y -= 24;
+
+      const fechaInicio = formatearFechaIso(document.getElementById("fechaInicioInforme").value || "");
+      const fechaFin = formatearFechaIso(document.getElementById("fechaFinInforme").value || "");
+      const programa = String(document.getElementById("selectProgramaInforme").selectedOptions?.[0]?.textContent || "Todos").trim();
+      const actividad = String(document.getElementById("selectActividadInforme").selectedOptions?.[0]?.textContent || "Todas").trim();
+      const tipoComparativa = String(document.getElementById("selectModoGrafica").selectedOptions?.[0]?.textContent || "-").trim();
+      const tipoGrafico = String(document.getElementById("selectTipoGrafico").selectedOptions?.[0]?.textContent || "-").trim();
+      const entidad = entidadComparativaActiva();
+
+      const filtrosLineas = [
+        `Intervalo: ${fechaInicio} - ${fechaFin}`,
+        `Programa: ${programa}`,
+        `Actividad: ${actividad}`,
+        `Comparativa: ${tipoComparativa}`,
+        `Grafico: ${tipoGrafico}`,
+        `Seleccion activa: ${entidad}`
+      ];
+      for (const linea of filtrosLineas) {
+        page.drawText(linea, {
+          x: margen,
+          y,
+          size: 10.5,
+          font,
+          color: gris
+        });
+        y -= 13;
+      }
+      y -= 8;
+
+      const resumenCards = [
+        { titulo: "Actividades", valor: String(Number(informeActual?.resumen?.total_actividades || 0)) },
+        { titulo: "Asistentes", valor: String(Number(informeActual?.resumen?.total_asistentes || 0)) }
+      ];
+      const anchoCard = 180;
+      resumenCards.forEach((card, index) => {
+        const x = margen + (index * (anchoCard + 14));
+        page.drawRectangle({
+          x,
+          y: y - 44,
+          width: anchoCard,
+          height: 44,
+          color: azulClaro,
+          borderColor: azulBorde,
+          borderWidth: 1
+        });
+        page.drawText(card.titulo, {
+          x: x + 12,
+          y: y - 18,
+          size: 10,
+          font,
+          color: gris
+        });
+        page.drawText(card.valor, {
+          x: x + anchoCard - 28,
+          y: y - 31,
+          size: 22,
+          font: fontBold,
+          color: azul
+        });
+      });
+      y -= 62;
+
+      const chartNode = document.getElementById("graficaActividad");
+      if (chartNode) {
+        const canvas = await window.html2canvas(chartNode, { backgroundColor: "#fbfcfe", scale: 2 });
+        const imageBytes = await new Promise((resolve) => canvas.toBlob(async (blob) => {
+          resolve(new Uint8Array(await blob.arrayBuffer()));
+        }, "image/png"));
+        const image = await pdfDoc.embedPng(imageBytes);
+        const maxChartWidth = pageWidth - margen * 2;
+        const maxChartHeight = 230;
+        const scale = Math.min(maxChartWidth / image.width, maxChartHeight / image.height);
+        const drawWidth = image.width * scale;
+        const drawHeight = image.height * scale;
+        page.drawImage(image, {
+          x: margen + ((maxChartWidth - drawWidth) / 2),
+          y: y - drawHeight,
+          width: drawWidth,
+          height: drawHeight
+        });
+        y -= drawHeight + 18;
+      }
+
+      let tablaPage = page;
+      let yTabla = y;
+      const filas = Array.isArray(informeActual?.actividades) ? informeActual.actividades : [];
+      const rowHeight = 16;
+
+      function dibujarCabeceraTabla(pagina, yBase) {
+        pagina.drawText("Detalle por actividad", {
+          x: margen,
+          y: yBase,
+          size: 13,
+          font: fontBold,
+          color: azul
+        });
+        pagina.drawText("(Las actividades en rojo estan pendientes de ejecucion)", {
+          x: margen + 128,
+          y: yBase + 1,
+          size: 9,
+          font,
+          color: azul
+        });
+        const top = yBase - 18;
+        pagina.drawRectangle({ x: margen, y: top - 18, width: pageWidth - margen * 2, height: 18, color: azulClaro });
+        const cols = [margen + 6, margen + 320, margen + 420, margen + 520, margen + 640];
+        ["Actividad", "Realizaciones", "Asistentes", "Primera fecha", "Ultima fecha"].forEach((txt, index) => {
+          pagina.drawText(txt, { x: cols[index], y: top - 12, size: 9.5, font: fontBold, color: azul });
+        });
+        return top - 28;
+      }
+
+      yTabla = dibujarCabeceraTabla(tablaPage, yTabla);
+      const hoy = hoyLocalIso();
+
+      for (const item of filas) {
+        if (yTabla < 48) {
+          tablaPage = pdfDoc.addPage([pageWidth, pageHeight]);
+          yTabla = dibujarCabeceraTabla(tablaPage, pageHeight - margen);
+        }
+        const esFutura = String(item.primera_fecha || "") > hoy;
+        const colorFila = esFutura ? rojo : rgbPdf("#223244");
+        const actividadLineas = partirTextoLineas(item.actividad_nombre || "Actividad", 38);
+        const lineas = Math.max(1, actividadLineas.length);
+        const alturaFila = Math.max(rowHeight, lineas * 11 + 4);
+        actividadLineas.forEach((linea, indice) => {
+          tablaPage.drawText(linea, {
+            x: margen + 6,
+            y: yTabla - (indice * 11),
+            size: 9.5,
+            font,
+            color: colorFila
+          });
+        });
+        tablaPage.drawText(String(Number(item.total_realizaciones || 0)), {
+          x: margen + 340,
+          y: yTabla,
+          size: 9.5,
+          font,
+          color: colorFila
+        });
+        tablaPage.drawText(String(Number(item.total_asistentes || 0)), {
+          x: margen + 444,
+          y: yTabla,
+          size: 9.5,
+          font,
+          color: colorFila
+        });
+        tablaPage.drawText(formatearFechaIso(item.primera_fecha), {
+          x: margen + 520,
+          y: yTabla,
+          size: 9.5,
+          font,
+          color: colorFila
+        });
+        tablaPage.drawText(formatearFechaIso(item.ultima_fecha), {
+          x: margen + 640,
+          y: yTabla,
+          size: 9.5,
+          font,
+          color: colorFila
+        });
+        yTabla -= alturaFila;
+      }
+
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = `informe_actividades_${document.getElementById("fechaInicioInforme").value || "inicio"}_${document.getElementById("fechaFinInforme").value || "fin"}.pdf`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      mostrarMensaje("ok", "PDF generado correctamente.");
+    }
+
     async function cargarInforme() {
       limpiarMensaje();
       const fechaInicio = String(document.getElementById("fechaInicioInforme").value || "").trim();
@@ -617,6 +872,13 @@
     }
 
     document.getElementById("btnGenerarInforme").addEventListener("click", cargarInforme);
+    document.getElementById("btnDescargarInformePdf").addEventListener("click", async function () {
+      try {
+        await descargarInformePdf();
+      } catch (error) {
+        mostrarMensaje("error", error?.message || "No se pudo generar el PDF del informe.");
+      }
+    });
     document.getElementById("selectProgramaInforme").addEventListener("change", function () {
       renderFiltroActividades(catalogoActividadesInforme);
     });
