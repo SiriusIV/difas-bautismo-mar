@@ -983,6 +983,170 @@
       mostrarMensaje("ok", "PDF generado correctamente.");
     }
 
+    async function descargarInformePdf() {
+      limpiarMensaje();
+      if (!informeActual) {
+        mostrarMensaje("error", "No hay datos de informe para exportar.");
+        return;
+      }
+      if (!window.PDFLib || !window.html2canvas) {
+        mostrarMensaje("error", "No se han podido cargar las librerías necesarias para generar el PDF.");
+        return;
+      }
+
+      const { PDFDocument } = window.PDFLib;
+      const pdfDoc = await PDFDocument.create();
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const filas = Array.isArray(informeActual?.actividades) ? informeActual.actividades : [];
+      const narrativa = construirNarrativaInforme(informeActual);
+      const fechaInicio = formatearFechaIso(document.getElementById("fechaInicioInforme").value || "");
+      const fechaFin = formatearFechaIso(document.getElementById("fechaFinInforme").value || "");
+      const programa = String(document.getElementById("selectProgramaInforme").selectedOptions?.[0]?.textContent || "Todos").trim();
+      const actividad = String(document.getElementById("selectActividadInforme").selectedOptions?.[0]?.textContent || "Todas").trim();
+      const tipoComparativa = String(document.getElementById("selectModoGrafica").selectedOptions?.[0]?.textContent || "-").trim();
+      const tipoGrafico = String(document.getElementById("selectTipoGrafico").selectedOptions?.[0]?.textContent || "-").trim();
+      const entidad = entidadComparativaActiva();
+      const hoy = hoyLocalIso();
+      const graficaNode = document.getElementById("graficaActividad");
+      const graficaBytes = graficaNode ? await capturarNodoComoPngBytes(graficaNode, "#fbfcfe", 2) : null;
+      const logoSrc = String(document.getElementById("logoCabeceraInformes")?.getAttribute("src") || "").trim();
+      const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
+
+      const stage = document.createElement("div");
+      stage.style.position = "fixed";
+      stage.style.left = "-99999px";
+      stage.style.top = "0";
+      stage.style.width = "794px";
+      stage.style.height = "1123px";
+      stage.style.boxSizing = "border-box";
+      stage.style.padding = "24px 28px";
+      stage.style.background = "#ffffff";
+      stage.style.color = "#123a63";
+      stage.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
+      stage.style.display = "grid";
+      stage.style.gridTemplateRows = "auto auto auto auto 1fr";
+      stage.style.rowGap = "12px";
+      stage.style.overflow = "hidden";
+
+      const detalleFilasHtml = (filas.length ? filas.slice(0, 10) : [{
+        actividad_nombre: "No hay actividades realizadas en el intervalo seleccionado.",
+        total_realizaciones: "",
+        total_asistentes: "",
+        primera_fecha: "",
+        ultima_fecha: ""
+      }]).map((item) => {
+        const esFutura = item.primera_fecha && String(item.primera_fecha) > hoy;
+        const color = esFutura ? "#b42318" : "#223244";
+        const fondo = esFutura ? "#fff2f0" : "#ffffff";
+        return `
+          <tr style="background:${fondo}; color:${color};">
+            <td style="padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:left;">${escapeHtml(item.actividad_nombre || "-")}</td>
+            <td style="padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;">${Number(item.total_realizaciones || 0)}</td>
+            <td style="padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;">${Number(item.total_asistentes || 0)}</td>
+            <td style="padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;">${escapeHtml(formatearFechaIso(item.primera_fecha) || "-")}</td>
+            <td style="padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;">${escapeHtml(formatearFechaIso(item.ultima_fecha) || "-")}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const narrativaHtml = narrativa.slice(0, 4).map((frase) => `
+        <li style="margin:0 0 4px 0; line-height:1.3; color:#425466;">${escapeHtml(limpiarTexto(frase))}</li>
+      `).join("");
+
+      stage.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr auto; align-items:start; column-gap:16px;">
+          <div>
+            <div style="font-size:23px; font-weight:800; color:#123a63; line-height:1.08;">Informe de actividades realizadas</div>
+            <div style="margin-top:7px; font-size:11px; color:#617385; line-height:1.35;">
+              <div><strong>Intervalo:</strong> ${escapeHtml(`${fechaInicio} - ${fechaFin}`)}</div>
+              <div><strong>Programa:</strong> ${escapeHtml(programa)} | <strong>Actividad:</strong> ${escapeHtml(actividad)}</div>
+              <div><strong>Comparativa:</strong> ${escapeHtml(tipoComparativa)} | <strong>Gráfico:</strong> ${escapeHtml(tipoGrafico)} | <strong>Selección:</strong> ${escapeHtml(entidad)}</div>
+            </div>
+          </div>
+          <div style="width:82px; height:82px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            ${logoSrc ? `<img src="${escapeHtml(logoSrc)}" alt="Logo administrador" style="max-width:82px; max-height:82px; object-fit:contain;" />` : ""}
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="border:1px solid #c9dcff; background:#eef4ff; border-radius:14px; padding:10px 14px; min-height:60px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:13px; font-weight:700; color:#3e6795;">Actividades</span>
+            <span style="font-size:31px; font-weight:800; color:#123a63; line-height:1;">${Number(informeActual?.resumen?.total_actividades || 0)}</span>
+          </div>
+          <div style="border:1px solid #c9dcff; background:#eef4ff; border-radius:14px; padding:10px 14px; min-height:60px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:13px; font-weight:700; color:#3e6795;">Asistentes</span>
+            <span style="font-size:31px; font-weight:800; color:#123a63; line-height:1;">${Number(informeActual?.resumen?.total_asistentes || 0)}</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:6px;">Lectura automática del periodo</div>
+          <ul style="margin:0; padding-left:18px; font-size:11px;">${narrativaHtml}</ul>
+        </div>
+
+        <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual</div>
+          <div style="height:190px; display:flex; align-items:center; justify-content:center;">
+            ${chartUrl ? `<img src="${chartUrl}" alt="Gráfico" style="display:block; max-width:100%; max-height:190px; margin:0 auto; object-fit:contain;" />` : `<div style="display:flex; align-items:center; justify-content:center; height:190px; color:#617385; font-size:12px;">No se ha podido capturar la gráfica seleccionada.</div>`}
+          </div>
+        </div>
+
+        <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#ffffff; overflow:hidden;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:7px;">
+            <div style="font-size:14px; font-weight:800; color:#123a63;">Detalle por actividad</div>
+            <div style="font-size:10px; color:#123a63;">(Las actividades en rojo están pendientes de ejecución)</div>
+          </div>
+          <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+            <thead>
+              <tr style="background:#eef4ff;">
+                <th style="padding:6px 7px; font-size:10px; color:#123a63; text-align:left; width:40%;">Actividad</th>
+                <th style="padding:6px 7px; font-size:10px; color:#123a63; text-align:center; width:14%;">Realizaciones</th>
+                <th style="padding:6px 7px; font-size:10px; color:#123a63; text-align:center; width:14%;">Asistentes</th>
+                <th style="padding:6px 7px; font-size:10px; color:#123a63; text-align:center; width:16%;">Primera fecha</th>
+                <th style="padding:6px 7px; font-size:10px; color:#123a63; text-align:center; width:16%;">Última fecha</th>
+              </tr>
+            </thead>
+            <tbody>${detalleFilasHtml}</tbody>
+          </table>
+        </div>
+      `;
+
+      document.body.appendChild(stage);
+
+      try {
+        const stageBytes = await capturarNodoComoPngBytes(stage, "#ffffff", 2);
+        if (!stageBytes) throw new Error("No se pudo capturar el informe para exportarlo.");
+
+        const page = pdfDoc.addPage([pageWidth, pageHeight]);
+        const stageImage = await pdfDoc.embedPng(stageBytes);
+        page.drawImage(stageImage, {
+          x: 0,
+          y: 0,
+          width: pageWidth,
+          height: pageHeight
+        });
+
+        const bytes = await pdfDoc.save();
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement("a");
+        enlace.href = url;
+        enlace.download = `informe_actividades_${document.getElementById("fechaInicioInforme").value || "inicio"}_${document.getElementById("fechaFinInforme").value || "fin"}.pdf`;
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        mostrarMensaje("ok", "PDF generado correctamente.");
+      } catch (error) {
+        console.error(error);
+        mostrarMensaje("error", error?.message || "No se pudo generar el PDF.");
+      } finally {
+        if (chartUrl) URL.revokeObjectURL(chartUrl);
+        stage.remove();
+      }
+    }
+
     async function cargarInforme() {
       limpiarMensaje();
       const fechaInicio = String(document.getElementById("fechaInicioInforme").value || "").trim();
