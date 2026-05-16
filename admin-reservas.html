@@ -310,10 +310,108 @@
     function actualizarBotonesAccion() { const hay = !!reservaSeleccionada; document.getElementById("btnConfirmarSeleccion").disabled = !hay || !puedeConfirmarseReserva(reservaSeleccionada); document.getElementById("btnRechazarSeleccion").disabled = !hay || !puedeRechazarseReserva(reservaSeleccionada); document.getElementById("btnGenerarDocumentos").disabled = !hay; }
     async function cargarContextoGeneracionReserva(reserva) { const token = String(reserva?.token_edicion || "").trim(); if (!token) throw new Error("La solicitud seleccionada no tiene token de edición disponible."); const [resReserva, resVisitantes] = await Promise.all([fetch(`/api/reserva?token=${encodeURIComponent(token)}`, { credentials: "same-origin" }), fetch(`/api/visitantes?token=${encodeURIComponent(token)}`, { credentials: "same-origin" })]); const dataReserva = await resReserva.json().catch(() => null); const dataVisitantes = await resVisitantes.json().catch(() => null); if (!resReserva.ok || !dataReserva?.ok) throw new Error(dataReserva?.detalle || dataReserva?.error || "No se pudo cargar el detalle de la solicitud."); if (!resVisitantes.ok || !dataVisitantes?.ok) throw new Error(dataVisitantes?.detalle || dataVisitantes?.error || "No se pudo cargar la lista de asistentes."); return { reserva: dataReserva.reserva || {}, visitantes: Array.isArray(dataVisitantes.visitantes) ? dataVisitantes.visitantes : [] }; }
     function obtenerPlantillaSeleccionadaGeneracion() { const id = String(document.getElementById("selectPlantillaGeneracion").value || ""); return plantillasDisponiblesReserva.find((item) => String(item.id) === id) || null; }
+    function normalizarClaveCampoFecha(nombreCampo) {
+      const clave = slugTexto(nombreCampo);
+      if (clave === "dia" || clave.startsWith("dia_")) return { tipo: "dia", grupo: clave === "dia" ? "" : clave.slice(4) };
+      if (clave === "mes" || clave.startsWith("mes_")) return { tipo: "mes", grupo: clave === "mes" ? "" : clave.slice(4) };
+      if (clave === "ano" || clave.startsWith("ano_")) return { tipo: "ano", grupo: clave === "ano" ? "" : clave.slice(4) };
+      return null;
+    }
+    function detectarAgrupacionesFechaCamposLibres(camposLibres) {
+      const grupos = new Map();
+      for (const campo of Array.isArray(camposLibres) ? camposLibres : []) {
+        const nombre = String(campo?.nombre || "").trim();
+        if (!nombre) continue;
+        const meta = normalizarClaveCampoFecha(nombre);
+        if (!meta) continue;
+        const claveGrupo = meta.grupo;
+        if (!grupos.has(claveGrupo)) grupos.set(claveGrupo, { grupo: claveGrupo, dia: null, mes: null, ano: null });
+        grupos.get(claveGrupo)[meta.tipo] = campo;
+      }
+      return Array.from(grupos.values()).filter((grupo) => grupo.dia && grupo.mes && grupo.ano);
+    }
+    function construirEtiquetaFechaCompuesta(grupo) {
+      const sufijo = String(grupo?.grupo || "").trim().replaceAll("_", " ");
+      if (!sufijo) return "Fecha";
+      return `Fecha ${sufijo}`;
+    }
+    function descomponerFechaIso(valorFecha) {
+      const texto = String(valorFecha || "").trim();
+      if (!texto || !/^\d{4}-\d{2}-\d{2}$/.test(texto)) return null;
+      const partes = texto.split("-");
+      return {
+        ano: partes[0],
+        mes: String(Number(partes[1] || "0")),
+        dia: String(Number(partes[2] || "0"))
+      };
+    }
 function construirResumenGeneracion(contexto) { const reserva = contexto?.reserva || {}; const total = Array.isArray(contexto?.visitantes) ? contexto.visitantes.length : 0; return `Solicitud: ${escapeHtml(reserva.codigo_reserva || "-")}<br>Actividad: ${escapeHtml(reserva.actividad_titulo_publico || reserva.actividad_nombre || "Actividad")}<br>Solicitante: ${escapeHtml(reserva.centro || "-")}<br>Total de asistentes: ${total}`; }
 function renderPlantillasGeneracion() { const select = document.getElementById("selectPlantillaGeneracion"); if (!plantillasDisponiblesReserva.length) { select.innerHTML = `<option value="">No hay plantillas disponibles</option>`; renderCamposLibresGeneracion(null); return; } select.innerHTML = plantillasDisponiblesReserva.map((p) => `<option value="${escapeHtml(String(p.id || ""))}">${escapeHtml(p.nombre || p.archivo_nombre || "Plantilla")}${plantillaTienePdfPersistido(p) ? "" : " (sin PDF en repositorio)"}</option>`).join(""); select.value = String(plantillasDisponiblesReserva[0].id || ""); renderCamposLibresGeneracion(obtenerPlantillaSeleccionadaGeneracion()); }
-function renderCamposLibresGeneracion(plantilla) { const cont = document.getElementById("contenedorCamposLibresGeneracion"); const libres = Array.isArray(plantilla?.campos_detectados) ? plantilla.campos_detectados.filter((c) => String(c?.modo || "VINCULADO").toUpperCase() === "LIBRE") : []; if (!plantilla) { cont.innerHTML = `<div class="estado-vacio" style="padding:12px;">Selecciona una plantilla para preparar sus campos libres.</div>`; return; } if (!libres.length) { cont.innerHTML = `<div class="estado-vacio" style="padding:12px;">Esta plantilla no tiene campos libres. La previsualización puede hacerse directamente.</div>`; return; } cont.innerHTML = libres.map((campo, index) => `<div class="campo-libre-item"><label for="campoLibre_${index}">${escapeHtml(campo.nombre || `Campo libre ${index + 1}`)}${campo.obligatorio === false ? "" : " *"}</label><input type="text" id="campoLibre_${index}" data-nombre-campo="${escapeHtml(campo.nombre || "")}" data-obligatorio="${campo.obligatorio === false ? "NO" : "SI"}" placeholder=""></div>`).join(""); }
-    function obtenerValoresCamposLibres() { const valores = {}; const faltantes = []; document.querySelectorAll("#contenedorCamposLibresGeneracion [data-nombre-campo]").forEach((input) => { const valor = String(input.value || "").trim(); const nombre = String(input.dataset.nombreCampo || "").trim(); valores[nombre] = valor; if (String(input.dataset.obligatorio || "SI").toUpperCase() === "SI" && !valor) faltantes.push(nombre); }); return { valores, faltantes }; }
+function renderCamposLibresGeneracion(plantilla) {
+  const cont = document.getElementById("contenedorCamposLibresGeneracion");
+  const libres = Array.isArray(plantilla?.campos_detectados) ? plantilla.campos_detectados.filter((c) => String(c?.modo || "VINCULADO").toUpperCase() === "LIBRE") : [];
+  if (!plantilla) {
+    cont.innerHTML = `<div class="estado-vacio" style="padding:12px;">Selecciona una plantilla para preparar sus campos libres.</div>`;
+    return;
+  }
+  if (!libres.length) {
+    cont.innerHTML = `<div class="estado-vacio" style="padding:12px;">Esta plantilla no tiene campos libres. La previsualización puede hacerse directamente.</div>`;
+    return;
+  }
+  const gruposFecha = detectarAgrupacionesFechaCamposLibres(libres);
+  const camposOcultos = new Set();
+  const bloquesFecha = gruposFecha.map((grupo, index) => {
+    camposOcultos.add(String(grupo.dia?.nombre || ""));
+    camposOcultos.add(String(grupo.mes?.nombre || ""));
+    camposOcultos.add(String(grupo.ano?.nombre || ""));
+    const esObligatorio = [grupo.dia, grupo.mes, grupo.ano].some((campo) => campo?.obligatorio !== false);
+    return `<div class="campo-libre-item">
+      <label for="campoLibreFecha_${index}">${escapeHtml(construirEtiquetaFechaCompuesta(grupo))}${esObligatorio ? " *" : ""}</label>
+      <input
+        type="date"
+        id="campoLibreFecha_${index}"
+        data-compuesto-fecha="SI"
+        data-etiqueta-campo="${escapeHtml(construirEtiquetaFechaCompuesta(grupo))}"
+        data-obligatorio="${esObligatorio ? "SI" : "NO"}"
+        data-campo-dia="${escapeHtml(String(grupo.dia?.nombre || ""))}"
+        data-campo-mes="${escapeHtml(String(grupo.mes?.nombre || ""))}"
+        data-campo-ano="${escapeHtml(String(grupo.ano?.nombre || ""))}">
+    </div>`;
+  }).join("");
+  const bloquesLibres = libres
+    .filter((campo) => !camposOcultos.has(String(campo?.nombre || "")))
+    .map((campo, index) => `<div class="campo-libre-item"><label for="campoLibre_${index}">${escapeHtml(campo.nombre || `Campo libre ${index + 1}`)}${campo.obligatorio === false ? "" : " *"}</label><input type="text" id="campoLibre_${index}" data-nombre-campo="${escapeHtml(campo.nombre || "")}" data-obligatorio="${campo.obligatorio === false ? "NO" : "SI"}" placeholder=""></div>`)
+    .join("");
+  cont.innerHTML = bloquesFecha + bloquesLibres;
+}
+    function obtenerValoresCamposLibres() {
+      const valores = {};
+      const faltantes = [];
+      document.querySelectorAll("#contenedorCamposLibresGeneracion [data-compuesto-fecha='SI']").forEach((input) => {
+        const valorFecha = String(input.value || "").trim();
+        const etiqueta = String(input.dataset.etiquetaCampo || "Fecha").trim();
+        const obligatorio = String(input.dataset.obligatorio || "SI").toUpperCase() === "SI";
+        if (!valorFecha) {
+          if (obligatorio) faltantes.push(etiqueta);
+          return;
+        }
+        const partes = descomponerFechaIso(valorFecha);
+        if (!partes) {
+          if (obligatorio) faltantes.push(etiqueta);
+          return;
+        }
+        valores[String(input.dataset.campoDia || "").trim()] = partes.dia;
+        valores[String(input.dataset.campoMes || "").trim()] = partes.mes;
+        valores[String(input.dataset.campoAno || "").trim()] = partes.ano;
+      });
+      document.querySelectorAll("#contenedorCamposLibresGeneracion [data-nombre-campo]").forEach((input) => {
+        const valor = String(input.value || "").trim();
+        const nombre = String(input.dataset.nombreCampo || "").trim();
+        valores[nombre] = valor;
+        if (String(input.dataset.obligatorio || "SI").toUpperCase() === "SI" && !valor) faltantes.push(nombre);
+      });
+      return { valores, faltantes };
+    }
     function mapearCampoVinculado(nombreCampo, contexto, visitante) { const clave = slugTexto(nombreCampo); const reserva = contexto?.reserva || {}; const nombreVisitante = String(visitante?.nombre_completo || "").trim(); if (["nombre", "nombre_asistente", "asistente", "alumno", "participante"].includes(clave) || clave.includes("nombre_asistente") || clave.includes("nombreparticipante")) return nombreVisitante || "[Sin asistente]"; if (clave.includes("actividad") || clave.includes("titulo_actividad")) return reserva.actividad_titulo_publico || reserva.actividad_nombre || "[Actividad]"; if (clave.includes("codigo")) return reserva.codigo_reserva || "[Codigo]"; if (clave.includes("centro")) return reserva.centro || "[Centro]"; if (clave.includes("lugar")) return reserva.actividad_lugar || "[Lugar]"; if (clave === "fecha" || clave.includes("fecha_actividad")) return reserva.fecha || reserva.actividad_fecha_inicio || "[Fecha]"; if (clave.includes("horario") || clave.includes("hora")) return [reserva.hora_inicio, reserva.hora_fin].filter(Boolean).join(" - ") || "[Horario]"; if (clave.includes("organizador")) return reserva.actividad_organizador_publico || "[Organizador]"; if (clave.includes("estado")) return reserva.estado || "[Estado]"; if (clave.includes("perfil")) return visitante?.perfil_asistente || "[Perfil]"; return "[Pendiente de vinculacion]"; }
     function construirValoresPlantilla(plantilla, contexto, visitante, camposLibres) { const valores = {}; const noResueltos = []; for (const campo of Array.isArray(plantilla?.campos_detectados) ? plantilla.campos_detectados : []) { const nombre = String(campo?.nombre || "").trim(); if (!nombre) continue; const modo = String(campo?.modo || "VINCULADO").toUpperCase(); if (modo === "LIBRE") { valores[nombre] = String(camposLibres[nombre] || "").trim(); continue; } const valor = mapearCampoVinculado(nombre, contexto, visitante); valores[nombre] = valor; if (valor === "[Pendiente de vinculacion]") noResueltos.push(nombre); } return { valores, noResueltos }; }
     async function cargarPdfDesdePlantilla(plantilla) { const url = String(plantilla?.archivo_url || "").trim(); if (!url) throw new Error("La plantilla seleccionada no tiene un PDF guardado en el repositorio."); if (cachePdfPlantillas.has(url)) { return await window.PDFLib.PDFDocument.load(cachePdfPlantillas.get(url), { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false }); } const res = await fetch(url, { credentials: "same-origin" }); if (!res.ok) throw new Error("No se pudo descargar el PDF de la plantilla desde el repositorio."); const bytes = new Uint8Array(await res.arrayBuffer()); cachePdfPlantillas.set(url, bytes); return await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false }); }
