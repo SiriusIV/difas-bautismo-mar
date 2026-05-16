@@ -101,8 +101,8 @@
     }
     .grafica-panel-cabecera label { margin-bottom: 6px; }
     .grafica-panel-cabecera select { min-width: 200px; }
-    .grafica-titulo { margin: 0 0 10px; font-size: 15px; color: #123a63; }
-    .grafica-sub { margin: 0 0 14px; font-size: 12px; color: #617385; line-height: 1.5; }
+    .grafica-titulo { margin: 0; font-size: 15px; color: #123a63; }
+    .grafica-sub { margin: auto 0 0; font-size: 12px; color: #617385; line-height: 1.5; }
     .barras-lista { display: flex; flex-direction: column; gap: 12px; }
     .barra-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) 52px; align-items: center; gap: 10px; }
     .barra-anio { font-weight: 700; color: #36506b; font-size: 12px; }
@@ -143,10 +143,14 @@
       line-height: 1.45;
     }
     .leyenda-pastel { display: flex; flex-direction: column; gap: 10px; }
-    .leyenda-item { display: grid; grid-template-columns: 14px 56px minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-size: 12px; color: #36506b; }
+    .leyenda-item { display: grid; grid-template-columns: 14px 56px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 12px; color: #36506b; }
     .leyenda-color { width: 14px; height: 14px; border-radius: 4px; }
     .leyenda-anio { font-weight: 700; }
-    .leyenda-porcentaje { text-align: right; font-weight: 700; color: #163c67; }
+    .leyenda-dato { color: #36506b; }
+    .leyenda-porcentaje { font-weight: 700; color: #163c67; }
+    .grafica-filtros-col { min-height: 100%; display: flex; flex-direction: column; }
+    .detalle-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 12px; }
+    .detalle-nota { font-size: 12px; color: #b42318; line-height: 1.4; text-align: right; }
     .mensaje { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; display: none; font-size: 13px; }
     .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; border: 1px solid #b9e0c0; }
@@ -242,7 +246,10 @@
     </div>
 
     <div class="bloque">
-      <h3 style="margin:0 0 12px; color:#123a63;">Detalle por actividad</h3>
+      <div class="detalle-cabecera">
+        <h3 style="margin:0; color:#123a63;">Detalle por actividad</h3>
+        <div class="detalle-nota">Las actividades en rojo estan pendientes de realizarse.</div>
+      </div>
       <div class="tabla-wrap">
         <table>
           <thead>
@@ -261,7 +268,7 @@
 
     <div class="bloque">
       <div class="grafica-wrap">
-        <div>
+        <div class="grafica-filtros-col">
           <label for="selectModoGrafica">Tipo de comparativa</label>
           <select id="selectModoGrafica">
             <option value="actividad">Por actividad</option>
@@ -466,8 +473,7 @@
           <div class="leyenda-item">
             <span class="leyenda-color" style="background:${color};"></span>
             <span class="leyenda-anio">${Number(item.anio || 0)}</span>
-            <span>${total} asistentes</span>
-            <span class="leyenda-porcentaje">${porcentaje.toFixed(1)}%</span>
+            <span class="leyenda-dato">${total} asistentes <span class="leyenda-porcentaje">(${porcentaje.toFixed(1)}%)</span></span>
           </div>
         `;
       }).join("");
