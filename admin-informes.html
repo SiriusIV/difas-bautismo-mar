@@ -865,7 +865,7 @@
     }
 
     function paletaGrafica(index) {
-      const colores = ["#0b5ed7", "#4a86e8", "#83aef3", "#bed4fb", "#7b61ff", "#4fb3bf", "#f0b429"];
+      const colores = ["#0b5ed7", "#e67e22", "#16a085", "#c0392b", "#7b61ff", "#d4a017", "#118ab2", "#ef476f"];
       return colores[index % colores.length];
     }
 
@@ -877,10 +877,12 @@
 
       let acumulado = 0;
       const segmentos = [];
+      const datosConPeso = [];
       const leyenda = series.map((item, index) => {
         const total = Number(item.total_asistentes || 0);
         const porcentaje = (total / totalGeneral) * 100;
         const color = paletaGrafica(index);
+        if (total > 0) datosConPeso.push({ color, total, porcentaje });
         const inicio = acumulado;
         acumulado += porcentaje;
         segmentos.push(`${color} ${inicio.toFixed(2)}% ${acumulado.toFixed(2)}%`);
@@ -893,9 +895,13 @@
         `;
       }).join("");
 
+      const fondoPastel = datosConPeso.length === 1
+        ? datosConPeso[0].color
+        : `conic-gradient(${segmentos.join(", ")})`;
+
       return `
         <div class="grafica-pastel-wrap">
-          <div class="grafica-pastel" style="background: conic-gradient(${segmentos.join(", ")});"></div>
+          <div class="grafica-pastel" style="background: ${fondoPastel};"></div>
           <div class="leyenda-pastel">${leyenda}</div>
         </div>
 
@@ -976,10 +982,12 @@
       }
       let acumulado = 0;
       const segmentos = [];
+      const datosConPeso = [];
       const leyenda = datos.map((item, index) => {
         const total = Number(item.total_asistentes || 0);
         const porcentaje = (total / totalGeneral) * 100;
         const color = paletaGrafica(index);
+        if (total > 0) datosConPeso.push({ color, total, porcentaje });
         const inicio = acumulado;
         acumulado += porcentaje;
         segmentos.push(`${color} ${inicio.toFixed(2)}% ${acumulado.toFixed(2)}%`);
@@ -991,9 +999,12 @@
           </div>
         `;
       }).join("");
+      const fondoPastel = datosConPeso.length === 1
+        ? datosConPeso[0].color
+        : `conic-gradient(${segmentos.join(", ")})`;
       return `
         <div style="min-height:150px; display:grid; grid-template-columns:120px minmax(0, 1fr); gap:8px; align-items:center;">
-          <div style="width:110px; height:110px; border-radius:50%; margin:0 auto; border:1px solid #d8e2ee; background:conic-gradient(${segmentos.join(", ")});"></div>
+          <div style="width:110px; height:110px; border-radius:50%; margin:0 auto; border:1px solid #d8e2ee; background:${fondoPastel};"></div>
           <div style="display:flex; flex-direction:column; gap:6px;">${leyenda}</div>
         </div>
       `;
