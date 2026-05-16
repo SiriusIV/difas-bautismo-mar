@@ -18,12 +18,12 @@
       background-blend-mode: normal, screen, normal;
       margin: 0;
       color: #222;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      display: block;
+      overflow-x: hidden;
+      overflow-y: auto;
       font-size: 14px;
     }
-    .cabecera-global { background: transparent; box-shadow: none; padding: 18px 20px 14px; flex: 0 0 auto; z-index: 20; }
+    .cabecera-global { background: transparent; box-shadow: none; padding: 18px 20px 14px; z-index: 20; }
     .cabecera-global-inner { max-width: 1108px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
     .bloque-marca { display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap; text-align: left; }
 .logo-cabecera { width: 101px; height: auto; display: block; transition: opacity 0.12s ease; }
@@ -31,7 +31,7 @@
     .logo-cabecera.logo-pendiente { opacity: 0; }
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
-    .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+    .app-scroll { width: 100%; min-height: 0; overflow: visible; }
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
