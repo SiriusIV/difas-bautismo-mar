@@ -319,7 +319,7 @@
 
     <div class="bloque">
       <div class="analisis-bloque">
-        <h3 class="analisis-titulo">Lectura automatica del periodo</h3>
+        <h3 class="analisis-titulo">Evaluacion del periodo</h3>
         <ul class="analisis-lista" id="listaAnalisisInforme"></ul>
       </div>
     </div>
@@ -1071,6 +1071,7 @@
       const logoNode = document.getElementById("logoCabeceraInformes");
       const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
       const logoBytes = !logoSrcDirecto && logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
+      const logoOverlayBytes = logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
       const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
       const logoUrl = logoSrcDirecto || (logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "");
 
@@ -1140,7 +1141,7 @@
         </div>
 
         <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
-          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:6px;">Lectura automática del periodo</div>
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:6px;">Evaluación del periodo</div>
           <ul style="margin:0; padding-left:18px; font-size:11px;">${narrativaHtml}</ul>
         </div>
 
@@ -1204,6 +1205,20 @@
           width: pageWidth,
           height: pageHeight
         });
+        if (logoOverlayBytes) {
+          const logoOverlay = await pdfDoc.embedPng(logoOverlayBytes);
+          const pdfScale = pageWidth / 794;
+          const logoWidth = 82 * pdfScale;
+          const logoHeight = 82 * pdfScale;
+          const logoX = 28 * pdfScale;
+          const logoTop = 24 * pdfScale;
+          page.drawImage(logoOverlay, {
+            x: logoX,
+            y: pageHeight - logoTop - logoHeight,
+            width: logoWidth,
+            height: logoHeight
+          });
+        }
 
         const bytes = await pdfDoc.save();
         const blob = new Blob([bytes], { type: "application/pdf" });
