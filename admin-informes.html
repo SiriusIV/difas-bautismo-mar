@@ -1183,11 +1183,11 @@
         const fondo = esFutura ? "#fff2f0" : "#ffffff";
         return `
           <tr style="background:${fondo}; color:${color};">
-            <td style="padding:4px 3px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:left; word-break:break-word;">${escapeHtml(item.actividad_nombre || "-")}</td>
-            <td style="padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;">${Number(item.total_realizaciones || 0)}</td>
-            <td style="padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;">${Number(item.total_asistentes || 0)}</td>
-            <td style="padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;">${escapeHtml(formatearFechaIso(item.primera_fecha) || "-")}</td>
-            <td style="padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;">${escapeHtml(formatearFechaIso(item.ultima_fecha) || "-")}</td>
+            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:left; word-break:break-word;">${escapeHtml(item.actividad_nombre || "-")}</td>
+            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_realizaciones || 0)}</td>
+            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${Number(item.total_asistentes || 0)}</td>
+            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.primera_fecha) || "-")}</td>
+            <td style="box-sizing:border-box; padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9px; text-align:center;">${escapeHtml(formatearFechaIso(item.ultima_fecha) || "-")}</td>
           </tr>
         `;
       }).join("");
@@ -1197,7 +1197,7 @@
       `).join("");
 
       let stageHtml = `
-        <div style="position:relative; min-height:118px; padding-left:122px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
+        <div style="position:relative; min-height:118px; padding-left:122px; padding-top:10px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
           ${logoUrl ? `<img src="${logoUrl}" alt="Logo administrador" style="position:absolute; left:0; top:-12px; width:118px; height:118px; object-fit:contain;" />` : ""}
           <div style="width:100%;">
             <div style="font-size:23px; font-weight:800; color:#123a63; line-height:1.08;">Informe de actividades realizadas</div>
@@ -1240,11 +1240,11 @@
           <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
             <thead>
               <tr style="background:#eef4ff;">
-                <th style="padding:5px 3px; font-size:9.5px; color:#123a63; text-align:left; width:28%;">Actividad</th>
-                <th style="padding:5px 3px; font-size:9.5px; color:#123a63; text-align:center; width:10%;">Realizaciones</th>
-                <th style="padding:5px 3px; font-size:9.5px; color:#123a63; text-align:center; width:10%;">Asistentes</th>
-                <th style="padding:5px 3px; font-size:9.5px; color:#123a63; text-align:center; width:19%;">Primera fecha</th>
-                <th style="padding:5px 3px; font-size:9.5px; color:#123a63; text-align:center; width:19%;">Última fecha</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:left; width:26%;">Actividad</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:9%;">Realizaciones</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:9%;">Asistentes</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">Primera fecha</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">Última fecha</th>
               </tr>
             </thead>
             <tbody>${detalleFilasHtml}</tbody>
