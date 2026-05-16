@@ -383,6 +383,17 @@
       document.getElementById("resultadoDiagnostico").textContent = JSON.stringify(resultado, null, 2);
     }
 
+    async function leerRespuestaJsonSegura(response) {
+      const texto = await response.text();
+      let data = null;
+      try {
+        data = texto ? JSON.parse(texto) : null;
+      } catch (_) {
+        data = null;
+      }
+      return { data, texto };
+    }
+
     async function cargarSesionCabecera() {
       try {
         const res = await fetch("/api/usuario/session", { credentials: "same-origin" });
@@ -397,13 +408,14 @@
 
     async function refrescarDiagnostico() {
       const res = await fetch("/api/admin/email-diagnostico", { credentials: "same-origin" });
-      const data = await res.json().catch(() => null);
+      const { data, texto } = await leerRespuestaJsonSegura(res);
       if (res.status === 401) {
         location.href = "portal.html";
         return;
       }
       if (!res.ok || !data?.ok) {
-        throw new Error(data?.detalle || data?.error || "No se pudo comprobar la configuración de correo.");
+        const detalle = data?.detalle || data?.error || texto || `HTTP ${res.status}`;
+        throw new Error(`No se pudo comprobar la configuración de correo. ${detalle}`.trim());
       }
       pintarDiagnostico(data.diagnostico || {});
       pintarResultado(data);
@@ -428,9 +440,10 @@
           credentials: "same-origin",
           body: JSON.stringify({ to, subject })
         });
-        const data = await res.json().catch(() => null);
+        const { data, texto } = await leerRespuestaJsonSegura(res);
         if (!res.ok || !data?.ok) {
-          throw new Error(data?.detalle || data?.error || "No se pudo ejecutar la prueba de correo.");
+          const detalle = data?.detalle || data?.error || texto || `HTTP ${res.status}`;
+          throw new Error(`No se pudo ejecutar la prueba de correo. ${detalle}`.trim());
         }
         pintarDiagnostico(data.diagnostico || {});
         pintarResultado(data);
