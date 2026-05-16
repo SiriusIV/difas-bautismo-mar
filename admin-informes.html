@@ -49,6 +49,34 @@
     .btn-principal:hover { background: #0a53be; color: #fff; border-color: #0a53be; }
     .btn-secundario { background: #eef4ff; color: #123a63; border-color: #c9dcff; }
     .btn-secundario:hover { background: #e2edff; color: #0b5ed7; border-color: #b6d0ff; }
+    .btn-cuadrado-icono {
+      width: 100%;
+      min-height: 72px;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .btn-cuadrado-icono img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      display: block;
+    }
+    .btn-descarga-informe {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .btn-descarga-informe img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      display: block;
+    }
     .btn-pildora { border-radius: 999px; padding: 9px 14px; display: inline-flex; align-items: center; gap: 8px; }
     .btn-pildora svg { width: 15px; height: 15px; }
     .btn-icono { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; }
@@ -262,7 +290,9 @@
         </div>
         <div>
           <label>&nbsp;</label>
-          <button type="button" class="btn btn-principal" id="btnGenerarInforme">Generar informe</button>
+          <button type="button" class="btn btn-principal btn-cuadrado-icono" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
+            <img src="assets/icono-generar-documentos.svg" alt="">
+          </button>
         </div>
       </div>
       <div class="ayuda-filtros">El informe resume las solicitudes confirmadas y los asistentes cargados dentro del intervalo seleccionado.</div>
@@ -321,7 +351,10 @@
           <label for="selectActividadGrafica" id="labelEntidadGrafica">Comparativa por actividad</label>
           <select id="selectActividadGrafica"></select>
           <div style="height:10px;"></div>
-          <button type="button" class="btn btn-secundario" id="btnDescargarInformePdf">Descargar PDF</button>
+          <button type="button" class="btn btn-secundario btn-descarga-informe" id="btnDescargarInformePdf">
+            <img src="assets/icono-descargar-informe.svg" alt="">
+            <span>Descargar informe</span>
+          </button>
           <p class="grafica-sub" id="ayudaGraficaComparativa">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
         </div>
         <div class="grafica-panel">
