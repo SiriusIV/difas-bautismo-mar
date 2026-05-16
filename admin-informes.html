@@ -100,6 +100,37 @@
     .barra-pista { height: 18px; border-radius: 999px; background: #e8eef6; overflow: hidden; }
     .barra-valor { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0b5ed7 0%, #4a86e8 100%); min-width: 4px; }
     .barra-total { text-align: right; font-weight: 700; color: #163c67; font-size: 12px; }
+    .grafica-pastel-wrap { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 18px; align-items: center; }
+    .grafica-pastel {
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      margin: 0 auto;
+      border: 1px solid #d8e2ee;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+    }
+    .grafica-pastel-vacia {
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      margin: 0 auto;
+      border: 1px dashed #c9d6e5;
+      background: #f9fbfd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #68798c;
+      padding: 18px;
+      box-sizing: border-box;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .leyenda-pastel { display: flex; flex-direction: column; gap: 10px; }
+    .leyenda-item { display: grid; grid-template-columns: 14px 56px minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-size: 12px; color: #36506b; }
+    .leyenda-color { width: 14px; height: 14px; border-radius: 4px; }
+    .leyenda-anio { font-weight: 700; }
+    .leyenda-porcentaje { text-align: right; font-weight: 700; color: #163c67; }
     .mensaje { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; display: none; font-size: 13px; }
     .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; border: 1px solid #b9e0c0; }
@@ -216,6 +247,12 @@
           <select id="selectModoGrafica">
             <option value="actividad">Por actividad</option>
             <option value="programa">Por programa</option>
+          </select>
+          <div style="height:10px;"></div>
+          <label for="selectTipoGrafico">Presentacion del grafico</label>
+          <select id="selectTipoGrafico">
+            <option value="barras">Barras horizontales</option>
+            <option value="pastel">Circular</option>
           </select>
           <div style="height:10px;"></div>
           <label for="selectActividadGrafica" id="labelEntidadGrafica">Comparativa por actividad</label>
@@ -367,6 +404,10 @@
       return String(document.getElementById("selectModoGrafica").value || "actividad");
     }
 
+    function obtenerTipoGrafico() {
+      return String(document.getElementById("selectTipoGrafico").value || "barras");
+    }
+
     function obtenerActividadGraficaSeleccionada() {
       const select = document.getElementById("selectActividadGrafica");
       const id = String(select.value || "");
@@ -379,10 +420,49 @@
       return informeActual?.comparativa?.programas?.find((item) => String(item.programa || "") === programa) || null;
     }
 
+    function paletaGrafica(index) {
+      const colores = ["#0b5ed7", "#4a86e8", "#83aef3", "#bed4fb", "#7b61ff", "#4fb3bf", "#f0b429"];
+      return colores[index % colores.length];
+    }
+
+    function renderGraficaPastel(series = []) {
+      const totalGeneral = series.reduce((acc, item) => acc + Number(item.total_asistentes || 0), 0);
+      if (!(totalGeneral > 0)) {
+        return `<div class="grafica-pastel-wrap"><div class="grafica-pastel-vacia">Todavia no hay asistentes suficientes para mostrar el reparto anual.</div></div>`;
+      }
+
+      let acumulado = 0;
+      const segmentos = [];
+      const leyenda = series.map((item, index) => {
+        const total = Number(item.total_asistentes || 0);
+        const porcentaje = (total / totalGeneral) * 100;
+        const color = paletaGrafica(index);
+        const inicio = acumulado;
+        acumulado += porcentaje;
+        segmentos.push(`${color} ${inicio.toFixed(2)}% ${acumulado.toFixed(2)}%`);
+        return `
+          <div class="leyenda-item">
+            <span class="leyenda-color" style="background:${color};"></span>
+            <span class="leyenda-anio">${Number(item.anio || 0)}</span>
+            <span>${total} asistentes</span>
+            <span class="leyenda-porcentaje">${porcentaje.toFixed(1)}%</span>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="grafica-pastel-wrap">
+          <div class="grafica-pastel" style="background: conic-gradient(${segmentos.join(", ")});"></div>
+          <div class="leyenda-pastel">${leyenda}</div>
+        </div>
+      `;
+    }
+
     function renderGraficaActividad() {
       const wrap = document.getElementById("graficaActividad");
       const titulo = document.getElementById("tituloGraficaActividad");
       const modo = obtenerModoGrafica();
+      const tipoGrafico = obtenerTipoGrafico();
       const actividad = modo === "programa" ? obtenerProgramaGraficaSeleccionado() : obtenerActividadGraficaSeleccionada();
       if (!actividad) {
         titulo.textContent = modo === "programa" ? "Comparativa anual por programa" : "Comparativa de asistentes";
@@ -393,6 +473,10 @@
         ? `Programa ${actividad.programa || ""}`.trim()
         : (actividad.actividad_nombre || "Comparativa de asistentes");
       const series = Array.isArray(actividad.series) ? actividad.series : [];
+      if (tipoGrafico === "pastel") {
+        wrap.innerHTML = renderGraficaPastel(series);
+        return;
+      }
       const maximo = Math.max(1, ...series.map((item) => Number(item.total_asistentes || 0)));
       wrap.innerHTML = `<div class="barras-lista">${series.map((item) => {
         const total = Number(item.total_asistentes || 0);
@@ -508,6 +592,7 @@
     document.getElementById("selectModoGrafica").addEventListener("change", function () {
       renderSelectorGrafica(informeActual?.comparativa || {});
     });
+    document.getElementById("selectTipoGrafico").addEventListener("change", renderGraficaActividad);
     document.getElementById("selectActividadGrafica").addEventListener("change", renderGraficaActividad);
 
     (async function init() {
