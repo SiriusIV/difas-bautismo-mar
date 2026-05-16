@@ -109,7 +109,7 @@
       justify-content: space-between;
       gap: 14px;
     }
-    .resumen-card-titulo { font-size: 12px; color: #547095; text-transform: uppercase; letter-spacing: 0.03em; }
+    .resumen-card-titulo { font-size: 15px; color: #547095; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; }
     .resumen-card-valor { font-size: 36px; line-height: 1; color: #163c67; font-weight: 700; margin-left: auto; text-align: right; min-width: 48px; }
     .analisis-bloque {
       border: 1px solid #d7e5ff;
@@ -1241,6 +1241,8 @@
       const tipoComparativa = String(document.getElementById("selectModoGrafica").selectedOptions?.[0]?.textContent || "-").trim();
       const tipoGrafico = String(document.getElementById("selectTipoGrafico").selectedOptions?.[0]?.textContent || "-").trim();
       const entidad = entidadComparativaActiva();
+      const entidadComparativa = obtenerEntidadComparativaInformePdf();
+      const seriesComparativa = Array.isArray(entidadComparativa?.series) ? entidadComparativa.series : [];
       const hoy = hoyLocalIso();
       const logoNode = document.getElementById("logoCabeceraInformes");
       const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
@@ -1444,7 +1446,7 @@
       }
     }
 
-    async function cargarInforme() {
+    async function cargarInforme(mostrarExito = true) {
       limpiarMensaje();
       const fechaInicio = String(document.getElementById("fechaInicioInforme").value || "").trim();
       const fechaFin = String(document.getElementById("fechaFinInforme").value || "").trim();
@@ -1475,7 +1477,9 @@
         return;
       }
       renderInforme(data);
-      mostrarMensaje("ok", "Informe actualizado correctamente.");
+      if (mostrarExito) {
+        mostrarMensaje("ok", "Informe actualizado correctamente.");
+      }
     }
 
     document.getElementById("btnGenerarInforme").addEventListener("click", cargarInforme);
@@ -1499,7 +1503,7 @@
       document.getElementById("fechaInicioInforme").value = fechaInicioAnioIso();
       document.getElementById("fechaFinInforme").value = fechaHoyIso();
       await cargarSesion();
-      await cargarInforme();
+      await cargarInforme(false);
     })();
   </script>
 </body>
