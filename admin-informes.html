@@ -62,15 +62,19 @@
       color: #1e2a36;
     }
     .ayuda-filtros { margin-top: 6px; color: #607080; font-size: 12px; }
-    .resumen-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .resumen-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .resumen-card {
       border-radius: 12px;
       padding: 12px 14px;
       background: linear-gradient(145deg, #eef4ff 0%, #f7fbff 100%);
       border: 1px solid #d7e5ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
     }
-    .resumen-card-titulo { font-size: 12px; color: #547095; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
-    .resumen-card-valor { font-size: 30px; line-height: 1; color: #163c67; font-weight: 700; }
+    .resumen-card-titulo { font-size: 12px; color: #547095; text-transform: uppercase; letter-spacing: 0.03em; }
+    .resumen-card-valor { font-size: 36px; line-height: 1; color: #163c67; font-weight: 700; margin-left: auto; text-align: right; min-width: 48px; }
     .tabla-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 13px; }
     th, td { border-bottom: 1px solid #dde4ea; padding: 9px 8px; text-align: left; vertical-align: middle; }
@@ -103,7 +107,7 @@
     .grafica-panel-cabecera select { min-width: 200px; }
     .grafica-panel-control { display: flex; align-items: center; gap: 8px; }
     .grafica-titulo { margin: 0; font-size: 15px; color: #123a63; }
-    .grafica-sub { margin: auto 0 0; font-size: 12px; color: #617385; line-height: 1.5; }
+    .grafica-sub { margin: auto 0 8px; font-size: 12px; color: #617385; line-height: 1.5; }
     .barras-lista { display: flex; flex-direction: column; gap: 12px; }
     .barra-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) 52px; align-items: center; gap: 10px; }
     .barra-anio { font-weight: 700; color: #36506b; font-size: 12px; }
@@ -233,15 +237,11 @@
     <div class="bloque">
       <div class="resumen-cards">
         <div class="resumen-card">
-          <div class="resumen-card-titulo">Actividades realizadas</div>
+          <div class="resumen-card-titulo">Actividades</div>
           <div class="resumen-card-valor" id="valorTotalActividades">0</div>
         </div>
         <div class="resumen-card">
-          <div class="resumen-card-titulo">Realizaciones computadas</div>
-          <div class="resumen-card-valor" id="valorTotalRealizaciones">0</div>
-        </div>
-        <div class="resumen-card">
-          <div class="resumen-card-titulo">Asistentes contabilizados</div>
+          <div class="resumen-card-titulo">Asistentes</div>
           <div class="resumen-card-valor" id="valorTotalAsistentes">0</div>
         </div>
       </div>
@@ -385,7 +385,6 @@
 
     function renderResumen(resumen = {}) {
       document.getElementById("valorTotalActividades").textContent = String(Number(resumen.total_actividades || 0));
-      document.getElementById("valorTotalRealizaciones").textContent = String(Number(resumen.total_realizaciones || 0));
       document.getElementById("valorTotalAsistentes").textContent = String(Number(resumen.total_asistentes || 0));
     }
 
