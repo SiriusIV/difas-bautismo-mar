@@ -109,13 +109,15 @@ async function obtenerReservasAfectablesActividad(env, actividadId) {
       r.usuario_id,
       r.codigo_reserva,
       r.contacto,
-      r.email,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
       r.estado,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
+    LEFT JOIN usuarios us
+      ON us.id = r.usuario_id
     WHERE r.actividad_id = ?
       AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
     ORDER BY r.id ASC

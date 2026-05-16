@@ -332,7 +332,7 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       r.codigo_reserva,
       r.centro,
       r.contacto,
-      r.email,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
       r.observaciones,
       COALESCE(r.observaciones_admin, '') AS observaciones_admin,
       r.estado,
@@ -341,6 +341,8 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
+    LEFT JOIN usuarios us
+      ON us.id = r.usuario_id
     WHERE r.id = ?
     LIMIT 1
   `).bind(reservaId).first();

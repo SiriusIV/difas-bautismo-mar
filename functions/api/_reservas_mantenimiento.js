@@ -329,7 +329,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
       r.codigo_reserva,
       r.centro,
       r.contacto,
-      r.email,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us_solicitante.email), '')) AS email,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       a.admin_id,
       u.email AS admin_email,
@@ -347,6 +347,8 @@ async function rechazarReservasSuspendidasVencidas(env) {
       ON a.id = r.actividad_id
     LEFT JOIN usuarios u
       ON u.id = a.admin_id
+    LEFT JOIN usuarios us_solicitante
+      ON us_solicitante.id = r.usuario_id
     WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'SUSPENDIDA'
       AND datetime(
         COALESCE(
@@ -404,7 +406,7 @@ async function obtenerReservasPrereservaExpirada(env) {
       r.codigo_reserva,
       r.centro,
       r.contacto,
-      r.email,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us_solicitante.email), '')) AS email,
       r.personas,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
@@ -428,6 +430,8 @@ async function obtenerReservasPrereservaExpirada(env) {
       ON a.id = r.actividad_id
     LEFT JOIN usuarios u
       ON u.id = a.admin_id
+    LEFT JOIN usuarios us_solicitante
+      ON us_solicitante.id = r.usuario_id
     LEFT JOIN franjas f
       ON f.id = r.franja_id
     WHERE r.prereserva_expira_en IS NOT NULL
