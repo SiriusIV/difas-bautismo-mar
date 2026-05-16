@@ -79,6 +79,15 @@
     }
     .resumen-card-titulo { font-size: 12px; color: #547095; text-transform: uppercase; letter-spacing: 0.03em; }
     .resumen-card-valor { font-size: 36px; line-height: 1; color: #163c67; font-weight: 700; margin-left: auto; text-align: right; min-width: 48px; }
+    .analisis-bloque {
+      border: 1px solid #d7e5ff;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #f7fbff 0%, #fbfdff 100%);
+      padding: 12px 14px;
+    }
+    .analisis-titulo { margin: 0 0 8px; font-size: 14px; color: #123a63; }
+    .analisis-lista { margin: 0; padding-left: 18px; color: #35506b; font-size: 13px; line-height: 1.55; }
+    .analisis-lista li + li { margin-top: 4px; }
     .tabla-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 13px; }
     th, td { border-bottom: 1px solid #dde4ea; padding: 9px 8px; text-align: left; vertical-align: middle; }
@@ -255,6 +264,13 @@
     </div>
 
     <div class="bloque">
+      <div class="analisis-bloque">
+        <h3 class="analisis-titulo">Lectura automatica del periodo</h3>
+        <ul class="analisis-lista" id="listaAnalisisInforme"></ul>
+      </div>
+    </div>
+
+    <div class="bloque">
       <div class="detalle-cabecera">
         <h3 style="margin:0; color:#123a63;">Detalle por actividad</h3>
         <div class="detalle-nota">(Las actividades en rojo estan pendientes de ejecucion)</div>
@@ -423,6 +439,54 @@
     function renderResumen(resumen = {}) {
       document.getElementById("valorTotalActividades").textContent = String(Number(resumen.total_actividades || 0));
       document.getElementById("valorTotalAsistentes").textContent = String(Number(resumen.total_asistentes || 0));
+    }
+
+    function construirNarrativaInforme(data) {
+      const resumen = data?.resumen || {};
+      const actividades = Array.isArray(data?.actividades) ? data.actividades : [];
+      const fechaInicio = formatearFechaIso(data?.intervalo?.fecha_inicio || "");
+      const fechaFin = formatearFechaIso(data?.intervalo?.fecha_fin || "");
+      const totalActividades = Number(resumen.total_actividades || 0);
+      const totalAsistentes = Number(resumen.total_asistentes || 0);
+      const totalRealizaciones = Number(resumen.total_realizaciones || 0);
+      const futuras = actividades.filter((item) => String(item.primera_fecha || "") > hoyLocalIso());
+      const realizadas = actividades.filter((item) => !(String(item.primera_fecha || "") > hoyLocalIso()));
+      const topActividad = actividades.slice().sort((a, b) => Number(b.total_asistentes || 0) - Number(a.total_asistentes || 0))[0] || null;
+      const media = totalActividades > 0 ? (totalAsistentes / totalActividades) : 0;
+      const programa = limpiarTexto(document.getElementById("selectProgramaInforme").value || "");
+      const actividad = limpiarTexto(document.getElementById("selectActividadInforme").selectedOptions?.[0]?.textContent || "");
+
+      const frases = [];
+      frases.push(`Entre el ${fechaInicio} y el ${fechaFin} se contabilizan ${totalActividades} actividades y ${totalAsistentes} asistentes confirmados.`);
+      if (totalRealizaciones > 0) {
+        frases.push(`El informe agrupa ${totalRealizaciones} realizaciones confirmadas en el intervalo seleccionado.`);
+      }
+      if (topActividad && Number(topActividad.total_asistentes || 0) > 0) {
+        frases.push(`La actividad con mayor asistencia es ${topActividad.actividad_nombre}, con ${Number(topActividad.total_asistentes || 0)} asistentes.`);
+      }
+      if (media > 0) {
+        frases.push(`La media aproximada se sitúa en ${media.toFixed(1)} asistentes por actividad computada.`);
+      }
+      if (programa) {
+        frases.push(`El analisis esta filtrado al programa ${programa}.`);
+      }
+      if (actividad && actividad !== "Todas") {
+        frases.push(`La lectura tambien queda acotada a la actividad ${actividad}.`);
+      }
+      if (realizadas.length && futuras.length) {
+        frases.push(`El periodo mezcla ${realizadas.length} actividades ya celebradas con ${futuras.length} pendientes de ejecucion, por lo que el balance final todavia puede crecer.`);
+      } else if (futuras.length) {
+        frases.push(`Todas las actividades del intervalo siguen pendientes de ejecucion, por lo que la asistencia definitiva aun no esta cerrada.`);
+      } else if (realizadas.length) {
+        frases.push(`Todas las actividades incluidas en el intervalo ya han tenido lugar.`);
+      }
+      return frases;
+    }
+
+    function renderAnalisis(data) {
+      const lista = document.getElementById("listaAnalisisInforme");
+      const frases = construirNarrativaInforme(data);
+      lista.innerHTML = frases.map((frase) => `<li>${escapeHtml(frase)}</li>`).join("");
     }
 
     function renderTabla(actividades = []) {
@@ -613,6 +677,7 @@
         document.getElementById("selectActividadInforme").value = String(data.filtros.actividad_id);
       }
       renderResumen(data?.resumen || {});
+      renderAnalisis(data);
       renderTabla(data?.actividades || []);
       renderSelectorGrafica(data?.comparativa || {});
     }
@@ -720,6 +785,31 @@
         });
       });
       y -= 62;
+
+      page.drawText("Lectura automatica del periodo", {
+        x: margen,
+        y,
+        size: 12,
+        font: fontBold,
+        color: azul
+      });
+      y -= 15;
+      const analisis = construirNarrativaInforme(informeActual);
+      for (const frase of analisis) {
+        const lineas = partirTextoLineas(`• ${frase}`, 104);
+        for (const linea of lineas) {
+          page.drawText(linea, {
+            x: margen + 2,
+            y,
+            size: 9.5,
+            font,
+            color: gris
+          });
+          y -= 11;
+        }
+        y -= 2;
+      }
+      y -= 8;
 
       const chartNode = document.getElementById("graficaActividad");
       if (chartNode) {
