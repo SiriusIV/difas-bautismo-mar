@@ -75,6 +75,7 @@
     table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 13px; }
     th, td { border-bottom: 1px solid #dde4ea; padding: 10px 8px; text-align: left; vertical-align: middle; }
     th { background: #eef4ff; color: #1d4f91; font-weight: 700; }
+    .fila-futura td { color: #b42318; }
     .estado-vacio {
       border: 1px dashed #c9d6e5;
       border-radius: 12px;
@@ -293,6 +294,14 @@
       return `${dd}/${mm}/${yyyy}`;
     }
 
+    function hoyLocalIso() {
+      const ahora = new Date();
+      const year = ahora.getFullYear();
+      const month = String(ahora.getMonth() + 1).padStart(2, "0");
+      const day = String(ahora.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
     async function cargarSesion() {
       const res = await fetch("/api/usuario/session", { credentials: "include", cache: "no-store" });
       const data = await res.json().catch(() => null);
@@ -318,8 +327,9 @@
         tbody.innerHTML = `<tr><td colspan="5"><div class="estado-vacio">No hay actividades realizadas en el intervalo seleccionado.</div></td></tr>`;
         return;
       }
+      const hoy = hoyLocalIso();
       tbody.innerHTML = actividades.map((item) => `
-        <tr>
+        <tr class="${String(item.primera_fecha || "") > hoy ? "fila-futura" : ""}">
           <td>${escapeHtml(item.actividad_nombre || "Actividad")}</td>
           <td>${Number(item.total_realizaciones || 0)}</td>
           <td>${Number(item.total_asistentes || 0)}</td>
