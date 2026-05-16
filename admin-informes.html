@@ -230,6 +230,63 @@
       line-height: 1;
       flex: 0 0 auto;
     }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 24, 39, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 3000;
+    }
+    .modal-overlay.abierto { display: flex; }
+    .modal {
+      width: min(100%, 520px);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 18px 50px rgba(11, 30, 56, 0.24);
+      border: 1px solid #d8e2ee;
+      overflow: hidden;
+    }
+    .modal-cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid #e3ebf6;
+    }
+    .modal-cabecera-titulo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .modal-cabecera-titulo h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      color: #123a63;
+    }
+    .modal-icono-aviso {
+      width: 24px;
+      height: 24px;
+      color: #b7791f;
+      flex: 0 0 auto;
+    }
+    .modal-cuerpo {
+      padding: 16px 18px 18px;
+      color: #35506b;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
     @media (max-width: 920px) {
       .resumen-cards, .grafica-wrap, .filtros-grid { grid-template-columns: 1fr; }
       .barra-nav { justify-content: center; padding-top: 10px; }
@@ -274,6 +331,29 @@
     </div>
 
     <div id="mensaje" class="mensaje"></div>
+
+    <div id="modalAdvertenciaInforme" class="modal-overlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalAdvertenciaInforme">
+        <div class="modal-cabecera">
+          <div class="modal-cabecera-titulo">
+            <svg class="modal-icono-aviso" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3l9 16H3L12 3z"></path>
+              <path d="M12 9v4.8"></path>
+              <path d="M12 17.2h.01"></path>
+            </svg>
+            <h3 id="tituloModalAdvertenciaInforme">Advertencia</h3>
+          </div>
+          <button type="button" class="btn-icono" id="btnCerrarModalAdvertenciaInforme" aria-label="Cerrar">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-cuerpo" id="textoModalAdvertenciaInforme"></div>
+        <div class="modal-acciones">
+          <button type="button" class="btn" id="btnCancelarModalAdvertenciaInforme">Cancelar</button>
+          <button type="button" class="btn btn-principal" id="btnContinuarModalAdvertenciaInforme">Continuar</button>
+        </div>
+      </div>
+    </div>
 
     <div class="bloque">
       <div class="filtros-grid">
@@ -416,6 +496,55 @@
       el.className = "mensaje";
       el.style.display = "none";
       el.textContent = "";
+    }
+
+    function actividadesNoFinalizadasInforme() {
+      const actividades = Array.isArray(informeActual?.actividades) ? informeActual.actividades : [];
+      const hoy = hoyLocalIso();
+      return actividades.filter((item) => {
+        const primera = String(item?.primera_fecha || "").trim();
+        const ultima = String(item?.ultima_fecha || "").trim();
+        if (ultima) return ultima >= hoy;
+        if (primera) return primera >= hoy;
+        return false;
+      });
+    }
+
+    function abrirModalAdvertenciaInforme(texto) {
+      const overlay = document.getElementById("modalAdvertenciaInforme");
+      const textoEl = document.getElementById("textoModalAdvertenciaInforme");
+      const btnCerrar = document.getElementById("btnCerrarModalAdvertenciaInforme");
+      const btnCancelar = document.getElementById("btnCancelarModalAdvertenciaInforme");
+      const btnContinuar = document.getElementById("btnContinuarModalAdvertenciaInforme");
+      textoEl.textContent = texto;
+      overlay.classList.add("abierto");
+      overlay.setAttribute("aria-hidden", "false");
+
+      return new Promise((resolve) => {
+        const cerrar = (resultado) => {
+          overlay.classList.remove("abierto");
+          overlay.setAttribute("aria-hidden", "true");
+          overlay.removeEventListener("click", onOverlayClick);
+          btnCerrar.removeEventListener("click", onCancelar);
+          btnCancelar.removeEventListener("click", onCancelar);
+          btnContinuar.removeEventListener("click", onContinuar);
+          document.removeEventListener("keydown", onKeyDown);
+          resolve(resultado);
+        };
+        const onCancelar = () => cerrar(false);
+        const onContinuar = () => cerrar(true);
+        const onOverlayClick = (event) => {
+          if (event.target === overlay) cerrar(false);
+        };
+        const onKeyDown = (event) => {
+          if (event.key === "Escape") cerrar(false);
+        };
+        overlay.addEventListener("click", onOverlayClick);
+        btnCerrar.addEventListener("click", onCancelar);
+        btnCancelar.addEventListener("click", onCancelar);
+        btnContinuar.addEventListener("click", onContinuar);
+        document.addEventListener("keydown", onKeyDown);
+      });
     }
 
     function escapeHtml(texto) {
@@ -1565,6 +1694,11 @@
     document.getElementById("btnGenerarInforme").addEventListener("click", cargarInforme);
     document.getElementById("btnDescargarInformePdf").addEventListener("click", async function () {
       try {
+        const pendientes = actividadesNoFinalizadasInforme();
+        if (pendientes.length) {
+          const continuar = await abrirModalAdvertenciaInforme("En el intervalo seleccionado existen actividades que todavia no han finalizado, porque aun no han comenzado o siguen en curso. Si continuas, el informe se generara igualmente con los datos disponibles hasta este momento.");
+          if (!continuar) return;
+        }
         await descargarInformePdf();
       } catch (error) {
         mostrarMensaje("error", error?.message || "No se pudo generar el PDF del informe.");
