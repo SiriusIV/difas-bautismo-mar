@@ -572,6 +572,15 @@ if (Number(actividad.activa || 0) !== 1) {
           hora_inicio: franja?.hora_inicio || "",
           hora_fin: franja?.hora_fin || ""
         });
+        if (!correoAdmin.ok && !correoAdmin.skipped) {
+          console.error("No se pudo enviar el correo al administrador tras crear una nueva solicitud.", {
+            reserva_id: Number(reservaCreada?.id || 0),
+            actividad_id: Number(actividadId || 0),
+            admin_id: Number(actividad?.admin_id || 0),
+            email_admin: actividad?.admin_email || "",
+            error: correoAdmin.error || ""
+          });
+        }
       } catch (errorNotificacion) {
         notificacionAdmin = {
           ok: false,

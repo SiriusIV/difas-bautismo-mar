@@ -1936,6 +1936,9 @@
         }
 
         if (String(data.estado || "").toUpperCase() === "PENDIENTE") {
+          if (data?.correo_admin?.enviado === false) {
+            mostrarMensaje("aviso", `${data.mensaje || "Solicitud reenviada correctamente y pendiente de nueva validación."}${construirAvisoCorreoAdmin(data)}`);
+          }
           reservaCreada = {
             codigo_reserva: data.codigo_reserva || "",
             estado: data.estado || "PENDIENTE",
@@ -1953,7 +1956,7 @@
         await cargarFranjas();
         aplicarDatosReservaEnFormulario(reservaActualizada);
         limpiarSolicitudPendiente();
-        mostrarMensaje("ok", data.mensaje || "Solicitud actualizada correctamente.");
+        mostrarMensaje(data?.correo_admin?.enviado === false ? "aviso" : "ok", `${data.mensaje || "Solicitud actualizada correctamente."}${construirAvisoCorreoAdmin(data)}`);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo actualizar la solicitud.");
       } finally {
@@ -1999,6 +2002,13 @@
       if (!mensaje) return;
       mensaje.className = `confirmacion-envio-mensaje ${tipo}`;
       mensaje.textContent = texto;
+    }
+
+    function construirAvisoCorreoAdmin(data) {
+      const correo = data?.correo_admin || null;
+      if (!correo || correo.enviado === true) return "";
+      const detalle = String(correo.error || "").trim();
+      return ` Aviso: no se pudo enviar el correo automático al administrador${detalle ? ` (${detalle})` : ""}.`;
     }
 
     function establecerVisibilidadModal(id, activo) {
@@ -2082,7 +2092,7 @@
         reservaCreada = data;
         limpiarSolicitudPendiente();
         tokenBorrador = "";
-        mostrarMensajeModalConfirmacion("ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.`);
+        mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${construirAvisoCorreoAdmin(data)}`);
         document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
         redireccionPendienteTrasConfirmacion = "usuario-panel.html";
 

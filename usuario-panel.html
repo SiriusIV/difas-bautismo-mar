@@ -1460,7 +1460,9 @@
               throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
             }
 
-            mostrarMensajeConfirmacionEnvio("ok", data.mensaje || "Solicitud enviada correctamente.");
+            const correoAdmin = data?.correo_admin || null;
+            const detalleCorreo = correoAdmin && correoAdmin.enviado !== true ? String(correoAdmin.error || "").trim() : "";
+            mostrarMensajeConfirmacionEnvio(correoAdmin && correoAdmin.enviado !== true ? "error" : "ok", `${data.mensaje || "Solicitud enviada correctamente."}${correoAdmin && correoAdmin.enviado !== true ? ` Aviso: no se pudo enviar el correo automático al administrador${detalleCorreo ? ` (${detalleCorreo})` : ""}.` : ""}`);
             document.getElementById("modalObservacionesAcciones").innerHTML = "";
             reservaSeleccionada = null;
             await cargarPanel();

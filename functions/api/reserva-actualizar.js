@@ -676,6 +676,15 @@ export async function onRequestPost(context) {
           hora_fin: franjaNueva?.hora_fin || "",
           plazas_prereservadas: plazasSolicitadas
         }, "nueva");
+        if (!correoAdmin.ok && !correoAdmin.skipped) {
+          console.error("No se pudo enviar el correo al administrador tras enviar un borrador.", {
+            reserva_id: Number(reservaActual?.id || 0),
+            actividad_id: Number(reservaActual?.actividad_id || 0),
+            admin_id: Number(actividad?.admin_id || 0),
+            email_admin: actividad?.admin_email || "",
+            error: correoAdmin.error || ""
+          });
+        }
       } catch (errorNotificacion) {
         notificacionAdmin = {
           ok: false,
@@ -788,6 +797,15 @@ export async function onRequestPost(context) {
           hora_fin: franjaNueva?.hora_fin || "",
           plazas_prereservadas: totalBloqueadoNuevo
         }, "reenviada");
+        if (!correoAdmin.ok && !correoAdmin.skipped) {
+          console.error("No se pudo enviar el correo al administrador tras reenviar una solicitud rechazada.", {
+            reserva_id: Number(reservaActual?.id || 0),
+            actividad_id: Number(reservaActual?.actividad_id || 0),
+            admin_id: Number(actividad?.admin_id || 0),
+            email_admin: actividad?.admin_email || "",
+            error: correoAdmin.error || ""
+          });
+        }
       } catch (errorNotificacion) {
         notificacionAdmin = {
           ok: false,

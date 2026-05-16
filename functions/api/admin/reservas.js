@@ -720,6 +720,15 @@ export async function onRequestPatch(context) {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoNotificacion);
       }
       correoSolicitante = await enviarCorreoSolicitanteCambioEstado(env, contextoNotificacion, nuevoEstado);
+      if (!correoSolicitante.ok && !correoSolicitante.skipped) {
+        console.error("No se pudo enviar el correo al solicitante tras cambio de estado de reserva.", {
+          reserva_id: Number(id || 0),
+          usuario_id: Number(contextoNotificacion?.usuario_id || 0),
+          estado_destino: nuevoEstado,
+          email: contextoNotificacion?.email || "",
+          error: correoSolicitante.error || ""
+        });
+      }
     } catch (errorNotificacion) {
       notificacionSolicitante = {
         ok: false,
