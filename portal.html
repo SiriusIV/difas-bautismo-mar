@@ -1439,6 +1439,9 @@
             </div>
             <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
           </div>
+          <div id="accionesAdminPortal" class="accionesPublicas" style="display:none;">
+            <button class="nav-btn" type="button" onclick="irInformesActividad()">Informes</button>
+          </div>
         </div>
       </div>
 
@@ -2622,6 +2625,7 @@ function actualizarBotonSolicitarSegunFranja() {
       const secretaria = esSecretaria();
 
       document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
+      document.getElementById("accionesAdminPortal").style.display = admin ? "flex" : "none";
       document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
       document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
       document.getElementById("barraSecretaria").style.display = secretaria ? "flex" : "none";
@@ -3733,6 +3737,10 @@ function continuarSolicitudActividad() {
 
     function irPanelPlantillas() {
       location.href = "admin-plantillas.html";
+    }
+
+    function irInformesActividad() {
+      location.href = "admin-informes.html";
     }
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
