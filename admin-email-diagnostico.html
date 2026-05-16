@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico de correo</title>
+  <style>
+    html, body { min-height: 100%; }
+    body {
+      font-family: Arial, sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
+      margin: 0;
+      color: #222;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    .cabecera-global { background: transparent; box-shadow: none; padding: 18px 20px 14px; }
+    .cabecera-global-inner { max-width: 1108px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
+    .bloque-marca { display: flex; align-items: center; justify-content: center; gap: 50px; flex-wrap: wrap; text-align: left; }
+    .logo-cabecera { width: 101px; height: auto; display: block; }
+    .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
+    .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
+    .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
+    .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+    .barra-navegacion {
+      position: relative;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-height: 58px;
+    }
+    .barra-navegacion-centro {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: min(calc(100% - 260px), 560px);
+      pointer-events: none;
+    }
+    .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
+    .barra-navegacion-der { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-left: auto; }
+    .btn-icono, .btn-pildora {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #1e2a36;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
+    }
+    .btn-icono {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+    }
+    .btn-pildora {
+      padding: 8px 14px;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .btn-icono:hover, .btn-pildora:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+    .btn-icono svg, .btn-pildora svg { width: 17px; height: 17px; display: block; }
+    .bloque { padding: 16px; margin-bottom: 10px; }
+    .bloque h3 { margin: 0 0 12px; font-size: 15px; color: #123a63; }
+    .mensaje {
+      position: relative;
+      margin-bottom: 10px;
+      padding: 10px 42px 10px 12px;
+      border-radius: 8px;
+      display: none;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
+    .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; border: 1px solid #b9e0c0; }
+    .mensaje.aviso { display: block; background: #fff7e6; color: #9a6700; border: 1px solid #f3d08b; }
+    .mensaje-cerrar {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: currentColor;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .mensaje-cerrar:hover { background: transparent; color: currentColor; }
+    .grid-diagnostico {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .tarjeta {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .tarjeta-etiqueta {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #516274;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .tarjeta-valor {
+      font-size: 20px;
+      font-weight: 700;
+      color: #123a63;
+      overflow-wrap: anywhere;
+    }
+    .estado-ok { color: #146c2e; }
+    .estado-error { color: #9b1c1c; }
+    .estado-aviso { color: #9a6700; }
+    .texto-ayuda {
+      margin: 0;
+      color: #516274;
+      line-height: 1.55;
+    }
+    .formulario-prueba {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 280px) auto;
+      gap: 10px;
+      align-items: end;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #123a63;
+      font-size: 13px;
+    }
+    input[type="email"], input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 11px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      color: #1e2a36;
+    }
+    .btn-principal {
+      border: 0;
+      border-radius: 10px;
+      background: #0b5ed7;
+      color: #fff;
+      padding: 10px 16px;
+      min-height: 39px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-principal:hover { background: #0a53be; }
+    .btn-principal:disabled {
+      background: #7aa7e8;
+      cursor: not-allowed;
+    }
+    .resultado-panel {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 12px;
+      padding: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.55;
+      color: #21374d;
+      min-height: 100px;
+    }
+    @media (max-width: 980px) {
+      .grid-diagnostico { grid-template-columns: 1fr 1fr; }
+      .formulario-prueba { grid-template-columns: 1fr; }
+      .barra-navegacion-centro {
+        position: static;
+        transform: none;
+        width: 100%;
+        order: -1;
+        pointer-events: auto;
+      }
+      .barra-navegacion-der {
+        width: 100%;
+        justify-content: center;
+      }
+      .bloque-marca {
+        gap: 28px;
+      }
+    }
+    @media (max-width: 700px) {
+      .grid-diagnostico { grid-template-columns: 1fr; }
+      .bloque-marca {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+      .titulos-cabecera h2 { text-align: center; }
+      .logo-cabecera { width: 82px; }
+      .panel-titulo { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cabecera-global">
+    <div class="cabecera-global-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo administrador" class="logo-cabecera" id="logoCabeceraDiagnosticoCorreo">
+        <div class="titulos-cabecera">
+          <h1>Actividades Públicas Institucionales</h1>
+          <h2 id="subtituloCabecera">Administrador</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="contenedor">
+    <div class="barra-navegacion">
+      <div class="barra-navegacion-centro">
+        <span class="panel-titulo">Diagnóstico de correo</span>
+      </div>
+      <div class="barra-navegacion-der">
+        <a class="btn-pildora" href="admin-reservas.html">Reservas</a>
+        <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5L12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div id="mensaje" class="mensaje">
+      <span id="mensajeTexto"></span>
+      <button type="button" class="mensaje-cerrar" id="btnCerrarMensaje" aria-label="Cerrar">×</button>
+    </div>
+
+    <div class="bloque">
+      <h3>Estado de la configuración</h3>
+      <div class="grid-diagnostico">
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">Correo habilitado</span>
+          <div class="tarjeta-valor" id="valorEmailConfigurado">-</div>
+        </div>
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">API key de Resend</span>
+          <div class="tarjeta-valor" id="valorApiKey">-</div>
+        </div>
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">Remitente</span>
+          <div class="tarjeta-valor" id="valorEmailFrom">-</div>
+        </div>
+        <div class="tarjeta">
+          <span class="tarjeta-etiqueta">Diagnóstico rápido</span>
+          <div class="tarjeta-valor" id="valorResumen">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <h3>Prueba real de envío</h3>
+      <p class="texto-ayuda">
+        Esta prueba usa la misma capa de correo que las solicitudes y los cambios de estado. Si aquí falla, el problema no está en la reserva concreta, sino en la configuración o en el proveedor.
+      </p>
+      <div class="formulario-prueba">
+        <div>
+          <label for="correoDestinoPrueba">Correo de destino</label>
+          <input type="email" id="correoDestinoPrueba" placeholder="destino@correo.es" autocomplete="email" />
+        </div>
+        <div>
+          <label for="asuntoPrueba">Asunto de prueba</label>
+          <input type="text" id="asuntoPrueba" value="[Diagnóstico] Prueba de correo" />
+        </div>
+        <div>
+          <button type="button" class="btn-principal" id="btnEnviarPrueba">Enviar prueba</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <h3>Resultado técnico</h3>
+      <div class="resultado-panel" id="resultadoDiagnostico">Todavía no se ha ejecutado ninguna prueba.</div>
+    </div>
+  </div>
+
+  <script>
+    function limpiarTexto(valor) {
+      return String(valor || "").trim();
+    }
+
+    function mostrarMensaje(tipo, texto) {
+      const el = document.getElementById("mensaje");
+      const textoEl = document.getElementById("mensajeTexto");
+      if (!el || !textoEl) return;
+      el.className = `mensaje ${tipo}`;
+      textoEl.textContent = texto || "";
+      if (tipo === "ok") {
+        window.clearTimeout(mostrarMensaje._timer);
+        mostrarMensaje._timer = window.setTimeout(limpiarMensaje, 4000);
+      }
+    }
+
+    function limpiarMensaje() {
+      const el = document.getElementById("mensaje");
+      const textoEl = document.getElementById("mensajeTexto");
+      if (!el || !textoEl) return;
+      el.className = "mensaje";
+      textoEl.textContent = "";
+      window.clearTimeout(mostrarMensaje._timer);
+    }
+
+    function estadoHtml(valor, okText, badText) {
+      return valor
+        ? `<span class="estado-ok">${okText}</span>`
+        : `<span class="estado-error">${badText}</span>`;
+    }
+
+    function describirResumen(diagnostico = {}) {
+      if (diagnostico.email_configurado) {
+        return `<span class="estado-ok">Listo para probar</span>`;
+      }
+      if (!diagnostico.resend_api_key_presente && !diagnostico.email_from_presente) {
+        return `<span class="estado-error">Faltan API key y remitente</span>`;
+      }
+      if (!diagnostico.resend_api_key_presente) {
+        return `<span class="estado-error">Falta API key</span>`;
+      }
+      if (!diagnostico.email_from_presente) {
+        return `<span class="estado-error">Falta remitente</span>`;
+      }
+      return `<span class="estado-aviso">Revisar configuración</span>`;
+    }
+
+    function pintarDiagnostico(diagnostico = {}) {
+      document.getElementById("valorEmailConfigurado").innerHTML = estadoHtml(
+        !!diagnostico.email_configurado,
+        "Sí",
+        "No"
+      );
+      document.getElementById("valorApiKey").innerHTML = diagnostico.resend_api_key_presente
+        ? `<span class="estado-ok">${limpiarTexto(diagnostico.resend_api_key_mascara || "Presente")}</span>`
+        : `<span class="estado-error">Ausente</span>`;
+      document.getElementById("valorEmailFrom").innerHTML = diagnostico.email_from_presente
+        ? `<span class="estado-ok">${limpiarTexto(diagnostico.email_from || "")}</span>`
+        : `<span class="estado-error">Ausente</span>`;
+      document.getElementById("valorResumen").innerHTML = describirResumen(diagnostico);
+    }
+
+    function pintarResultado(resultado) {
+      document.getElementById("resultadoDiagnostico").textContent = JSON.stringify(resultado, null, 2);
+    }
+
+    async function cargarSesionCabecera() {
+      try {
+        const res = await fetch("/api/usuario/session", { credentials: "same-origin" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) return;
+        document.getElementById("subtituloCabecera").textContent = String(data.user.nombre || data.user.email || "Administrador").toUpperCase();
+        if (data.user.logo_url) {
+          document.getElementById("logoCabeceraDiagnosticoCorreo").src = data.user.logo_url;
+        }
+      } catch (_) {}
+    }
+
+    async function refrescarDiagnostico() {
+      const res = await fetch("/api/admin/email-diagnostico", { credentials: "same-origin" });
+      const data = await res.json().catch(() => null);
+      if (res.status === 401) {
+        location.href = "portal.html";
+        return;
+      }
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.detalle || data?.error || "No se pudo comprobar la configuración de correo.");
+      }
+      pintarDiagnostico(data.diagnostico || {});
+      pintarResultado(data);
+    }
+
+    async function enviarPrueba() {
+      limpiarMensaje();
+      const boton = document.getElementById("btnEnviarPrueba");
+      const to = limpiarTexto(document.getElementById("correoDestinoPrueba").value);
+      const subject = limpiarTexto(document.getElementById("asuntoPrueba").value) || "[Diagnóstico] Prueba de correo";
+
+      if (!to) {
+        mostrarMensaje("error", "Debes indicar un correo de destino para la prueba.");
+        return;
+      }
+
+      try {
+        boton.disabled = true;
+        const res = await fetch("/api/admin/email-diagnostico", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ to, subject })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.detalle || data?.error || "No se pudo ejecutar la prueba de correo.");
+        }
+        pintarDiagnostico(data.diagnostico || {});
+        pintarResultado(data);
+        if (data?.envio?.enviado) {
+          mostrarMensaje("ok", "La capa de correo ha aceptado la prueba correctamente.");
+        } else if (data?.envio?.omitido) {
+          mostrarMensaje("aviso", `La prueba no se ha enviado: ${data?.envio?.error || "correo omitido"}.`);
+        } else {
+          mostrarMensaje("error", `La prueba ha fallado: ${data?.envio?.error || "error desconocido"}.`);
+        }
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo ejecutar la prueba de correo.");
+      } finally {
+        boton.disabled = false;
+      }
+    }
+
+    document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
+    document.getElementById("btnEnviarPrueba").addEventListener("click", enviarPrueba);
+
+    (async function init() {
+      await cargarSesionCabecera();
+      try {
+        await refrescarDiagnostico();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo cargar el diagnóstico de correo.");
+      }
+    })();
+  </script>
+</body>
+</html>
