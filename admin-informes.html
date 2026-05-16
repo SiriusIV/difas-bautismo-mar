@@ -1197,8 +1197,8 @@
       `).join("");
 
       let stageHtml = `
-        <div style="position:relative; min-height:98px; padding-left:104px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
-          ${logoUrl ? `<img src="${logoUrl}" alt="Logo administrador" style="position:absolute; left:0; top:0; width:98px; height:98px; object-fit:contain;" />` : ""}
+        <div style="position:relative; min-height:118px; padding-left:122px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;">
+          ${logoUrl ? `<img src="${logoUrl}" alt="Logo administrador" style="position:absolute; left:0; top:0; width:118px; height:118px; object-fit:contain;" />` : ""}
           <div style="width:100%;">
             <div style="font-size:23px; font-weight:800; color:#123a63; line-height:1.08;">Informe de actividades realizadas</div>
             <div style="margin-top:7px; font-size:11px; color:#617385; line-height:1.35;">
@@ -1260,14 +1260,14 @@
         .replace(/estÃ¡n pendientes de ejecuciÃ³n/g, "están pendientes de ejecución")
         .replace(/Ãšltima fecha/g, "Última fecha")
         .replace('display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;', 'display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;')
-        .replace('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:left;', 'padding:4px 4px; border-bottom:1px solid #d9e5f7; font-size:10px; text-align:left; word-break:break-word;')
-        .replaceAll('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;', 'padding:4px 4px; border-bottom:1px solid #d9e5f7; font-size:10px; text-align:center;')
-        .replace('width:40%;">Actividad</th>', 'width:36%;">Actividad</th>')
-        .replace('width:14%;">Realizaciones</th>', 'width:12%;">Realizaciones</th>')
-        .replace('width:14%;">Asistentes</th>', 'width:12%;">Asistentes</th>')
-        .replace('width:16%;">Primera fecha</th>', 'width:18%;">Primera fecha</th>')
+        .replace('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:left;', 'padding:4px 3px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:left; word-break:break-word;')
+        .replaceAll('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;', 'padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;')
+        .replace('width:40%;">Actividad</th>', 'width:31%;">Actividad</th>')
+        .replace('width:14%;">Realizaciones</th>', 'width:11%;">Realizaciones</th>')
+        .replace('width:14%;">Asistentes</th>', 'width:11%;">Asistentes</th>')
+        .replace('width:16%;">Primera fecha</th>', 'width:20%;">Primera fecha</th>')
         .replace('width:16%;">Última fecha</th>', 'width:21%;">Última fecha</th>')
-        .replaceAll('padding:6px 7px; font-size:10px; color:#123a63;', 'padding:6px 4px; font-size:10px; color:#123a63;');
+        .replaceAll('padding:6px 7px; font-size:10px; color:#123a63;', 'padding:5px 3px; font-size:9.5px; color:#123a63;');
 
       stage.innerHTML = stageHtml;
       document.body.appendChild(stage);
