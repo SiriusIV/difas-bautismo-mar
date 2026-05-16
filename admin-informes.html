@@ -810,7 +810,7 @@
       }
       const maximo = Math.max(1, ...datos.map((item) => Number(item.total_asistentes || 0)));
       return `
-        <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="min-height:150px; display:flex; flex-direction:column; justify-content:center; gap:8px;">
           ${datos.map((item) => {
             const total = Number(item.total_asistentes || 0);
             const ancho = Math.max(total > 0 ? 6 : 0, Math.round((total / maximo) * 100));
@@ -852,7 +852,7 @@
         `;
       }).join("");
       return `
-        <div style="display:grid; grid-template-columns:120px minmax(0, 1fr); gap:8px; align-items:center;">
+        <div style="min-height:150px; display:grid; grid-template-columns:120px minmax(0, 1fr); gap:8px; align-items:center;">
           <div style="width:110px; height:110px; border-radius:50%; margin:0 auto; border:1px solid #d8e2ee; background:conic-gradient(${segmentos.join(", ")});"></div>
           <div style="display:flex; flex-direction:column; gap:6px;">${leyenda}</div>
         </div>
@@ -1252,21 +1252,32 @@
       const logoUrl = logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "";
       const chartUrl = "";
 
+      const stageWidthPx = 794;
+      const stageHeightPx = 1123;
+      const paddingTopPx = 52;
+      const paddingRightPx = 40;
+      const paddingBottomPx = 64;
+      const paddingLeftPx = 56;
+      const footerHeightPx = 18;
+      const contentWidthPx = stageWidthPx - paddingLeftPx - paddingRightPx;
+      const availableContentHeightPx = stageHeightPx - paddingTopPx - paddingBottomPx - footerHeightPx;
+
       const stage = document.createElement("div");
       stage.style.position = "fixed";
       stage.style.left = "-99999px";
       stage.style.top = "0";
-      stage.style.width = "794px";
-      stage.style.height = "1123px";
+      stage.style.width = `${contentWidthPx}px`;
+      stage.style.height = "auto";
       stage.style.boxSizing = "border-box";
-      stage.style.padding = "52px 40px 64px 56px";
+      stage.style.padding = "0";
       stage.style.background = "#ffffff";
       stage.style.color = "#123a63";
       stage.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
-      stage.style.display = "grid";
-      stage.style.gridTemplateRows = "auto auto auto auto auto auto";
+      stage.style.display = "flex";
+      stage.style.flexDirection = "column";
       stage.style.rowGap = "10px";
-      stage.style.overflow = "hidden";
+      stage.style.gap = "10px";
+      stage.style.overflow = "visible";
 
       const detalleFilasHtml = (filas.length ? filas.slice(0, 10) : [{
         actividad_nombre: "No hay actividades realizadas en el intervalo seleccionado.",
@@ -1301,11 +1312,11 @@
         <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
           <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start;">
-            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px;">
+            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px; min-height:196px; display:flex; flex-direction:column;">
               <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">Barras horizontales</div>
               ${graficaBarrasPdfHtml}
             </div>
-            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px;">
+            <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px; min-height:196px; display:flex; flex-direction:column;">
               <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">Gráfico circular</div>
               ${graficaPastelPdfHtml}
             </div>
@@ -1413,18 +1424,84 @@
       document.body.appendChild(stage);
       await esperarImagenesCargadas(stage);
 
-      try {
-        const stageBytes = await capturarNodoComoPngBytes(stage, "#ffffff", 2);
-        if (!stageBytes) throw new Error("No se pudo capturar el informe para exportarlo.");
+      const paginasHost = document.createElement("div");
+      paginasHost.style.position = "fixed";
+      paginasHost.style.left = "-99999px";
+      paginasHost.style.top = "0";
+      paginasHost.style.display = "flex";
+      paginasHost.style.flexDirection = "column";
+      paginasHost.style.gap = "24px";
+      document.body.appendChild(paginasHost);
 
-        const page = pdfDoc.addPage([pageWidth, pageHeight]);
-        const stageImage = await pdfDoc.embedPng(stageBytes);
-        page.drawImage(stageImage, {
-          x: 0,
-          y: 0,
-          width: pageWidth,
-          height: pageHeight
-        });
+      const crearPaginaInforme = () => {
+        const pagina = document.createElement("div");
+        pagina.style.width = `${stageWidthPx}px`;
+        pagina.style.height = `${stageHeightPx}px`;
+        pagina.style.boxSizing = "border-box";
+        pagina.style.background = "#ffffff";
+        pagina.style.color = "#123a63";
+        pagina.style.fontFamily = "'Segoe UI', Tahoma, sans-serif";
+        pagina.style.position = "relative";
+        pagina.style.overflow = "hidden";
+
+        const contenido = document.createElement("div");
+        contenido.style.boxSizing = "border-box";
+        contenido.style.padding = `${paddingTopPx}px ${paddingRightPx}px ${paddingBottomPx}px ${paddingLeftPx}px`;
+        contenido.style.width = "100%";
+        contenido.style.height = "100%";
+        contenido.style.display = "flex";
+        contenido.style.flexDirection = "column";
+        contenido.style.gap = "10px";
+        contenido.style.alignItems = "stretch";
+
+        const pie = document.createElement("div");
+        pie.style.position = "absolute";
+        pie.style.left = "0";
+        pie.style.right = "0";
+        pie.style.bottom = "22px";
+        pie.style.textAlign = "center";
+        pie.style.fontSize = "10px";
+        pie.style.color = "#617385";
+
+        pagina.appendChild(contenido);
+        pagina.appendChild(pie);
+        paginasHost.appendChild(pagina);
+        return { pagina, contenido, pie, usado: 0 };
+      };
+
+      const bloques = Array.from(stage.children);
+      const paginas = [];
+      let paginaActual = crearPaginaInforme();
+      paginas.push(paginaActual);
+      for (const bloque of bloques) {
+        const alturaBloque = Math.ceil(bloque.getBoundingClientRect().height);
+        const extraGap = paginaActual.usado > 0 ? 10 : 0;
+        if (paginaActual.usado > 0 && (paginaActual.usado + extraGap + alturaBloque) > availableContentHeightPx) {
+          paginaActual = crearPaginaInforme();
+          paginas.push(paginaActual);
+        }
+        paginaActual.contenido.appendChild(bloque.cloneNode(true));
+        paginaActual.usado += extraGap + alturaBloque;
+      }
+
+      paginas.forEach((item, index) => {
+        item.pie.textContent = `Página ${index + 1}`;
+      });
+      await esperarImagenesCargadas(paginasHost);
+
+      try {
+        for (const item of paginas) {
+          const stageBytes = await capturarNodoComoPngBytes(item.pagina, "#ffffff", 2);
+          if (!stageBytes) throw new Error("No se pudo capturar una de las paginas del informe para exportarla.");
+          const page = pdfDoc.addPage([pageWidth, pageHeight]);
+          const stageImage = await pdfDoc.embedPng(stageBytes);
+          page.drawImage(stageImage, {
+            x: 0,
+            y: 0,
+            width: pageWidth,
+            height: pageHeight
+          });
+        }
         const bytes = await pdfDoc.save();
         const blob = new Blob([bytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
@@ -1442,6 +1519,7 @@
       } finally {
         if (chartUrl) URL.revokeObjectURL(chartUrl);
         if (logoBytes && logoUrl) URL.revokeObjectURL(logoUrl);
+        paginasHost.remove();
         stage.remove();
       }
     }
