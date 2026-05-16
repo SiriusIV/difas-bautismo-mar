@@ -55,6 +55,16 @@ async function obtenerFilasBase(db, filtros) {
     binds.push(filtros.adminId);
   }
 
+  if (filtros.programa) {
+    where.push("TRIM(COALESCE(a.subtitulo_publico, '')) = ?");
+    binds.push(filtros.programa);
+  }
+
+  if (filtros.actividadId) {
+    where.push("a.id = ?");
+    binds.push(filtros.actividadId);
+  }
+
   const result = await db.prepare(`
     SELECT
       r.id AS reserva_id,
@@ -120,6 +130,40 @@ function construirDetalle(rows) {
   });
 }
 
+async function obtenerCatalogoFiltros(db, filtros) {
+  const where = [];
+  const binds = [];
+
+  if (!filtros.esSuperadmin) {
+    where.push("admin_id = ?");
+    binds.push(filtros.adminId);
+  }
+
+  const result = await db.prepare(`
+    SELECT
+      id,
+      COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(subtitulo_publico, '') AS programa
+    FROM actividades
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    ORDER BY actividad_nombre COLLATE NOCASE ASC
+  `).bind(...binds).all();
+
+  const actividades = (result.results || []).map((row) => ({
+    id: Number(row.id || 0),
+    nombre: limpiarTexto(row.actividad_nombre) || "Actividad",
+    programa: limpiarTexto(row.programa)
+  }));
+
+  const programas = [...new Set(
+    actividades
+      .map((item) => item.programa)
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
+  return { programas, actividades };
+}
+
 async function obtenerComparativa(db, filtros) {
   const anios = rangoAniosComparativa();
   const where = [
@@ -131,6 +175,16 @@ async function obtenerComparativa(db, filtros) {
   if (!filtros.esSuperadmin) {
     where.push("a.admin_id = ?");
     binds.push(filtros.adminId);
+  }
+
+  if (filtros.programa) {
+    where.push("TRIM(COALESCE(a.subtitulo_publico, '')) = ?");
+    binds.push(filtros.programa);
+  }
+
+  if (filtros.actividadId) {
+    where.push("a.id = ?");
+    binds.push(filtros.actividadId);
   }
 
   const result = await db.prepare(`
@@ -195,6 +249,8 @@ export async function onRequestGet(context) {
     const fechaFin = fechaValidaIso(url.searchParams.get("fecha_fin"))
       ? limpiarTexto(url.searchParams.get("fecha_fin"))
       : fechaHoyIso();
+    const programa = limpiarTexto(url.searchParams.get("programa"));
+    const actividadId = Number(url.searchParams.get("actividad_id") || 0);
 
     if (fechaInicio > fechaFin) {
       return json({ ok: false, error: "La fecha de inicio no puede ser posterior a la fecha final." }, 400);
@@ -205,9 +261,12 @@ export async function onRequestGet(context) {
       adminId: session.usuario_id,
       esSuperadmin,
       fechaInicio,
-      fechaFin
+      fechaFin,
+      programa,
+      actividadId: actividadId > 0 ? actividadId : 0
     };
 
+    const catalogo = await obtenerCatalogoFiltros(db, filtros);
     const rows = await obtenerFilasBase(db, filtros);
     const resumen = construirResumen(rows);
     const detalle = construirDetalle(rows);
@@ -218,6 +277,11 @@ export async function onRequestGet(context) {
       intervalo: {
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin
+      },
+      filtros: {
+        programa,
+        actividad_id: filtros.actividadId || 0,
+        catalogo
       },
       resumen,
       actividades: detalle,
