@@ -211,9 +211,15 @@
     <div class="bloque">
       <div class="grafica-wrap">
         <div>
-          <label for="selectActividadGrafica">Comparativa por actividad</label>
+          <label for="selectModoGrafica">Tipo de comparativa</label>
+          <select id="selectModoGrafica">
+            <option value="actividad">Por actividad</option>
+            <option value="programa">Por programa</option>
+          </select>
+          <div style="height:10px;"></div>
+          <label for="selectActividadGrafica" id="labelEntidadGrafica">Comparativa por actividad</label>
           <select id="selectActividadGrafica"></select>
-          <p class="grafica-sub">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
+          <p class="grafica-sub" id="ayudaGraficaComparativa">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
         </div>
         <div class="grafica-panel">
           <h3 class="grafica-titulo" id="tituloGraficaActividad">Comparativa de asistentes</h3>
@@ -347,22 +353,35 @@
       }
     }
 
+    function obtenerModoGrafica() {
+      return String(document.getElementById("selectModoGrafica").value || "actividad");
+    }
+
     function obtenerActividadGraficaSeleccionada() {
       const select = document.getElementById("selectActividadGrafica");
       const id = String(select.value || "");
       return informeActual?.comparativa?.actividades?.find((item) => String(item.actividad_id) === id) || null;
     }
 
+    function obtenerProgramaGraficaSeleccionado() {
+      const select = document.getElementById("selectActividadGrafica");
+      const programa = String(select.value || "");
+      return informeActual?.comparativa?.programas?.find((item) => String(item.programa || "") === programa) || null;
+    }
+
     function renderGraficaActividad() {
       const wrap = document.getElementById("graficaActividad");
       const titulo = document.getElementById("tituloGraficaActividad");
-      const actividad = obtenerActividadGraficaSeleccionada();
+      const modo = obtenerModoGrafica();
+      const actividad = modo === "programa" ? obtenerProgramaGraficaSeleccionado() : obtenerActividadGraficaSeleccionada();
       if (!actividad) {
-        titulo.textContent = "Comparativa de asistentes";
+        titulo.textContent = modo === "programa" ? "Comparativa anual por programa" : "Comparativa de asistentes";
         wrap.innerHTML = `<div class="estado-vacio">Todavia no hay datos suficientes para dibujar la comparativa anual.</div>`;
         return;
       }
-      titulo.textContent = actividad.actividad_nombre || "Comparativa de asistentes";
+      titulo.textContent = modo === "programa"
+        ? `Programa ${actividad.programa || ""}`.trim()
+        : (actividad.actividad_nombre || "Comparativa de asistentes");
       const series = Array.isArray(actividad.series) ? actividad.series : [];
       const maximo = Math.max(1, ...series.map((item) => Number(item.total_asistentes || 0)));
       wrap.innerHTML = `<div class="barras-lista">${series.map((item) => {
@@ -380,13 +399,37 @@
 
     function renderSelectorGrafica(comparativa = {}) {
       const select = document.getElementById("selectActividadGrafica");
+      const label = document.getElementById("labelEntidadGrafica");
+      const ayuda = document.getElementById("ayudaGraficaComparativa");
+      const modo = obtenerModoGrafica();
+      const valorActual = String(select.value || "");
+      if (modo === "programa") {
+        const programas = Array.isArray(comparativa.programas) ? comparativa.programas : [];
+        label.textContent = "Comparativa por programa";
+        ayuda.textContent = "Suma la asistencia anual de todas las actividades pertenecientes al programa seleccionado durante los ultimos cinco anos.";
+        if (!programas.length) {
+          select.innerHTML = `<option value="">Sin datos</option>`;
+          renderGraficaActividad();
+          return;
+        }
+        select.innerHTML = programas.map((item) => `<option value="${escapeHtml(item.programa || "")}">${escapeHtml(item.programa || "Programa")}</option>`).join("");
+        if (valorActual && programas.some((item) => String(item.programa || "") === valorActual)) {
+          select.value = valorActual;
+        } else {
+          select.value = String(programas[0].programa || "");
+        }
+        renderGraficaActividad();
+        return;
+      }
+
       const actividades = Array.isArray(comparativa.actividades) ? comparativa.actividades : [];
+      label.textContent = "Comparativa por actividad";
+      ayuda.textContent = "Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.";
       if (!actividades.length) {
         select.innerHTML = `<option value="">Sin datos</option>`;
         renderGraficaActividad();
         return;
       }
-      const valorActual = String(select.value || "");
       select.innerHTML = actividades.map((item) => `<option value="${item.actividad_id}">${escapeHtml(item.actividad_nombre || "Actividad")}</option>`).join("");
       if (valorActual && actividades.some((item) => String(item.actividad_id) === valorActual)) {
         select.value = valorActual;
@@ -451,6 +494,9 @@
     document.getElementById("btnGenerarInforme").addEventListener("click", cargarInforme);
     document.getElementById("selectProgramaInforme").addEventListener("change", function () {
       renderFiltroActividades(catalogoActividadesInforme);
+    });
+    document.getElementById("selectModoGrafica").addEventListener("change", function () {
+      renderSelectorGrafica(informeActual?.comparativa || {});
     });
     document.getElementById("selectActividadGrafica").addEventListener("change", renderGraficaActividad);
 

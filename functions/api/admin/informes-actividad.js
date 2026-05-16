@@ -230,6 +230,63 @@ async function obtenerComparativa(db, filtros) {
   };
 }
 
+async function obtenerComparativaProgramas(db, filtros) {
+  const anios = rangoAniosComparativa();
+  const where = [
+    "UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA'",
+    "TRIM(COALESCE(a.subtitulo_publico, '')) <> ''",
+    `CAST(strftime('%Y', COALESCE(f.fecha, a.fecha_inicio, substr(r.fecha_solicitud, 1, 10))) AS INTEGER) IN (${anios.map(() => "?").join(", ")})`
+  ];
+  const binds = [...anios];
+
+  if (!filtros.esSuperadmin) {
+    where.push("a.admin_id = ?");
+    binds.push(filtros.adminId);
+  }
+
+  if (filtros.programa) {
+    where.push("TRIM(COALESCE(a.subtitulo_publico, '')) = ?");
+    binds.push(filtros.programa);
+  }
+
+  const result = await db.prepare(`
+    SELECT
+      TRIM(COALESCE(a.subtitulo_publico, '')) AS programa,
+      CAST(strftime('%Y', COALESCE(f.fecha, a.fecha_inicio, substr(r.fecha_solicitud, 1, 10))) AS INTEGER) AS anio,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM visitantes v
+        WHERE v.reserva_id = r.id
+      ), 0) AS asistentes
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE ${where.join(" AND ")}
+  `).bind(...binds).all();
+
+  const mapa = new Map();
+  for (const row of result.results || []) {
+    const programa = limpiarTexto(row.programa);
+    if (!programa) continue;
+    if (!mapa.has(programa)) {
+      mapa.set(programa, {
+        programa,
+        series: anios.map((anio) => ({ anio, total_asistentes: 0 }))
+      });
+    }
+    const item = mapa.get(programa);
+    const anio = Number(row.anio || 0);
+    const slot = item.series.find((serie) => serie.anio === anio);
+    if (slot) slot.total_asistentes += Number(row.asistentes || 0);
+  }
+
+  return Array.from(mapa.values()).sort((a, b) =>
+    a.programa.localeCompare(b.programa, "es", { sensitivity: "base" })
+  );
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -270,7 +327,8 @@ export async function onRequestGet(context) {
     const rows = await obtenerFilasBase(db, filtros);
     const resumen = construirResumen(rows);
     const detalle = construirDetalle(rows);
-    const comparativa = await obtenerComparativa(db, filtros);
+    const comparativaActividades = await obtenerComparativa(db, filtros);
+    const comparativaProgramas = await obtenerComparativaProgramas(db, filtros);
 
     return json({
       ok: true,
@@ -285,7 +343,11 @@ export async function onRequestGet(context) {
       },
       resumen,
       actividades: detalle,
-      comparativa
+      comparativa: {
+        anios: comparativaActividades.anios,
+        actividades: comparativaActividades.actividades,
+        programas: comparativaProgramas
+      }
     });
   } catch (error) {
     return json({
