@@ -52,7 +52,6 @@
     .btn-cuadrado-icono {
       width: 100%;
       min-height: 90px;
-      height: 100%;
       border-radius: 22px;
       display: inline-flex;
       align-items: center;
@@ -86,8 +85,7 @@
     .btn-pildora svg { width: 15px; height: 15px; }
     .btn-icono { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; }
     .btn-icono svg { width: 18px; height: 18px; }
-    .filtros-grid { display: grid; grid-template-columns: 170px 170px minmax(150px, .8fr) minmax(210px, 1fr) 116px; gap: 14px; align-items: start; }
-    .filtro-accion { align-self: stretch; display: flex; flex-direction: column; justify-content: flex-start; }
+    .filtros-grid { display: grid; grid-template-columns: 180px 180px minmax(160px, .9fr) minmax(240px, 1.1fr); gap: 14px; align-items: start; }
     label { display: block; font-weight: 700; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="date"], select {
       width: 100%;
@@ -136,6 +134,8 @@
       background: #f9fbfd;
     }
     .grafica-wrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .grafica-filtros-col { display: flex; flex-direction: column; min-height: 100%; }
+    .btn-generar-panel { margin-top: 10px; flex: 1 1 auto; min-height: 120px; }
     .grafica-panel {
       border: 1px solid #dde4ea;
       border-radius: 12px;
@@ -294,12 +294,6 @@
             <option value="">Todas</option>
           </select>
         </div>
-        <div class="filtro-accion">
-          <label>&nbsp;</label>
-          <button type="button" class="btn btn-principal btn-cuadrado-icono" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
-            <img src="assets/icono-generar-informe.svg" alt="">
-          </button>
-        </div>
       </div>
       <div class="ayuda-filtros">El informe resume las solicitudes confirmadas y los asistentes cargados dentro del intervalo seleccionado.</div>
     </div>
@@ -360,6 +354,9 @@
           <button type="button" class="btn btn-secundario btn-descarga-informe" id="btnDescargarInformePdf">
             <img src="assets/icono-descargar-informe.svg" alt="">
             <span>Descargar informe</span>
+          </button>
+          <button type="button" class="btn btn-cuadrado-icono btn-generar-panel" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
+            <img src="assets/icono-generar-informe.svg" alt="">
           </button>
           <p class="grafica-sub" id="ayudaGraficaComparativa">Compara la evolucion anual de asistentes durante los ultimos cinco anos para la actividad seleccionada.</p>
         </div>
@@ -520,6 +517,44 @@
         img.addEventListener("load", fin, { once: true });
         img.addEventListener("error", fin, { once: true });
       })));
+    }
+
+    async function rasterizarImagenDesdeSrc(src) {
+      const url = String(src || "").trim();
+      if (!url) return null;
+      try {
+        const res = await fetch(url, { credentials: "include", cache: "no-store" });
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+          const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = objectUrl;
+          });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, img.naturalWidth || img.width || 1);
+          canvas.height = Math.max(1, img.naturalHeight || img.height || 1);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          return await new Promise((resolve) => {
+            canvas.toBlob(async (pngBlob) => {
+              if (!pngBlob) {
+                resolve(null);
+                return;
+              }
+              resolve(new Uint8Array(await pngBlob.arrayBuffer()));
+            }, "image/png");
+          });
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      } catch (_) {
+        return null;
+      }
     }
 
     async function cargarSesion() {
@@ -1070,10 +1105,11 @@
       const graficaBytes = graficaNode ? await capturarNodoComoPngBytes(graficaNode, "#fbfcfe", 2) : null;
       const logoNode = document.getElementById("logoCabeceraInformes");
       const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
-      const logoBytes = !logoSrcDirecto && logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
-      const logoOverlayBytes = logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
+      const logoBytesRaster = await rasterizarImagenDesdeSrc(logoSrcDirecto);
+      const logoBytes = logoBytesRaster || (logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null);
+      const logoOverlayBytes = logoBytes;
       const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
-      const logoUrl = logoSrcDirecto || (logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "");
+      const logoUrl = logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "";
 
       const stage = document.createElement("div");
       stage.style.position = "fixed";
