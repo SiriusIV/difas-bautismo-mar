@@ -51,16 +51,21 @@
     .btn-secundario:hover { background: #e2edff; color: #0b5ed7; border-color: #b6d0ff; }
     .btn-cuadrado-icono {
       width: 100%;
-      min-height: 72px;
-      border-radius: 18px;
+      min-height: 90px;
+      height: 100%;
+      border-radius: 22px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 12px;
+      padding: 10px;
+      background: #eef4ff;
+      border-color: #c9dcff;
+      color: #123a63;
     }
+    .btn-cuadrado-icono:hover { background: #e2edff; color: #0b5ed7; border-color: #b6d0ff; }
     .btn-cuadrado-icono img {
-      width: 34px;
-      height: 34px;
+      width: 56px;
+      height: 56px;
       object-fit: contain;
       display: block;
     }
@@ -81,7 +86,8 @@
     .btn-pildora svg { width: 15px; height: 15px; }
     .btn-icono { width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; }
     .btn-icono svg { width: 18px; height: 18px; }
-    .filtros-grid { display: grid; grid-template-columns: 180px 180px minmax(180px, 1fr) minmax(220px, 1fr) auto; gap: 10px; align-items: end; }
+    .filtros-grid { display: grid; grid-template-columns: 170px 170px minmax(150px, .8fr) minmax(210px, 1fr) 116px; gap: 14px; align-items: start; }
+    .filtro-accion { align-self: stretch; display: flex; flex-direction: column; justify-content: flex-start; }
     label { display: block; font-weight: 700; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="date"], select {
       width: 100%;
@@ -288,7 +294,7 @@
             <option value="">Todas</option>
           </select>
         </div>
-        <div>
+        <div class="filtro-accion">
           <label>&nbsp;</label>
           <button type="button" class="btn btn-principal btn-cuadrado-icono" id="btnGenerarInforme" title="Generar informe" aria-label="Generar informe">
             <img src="assets/icono-generar-informe.svg" alt="">
