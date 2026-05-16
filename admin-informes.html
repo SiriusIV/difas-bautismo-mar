@@ -497,6 +497,25 @@
       });
     }
 
+    async function esperarImagenesCargadas(scope) {
+      const root = scope || document;
+      const images = Array.from(root.querySelectorAll("img"));
+      if (!images.length) return;
+      await Promise.all(images.map((img) => new Promise((resolve) => {
+        if (img.complete && img.naturalWidth > 0) {
+          resolve();
+          return;
+        }
+        const fin = () => {
+          img.removeEventListener("load", fin);
+          img.removeEventListener("error", fin);
+          resolve();
+        };
+        img.addEventListener("load", fin, { once: true });
+        img.addEventListener("error", fin, { once: true });
+      })));
+    }
+
     async function cargarSesion() {
       const res = await fetch("/api/usuario/session", { credentials: "include", cache: "no-store" });
       const data = await res.json().catch(() => null);
@@ -1044,9 +1063,10 @@
       const graficaNode = document.getElementById("graficaActividad");
       const graficaBytes = graficaNode ? await capturarNodoComoPngBytes(graficaNode, "#fbfcfe", 2) : null;
       const logoNode = document.getElementById("logoCabeceraInformes");
-      const logoBytes = logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
+      const logoSrcDirecto = String(logoNode?.currentSrc || logoNode?.src || "").trim();
+      const logoBytes = !logoSrcDirecto && logoNode ? await capturarNodoComoPngBytes(logoNode, null, 2) : null;
       const chartUrl = graficaBytes ? URL.createObjectURL(new Blob([graficaBytes], { type: "image/png" })) : "";
-      const logoUrl = logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "";
+      const logoUrl = logoSrcDirecto || (logoBytes ? URL.createObjectURL(new Blob([logoBytes], { type: "image/png" })) : "");
 
       const stage = document.createElement("div");
       stage.style.position = "fixed";
@@ -1164,6 +1184,7 @@
 
       stage.innerHTML = stageHtml;
       document.body.appendChild(stage);
+      await esperarImagenesCargadas(stage);
 
       try {
         const stageBytes = await capturarNodoComoPngBytes(stage, "#ffffff", 2);
@@ -1194,7 +1215,7 @@
         mostrarMensaje("error", error?.message || "No se pudo generar el PDF.");
       } finally {
         if (chartUrl) URL.revokeObjectURL(chartUrl);
-        if (logoUrl) URL.revokeObjectURL(logoUrl);
+        if (logoBytes && logoUrl) URL.revokeObjectURL(logoUrl);
         stage.remove();
       }
     }
