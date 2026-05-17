@@ -2478,15 +2478,6 @@ function actualizarBotonSolicitarSegunFranja() {
 
       try {
         if (esSolicitante()) {
-          const resReservas = await fetch(`/api/usuario/reservas?_ts=${Date.now()}`, {
-            credentials: "include",
-            cache: "no-store"
-          });
-          const dataReservas = await resReservas.json().catch(() => null);
-          if (resReservas.ok && dataReservas?.ok) {
-            operativas.push(...construirNotificacionesOperativasReservaSolicitante(dataReservas?.data, vistas));
-          }
-
           const resAvisos = await fetch(`/api/usuario/avisos-operativos?limit=25&_ts=${Date.now()}`, {
             credentials: "include",
             cache: "no-store"
