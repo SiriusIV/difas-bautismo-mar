@@ -153,6 +153,16 @@ function construirUrlGoogleMaps(contexto = {}) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destino)}`;
 }
 
+function construirUrlPanelReservasAdmin(contexto = {}) {
+  const baseUrl = limpiarTexto(contexto?.base_url || "");
+  if (!baseUrl) return "";
+  const actividadId = Number(contexto?.actividad_id || contexto?.id || 0);
+  const sufijo = actividadId > 0
+    ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
+    : "/admin-reservas.html";
+  return `${baseUrl.replace(/\/+$/, "")}${sufijo}`;
+}
+
 function construirTextoContextualSolicitudAdmin(contexto = {}) {
   const usaFranjas = Number(contexto?.usa_franjas || 0) === 1;
   const aforoLimitado = Number(contexto?.aforo_limitado || 0) === 1;
@@ -209,6 +219,7 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     ? "Se ha reenviado una solicitud de actividad para nueva revisión."
     : "Se ha registrado una nueva solicitud de actividad.";
   const urlMaps = construirUrlGoogleMaps(contexto);
+  const urlPanel = construirUrlPanelReservasAdmin(contexto);
   const lugar = limpiarTexto(contexto?.lugar || "");
   const direccion = limpiarTexto(contexto?.direccion_postal || "");
   const ubicacion = direccion || lugar;
@@ -296,6 +307,9 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     "RESUMEN DE LA SOLICITUD",
     ...bloqueDatosCompletosTexto.map((linea) => `- ${linea}`),
     "",
+    urlPanel ? "ACCESO DIRECTO" : "",
+    urlPanel ? `- Gestionar solicitud: ${urlPanel}` : "",
+    urlPanel ? "" : "",
     observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
     observaciones ? observaciones : "",
     observaciones ? "" : "",
@@ -334,6 +348,13 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
             <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtml(ubicacion || "Consulta la localizacion en Google Maps.")}</div>
             <a href="${escaparHtml(urlMaps)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir en Google Maps</a>
           </div>
+        </div>
+      ` : ""}
+      ${urlPanel ? `
+        <div style="margin-bottom:14px;border:1px solid #d8e6fb;border-radius:14px;padding:14px 16px;background:#f7fbff;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:8px;">Acceso directo</div>
+          <div style="font-size:14px;color:#4a5b6d;margin-bottom:12px;">Puedes abrir directamente el panel de reservas para revisar y tramitar esta solicitud.</div>
+          <a href="${escaparHtml(urlPanel)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#123a63;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir panel de reservas</a>
         </div>
       ` : ""}
       ${observaciones ? `
@@ -563,6 +584,7 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    const baseUrl = new URL(request.url).origin;
     const user = await getUserSession(request, env.SECRET_KEY);
     if (!user?.id) {
       return json(
@@ -866,6 +888,7 @@ export async function onRequestPost(context) {
         correoAdmin = await enviarCorreoNuevaSolicitudAdmin(env, {
           ...actividad,
           ...reservaActual,
+          base_url: baseUrl,
           centro,
           contacto,
           email,
@@ -987,6 +1010,7 @@ export async function onRequestPost(context) {
         correoAdmin = await enviarCorreoNuevaSolicitudAdmin(env, {
           ...actividad,
           ...reservaActual,
+          base_url: baseUrl,
           centro,
           contacto,
           email,
