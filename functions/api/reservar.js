@@ -20,6 +20,10 @@ function normalizarCentroComparacion(valor) {
   return limpiarTexto(valor).toUpperCase();
 }
 
+function normalizarContactoComparacion(valor) {
+  return limpiarTexto(valor).toUpperCase();
+}
+
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -473,7 +477,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
   return Number(row?.ocupadas || 0);
 }
 
-async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion) {
+async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion) {
   const sql = `
     SELECT
       r.id,
@@ -482,6 +486,7 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     FROM reservas r
     WHERE r.franja_id = ?
       AND UPPER(TRIM(r.centro)) = ?
+      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
       AND (
         r.estado = 'CONFIRMADA'
         OR (
@@ -504,7 +509,7 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
   `;
 
   return await env.DB.prepare(sql)
-    .bind(franjaId, centroComparacion)
+    .bind(franjaId, centroComparacion, contactoComparacion)
     .first();
 }
 
@@ -512,7 +517,7 @@ function franjaTieneCapacidadLimitada(actividad, franja) {
   return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
 }
 
-async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion) {
+async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion) {
   const sql = `
     SELECT
       r.id,
@@ -522,6 +527,7 @@ async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividad
     WHERE r.actividad_id = ?
       AND r.franja_id IS NULL
       AND UPPER(TRIM(r.centro)) = ?
+      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
       AND (
         r.estado = 'CONFIRMADA'
         OR (
@@ -544,7 +550,7 @@ async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividad
   `;
 
   return await env.DB.prepare(sql)
-    .bind(actividadId, centroComparacion)
+    .bind(actividadId, centroComparacion, contactoComparacion)
     .first();
 }
 
@@ -632,6 +638,7 @@ if (Number(actividad.activa || 0) !== 1) {
     }
 
     const centroComparacion = normalizarCentroComparacion(centro);
+    const contactoComparacion = normalizarContactoComparacion(contacto);
     let franja = null;
     let duplicada = null;
     let capacidad = null;
@@ -654,14 +661,14 @@ if (Number(actividad.activa || 0) !== 1) {
         );
       }
 
-      duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion);
+      duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion);
       if (franjaTieneCapacidadLimitada(actividad, franja)) {
         const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
         capacidad = Number(franja.capacidad || 0);
         disponibles = Math.max(capacidad - ocupadas, 0);
       }
     } else {
-      duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion);
+      duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion);
       if (Number(actividad.aforo_limitado || 0) === 1) {
         capacidad = Number(actividad.aforo_maximo || 0);
         const ocupadas = await obtenerBloqueoActividadSinFranja(env, actividadId);
@@ -674,8 +681,8 @@ if (Number(actividad.activa || 0) !== 1) {
         {
           ok: false,
           error: usaFranjas
-            ? "Ya existe una solicitud activa para este centro en la franja seleccionada. Debe modificar la existente, no crear una segunda."
-            : "Ya existe una solicitud activa para este centro en esta actividad. Debe modificar la existente, no crear una segunda."
+            ? "Ya existe una solicitud activa para este mismo solicitante en la franja seleccionada. Debe modificar la existente, no crear una segunda."
+            : "Ya existe una solicitud activa para este mismo solicitante en esta actividad. Debe modificar la existente, no crear una segunda."
         },
         { status: 409 }
       );
