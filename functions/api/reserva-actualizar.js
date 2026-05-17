@@ -212,9 +212,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
   const lugar = limpiarTexto(contexto?.lugar || "");
   const direccion = limpiarTexto(contexto?.direccion_postal || "");
   const ubicacion = direccion || lugar;
-  const requisitos = Array.isArray(contexto?.requisitos_particulares)
-    ? contexto.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean)
-    : [];
   const lineasContextuales = construirLineasInformacionAdicionalSolicitudAdmin(contexto);
   const bloqueDatosTexto = [
     codigo ? `Código de solicitud: ${codigo}` : "",
@@ -291,9 +288,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     ubicacion ? `Ubicación: ${ubicacion}` : "",
     urlMaps ? `Google Maps: ${urlMaps}` : ""
   ].filter(Boolean);
-  const bloqueRequisitosTexto = requisitos.length > 0
-    ? ["REQUISITOS ASOCIADOS", ...requisitos.map((item, index) => `${index + 1}. ${item}`), ""]
-    : [];
   const textoFinal = [
     mensaje,
     "",
@@ -305,19 +299,9 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
     observaciones ? observaciones : "",
     observaciones ? "" : "",
-    ...bloqueRequisitosTexto,
     "INFORMACIÓN ADICIONAL",
     ...lineasContextuales.map((linea) => `- ${linea}`)
   ].filter(Boolean).join("\n");
-
-  const bloqueRequisitosHtml = requisitos.length > 0 ? `
-        <div style="border:1px solid #d9e6fb;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#f7fbff;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:8px;">Requisitos asociados</div>
-          <ul style="margin:0;padding-left:18px;color:#22313f;">
-            ${requisitos.map((item) => `<li style="margin:0 0 6px 0;">${escaparHtml(item)}</li>`).join("")}
-          </ul>
-        </div>
-      ` : "";
 
   const htmlFinal = `
     <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
@@ -348,7 +332,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
           <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtml(observaciones)}</div>
         </div>
       ` : ""}
-      ${bloqueRequisitosHtml}
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Información adicional</div>
         <ul style="margin:0;padding-left:18px;color:#22313f;">

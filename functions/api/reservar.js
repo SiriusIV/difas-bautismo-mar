@@ -237,9 +237,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
   const lugar = limpiarTexto(contexto?.lugar || "");
   const direccion = limpiarTexto(contexto?.direccion_postal || "");
   const ubicacion = direccion || lugar;
-  const requisitos = Array.isArray(contexto?.requisitos_particulares)
-    ? contexto.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean)
-    : [];
   const lineasContextuales = construirLineasInformacionAdicionalSolicitudAdmin(contexto);
   const asunto = `${actividad} · Nueva solicitud de actividad`;
   const mensaje = "Se ha registrado una nueva solicitud de actividad.";
@@ -261,17 +258,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
     ubicacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">UbicaciÃ³n</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : "",
     urlMaps ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Google Maps</td><td style="padding:6px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicaciÃ³n</a></td></tr>` : ""
   ].filter(Boolean).join("");
-  const bloqueRequisitosTexto = requisitos.length > 0
-    ? ["REQUISITOS ASOCIADOS", ...requisitos.map((item, index) => `${index + 1}. ${item}`), ""]
-    : [];
-  const bloqueRequisitosHtml = requisitos.length > 0 ? `
-        <div style="border:1px solid #d9e6fb;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#f7fbff;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:8px;">Requisitos asociados</div>
-          <ul style="margin:0;padding-left:18px;color:#22313f;">
-            ${requisitos.map((item) => `<li style="margin:0 0 6px 0;">${escaparHtml(item)}</li>`).join("")}
-          </ul>
-        </div>
-      ` : "";
 
   const texto = [
     mensaje,
@@ -343,7 +329,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
     observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
     observaciones ? observaciones : "",
     observaciones ? "" : "",
-    ...bloqueRequisitosTexto,
     "INFORMACION ADICIONAL",
     ...lineasContextuales.map((linea) => `- ${linea}`)
   ].filter(Boolean).join("\n");
@@ -376,7 +361,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
           <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtml(observaciones)}</div>
         </div>
       ` : ""}
-      ${bloqueRequisitosHtml}
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Informacion adicional</div>
         <ul style="margin:0;padding-left:18px;color:#22313f;">
