@@ -492,9 +492,11 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     FROM reservas r
     WHERE r.franja_id = ?
       AND UPPER(TRIM(r.centro)) = ?
-      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
-      AND UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
-      AND UPPER(TRIM(COALESCE(r.email, ''))) = ?
+      AND (
+        UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
+        OR UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
+        OR UPPER(TRIM(COALESCE(r.email, ''))) = ?
+      )
       AND (
         r.estado = 'CONFIRMADA'
         OR (
@@ -535,9 +537,11 @@ async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividad
     WHERE r.actividad_id = ?
       AND r.franja_id IS NULL
       AND UPPER(TRIM(r.centro)) = ?
-      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
-      AND UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
-      AND UPPER(TRIM(COALESCE(r.email, ''))) = ?
+      AND (
+        UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
+        OR UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
+        OR UPPER(TRIM(COALESCE(r.email, ''))) = ?
+      )
       AND (
         r.estado = 'CONFIRMADA'
         OR (
