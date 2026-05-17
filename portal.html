@@ -2582,9 +2582,9 @@ function actualizarBotonSolicitarSegunFranja() {
       actualizarIconoNotificacionesPortal();
     }
 
-    async function sincronizarNotificacionesMarcadasModalPortal() {
+    async function sincronizarNotificacionesMarcadasModalPortal(items = notificacionesModalPortal) {
       const idsMarcadas = Array.from(new Set(
-        (notificacionesModalPortal || [])
+        (items || [])
           .filter((item) => item.leida)
           .map((item) => String(item.id || "").trim())
           .filter(Boolean)
@@ -2600,11 +2600,15 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     async function cerrarModalNotificacionesPortal() {
-      await sincronizarNotificacionesMarcadasModalPortal();
+      const modal = document.getElementById("modalNotificacionesPortal");
+      const snapshot = Array.isArray(notificacionesModalPortal)
+        ? notificacionesModalPortal.map((item) => ({ ...item }))
+        : [];
       notificacionesModalPortal = [];
-      document.getElementById("modalNotificacionesPortal").classList.remove("activo");
-      document.getElementById("modalNotificacionesPortal").setAttribute("aria-hidden", "true");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
       refrescarInterfazNotificacionesPortal();
+      await sincronizarNotificacionesMarcadasModalPortal(snapshot);
     }
 
     async function marcarNotificacionComoVistaPortal(notificacionId, opciones = {}) {
