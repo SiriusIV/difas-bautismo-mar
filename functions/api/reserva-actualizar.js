@@ -49,8 +49,35 @@ function accionNormalizada(valor) {
   return limpiarTexto(valor).toLowerCase();
 }
 
+async function asegurarTablaRequisitos(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_requisitos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actividad_id INTEGER NOT NULL,
+      texto TEXT NOT NULL,
+      orden INTEGER NOT NULL DEFAULT 0
+    )
+  `).run();
+}
+
+async function obtenerRequisitosActividad(env, actividadId) {
+  const id = Number(actividadId || 0);
+  if (!(id > 0)) return [];
+  await asegurarTablaRequisitos(env);
+  const result = await env.DB.prepare(`
+    SELECT texto
+    FROM actividad_requisitos
+    WHERE actividad_id = ?
+    ORDER BY orden ASC, id ASC
+  `).bind(id).all();
+
+  return (result.results || [])
+    .map((row) => limpiarTexto(row?.texto || ""))
+    .filter(Boolean);
+}
+
 async function obtenerActividad(env, actividadId) {
-  return await env.DB.prepare(`
+  const actividad = await env.DB.prepare(`
     SELECT
       a.id,
       a.admin_id,
@@ -74,6 +101,12 @@ async function obtenerActividad(env, actividadId) {
     WHERE a.id = ?
     LIMIT 1
   `).bind(actividadId).first();
+
+  if (!actividad) return null;
+  return {
+    ...actividad,
+    requisitos_particulares: await obtenerRequisitosActividad(env, actividad.id)
+  };
 }
 
 async function crearNotificacionNuevaSolicitudAdmin(env, {
@@ -125,9 +158,6 @@ function construirTextoContextualSolicitudAdmin(contexto = {}) {
   const aforoLimitado = Number(contexto?.aforo_limitado || 0) === 1;
   const aforoMaximo = Number(contexto?.aforo_maximo || 0);
   const programacion = construirDescripcionProgramacion(contexto);
-  const lugar = limpiarTexto(contexto?.lugar || "");
-  const direccion = limpiarTexto(contexto?.direccion_postal || "");
-  const urlMaps = construirUrlGoogleMaps(contexto);
 
   const lineas = [];
   if (usaFranjas && programacion) {
@@ -139,13 +169,25 @@ function construirTextoContextualSolicitudAdmin(contexto = {}) {
   } else if (!aforoLimitado) {
     lineas.push("La actividad no tiene aforo limitado.");
   }
-  if (direccion) {
-    lineas.push(`Dirección de referencia: ${direccion}.`);
-  } else if (lugar) {
-    lineas.push(`Lugar de referencia: ${lugar}.`);
+  lineas.push("Revise la solicitud y continúe su tramitación desde el panel de reservas.");
+  return lineas;
+}
+
+function construirLineasInformacionAdicionalSolicitudAdmin(contexto = {}) {
+  const usaFranjas = Number(contexto?.usa_franjas || 0) === 1;
+  const aforoLimitado = Number(contexto?.aforo_limitado || 0) === 1;
+  const aforoMaximo = Number(contexto?.aforo_maximo || 0);
+  const programacion = construirDescripcionProgramacion(contexto);
+
+  const lineas = [];
+  if (usaFranjas && programacion) {
+    lineas.push(`La solicitud se ha registrado para la franja ${programacion}.`);
   }
-  if (urlMaps) {
-    lineas.push(`Localización en Google Maps: ${urlMaps}`);
+  if (aforoLimitado && aforoMaximo > 0) {
+    lineas.push(`El aforo de esta actividad está limitado a ${aforoMaximo} plazas.`);
+    lineas.push("Si fuese necesario ampliar asistentes más adelante, podrán seguir asignándose sobre esta misma solicitud mientras continúe existiendo disponibilidad.");
+  } else if (!aforoLimitado) {
+    lineas.push("La actividad no tiene aforo limitado.");
   }
   lineas.push("Revise la solicitud y continúe su tramitación desde el panel de reservas.");
   return lineas;
@@ -167,7 +209,13 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     ? "Se ha reenviado una solicitud de actividad para nueva revisión."
     : "Se ha registrado una nueva solicitud de actividad.";
   const urlMaps = construirUrlGoogleMaps(contexto);
-  const lineasContextuales = construirTextoContextualSolicitudAdmin(contexto);
+  const lugar = limpiarTexto(contexto?.lugar || "");
+  const direccion = limpiarTexto(contexto?.direccion_postal || "");
+  const ubicacion = direccion || lugar;
+  const requisitos = Array.isArray(contexto?.requisitos_particulares)
+    ? contexto.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean)
+    : [];
+  const lineasContextuales = construirLineasInformacionAdicionalSolicitudAdmin(contexto);
   const bloqueDatosTexto = [
     codigo ? `Código de solicitud: ${codigo}` : "",
     `Centro solicitante: ${centro}`,
@@ -238,7 +286,79 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
     </div>
   `;
 
-  return { asunto, texto, html };
+  const bloqueDatosCompletosTexto = [
+    ...bloqueDatosTexto,
+    ubicacion ? `Ubicación: ${ubicacion}` : "",
+    urlMaps ? `Google Maps: ${urlMaps}` : ""
+  ].filter(Boolean);
+  const bloqueRequisitosTexto = requisitos.length > 0
+    ? ["REQUISITOS ASOCIADOS", ...requisitos.map((item, index) => `${index + 1}. ${item}`), ""]
+    : [];
+  const textoFinal = [
+    mensaje,
+    "",
+    `ACTIVIDAD: ${actividad}`,
+    "",
+    "RESUMEN DE LA SOLICITUD",
+    ...bloqueDatosCompletosTexto.map((linea) => `- ${linea}`),
+    "",
+    observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
+    observaciones ? observaciones : "",
+    observaciones ? "" : "",
+    ...bloqueRequisitosTexto,
+    "INFORMACIÓN ADICIONAL",
+    ...lineasContextuales.map((linea) => `- ${linea}`)
+  ].filter(Boolean).join("\n");
+
+  const bloqueRequisitosHtml = requisitos.length > 0 ? `
+        <div style="border:1px solid #d9e6fb;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#f7fbff;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:8px;">Requisitos asociados</div>
+          <ul style="margin:0;padding-left:18px;color:#22313f;">
+            ${requisitos.map((item) => `<li style="margin:0 0 6px 0;">${escaparHtml(item)}</li>`).join("")}
+          </ul>
+        </div>
+      ` : "";
+
+  const htmlFinal = `
+    <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
+      <div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">${modo === "reenviada" ? "Solicitud reenviada" : "Nueva solicitud"}</div>
+        <div style="font-size:22px;font-weight:700;color:#123a63;line-height:1.2;margin-bottom:6px;">${escaparHtml(actividad)}</div>
+        <div style="font-size:15px;font-weight:600;color:#355679;">${escaparHtml(mensaje)}</div>
+      </div>
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tbody>
+            ${codigo ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Código de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
+            <tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Centro solicitante</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
+            ${contacto ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
+            ${correoContacto ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Correo de contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(correoContacto)}</td></tr>` : ""}
+            ${plazas > 0 ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Plazas solicitadas</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(plazas)}</td></tr>` : ""}
+            ${programacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Programación</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
+            ${ubicacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Ubicación</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : ""}
+            ${urlMaps ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Google Maps</td><td style="padding:6px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación</a></td></tr>` : ""}
+            ${modo === "reenviada" ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Situación</td><td style="padding:6px 0;color:#22313f;">Solicitud reenviada para revisión</td></tr>` : ""}
+          </tbody>
+        </table>
+      </div>
+      ${observaciones ? `
+        <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Observaciones del solicitante</div>
+          <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtml(observaciones)}</div>
+        </div>
+      ` : ""}
+      ${bloqueRequisitosHtml}
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Información adicional</div>
+        <ul style="margin:0;padding-left:18px;color:#22313f;">
+          ${lineasContextuales.map((linea) => `<li style="margin:0 0 6px 0;">${escaparHtml(linea)}</li>`).join("")}
+        </ul>
+      </div>
+    </div>
+  `;
+
+  return { asunto, texto: textoFinal, html: htmlFinal };
 }
 
 async function enviarCorreoNuevaSolicitudAdmin(env, contexto = {}, modo = "nueva") {
