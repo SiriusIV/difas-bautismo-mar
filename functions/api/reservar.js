@@ -215,12 +215,12 @@ function construirLineasInformacionAdicionalSolicitudAdmin(contexto = {}) {
     lineas.push(`La solicitud se ha registrado para la franja ${programacion}.`);
   }
   if (aforoLimitado && aforoMaximo > 0) {
-    lineas.push(`El aforo de esta actividad estÃ¡ limitado a ${aforoMaximo} plazas.`);
-    lineas.push("Si fuese necesario ampliar asistentes mÃ¡s adelante, podrÃ¡n seguir asignÃ¡ndose sobre esta misma solicitud mientras continÃºe existiendo disponibilidad.");
+    lineas.push(`El aforo de esta actividad est\u00e1 limitado a ${aforoMaximo} plazas.`);
+    lineas.push("Si fuese necesario ampliar asistentes m\u00e1s adelante, podr\u00e1n seguir asign\u00e1ndose sobre esta misma solicitud mientras contin\u00fae existiendo disponibilidad.");
   } else if (!aforoLimitado) {
     lineas.push("La actividad no tiene aforo limitado.");
   }
-  lineas.push("Revise la solicitud y continÃºe su tramitaciÃ³n desde el panel de reservas.");
+  lineas.push("Revise la solicitud y contin\u00fae su tramitaci\u00f3n desde el panel de reservas.");
   return lineas;
 }
 
@@ -329,7 +329,7 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
     observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
     observaciones ? observaciones : "",
     observaciones ? "" : "",
-    "INFORMACION ADICIONAL",
+    "INFORMACI\u00d3N ADICIONAL",
     ...lineasContextuales.map((linea) => `- ${linea}`)
   ].filter(Boolean).join("\n");
 
@@ -372,7 +372,7 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
         </div>
       ` : ""}
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
-        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Informacion adicional</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Informaci\u00f3n adicional</div>
         <ul style="margin:0;padding-left:18px;color:#22313f;">
           ${lineasContextuales.map((linea) => `<li style="margin:0 0 6px 0;">${escaparHtml(linea)}</li>`).join("")}
         </ul>
