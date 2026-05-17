@@ -176,10 +176,11 @@ function construirUrlPanelReservasAdmin(contexto = {}) {
   const baseUrl = limpiarTexto(contexto?.base_url || "");
   if (!baseUrl) return "";
   const actividadId = Number(contexto?.actividad_id || contexto?.id || 0);
-  const sufijo = actividadId > 0
+  const destinoInterno = actividadId > 0
     ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
     : "/admin-reservas.html";
-  return `${baseUrl.replace(/\/+$/, "")}${sufijo}`;
+  const loginPath = `/admin-login.html?next=${encodeURIComponent(destinoInterno)}`;
+  return `${baseUrl.replace(/\/+$/, "")}${loginPath}`;
 }
 
 function construirTextoContextualSolicitudAdmin(contexto = {}) {
@@ -291,9 +292,14 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
   const html = `
     <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
       <div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">Nueva solicitud</div>
-        <div style="font-size:22px;font-weight:700;color:#123a63;line-height:1.2;margin-bottom:6px;">${escaparHtml(actividad)}</div>
-        <div style="font-size:15px;font-weight:600;color:#355679;">${escaparHtml(mensaje)}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
+          <div style="min-width:0;flex:1 1 auto;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">Nueva solicitud</div>
+            <div style="font-size:22px;font-weight:700;color:#123a63;line-height:1.2;margin-bottom:6px;">${escaparHtml(actividad)}</div>
+            <div style="font-size:15px;font-weight:600;color:#355679;">${escaparHtml(mensaje)}</div>
+          </div>
+          ${urlPanel ? `<a href="${escaparHtml(urlPanel)}" style="display:inline-block;flex:0 0 auto;padding:10px 16px;border-radius:999px;background:#123a63;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Abrir panel de reservas</a>` : ""}
+        </div>
       </div>
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
@@ -377,13 +383,6 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
             <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtml(ubicacion || "Consulta la localizacion en Google Maps.")}</div>
             <a href="${escaparHtml(urlMaps)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir en Google Maps</a>
           </div>
-        </div>
-      ` : ""}
-      ${urlPanel ? `
-        <div style="margin-bottom:14px;border:1px solid #d8e6fb;border-radius:14px;padding:14px 16px;background:#f7fbff;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:8px;">Acceso directo</div>
-          <div style="font-size:14px;color:#4a5b6d;margin-bottom:12px;">Puedes abrir directamente el panel de reservas para revisar y tramitar esta solicitud.</div>
-          <a href="${escaparHtml(urlPanel)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#123a63;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir panel de reservas</a>
         </div>
       ` : ""}
       ${observaciones ? `
