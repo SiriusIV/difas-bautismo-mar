@@ -355,6 +355,16 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
           </tbody>
         </table>
       </div>
+      ${urlMaps ? `
+        <div style="margin-bottom:14px;border:1px solid #d8e6fb;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#f7fbff 0%,#eef4ff 100%);">
+          <div style="padding:12px 16px 8px 16px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;">Ubicacion de la actividad</div>
+          <div style="padding:0 16px 12px 16px;font-size:14px;color:#22313f;">
+            <div style="font-weight:700;color:#123a63;margin-bottom:4px;">${escaparHtml(actividad)}</div>
+            <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtml(ubicacion || "Consulta la localizacion en Google Maps.")}</div>
+            <a href="${escaparHtml(urlMaps)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir en Google Maps</a>
+          </div>
+        </div>
+      ` : ""}
       ${observaciones ? `
         <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Observaciones del solicitante</div>
