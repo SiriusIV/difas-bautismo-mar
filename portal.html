@@ -1697,21 +1697,37 @@
       }
     }
 
+    function obtenerAdminEsperadoPortal() {
+      try {
+        const valor = Number(new URLSearchParams(window.location.search).get("admin_id") || 0);
+        return valor > 0 ? valor : 0;
+      } catch {
+        return 0;
+      }
+    }
+
     function intentarRedireccionPendientePortal() {
       const destino = obtenerDestinoPendientePortal();
       if (!destino) return false;
       const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
       if (rol !== "ADMIN" && rol !== "SUPERADMIN") return false;
+      const adminEsperado = obtenerAdminEsperadoPortal();
+      const adminSesionId = Number(usuarioAutenticado?.id || usuarioAutenticado?.usuario_id || 0);
+      if (adminEsperado > 0 && adminSesionId !== adminEsperado) return false;
       window.location.href = destino;
       return true;
     }
 
-    function gestionarAccesoPendientePortal() {
+    async function gestionarAccesoPendientePortal() {
       const destino = obtenerDestinoPendientePortal();
       if (!destino) return false;
       if (intentarRedireccionPendientePortal()) return true;
+      if (usuarioAutenticado) {
+        await logoutActual();
+      }
       if (!usuarioAutenticado) {
         abrirModalLogin();
+        mensaje("mensajeLogin", "error", "Inicia sesión con la cuenta administradora responsable de esta actividad para continuar desde el correo.");
         return true;
       }
       return false;
@@ -3720,6 +3736,11 @@ function continuarSolicitudActividad() {
         cerrarModalLogin();
         await comprobarSesionUsuario();
         if (intentarRedireccionPendientePortal()) return;
+        if (obtenerDestinoPendientePortal()) {
+          abrirModalLogin();
+          mensaje("mensajeLogin", "error", "La cuenta iniciada no corresponde al administrador responsable de esta actividad.");
+          return;
+        }
         await cargarActividades();
       } else {
         mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
@@ -3856,7 +3877,7 @@ function continuarSolicitudActividad() {
       appScrollPortal.classList.add("portal-cargando");
       try {
       await comprobarSesionUsuario();
-      if (gestionarAccesoPendientePortal()) {
+      if (await gestionarAccesoPendientePortal()) {
         await cargarActividades();
         return;
       }
