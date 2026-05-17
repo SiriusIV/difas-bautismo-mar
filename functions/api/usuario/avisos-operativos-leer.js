@@ -1,5 +1,5 @@
 import { getUserSession } from "./_auth.js";
-import { marcarNotificacionLeida, marcarTodasLasNotificacionesLeidas } from "../_notificaciones.js";
+import { eliminarAvisoUsuario, eliminarTodosLosAvisosUsuario } from "../_avisos_usuario.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -25,29 +25,29 @@ export async function onRequestPost(context) {
 
     const body = await request.json().catch(() => ({}));
     if (body?.todas === true) {
-      const result = await marcarTodasLasNotificacionesLeidas(env, usuarioId);
+      const result = await eliminarTodosLosAvisosUsuario(env, usuarioId);
       return json({
         ok: true,
-        mensaje: "Todas las notificaciones se han retirado del listado pendiente.",
+        mensaje: "Todos los avisos operativos se han marcado como vistos.",
         changes: Number(result?.changes || 0)
       });
     }
 
-    const notificacionId = parsearIdPositivo(body?.notificacion_id);
-    if (!notificacionId) {
-      return json({ ok: false, error: "Debes indicar una notificación válida." }, { status: 400 });
+    const avisoId = parsearIdPositivo(body?.aviso_id);
+    if (!avisoId) {
+      return json({ ok: false, error: "Debes indicar un aviso válido." }, { status: 400 });
     }
 
-    const result = await marcarNotificacionLeida(env, usuarioId, notificacionId);
+    const result = await eliminarAvisoUsuario(env, usuarioId, avisoId);
     return json({
       ok: true,
-      mensaje: "Notificacion retirada del listado pendiente.",
+      mensaje: "Aviso operativo marcado como visto.",
       changes: Number(result?.changes || 0)
     });
   } catch (error) {
     return json({
       ok: false,
-      error: "No se pudo actualizar la notificación.",
+      error: "No se pudo actualizar el aviso operativo.",
       detalle: error.message
     }, { status: 500 });
   }

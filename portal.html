@@ -2146,9 +2146,15 @@ function actualizarBotonSolicitarSegunFranja() {
       });
     }
 
+    function obtenerClaveNotificacionesOperativasVistas() {
+      const rol = String(usuarioAutenticado?.rol || "anon").trim().toUpperCase() || "ANON";
+      const usuarioId = Number(usuarioAutenticado?.usuario_id || usuarioAutenticado?.id || 0);
+      return `${STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS}:${rol}:${usuarioId || "anon"}`;
+    }
+
     function leerNotificacionesOperativasVistas() {
       try {
-        const raw = localStorage.getItem(STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS);
+        const raw = localStorage.getItem(obtenerClaveNotificacionesOperativasVistas());
         const parsed = raw ? JSON.parse(raw) : [];
         return Array.isArray(parsed) ? parsed.map((item) => String(item || "")) : [];
       } catch {
@@ -2158,7 +2164,8 @@ function actualizarBotonSolicitarSegunFranja() {
 
     function guardarNotificacionesOperativasVistas(ids) {
       try {
-        localStorage.setItem(STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS, JSON.stringify(ids || []));
+        const lista = Array.from(new Set(Array.isArray(ids) ? ids.map((item) => String(item || "")).filter(Boolean) : []));
+        localStorage.setItem(obtenerClaveNotificacionesOperativasVistas(), JSON.stringify(lista.slice(-500)));
       } catch {}
     }
 
@@ -2440,9 +2447,19 @@ function actualizarBotonSolicitarSegunFranja() {
           } else {
             const total = Number(data?.total || 0);
             if (total > 0) {
-              const fechaRef = String(data?.expedientes?.[0]?.fecha_ultima_entrega || "").trim() || "sin-fecha";
+              const firmaPendientes = (Array.isArray(data?.expedientes) ? data.expedientes : [])
+                .map((item) => ([
+                  String(item?.id || "").trim(),
+                  String(item?.usuario_id || "").trim(),
+                  String(item?.fecha_ultima_entrega || "").trim(),
+                  String(item?.nombre_documento || "").trim(),
+                  String(item?.estado || "").trim()
+                ].join("|")))
+                .filter(Boolean)
+                .sort()
+                .join("::") || `total:${total}`;
               const rol = String(usuarioAutenticado?.rol || "").toUpperCase() || "ROL";
-              const idOperativa = `operativa-bandeja-${rol}-${total}-${fechaRef}`;
+              const idOperativa = `operativa-bandeja-${rol}-${firmaPendientes}`;
               if (!vistas.includes(idOperativa)) {
                 operativas.push({
                   id: idOperativa,
@@ -2611,6 +2628,19 @@ function actualizarBotonSolicitarSegunFranja() {
           vistas.push(idTexto);
           guardarNotificacionesOperativasVistas(vistas);
         }
+        if (idTexto.startsWith("operativa-aviso-usuario-")) {
+          const avisoId = Number(idTexto.replace("operativa-aviso-usuario-", "") || 0);
+          if (avisoId > 0) {
+            try {
+              await fetch("/api/usuario/avisos-operativos-leer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ aviso_id: avisoId })
+              });
+            } catch {}
+          }
+        }
         if (recargar) {
           await cargarNotificacionesPortal();
         }
@@ -2631,12 +2661,30 @@ function actualizarBotonSolicitarSegunFranja() {
     }
 
     async function marcarTodasLasNotificacionesComoVistasPortal() {
-      await fetch("/api/usuario/notificaciones-leer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ todas: true })
-      });
+      const idsOperativos = Array.from(new Set(
+        [...(notificacionesOperativasPortal || []), ...(notificacionesModalPortal || [])]
+          .map((item) => String(item?.id || "").trim())
+          .filter(Boolean)
+      ));
+      if (idsOperativos.length) {
+        const vistas = leerNotificacionesOperativasVistas();
+        guardarNotificacionesOperativasVistas([...vistas, ...idsOperativos]);
+      }
+
+      await Promise.allSettled([
+        fetch("/api/usuario/notificaciones-leer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ todas: true })
+        }),
+        fetch("/api/usuario/avisos-operativos-leer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ todas: true })
+        })
+      ]);
       await cargarNotificacionesPortal();
     }
 

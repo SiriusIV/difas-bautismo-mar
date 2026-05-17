@@ -461,34 +461,11 @@ export async function marcarNotificacionLeida(env, usuarioId, notificacionId) {
   if (!userId || !id) return { ok: false, error: "Identificador inválido." };
 
   await asegurarTablaNotificaciones(env);
-  let result;
-  try {
-    result = await dbPrimaria(env).prepare(`
-      UPDATE notificaciones
-      SET
-        leida = 1,
-        leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
-      WHERE id = ?
-        AND usuario_id = ?
-    `).bind(id, userId).run();
-  } catch (error) {
-    if (!hayErrorEsquemaNotificaciones(error)) {
-      throw error;
-    }
-    try {
-      result = await dbPrimaria(env).prepare(`
-        UPDATE notificaciones
-        SET leida = 1
-        WHERE id = ?
-          AND usuario_id = ?
-      `).bind(id, userId).run();
-    } catch (errorLeida) {
-      if (!hayErrorEsquemaNotificaciones(errorLeida)) {
-        throw errorLeida;
-      }
-      return { ok: true, changes: 0 };
-    }
-  }
+  const result = await dbPrimaria(env).prepare(`
+    DELETE FROM notificaciones
+    WHERE id = ?
+      AND usuario_id = ?
+  `).bind(id, userId).run();
 
   return { ok: true, changes: Number(result?.meta?.changes || 0) };
 }
@@ -497,33 +474,11 @@ export async function marcarTodasLasNotificacionesLeidas(env, usuarioId) {
   const userId = Number(usuarioId || 0);
   if (!userId) return { ok: false, error: "Usuario inválido." };
 
-  let result;
-  try {
-    result = await dbPrimaria(env).prepare(`
-      UPDATE notificaciones
-      SET
-        leida = 1,
-        leida_at = CASE WHEN leida_at IS NULL THEN CURRENT_TIMESTAMP ELSE leida_at END
-      WHERE usuario_id = ?
-        AND COALESCE(leida, 0) = 0
-    `).bind(userId).run();
-  } catch (error) {
-    if (!hayErrorEsquemaNotificaciones(error)) {
-      throw error;
-    }
-    try {
-      result = await dbPrimaria(env).prepare(`
-        UPDATE notificaciones
-        SET leida = 1
-        WHERE usuario_id = ?
-      `).bind(userId).run();
-    } catch (errorLeida) {
-      if (!hayErrorEsquemaNotificaciones(errorLeida)) {
-        throw errorLeida;
-      }
-      return { ok: true, changes: 0 };
-    }
-  }
+  await asegurarTablaNotificaciones(env);
+  const result = await dbPrimaria(env).prepare(`
+    DELETE FROM notificaciones
+    WHERE usuario_id = ?
+  `).bind(userId).run();
 
   return { ok: true, changes: Number(result?.meta?.changes || 0) };
 }

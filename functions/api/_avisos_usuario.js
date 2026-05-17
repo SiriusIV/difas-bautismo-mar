@@ -97,3 +97,35 @@ export async function listarAvisosUsuario(env, usuarioId, { limit = 25 } = {}) {
     created_at: limpiarTexto(row.created_at)
   }));
 }
+
+export async function eliminarAvisoUsuario(env, usuarioId, avisoId) {
+  const userId = Number(usuarioId || 0);
+  const id = Number(avisoId || 0);
+  if (!(userId > 0) || !(id > 0)) {
+    return { ok: false, changes: 0, error: "Identificador inválido." };
+  }
+
+  await asegurarTablaAvisosUsuario(env);
+  const result = await dbPrimaria(env).prepare(`
+    DELETE FROM reservas_avisos_usuario
+    WHERE id = ?
+      AND usuario_id = ?
+  `).bind(id, userId).run();
+
+  return { ok: true, changes: Number(result?.meta?.changes || 0) };
+}
+
+export async function eliminarTodosLosAvisosUsuario(env, usuarioId) {
+  const userId = Number(usuarioId || 0);
+  if (!(userId > 0)) {
+    return { ok: false, changes: 0, error: "Usuario inválido." };
+  }
+
+  await asegurarTablaAvisosUsuario(env);
+  const result = await dbPrimaria(env).prepare(`
+    DELETE FROM reservas_avisos_usuario
+    WHERE usuario_id = ?
+  `).bind(userId).run();
+
+  return { ok: true, changes: Number(result?.meta?.changes || 0) };
+}
