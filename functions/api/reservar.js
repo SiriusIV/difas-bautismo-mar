@@ -24,6 +24,14 @@ function normalizarContactoComparacion(valor) {
   return limpiarTexto(valor).toUpperCase();
 }
 
+function normalizarTelefonoComparacion(valor) {
+  return limpiarTexto(valor).toUpperCase();
+}
+
+function normalizarEmailComparacion(valor) {
+  return limpiarTexto(valor).toUpperCase();
+}
+
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -477,7 +485,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
   return Number(row?.ocupadas || 0);
 }
 
-async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion) {
+async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion) {
   const sql = `
     SELECT
       r.id,
@@ -487,6 +495,8 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
     WHERE r.franja_id = ?
       AND UPPER(TRIM(r.centro)) = ?
       AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
+      AND UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
+      AND UPPER(TRIM(COALESCE(r.email, ''))) = ?
       AND (
         r.estado = 'CONFIRMADA'
         OR (
@@ -509,7 +519,7 @@ async function existeSolicitudActivaMismoCentroFranja(env, franjaId, centroCompa
   `;
 
   return await env.DB.prepare(sql)
-    .bind(franjaId, centroComparacion, contactoComparacion)
+    .bind(franjaId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion)
     .first();
 }
 
@@ -517,7 +527,7 @@ function franjaTieneCapacidadLimitada(actividad, franja) {
   return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
 }
 
-async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion) {
+async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion) {
   const sql = `
     SELECT
       r.id,
@@ -528,6 +538,8 @@ async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividad
       AND r.franja_id IS NULL
       AND UPPER(TRIM(r.centro)) = ?
       AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
+      AND UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
+      AND UPPER(TRIM(COALESCE(r.email, ''))) = ?
       AND (
         r.estado = 'CONFIRMADA'
         OR (
@@ -550,7 +562,7 @@ async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividad
   `;
 
   return await env.DB.prepare(sql)
-    .bind(actividadId, centroComparacion, contactoComparacion)
+    .bind(actividadId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion)
     .first();
 }
 
@@ -639,6 +651,8 @@ if (Number(actividad.activa || 0) !== 1) {
 
     const centroComparacion = normalizarCentroComparacion(centro);
     const contactoComparacion = normalizarContactoComparacion(contacto);
+    const telefonoComparacion = normalizarTelefonoComparacion(telefono);
+    const emailComparacion = normalizarEmailComparacion(email);
     let franja = null;
     let duplicada = null;
     let capacidad = null;
@@ -661,14 +675,14 @@ if (Number(actividad.activa || 0) !== 1) {
         );
       }
 
-      duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion);
+      duplicada = await existeSolicitudActivaMismoCentroFranja(env, franjaId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion);
       if (franjaTieneCapacidadLimitada(actividad, franja)) {
         const ocupadas = await obtenerBloqueoActualFranja(env, franjaId);
         capacidad = Number(franja.capacidad || 0);
         disponibles = Math.max(capacidad - ocupadas, 0);
       }
     } else {
-      duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion);
+      duplicada = await existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion);
       if (Number(actividad.aforo_limitado || 0) === 1) {
         capacidad = Number(actividad.aforo_maximo || 0);
         const ocupadas = await obtenerBloqueoActividadSinFranja(env, actividadId);
