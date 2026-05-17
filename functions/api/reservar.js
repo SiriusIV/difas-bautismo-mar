@@ -342,16 +342,16 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
       </div>
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
           <tbody>
-            ${codigo ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Codigo de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
-            <tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Centro solicitante</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
-            ${contacto ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
-            ${correoContacto ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Correo de contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(correoContacto)}</td></tr>` : ""}
-            ${plazas > 0 ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Plazas solicitadas</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(plazas)}</td></tr>` : ""}
-            ${programacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Programacion</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
-            ${ubicacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Ubicacion</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : ""}
-            ${urlMaps ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Google Maps</td><td style="padding:6px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicacion</a></td></tr>` : ""}
+            ${codigo ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Codigo</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
+            <tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Centro</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
+            ${contacto ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Contacto</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
+            ${correoContacto ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Correo</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(correoContacto)}</td></tr>` : ""}
+            ${plazas > 0 ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Plazas</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(plazas)}</td></tr>` : ""}
+            ${programacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Fecha y hora</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
+            ${ubicacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Ubicacion</td><td style="padding:4px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : ""}
+            ${urlMaps ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:112px;">Mapa</td><td style="padding:4px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicacion</a></td></tr>` : ""}
           </tbody>
         </table>
       </div>
