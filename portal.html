@@ -2477,25 +2477,7 @@ function actualizarBotonSolicitarSegunFranja() {
       } catch {}
 
       try {
-        if (esAdmin()) {
-          const resReservas = await fetch(`/api/admin/reservas?estado=PENDIENTE&_ts=${Date.now()}`, {
-            credentials: "include",
-            cache: "no-store"
-          });
-          const dataReservas = await resReservas.json().catch(() => null);
-          if (resReservas.ok && dataReservas?.ok) {
-            operativas.push(...construirNotificacionesOperativasReservaAdmin(dataReservas?.reservas, vistas));
-          }
-
-          const resCanceladas = await fetch(`/api/admin/reservas?estado=CANCELADA&_ts=${Date.now()}`, {
-            credentials: "include",
-            cache: "no-store"
-          });
-          const dataCanceladas = await resCanceladas.json().catch(() => null);
-          if (resCanceladas.ok && dataCanceladas?.ok) {
-            operativas.push(...construirNotificacionesOperativasReservaAdminCancelada(dataCanceladas?.reservas, vistas));
-          }
-        } else if (esSolicitante()) {
+        if (esSolicitante()) {
           const resReservas = await fetch(`/api/usuario/reservas?_ts=${Date.now()}`, {
             credentials: "include",
             cache: "no-store"
