@@ -179,8 +179,8 @@ function construirUrlPanelReservasAdmin(contexto = {}) {
   const destinoInterno = actividadId > 0
     ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
     : "/admin-reservas.html";
-  const loginPath = `/admin-login.html?next=${encodeURIComponent(destinoInterno)}`;
-  return `${baseUrl.replace(/\/+$/, "")}${loginPath}`;
+  const portalPath = `/portal.html?next=${encodeURIComponent(destinoInterno)}`;
+  return `${baseUrl.replace(/\/+$/, "")}${portalPath}`;
 }
 
 function construirTextoContextualSolicitudAdmin(contexto = {}) {
@@ -292,13 +292,13 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
   const html = `
     <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
       <div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <div style="min-width:0;flex:1 1 auto;">
             <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">Nueva solicitud</div>
             <div style="font-size:22px;font-weight:700;color:#123a63;line-height:1.2;margin-bottom:6px;">${escaparHtml(actividad)}</div>
             <div style="font-size:15px;font-weight:600;color:#355679;">${escaparHtml(mensaje)}</div>
           </div>
-          ${urlPanel ? `<a href="${escaparHtml(urlPanel)}" style="display:inline-block;flex:0 0 auto;padding:10px 16px;border-radius:999px;background:#123a63;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Abrir panel de reservas</a>` : ""}
+          ${urlPanel ? `<a href="${escaparHtml(urlPanel)}" style="display:inline-block;flex:0 0 auto;padding:10px 16px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Abrir panel de reservas</a>` : ""}
         </div>
       </div>
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">

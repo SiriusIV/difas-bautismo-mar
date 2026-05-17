@@ -1687,6 +1687,25 @@
       return usuarioAutenticado && usuarioAutenticado.rol === "SUPERADMIN";
     }
 
+    function obtenerDestinoPendientePortal() {
+      try {
+        const next = new URLSearchParams(window.location.search).get("next") || "";
+        if (!next || !next.startsWith("/") || next.startsWith("//")) return "";
+        return next;
+      } catch {
+        return "";
+      }
+    }
+
+    function intentarRedireccionPendientePortal() {
+      const destino = obtenerDestinoPendientePortal();
+      if (!destino) return false;
+      const rol = String(usuarioAutenticado?.rol || "").toUpperCase();
+      if (rol !== "ADMIN" && rol !== "SUPERADMIN") return false;
+      window.location.href = destino;
+      return true;
+    }
+
     function abrirModalLogin() {
       limpiarMensaje("mensajeLogin");
 
@@ -2616,6 +2635,9 @@ function actualizarBotonSolicitarSegunFranja() {
       usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
       actualizarModoAcceso();
       await cargarNotificacionesPortal();
+      if (usuarioAutenticado) {
+        intentarRedireccionPendientePortal();
+      }
     }
 
     function actualizarModoAcceso() {
@@ -3686,6 +3708,7 @@ function continuarSolicitudActividad() {
       if (data.ok) {
         cerrarModalLogin();
         await comprobarSesionUsuario();
+        if (intentarRedireccionPendientePortal()) return;
         await cargarActividades();
       } else {
         mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
