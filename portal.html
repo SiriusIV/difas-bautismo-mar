@@ -282,6 +282,22 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .btn-notificaciones-marcar-todas {
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #123a63;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+    .btn-notificaciones-marcar-todas:hover {
+      background: #e2eeff;
+      border-color: #9ebfe9;
+      transform: translateY(-1px);
+    }
     .modal-notificaciones-subtitulo {
       margin: 0 0 12px;
       color: #5a6877;
@@ -1598,6 +1614,7 @@
       <div class="modal-notificaciones-head">
         <h3>Notificaciones</h3>
         <div class="modal-notificaciones-acciones-head">
+          <button class="btn-notificaciones-marcar-todas" id="btnMarcarTodasNotificaciones" type="button">Marcar todas como vistas</button>
           <button class="btn-cerrar-modal-plano" id="btnCerrarModalNotificaciones" type="button" aria-label="Cerrar notificaciones" title="Cerrar">×</button>
         </div>
       </div>
@@ -3821,6 +3838,10 @@ function continuarSolicitudActividad() {
 
     document.getElementById("btnSolicitarActividad").addEventListener("click", solicitarActividadActual);
     document.getElementById("btnNotificacionesSesion").addEventListener("click", abrirModalNotificacionesPortal);
+    document.getElementById("btnMarcarTodasNotificaciones").addEventListener("click", async function () {
+      await marcarTodasLasNotificacionesComoVistasPortal();
+      await cerrarModalNotificacionesPortal();
+    });
     document.getElementById("btnCerrarModalNotificaciones").addEventListener("click", async function () {
       await cerrarModalNotificacionesPortal();
     });
