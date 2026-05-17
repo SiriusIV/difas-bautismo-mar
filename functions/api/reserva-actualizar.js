@@ -2,7 +2,7 @@
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
-import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
+import { enviarEmail } from "./_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -60,6 +60,10 @@ async function obtenerActividad(env, actividadId) {
       a.usa_franjas,
       a.aforo_limitado,
       COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
+      COALESCE(a.lugar, '') AS lugar,
+      COALESCE(a.direccion_postal, '') AS direccion_postal,
+      COALESCE(a.latitud, '') AS latitud,
+      COALESCE(a.longitud, '') AS longitud,
       u.email AS admin_email,
       u.nombre AS admin_nombre,
       u.nombre_publico AS admin_nombre_publico,
@@ -103,6 +107,50 @@ function construirDescripcionProgramacion(contexto = {}) {
   return "";
 }
 
+function construirUrlGoogleMaps(contexto = {}) {
+  const latitud = limpiarTexto(contexto?.latitud || "");
+  const longitud = limpiarTexto(contexto?.longitud || "");
+  if (latitud && longitud) {
+    return `https://www.google.com/maps?q=${encodeURIComponent(`${latitud},${longitud}`)}`;
+  }
+  const direccion = limpiarTexto(contexto?.direccion_postal || "");
+  const lugar = limpiarTexto(contexto?.lugar || "");
+  const destino = direccion || lugar;
+  if (!destino) return "";
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destino)}`;
+}
+
+function construirTextoContextualSolicitudAdmin(contexto = {}) {
+  const usaFranjas = Number(contexto?.usa_franjas || 0) === 1;
+  const aforoLimitado = Number(contexto?.aforo_limitado || 0) === 1;
+  const aforoMaximo = Number(contexto?.aforo_maximo || 0);
+  const programacion = construirDescripcionProgramacion(contexto);
+  const lugar = limpiarTexto(contexto?.lugar || "");
+  const direccion = limpiarTexto(contexto?.direccion_postal || "");
+  const urlMaps = construirUrlGoogleMaps(contexto);
+
+  const lineas = [];
+  if (usaFranjas && programacion) {
+    lineas.push(`La solicitud se ha registrado para la franja ${programacion}.`);
+  }
+  if (aforoLimitado && aforoMaximo > 0) {
+    lineas.push(`El aforo de esta actividad está limitado a ${aforoMaximo} plazas.`);
+    lineas.push("Si fuese necesario ampliar asistentes más adelante, podrán seguir asignándose sobre esta misma solicitud mientras continúe existiendo disponibilidad.");
+  } else if (!aforoLimitado) {
+    lineas.push("La actividad no tiene aforo limitado.");
+  }
+  if (direccion) {
+    lineas.push(`Dirección de referencia: ${direccion}.`);
+  } else if (lugar) {
+    lineas.push(`Lugar de referencia: ${lugar}.`);
+  }
+  if (urlMaps) {
+    lineas.push(`Localización en Google Maps: ${urlMaps}`);
+  }
+  lineas.push("Revise la solicitud y continúe su tramitación desde el panel de reservas.");
+  return lineas;
+}
+
 function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
   const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
   const centro = limpiarTexto(contexto?.centro || "un centro");
@@ -110,18 +158,17 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
   const correoContacto = limpiarTexto(contexto?.email || "");
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const plazas = Number(contexto?.plazas_prereservadas || 0);
+  const observaciones = limpiarTexto(contexto?.observaciones || "");
   const programacion = construirDescripcionProgramacion(contexto);
   const asunto = modo === "reenviada"
-    ? "[Reservas] Solicitud reenviada para revisión"
-    : "[Reservas] Nueva solicitud de actividad";
+    ? `${actividad} · Solicitud reenviada para revisión`
+    : `${actividad} · Nueva solicitud de actividad`;
   const mensaje = modo === "reenviada"
     ? "Se ha reenviado una solicitud de actividad para nueva revisión."
     : "Se ha registrado una nueva solicitud de actividad.";
-  const textoCierre = plazas > 0
-    ? "Revise la solicitud y, en su caso, la disponibilidad asociada para continuar su tramitación desde el panel de reservas."
-    : "Revise la solicitud y continúe su tramitación desde el panel de reservas.";
+  const urlMaps = construirUrlGoogleMaps(contexto);
+  const lineasContextuales = construirTextoContextualSolicitudAdmin(contexto);
   const bloqueDatosTexto = [
-    `Actividad: ${actividad}`,
     codigo ? `Código de solicitud: ${codigo}` : "",
     `Centro solicitante: ${centro}`,
     contacto ? `Contacto: ${contacto}` : "",
@@ -134,24 +181,32 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
   const texto = [
     mensaje,
     "",
+    `ACTIVIDAD: ${actividad}`,
+    "",
     "RESUMEN DE LA SOLICITUD",
     ...bloqueDatosTexto.map((linea) => `- ${linea}`),
     "",
-    "SIGUIENTE ACCIÓN",
-    textoCierre
+    observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
+    observaciones ? observaciones : "",
+    observaciones ? "" : "",
+    urlMaps ? "LOCALIZACIÓN" : "",
+    urlMaps ? `- Google Maps: ${urlMaps}` : "",
+    urlMaps ? "" : "",
+    "INFORMACIÓN ADICIONAL",
+    ...lineasContextuales.map((linea) => `- ${linea}`)
   ].filter(Boolean).join("\n");
 
   const html = `
     <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
       <div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">${modo === "reenviada" ? "Solicitud reenviada" : "Nueva solicitud"}</div>
-        <div style="font-size:16px;font-weight:700;color:#123a63;">${escaparHtml(mensaje)}</div>
+        <div style="font-size:22px;font-weight:700;color:#123a63;line-height:1.2;margin-bottom:6px;">${escaparHtml(actividad)}</div>
+        <div style="font-size:15px;font-weight:600;color:#355679;">${escaparHtml(mensaje)}</div>
       </div>
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
         <table style="width:100%;border-collapse:collapse;font-size:14px;">
           <tbody>
-            <tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;width:180px;">Actividad</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(actividad)}</td></tr>
             ${codigo ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Código de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
             <tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Centro solicitante</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
             ${contacto ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
@@ -162,9 +217,23 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
           </tbody>
         </table>
       </div>
+      ${observaciones ? `
+        <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Observaciones del solicitante</div>
+          <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtml(observaciones)}</div>
+        </div>
+      ` : ""}
+      ${urlMaps ? `
+        <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Localización</div>
+          <a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación en Google Maps</a>
+        </div>
+      ` : ""}
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
-        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Siguiente acción</div>
-        <div style="font-size:14px;color:#22313f;">${escaparHtml(textoCierre)}</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Información adicional</div>
+        <ul style="margin:0;padding-left:18px;color:#22313f;">
+          ${lineasContextuales.map((linea) => `<li style="margin:0 0 6px 0;">${escaparHtml(linea)}</li>`).join("")}
+        </ul>
       </div>
     </div>
   `;
