@@ -19,6 +19,35 @@ export function esEmailConfigurable(env) {
   return !!limpiarTexto(env?.RESEND_API_KEY) && !!limpiarTexto(env?.EMAIL_FROM);
 }
 
+function construirAvisoCabeceraTexto() {
+  return [
+    "AVISO AUTOMATICO",
+    "Este correo ha sido generado automaticamente por la plataforma. Por favor, no respondas a este mensaje.",
+    ""
+  ].join("\n");
+}
+
+function construirAvisoCabeceraHtml() {
+  return `
+    <div style="margin-bottom:16px;padding:12px 14px;border:1px solid #d9e2ec;border-radius:12px;background:#f8fafc;color:#445566;font-family:Arial,sans-serif;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:6px;">Aviso automático</div>
+      <div style="font-size:13px;line-height:1.45;">Este correo ha sido generado automáticamente por la plataforma. Por favor, no respondas a este mensaje.</div>
+    </div>
+  `;
+}
+
+function envolverTextoAutomatico(texto) {
+  const contenido = limpiarTexto(texto);
+  if (!contenido) return construirAvisoCabeceraTexto().trim();
+  return `${construirAvisoCabeceraTexto()}${contenido}`;
+}
+
+function envolverHtmlAutomatico(html) {
+  const contenido = limpiarTexto(html);
+  if (!contenido) return construirAvisoCabeceraHtml().trim();
+  return `${construirAvisoCabeceraHtml()}${contenido}`;
+}
+
 export async function enviarEmail(env, { to, subject, text, html }) {
   const destinatario = limpiarTexto(to).toLowerCase();
   const asunto = limpiarTexto(subject);
@@ -46,8 +75,8 @@ export async function enviarEmail(env, { to, subject, text, html }) {
     from,
     to: [destinatario],
     subject: asunto,
-    text: limpiarTexto(text),
-    html: limpiarTexto(html)
+    text: envolverTextoAutomatico(text),
+    html: envolverHtmlAutomatico(html)
   };
 
   try {
