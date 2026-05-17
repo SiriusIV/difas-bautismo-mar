@@ -104,11 +104,6 @@ function construirDescripcionProgramacion(contexto = {}) {
 }
 
 function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
-  const adminNombre = nombreVisibleAdmin({
-    nombre_publico: contexto?.admin_nombre_publico,
-    nombre: contexto?.admin_nombre,
-    localidad: contexto?.admin_localidad
-  });
   const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
   const centro = limpiarTexto(contexto?.centro || "un centro");
   const contacto = limpiarTexto(contexto?.contacto || "");
@@ -116,41 +111,62 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}, modo = "nueva") {
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const plazas = Number(contexto?.plazas_prereservadas || 0);
   const programacion = construirDescripcionProgramacion(contexto);
-  const accion = modo === "reenviada"
-    ? "ha reenviado una solicitud para"
-    : "ha presentado una nueva solicitud para";
   const asunto = modo === "reenviada"
     ? "[Reservas] Solicitud reenviada para revisión"
     : "[Reservas] Nueva solicitud de actividad";
-  const mensaje = `${centro} ${accion} ${actividad}${codigo ? ` (${codigo})` : ""}.`;
-
-  const texto = [
-    `Hola ${adminNombre},`,
-    "",
-    mensaje,
-    "",
+  const mensaje = modo === "reenviada"
+    ? "Se ha reenviado una solicitud de actividad para nueva revisión."
+    : "Se ha registrado una nueva solicitud de actividad.";
+  const textoCierre = plazas > 0
+    ? "Revise la solicitud y, en su caso, la disponibilidad asociada para continuar su tramitación desde el panel de reservas."
+    : "Revise la solicitud y continúe su tramitación desde el panel de reservas.";
+  const bloqueDatosTexto = [
     `Actividad: ${actividad}`,
     codigo ? `Código de solicitud: ${codigo}` : "",
     `Centro solicitante: ${centro}`,
-    contacto ? `Persona de contacto: ${contacto}` : "",
+    contacto ? `Contacto: ${contacto}` : "",
     correoContacto ? `Correo de contacto: ${correoContacto}` : "",
     plazas > 0 ? `Plazas solicitadas: ${plazas}` : "",
     programacion ? `Programación: ${programacion}` : "",
+    modo === "reenviada" ? "Situación: Solicitud reenviada para revisión" : ""
+  ].filter(Boolean);
+
+  const texto = [
+    mensaje,
     "",
-    "Puedes revisar la solicitud desde tu panel de reservas."
+    "RESUMEN DE LA SOLICITUD",
+    ...bloqueDatosTexto.map((linea) => `- ${linea}`),
+    "",
+    "SIGUIENTE ACCIÓN",
+    textoCierre
   ].filter(Boolean).join("\n");
 
   const html = `
-    <p>Hola ${escaparHtml(adminNombre)},</p>
-    <p>${escaparHtml(mensaje)}</p>
-    <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
-    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
-    <p><strong>Centro solicitante:</strong> ${escaparHtml(centro)}</p>
-    ${contacto ? `<p><strong>Persona de contacto:</strong> ${escaparHtml(contacto)}</p>` : ""}
-    ${correoContacto ? `<p><strong>Correo de contacto:</strong> ${escaparHtml(correoContacto)}</p>` : ""}
-    ${plazas > 0 ? `<p><strong>Plazas solicitadas:</strong> ${escaparHtml(plazas)}</p>` : ""}
-    ${programacion ? `<p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>` : ""}
-    <p>Puedes revisar la solicitud desde tu panel de reservas.</p>
+    <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
+      <div style="background:#eef4ff;border:1px solid #c9dcff;border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;margin-bottom:6px;">${modo === "reenviada" ? "Solicitud reenviada" : "Nueva solicitud"}</div>
+        <div style="font-size:16px;font-weight:700;color:#123a63;">${escaparHtml(mensaje)}</div>
+      </div>
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tbody>
+            <tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;width:180px;">Actividad</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(actividad)}</td></tr>
+            ${codigo ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Código de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
+            <tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Centro solicitante</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
+            ${contacto ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
+            ${correoContacto ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Correo de contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(correoContacto)}</td></tr>` : ""}
+            ${plazas > 0 ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Plazas solicitadas</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(plazas)}</td></tr>` : ""}
+            ${programacion ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Programación</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
+            ${modo === "reenviada" ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Situación</td><td style="padding:6px 0;color:#22313f;">Solicitud reenviada para revisión</td></tr>` : ""}
+          </tbody>
+        </table>
+      </div>
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Siguiente acción</div>
+        <div style="font-size:14px;color:#22313f;">${escaparHtml(textoCierre)}</div>
+      </div>
+    </div>
   `;
 
   return { asunto, texto, html };
