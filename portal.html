@@ -1706,6 +1706,17 @@
       return true;
     }
 
+    function gestionarAccesoPendientePortal() {
+      const destino = obtenerDestinoPendientePortal();
+      if (!destino) return false;
+      if (intentarRedireccionPendientePortal()) return true;
+      if (!usuarioAutenticado) {
+        abrirModalLogin();
+        return true;
+      }
+      return false;
+    }
+
     function abrirModalLogin() {
       limpiarMensaje("mensajeLogin");
 
@@ -3845,6 +3856,10 @@ function continuarSolicitudActividad() {
       appScrollPortal.classList.add("portal-cargando");
       try {
       await comprobarSesionUsuario();
+      if (gestionarAccesoPendientePortal()) {
+        await cargarActividades();
+        return;
+      }
       await cargarActividades();
 
       const carruselWrap = document.getElementById("carruselWrap");
