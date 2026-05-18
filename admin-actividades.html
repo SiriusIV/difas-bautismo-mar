@@ -292,6 +292,13 @@
   opacity: 1;
 }
 
+.pantalla-bloqueada .subbloque,
+.pantalla-bloqueada .config-panel,
+.pantalla-bloqueada .config-periodo-card {
+  opacity: 1;
+  background: #ffffff;
+}
+
 .pantalla-bloqueada #mensajeActividad {
   pointer-events: auto;
   opacity: 1;
@@ -2336,10 +2343,11 @@
     let callbackCancelarMensajeActividad = null;
     let pantallaBloqueadaPorErrorActividad = false;
     let temporizadorMensajeActividad = null;
-    let formularioActividadModificado = false;
-    let salidaPendienteAlPortal = false;
-    let destinoSalidaPendiente = "portal.html";
-    let desactivacionActividadPendiente = false;
+      let formularioActividadModificado = false;
+      let salidaPendienteAlPortal = false;
+      let destinoSalidaPendiente = "portal.html";
+      let desactivacionActividadPendiente = false;
+      let permitirSubmitExplicitoActividadHasta = 0;
 
     function normalizarTexto(v) {
       return String(v || "").trim();
@@ -4469,10 +4477,13 @@ async function borrarFranja(id) {
       const esSubmitImplicitoDesdeFecha =
         !submitter &&
         (activeElementId === "fecha_inicio" || activeElementId === "fecha_fin");
+      const submitRecientementeAutorizado = Date.now() <= permitirSubmitExplicitoActividadHasta;
 
-      if (esSubmitImplicito) {
+      if (esSubmitImplicito || !submitRecientementeAutorizado) {
         return false;
       }
+
+      permitirSubmitExplicitoActividadHasta = 0;
 
       const payload = construirPayloadActividad(0);
 
@@ -5117,6 +5128,9 @@ function retrocederPaso() {
         compactarCabeceraFranjas();
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
+      document.getElementById("btnGuardarActividad").addEventListener("click", () => {
+        permitirSubmitExplicitoActividadHasta = Date.now() + 3000;
+      });
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
         document.getElementById("btnAceptarMensajeActividad").addEventListener("click", aceptarMensajeErrorActividad);
         document.getElementById("btnCancelarMensajeActividad").addEventListener("click", cancelarMensajeErrorActividad);
@@ -5151,6 +5165,7 @@ function retrocederPaso() {
         await salirSinGuardarActividad();
       });
       document.getElementById("btnGuardarYSalir").addEventListener("click", async () => {
+        permitirSubmitExplicitoActividadHasta = Date.now() + 3000;
         salidaPendienteAlPortal = true;
         const okGuardado = await guardarActividad();
         if (okGuardado) {
