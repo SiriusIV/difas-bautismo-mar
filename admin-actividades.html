@@ -1590,21 +1590,21 @@
       height: 34px;
       resize: none;
       font: inherit;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 7px 10px;
+      border: none;
+      border-radius: 0;
+      padding: 0;
       color: #1e2a36;
-      background: #fff;
+      background: transparent;
       box-sizing: border-box;
       line-height: 1.35;
       overflow: hidden;
       white-space: nowrap;
+      box-shadow: none;
     }
 
     .input-requisito:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(33, 99, 222, 0.12);
+      box-shadow: none;
     }
 
     .tabla-requisitos-vacia {
@@ -1690,8 +1690,12 @@
     }
 
     .tabla-documentacion-actividad td {
-      font-size: 0.94rem;
+      font-size: 13px;
       color: #44576a;
+    }
+
+    .tabla-documentacion-actividad thead {
+      display: none;
     }
 
     .documentacion-actividad-resumen {
@@ -2350,12 +2354,6 @@
 
             <div class="tabla-requisitos-wrap">
               <table class="tabla-requisitos" aria-label="Tabla de requisitos particulares">
-                <thead>
-                  <tr>
-                    <th class="col-acciones"></th>
-                    <th>Requisito</th>
-                  </tr>
-                </thead>
                 <tbody id="tablaRequisitosBody"></tbody>
               </table>
             </div>
@@ -2381,12 +2379,6 @@
 
                 <div class="tabla-documentacion-actividad-wrap">
                   <table class="tabla-documentacion-actividad" aria-label="Tabla de documentación exigible">
-                    <thead>
-                      <tr>
-                        <th class="col-documentacion-acciones"></th>
-                        <th>Documento exigible</th>
-                      </tr>
-                    </thead>
                     <tbody id="tablaDocumentacionActividadBody"></tbody>
                   </table>
                 </div>
