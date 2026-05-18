@@ -2429,9 +2429,39 @@
       let permitirSubmitExplicitoActividadHasta = 0;
       const TRAZA_ACTIVIDAD_ACTIVA = true;
 
+      function asegurarTrazaActividadUI() {
+        if (!TRAZA_ACTIVIDAD_ACTIVA) return null;
+
+        let panel = document.getElementById("debugTrazaActividad");
+        if (panel) return panel;
+
+        panel = document.createElement("aside");
+        panel.id = "debugTrazaActividad";
+        panel.className = "debug-traza-actividad";
+        panel.innerHTML = `
+          <div class="debug-traza-actividad-head">
+            <strong>Traza temporal de edición</strong>
+            <div class="debug-traza-actividad-acciones">
+              <button type="button" id="btnLimpiarTrazaActividad" class="debug-traza-actividad-btn">Limpiar</button>
+            </div>
+          </div>
+          <ul id="debugTrazaActividadLista" class="debug-traza-actividad-lista"></ul>
+        `;
+
+        document.body.appendChild(panel);
+
+        panel.querySelector("#btnLimpiarTrazaActividad")?.addEventListener("click", () => {
+          const lista = document.getElementById("debugTrazaActividadLista");
+          if (lista) lista.innerHTML = "";
+        });
+
+        return panel;
+      }
+
       function registrarTrazaActividad(evento, detalle = null) {
         if (!TRAZA_ACTIVIDAD_ACTIVA) return;
 
+        asegurarTrazaActividadUI();
         const lista = document.getElementById("debugTrazaActividadLista");
         if (!lista) return;
 
@@ -5279,7 +5309,11 @@ function retrocederPaso() {
       }
     }
 
-    document.addEventListener("DOMContentLoaded", async function () {
+      document.addEventListener("DOMContentLoaded", async function () {
+        asegurarTrazaActividadUI();
+        registrarTrazaActividad("DOMContentLoaded", {
+          href: window.location.href
+        });
         const ok = await comprobarSesionAdmin();
         if (!ok) return;
 
@@ -5458,11 +5492,6 @@ function retrocederPaso() {
             event.preventDefault();
           }
         });
-      });
-
-      document.getElementById("btnLimpiarTrazaActividad")?.addEventListener("click", () => {
-        const lista = document.getElementById("debugTrazaActividadLista");
-        if (lista) lista.innerHTML = "";
       });
 
       [
