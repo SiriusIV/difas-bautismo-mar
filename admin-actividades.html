@@ -3269,10 +3269,7 @@ function debeAplazarValidacionCambioCritico(id) {
   const tipo = String(document.getElementById("tipo")?.value || "").toUpperCase();
   if (tipo !== "TEMPORAL") return false;
 
-  const fechaInicio = String(document.getElementById("fecha_inicio")?.value || "").trim();
-  const fechaFin = String(document.getElementById("fecha_fin")?.value || "").trim();
-
-  return !fechaInicio || !fechaFin;
+  return true;
 }
 
 async function manejarCambioCriticoCampo(id) {
