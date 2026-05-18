@@ -329,16 +329,31 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       r.id,
       r.usuario_id,
       r.actividad_id,
+      r.franja_id,
       r.codigo_reserva,
       r.centro,
       r.contacto,
+      COALESCE(r.telefono, '') AS telefono,
       COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
       r.observaciones,
       COALESCE(r.observaciones_admin, '') AS observaciones_admin,
+      COALESCE(r.plazas_prereservadas, 0) AS plazas_prereservadas,
       r.estado,
+      COALESCE(f.fecha, '') AS fecha,
+      COALESCE(f.hora_inicio, '') AS hora_inicio,
+      COALESCE(f.hora_fin, '') AS hora_fin,
+      COALESCE(a.lugar, '') AS lugar,
+      COALESCE(a.direccion_postal, '') AS direccion_postal,
+      COALESCE(a.latitud, '') AS latitud,
+      COALESCE(a.longitud, '') AS longitud,
+      COALESCE(a.usa_franjas, 0) AS usa_franjas,
+      COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
+      COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
     FROM reservas r
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
     LEFT JOIN usuarios us
@@ -451,6 +466,292 @@ async function enviarCorreoSolicitanteCambioEstado(env, contexto = {}, nuevoEsta
           html: correoBase.html.replace(
             "<p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>",
             `${bloqueHtml}<p>Puedes consultar el detalle actualizado desde tu panel de usuario.</p>`
+          )
+        };
+      })();
+
+  return await enviarEmail(env, {
+    to: destinatario,
+    subject: correo.asunto,
+    text: correo.texto,
+    html: correo.html
+  });
+}
+
+function construirDescripcionProgramacionCorreoSolicitante(contexto = {}) {
+  const fecha = limpiarTexto(contexto?.fecha || "");
+  const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
+  const horaFin = limpiarTexto(contexto?.hora_fin || "");
+  if (fecha && horaInicio && horaFin) return `${fecha} · ${horaInicio} - ${horaFin}`;
+  if (fecha) return fecha;
+  return "";
+}
+
+function construirUrlGoogleMapsCorreoSolicitante(contexto = {}) {
+  const latitud = limpiarTexto(contexto?.latitud || "");
+  const longitud = limpiarTexto(contexto?.longitud || "");
+  if (latitud && longitud) {
+    return `https://www.google.com/maps?q=${encodeURIComponent(`${latitud},${longitud}`)}`;
+  }
+
+  const direccion = limpiarTexto(contexto?.direccion_postal || "");
+  const lugar = limpiarTexto(contexto?.lugar || "");
+  const destino = direccion || lugar;
+  if (!destino) return "";
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destino)}`;
+}
+
+function construirUrlPanelSolicitanteCorreo(contexto = {}) {
+  const baseUrl = limpiarTexto(contexto?.base_url || "");
+  if (!baseUrl) return "";
+  return `${baseUrl.replace(/\/+$/, "")}/usuario-panel.html`;
+}
+
+function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevoEstado = "") {
+  const actividad = limpiarTexto(contexto?.actividad_nombre || "Actividad");
+  const codigo = limpiarTexto(contexto?.codigo_reserva || "");
+  const organizador = limpiarTexto(contexto?.organizador_nombre || "la organización");
+  const estado = limpiarTexto(nuevoEstado || contexto?.estado || "").toUpperCase();
+
+  if (estado === "CONFIRMADA") {
+    return {
+      asunto: `${actividad} · Solicitud aceptada`,
+      etiqueta: "Solicitud aceptada",
+      mensaje: "La solicitud ha sido validada correctamente.",
+      colorFondo: "#eef8f1",
+      colorBorde: "#c8ead3",
+      colorEtiqueta: "#1f6f43",
+      colorTitulo: "#184f34",
+      colorTexto: "#2e5f45",
+      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido aceptada por ${organizador}.`,
+      siguientesPasos: [
+        "La actividad queda reservada y lista para su seguimiento desde tu panel.",
+        "Si la actividad tiene aforo limitado, podrás gestionar la relación definitiva de asistentes desde esta misma solicitud.",
+        "Revisa con antelación la programación y la ubicación antes del día de la actividad."
+      ]
+    };
+  }
+
+  if (estado === "RECHAZADA") {
+    return {
+      asunto: `${actividad} · Solicitud rechazada`,
+      etiqueta: "Solicitud rechazada",
+      mensaje: "La solicitud no puede continuar en su estado actual.",
+      colorFondo: "#fff4f1",
+      colorBorde: "#f3c9bf",
+      colorEtiqueta: "#a24a2a",
+      colorTitulo: "#7c2f16",
+      colorTexto: "#7a4737",
+      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada por ${organizador}.`,
+      siguientesPasos: [
+        "Revisa las observaciones administrativas incluidas en este correo.",
+        "Accede a tu panel para decidir si conviene corregir la solicitud, rehacerla o dejarla sin continuidad.",
+        "Si necesitas más contexto, consulta el detalle completo desde tu área de usuario."
+      ]
+    };
+  }
+
+  if (estado === "SUSPENDIDA") {
+    return {
+      asunto: `${actividad} · Solicitud suspendida`,
+      etiqueta: "Solicitud suspendida",
+      mensaje: "La solicitud queda temporalmente detenida hasta resolver su situación.",
+      colorFondo: "#fff8e8",
+      colorBorde: "#f1d58b",
+      colorEtiqueta: "#8a5b00",
+      colorTitulo: "#724200",
+      colorTexto: "#6b5630",
+      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha quedado suspendida por ${organizador}.`,
+      siguientesPasos: [
+        "Consulta los requisitos u observaciones pendientes asociados a la actividad.",
+        "La solicitud no seguirá avanzando hasta que se resuelva la causa de la suspensión.",
+        "Cuando la situación quede regularizada, la actividad podrá reactivarse desde el panel."
+      ]
+    };
+  }
+
+  if (estado === "PENDIENTE") {
+    return {
+      asunto: `${actividad} · Solicitud reabierta`,
+      etiqueta: "Solicitud reabierta",
+      mensaje: "La solicitud vuelve a estar en revisión.",
+      colorFondo: "#eef4ff",
+      colorBorde: "#c9dcff",
+      colorEtiqueta: "#1d4f91",
+      colorTitulo: "#123a63",
+      colorTexto: "#355679",
+      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisión del organizador.`,
+      siguientesPasos: [
+        "Revisa las observaciones administrativas para saber qué debe ajustarse.",
+        "La solicitud permanecerá en trámite hasta que el organizador complete una nueva revisión.",
+        "Puedes seguir su evolución desde tu panel de usuario."
+      ]
+    };
+  }
+
+  return {
+    asunto: `${actividad} · Actualización de la solicitud`,
+    etiqueta: "Solicitud actualizada",
+    mensaje: "Se ha producido una actualización en la solicitud.",
+    colorFondo: "#eef4ff",
+    colorBorde: "#c9dcff",
+    colorEtiqueta: "#1d4f91",
+    colorTitulo: "#123a63",
+    colorTexto: "#355679",
+    cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada.`,
+    siguientesPasos: [
+      "Consulta el detalle actualizado desde tu panel de usuario."
+    ]
+  };
+}
+
+function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
+  const actividad = limpiarTexto(contexto?.actividad_nombre || "la actividad");
+  const codigo = limpiarTexto(contexto?.codigo_reserva || "");
+  const organizador = limpiarTexto(contexto?.organizador_nombre || "el organizador");
+  const centro = limpiarTexto(contexto?.centro || "");
+  const telefono = limpiarTexto(contexto?.telefono || "");
+  const correoContacto = limpiarTexto(contexto?.email || "");
+  const plazas = Number(contexto?.plazas_prereservadas || 0);
+  const observacionesAdmin = limpiarTexto(contexto?.observaciones_admin || "");
+  const observacionesSolicitud = limpiarTexto(contexto?.observaciones || "");
+  const programacion = construirDescripcionProgramacionCorreoSolicitante(contexto);
+  const direccion = limpiarTexto(contexto?.direccion_postal || "");
+  const lugar = limpiarTexto(contexto?.lugar || "");
+  const ubicacion = direccion || lugar;
+  const urlMaps = construirUrlGoogleMapsCorreoSolicitante(contexto);
+  const urlPanel = construirUrlPanelSolicitanteCorreo(contexto);
+  const configuracion = obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto, nuevoEstado);
+
+  const resumenTexto = [
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    centro ? `Centro: ${centro}` : "",
+    `Organiza: ${organizador}`,
+    programacion ? `Fecha y hora: ${programacion}` : "",
+    plazas > 0 ? `Plazas solicitadas: ${plazas}` : "",
+    ubicacion ? `Ubicación: ${ubicacion}` : "",
+    urlMaps ? `Google Maps: ${urlMaps}` : "",
+    telefono ? `Teléfono de contacto: ${telefono}` : "",
+    correoContacto ? `Correo de contacto: ${correoContacto}` : ""
+  ].filter(Boolean);
+
+  const texto = [
+    configuracion.cierre,
+    "",
+    `ACTIVIDAD: ${actividad}`,
+    "",
+    "RESUMEN DE LA SOLICITUD",
+    ...resumenTexto.map((linea) => `- ${linea}`),
+    "",
+    observacionesAdmin ? "OBSERVACIONES DEL ADMINISTRADOR DE ACTIVIDAD" : "",
+    observacionesAdmin ? observacionesAdmin : "",
+    observacionesAdmin ? "" : "",
+    observacionesSolicitud ? "OBSERVACIONES REGISTRADAS EN LA SOLICITUD" : "",
+    observacionesSolicitud ? observacionesSolicitud : "",
+    observacionesSolicitud ? "" : "",
+    "SIGUIENTES PASOS",
+    ...configuracion.siguientesPasos.map((linea) => `- ${linea}`),
+    "",
+    urlPanel ? `Panel de usuario: ${urlPanel}` : "Puedes consultar el detalle actualizado desde tu panel de usuario."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
+      <div style="background:${configuracion.colorFondo};border:1px solid ${configuracion.colorBorde};border-radius:12px;padding:14px 16px;margin-bottom:14px;">
+        <div style="min-width:0;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${configuracion.colorEtiqueta};margin-bottom:6px;">${escaparHtmlCorreo(configuracion.etiqueta)}</div>
+          <div style="font-size:22px;font-weight:700;color:${configuracion.colorTitulo};line-height:1.2;margin-bottom:6px;">${escaparHtmlCorreo(actividad)}</div>
+          <div style="font-size:15px;font-weight:600;color:${configuracion.colorTexto};">${escaparHtmlCorreo(configuracion.mensaje)}</div>
+          ${urlPanel ? `<div style="margin-top:10px;"><a href="${escaparHtmlCorreo(urlPanel)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Abrir panel de usuario</a></div>` : ""}
+        </div>
+      </div>
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
+          <tbody>
+            ${codigo ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Código</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(codigo)}</td></tr>` : ""}
+            ${centro ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Centro</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(centro)}</td></tr>` : ""}
+            <tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Organiza</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(organizador)}</td></tr>
+            ${programacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Fecha y hora</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(programacion)}</td></tr>` : ""}
+            ${plazas > 0 ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Plazas</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(plazas)}</td></tr>` : ""}
+            ${ubicacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Ubicación</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(ubicacion)}</td></tr>` : ""}
+            ${urlMaps ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Mapa</td><td style="padding:4px 0;color:#22313f;"><a href="${escaparHtmlCorreo(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación</a></td></tr>` : ""}
+            ${telefono ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Teléfono</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(telefono)}</td></tr>` : ""}
+            ${correoContacto ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Correo</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(correoContacto)}</td></tr>` : ""}
+          </tbody>
+        </table>
+      </div>
+      ${urlMaps ? `
+        <div style="margin-bottom:14px;border:1px solid #d8e6fb;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#f7fbff 0%,#eef4ff 100%);">
+          <div style="padding:12px 16px 8px 16px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;">Ubicación de la actividad</div>
+          <div style="padding:0 16px 12px 16px;font-size:14px;color:#22313f;">
+            <div style="font-weight:700;color:#123a63;margin-bottom:4px;">${escaparHtmlCorreo(actividad)}</div>
+            <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtmlCorreo(ubicacion || "Consulta la localización en Google Maps.")}</div>
+            <a href="${escaparHtmlCorreo(urlMaps)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir en Google Maps</a>
+          </div>
+        </div>
+      ` : ""}
+      ${observacionesAdmin ? `
+        <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Observaciones del administrador de actividad</div>
+          <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtmlCorreo(observacionesAdmin)}</div>
+        </div>
+      ` : ""}
+      ${observacionesSolicitud ? `
+        <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Observaciones registradas en la solicitud</div>
+          <div style="font-size:14px;color:#22313f;white-space:pre-wrap;">${escaparHtmlCorreo(observacionesSolicitud)}</div>
+        </div>
+      ` : ""}
+      <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Siguientes pasos</div>
+        <ul style="margin:0;padding-left:18px;color:#22313f;">
+          ${configuracion.siguientesPasos.map((linea) => `<li style="margin:0 0 6px 0;">${escaparHtmlCorreo(linea)}</li>`).join("")}
+        </ul>
+      </div>
+    </div>
+  `;
+
+  return { asunto: configuracion.asunto, texto, html };
+}
+
+async function enviarCorreoSolicitanteCambioEstado(env, contexto = {}, nuevoEstado = "") {
+  const destinatario = limpiarTexto(contexto?.email || "");
+  if (!destinatario) {
+    return { ok: false, skipped: true, error: "La solicitud no tiene correo de contacto." };
+  }
+
+  const correoBase = construirCorreoEstadoReserva(contexto, nuevoEstado);
+  const requisitos = Array.isArray(contexto?.requisitos_particulares)
+    ? contexto.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean)
+    : [];
+  const incluirRequisitos = requisitos.length > 0 && nuevoEstado !== "RECHAZADA";
+
+  const correo = !incluirRequisitos
+    ? correoBase
+    : (() => {
+        const avisoRequisitos = "Si en el momento de comenzar la actividad no se cumplen algunos de los requisitos necesarios, la actividad no podrá desarrollarse en las condiciones previstas.";
+        const bloqueTexto = [
+          "",
+          "REQUISITOS ASOCIADOS",
+          ...requisitos.map((item, index) => `${index + 1}. ${item}`),
+          "",
+          avisoRequisitos
+        ].join("\n");
+        const bloqueHtml = `
+          <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Requisitos asociados</div>
+            <ol style="margin:0 0 10px 18px;padding:0;color:#5a4630;">${requisitos.map((item) => `<li style="margin:0 0 6px 0;">${escaparHtmlCorreo(item)}</li>`).join("")}</ol>
+            <div style="font-size:14px;color:#5a4630;">${escaparHtmlCorreo(avisoRequisitos)}</div>
+          </div>
+        `;
+
+        return {
+          asunto: correoBase.asunto,
+          texto: `${correoBase.texto}${bloqueTexto ? `\n${bloqueTexto}` : ""}`,
+          html: correoBase.html.replace(
+            '<div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">',
+            `${bloqueHtml}<div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">`
           )
         };
       })();
@@ -615,8 +916,8 @@ export async function onRequestGet(context) {
   }
 }
 
-export async function onRequestPatch(context) {
-  const { request, env } = context;
+  export async function onRequestPatch(context) {
+    const { request, env } = context;
 
   try {
     await asegurarColumnaObservacionesAdmin(env);
@@ -707,10 +1008,13 @@ export async function onRequestPatch(context) {
 
     let notificacionSolicitante = { ok: false, skipped: true, error: "" };
     let correoSolicitante = { ok: false, skipped: true, error: "" };
-    const contextoNotificacion = {
-      ...contextoReserva,
-      observaciones_admin: observacionesAdmin || contextoReserva?.observaciones_admin || ""
-    };
+      const requestUrl = new URL(request.url);
+      const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+      const contextoNotificacion = {
+        ...contextoReserva,
+        observaciones_admin: observacionesAdmin || contextoReserva?.observaciones_admin || "",
+        base_url: baseUrl
+      };
     try {
       if (nuevoEstado === "CONFIRMADA") {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaAceptada(env, contextoNotificacion);
