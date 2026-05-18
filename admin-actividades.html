@@ -3704,6 +3704,11 @@ function actualizarVisibilidadFormulario() {
   const fechaFinInput = document.getElementById("fecha_fin");
   const enlaceExternoInput = document.getElementById("enlace_externo_url");
 
+  if (tipo !== "TEMPORAL") {
+    if (fechaInicioInput && fechaInicioInput.value) fechaInicioInput.value = "";
+    if (fechaFinInput && fechaFinInput.value) fechaFinInput.value = "";
+  }
+
   bloqueFechas?.classList.toggle("desactivado", tipo !== "TEMPORAL");
   if (fechaInicioInput) fechaInicioInput.disabled = tipo !== "TEMPORAL";
   if (fechaFinInput) fechaFinInput.disabled = tipo !== "TEMPORAL";
