@@ -4463,7 +4463,21 @@ async function borrarFranja(id) {
       if (event) event.preventDefault();
       limpiarMensaje();
 
+      const submitter = event?.submitter || null;
+      const activeElementId = document.activeElement?.id || "";
+      const esSubmitImplicitoDesdeFecha =
+        !submitter &&
+        (activeElementId === "fecha_inicio" || activeElementId === "fecha_fin");
+
       const payload = construirPayloadActividad(0);
+
+      if (
+        esSubmitImplicitoDesdeFecha &&
+        payload.tipo === "TEMPORAL" &&
+        (!payload.fecha_inicio || !payload.fecha_fin)
+      ) {
+        return false;
+      }
 
       if (!payload.nombre) {
         mostrarMensaje("error", "Debe indicar al menos el nombre de la actividad.");
@@ -5228,6 +5242,16 @@ function retrocederPaso() {
               renderListaFranjas();
               renderPreviewFranjas();
             }
+          }
+        });
+      });
+
+      ["fecha_inicio", "fecha_fin"].forEach((id) => {
+        const inputFecha = document.getElementById(id);
+        if (!inputFecha) return;
+        inputFecha.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
           }
         });
       });
