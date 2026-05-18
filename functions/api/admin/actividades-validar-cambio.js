@@ -149,8 +149,10 @@ function validarDatosBasicosPropuestos(p) {
   }
 
   if (p.tipo === "TEMPORAL") {
+    // En la pantalla de edición permitimos estados intermedios mientras el usuario
+    // está completando ambas fechas. La validación estricta se mantiene al guardar.
     if (!p.fecha_inicio || !p.fecha_fin) {
-      return "Las actividades temporales deben tener fecha de inicio y fecha de fin.";
+      return null;
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(p.fecha_inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(p.fecha_fin)) {
