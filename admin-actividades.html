@@ -285,6 +285,75 @@
 .btn-mensaje-cancelar:hover {
   background: #f4f8ff;
 }
+
+.debug-traza-actividad {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(460px, calc(100vw - 32px));
+  max-height: 42vh;
+  overflow: auto;
+  z-index: 9999;
+  border: 1px solid rgba(18, 58, 99, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  color: #22313f;
+}
+
+.debug-traza-actividad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #dbe5f0;
+  background: #eef4ff;
+  position: sticky;
+  top: 0;
+}
+
+.debug-traza-actividad-head strong {
+  color: #123a63;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.debug-traza-actividad-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.debug-traza-actividad-btn {
+  border: 1px solid #c6d7ef;
+  background: #fff;
+  color: #123a63;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.debug-traza-actividad-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.debug-traza-actividad-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf2f7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.4;
+}
+
+.debug-traza-actividad-item:last-child {
+  border-bottom: none;
+}
     
 .pantalla-bloqueada .bloque-superior,
 .pantalla-bloqueada .bloque-inferior {
@@ -1806,6 +1875,16 @@
         </div>
       </div>
 
+      <aside id="debugTrazaActividad" class="debug-traza-actividad">
+        <div class="debug-traza-actividad-head">
+          <strong>Traza temporal de edición</strong>
+          <div class="debug-traza-actividad-acciones">
+            <button type="button" id="btnLimpiarTrazaActividad" class="debug-traza-actividad-btn">Limpiar</button>
+          </div>
+        </div>
+        <ul id="debugTrazaActividadLista" class="debug-traza-actividad-lista"></ul>
+      </aside>
+
       <div class="bloque-superior">
           <div class="contexto-head">
             <div class="contexto-head-top">
@@ -2348,6 +2427,46 @@
       let destinoSalidaPendiente = "portal.html";
       let desactivacionActividadPendiente = false;
       let permitirSubmitExplicitoActividadHasta = 0;
+      const TRAZA_ACTIVIDAD_ACTIVA = true;
+
+      function registrarTrazaActividad(evento, detalle = null) {
+        if (!TRAZA_ACTIVIDAD_ACTIVA) return;
+
+        const lista = document.getElementById("debugTrazaActividadLista");
+        if (!lista) return;
+
+        const hora = new Date().toLocaleTimeString("es-ES", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+
+        let detalleTexto = "";
+        if (detalle != null) {
+          if (typeof detalle === "string") {
+            detalleTexto = detalle;
+          } else {
+            try {
+              detalleTexto = JSON.stringify(detalle, null, 2);
+            } catch (_) {
+              detalleTexto = String(detalle);
+            }
+          }
+        }
+
+        const li = document.createElement("li");
+        li.className = "debug-traza-actividad-item";
+        li.textContent = `[${hora}] ${evento}${detalleTexto ? `\n${detalleTexto}` : ""}`;
+        lista.prepend(li);
+
+        while (lista.children.length > 30) {
+          lista.removeChild(lista.lastChild);
+        }
+
+        try {
+          console.debug("[TrazaActividad]", evento, detalle);
+        } catch (_) {}
+      }
 
     function normalizarTexto(v) {
       return String(v || "").trim();
@@ -2958,6 +3077,16 @@ function desbloquearPantallaPorErrorActividad() {
 }
 
 function mostrarMensaje(tipo, texto, opciones = {}) {
+  if (TRAZA_ACTIVIDAD_ACTIVA) {
+    registrarTrazaActividad("mostrarMensaje", {
+      tipo,
+      texto,
+      bloqueante: !!opciones.bloqueante,
+      confirmable: !!opciones.confirmable,
+      activeElementId: document.activeElement?.id || ""
+    });
+  }
+
   const m = document.getElementById("mensajeActividad");
   const textoEl = document.getElementById("mensajeActividadTexto");
   const btnAceptar = document.getElementById("btnAceptarMensajeActividad");
@@ -3252,6 +3381,12 @@ async function validarCambioCriticoActividad() {
     aforo_maximo: document.getElementById("aforo_maximo").value
   };
 
+  registrarTrazaActividad("validarCambioCriticoActividad", {
+    actividadId,
+    payload,
+    activeElementId: document.activeElement?.id || ""
+  });
+
   const res = await fetch("/api/admin/actividades-validar-cambio", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -3283,6 +3418,12 @@ function debeAplazarValidacionCambioCritico(id) {
 async function manejarCambioCriticoCampo(id) {
   if (pantallaBloqueadaPorErrorActividad) return false;
   if (cargandoActividad) return true;
+
+  registrarTrazaActividad("manejarCambioCriticoCampo", {
+    id,
+    valor: document.getElementById(id)?.value ?? null,
+    activeElementId: document.activeElement?.id || ""
+  });
 
   if (id === "tipo") {
     guardarValorPrevioCampoCritico(id);
@@ -4479,7 +4620,26 @@ async function borrarFranja(id) {
         (activeElementId === "fecha_inicio" || activeElementId === "fecha_fin");
       const submitRecientementeAutorizado = Date.now() <= permitirSubmitExplicitoActividadHasta;
 
+      registrarTrazaActividad("guardarActividad:inicio", {
+        eventType: event?.type || null,
+        submitterId: submitter?.id || null,
+        activeElementId,
+        esSubmitImplicito,
+        esSubmitImplicitoDesdeFecha,
+        submitRecientementeAutorizado,
+        actividadId: document.getElementById("actividadId")?.value || "",
+        tipo: document.getElementById("tipo")?.value || "",
+        fecha_inicio: document.getElementById("fecha_inicio")?.value || "",
+        fecha_fin: document.getElementById("fecha_fin")?.value || "",
+        stack: String(new Error().stack || "").split("\n").slice(1, 6)
+      });
+
       if (esSubmitImplicito || !submitRecientementeAutorizado) {
+        registrarTrazaActividad("guardarActividad:ignorado", {
+          motivo: esSubmitImplicito ? "submit implicito" : "sin autorizacion explicita",
+          submitterId: submitter?.id || null,
+          activeElementId
+        });
         return false;
       }
 
@@ -5129,6 +5289,10 @@ function retrocederPaso() {
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("btnGuardarActividad").addEventListener("click", () => {
+        registrarTrazaActividad("click:btnGuardarActividad", {
+          actividadId: document.getElementById("actividadId")?.value || "",
+          tipo: document.getElementById("tipo")?.value || ""
+        });
         permitirSubmitExplicitoActividadHasta = Date.now() + 3000;
       });
       document.getElementById("formActividad").addEventListener("submit", guardarActividad);
@@ -5165,6 +5329,10 @@ function retrocederPaso() {
         await salirSinGuardarActividad();
       });
       document.getElementById("btnGuardarYSalir").addEventListener("click", async () => {
+        registrarTrazaActividad("click:btnGuardarYSalir", {
+          actividadId: document.getElementById("actividadId")?.value || "",
+          tipo: document.getElementById("tipo")?.value || ""
+        });
         permitirSubmitExplicitoActividadHasta = Date.now() + 3000;
         salidaPendienteAlPortal = true;
         const okGuardado = await guardarActividad();
@@ -5269,11 +5437,32 @@ function retrocederPaso() {
       ["fecha_inicio", "fecha_fin"].forEach((id) => {
         const inputFecha = document.getElementById(id);
         if (!inputFecha) return;
+        inputFecha.addEventListener("input", () => {
+          registrarTrazaActividad("fecha:input", {
+            id,
+            valor: inputFecha.value,
+            actividadId: document.getElementById("actividadId")?.value || "",
+            tipo: document.getElementById("tipo")?.value || ""
+          });
+        });
+        inputFecha.addEventListener("change", () => {
+          registrarTrazaActividad("fecha:change", {
+            id,
+            valor: inputFecha.value,
+            actividadId: document.getElementById("actividadId")?.value || "",
+            tipo: document.getElementById("tipo")?.value || ""
+          });
+        });
         inputFecha.addEventListener("keydown", (event) => {
           if (event.key === "Enter") {
             event.preventDefault();
           }
         });
+      });
+
+      document.getElementById("btnLimpiarTrazaActividad")?.addEventListener("click", () => {
+        const lista = document.getElementById("debugTrazaActividadLista");
+        if (lista) lista.innerHTML = "";
       });
 
       [
