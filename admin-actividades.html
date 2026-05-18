@@ -1550,19 +1550,12 @@
       border-bottom: none;
     }
 
-    .tabla-requisitos .col-orden {
+    .tabla-requisitos .col-acciones {
       width: 48px;
       text-align: center;
       white-space: nowrap;
     }
 
-    .tabla-requisitos .col-acciones {
-      width: 101px;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    .tabla-requisitos .celda-orden,
     .tabla-requisitos .celda-acciones {
       text-align: center;
       vertical-align: middle;
@@ -1690,23 +1683,15 @@
       border-bottom: none;
     }
 
-    .tabla-documentacion-actividad .col-documentacion-orden {
+    .tabla-documentacion-actividad .col-documentacion-acciones {
       width: 48px;
       text-align: center;
       white-space: nowrap;
     }
 
-    .tabla-documentacion-actividad .col-documentacion-acciones {
-      width: 104px;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    .documentacion-actividad-meta {
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.45;
-      margin-top: 4px;
+    .tabla-documentacion-actividad td {
+      font-size: 0.94rem;
+      color: #44576a;
     }
 
     .documentacion-actividad-resumen {
@@ -2367,9 +2352,8 @@
               <table class="tabla-requisitos" aria-label="Tabla de requisitos particulares">
                 <thead>
                   <tr>
-                    <th class="col-orden">#</th>
-                    <th>Requisito</th>
                     <th class="col-acciones"></th>
+                    <th>Requisito</th>
                   </tr>
                 </thead>
                 <tbody id="tablaRequisitosBody"></tbody>
@@ -2399,9 +2383,8 @@
                   <table class="tabla-documentacion-actividad" aria-label="Tabla de documentación exigible">
                     <thead>
                       <tr>
-                        <th class="col-documentacion-orden">#</th>
-                        <th>Documento exigible</th>
                         <th class="col-documentacion-acciones"></th>
+                        <th>Documento exigible</th>
                       </tr>
                     </thead>
                     <tbody id="tablaDocumentacionActividadBody"></tbody>
@@ -3708,22 +3691,6 @@ function renderTablaRequisitos() {
   requisitosParticulares.forEach((requisito, index) => {
     const tr = document.createElement("tr");
 
-    const tdOrden = document.createElement("td");
-    tdOrden.className = "celda-orden";
-    tdOrden.textContent = String(index + 1);
-
-    const tdTexto = document.createElement("td");
-    const textarea = document.createElement("textarea");
-    textarea.className = "input-requisito";
-    textarea.rows = 1;
-    textarea.placeholder = "Escribe aquí un requisito particular de esta actividad.";
-    textarea.value = requisito.texto || "";
-    textarea.addEventListener("input", () => {
-      requisitosParticulares[index].texto = textarea.value;
-      marcarCambiosPendientesActividad();
-    });
-    tdTexto.appendChild(textarea);
-
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
     const btnEliminar = document.createElement("button");
@@ -3739,7 +3706,19 @@ function renderTablaRequisitos() {
     });
     tdAcciones.appendChild(btnEliminar);
 
-    tr.append(tdOrden, tdTexto, tdAcciones);
+    const tdTexto = document.createElement("td");
+    const textarea = document.createElement("textarea");
+    textarea.className = "input-requisito";
+    textarea.rows = 1;
+    textarea.placeholder = "Escribe aquí un requisito particular de esta actividad.";
+    textarea.value = requisito.texto || "";
+    textarea.addEventListener("input", () => {
+      requisitosParticulares[index].texto = textarea.value;
+      marcarCambiosPendientesActividad();
+    });
+    tdTexto.appendChild(textarea);
+
+    tr.append(tdAcciones, tdTexto);
     tbody.appendChild(tr);
   });
 }
@@ -3868,25 +3847,7 @@ function renderConfiguracionDocumentacionActividad() {
   vacia.classList.toggle("oculto", documentosActivos.length > 0);
 
   documentosActivos.forEach((nombre, index) => {
-    const doc = catalogoDocumentacionActividad.find((item) =>
-      String(item.nombre || "").trim().toUpperCase() === String(nombre || "").trim().toUpperCase()
-    );
     const tr = document.createElement("tr");
-
-    const tdOrden = document.createElement("td");
-    tdOrden.className = "col-documentacion-orden";
-    tdOrden.textContent = String(index + 1);
-
-    const tdNombre = document.createElement("td");
-    const titulo = document.createElement("strong");
-    titulo.textContent = nombre;
-    tdNombre.appendChild(titulo);
-    if (doc?.descripcion) {
-      const meta = document.createElement("div");
-      meta.className = "documentacion-actividad-meta";
-      meta.textContent = doc.descripcion;
-      tdNombre.appendChild(meta);
-    }
 
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
@@ -3914,7 +3875,10 @@ function renderConfiguracionDocumentacionActividad() {
     });
     tdAcciones.appendChild(btnEliminar);
 
-    tr.append(tdOrden, tdNombre, tdAcciones);
+    const tdNombre = document.createElement("td");
+    tdNombre.textContent = nombre;
+
+    tr.append(tdAcciones, tdNombre);
     tbody.appendChild(tr);
   });
 
