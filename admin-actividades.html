@@ -1524,6 +1524,7 @@
 
     .tabla-requisitos {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -1557,10 +1558,11 @@
     }
 
     .tabla-requisitos .celda-acciones {
+      width: 34px;
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
-      padding-right: 4px;
+      padding-right: 2px;
     }
 
     .btn-requisito-eliminar {
@@ -1588,9 +1590,8 @@
 
     .input-requisito {
       width: 100%;
-      min-height: 22px;
-      height: 22px;
-      resize: none;
+      min-height: 20px;
+      height: 20px;
       font: inherit;
       border: none;
       border-radius: 0;
@@ -1598,7 +1599,7 @@
       color: #1e2a36;
       background: transparent;
       box-sizing: border-box;
-      line-height: 1.35;
+      line-height: 20px;
       overflow: hidden;
       white-space: nowrap;
       box-shadow: none;
@@ -1663,6 +1664,7 @@
 
     .tabla-documentacion-actividad {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -1699,10 +1701,16 @@
     }
 
     .tabla-documentacion-actividad .celda-acciones {
+      width: 34px;
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
-      padding-right: 4px;
+      padding-right: 2px;
+    }
+
+    .tabla-documentacion-actividad td:not(.celda-acciones),
+    .tabla-requisitos td:not(.celda-acciones) {
+      padding-left: 2px;
     }
 
     .tabla-documentacion-actividad thead {
@@ -3710,16 +3718,16 @@ function renderTablaRequisitos() {
     tdAcciones.appendChild(btnEliminar);
 
     const tdTexto = document.createElement("td");
-    const textarea = document.createElement("textarea");
-    textarea.className = "input-requisito";
-    textarea.rows = 1;
-    textarea.placeholder = "Escribe aquí un requisito particular de esta actividad.";
-    textarea.value = requisito.texto || "";
-    textarea.addEventListener("input", () => {
-      requisitosParticulares[index].texto = textarea.value;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "input-requisito";
+    input.placeholder = "Escribe aquí un requisito particular de esta actividad.";
+    input.value = requisito.texto || "";
+    input.addEventListener("input", () => {
+      requisitosParticulares[index].texto = input.value;
       marcarCambiosPendientesActividad();
     });
-    tdTexto.appendChild(textarea);
+    tdTexto.appendChild(input);
 
     tr.append(tdAcciones, tdTexto);
     tbody.appendChild(tr);
