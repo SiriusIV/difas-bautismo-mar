@@ -89,10 +89,6 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
     return calcularEstadoDocumento(doc, entrega);
   });
 
-  if (estados.every((estado) => estado === "NO_ENVIADO")) {
-    return "NO_INICIADO";
-  }
-
   if (estados.some((estado) => estado === "RECHAZADO")) {
     return "RECHAZADA";
   }
@@ -101,15 +97,15 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
     return "NO_ACTUALIZADO";
   }
 
-  if (estados.some((estado) => estado === "NO_ENVIADO")) {
-    return "NO_COMPLETADO";
+  if (estados.some((estado) => estado === "EN_REVISION")) {
+    return "EN_REVISION";
   }
 
   if (estados.every((estado) => estado === "VALIDADO")) {
     return "VALIDADA";
   }
 
-  return "EN_REVISION";
+  return "VALIDACION_PARCIAL";
 }
 
 function contarDocumentosValidados(documentosActivos, archivosActivos) {
