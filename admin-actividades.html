@@ -1640,10 +1640,7 @@
     }
 
     .documentacion-actividad-select label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      color: #39526b;
+      display: none;
     }
 
     .documentacion-actividad-select select {
@@ -1721,10 +1718,13 @@
     }
 
     .documentacion-actividad-resumen {
-      margin-top: 12px;
-      font-size: 0.94rem;
-      color: #3d4c5d;
-      line-height: 1.5;
+      margin: 0;
+      font-size: 13px;
+      color: #5c6b7b;
+      line-height: 1.4;
+      flex: 1 1 auto;
+      text-align: left;
+      align-self: center;
     }
 
     .documentacion-actividad-vacia {
@@ -2385,13 +2385,12 @@
             <div class="documentacion-actividad-panel">
               <div class="requisitos-head">
                 <h3 class="step-title">Documentación exigible</h3>
+                <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
               </div>
-              <p class="step-help">Selecciona qué documentos comunes del organizador serán exigibles para esta actividad. Si añades <strong>Todos</strong>, la actividad heredará toda la documentación activa del organizador.</p>
 
               <div class="documentacion-actividad-opciones" id="documentacionActividadOpciones">
                 <div class="documentacion-actividad-controles">
                   <div class="documentacion-actividad-select">
-                    <label for="documentacionActividadSelect">Documento</label>
                     <select id="documentacionActividadSelect"></select>
                   </div>
                   <div class="documentacion-actividad-acciones">
@@ -2407,8 +2406,6 @@
 
                 <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Esta actividad quedará exenta de documentación previa mientras no añadas ningún documento exigible.</div>
               </div>
-
-              <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
             </div>
           </section>
 
@@ -3835,6 +3832,7 @@ function renderSelectDocumentacionActividad() {
     return;
   }
 
+  opciones[0] = `<option value="">Selecciona los documentos exigibles para esta actividad...</option>`;
   select.innerHTML = opciones.join("");
   select.disabled = false;
   select.value = "";
