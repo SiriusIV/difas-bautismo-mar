@@ -1194,6 +1194,28 @@
       border-bottom: none;
     }
 
+    .franja-programacion-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .franja-badge-finalizada {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #e7c7bf;
+      background: #fff4f1;
+      color: #8b3d26;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
     .acciones-fila {
       display: flex;
       gap: 6px;
@@ -4272,6 +4294,16 @@ function renderListaFranjas() {
     const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
     const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
     const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
+    const fechaHoraFin = f?.fecha && f?.hora_fin && Number(f?.es_recurrente || 0) !== 1
+      ? new Date(`${f.fecha}T${f.hora_fin}`)
+      : null;
+    const finalizada = !!fechaHoraFin && !Number.isNaN(fechaHoraFin.getTime()) && fechaHoraFin.getTime() < Date.now();
+    const programacionHtml = `
+      <span class="franja-programacion-admin">
+        <span>${bloqueProgramacion}</span>
+        ${finalizada ? '<span class="franja-badge-finalizada">Finalizada</span>' : ''}
+      </span>
+    `;
 
     return `
       <tr class="${seleccionada ? "seleccionada" : ""}">
@@ -4284,7 +4316,7 @@ function renderListaFranjas() {
             ${seleccionada ? "checked" : ""}
           >
         </td>
-        <td>${bloqueProgramacion}</td>
+        <td>${programacionHtml}</td>
         <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
         <td class="col-num">${capacidad}</td>
         <td class="col-num">${ocupadas}</td>
