@@ -1562,7 +1562,7 @@
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
-      padding-right: 8px;
+      padding-right: 14px;
     }
 
     .btn-requisito-eliminar {
@@ -1704,12 +1704,12 @@
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
-      padding-right: 8px;
+      padding-right: 14px;
     }
 
     .tabla-documentacion-actividad td:not(.celda-acciones),
     .tabla-requisitos td:not(.celda-acciones) {
-      padding-left: 2px;
+      padding-left: 10px;
       vertical-align: middle;
     }
 
@@ -1718,13 +1718,11 @@
     }
 
     .documentacion-actividad-resumen {
-      margin: 0;
+      margin: 4px 0 0;
       font-size: 13px;
       color: #5c6b7b;
       line-height: 1.4;
-      flex: 1 1 auto;
       text-align: left;
-      align-self: center;
     }
 
     .documentacion-actividad-vacia {
@@ -2383,10 +2381,8 @@
             <div id="tablaRequisitosVacia" class="sin-franjas tabla-requisitos-vacia">Todavía no hay requisitos particulares definidos para esta actividad.</div>
 
             <div class="documentacion-actividad-panel">
-              <div class="requisitos-head">
-                <h3 class="step-title">Documentación exigible</h3>
-                <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
-              </div>
+              <h3 class="step-title">Documentación preceptiva</h3>
+              <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
 
               <div class="documentacion-actividad-opciones" id="documentacionActividadOpciones">
                 <div class="documentacion-actividad-controles">
@@ -2404,7 +2400,7 @@
                   </table>
                 </div>
 
-                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Esta actividad quedará exenta de documentación previa mientras no añadas ningún documento exigible.</div>
+                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Todavía no hay documentos preceptivos exigidos por esta actividad.</div>
               </div>
             </div>
           </section>
@@ -3780,13 +3776,13 @@ function actualizarResumenDocumentacionActividad() {
   if (!resumen) return;
 
   if (!catalogoDocumentacionActividad.length) {
-    resumen.textContent = "Ahora mismo este organizador no tiene documentación común activa. La actividad no exigirá documentación previa mientras el catálogo siga vacío.";
+    resumen.textContent = "Esta actividad no exige documentación preceptiva en este momento.";
     return;
   }
 
   const totalSeleccionados = documentosDocumentacionActividad.length;
   if (totalSeleccionados === 0) {
-    resumen.textContent = "Esta actividad quedará exenta de documentación común previa mientras no selecciones ningún documento.";
+    resumen.textContent = "Esta actividad no exige documentación preceptiva en este momento.";
     return;
   }
 
@@ -3832,7 +3828,7 @@ function renderSelectDocumentacionActividad() {
     return;
   }
 
-  opciones[0] = `<option value="">Selecciona los documentos exigibles para esta actividad...</option>`;
+  opciones[0] = `<option value="">Selecciona los documentos exigibles para esta actividad</option>`;
   select.innerHTML = opciones.join("");
   select.disabled = false;
   select.value = "";
