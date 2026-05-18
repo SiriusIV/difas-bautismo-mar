@@ -1618,6 +1618,96 @@
       margin-top: 10px;
     }
 
+    .documentacion-actividad-panel {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .documentacion-actividad-modos {
+      display: grid;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .documentacion-actividad-radio {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .documentacion-actividad-radio input[type="radio"] {
+      margin-top: 2px;
+      accent-color: var(--brand);
+    }
+
+    .documentacion-actividad-radio strong {
+      display: block;
+      color: var(--brand-dark);
+      margin-bottom: 3px;
+    }
+
+    .documentacion-actividad-radio span {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.45;
+    }
+
+    .documentacion-actividad-opciones {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .documentacion-actividad-lista {
+      display: grid;
+      gap: 10px;
+    }
+
+    .documentacion-actividad-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border: 1px solid #dbe6f4;
+      border-radius: 10px;
+      background: #f9fbfe;
+    }
+
+    .documentacion-actividad-item input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: var(--brand);
+    }
+
+    .documentacion-actividad-item strong {
+      display: block;
+      color: #20364f;
+      margin-bottom: 3px;
+    }
+
+    .documentacion-actividad-item span {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .documentacion-actividad-resumen {
+      margin-top: 12px;
+      font-size: 0.94rem;
+      color: #3d4c5d;
+      line-height: 1.5;
+    }
+
+    .documentacion-actividad-vacia {
+      margin-top: 10px;
+    }
+
     .fila-compacta-config-final {
       grid-template-columns: 180px 180px 140px 160px;
     }
@@ -2275,6 +2365,38 @@
             </div>
 
             <div id="tablaRequisitosVacia" class="sin-franjas tabla-requisitos-vacia">Todavía no hay requisitos particulares definidos para esta actividad.</div>
+
+            <div class="documentacion-actividad-panel">
+              <div class="requisitos-head">
+                <h3 class="step-title">Documentación exigible</h3>
+              </div>
+              <p class="step-help">Decide si esta actividad hereda toda la documentación común del organizador o si solo exige una parte concreta.</p>
+
+              <div class="documentacion-actividad-modos" id="documentacionActividadModos">
+                <label class="documentacion-actividad-radio">
+                  <input type="radio" name="documentacionActividadModo" value="HEREDADA" checked>
+                  <div>
+                    <strong>Heredar documentación común</strong>
+                    <span>La actividad exigirá todos los documentos comunes activos que tenga configurados este organizador.</span>
+                  </div>
+                </label>
+
+                <label class="documentacion-actividad-radio">
+                  <input type="radio" name="documentacionActividadModo" value="PERSONALIZADA">
+                  <div>
+                    <strong>Personalizar por actividad</strong>
+                    <span>Podrás elegir qué documentos comunes aplican realmente a esta actividad y cuáles quedan exentos.</span>
+                  </div>
+                </label>
+              </div>
+
+              <div class="documentacion-actividad-opciones oculto" id="documentacionActividadOpciones">
+                <div id="documentacionActividadLista" class="documentacion-actividad-lista"></div>
+                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Este organizador no tiene ahora mismo documentos comunes activos para seleccionar.</div>
+              </div>
+
+              <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
+            </div>
           </section>
 
         </form>
@@ -2419,6 +2541,10 @@
     let actividadEsBorradorTecnico = false;
     let franjaSeleccionadaId = null;
     let requisitosParticulares = [];
+    let catalogoDocumentacionAdminSesion = [];
+    let catalogoDocumentacionActividad = [];
+    let modoDocumentacionActividad = "HEREDADA";
+    let documentosDocumentacionActividad = [];
 
     let imagenOriginalId = "";
     let imagenOriginalUrl = "";
@@ -3355,6 +3481,7 @@ function establecerVisibilidadModalActividad(id, activo) {
       }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
+      catalogoDocumentacionAdminSesion = normalizarCatalogoDocumentacionActividad(data.catalogo_documentacion_admin);
       actualizarSugerenciasCamposActividad();
     }
 
@@ -3609,6 +3736,150 @@ function cargarRequisitosActividad(actividad) {
   actualizarTituloRequisitos();
 }
 
+function normalizarCatalogoDocumentacionActividad(lista) {
+  const vistos = new Set();
+  return (Array.isArray(lista) ? lista : [])
+    .map((item) => ({
+      id: Number(item?.id || 0),
+      nombre: String(item?.nombre || "").trim(),
+      descripcion: String(item?.descripcion || "").trim(),
+      orden: Number(item?.orden || 0)
+    }))
+    .filter((item) => {
+      const key = item.nombre.toUpperCase();
+      if (!item.nombre || vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.orden !== b.orden) return a.orden - b.orden;
+      return a.nombre.localeCompare(b.nombre, "es");
+    });
+}
+
+function normalizarDocumentosDocumentacionActividad(lista) {
+  const vistos = new Set();
+  return (Array.isArray(lista) ? lista : [])
+    .map((item) => String(typeof item === "string" ? item : item?.nombre || "").trim())
+    .filter((nombre) => {
+      const key = nombre.toUpperCase();
+      if (!nombre || vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+}
+
+function obtenerModoDocumentacionActividadSeleccionado() {
+  return modoDocumentacionActividad === "PERSONALIZADA" ? "PERSONALIZADA" : "HEREDADA";
+}
+
+function actualizarResumenDocumentacionActividad() {
+  const resumen = document.getElementById("documentacionActividadResumen");
+  if (!resumen) return;
+
+  if (!catalogoDocumentacionActividad.length) {
+    resumen.textContent = "Ahora mismo este organizador no tiene documentación común activa. La actividad no exigirá documentación previa mientras el catálogo siga vacío.";
+    return;
+  }
+
+  if (obtenerModoDocumentacionActividadSeleccionado() !== "PERSONALIZADA") {
+    const total = catalogoDocumentacionActividad.length;
+    resumen.textContent = total === 1
+      ? "La actividad heredará el único documento común activo configurado para este organizador."
+      : `La actividad heredará los ${total} documentos comunes activos configurados para este organizador.`;
+    return;
+  }
+
+  const totalSeleccionados = documentosDocumentacionActividad.length;
+  if (totalSeleccionados === 0) {
+    resumen.textContent = "Esta actividad quedará exenta de documentación común previa mientras no selecciones ningún documento.";
+    return;
+  }
+
+  resumen.textContent = totalSeleccionados === 1
+    ? "Esta actividad exigirá 1 documento común seleccionado específicamente para ella."
+    : `Esta actividad exigirá ${totalSeleccionados} documentos comunes seleccionados específicamente para ella.`;
+}
+
+function renderConfiguracionDocumentacionActividad() {
+  const radios = Array.from(document.querySelectorAll('input[name="documentacionActividadModo"]'));
+  const bloqueOpciones = document.getElementById("documentacionActividadOpciones");
+  const lista = document.getElementById("documentacionActividadLista");
+  const vacia = document.getElementById("documentacionActividadVacia");
+  if (!radios.length || !bloqueOpciones || !lista || !vacia) return;
+
+  const modoActual = obtenerModoDocumentacionActividadSeleccionado();
+  radios.forEach((radio) => {
+    radio.checked = radio.value === modoActual;
+  });
+
+  bloqueOpciones.classList.toggle("oculto", modoActual !== "PERSONALIZADA");
+  lista.innerHTML = "";
+
+  if (!catalogoDocumentacionActividad.length) {
+    vacia.classList.remove("oculto");
+    actualizarResumenDocumentacionActividad();
+    return;
+  }
+
+  vacia.classList.add("oculto");
+
+  const seleccionados = new Set(documentosDocumentacionActividad.map((nombre) => nombre.toUpperCase()));
+
+  catalogoDocumentacionActividad.forEach((doc) => {
+    const item = document.createElement("label");
+    item.className = "documentacion-actividad-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = seleccionados.has(String(doc.nombre || "").toUpperCase());
+    checkbox.addEventListener("change", () => {
+      const nombre = String(doc.nombre || "").trim();
+      const key = nombre.toUpperCase();
+      if (checkbox.checked) {
+        if (!seleccionados.has(key)) {
+          documentosDocumentacionActividad.push(nombre);
+        }
+      } else {
+        documentosDocumentacionActividad = documentosDocumentacionActividad.filter((itemNombre) =>
+          String(itemNombre || "").trim().toUpperCase() !== key
+        );
+      }
+      documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
+      marcarCambiosPendientesActividad();
+      actualizarResumenDocumentacionActividad();
+    });
+
+    const texto = document.createElement("div");
+    const titulo = document.createElement("strong");
+    titulo.textContent = doc.nombre;
+    const descripcion = document.createElement("span");
+    descripcion.textContent = doc.descripcion || "Documento común activo del organizador.";
+    texto.append(titulo, descripcion);
+
+    item.append(checkbox, texto);
+    lista.appendChild(item);
+  });
+
+  actualizarResumenDocumentacionActividad();
+}
+
+function cargarConfiguracionDocumentacionActividad(actividad) {
+  const resumen = actividad?.documentacion_actividad || null;
+  catalogoDocumentacionActividad = normalizarCatalogoDocumentacionActividad(
+    actividad?.documentos_admin_activos || catalogoDocumentacionAdminSesion
+  );
+  modoDocumentacionActividad = String(resumen?.modo || "HEREDADA").trim().toUpperCase() === "PERSONALIZADA"
+    ? "PERSONALIZADA"
+    : "HEREDADA";
+  documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
+    resumen?.documentos_configurados || []
+  ).filter((nombre) =>
+    catalogoDocumentacionActividad.some((doc) => String(doc.nombre || "").trim().toUpperCase() === nombre.toUpperCase())
+  );
+  renderConfiguracionDocumentacionActividad();
+}
+
     function rellenarFormulario(actividad) {
     cargandoActividad = true;
 
@@ -3650,6 +3921,7 @@ function cargarRequisitosActividad(actividad) {
 
     registrarImagenOriginalDesdeFormulario();
     cargarRequisitosActividad(actividad);
+    cargarConfiguracionDocumentacionActividad(actividad);
     sincronizarTogglesPanelConfiguracion();
     actualizarBotonEliminar();
     actualizarVisibilidadFormulario();
@@ -3664,8 +3936,10 @@ function cargarRequisitosActividad(actividad) {
     async function cargarActividadSiEsEdicion() {
       actividadEditandoId = getActividadIdURL();
       if (!actividadEditandoId) {
+        await cargarActividades();
         registrarImagenOriginalDesdeFormulario();
         cargarRequisitosActividad(null);
+        cargarConfiguracionDocumentacionActividad(null);
         actualizarBotonEliminar();
         limpiarCambiosPendientesActividad();
         return;
@@ -4671,7 +4945,9 @@ async function borrarFranja(id) {
           longitud: document.getElementById("longitud").value.trim(),
           zoom_mapa: document.getElementById("zoom_mapa").value.trim(),
           borrador_tecnico: borradorTecnico,
-          requisitos_particulares: obtenerRequisitosParticularesFormulario()
+          requisitos_particulares: obtenerRequisitosParticularesFormulario(),
+          documentacion_actividad_modo: obtenerModoDocumentacionActividadSeleccionado(),
+          documentacion_actividad_documentos: normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad)
         };
       }
 
@@ -5376,6 +5652,13 @@ function retrocederPaso() {
           requisitosParticulares.push(crearRequisitoLocal(""));
           marcarCambiosPendientesActividad();
           renderTablaRequisitos();
+        });
+        document.querySelectorAll('input[name="documentacionActividadModo"]').forEach((radio) => {
+          radio.addEventListener("change", () => {
+            modoDocumentacionActividad = radio.value === "PERSONALIZADA" ? "PERSONALIZADA" : "HEREDADA";
+            marcarCambiosPendientesActividad();
+            renderConfiguracionDocumentacionActividad();
+          });
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
         document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);

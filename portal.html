@@ -3683,8 +3683,9 @@ function cerrarModalDocumentacionPendiente() {
 
 function abrirModalDocumentacionPendiente(data) {
   const adminNombre = data?.admin?.nombre_publico || data?.admin?.nombre || "el organizador de esta actividad";
+  const actividadNombre = data?.actividad?.nombre || actividadSeleccionada?.titulo_publico || actividadSeleccionada?.nombre || "esta actividad";
   const estado = String(data?.estado_efectivo || "").toUpperCase();
-  let texto = `Antes de solicitar esta actividad, debes regularizar la documentación preceptiva exigida por ${adminNombre}.`;
+  let texto = `Antes de solicitar ${actividadNombre}, debes regularizar la documentación preceptiva exigida por ${adminNombre}.`;
 
   if (estado === "NO_INICIADO" || estado === "NO_COMPLETADO" || estado === "NO_ENVIADO") {
     texto = `No has remitido toda la documentación preceptiva exigida por ${adminNombre} para poder solicitar esta actividad.`;
@@ -3696,14 +3697,22 @@ function abrirModalDocumentacionPendiente(data) {
     texto = `La documentación exigida por ${adminNombre} ya ha sido presentada, pero todavía está pendiente de revisión y validación manual.`;
   }
 
+  const pendientes = Array.isArray(data?.documentos_pendientes) ? data.documentos_pendientes.filter(Boolean) : [];
+  if (pendientes.length) {
+    const listado = pendientes.join(", ");
+    texto += ` Documentación pendiente para esta actividad: ${listado}.`;
+  }
+
   document.getElementById("textoModalDocumentacionPendiente").textContent = texto;
   document.getElementById("btnIrPerfilDesdeModalDocumentacion").dataset.adminId = String(data?.admin?.id || actividadSeleccionada?.admin_id || "");
+  document.getElementById("btnIrPerfilDesdeModalDocumentacion").dataset.actividadId = String(data?.actividad?.id || actividadSeleccionada?.id || "");
   document.getElementById("modalDocumentacionPendiente").classList.add("activo");
   document.getElementById("modalDocumentacionPendiente").setAttribute("aria-hidden", "false");
 }
 
 async function comprobarDocumentacionYRedirigir() {
   const adminId = Number(actividadSeleccionada?.admin_id || 0);
+  const actividadId = Number(actividadSeleccionada?.id || 0);
 
   if (!adminId) {
     continuarSolicitudActividad();
@@ -3711,7 +3720,14 @@ async function comprobarDocumentacionYRedirigir() {
   }
 
   try {
-    const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminId)}`, {
+    const query = new URLSearchParams({
+      admin_id: String(adminId)
+    });
+    if (actividadId > 0) {
+      query.set("actividad_id", String(actividadId));
+    }
+
+    const res = await fetch(`/api/usuario/documentacion-admin?${query.toString()}`, {
       credentials: "include"
     });
 
@@ -3858,8 +3874,16 @@ function continuarSolicitudActividad() {
     document.getElementById("btnCancelarModalDocumentacionPendiente").addEventListener("click", cerrarModalDocumentacionPendiente);
     document.getElementById("btnIrPerfilDesdeModalDocumentacion").addEventListener("click", function () {
       const adminId = Number.parseInt(this.dataset.adminId || "", 10);
+      const actividadId = Number.parseInt(this.dataset.actividadId || "", 10);
       if (Number.isInteger(adminId) && adminId > 0) {
-        location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(adminId)}&tab=documentos`;
+        const query = new URLSearchParams({
+          admin_id: String(adminId),
+          tab: "documentos"
+        });
+        if (Number.isInteger(actividadId) && actividadId > 0) {
+          query.set("actividad_id", String(actividadId));
+        }
+        location.href = `usuario-perfil.html?${query.toString()}`;
         return;
       }
       location.href = "usuario-perfil.html";

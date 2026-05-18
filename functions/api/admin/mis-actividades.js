@@ -2,6 +2,11 @@ import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
+import {
+  construirResumenDocumentacionActividad,
+  obtenerCatalogoDocumentosActivosAdmin,
+  obtenerConfiguracionDocumentalPorActividades
+} from "../_actividad_documentacion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -257,7 +262,35 @@ export async function onRequestGet(context) {
       env,
       (result.results || []).map((a) => a.id)
     );
+    const configuracionDocumentalPorActividad = await obtenerConfiguracionDocumentalPorActividades(
+      env,
+      (result.results || []).map((a) => a.id)
+    );
+    const catalogoDocumentacionPorAdmin = new Map();
+    const adminIds = Array.from(
+      new Set((result.results || []).map((a) => Number(a.admin_id || 0)).filter((id) => id > 0))
+    );
+    for (const adminId of adminIds) {
+      catalogoDocumentacionPorAdmin.set(
+        adminId,
+        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+      );
+    }
+    const catalogoDocumentacionAdminSesion = await obtenerCatalogoDocumentosActivosAdmin(env, session.usuario_id);
     const actividades = (result.results || []).map((a) => ({
+        ...(function () {
+          const actividadId = Number(a.id || 0);
+          const adminId = Number(a.admin_id || 0);
+          const catalogoActividad = catalogoDocumentacionPorAdmin.get(adminId) || [];
+          const configuracionActividad = configuracionDocumentalPorActividad.get(actividadId) || null;
+          return {
+            documentacion_actividad: construirResumenDocumentacionActividad(
+              catalogoActividad,
+              configuracionActividad
+            ),
+            documentos_admin_activos: catalogoActividad
+          };
+        })(),
         ...a,
         aforo_maximo: Number(a.aforo_maximo || 0),
         plazas_totales: Number(a.plazas_totales || 0),
@@ -274,6 +307,7 @@ export async function onRequestGet(context) {
 
     return json({
       ok: true,
+      catalogo_documentacion_admin: catalogoDocumentacionAdminSesion,
       actividades
     });
   } catch (error) {

@@ -1,4 +1,9 @@
 import { asegurarColumnaAforoMaximo } from "./_actividades_aforo.js";
+import {
+  construirResumenDocumentacionActividad,
+  obtenerCatalogoDocumentosActivosAdmin,
+  obtenerConfiguracionDocumentalPorActividades
+} from "./_actividad_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -515,6 +520,20 @@ export async function onRequestGet(context) {
       env,
       (result.results || []).map((a) => a.id)
     );
+    const configuracionDocumentalPorActividad = await obtenerConfiguracionDocumentalPorActividades(
+      env,
+      (result.results || []).map((a) => a.id)
+    );
+    const catalogoDocumentacionPorAdmin = new Map();
+    const adminIds = Array.from(
+      new Set((result.results || []).map((a) => Number(a.admin_id || 0)).filter((id) => id > 0))
+    );
+    for (const adminId of adminIds) {
+      catalogoDocumentacionPorAdmin.set(
+        adminId,
+        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+      );
+    }
 
     return json({
       ok: true,
@@ -525,6 +544,10 @@ export async function onRequestGet(context) {
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
         plazas_disponibles: Number(a.plazas_disponibles || 0),
         requisitos_particulares: requisitosPorActividad.get(Number(a.id || 0)) || [],
+        documentacion_actividad: construirResumenDocumentacionActividad(
+          catalogoDocumentacionPorAdmin.get(Number(a.admin_id || 0)) || [],
+          configuracionDocumentalPorActividad.get(Number(a.id || 0)) || null
+        ),
         completa_calculada: Number(a.completa_calculada || 0)
       }))
     });

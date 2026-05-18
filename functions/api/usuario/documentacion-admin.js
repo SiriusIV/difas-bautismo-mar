@@ -7,6 +7,10 @@ import {
 } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
+import {
+  leerConfiguracionDocumentalActividad,
+  resolverDocumentosExigiblesActividad
+} from "../_actividad_documentacion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -99,6 +103,21 @@ async function obtenerUsuarioSolicitante(env, userId) {
 async function obtenerAdmin(env, adminId) {
   const resolucion = await resolverResponsableDocumental(env, adminId);
   return resolucion?.admin || null;
+}
+
+async function obtenerActividadMinima(env, actividadId) {
+  const id = parsearIdPositivo(actividadId);
+  if (!id) return null;
+
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      admin_id,
+      COALESCE(titulo_publico, nombre, 'Actividad') AS nombre_publico
+    FROM actividades
+    WHERE id = ?
+    LIMIT 1
+  `).bind(id).first();
 }
 
 async function obtenerPropietarioDocumentalId(env, adminId) {
@@ -273,6 +292,13 @@ function construirResumenDocumentos(documentos, archivosActivos) {
   });
 }
 
+function construirDocumentosPendientes(documentos, archivosActivos) {
+  return construirResumenDocumentos(documentos, archivosActivos)
+    .filter((doc) => String(doc.estado_documento || "").toUpperCase() !== "VALIDADO")
+    .map((doc) => doc.nombre)
+    .filter(Boolean);
+}
+
 function validarEntregas(entregas) {
   if (!Array.isArray(entregas)) {
     return "Debes indicar la documentación a guardar.";
@@ -366,6 +392,7 @@ export async function onRequestGet(context) {
 
     const url = new URL(request.url);
     const adminId = parsearIdPositivo(url.searchParams.get("admin_id"));
+    const actividadId = parsearIdPositivo(url.searchParams.get("actividad_id"));
 
     if (!adminId) {
       return json({ ok: false, error: "Debes indicar un administrador válido." }, 400);
@@ -376,12 +403,32 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Administrador no encontrado." }, 404);
     }
 
-    const versionRequerida = await obtenerVersionRequerida(env, adminId);
-    const documentos = await obtenerDocumentosActivos(env, adminId);
+    let actividad = null;
+    let configuracionActividad = null;
+    if (actividadId) {
+      actividad = await obtenerActividadMinima(env, actividadId);
+      if (!actividad) {
+        return json({ ok: false, error: "Actividad no encontrada." }, 404);
+      }
+      if (Number(actividad.admin_id || 0) !== Number(adminId)) {
+        return json({ ok: false, error: "La actividad no corresponde al administrador indicado." }, 400);
+      }
+      configuracionActividad = await leerConfiguracionDocumentalActividad(env, actividadId);
+    }
+
+    const documentosBase = await obtenerDocumentosActivos(env, adminId);
+    const documentos = actividadId
+      ? resolverDocumentosExigiblesActividad(documentosBase, configuracionActividad)
+      : documentosBase;
+    const versionRequerida = documentos.reduce(
+      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+      0
+    );
     const expediente = await obtenerExpediente(env, usuario.id, adminId);
     const archivosActivos = await obtenerArchivosActivos(env, expediente?.id);
     const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosActivos);
     const requiereDocumentacion = documentos.length > 0;
+    const documentosPendientes = construirDocumentosPendientes(documentos, archivosActivos);
 
     return json({
       ok: true,
@@ -392,6 +439,10 @@ export async function onRequestGet(context) {
         localidad: admin.localidad || "",
         email: admin.email || ""
       },
+      actividad: actividad ? {
+        id: Number(actividad.id || 0),
+        nombre: actividad.nombre_publico || ""
+      } : null,
       centro: {
         id: usuario.id,
         centro: usuario.centro || "",
@@ -399,10 +450,15 @@ export async function onRequestGet(context) {
       },
       requiere_documentacion: requiereDocumentacion,
       al_dia: !requiereDocumentacion || estadoEfectivo === "VALIDADA",
+      estado_efectivo: estadoEfectivo,
       version_requerida: versionRequerida || 0,
+      documentos_pendientes: documentosPendientes,
+      documentacion_actividad: actividadId ? {
+        modo: configuracionActividad?.modo || "HEREDADA"
+      } : null,
       expediente: expediente ? {
         id: expediente.id,
-        version_requerida: Number(expediente.version_requerida || 0),
+        version_requerida: Number(versionRequerida || expediente.version_requerida || 0),
         version_aportada: Number(expediente.version_aportada || 0),
         estado: expediente.estado || "",
         estado_efectivo: estadoEfectivo,

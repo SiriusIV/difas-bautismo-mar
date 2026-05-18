@@ -899,7 +899,14 @@
         return;
       }
 
-      const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminSeleccionadoId)}`, {
+      const query = new URLSearchParams({
+        admin_id: String(adminSeleccionadoId)
+      });
+      if (Number.isInteger(actividadId) && actividadId > 0 && esModoSolicitud()) {
+        query.set("actividad_id", String(actividadId));
+      }
+
+      const res = await fetch(`/api/usuario/documentacion-admin?${query.toString()}`, {
         credentials: "include"
       });
       const data = await res.json().catch(() => null);

@@ -9,6 +9,13 @@ import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
+import {
+  borrarConfiguracionDocumentalActividad,
+  guardarConfiguracionDocumentalActividad,
+  normalizarModoDocumentacionActividad,
+  normalizarNombresDocumentosActividad,
+  obtenerCatalogoDocumentosActivosAdmin
+} from "../_actividad_documentacion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -62,6 +69,13 @@ function normalizarRequisitosEntrada(valor) {
       return String(item?.texto || "").trim();
     })
     .filter(Boolean);
+}
+
+function normalizarDocumentacionActividadEntrada(body = {}) {
+  return {
+    modo: normalizarModoDocumentacionActividad(body.documentacion_actividad_modo),
+    documentos: normalizarNombresDocumentosActividad(body.documentacion_actividad_documentos)
+  };
 }
 
 async function asegurarTablaRequisitos(env) {
@@ -437,7 +451,8 @@ function construirPayload(body, admin_id) {
     usa_enlace_externo: parsearFlag(body.usa_enlace_externo, 0),
     enlace_externo_url: normalizarNullable(body.enlace_externo_url),
     borrador_tecnico: parsearFlag(body.borrador_tecnico, 0),
-    requisitos_particulares: normalizarRequisitosEntrada(body.requisitos_particulares)
+    requisitos_particulares: normalizarRequisitosEntrada(body.requisitos_particulares),
+    documentacion_actividad: normalizarDocumentacionActividadEntrada(body)
   };
 }
 
@@ -470,6 +485,13 @@ export async function onRequestPost(context) {
     }
 
     const p = construirPayload(body, admin_id);
+    const catalogoDocumentalActivo = await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id);
+    const nombresDocumentosActivos = new Set(
+      catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
+    );
+    p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
+      nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
+    );
     if (Number(p.activa || 0) === 0) {
       p.visible_portal = 0;
     }
@@ -553,6 +575,12 @@ export async function onRequestPost(context) {
     const actividadId = Number(result?.meta?.last_row_id || 0);
     if (actividadId > 0) {
       await guardarRequisitosActividad(env, actividadId, p.requisitos_particulares);
+      await guardarConfiguracionDocumentalActividad(
+        env,
+        actividadId,
+        p.documentacion_actividad.modo,
+        p.documentacion_actividad.documentos
+      );
     }
 
     return json({
@@ -604,6 +632,13 @@ export async function onRequestPut(context) {
     }
 
     const p = construirPayload(body, admin_id);
+    const catalogoDocumentalActivo = await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id);
+    const nombresDocumentosActivos = new Set(
+      catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
+    );
+    p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
+      nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
+    );
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
@@ -839,6 +874,12 @@ export async function onRequestPut(context) {
     }
 
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
+    await guardarConfiguracionDocumentalActividad(
+      env,
+      id,
+      p.documentacion_actividad.modo,
+      p.documentacion_actividad.documentos
+    );
 
     let resumenCambioRequisitos = null;
     if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0) {
@@ -910,6 +951,7 @@ export async function onRequestDelete(context) {
       DELETE FROM actividad_requisitos
       WHERE actividad_id = ?
     `).bind(id).run();
+    await borrarConfiguracionDocumentalActividad(env, id);
 
     const result = await env.DB.prepare(`
       DELETE FROM actividades

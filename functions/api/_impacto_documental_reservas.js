@@ -10,6 +10,10 @@ import {
 } from "./_email_reservas_documentacion.js";
 import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
 import { crearNotificacion } from "./_notificaciones.js";
+import {
+  obtenerConfiguracionDocumentalPorActividades,
+  resolverDocumentosExigiblesActividad
+} from "./_actividad_documentacion.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -291,6 +295,22 @@ function construirPendientes(documentosActivos, archivosActivos) {
   }).filter((doc) => doc.estado !== "VALIDADO");
 }
 
+function unificarPendientesReservas(listas = []) {
+  const vistos = new Set();
+  const salida = [];
+
+  for (const item of Array.isArray(listas) ? listas.flat() : []) {
+    const nombre = limpiarTexto(item?.nombre);
+    if (!nombre) continue;
+    const key = nombre.toUpperCase();
+    if (vistos.has(key)) continue;
+    vistos.add(key);
+    salida.push(item);
+  }
+
+  return salida;
+}
+
 async function actualizarEstadoReserva(env, reservaId, nuevoEstado) {
   await env.DB.prepare(`
     UPDATE reservas
@@ -507,12 +527,25 @@ export async function recalcularImpactoDocumentalReservas(env, {
     }
 
     const enlacePerfil = construirUrlPerfilDocumentacion(baseUrl, adminIdNumerico);
+    const configuracionDocumentalPorActividad = await obtenerConfiguracionDocumentalPorActividades(
+      env,
+      reservas.map((reserva) => Number(reserva.actividad_id || 0))
+    );
     const reservasSuspendidas = [];
     const reservasReactivadas = [];
+    const pendientesPorReserva = new Map();
 
     for (const reserva of reservas) {
       const estadoReserva = limpiarTexto(reserva.estado).toUpperCase();
-      if (estadoDocumentalCompleto(estadoGlobal)) {
+      const configuracionActividad = configuracionDocumentalPorActividad.get(Number(reserva.actividad_id || 0)) || null;
+      const documentosExigiblesReserva = resolverDocumentosExigiblesActividad(documentos, configuracionActividad);
+      const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivos);
+      pendientesPorReserva.set(
+        Number(reserva.id || 0),
+        construirPendientes(documentosExigiblesReserva, archivosActivos)
+      );
+
+      if (estadoDocumentalCompleto(estadoDocumentalReserva)) {
         if (estadoReserva === "SUSPENDIDA") {
           await actualizarEstadoReserva(env, Number(reserva.id || 0), "CONFIRMADA");
           reservasReactivadas.push(reserva);
@@ -524,6 +557,13 @@ export async function recalcularImpactoDocumentalReservas(env, {
         resumen.reservas_suspendidas += 1;
       }
     }
+
+    const pendientesSuspendidas = unificarPendientesReservas(
+      reservasSuspendidas.map((reserva) => pendientesPorReserva.get(Number(reserva.id || 0)) || [])
+    );
+    const pendientesSinCambios = unificarPendientesReservas(
+      reservas.map((reserva) => pendientesPorReserva.get(Number(reserva.id || 0)) || [])
+    );
 
     const debeAvisarSinCambios = debeAvisarCambioMarcoSinCambios(motivo, avisarCambioMarcoSinCambios);
 
@@ -540,7 +580,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
           },
           motivo_texto: motivoImpactoDocumentalTexto(motivo),
           reservas: reservasSuspendidas,
-          documentos_pendientes: pendientes,
+          documentos_pendientes: pendientesSuspendidas,
         enlace_perfil: enlacePerfil
       };
       const resultado = await notificarReservaCondicionada(env, payloadNotificacion);
@@ -597,7 +637,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
         },
         motivo_texto: motivoImpactoDocumentalTexto(motivo),
         reservas,
-        documentos_pendientes: pendientes,
+        documentos_pendientes: pendientesSinCambios,
         estado_documental: estadoGlobal,
         enlace_perfil: enlacePerfil
       };
@@ -630,7 +670,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
             : (reserva.estado || "")
       })),
       estado_documental: estadoGlobal,
-      pendientes,
+      pendientes: pendientesSinCambios,
       accion: reservasSuspendidas.length
         ? "SUSPENDIDA"
         : reservasReactivadas.length

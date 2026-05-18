@@ -1246,6 +1246,7 @@
     let cambioTabBloquePendiente = null;
     let organizadorPendienteId = null;
     let adminIdPreferentePerfil = null;
+    let actividadIdPreferentePerfil = null;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
@@ -1944,7 +1945,18 @@
       actualizarAccionesDetalleDocumentacion();
 
       try {
-        const res = await fetch(`/api/usuario/documentacion-admin?admin_id=${encodeURIComponent(adminId)}`, {
+        const query = new URLSearchParams({
+          admin_id: String(adminId)
+        });
+        if (
+          Number.isInteger(Number(actividadIdPreferentePerfil || 0)) &&
+          Number(actividadIdPreferentePerfil || 0) > 0 &&
+          Number(adminIdPreferentePerfil || 0) === Number(adminId || 0)
+        ) {
+          query.set("actividad_id", String(Number(actividadIdPreferentePerfil || 0)));
+        }
+
+        const res = await fetch(`/api/usuario/documentacion-admin?${query.toString()}`, {
           credentials: "include"
         });
         const data = await res.json().catch(() => null);
@@ -2188,7 +2200,9 @@
     function leerAdminPreferenteDesdeUrl() {
       const url = new URL(window.location.href);
       const adminId = Number.parseInt(url.searchParams.get("admin_id") || "", 10);
+      const actividadId = Number.parseInt(url.searchParams.get("actividad_id") || "", 10);
       adminIdPreferentePerfil = Number.isInteger(adminId) && adminId > 0 ? adminId : null;
+      actividadIdPreferentePerfil = Number.isInteger(actividadId) && actividadId > 0 ? actividadId : null;
       const tab = String(url.searchParams.get("tab") || "").trim().toLowerCase();
       if (tab === "pendientes" || tab === "bandeja") {
         documentacionAdminVistaActual = "pendientes";
