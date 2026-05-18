@@ -1580,6 +1580,7 @@
       line-height: 1;
       padding: 0;
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+      vertical-align: middle;
     }
 
     .btn-requisito-eliminar:hover {
@@ -1605,6 +1606,7 @@
       box-shadow: none;
       display: block;
       text-align: left;
+      margin: 0;
     }
 
     .input-requisito:focus {
@@ -1711,6 +1713,7 @@
     .tabla-documentacion-actividad td:not(.celda-acciones),
     .tabla-requisitos td:not(.celda-acciones) {
       padding-left: 2px;
+      vertical-align: middle;
     }
 
     .tabla-documentacion-actividad thead {
@@ -3784,14 +3787,6 @@ function actualizarResumenDocumentacionActividad() {
     return;
   }
 
-  if (modoDocumentacionActividad === "HEREDADA") {
-    const total = catalogoDocumentacionActividad.length;
-    resumen.textContent = total === 1
-      ? "La actividad exige el único documento común activo del organizador."
-      : `La actividad exige los ${total} documentos comunes activos del organizador.`;
-    return;
-  }
-
   const totalSeleccionados = documentosDocumentacionActividad.length;
   if (totalSeleccionados === 0) {
     resumen.textContent = "Esta actividad quedará exenta de documentación común previa mientras no selecciones ningún documento.";
@@ -3805,15 +3800,12 @@ function actualizarResumenDocumentacionActividad() {
 
 function obtenerModoDocumentacionActividadSeleccionado() {
   if (!catalogoDocumentacionActividad.length) return "PERSONALIZADA";
-  return modoDocumentacionActividad === "HEREDADA" ? "HEREDADA" : "PERSONALIZADA";
+  const totalCatalogo = catalogoDocumentacionActividad.length;
+  const totalSeleccionados = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).length;
+  return totalSeleccionados > 0 && totalSeleccionados === totalCatalogo ? "HEREDADA" : "PERSONALIZADA";
 }
 
 function obtenerDocumentosDocumentacionActividadParaGuardar() {
-  if (obtenerModoDocumentacionActividadSeleccionado() === "HEREDADA") {
-    return normalizarDocumentosDocumentacionActividad(
-      catalogoDocumentacionActividad.map((doc) => doc.nombre)
-    );
-  }
   return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
 }
 
@@ -3829,22 +3821,24 @@ function renderSelectDocumentacionActividad() {
     (doc) => !seleccionados.has(String(doc.nombre || "").trim().toUpperCase())
   );
 
-  const opciones = [];
-  if (catalogoDocumentacionActividad.length > 0 && modoDocumentacionActividad !== "HEREDADA") {
-    opciones.push(`<option value="__ALL__">Todos</option>`);
-  }
-
-  opciones.push(
+  const opciones = [
+    `<option value="">Selecciona un documento...</option>`,
     ...opcionesDisponibles.map((doc) =>
       `<option value="${String(doc.nombre || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${String(doc.nombre || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</option>`
     )
-  );
+  ];
 
-  select.innerHTML = opciones.length
-    ? opciones.join("")
-    : `<option value="">No hay más documentos disponibles</option>`;
-  select.disabled = !opciones.length;
-  btnAgregar.disabled = !catalogoDocumentacionActividad.length || !select.value;
+  if (!opcionesDisponibles.length) {
+    select.innerHTML = `<option value="">No hay más documentos disponibles</option>`;
+    select.disabled = true;
+    btnAgregar.disabled = true;
+    return;
+  }
+
+  select.innerHTML = opciones.join("");
+  select.disabled = false;
+  select.value = "";
+  btnAgregar.disabled = true;
 }
 
 function renderConfiguracionDocumentacionActividad() {
@@ -3902,9 +3896,9 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
   catalogoDocumentacionActividad = normalizarCatalogoDocumentacionActividad(
     actividad?.documentos_admin_activos || catalogoDocumentacionAdminSesion
   );
-  modoDocumentacionActividad = String(resumen?.modo || "HEREDADA").trim().toUpperCase() === "PERSONALIZADA"
-    ? "PERSONALIZADA"
-    : "HEREDADA";
+  modoDocumentacionActividad = String(resumen?.modo || "PERSONALIZADA").trim().toUpperCase() === "HEREDADA"
+    ? "HEREDADA"
+    : "PERSONALIZADA";
   documentosDocumentacionActividad = (
     modoDocumentacionActividad === "HEREDADA"
       ? catalogoDocumentacionActividad.map((doc) => doc.nombre)
@@ -5696,23 +5690,11 @@ function retrocederPaso() {
           const valor = String(select?.value || "").trim();
           if (!valor) return;
 
-          if (valor === "__ALL__") {
-            modoDocumentacionActividad = "HEREDADA";
-            documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
-              catalogoDocumentacionActividad.map((doc) => doc.nombre)
-            );
-          } else {
-            if (modoDocumentacionActividad === "HEREDADA") {
-              documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
-                catalogoDocumentacionActividad.map((doc) => doc.nombre)
-              );
-              modoDocumentacionActividad = "PERSONALIZADA";
-            }
-            documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
-              ...documentosDocumentacionActividad,
-              valor
-            ]);
-          }
+          modoDocumentacionActividad = "PERSONALIZADA";
+          documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
+            ...documentosDocumentacionActividad,
+            valor
+          ]);
 
           marcarCambiosPendientesActividad();
           renderConfiguracionDocumentacionActividad();
