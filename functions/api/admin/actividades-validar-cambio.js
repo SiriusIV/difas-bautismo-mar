@@ -134,6 +134,7 @@ function construirEstadoPropuesto(body, actual) {
 
   return {
     tipo,
+    activa: parsearFlag(body.activa, Number(actual.activa ?? actual.visible_portal ?? 1)),
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio ?? actual.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin ?? actual.fecha_fin) : null,
     usa_franjas: parsearFlag(body.usa_franjas, Number(actual.usa_franjas || 0)),
@@ -196,6 +197,12 @@ export async function onRequestPost(context) {
     }
 
     const p = construirEstadoPropuesto(body, actual);
+    const activaActual = Number(actual.activa ?? actual.visible_portal ?? 1) === 1 ? 1 : 0;
+    const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
+
+    if (activaActual === 1 && activaNueva === 0) {
+      return json({ ok: true }, 200);
+    }
 
     const errorBasico = validarDatosBasicosPropuestos(p);
     if (errorBasico) {
@@ -210,7 +217,7 @@ export async function onRequestPost(context) {
 
     const listaFranjas = franjas.results || [];
 
-    if (p.tipo === "TEMPORAL" && listaFranjas.length > 0) {
+    if (p.tipo === "TEMPORAL" && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0) {
       const fueraRango = listaFranjas.some(f =>
         f.fecha && (f.fecha < p.fecha_inicio || f.fecha > p.fecha_fin)
       );

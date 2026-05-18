@@ -4676,6 +4676,7 @@ async function borrarFranja(id) {
       permitirSubmitExplicitoActividadHasta = 0;
 
       const payload = construirPayloadActividad(0);
+      const actividadQuedaDesactivada = payload.activa !== "1";
 
       if (
         esSubmitImplicitoDesdeFecha &&
@@ -4685,32 +4686,32 @@ async function borrarFranja(id) {
         return false;
       }
 
-      if (!payload.nombre) {
+      if (!actividadQuedaDesactivada && !payload.nombre) {
         mostrarMensaje("error", "Debe indicar al menos el nombre de la actividad.");
         return false;
       }
 
-      if (payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
+      if (!actividadQuedaDesactivada && payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
         mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
         return false;
       }
 
-      if (payload.tipo === "TEMPORAL" && payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
+      if (!actividadQuedaDesactivada && payload.tipo === "TEMPORAL" && payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
         mostrarMensaje("error", "La fecha de finalización no puede ser anterior a la fecha de inicio.");
         return false;
       }
 
-      if (payload.usa_enlace_externo === "1" && !payload.enlace_externo_url) {
+      if (!actividadQuedaDesactivada && payload.usa_enlace_externo === "1" && !payload.enlace_externo_url) {
         mostrarMensaje("error", "Debe indicar la URL del enlace externo.");
         return false;
       }
 
-      if (payload.usa_franjas === "1" && payload.es_recurrente === "1" && !payload.patron_recurrencia) {
+      if (!actividadQuedaDesactivada && payload.usa_franjas === "1" && payload.es_recurrente === "1" && !payload.patron_recurrencia) {
         mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
         return false;
       }
 
-      if (payload.aforo_limitado === "1" && payload.usa_franjas !== "1") {
+      if (!actividadQuedaDesactivada && payload.aforo_limitado === "1" && payload.usa_franjas !== "1") {
         const aforoMaximo = parseInt(payload.aforo_maximo || "", 10);
         if (!Number.isInteger(aforoMaximo) || aforoMaximo <= 0) {
           mostrarMensaje("error", "Debes indicar un aforo máximo válido cuando la actividad tenga aforo limitado y no utilice franjas horarias.");
@@ -4718,7 +4719,7 @@ async function borrarFranja(id) {
         }
       }
 
-      if (payload.usa_franjas === "1") {
+      if (!actividadQuedaDesactivada && payload.usa_franjas === "1") {
         let franjasDisponibles = Array.isArray(franjasCache) ? franjasCache : [];
 
         if (!franjasDisponibles.length && payload.id) {
@@ -4751,12 +4752,12 @@ async function borrarFranja(id) {
       const tieneLat = payload.latitud !== "";
       const tieneLng = payload.longitud !== "";
 
-      if ((tieneLat && !tieneLng) || (!tieneLat && tieneLng)) {
+      if (!actividadQuedaDesactivada && ((tieneLat && !tieneLng) || (!tieneLat && tieneLng))) {
         mostrarMensaje("error", "Debe indicar latitud y longitud conjuntamente.");
         return false;
       }
 
-      if ((tieneLat && tieneLng) && !payload.zoom_mapa) {
+      if (!actividadQuedaDesactivada && (tieneLat && tieneLng) && !payload.zoom_mapa) {
         payload.zoom_mapa = "15";
       }
 

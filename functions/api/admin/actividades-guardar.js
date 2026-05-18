@@ -278,6 +278,11 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
 function validarActividad(data) {
   const nombre = limpiarTexto(data.nombre);
   const tipo = limpiarTexto(data.tipo).toUpperCase();
+  const activa = parsearFlag(data.activa, 1);
+
+  if (activa === 0) {
+    return null;
+  }
 
   if (!nombre) return "El nombre de la actividad es obligatorio.";
   if (!["TEMPORAL", "PERMANENTE"].includes(tipo)) {
@@ -590,11 +595,6 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: "No autorizado para editar esta actividad." }, 403);
     }
 
-    const errorValidacion = validarActividad(body);
-    if (errorValidacion) {
-      return json({ ok: false, error: errorValidacion }, 400);
-    }
-
     let admin_id = parsearIdPositivo(body.admin_id);
     if (rol !== "SUPERADMIN") {
       admin_id = actual.admin_id;
@@ -609,6 +609,12 @@ export async function onRequestPut(context) {
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
     const activaActual = Number(actual.activa ?? actual.visible_portal ?? 1) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
+
+    const errorValidacion = validarActividad(body);
+    if (errorValidacion) {
+      return json({ ok: false, error: errorValidacion }, 400);
+    }
+
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
     const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
@@ -627,7 +633,7 @@ export async function onRequestPut(context) {
 
     const listaFranjas = franjas.results || [];
 
-    if (p.tipo === "TEMPORAL" && listaFranjas.length > 0) {
+    if (activaNueva === 1 && p.tipo === "TEMPORAL" && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0) {
       const fueraRango = listaFranjas.some(f =>
         f.fecha && (f.fecha < p.fecha_inicio || f.fecha > p.fecha_fin)
       );
@@ -655,7 +661,7 @@ export async function onRequestPut(context) {
     const hayConfirmadas = Number(confirmadasFuturas?.total || 0) > 0;
     const solicitudesVivas = await obtenerSolicitudesVivasActividad(env, id);
 
-    if (hayConfirmadas && p.tipo === "PERMANENTE" && actual.tipo === "TEMPORAL") {
+    if (activaNueva === 1 && hayConfirmadas && p.tipo === "PERMANENTE" && actual.tipo === "TEMPORAL") {
       return json({
         ok: false,
         error: "No puedes cambiar a actividad permanente porque existen reservas confirmadas futuras."
@@ -665,6 +671,7 @@ export async function onRequestPut(context) {
     const plazasComprometidas = await obtenerPlazasComprometidasActividad(env, id);
 
     if (
+      activaNueva === 1 &&
       plazasComprometidas > 0 &&
       Number(actual.aforo_limitado || 0) === 1 &&
       Number(p.aforo_limitado || 0) === 0
@@ -676,6 +683,7 @@ export async function onRequestPut(context) {
     }
 
     if (
+      activaNueva === 1 &&
       plazasComprometidas > 0 &&
       Number(actual.requiere_reserva || 0) === 1 &&
       Number(p.requiere_reserva || 0) === 0
@@ -687,6 +695,7 @@ export async function onRequestPut(context) {
     }
 
     if (
+      activaNueva === 1 &&
       solicitudesVivas > 0 &&
       Number(actual.usa_franjas || 0) === 1 &&
       Number(p.usa_franjas || 0) === 0
@@ -697,7 +706,7 @@ export async function onRequestPut(context) {
       }, 400);
     }
 
-    if (Number(p.borrador_tecnico || 0) !== 1 && Number(p.usa_franjas || 0) === 1) {
+    if (activaNueva === 1 && Number(p.borrador_tecnico || 0) !== 1 && Number(p.usa_franjas || 0) === 1) {
       if (resumenFranjas.total <= 0) {
         return json({
           ok: false,
