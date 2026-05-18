@@ -1624,39 +1624,6 @@
       border-top: 1px solid var(--border);
     }
 
-    .documentacion-actividad-modos {
-      display: grid;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .documentacion-actividad-radio {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #f8fbff;
-    }
-
-    .documentacion-actividad-radio input[type="radio"] {
-      margin-top: 2px;
-      accent-color: var(--brand);
-    }
-
-    .documentacion-actividad-radio strong {
-      display: block;
-      color: var(--brand-dark);
-      margin-bottom: 3px;
-    }
-
-    .documentacion-actividad-radio span {
-      color: var(--muted);
-      font-size: 0.94rem;
-      line-height: 1.45;
-    }
-
     .documentacion-actividad-opciones {
       margin-top: 14px;
       padding: 14px;
@@ -1665,36 +1632,81 @@
       background: #fff;
     }
 
-    .documentacion-actividad-lista {
+    .documentacion-actividad-controles {
       display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
       gap: 10px;
+      align-items: end;
     }
 
-    .documentacion-actividad-item {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      padding: 10px 12px;
-      border: 1px solid #dbe6f4;
-      border-radius: 10px;
-      background: #f9fbfe;
-    }
-
-    .documentacion-actividad-item input[type="checkbox"] {
-      margin-top: 3px;
-      accent-color: var(--brand);
-    }
-
-    .documentacion-actividad-item strong {
+    .documentacion-actividad-select label {
       display: block;
-      color: #20364f;
-      margin-bottom: 3px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #39526b;
     }
 
-    .documentacion-actividad-item span {
+    .documentacion-actividad-select select {
+      width: 100%;
+    }
+
+    .documentacion-actividad-acciones {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .tabla-documentacion-actividad-wrap {
+      margin-top: 14px;
+      max-height: 248px;
+      overflow-y: auto;
+      border-radius: 10px;
+    }
+
+    .tabla-documentacion-actividad {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .tabla-documentacion-actividad th,
+    .tabla-documentacion-actividad td {
+      padding: 7px 9px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .tabla-documentacion-actividad th {
+      background: #f2f6fb;
+      color: #334250;
+      font-weight: 600;
+    }
+
+    .tabla-documentacion-actividad tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tabla-documentacion-actividad .col-documentacion-orden {
+      width: 48px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .tabla-documentacion-actividad .col-documentacion-acciones {
+      width: 104px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .documentacion-actividad-meta {
       color: var(--muted);
       font-size: 0.92rem;
-      line-height: 1.4;
+      line-height: 1.45;
+      margin-top: 4px;
     }
 
     .documentacion-actividad-resumen {
@@ -1705,7 +1717,7 @@
     }
 
     .documentacion-actividad-vacia {
-      margin-top: 10px;
+      margin-top: 14px;
     }
 
     .fila-compacta-config-final {
@@ -2370,29 +2382,33 @@
               <div class="requisitos-head">
                 <h3 class="step-title">Documentación exigible</h3>
               </div>
-              <p class="step-help">Decide si esta actividad hereda toda la documentación común del organizador o si solo exige una parte concreta.</p>
+              <p class="step-help">Selecciona qué documentos comunes del organizador serán exigibles para esta actividad. Si añades <strong>Todos</strong>, la actividad heredará toda la documentación activa del organizador.</p>
 
-              <div class="documentacion-actividad-modos" id="documentacionActividadModos">
-                <label class="documentacion-actividad-radio">
-                  <input type="radio" name="documentacionActividadModo" value="HEREDADA" checked>
-                  <div>
-                    <strong>Heredar documentación común</strong>
-                    <span>La actividad exigirá todos los documentos comunes activos que tenga configurados este organizador.</span>
+              <div class="documentacion-actividad-opciones" id="documentacionActividadOpciones">
+                <div class="documentacion-actividad-controles">
+                  <div class="documentacion-actividad-select">
+                    <label for="documentacionActividadSelect">Documento</label>
+                    <select id="documentacionActividadSelect"></select>
                   </div>
-                </label>
-
-                <label class="documentacion-actividad-radio">
-                  <input type="radio" name="documentacionActividadModo" value="PERSONALIZADA">
-                  <div>
-                    <strong>Personalizar por actividad</strong>
-                    <span>Podrás elegir qué documentos comunes aplican realmente a esta actividad y cuáles quedan exentos.</span>
+                  <div class="documentacion-actividad-acciones">
+                    <button type="button" class="btn-mini" id="btnAgregarDocumentoActividad">Añadir</button>
                   </div>
-                </label>
-              </div>
+                </div>
 
-              <div class="documentacion-actividad-opciones oculto" id="documentacionActividadOpciones">
-                <div id="documentacionActividadLista" class="documentacion-actividad-lista"></div>
-                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Este organizador no tiene ahora mismo documentos comunes activos para seleccionar.</div>
+                <div class="tabla-documentacion-actividad-wrap">
+                  <table class="tabla-documentacion-actividad" aria-label="Tabla de documentación exigible">
+                    <thead>
+                      <tr>
+                        <th class="col-documentacion-orden">#</th>
+                        <th>Documento exigible</th>
+                        <th class="col-documentacion-acciones"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="tablaDocumentacionActividadBody"></tbody>
+                  </table>
+                </div>
+
+                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Esta actividad quedará exenta de documentación previa mientras no añadas ningún documento exigible.</div>
               </div>
 
               <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
@@ -3769,10 +3785,6 @@ function normalizarDocumentosDocumentacionActividad(lista) {
     });
 }
 
-function obtenerModoDocumentacionActividadSeleccionado() {
-  return modoDocumentacionActividad === "PERSONALIZADA" ? "PERSONALIZADA" : "HEREDADA";
-}
-
 function actualizarResumenDocumentacionActividad() {
   const resumen = document.getElementById("documentacionActividadResumen");
   if (!resumen) return;
@@ -3782,11 +3794,11 @@ function actualizarResumenDocumentacionActividad() {
     return;
   }
 
-  if (obtenerModoDocumentacionActividadSeleccionado() !== "PERSONALIZADA") {
+  if (modoDocumentacionActividad === "HEREDADA") {
     const total = catalogoDocumentacionActividad.length;
     resumen.textContent = total === 1
-      ? "La actividad heredará el único documento común activo configurado para este organizador."
-      : `La actividad heredará los ${total} documentos comunes activos configurados para este organizador.`;
+      ? "La actividad exige el único documento común activo del organizador."
+      : `La actividad exige los ${total} documentos comunes activos del organizador.`;
     return;
   }
 
@@ -3801,66 +3813,112 @@ function actualizarResumenDocumentacionActividad() {
     : `Esta actividad exigirá ${totalSeleccionados} documentos comunes seleccionados específicamente para ella.`;
 }
 
-function renderConfiguracionDocumentacionActividad() {
-  const radios = Array.from(document.querySelectorAll('input[name="documentacionActividadModo"]'));
-  const bloqueOpciones = document.getElementById("documentacionActividadOpciones");
-  const lista = document.getElementById("documentacionActividadLista");
-  const vacia = document.getElementById("documentacionActividadVacia");
-  if (!radios.length || !bloqueOpciones || !lista || !vacia) return;
+function obtenerModoDocumentacionActividadSeleccionado() {
+  if (!catalogoDocumentacionActividad.length) return "PERSONALIZADA";
+  return modoDocumentacionActividad === "HEREDADA" ? "HEREDADA" : "PERSONALIZADA";
+}
 
-  const modoActual = obtenerModoDocumentacionActividadSeleccionado();
-  radios.forEach((radio) => {
-    radio.checked = radio.value === modoActual;
-  });
+function obtenerDocumentosDocumentacionActividadParaGuardar() {
+  if (obtenerModoDocumentacionActividadSeleccionado() === "HEREDADA") {
+    return normalizarDocumentosDocumentacionActividad(
+      catalogoDocumentacionActividad.map((doc) => doc.nombre)
+    );
+  }
+  return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
+}
 
-  bloqueOpciones.classList.toggle("oculto", modoActual !== "PERSONALIZADA");
-  lista.innerHTML = "";
+function renderSelectDocumentacionActividad() {
+  const select = document.getElementById("documentacionActividadSelect");
+  const btnAgregar = document.getElementById("btnAgregarDocumentoActividad");
+  if (!select || !btnAgregar) return;
 
-  if (!catalogoDocumentacionActividad.length) {
-    vacia.classList.remove("oculto");
-    actualizarResumenDocumentacionActividad();
-    return;
+  const seleccionados = new Set(
+    obtenerDocumentosDocumentacionActividadParaGuardar().map((nombre) => nombre.toUpperCase())
+  );
+  const opcionesDisponibles = catalogoDocumentacionActividad.filter(
+    (doc) => !seleccionados.has(String(doc.nombre || "").trim().toUpperCase())
+  );
+
+  const opciones = [];
+  if (catalogoDocumentacionActividad.length > 0 && modoDocumentacionActividad !== "HEREDADA") {
+    opciones.push(`<option value="__ALL__">Todos</option>`);
   }
 
-  vacia.classList.add("oculto");
+  opciones.push(
+    ...opcionesDisponibles.map((doc) =>
+      `<option value="${String(doc.nombre || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${String(doc.nombre || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</option>`
+    )
+  );
 
-  const seleccionados = new Set(documentosDocumentacionActividad.map((nombre) => nombre.toUpperCase()));
+  select.innerHTML = opciones.length
+    ? opciones.join("")
+    : `<option value="">No hay más documentos disponibles</option>`;
+  select.disabled = !opciones.length;
+  btnAgregar.disabled = !catalogoDocumentacionActividad.length || !select.value;
+}
 
-  catalogoDocumentacionActividad.forEach((doc) => {
-    const item = document.createElement("label");
-    item.className = "documentacion-actividad-item";
+function renderConfiguracionDocumentacionActividad() {
+  const tbody = document.getElementById("tablaDocumentacionActividadBody");
+  const vacia = document.getElementById("documentacionActividadVacia");
+  if (!tbody || !vacia) return;
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = seleccionados.has(String(doc.nombre || "").toUpperCase());
-    checkbox.addEventListener("change", () => {
-      const nombre = String(doc.nombre || "").trim();
-      const key = nombre.toUpperCase();
-      if (checkbox.checked) {
-        if (!seleccionados.has(key)) {
-          documentosDocumentacionActividad.push(nombre);
-        }
+  tbody.innerHTML = "";
+
+  const documentosActivos = obtenerDocumentosDocumentacionActividadParaGuardar();
+  vacia.classList.toggle("oculto", documentosActivos.length > 0);
+
+  documentosActivos.forEach((nombre, index) => {
+    const doc = catalogoDocumentacionActividad.find((item) =>
+      String(item.nombre || "").trim().toUpperCase() === String(nombre || "").trim().toUpperCase()
+    );
+    const tr = document.createElement("tr");
+
+    const tdOrden = document.createElement("td");
+    tdOrden.className = "col-documentacion-orden";
+    tdOrden.textContent = String(index + 1);
+
+    const tdNombre = document.createElement("td");
+    const titulo = document.createElement("strong");
+    titulo.textContent = nombre;
+    tdNombre.appendChild(titulo);
+    if (doc?.descripcion) {
+      const meta = document.createElement("div");
+      meta.className = "documentacion-actividad-meta";
+      meta.textContent = doc.descripcion;
+      tdNombre.appendChild(meta);
+    }
+
+    const tdAcciones = document.createElement("td");
+    tdAcciones.className = "celda-acciones";
+    const btnEliminar = document.createElement("button");
+    btnEliminar.type = "button";
+    btnEliminar.className = "btn-requisito-eliminar";
+    btnEliminar.setAttribute("aria-label", "Eliminar documento");
+    btnEliminar.setAttribute("title", "Eliminar documento");
+    btnEliminar.textContent = "×";
+    btnEliminar.addEventListener("click", () => {
+      if (modoDocumentacionActividad === "HEREDADA") {
+        documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
+          catalogoDocumentacionActividad
+            .map((item) => item.nombre)
+            .filter((itemNombre) => String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase())
+        );
+        modoDocumentacionActividad = "PERSONALIZADA";
       } else {
         documentosDocumentacionActividad = documentosDocumentacionActividad.filter((itemNombre) =>
-          String(itemNombre || "").trim().toUpperCase() !== key
+          String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase()
         );
       }
-      documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
       marcarCambiosPendientesActividad();
-      actualizarResumenDocumentacionActividad();
+      renderConfiguracionDocumentacionActividad();
     });
+    tdAcciones.appendChild(btnEliminar);
 
-    const texto = document.createElement("div");
-    const titulo = document.createElement("strong");
-    titulo.textContent = doc.nombre;
-    const descripcion = document.createElement("span");
-    descripcion.textContent = doc.descripcion || "Documento común activo del organizador.";
-    texto.append(titulo, descripcion);
-
-    item.append(checkbox, texto);
-    lista.appendChild(item);
+    tr.append(tdOrden, tdNombre, tdAcciones);
+    tbody.appendChild(tr);
   });
 
+  renderSelectDocumentacionActividad();
   actualizarResumenDocumentacionActividad();
 }
 
@@ -3872,8 +3930,10 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
   modoDocumentacionActividad = String(resumen?.modo || "HEREDADA").trim().toUpperCase() === "PERSONALIZADA"
     ? "PERSONALIZADA"
     : "HEREDADA";
-  documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
-    resumen?.documentos_configurados || []
+  documentosDocumentacionActividad = (
+    modoDocumentacionActividad === "HEREDADA"
+      ? catalogoDocumentacionActividad.map((doc) => doc.nombre)
+      : normalizarDocumentosDocumentacionActividad(resumen?.documentos_configurados || [])
   ).filter((nombre) =>
     catalogoDocumentacionActividad.some((doc) => String(doc.nombre || "").trim().toUpperCase() === nombre.toUpperCase())
   );
@@ -4947,7 +5007,7 @@ async function borrarFranja(id) {
           borrador_tecnico: borradorTecnico,
           requisitos_particulares: obtenerRequisitosParticularesFormulario(),
           documentacion_actividad_modo: obtenerModoDocumentacionActividadSeleccionado(),
-          documentacion_actividad_documentos: normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad)
+          documentacion_actividad_documentos: obtenerDocumentosDocumentacionActividadParaGuardar()
         };
       }
 
@@ -5653,12 +5713,34 @@ function retrocederPaso() {
           marcarCambiosPendientesActividad();
           renderTablaRequisitos();
         });
-        document.querySelectorAll('input[name="documentacionActividadModo"]').forEach((radio) => {
-          radio.addEventListener("change", () => {
-            modoDocumentacionActividad = radio.value === "PERSONALIZADA" ? "PERSONALIZADA" : "HEREDADA";
-            marcarCambiosPendientesActividad();
-            renderConfiguracionDocumentacionActividad();
-          });
+        document.getElementById("documentacionActividadSelect").addEventListener("change", () => {
+          document.getElementById("btnAgregarDocumentoActividad").disabled = !document.getElementById("documentacionActividadSelect").value;
+        });
+        document.getElementById("btnAgregarDocumentoActividad").addEventListener("click", () => {
+          const select = document.getElementById("documentacionActividadSelect");
+          const valor = String(select?.value || "").trim();
+          if (!valor) return;
+
+          if (valor === "__ALL__") {
+            modoDocumentacionActividad = "HEREDADA";
+            documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
+              catalogoDocumentacionActividad.map((doc) => doc.nombre)
+            );
+          } else {
+            if (modoDocumentacionActividad === "HEREDADA") {
+              documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
+                catalogoDocumentacionActividad.map((doc) => doc.nombre)
+              );
+              modoDocumentacionActividad = "PERSONALIZADA";
+            }
+            documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
+              ...documentosDocumentacionActividad,
+              valor
+            ]);
+          }
+
+          marcarCambiosPendientesActividad();
+          renderConfiguracionDocumentacionActividad();
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
         document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);
