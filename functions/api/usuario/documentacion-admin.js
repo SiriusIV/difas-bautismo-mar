@@ -120,6 +120,27 @@ async function obtenerActividadMinima(env, actividadId) {
   `).bind(id).first();
 }
 
+async function obtenerActividadesAdmin(env, adminId) {
+  const id = parsearIdPositivo(adminId);
+  if (!id) return [];
+
+  const rows = await env.DB.prepare(`
+    SELECT
+      id,
+      admin_id,
+      COALESCE(titulo_publico, nombre, 'Actividad') AS nombre_publico
+    FROM actividades
+    WHERE admin_id = ?
+    ORDER BY COALESCE(titulo_publico, nombre, 'Actividad') COLLATE NOCASE ASC, id ASC
+  `).bind(id).all();
+
+  return (rows?.results || []).map((row) => ({
+    id: Number(row.id || 0),
+    admin_id: Number(row.admin_id || 0),
+    nombre_publico: limpiarTexto(row.nombre_publico) || "Actividad"
+  })).filter((row) => row.id > 0);
+}
+
 async function obtenerPropietarioDocumentalId(env, adminId) {
   const resolucion = await resolverResponsableDocumental(env, adminId);
   if (!resolucion) return null;
@@ -292,6 +313,61 @@ function construirResumenDocumentos(documentos, archivosActivos) {
   });
 }
 
+function construirActividadesPorDocumento(documentosBase = [], actividades = [], configuraciones = new Map()) {
+  const mapa = new Map();
+
+  for (const doc of Array.isArray(documentosBase) ? documentosBase : []) {
+    const key = limpiarTexto(doc?.nombre).toUpperCase();
+    if (!key) continue;
+    mapa.set(key, []);
+  }
+
+  for (const actividad of Array.isArray(actividades) ? actividades : []) {
+    const actividadId = Number(actividad?.id || 0);
+    if (!(actividadId > 0)) continue;
+    const configuracion = configuraciones.get(actividadId) || null;
+    const exigidos = resolverDocumentosExigiblesActividad(documentosBase, configuracion);
+    for (const doc of exigidos) {
+      const key = limpiarTexto(doc?.nombre).toUpperCase();
+      if (!key) continue;
+      if (!mapa.has(key)) {
+        mapa.set(key, []);
+      }
+      mapa.get(key).push({
+        id: actividadId,
+        nombre: limpiarTexto(actividad?.nombre_publico) || "Actividad"
+      });
+    }
+  }
+
+  for (const [key, lista] of mapa.entries()) {
+    const unicos = [];
+    const vistos = new Set();
+    for (const item of lista) {
+      const id = Number(item?.id || 0);
+      if (!(id > 0) || vistos.has(id)) continue;
+      vistos.add(id);
+      unicos.push(item);
+    }
+    mapa.set(key, unicos);
+  }
+
+  return mapa;
+}
+
+function enriquecerResumenDocumentosConActividades(documentosResumen = [], actividadesPorDocumento = new Map()) {
+  return (documentosResumen || []).map((doc) => {
+    const key = limpiarTexto(doc?.nombre).toUpperCase();
+    return {
+      ...doc,
+      actividades_relacionadas: (actividadesPorDocumento.get(key) || []).map((actividad) => ({
+        id: Number(actividad.id || 0),
+        nombre: actividad.nombre || "Actividad"
+      }))
+    };
+  });
+}
+
 function construirDocumentosPendientes(documentos, archivosActivos) {
   return construirResumenDocumentos(documentos, archivosActivos)
     .filter((doc) => String(doc.estado_documento || "").toUpperCase() !== "VALIDADO")
@@ -420,6 +496,20 @@ export async function onRequestGet(context) {
     const documentos = actividadId
       ? resolverDocumentosExigiblesActividad(documentosBase, configuracionActividad)
       : documentosBase;
+    const actividadesAdmin = await obtenerActividadesAdmin(env, adminId);
+    const configuracionesActividades = actividadesAdmin.length
+      ? await Promise.all(
+          actividadesAdmin.map(async (actividadItem) => [
+            Number(actividadItem.id || 0),
+            await leerConfiguracionDocumentalActividad(env, Number(actividadItem.id || 0))
+          ])
+        ).then((pares) => new Map(pares))
+      : new Map();
+    const actividadesPorDocumento = construirActividadesPorDocumento(
+      documentosBase,
+      actividadesAdmin,
+      configuracionesActividades
+    );
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
       0
@@ -466,7 +556,10 @@ export async function onRequestGet(context) {
         fecha_validacion: expediente.fecha_validacion || "",
         observaciones_admin: expediente.observaciones_admin || ""
       } : null,
-      documentos: construirResumenDocumentos(documentos, archivosActivos)
+      documentos: enriquecerResumenDocumentosConActividades(
+        construirResumenDocumentos(documentos, archivosActivos),
+        actividadesPorDocumento
+      )
     });
   } catch (error) {
     return json(

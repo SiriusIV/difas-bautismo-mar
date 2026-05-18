@@ -631,6 +631,39 @@
     .mensaje-modal-detalle { margin: 0 0 10px; padding: 10px 12px; border-radius: 8px; display: none; border: 1px solid transparent; line-height: 1.5; font-size: 13px; }
     .mensaje-modal-detalle.ok { display: block; background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
     .mensaje-modal-detalle.error { display: block; background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
+    .bloque-actividades-documento {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+    .bloque-actividades-documento.oculto { display: none; }
+    .bloque-actividades-documento-titulo {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334250;
+      text-transform: none;
+    }
+    .bloque-actividades-documento-lista {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+    .bloque-actividades-documento-lista li {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #243648;
+    }
+    .bloque-actividades-documento-vacio {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #5f6d7a;
+    }
     .detalle-docs-cabecera { margin-bottom: 12px; }
     .detalle-docs-cabecera .admin-doc-nombre { font-size: 18px; }
     .detalle-docs-cabecera .admin-doc-meta { font-size: 12px; }
@@ -1151,6 +1184,11 @@
         <label>Estado</label>
         <div id="estadoModalObservacionesDocumento" class="campo-linea-valor-fijo"></div>
       </div>
+      <div class="bloque-actividades-documento oculto" id="bloqueActividadesDocumentoModal">
+        <p class="bloque-actividades-documento-titulo">Actividades que exigen este documento</p>
+        <ul id="listaActividadesDocumentoModal" class="bloque-actividades-documento-lista"></ul>
+        <p id="vacioActividadesDocumentoModal" class="bloque-actividades-documento-vacio oculto">Ninguna actividad exige actualmente este documento.</p>
+      </div>
       <div class="campo-linea">
         <label>Observaciones</label>
         <textarea id="textoModalObservacionesDocumento" style="width:100%; min-height:120px; resize:vertical; padding:9px 10px; border:1px solid #c9cfd6; border-radius:8px; font-size:13px; line-height:1.6; color:#4a5a6a;"></textarea>
@@ -1557,7 +1595,13 @@
       const textarea = document.getElementById("textoModalObservacionesDocumento");
       const acciones = document.getElementById("accionesModalObservacionesDocumento");
       const accionesSubida = document.getElementById("accionesSubidaModalObservacionesDocumento");
+      const bloqueActividades = document.getElementById("bloqueActividadesDocumentoModal");
+      const listaActividades = document.getElementById("listaActividadesDocumentoModal");
+      const vacioActividades = document.getElementById("vacioActividadesDocumentoModal");
       const permiteSubida = !editable && !!documento?.id && admiteNuevaRemisionDocumento(estadoBruto);
+      const actividadesRelacionadas = Array.isArray(documento?.actividades_relacionadas)
+        ? documento.actividades_relacionadas
+        : [];
 
       contextoModalObservacionesDocumento = editable
         ? {
@@ -1568,6 +1612,18 @@
       document.getElementById("tituloModalObservacionesDocumento").textContent = editable ? "Observaciones del rechazo" : "Observaciones";
       document.getElementById("subtituloModalObservacionesDocumento").textContent = titulo;
       document.getElementById("estadoModalObservacionesDocumento").textContent = estado;
+      listaActividades.innerHTML = "";
+      if (actividadesRelacionadas.length) {
+        actividadesRelacionadas.forEach((actividad) => {
+          const li = document.createElement("li");
+          li.textContent = actividad?.nombre || "Actividad";
+          listaActividades.appendChild(li);
+        });
+        vacioActividades.classList.add("oculto");
+      } else {
+        vacioActividades.classList.remove("oculto");
+      }
+      bloqueActividades.classList.toggle("oculto", editable);
       textarea.value = observaciones;
       textarea.readOnly = !editable;
       acciones.classList.toggle("oculto", !editable);
