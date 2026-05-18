@@ -981,7 +981,6 @@
           <table class="tabla-organizadores">
             <thead>
               <tr>
-                <th class="col-seleccion"></th>
                 <th>Organizador</th>
                 <th>Estado</th>
                 <th>
@@ -2306,9 +2305,6 @@
 
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
-          <td class="col-seleccion">
-            <input type="radio" name="organizador_documentacion_seleccion" class="selector-doc" value="${adminId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar organizador">
-          </td>
           <td class="td-centro">
             <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
             <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
@@ -3733,11 +3729,6 @@
         activarTabBloqueDocumentacion("documentos");
         return;
       }
-      const selector = event.target.closest(".selector-doc");
-      if (!selector) return;
-      const adminId = Number.parseInt(selector.value || "", 10);
-      if (!Number.isInteger(adminId) || adminId <= 0) return;
-      seleccionarOrganizador(adminId);
     });
     document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
       const btnEliminarFila = event.target.closest("[data-doc-eliminar]");
