@@ -650,12 +650,38 @@
     .tabla-detalle-docs.solicitante-sin-selector th.col-seleccion,
     .tabla-detalle-docs.solicitante-sin-selector td.col-seleccion { display: none; }
     .col-seleccion { width: 42px; text-align: center; }
+    .col-eliminar-doc { width: 50px; text-align: center; }
     .selector-doc { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
     .acciones-doc-fila { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
     .btn-accion-doc-inline { appearance: none; border: none; background: transparent; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #355070; transition: opacity .18s ease, transform .18s ease; }
     .btn-accion-doc-inline:hover { opacity: 0.82; transform: translateY(-1px); }
     .btn-accion-doc-inline:disabled { opacity: 0.34; cursor: not-allowed; transform: none; }
     .btn-accion-doc-inline img { width: 20px; height: 20px; display: block; }
+    .btn-eliminar-doc-fila {
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid #efb5b5;
+      background: #fdeaea;
+      color: #b42318;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+      transition: filter .18s ease, transform .18s ease, opacity .18s ease;
+    }
+    .btn-eliminar-doc-fila:hover:not(:disabled) { filter: brightness(0.98); transform: translateY(-1px); }
+    .btn-eliminar-doc-fila:disabled {
+      opacity: 0.36;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
     .doc-titulo-con-accion,
     .doc-estado-con-accion { display: inline-flex; align-items: center; gap: 8px; }
     .doc-titulo-con-accion { justify-content: flex-start; }
@@ -1012,6 +1038,7 @@
                 <th>Versión</th>
                 <th>Última entrega</th>
                 <th>Estado del documento <button type="button" class="btn-ayuda-campo" id="btnAyudaEstadosDocumento" aria-label="Ayuda sobre los estados de documento" title="Ayuda sobre los estados del documento" style="position: static; transform: none; margin-left: 6px;">?</button></th>
+                <th class="col-eliminar-doc"></th>
               </tr>
             </thead>
             <tbody id="detalleDocumentacionBody"></tbody>
@@ -1867,6 +1894,10 @@
           : (cambio?.tipo === "subir" ? "EN_REVISION" : estadoDetalleDocumento("", doc));
         const pendiente = etiquetaCambioPendienteDetalle(cambio);
         const documentoBase = doc.nombre || "Documento";
+        const puedeEliminarFila = !!(doc.entrega_archivo_url || cambio?.tipo === "subir") && cambio?.tipo !== "eliminar";
+        const tituloEliminarFila = cambio?.tipo === "eliminar"
+          ? "Documento marcado para eliminar al guardar"
+          : (puedeEliminarFila ? "Eliminar documento remitido" : "No hay documento para eliminar");
 
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.innerHTML = `
@@ -1889,6 +1920,9 @@
               </button>
               <button type="button" class="estado-pill-doc ${estadoDoc}" data-estado-doc-id="${docId}" data-estado-doc-actual="${estadoDoc}">${etiquetaEstadoDocumentacion(estadoDoc)}</button>
             </span>
+          </td>
+          <td class="col-eliminar-doc">
+            <button type="button" class="btn-eliminar-doc-fila" data-doc-eliminar="${docId}" title="${tituloEliminarFila}" aria-label="${tituloEliminarFila}" ${puedeEliminarFila ? "" : "disabled"}>×</button>
           </td>
         `;
         body.appendChild(tr);
@@ -3706,6 +3740,16 @@
       seleccionarOrganizador(adminId);
     });
     document.getElementById("detalleDocumentacionBody").addEventListener("click", function (event) {
+      const btnEliminarFila = event.target.closest("[data-doc-eliminar]");
+      if (btnEliminarFila) {
+        const docId = Number.parseInt(btnEliminarFila.dataset.docEliminar || "", 10);
+        if (!Number.isInteger(docId) || docId <= 0) return;
+        const doc = seleccionarDocumentoDetallePorId(docId);
+        if (!doc) return;
+        eliminarDocumentoDetalle(doc);
+        return;
+      }
+
       const btnAccion = event.target.closest("[data-doc-accion]");
       if (btnAccion) {
         const docId = Number.parseInt(btnAccion.dataset.docId || "", 10);
