@@ -289,7 +289,7 @@
 .pantalla-bloqueada .bloque-superior,
 .pantalla-bloqueada .bloque-inferior {
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .pantalla-bloqueada #mensajeActividad {
@@ -493,7 +493,7 @@
     .config-periodo-card {
       border: 1px solid var(--soft-border);
       border-radius: 12px;
-      background: #eef4ff;
+      background: #ffffff;
       padding: 6px 10px;
       display: flex;
       flex-direction: column;
@@ -501,7 +501,7 @@
     }
 
     .config-periodo-card.desactivado {
-      background: #f4f7fa;
+      background: #ffffff;
       border-color: #d9e1e9;
     }
 
@@ -604,7 +604,7 @@
     .config-panel {
       border: 1px solid var(--soft-border);
       border-radius: 12px;
-      background: var(--soft-bg);
+      background: #ffffff;
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
@@ -863,7 +863,7 @@
       padding: 8px;
       border: 1px solid var(--soft-border);
       border-radius: 10px;
-      background: var(--soft-bg);
+      background: #ffffff;
     }
 
     .subbloque-head {
@@ -4465,9 +4465,14 @@ async function borrarFranja(id) {
 
       const submitter = event?.submitter || null;
       const activeElementId = document.activeElement?.id || "";
+      const esSubmitImplicito = !!event && event.type === "submit" && !submitter;
       const esSubmitImplicitoDesdeFecha =
         !submitter &&
         (activeElementId === "fecha_inicio" || activeElementId === "fecha_fin");
+
+      if (esSubmitImplicito) {
+        return false;
+      }
 
       const payload = construirPayloadActividad(0);
 
