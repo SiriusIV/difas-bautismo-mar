@@ -449,9 +449,6 @@ async function obtenerResumenFranjas(env, actividad_id) {
     };
   });
 
-  const ahora = new Date();
-  franjas = franjas.filter((franja) => !haFinalizadoFranja(franja, ahora));
-
   return franjas;
 }
 

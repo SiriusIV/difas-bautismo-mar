@@ -3251,7 +3251,7 @@ function obtenerActividadesFiltradas() {
       const completa = usaFranjas && Number(actividad?.completa_calculada || 0) === 1;
       const tieneFranjasRecurrentes = Number(actividad?.tiene_franjas_recurrentes || 0) === 1;
       const ultimaFranjaFin = parsearFechaHoraActividad(actividad?.ultima_franja_fin);
-      if (!tieneFranjasRecurrentes && ultimaFranjaFin && ultimaFranjaFin.getTime() < Date.now()) {
+      if (usaFranjas && !tieneFranjasRecurrentes && ultimaFranjaFin && ultimaFranjaFin.getTime() < Date.now()) {
         return { texto: "FINALIZADA", clase: "finalizada" };
       }
 
