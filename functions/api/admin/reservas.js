@@ -379,10 +379,15 @@ function escaparHtmlCorreo(valor) {
     .replace(/'/g, "&#39;");
 }
 
-  if (fecha && horaInicio && horaFin) return `${fecha} Â· ${horaInicio} - ${horaFin}`;
+function construirDescripcionProgramacionCorreoSolicitante(contexto = {}) {
+  const fecha = limpiarTexto(contexto?.fecha || "");
+  const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
+  const horaFin = limpiarTexto(contexto?.hora_fin || "");
+  if (fecha && horaInicio && horaFin) return `${fecha} · ${horaInicio} - ${horaFin}`;
   if (fecha) return fecha;
   return "";
 }
+
 
 function construirUrlGoogleMapsCorreoSolicitante(contexto = {}) {
   const latitud = limpiarTexto(contexto?.latitud || "");
