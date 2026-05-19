@@ -1422,7 +1422,7 @@
         max-width: calc(100vw - 22px) !important;
       }
 
-      .franja-sesion-inner.modo-solicitante {
+      body.sesion-solicitante .franja-sesion-inner {
         display: grid;
         grid-template-columns: 1fr auto;
         grid-template-areas:
@@ -1433,27 +1433,27 @@
         align-items: center;
       }
 
-      .franja-sesion-inner.modo-solicitante .franja-sesion-spacer {
+      body.sesion-solicitante .franja-sesion-inner .franja-sesion-spacer {
         display: none;
       }
 
-      .franja-sesion-inner.modo-solicitante #barraUsuario {
+      body.sesion-solicitante .franja-sesion-inner #barraUsuario {
         grid-area: reservas;
         justify-self: start;
       }
 
-      .franja-sesion-inner.modo-solicitante #btnLogoutSesion {
+      body.sesion-solicitante .franja-sesion-inner #btnLogoutSesion {
         grid-area: logout;
         justify-self: end;
       }
 
-      .franja-sesion-inner.modo-solicitante #textoSesion {
+      body.sesion-solicitante .franja-sesion-inner #textoSesion {
         grid-area: texto;
         justify-self: center;
         text-align: center;
       }
 
-      .franja-sesion-inner.modo-solicitante #btnPerfilSesion {
+      body.sesion-solicitante .franja-sesion-inner #btnPerfilSesion {
         display: none !important;
       }
     }
@@ -2859,7 +2859,8 @@ function actualizarBotonSolicitarSegunFranja() {
     function actualizarModoAcceso() {
       const admin = esAdmin();
       const superadmin = esSuperAdmin();
-      const solicitante = usuarioAutenticado && usuarioAutenticado.rol === "SOLICITANTE";
+      const rolSesion = String(usuarioAutenticado?.rol || "").toUpperCase();
+      const solicitante = !!usuarioAutenticado && rolSesion === "SOLICITANTE";
       const secretaria = esSecretaria();
 
       document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
@@ -2874,6 +2875,7 @@ function actualizarBotonSolicitarSegunFranja() {
       }
 
       document.getElementById("franjaAvisoPortal").style.display = usuarioAutenticado ? "none" : "block";
+      document.body.classList.toggle("sesion-solicitante", solicitante);
 
       actualizarLogoCabeceraSesion();
       actualizarFranjaSesion();
