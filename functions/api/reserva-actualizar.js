@@ -3,6 +3,7 @@ import { registrarEventoReserva } from "./_reservas_historial.js";
 import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 import { enviarEmail } from "./_email.js";
+import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -755,6 +756,28 @@ export async function onRequestPost(context) {
               : "Ya existe una solicitud activa para este mismo solicitante en esta actividad. Debe modificar la existente, no crear una segunda."
           },
           { status: 409 }
+        );
+      }
+    }
+
+    if (enviarBorrador || reenviarRechazada) {
+      const validacionDocumental = await validarDocumentacionReserva(env, {
+        usuarioId: user.id,
+        adminId: actividad.admin_id,
+        actividadId: reservaActual.actividad_id
+      });
+
+      if (!validacionDocumental.ok) {
+        return json(
+          {
+            ok: false,
+            error: validacionDocumental.error || "La documentación obligatoria de la actividad no está completa.",
+            estado_documental: validacionDocumental.estado_documental || "",
+            documentos_pendientes: validacionDocumental.documentos_pendientes || [],
+            actividad_id: Number(reservaActual.actividad_id || 0),
+            admin_id: Number(actividad.admin_id || 0)
+          },
+          { status: 400 }
         );
       }
     }

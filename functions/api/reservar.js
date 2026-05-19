@@ -4,6 +4,7 @@ import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail } from "./_email.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
+import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -702,6 +703,28 @@ if (Number(actividad.activa || 0) !== 1) {
         },
         { status: 409 }
       );
+    }
+
+    if (!guardarComoBorrador) {
+      const validacionDocumental = await validarDocumentacionReserva(env, {
+        usuarioId,
+        adminId: actividad.admin_id,
+        actividadId
+      });
+
+      if (!validacionDocumental.ok) {
+        return json(
+          {
+            ok: false,
+            error: validacionDocumental.error || "La documentación obligatoria de la actividad no está completa.",
+            estado_documental: validacionDocumental.estado_documental || "",
+            documentos_pendientes: validacionDocumental.documentos_pendientes || [],
+            actividad_id: actividadId,
+            admin_id: Number(actividad.admin_id || 0)
+          },
+          { status: 400 }
+        );
+      }
     }
 
     if (
