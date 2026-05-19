@@ -1184,8 +1184,8 @@
         <label>Estado</label>
         <div id="estadoModalObservacionesDocumento" class="campo-linea-valor-fijo"></div>
       </div>
+      <p class="bloque-actividades-documento-titulo oculto" id="tituloActividadesDocumentoModal">Actividades que exigen este documento</p>
       <div class="bloque-actividades-documento oculto" id="bloqueActividadesDocumentoModal">
-        <p class="bloque-actividades-documento-titulo">Actividades que exigen este documento</p>
         <ul id="listaActividadesDocumentoModal" class="bloque-actividades-documento-lista"></ul>
         <p id="vacioActividadesDocumentoModal" class="bloque-actividades-documento-vacio oculto">Ninguna actividad exige actualmente este documento.</p>
       </div>
@@ -1595,6 +1595,7 @@
       const textarea = document.getElementById("textoModalObservacionesDocumento");
       const acciones = document.getElementById("accionesModalObservacionesDocumento");
       const accionesSubida = document.getElementById("accionesSubidaModalObservacionesDocumento");
+      const tituloActividades = document.getElementById("tituloActividadesDocumentoModal");
       const bloqueActividades = document.getElementById("bloqueActividadesDocumentoModal");
       const listaActividades = document.getElementById("listaActividadesDocumentoModal");
       const vacioActividades = document.getElementById("vacioActividadesDocumentoModal");
@@ -1623,6 +1624,7 @@
       } else {
         vacioActividades.classList.remove("oculto");
       }
+      tituloActividades.classList.toggle("oculto", editable);
       bloqueActividades.classList.toggle("oculto", editable);
       textarea.value = observaciones;
       textarea.readOnly = !editable;
