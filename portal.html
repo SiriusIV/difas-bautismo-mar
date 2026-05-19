@@ -1743,6 +1743,28 @@
     </div>
   </div>
 
+  <div id="modalRecuperarPassword" class="modal-fondo" aria-hidden="true">
+    <div class="modal-login">
+      <h3>Recuperar contraseña</h3>
+
+      <p style="margin:0 0 16px; color:#4d5966; line-height:1.6; font-size:14px;">
+        Indica tu correo electrónico y te enviaremos un enlace temporal para restablecer el acceso.
+      </p>
+
+      <div class="campo">
+        <label for="emailRecuperarPassword">Email</label>
+        <input type="email" id="emailRecuperarPassword" autocomplete="off">
+      </div>
+
+      <div class="acciones-acceso">
+        <button class="btn" onclick="enviarRecuperacionPassword()">Enviar enlace</button>
+        <button class="btn btn-admin" onclick="volverAModalLogin()">Volver</button>
+      </div>
+
+      <div id="mensajeRecuperarPassword" class="mensaje"></div>
+    </div>
+  </div>
+
   <div id="modalDocumentacionPendiente" class="modal-fondo" aria-hidden="true">
     <div class="modal-login" style="max-width: 640px;">
       <h3>Documentación obligatoria pendiente</h3>
@@ -1926,6 +1948,30 @@
     function cerrarModalLogin() {
       document.getElementById("modalLogin").classList.remove("activo");
       document.getElementById("modalLogin").setAttribute("aria-hidden", "true");
+    }
+
+    function abrirModalRecuperarPassword(emailInicial = "") {
+      limpiarMensaje("mensajeRecuperarPassword");
+
+      const input = document.getElementById("emailRecuperarPassword");
+      input.value = String(emailInicial || "").trim();
+
+      document.getElementById("modalRecuperarPassword").classList.add("activo");
+      document.getElementById("modalRecuperarPassword").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalRecuperarPassword() {
+      document.getElementById("modalRecuperarPassword").classList.remove("activo");
+      document.getElementById("modalRecuperarPassword").setAttribute("aria-hidden", "true");
+    }
+
+    function volverAModalLogin() {
+      const email = document.getElementById("emailRecuperarPassword").value.trim();
+      cerrarModalRecuperarPassword();
+      abrirModalLogin();
+      if (email) {
+        document.getElementById("emailLogin").value = email;
+      }
     }
 
     function alternarPassword() {
@@ -4079,10 +4125,42 @@ function continuarSolicitudActividad() {
     function recuperarPassword(event) {
       event.preventDefault();
       const email = document.getElementById("emailLogin").value.trim();
-      const destino = email
-        ? `usuario-password-recuperar.html?email=${encodeURIComponent(email)}`
-        : "usuario-password-recuperar.html";
-      location.href = destino;
+      cerrarModalLogin();
+      abrirModalRecuperarPassword(email);
+    }
+
+    async function enviarRecuperacionPassword() {
+      limpiarMensaje("mensajeRecuperarPassword");
+
+      const email = document.getElementById("emailRecuperarPassword").value.trim();
+
+      if (!email) {
+        mensaje("mensajeRecuperarPassword", "error", "Debes indicar un correo electrónico.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/usuario/password-recuperar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          mensaje("mensajeRecuperarPassword", "error", data?.error || "No se pudo iniciar la recuperación.");
+          return;
+        }
+
+        mensaje(
+          "mensajeRecuperarPassword",
+          "ok",
+          data?.mensaje || "Si el correo existe en la plataforma, recibirás un enlace para restablecer la contraseña."
+        );
+      } catch (error) {
+        mensaje("mensajeRecuperarPassword", "error", error.message || "No se pudo iniciar la recuperación.");
+      }
     }
 
     function irRegistro() {
@@ -4147,6 +4225,9 @@ function continuarSolicitudActividad() {
 
     document.getElementById("modalLogin").addEventListener("click", function (e) {
       if (e.target.id === "modalLogin") cerrarModalLogin();
+    });
+    document.getElementById("modalRecuperarPassword").addEventListener("click", function (e) {
+      if (e.target.id === "modalRecuperarPassword") cerrarModalRecuperarPassword();
     });
     document.getElementById("modalDocumentacionPendiente").addEventListener("click", function (e) {
       if (e.target.id === "modalDocumentacionPendiente") cerrarModalDocumentacionPendiente();
