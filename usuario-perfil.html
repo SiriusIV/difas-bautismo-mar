@@ -607,6 +607,27 @@
     .modal h3 { margin: 0 0 10px; font-size: 20px; color: var(--brand); }
     .modal p { margin: 0; font-size: 13px; line-height: 1.6; color: #445261; }
     .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .input-password-wrap { position: relative; }
+    .input-password-wrap input[type="password"],
+    .input-password-wrap input[type="text"] { padding-right: 42px; }
+    .btn-toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: #5f6d7a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+    }
+    .btn-toggle-password:hover { color: #123a63; }
+    .btn-toggle-password svg { width: 18px; height: 18px; display: block; }
     .modal-detalle-docs { max-width: 980px; }
     .modal-detalle-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 10px; }
     .modal-detalle-head h3 { margin: 0; font-size: 28px; color: var(--brand); }
@@ -1202,29 +1223,38 @@
   </div>
 
   <div id="modalPasswordActual" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
-      <h3>Validar contraseña actual</h3>
-      <div class="campo-linea">
-        <label for="modal_password_actual">Contraseña actual</label>
-        <input type="password" id="modal_password_actual" autocomplete="current-password">
-      </div>
-      <div class="modal-acciones">
-        <button type="button" class="btn" id="btnAceptarPasswordActual">Aceptar</button>
-      </div>
+      <div class="modal">
+        <h3>Validar contraseña actual</h3>
+        <div class="campo-linea">
+          <label for="modal_password_actual">Contraseña actual</label>
+          <div class="input-password-wrap">
+            <input type="password" id="modal_password_actual" autocomplete="current-password">
+            <button type="button" class="btn-toggle-password" id="btnTogglePasswordActual" aria-label="Mostrar contraseña" title="Mostrar contraseña"></button>
+          </div>
+        </div>
+        <div class="modal-acciones">
+          <button type="button" class="btn" id="btnAceptarPasswordActual">Aceptar</button>
+        </div>
     </div>
   </div>
 
   <div id="modalPasswordNueva" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
-      <h3>Cambiar contraseña</h3>
-      <div class="campo-linea">
-        <label for="modal_password_nueva">Nueva contraseña</label>
-        <input type="password" id="modal_password_nueva" autocomplete="new-password">
-      </div>
-      <div class="campo-linea">
-        <label for="modal_password_confirmacion">Confirmar nueva contraseña</label>
-        <input type="password" id="modal_password_confirmacion" autocomplete="new-password">
-      </div>
+      <div class="modal">
+        <h3>Cambiar contraseña</h3>
+        <div class="campo-linea">
+          <label for="modal_password_nueva">Nueva contraseña</label>
+          <div class="input-password-wrap">
+            <input type="password" id="modal_password_nueva" autocomplete="new-password">
+            <button type="button" class="btn-toggle-password" id="btnTogglePasswordNueva" aria-label="Mostrar contraseña" title="Mostrar contraseña"></button>
+          </div>
+        </div>
+        <div class="campo-linea">
+          <label for="modal_password_confirmacion">Confirmar nueva contraseña</label>
+          <div class="input-password-wrap">
+            <input type="password" id="modal_password_confirmacion" autocomplete="new-password">
+            <button type="button" class="btn-toggle-password" id="btnTogglePasswordConfirmacion" aria-label="Mostrar contraseña" title="Mostrar contraseña"></button>
+          </div>
+        </div>
       <p class="nota" style="margin-top:0;">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</p>
       <div class="modal-acciones">
         <button type="button" class="btn" id="btnAceptarPasswordNueva">Aceptar</button>
@@ -1410,6 +1440,8 @@
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
+    const ICONO_PASSWORD_VISIBLE = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><path d="M61.9219,31.6118C61.8389,31.416,53.416,12,32,12S2.1611,31.416,2.0781,31.6118a1.005,1.005,0,0,0,0,.7764C2.1611,32.584,10.584,52,32,52S61.8389,32.584,61.9219,32.3882A1.005,1.005,0,0,0,61.9219,31.6118ZM32,50C13.5811,50,5.3828,34.6592,4.1016,32,5.3828,29.3408,13.5811,14,32,14S58.6172,29.3408,59.8984,32C58.6172,34.6592,50.4189,50,32,50Z"/><path d="M32,20A12,12,0,1,0,44,32,12.0137,12.0137,0,0,0,32,20Zm0,22A10,10,0,1,1,42,32,10.0111,10.0111,0,0,1,32,42Z"/></g></svg>`;
+    const ICONO_PASSWORD_OCULTO = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.992,18.611l-2.679,2.682c-0.39,0.391 -0.39,1.024 0,1.414c0.391,0.391 1.025,0.39 1.415,-0l3.027,-3.031c2.098,1.149 4.577,2.094 7.249,2.288l0.016,4.04c0.002,0.552 0.452,0.998 1.004,0.996c0.552,-0.002 0.998,-0.452 0.996,-1.004l-0.016,-4.033c2.281,-0.166 4.421,-0.88 6.302,-1.8c0.002,0.002 0.004,0.004 0.007,0.006l3.533,3.538c0.391,0.39 1.024,0.391 1.415,0c0.39,-0.39 0.39,-1.023 0,-1.414l-3.126,-3.13c3.415,-2.063 5.61,-4.496 5.61,-4.496c0.368,-0.411 0.333,-1.043 -0.078,-1.412c-0.411,-0.368 -1.043,-0.333 -1.412,0.078c0,-0 -5.93,6.667 -13.255,6.667c-7.325,0 -13.255,-6.667 -13.255,-6.667c-0.369,-0.411 -1.001,-0.446 -1.412,-0.078c-0.411,0.369 -0.446,1.001 -0.078,1.412c0,0 1.826,2.024 4.737,3.944Z"/></svg>`;
 
     function aplicarLogoCabeceraPerfilAdmin() {
       const logo = document.getElementById("logoCabecera");
@@ -1486,6 +1518,24 @@
       if (!/[0-9]/.test(valor)) return false;
       if (!/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(valor)) return false;
       return true;
+    }
+
+    function alternarVisibilidadPassword(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (!input || !button) return;
+      input.type = input.type === "password" ? "text" : "password";
+      actualizarBotonPasswordVisible(inputId, buttonId);
+    }
+
+    function actualizarBotonPasswordVisible(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (!input || !button) return;
+      const visible = input.type === "text";
+      button.innerHTML = visible ? ICONO_PASSWORD_VISIBLE : ICONO_PASSWORD_OCULTO;
+      button.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+      button.setAttribute("title", visible ? "Ocultar contraseña" : "Mostrar contraseña");
     }
 
     function mostrarMensajePerfilTemporal(tipo, texto, duracionMs = 4000) {
@@ -3597,12 +3647,18 @@
     function cerrarModalPasswordActual() {
       document.getElementById("modalPasswordActual").classList.remove("activo");
       document.getElementById("modal_password_actual").value = "";
+      document.getElementById("modal_password_actual").type = "password";
+      actualizarBotonPasswordVisible("modal_password_actual", "btnTogglePasswordActual");
     }
 
     function cerrarModalPasswordNueva() {
       document.getElementById("modalPasswordNueva").classList.remove("activo");
       document.getElementById("modal_password_nueva").value = "";
       document.getElementById("modal_password_confirmacion").value = "";
+      document.getElementById("modal_password_nueva").type = "password";
+      document.getElementById("modal_password_confirmacion").type = "password";
+      actualizarBotonPasswordVisible("modal_password_nueva", "btnTogglePasswordNueva");
+      actualizarBotonPasswordVisible("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
       passwordActualValidada = "";
     }
 
@@ -3622,6 +3678,8 @@
     function abrirModalPasswordActual() {
       limpiarMensaje("mensajePassword");
       document.getElementById("modalPasswordActual").classList.add("activo");
+      document.getElementById("modal_password_actual").type = "password";
+      actualizarBotonPasswordVisible("modal_password_actual", "btnTogglePasswordActual");
       setTimeout(() => {
         document.getElementById("modal_password_actual").focus();
       }, 0);
@@ -3656,6 +3714,10 @@
         passwordActualValidada = passwordActual;
         cerrarModalPasswordActual();
         document.getElementById("modalPasswordNueva").classList.add("activo");
+        document.getElementById("modal_password_nueva").type = "password";
+        document.getElementById("modal_password_confirmacion").type = "password";
+        actualizarBotonPasswordVisible("modal_password_nueva", "btnTogglePasswordNueva");
+        actualizarBotonPasswordVisible("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
         setTimeout(() => {
           document.getElementById("modal_password_nueva").focus();
         }, 0);
@@ -3878,6 +3940,15 @@
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
     document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
+    document.getElementById("btnTogglePasswordActual").addEventListener("click", function () {
+      alternarVisibilidadPassword("modal_password_actual", "btnTogglePasswordActual");
+    });
+    document.getElementById("btnTogglePasswordNueva").addEventListener("click", function () {
+      alternarVisibilidadPassword("modal_password_nueva", "btnTogglePasswordNueva");
+    });
+    document.getElementById("btnTogglePasswordConfirmacion").addEventListener("click", function () {
+      alternarVisibilidadPassword("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
+    });
     document.getElementById("btnVolverOrganizadores").addEventListener("click", function () {
       activarTabBloqueDocumentacion("organizadores");
     });
@@ -4022,6 +4093,9 @@
     document.getElementById("documentoSolicitante").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAceptarPasswordActual").addEventListener("click", validarPasswordActual);
     document.getElementById("btnAceptarPasswordNueva").addEventListener("click", confirmarCambioPassword);
+    actualizarBotonPasswordVisible("modal_password_actual", "btnTogglePasswordActual");
+    actualizarBotonPasswordVisible("modal_password_nueva", "btnTogglePasswordNueva");
+    actualizarBotonPasswordVisible("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
     window.addEventListener("beforeunload", function (event) {
       if (!hayCambiosPendientesEnPagina()) return;
       event.preventDefault();
