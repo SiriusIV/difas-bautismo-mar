@@ -923,13 +923,24 @@ export async function onRequestPut(context) {
       } catch {
         baseUrl = "";
       }
-
-      resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
-        adminId: p.admin_id,
-        baseUrl,
-        motivo: "documentos_actualizados",
-        avisarCambioMarcoSinCambios: false
-      });
+      try {
+        resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
+          adminId: p.admin_id,
+          baseUrl,
+          motivo: "documentos_actualizados",
+          avisarCambioMarcoSinCambios: false
+        });
+      } catch (errorImpactoDocumental) {
+        console.error("No se pudo recalcular el impacto documental tras guardar la actividad.", {
+          actividad_id: Number(id || 0),
+          admin_id: Number(p.admin_id || 0),
+          error: errorImpactoDocumental?.message || String(errorImpactoDocumental || "")
+        });
+        resumenImpactoDocumental = {
+          ok: false,
+          error: "No se pudo recalcular el impacto documental automáticamente."
+        };
+      }
     }
 
     let resumenCambioRequisitos = null;

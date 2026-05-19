@@ -3211,7 +3211,7 @@ function obtenerActividadesFiltradas() {
               <div class="card-meta">
                 ${a.lugar ? `<div>${a.lugar}</div>` : ""}
                 ${a.provincia ? `<div>${a.provincia}</div>` : ""}
-                ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+                ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${formatearIntervaloFechaES(a.fecha_inicio, a.fecha_fin)}</div>` : ""}
                 ${a.tipo === "PENDIENTE" ? `<div>Fechas pendientes de determinar</div>` : ""}
               </div>
             </div>
