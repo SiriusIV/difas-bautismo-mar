@@ -746,8 +746,33 @@
       }
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
+      #filaAdminCuentaNombre,
+      #filaAdminNombrePublicoEmail,
+      #filaAdminUrlWeb,
+      #filaSolicitanteCuentaCentro,
+      #filaSolicitanteEmailTelefono,
+      #filaSolicitanteResponsableDocumento {
+        grid-template-columns: 1fr !important;
+      }
       .preview-imagen { min-height: 208px; }
       .bloque { padding: 12px; }
+      .bloque,
+      .bloque-documentacion-admin,
+      .documentacion-admin-shell,
+      .documentacion-admin-barra,
+      .panel-documentacion-admin,
+      .panel-bloque-documentacion {
+        min-width: 0;
+        max-width: 100%;
+      }
+      .documentacion-admin-barra {
+        overflow-x: auto;
+      }
+      .campo-linea,
+      .campo-linea-valor-fijo,
+      input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="url"], select {
+        min-width: 0;
+      }
       .acciones-superiores {
         width: 100%;
         justify-content: flex-start;
@@ -776,6 +801,8 @@
       .tabla-detalle-docs-wrap,
       .tabla-estados-wrap {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
       }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
       .tabla-revision-expediente { min-width: 0; table-layout: auto; }
