@@ -1857,6 +1857,11 @@
     function formatearCabeceraDiaCalendario(arg) {
       const fecha = arg?.date || new Date();
       if (esMovilCalendario()) {
+        const tipoVista = String(arg?.view?.type || calendar?.view?.type || "");
+        if (tipoVista === "timeGridWeek") {
+          const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
+          return `${obtenerInicialDiaSemana(fecha)} ${day}`;
+        }
         return obtenerInicialDiaSemana(fecha);
       }
       return construirTextoDiaSemanaCompleto(fecha);
