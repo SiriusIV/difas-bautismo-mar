@@ -131,6 +131,8 @@ async function obtenerActividadesAdmin(env, adminId) {
       COALESCE(titulo_publico, nombre, 'Actividad') AS nombre_publico
     FROM actividades
     WHERE admin_id = ?
+      AND COALESCE(activa, 1) = 1
+      AND COALESCE(visible_portal, 1) = 1
     ORDER BY COALESCE(titulo_publico, nombre, 'Actividad') COLLATE NOCASE ASC, id ASC
   `).bind(id).all();
 
