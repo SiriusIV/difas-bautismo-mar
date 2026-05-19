@@ -365,6 +365,17 @@
       display: none;
       font-size: 13px;
     }
+    .mensaje-texto-linea {
+      display: block;
+      line-height: 1.45;
+    }
+    .mensaje-accion-wrap {
+      display: none;
+      margin-top: 10px;
+    }
+    .mensaje-accion-wrap.activo {
+      display: block;
+    }
     .mensaje.error {
       display: block;
       background: #fdeaea;
@@ -376,6 +387,23 @@
       background: #eaf7ea;
       color: #146c2e;
       border: 1px solid #b9e0c0;
+    }
+    .btn-accion-documentacion {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid currentColor;
+      background: rgba(255,255,255,0.92);
+      color: inherit;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-accion-documentacion:hover {
+      background: rgba(255,255,255,1);
     }
     .icono-observacion {
       display: inline-flex;
@@ -720,7 +748,12 @@
       </div>
     </div>
 
-    <div id="mensaje" class="mensaje"></div>
+    <div id="mensaje" class="mensaje">
+      <span id="mensajeTexto" class="mensaje-texto-linea"></span>
+      <div id="mensajeAccionWrap" class="mensaje-accion-wrap">
+        <button type="button" id="btnIrDocumentacionMensaje" class="btn-accion-documentacion">Ir a documentación</button>
+      </div>
+    </div>
 
     <div class="bloque">
       <h3>Filtros</h3>
@@ -846,6 +879,7 @@
     let reservaSeleccionada = null;
     let nombreUsuarioPanel = "Usuario";
     let temporizadorRecargaPanel = null;
+    let accesoDocumentacionPendiente = null;
 
     function normalizarEstadoReserva(estado) {
       const valor = String(estado || "").trim().toUpperCase();
@@ -875,18 +909,92 @@
       return e || "-";
     }
 
+    function construirUrlDocumentacion(adminId, actividadId) {
+      const admin = Number(adminId || 0);
+      if (!(admin > 0)) return "";
+      const query = new URLSearchParams({
+        admin_id: String(admin),
+        tab: "documentos"
+      });
+      const actividad = Number(actividadId || 0);
+      if (actividad > 0) {
+        query.set("actividad_id", String(actividad));
+      }
+      return `usuario-perfil.html?${query.toString()}`;
+    }
+
+    function extraerAccesoDocumentacion(data) {
+      const adminId = Number(data?.admin_id || 0);
+      const actividadId = Number(data?.actividad_id || 0);
+      const pendientes = Array.isArray(data?.documentos_pendientes) ? data.documentos_pendientes : [];
+      const estado = String(data?.estado_documental || "").trim().toUpperCase();
+      if (!(adminId > 0) || (!estado && !pendientes.length)) {
+        return null;
+      }
+      const url = construirUrlDocumentacion(adminId, actividadId);
+      if (!url) return null;
+      return { url, adminId, actividadId };
+    }
+
+    function aplicarAccionDocumentacionAviso(acceso) {
+      accesoDocumentacionPendiente = acceso || null;
+      const wrap = document.getElementById("mensajeAccionWrap");
+      const btn = document.getElementById("btnIrDocumentacionMensaje");
+      if (!wrap || !btn) return;
+      if (acceso?.url) {
+        wrap.classList.add("activo");
+        btn.dataset.url = acceso.url;
+      } else {
+        wrap.classList.remove("activo");
+        btn.dataset.url = "";
+      }
+    }
+
+    function aplicarAccionDocumentacionModal(acceso) {
+      accesoDocumentacionPendiente = acceso || accesoDocumentacionPendiente || null;
+      const contenedor = document.getElementById("modalObservacionesAcciones");
+      if (!contenedor) return;
+      let btn = document.getElementById("btnIrDocumentacionModal");
+      if (acceso?.url) {
+        if (!btn) {
+          btn = document.createElement("button");
+          btn.type = "button";
+          btn.id = "btnIrDocumentacionModal";
+          btn.className = "btn-modal";
+          btn.textContent = "Ir a documentación";
+          btn.addEventListener("click", function () {
+            irADocumentacionPendiente(this.dataset.url || "");
+          });
+          contenedor.appendChild(btn);
+        }
+        btn.dataset.url = acceso.url;
+      } else if (btn) {
+        btn.remove();
+      }
+    }
+
+    function irADocumentacionPendiente(url) {
+      const destino = String(url || accesoDocumentacionPendiente?.url || "").trim();
+      if (!destino) return;
+      location.href = destino;
+    }
+
     function mostrarMensaje(tipo, texto) {
       const m = document.getElementById("mensaje");
+      const textoEl = document.getElementById("mensajeTexto");
       m.className = "mensaje " + tipo;
       m.style.display = "block";
-      m.textContent = texto;
+      if (textoEl) textoEl.textContent = texto;
+      aplicarAccionDocumentacionAviso(null);
     }
 
     function limpiarMensaje() {
       const m = document.getElementById("mensaje");
+      const textoEl = document.getElementById("mensajeTexto");
       m.className = "mensaje";
       m.style.display = "none";
-      m.textContent = "";
+      if (textoEl) textoEl.textContent = "";
+      aplicarAccionDocumentacionAviso(null);
     }
 
     function aplicarLogoCabeceraUsuario() {
@@ -1482,7 +1590,9 @@
             });
             const data = await response.json().catch(() => null);
             if (!response.ok || !data?.ok) {
-              throw new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
+              const error = new Error(data?.error || data?.detalle || "No se pudo enviar la solicitud.");
+              error.documentacion = extraerAccesoDocumentacion(data);
+              throw error;
             }
 
             const correoAdmin = data?.correo_admin || null;
@@ -1493,6 +1603,7 @@
             await cargarPanel();
           } catch (error) {
             mostrarMensajeConfirmacionEnvio("error", error.message || "No se pudo enviar la solicitud.");
+            aplicarAccionDocumentacionModal(error?.documentacion || null);
             if (btnConfirmar) btnConfirmar.disabled = false;
           } finally {
             actualizarBotones();
@@ -1500,6 +1611,7 @@
         });
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo enviar la solicitud.");
+        aplicarAccionDocumentacionAviso(error?.documentacion || null);
       } finally {
         if (btnEnviar) btnEnviar.disabled = false;
         actualizarBotones();
@@ -1558,6 +1670,9 @@ async function anularSolicitudSeleccionada() {
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion, reservaSeleccionada.estado);
+    });
+    document.getElementById("btnIrDocumentacionMensaje").addEventListener("click", function () {
+      irADocumentacionPendiente(this.dataset.url || "");
     });
     document.getElementById("btnEnviarSolicitud").addEventListener("click", enviarSolicitudSeleccionada);
     document.getElementById("btnAsistentes").addEventListener("click", () => {
