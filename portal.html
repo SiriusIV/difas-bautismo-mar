@@ -208,6 +208,23 @@
       padding: 7px 13px;
     }
     .franja-sesion-spacer { flex: 1 1 auto; }
+    @media (min-width: 701px) {
+      .franja-sesion-inner.modo-admin {
+        position: relative;
+      }
+      .franja-sesion-inner.modo-admin .franja-sesion-spacer {
+        display: none;
+      }
+      .franja-sesion-inner.modo-admin #barraAdmin {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .franja-sesion-inner.modo-admin #btnLogoutSesion {
+        margin-left: auto;
+      }
+    }
     .btn-notificaciones {
       display: none;
       align-items: center;
@@ -2301,7 +2318,7 @@ function actualizarBotonSolicitarSegunFranja() {
       if (!usuarioAutenticado) {
         franja.style.display = "none";
         if (franjaInner) {
-          franjaInner.classList.remove("modo-solicitante");
+          franjaInner.classList.remove("modo-solicitante", "modo-admin");
         }
         texto.textContent = "";
         btnPerfil.style.display = "none";
@@ -2325,6 +2342,7 @@ function actualizarBotonSolicitarSegunFranja() {
 
         if (franjaInner) {
           franjaInner.classList.toggle("modo-solicitante", rol === "SOLICITANTE");
+          franjaInner.classList.toggle("modo-admin", rol === "ADMIN" || rol === "SUPERADMIN");
         }
         btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
         btnNotificaciones.style.display = "none";
