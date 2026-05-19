@@ -55,11 +55,18 @@ export async function onRequestPost(context) {
       LIMIT 1
     `).bind(email).first();
 
-    if (!usuario || Number(usuario.activo || 0) !== 1) {
+    if (!usuario) {
       return json({
-        ok: true,
-        mensaje: "Si el correo existe en la plataforma, recibirás un enlace para restablecer la contraseña."
-      });
+        ok: false,
+        error: "Ese usuario no está registrado en el sistema."
+      }, 404);
+    }
+
+    if (Number(usuario.activo || 0) !== 1) {
+      return json({
+        ok: false,
+        error: "La cuenta existe pero está inactiva y no puede recuperar la contraseña."
+      }, 403);
     }
 
     const tokenPlano = generarTokenSeguro(32);
@@ -94,14 +101,15 @@ export async function onRequestPost(context) {
       return json({
         ok: false,
         error: envio.skipped
-          ? "La recuperación de contraseña no está disponible en este momento."
-          : (envio.error || "No se pudo enviar el correo de recuperación.")
+          ? "La recuperación de contraseña no está disponible en este momento porque falta configurar el servicio de correo."
+          : (envio.error || "No se pudo enviar el correo de recuperación."),
+        detalle: envio.error || ""
       }, 503);
     }
 
     return json({
       ok: true,
-      mensaje: "Si el correo existe en la plataforma, recibirás un enlace para restablecer la contraseña."
+      mensaje: "Te hemos enviado un enlace de recuperación al correo registrado en el sistema."
     });
   } catch (error) {
     return json({
