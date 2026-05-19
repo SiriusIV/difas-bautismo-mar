@@ -496,10 +496,10 @@
       font-size: 13px;
     }
     .estado-modal-badge {
-      font-size: 12px;
-      padding: 5px 12px;
-      line-height: 1;
-      min-width: 104px;
+      font-size: 13px;
+      padding: 9px 16px;
+      line-height: 1.2;
+      min-width: 132px;
       text-align: center;
     }
     .estado-modal-bloque {
@@ -1189,7 +1189,7 @@
       }
       if (estado === "CONFIRMADA") {
         if (observacionesAdmin) {
-          return `Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador. Motivo indicado: ${observacionesAdmin}`;
+          return "Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador.";
         }
         return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
       }
@@ -1201,7 +1201,7 @@
       }
       if (estado === "RECHAZADA") {
         if (observacionesAdmin) {
-          return `Tu solicitud ha sido rechazada por el administrador. Motivo indicado: ${observacionesAdmin}`;
+          return "Tu solicitud ha sido rechazada por el administrador.";
         }
         return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
       }
