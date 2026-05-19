@@ -1826,6 +1826,16 @@
       return `${capitalizarTextoCalendario(weekday)} ${day} de ${month}`;
     }
 
+    function esMovilCalendario() {
+      return window.matchMedia("(max-width: 720px)").matches;
+    }
+
+    function obtenerInicialDiaSemana(fecha) {
+      const dia = new Date(fecha).getDay();
+      const iniciales = ["D", "L", "M", "X", "J", "V", "S"];
+      return iniciales[dia] || "";
+    }
+
     function obtenerMesAnioVisibleListaCalendario(baseDate = null) {
       const fechaBase = baseDate || calendar?.getDate?.() || new Date();
       const fecha = fechaBase instanceof Date ? fechaBase : new Date(`${fechaBase}T00:00:00`);
@@ -1846,6 +1856,9 @@
 
     function formatearCabeceraDiaCalendario(arg) {
       const fecha = arg?.date || new Date();
+      if (esMovilCalendario()) {
+        return obtenerInicialDiaSemana(fecha);
+      }
       return construirTextoDiaSemanaCompleto(fecha);
     }
 
