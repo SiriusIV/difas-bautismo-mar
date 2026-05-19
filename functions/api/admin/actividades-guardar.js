@@ -9,9 +9,11 @@ import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import {
   borrarConfiguracionDocumentalActividad,
   guardarConfiguracionDocumentalActividad,
+  leerConfiguracionDocumentalActividad,
   normalizarModoDocumentacionActividad,
   normalizarNombresDocumentosActividad,
   obtenerCatalogoDocumentosActivosAdmin
@@ -116,6 +118,24 @@ function requisitosSonIguales(listaA = [], listaB = []) {
       return false;
     }
   }
+  return true;
+}
+
+function configuracionDocumentalActividadIgual(a = {}, b = {}) {
+  const modoA = normalizarModoDocumentacionActividad(a?.modo);
+  const modoB = normalizarModoDocumentacionActividad(b?.modo);
+  if (modoA !== modoB) return false;
+
+  const docsA = normalizarNombresDocumentosActividad(a?.documentos || []);
+  const docsB = normalizarNombresDocumentosActividad(b?.documentos || []);
+  if (docsA.length !== docsB.length) return false;
+
+  for (let i = 0; i < docsA.length; i += 1) {
+    if (limpiarTexto(docsA[i]).toUpperCase() !== limpiarTexto(docsB[i]).toUpperCase()) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -653,6 +673,15 @@ export async function onRequestPut(context) {
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
     const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
+    const documentacionActividadActual = await leerConfiguracionDocumentalActividad(env, id);
+    const documentacionActividadNueva = {
+      modo: p.documentacion_actividad.modo,
+      documentos: p.documentacion_actividad.documentos
+    };
+    const documentacionActividadHaCambiado = !configuracionDocumentalActividadIgual(
+      documentacionActividadActual,
+      documentacionActividadNueva
+    );
     const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
     const resumenFranjas = await obtenerResumenFranjasActividad(env, id);
 
@@ -881,6 +910,23 @@ export async function onRequestPut(context) {
       p.documentacion_actividad.documentos
     );
 
+    let resumenImpactoDocumental = null;
+    if (documentacionActividadHaCambiado) {
+      let baseUrl = "";
+      try {
+        baseUrl = new URL(request.url).origin;
+      } catch {
+        baseUrl = "";
+      }
+
+      resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
+        adminId: p.admin_id,
+        baseUrl,
+        motivo: "documentos_actualizados",
+        avisarCambioMarcoSinCambios: false
+      });
+    }
+
     let resumenCambioRequisitos = null;
     if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0) {
       resumenCambioRequisitos = await notificarCambioRequisitosActividad(
@@ -898,6 +944,7 @@ export async function onRequestPut(context) {
       ok: true,
       resumen_anulacion: resumenAnulacion,
       resumen_cambio_requisitos: resumenCambioRequisitos,
+      resumen_impacto_documental: resumenImpactoDocumental,
       mensaje: p.borrador_tecnico ? "Borrador tÃ©cnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
