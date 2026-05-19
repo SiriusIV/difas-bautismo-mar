@@ -19,6 +19,8 @@ import {
   obtenerCatalogoDocumentosActivosAdmin
 } from "../_actividad_documentacion.js";
 
+const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -441,9 +443,12 @@ function construirPayload(body, admin_id) {
   const aforoLimitado = esPendiente ? 0 : parsearFlag(body.aforo_limitado, 1);
   const aforoMaximo = esPendiente ? null : parsearEnteroPositivoONull(body.aforo_maximo);
 
+  const patronRecurrenciaEntrada = normalizarNullable(body.patron_recurrencia);
+
   return {
     nombre: limpiarTexto(body.nombre),
     tipo,
+    tipo_persistencia: esPendiente ? "PERMANENTE" : tipo,
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
     activa,
@@ -472,7 +477,7 @@ function construirPayload(body, admin_id) {
     aforo_maximo: aforoMaximo,
     provincia: normalizarNullable(body.provincia),
     es_recurrente: parsearFlag(body.es_recurrente, 0),
-    patron_recurrencia: normalizarNullable(body.patron_recurrencia),
+    patron_recurrencia: esPendiente ? MARCADOR_TIPO_PENDIENTE : patronRecurrenciaEntrada,
     usa_enlace_externo: parsearFlag(body.usa_enlace_externo, 0),
     enlace_externo_url: normalizarNullable(body.enlace_externo_url),
     borrador_tecnico: parsearFlag(body.borrador_tecnico, 0),
@@ -563,7 +568,7 @@ export async function onRequestPost(context) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       p.nombre,
-      p.tipo,
+      p.tipo_persistencia,
       p.fecha_inicio,
       p.fecha_fin,
       p.activa,
@@ -863,7 +868,7 @@ export async function onRequestPut(context) {
       WHERE id = ?
     `).bind(
       p.nombre,
-      p.tipo,
+      p.tipo_persistencia,
       p.fecha_inicio,
       p.fecha_fin,
       p.activa,

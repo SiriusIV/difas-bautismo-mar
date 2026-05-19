@@ -5,6 +5,8 @@ import {
   obtenerConfiguracionDocumentalPorActividades
 } from "./_actividad_documentacion.js";
 
+const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: {
@@ -15,6 +17,14 @@ function json(data, init = {}) {
     },
     ...init
   });
+}
+
+function resolverTipoActividadVisible(row = {}) {
+  const tipo = String(row?.tipo || "").trim().toUpperCase();
+  const patron = String(row?.patron_recurrencia || "").trim().toUpperCase();
+  if (tipo === "PENDIENTE") return "PENDIENTE";
+  if (tipo === "PERMANENTE" && patron === MARCADOR_TIPO_PENDIENTE) return "PENDIENTE";
+  return tipo || "TEMPORAL";
 }
 
 async function desactivarActividadesFinalizadasPorPeriodo(env) {
@@ -541,6 +551,7 @@ export async function onRequestGet(context) {
       ok: true,
       actividades: (result.results || []).map((a) => ({
         ...a,
+        tipo: resolverTipoActividadVisible(a),
         aforo_maximo: Number(a.aforo_maximo || 0),
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),

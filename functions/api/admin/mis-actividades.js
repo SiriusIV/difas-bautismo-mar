@@ -8,6 +8,8 @@ import {
   obtenerConfiguracionDocumentalPorActividades
 } from "../_actividad_documentacion.js";
 
+const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -18,6 +20,14 @@ function json(data, status = 200) {
       "Expires": "0"
     }
   });
+}
+
+function resolverTipoActividadVisible(row = {}) {
+  const tipo = String(row?.tipo || "").trim().toUpperCase();
+  const patron = String(row?.patron_recurrencia || "").trim().toUpperCase();
+  if (tipo === "PENDIENTE") return "PENDIENTE";
+  if (tipo === "PERMANENTE" && patron === MARCADOR_TIPO_PENDIENTE) return "PENDIENTE";
+  return tipo || "TEMPORAL";
 }
 
 function dbPrimaria(env) {
@@ -292,6 +302,7 @@ export async function onRequestGet(context) {
           };
         })(),
         ...a,
+        tipo: resolverTipoActividadVisible(a),
         aforo_maximo: Number(a.aforo_maximo || 0),
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
