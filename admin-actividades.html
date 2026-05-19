@@ -1947,6 +1947,16 @@
     }
 
     @media (max-width: 700px) {
+      .contenedor {
+        margin: 10px auto 18px;
+        padding: 0 10px 14px;
+      }
+
+      .bloque-superior,
+      .bloque-inferior {
+        padding: 12px;
+      }
+
       .cabecera-inner {
         flex-direction: column;
         align-items: stretch;
@@ -1964,19 +1974,94 @@
 
       .contexto-head-top {
         align-items: flex-start;
+        gap: 10px;
       }
 
       .contexto-titulos {
         width: 100%;
       }
 
+      .contexto-acciones-grupo.pasos {
+        margin-left: 0;
+      }
+
       .contexto-acciones {
         width: 100%;
-        justify-content: space-between;
+        justify-content: stretch;
+        gap: 10px;
       }
 
       .contexto-acciones-grupo {
         width: 100%;
+        justify-content: flex-start;
+      }
+
+      .contexto-acciones-grupo.estado-actividad {
+        width: fit-content;
+      }
+
+      .step-title {
+        font-size: 16px;
+      }
+
+      .step-help {
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .config-main .fila,
+      .config-main .fila-una,
+      .fila-compacta,
+      .fila-compacta-tres,
+      .fila-compacta-cuatro {
+        grid-template-columns: 1fr;
+      }
+
+      .config-panel,
+      .config-periodo-card,
+      .subbloque {
+        padding: 10px;
+      }
+
+      .control-row {
+        min-height: 32px;
+      }
+
+      .select-inline,
+      .control-row-input-aforo,
+      .config-periodo-campo input {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+
+      .config-periodo-campo {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+      }
+
+      .fila-franja-inline {
+        grid-template-columns: 1fr;
+      }
+
+      .campo-franja-acciones {
+        justify-content: flex-start;
+      }
+
+      .tabla-wrap-franjas {
+        overflow-x: auto;
+      }
+
+      .tabla-franjas {
+        min-width: 620px;
+      }
+
+      .debug-traza-actividad {
+        width: calc(100vw - 20px);
+        right: 10px;
+        bottom: 10px;
+        max-height: 38vh;
       }
     }
   </style>
