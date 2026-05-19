@@ -278,6 +278,7 @@ export async function onRequestGet(context) {
           AND a.visible_portal = 1
           AND (
             a.tipo = 'PERMANENTE'
+            OR a.tipo = 'PENDIENTE'
             OR (
               a.tipo = 'TEMPORAL'
               AND (
@@ -504,6 +505,7 @@ export async function onRequestGet(context) {
         AND a.visible_portal = 1
         AND (
           a.tipo = 'PERMANENTE'
+          OR a.tipo = 'PENDIENTE'
           OR (
             a.tipo = 'TEMPORAL'
             AND (

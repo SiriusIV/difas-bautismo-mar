@@ -131,22 +131,23 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
 function construirEstadoPropuesto(body, actual) {
   const tipo = limpiarTexto(body.tipo || actual.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
+  const esPendiente = tipo === "PENDIENTE";
 
   return {
     tipo,
     activa: parsearFlag(body.activa, Number(actual.activa ?? actual.visible_portal ?? 1)),
     fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio ?? actual.fecha_inicio) : null,
     fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin ?? actual.fecha_fin) : null,
-    usa_franjas: parsearFlag(body.usa_franjas, Number(actual.usa_franjas || 0)),
-    requiere_reserva: parsearFlag(body.requiere_reserva, Number(actual.requiere_reserva || 0)),
-    aforo_limitado: parsearFlag(body.aforo_limitado, Number(actual.aforo_limitado || 0)),
-    aforo_maximo: parsearEnteroPositivoONull(body.aforo_maximo ?? actual.aforo_maximo)
+    usa_franjas: esPendiente ? 0 : parsearFlag(body.usa_franjas, Number(actual.usa_franjas || 0)),
+    requiere_reserva: esPendiente ? 0 : parsearFlag(body.requiere_reserva, Number(actual.requiere_reserva || 0)),
+    aforo_limitado: esPendiente ? 0 : parsearFlag(body.aforo_limitado, Number(actual.aforo_limitado || 0)),
+    aforo_maximo: esPendiente ? null : parsearEnteroPositivoONull(body.aforo_maximo ?? actual.aforo_maximo)
   };
 }
 
 function validarDatosBasicosPropuestos(p) {
-  if (!["TEMPORAL", "PERMANENTE"].includes(p.tipo)) {
-    return "El tipo debe ser TEMPORAL o PERMANENTE.";
+  if (!["TEMPORAL", "PERMANENTE", "PENDIENTE"].includes(p.tipo)) {
+    return "El tipo debe ser TEMPORAL, PERMANENTE o PENDIENTE.";
   }
 
   if (p.tipo === "TEMPORAL") {

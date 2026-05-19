@@ -3212,6 +3212,7 @@ function obtenerActividadesFiltradas() {
                 ${a.lugar ? `<div>${a.lugar}</div>` : ""}
                 ${a.provincia ? `<div>${a.provincia}</div>` : ""}
                 ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${a.fecha_inicio || ""}${a.fecha_inicio && a.fecha_fin ? " - " : ""}${a.fecha_fin || ""}</div>` : ""}
+                ${a.tipo === "PENDIENTE" ? `<div>Fechas pendientes de determinar</div>` : ""}
               </div>
             </div>
           </div>
@@ -3465,6 +3466,7 @@ function puedeEditarRequisitosActividadSeleccionada() {
         ${a.lugar ? `<div><strong>Lugar:</strong> ${a.lugar}</div>` : ""}
         ${a.provincia ? `<div><strong>Localidad:</strong> ${a.provincia}</div>` : ""}
         ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div><strong>Fechas:</strong> ${formatearIntervaloFechaES(a.fecha_inicio, a.fecha_fin)}</div>` : ""}
+        ${a.tipo === "PENDIENTE" ? `<div><strong>Fechas:</strong> Pendientes de determinar</div>` : ""}
         ${a.tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
         ${Number(a.aforo_limitado || 0) === 1 && Number(a.usa_franjas || 0) !== 1 && Number(a.plazas_totales || 0) > 0 ? `<div><strong>Aforo máximo:</strong> ${Number(a.plazas_totales || 0)} personas</div>` : ""}
       `;

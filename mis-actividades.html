@@ -605,6 +605,10 @@
                       <span>Temporales</span>
                     </label>
                     <label class="filtro-multiselect-opcion">
+                      <input type="checkbox" value="pendientes" checked>
+                      <span>Pendientes</span>
+                    </label>
+                    <label class="filtro-multiselect-opcion">
                       <input type="checkbox" value="activas" checked>
                       <span>Activas</span>
                     </label>
@@ -689,7 +693,7 @@
       img.classList.remove("logo-pendiente");
     }
     let filtroPrograma = "";
-    let filtrosTipoActividad = new Set(["permanentes", "temporales", "activas", "inactivas"]);
+    let filtrosTipoActividad = new Set(["permanentes", "temporales", "pendientes", "activas", "inactivas"]);
 
     function mostrarMensaje(tipo, texto) {
       const el = document.getElementById("mensaje");
@@ -794,10 +798,11 @@
 
     function actualizarResumenFiltroTipoActividad() {
       const btn = document.getElementById("btnFiltroTipoActividad");
-      const orden = ["permanentes", "temporales", "activas", "inactivas"];
+      const orden = ["permanentes", "temporales", "pendientes", "activas", "inactivas"];
       const etiquetas = {
         permanentes: "Permanentes",
         temporales: "Temporales",
+        pendientes: "Pendientes",
         activas: "Activas",
         inactivas: "Inactivas"
       };
@@ -832,12 +837,14 @@
 
         const esPermanente = String(a.tipo || "").toUpperCase() === "PERMANENTE";
         const esTemporal = String(a.tipo || "").toUpperCase() === "TEMPORAL";
+        const esPendiente = String(a.tipo || "").toUpperCase() === "PENDIENTE";
         const esActiva = esActividadVisibleActiva(a);
         const esInactiva = !esActiva;
 
         const coincideTipo =
           (filtrosTipoActividad.has("permanentes") && esPermanente) ||
-          (filtrosTipoActividad.has("temporales") && esTemporal);
+          (filtrosTipoActividad.has("temporales") && esTemporal) ||
+          (filtrosTipoActividad.has("pendientes") && esPendiente);
 
         const coincideEstado =
           (filtrosTipoActividad.has("activas") && esActiva) ||
@@ -909,7 +916,7 @@
               >
             </td>
             <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
-            <td class="tipo-col">${a.tipo || ""}</td>
+            <td class="tipo-col">${String(a.tipo || "").toUpperCase() === "PENDIENTE" ? "PENDIENTE" : (a.tipo || "")}</td>
             <td class="programa-col">${a.subtitulo_publico || "-"}</td>
             <td class="inicio-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_inicio) : "-"}</td>
             <td class="fin-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_fin) : "-"}</td>

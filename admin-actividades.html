@@ -2194,6 +2194,7 @@
                 <select id="tipo" class="input-corto">
                   <option value="TEMPORAL">TEMPORAL</option>
                   <option value="PERMANENTE">PERMANENTE</option>
+                  <option value="PENDIENTE">PENDIENTE</option>
                 </select>
               </div>
 
@@ -4013,6 +4014,7 @@ function normalizarPasoSegunFlujo(pasoDeseado) {
 
 function actualizarVisibilidadFormulario() {
   const tipo = document.getElementById("tipo").value;
+  const esPendiente = tipo === "PENDIENTE";
   const usaFranjas = document.getElementById("usa_franjas").value === "1";
   const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
   const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
@@ -4022,6 +4024,13 @@ function actualizarVisibilidadFormulario() {
   const fechaInicioInput = document.getElementById("fecha_inicio");
   const fechaFinInput = document.getElementById("fecha_fin");
   const enlaceExternoInput = document.getElementById("enlace_externo_url");
+
+  if (esPendiente) {
+    document.getElementById("requiere_reserva").value = "0";
+    document.getElementById("usa_franjas").value = "0";
+    document.getElementById("aforo_limitado").value = "0";
+  }
+  sincronizarTogglesPanelConfiguracion();
 
   if (tipo !== "TEMPORAL") {
     if (fechaInicioInput && fechaInicioInput.value) fechaInicioInput.value = "";
@@ -4046,6 +4055,15 @@ function actualizarVisibilidadFormulario() {
   const aviso = document.getElementById("avisoConfiguracion");
   aviso.textContent = "";
   aviso.classList.add("oculto");
+
+  const selectReserva = document.getElementById("requiere_reserva");
+  if (selectReserva) {
+    selectReserva.disabled = esPendiente;
+  }
+  const controlReserva = selectReserva?.closest(".control-row");
+  if (controlReserva) {
+    controlReserva.classList.toggle("desactivado", esPendiente);
+  }
 
   actualizarEstadoFranjasUI();
   actualizarVisibilidadAforoMaximoUI();
@@ -4095,6 +4113,7 @@ function actualizarVisibilidadAforoMaximoUI() {
           ? `<div><strong>Fechas:</strong> ${formatearIntervaloFechaES(fecha_inicio, fecha_fin)}</div>`
           : ""}
         ${tipo === "PERMANENTE" ? `<div><strong>Disponibilidad:</strong> Permanente</div>` : ""}
+        ${tipo === "PENDIENTE" ? `<div><strong>Fechas:</strong> Pendientes de determinar</div>` : ""}
       `;
     }
 
@@ -4982,6 +5001,12 @@ async function borrarFranja(id) {
 
       const payload = construirPayloadActividad(0);
       const actividadQuedaDesactivada = payload.activa !== "1";
+
+      if (payload.tipo === "PENDIENTE") {
+        payload.requiere_reserva = "0";
+        payload.usa_franjas = "0";
+        payload.aforo_limitado = "0";
+      }
 
       if (
         esSubmitImplicitoDesdeFecha &&

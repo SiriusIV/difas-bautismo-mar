@@ -319,8 +319,8 @@ function validarActividad(data) {
   }
 
   if (!nombre) return "El nombre de la actividad es obligatorio.";
-  if (!["TEMPORAL", "PERMANENTE"].includes(tipo)) {
-    return "El tipo debe ser TEMPORAL o PERMANENTE.";
+  if (!["TEMPORAL", "PERMANENTE", "PENDIENTE"].includes(tipo)) {
+    return "El tipo debe ser TEMPORAL, PERMANENTE o PENDIENTE.";
   }
 
   if (tipo === "TEMPORAL") {
@@ -433,8 +433,13 @@ async function obtenerResumenFranjasActividad(env, actividadId) {
 function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
+  const esPendiente = tipo === "PENDIENTE";
   const visiblePortal = parsearFlag(body.visible_portal, 1);
   const activa = parsearFlag(body.activa, 1);
+  const usaFranjas = esPendiente ? 0 : parsearFlag(body.usa_franjas, 1);
+  const requiereReserva = esPendiente ? 0 : parsearFlag(body.requiere_reserva, 1);
+  const aforoLimitado = esPendiente ? 0 : parsearFlag(body.aforo_limitado, 1);
+  const aforoMaximo = esPendiente ? null : parsearEnteroPositivoONull(body.aforo_maximo);
 
   return {
     nombre: limpiarTexto(body.nombre),
@@ -460,11 +465,11 @@ function construirPayload(body, admin_id) {
     visible_portal: activa === 0 ? 0 : visiblePortal,
     orden_portal: parsearEntero(body.orden_portal, 0),
     organizador_publico: normalizarNullable(body.organizador_publico),
-    usa_franjas: parsearFlag(body.usa_franjas, 1),
+    usa_franjas: usaFranjas,
     admin_id,
-    requiere_reserva: parsearFlag(body.requiere_reserva, 1),
-    aforo_limitado: parsearFlag(body.aforo_limitado, 1),
-    aforo_maximo: parsearEnteroPositivoONull(body.aforo_maximo),
+    requiere_reserva: requiereReserva,
+    aforo_limitado: aforoLimitado,
+    aforo_maximo: aforoMaximo,
     provincia: normalizarNullable(body.provincia),
     es_recurrente: parsearFlag(body.es_recurrente, 0),
     patron_recurrencia: normalizarNullable(body.patron_recurrencia),
