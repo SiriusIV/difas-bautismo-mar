@@ -4146,10 +4146,23 @@ function continuarSolicitudActividad() {
           body: JSON.stringify({ email })
         });
 
-        const data = await res.json().catch(() => null);
+        const raw = await res.text();
+        let data = null;
+
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch (_) {
+          data = null;
+        }
 
         if (!res.ok || !data?.ok) {
-          mensaje("mensajeRecuperarPassword", "error", data?.error || "No se pudo iniciar la recuperación.");
+          const detalle = data?.detalle ? ` Detalle: ${data.detalle}` : "";
+          const fallback = raw && !data ? ` Respuesta: ${raw}` : "";
+          mensaje(
+            "mensajeRecuperarPassword",
+            "error",
+            (data?.error || "No se pudo iniciar la recuperación.") + detalle + fallback
+          );
           return;
         }
 
