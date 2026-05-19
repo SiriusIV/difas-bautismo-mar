@@ -1979,25 +1979,37 @@
 
       .contexto-titulos {
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
       }
 
       .contexto-acciones-grupo.pasos {
         margin-left: 0;
-      }
-
-      .contexto-acciones {
-        width: 100%;
-        justify-content: stretch;
-        gap: 10px;
-      }
-
-      .contexto-acciones-grupo {
         width: 100%;
         justify-content: flex-start;
       }
 
+      .contexto-acciones {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 10px;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .contexto-acciones-grupo {
+        width: auto;
+        justify-content: flex-start;
+      }
+
       .contexto-acciones-grupo.estado-actividad {
-        width: fit-content;
+        width: auto;
+      }
+
+      .contexto-acciones-grupo.portal-acceso {
+        margin-left: 0;
       }
 
       .step-title {
