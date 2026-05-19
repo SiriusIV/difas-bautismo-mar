@@ -495,6 +495,12 @@
       font-weight: 600;
       color: #123a63;
     }
+    .filtro-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 180px;
+    }
 
     .filtro-admin-wrap.oculto,
     .filtro-provincia-wrap.oculto {
@@ -1343,9 +1349,9 @@
       }
 
       .card {
-        width: min(84vw, 280px);
-        min-width: min(84vw, 280px);
-        max-width: min(84vw, 280px);
+        width: calc(100vw - 44px);
+        min-width: calc(100vw - 44px);
+        max-width: calc(100vw - 44px);
       }
 
       .filtro-panel {
@@ -1355,6 +1361,11 @@
       .filtro-panel-izq,
       .filtro-panel-der {
         width: 100%;
+      }
+      .filtro-panel-izq {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
       }
 
       .filtro-grupo {
@@ -1493,10 +1504,12 @@
     </select>
   </div>
 
-  <label for="filtroPrograma">Programa</label>
-  <select id="filtroPrograma">
-    <option value="">Todos</option>
-  </select>
+  <div class="filtro-grupo" id="filtroProgramaWrap">
+    <label for="filtroPrograma">Programa</label>
+    <select id="filtroPrograma">
+      <option value="">Todos</option>
+    </select>
+  </div>
 </div>
 
         <div class="filtro-panel-der">
@@ -1702,7 +1715,7 @@
     let carruselAutoIndex = 0;
     let carruselReanudarTimeout = null;
       let provinciaSeleccionada = "";
-      let estadoActividadSeleccionado = "";
+      let estadoActividadSeleccionado = "publicadas";
       let programaSeleccionado = "";
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
@@ -2836,6 +2849,7 @@ function actualizarBotonSolicitarSegunFranja() {
         wrapAdmin.classList.add("oculto");
         adminSecretariaSeleccionado = "";
         provinciaSeleccionada = "";
+        if (!estadoActividadSeleccionado) estadoActividadSeleccionado = "publicadas";
         if (selectAdmin) selectAdmin.value = "";
         if (selectProvincia) selectProvincia.value = estadoActividadSeleccionado;
         if (labelProvincia) labelProvincia.textContent = "Estado";
@@ -2947,7 +2961,7 @@ function actualizarBotonSolicitarSegunFranja() {
         select.innerHTML = opciones.map(([valor, texto]) => `<option value="${valor}">${texto}</option>`).join("");
 
         if (!opciones.some(([valor]) => valor === estadoActividadSeleccionado)) {
-          estadoActividadSeleccionado = "";
+          estadoActividadSeleccionado = "publicadas";
         }
 
         select.value = estadoActividadSeleccionado;
@@ -3093,7 +3107,10 @@ function obtenerActividadesFiltradas() {
       const wrap = document.getElementById("carruselWrap");
       if (!wrap) return;
 
-      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+      const esMovil = window.matchMedia("(max-width: 700px)").matches;
+      const targetLeft = esMovil
+        ? card.offsetLeft
+        : card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
       wrap.scrollTo({
         left: Math.max(targetLeft, 0),
@@ -3107,7 +3124,10 @@ function obtenerActividadesFiltradas() {
       const wrap = document.getElementById("carruselWrap");
       if (!wrap) return;
 
-      const targetLeft = card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
+      const esMovil = window.matchMedia("(max-width: 700px)").matches;
+      const targetLeft = esMovil
+        ? card.offsetLeft
+        : card.offsetLeft - ((wrap.clientWidth - card.offsetWidth) / 2);
 
       const anterior = wrap.style.scrollBehavior;
       wrap.style.scrollBehavior = "auto";
