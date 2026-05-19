@@ -869,6 +869,33 @@
         grid-template-columns: 1fr;
       }
 
+      .solicitud-bloque-top {
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 12px;
+        column-gap: 12px;
+        align-items: center;
+      }
+
+      .datos-actividad-solicitud {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        justify-self: center;
+      }
+
+      .atajo-reservas-solicitud {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: start;
+      }
+
+      .acciones-circulares {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: end;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+      }
+
       .fila-franja-plazas {
         grid-template-columns: 1fr 1fr;
       }
@@ -902,10 +929,6 @@
 
       .datos-actividad-meta {
         gap: 8px 14px;
-      }
-
-      .acciones-circulares {
-        justify-content: flex-start;
       }
 
       .titulos-cabecera,
