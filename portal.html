@@ -1421,6 +1421,41 @@
         width: calc(100vw - 22px);
         max-width: calc(100vw - 22px) !important;
       }
+
+      .franja-sesion-inner.modo-solicitante {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "reservas logout"
+          "texto texto";
+        row-gap: 10px;
+        column-gap: 10px;
+        align-items: center;
+      }
+
+      .franja-sesion-inner.modo-solicitante .franja-sesion-spacer {
+        display: none;
+      }
+
+      .franja-sesion-inner.modo-solicitante #barraUsuario {
+        grid-area: reservas;
+        justify-self: start;
+      }
+
+      .franja-sesion-inner.modo-solicitante #btnLogoutSesion {
+        grid-area: logout;
+        justify-self: end;
+      }
+
+      .franja-sesion-inner.modo-solicitante #textoSesion {
+        grid-area: texto;
+        justify-self: center;
+        text-align: center;
+      }
+
+      .franja-sesion-inner.modo-solicitante #btnPerfilSesion {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -2226,12 +2261,16 @@ function actualizarBotonSolicitarSegunFranja() {
 
     function actualizarFranjaSesion() {
       const franja = document.getElementById("franjaSesion");
+      const franjaInner = franja ? franja.querySelector(".franja-sesion-inner") : null;
       const texto = document.getElementById("textoSesion");
       const btnPerfil = document.getElementById("btnPerfilSesion");
       const btnNotificaciones = document.getElementById("btnNotificacionesSesion");
 
       if (!usuarioAutenticado) {
         franja.style.display = "none";
+        if (franjaInner) {
+          franjaInner.classList.remove("modo-solicitante");
+        }
         texto.textContent = "";
         btnPerfil.style.display = "none";
         btnNotificaciones.style.display = "none";
@@ -2252,6 +2291,9 @@ function actualizarBotonSolicitarSegunFranja() {
         texto.textContent = "";
       }
 
+        if (franjaInner) {
+          franjaInner.classList.toggle("modo-solicitante", rol === "SOLICITANTE");
+        }
         btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
         btnNotificaciones.style.display = "none";
         franja.style.display = texto.textContent ? "block" : "none";
