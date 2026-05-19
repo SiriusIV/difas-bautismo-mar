@@ -1715,6 +1715,7 @@
     let markerIconDefault = null;
     let resizeObserverMapa = null;
     let marcadorActividad = null;
+    let mapaTouchHandlers = null;
     let actividadFranjasSolicitada = null;
     let franjaSeleccionadaPortalId = null;
     let franjasActividadActual = [];
@@ -3388,6 +3389,14 @@ function obtenerActividadesFiltradas() {
         resizeObserverMapa.disconnect();
         resizeObserverMapa = null;
       }
+      if (mapaTouchHandlers && mapaTouchHandlers.el) {
+        const { el, onStart, onMove, onEnd } = mapaTouchHandlers;
+        el.removeEventListener("touchstart", onStart);
+        el.removeEventListener("touchmove", onMove);
+        el.removeEventListener("touchend", onEnd);
+        el.removeEventListener("touchcancel", onEnd);
+        mapaTouchHandlers = null;
+      }
 
       if (mapaActividad) {
         mapaActividad.remove();
@@ -3444,6 +3453,36 @@ function renderMapaActividad(a) {
     zoom: zoom,
     zoomControl: true
   });
+
+  const esPantallaTactil = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+  if (esPantallaTactil) {
+    mapaActividad.dragging.disable();
+    const onTouchStart = (event) => {
+      if (!mapaActividad) return;
+      if ((event.touches?.length || 0) >= 2) {
+        mapaActividad.dragging.enable();
+      } else {
+        mapaActividad.dragging.disable();
+      }
+    };
+    const onTouchMove = (event) => {
+      if (!mapaActividad) return;
+      if ((event.touches?.length || 0) >= 2) {
+        mapaActividad.dragging.enable();
+      } else {
+        mapaActividad.dragging.disable();
+      }
+    };
+    const onTouchEnd = () => {
+      if (!mapaActividad) return;
+      mapaActividad.dragging.disable();
+    };
+    mapaDiv.addEventListener("touchstart", onTouchStart, { passive: true });
+    mapaDiv.addEventListener("touchmove", onTouchMove, { passive: true });
+    mapaDiv.addEventListener("touchend", onTouchEnd, { passive: true });
+    mapaDiv.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    mapaTouchHandlers = { el: mapaDiv, onStart: onTouchStart, onMove: onTouchMove, onEnd: onTouchEnd };
+  }
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
