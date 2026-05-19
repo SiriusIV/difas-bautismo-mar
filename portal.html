@@ -1422,39 +1422,58 @@
         max-width: calc(100vw - 22px) !important;
       }
 
-      body.sesion-solicitante .franja-sesion-inner {
+      .franja-sesion-inner {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
         grid-template-areas:
-          "reservas logout"
-          "texto texto";
+          "perfil texto noti logout"
+          "nav nav nav nav";
         row-gap: 10px;
-        column-gap: 10px;
+        column-gap: 8px;
         align-items: center;
       }
 
-      body.sesion-solicitante .franja-sesion-inner .franja-sesion-spacer {
+      .franja-sesion-inner .franja-sesion-spacer {
         display: none;
       }
 
-      body.sesion-solicitante .franja-sesion-inner #barraUsuario {
-        grid-area: reservas;
+      .franja-sesion-inner #btnPerfilSesion {
+        grid-area: perfil;
         justify-self: start;
+        display: inline-flex !important;
       }
 
-      body.sesion-solicitante .franja-sesion-inner #btnLogoutSesion {
+      .franja-sesion-inner #textoSesion {
+        grid-area: texto;
+        min-width: 0;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .franja-sesion-inner #btnNotificacionesSesion {
+        grid-area: noti;
+        justify-self: end;
+      }
+
+      .franja-sesion-inner #btnLogoutSesion {
         grid-area: logout;
         justify-self: end;
       }
 
-      body.sesion-solicitante .franja-sesion-inner #textoSesion {
-        grid-area: texto;
+      .franja-sesion-inner #barraUsuario,
+      .franja-sesion-inner #barraAdmin,
+      .franja-sesion-inner #barraSecretaria {
+        grid-area: nav;
         justify-self: center;
-        text-align: center;
+        width: auto;
       }
 
-      body.sesion-solicitante .franja-sesion-inner #btnPerfilSesion {
-        display: none !important;
+      .franja-sesion-inner #barraUsuario .nav-btn,
+      .franja-sesion-inner #barraAdmin .nav-btn,
+      .franja-sesion-inner #barraSecretaria .nav-btn {
+        white-space: nowrap;
       }
     }
   </style>
