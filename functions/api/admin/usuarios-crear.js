@@ -1,17 +1,15 @@
 import { getAdminSession } from "./_auth.js";
+import {
+  hashPassword,
+  mensajePoliticaPassword,
+  validarPoliticaPassword
+} from "../usuario/_password.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
-}
-
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 
 export async function onRequestPost(context) {
@@ -35,6 +33,15 @@ export async function onRequestPost(context) {
 
     if (!nombre || !email || !password) {
       return json({ ok: false, error: "Faltan datos obligatorios" }, 400);
+    }
+
+    const validacionPassword = validarPoliticaPassword(password);
+    if (!validacionPassword.ok) {
+      return json({
+        ok: false,
+        error: mensajePoliticaPassword(),
+        detalles: validacionPassword.errores
+      }, 400);
     }
 
     // comprobar email existente

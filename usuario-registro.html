@@ -525,6 +525,10 @@
               <label for="password_confirmacion">Confirmar contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password_confirmacion" name="password_confirmacion" autocomplete="new-password" required>
             </div>
+
+            <div class="campo-completo">
+              <div class="nota">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
+            </div>
           </div>
 
         </form>
@@ -640,6 +644,16 @@
       return false;
     }
 
+    function validarPoliticaPassword(password) {
+      const valor = String(password || "");
+      if (valor.length < 8) return false;
+      if (!/[A-ZÁÉÍÓÚÜÑ]/.test(valor)) return false;
+      if (!/[a-záéíóúüñ]/.test(valor)) return false;
+      if (!/[0-9]/.test(valor)) return false;
+      if (!/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(valor)) return false;
+      return true;
+    }
+
     async function registro(event) {
       event.preventDefault();
       limpiarMensaje();
@@ -678,6 +692,11 @@
 
       if (password !== passwordConfirmacion) {
         mostrarMensaje("error", "La contraseña y su confirmación no coinciden.");
+        return;
+      }
+
+      if (!validarPoliticaPassword(password)) {
+        mostrarMensaje("error", "La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.");
         return;
       }
 

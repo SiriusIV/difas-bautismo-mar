@@ -1,4 +1,9 @@
 import { createSessionCookie } from "./_auth.js";
+import {
+  hashPassword,
+  mensajePoliticaPassword,
+  validarPoliticaPassword
+} from "./_password.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -59,13 +64,6 @@ function esDocumentoValido(tipo, documento) {
   return false;
 }
 
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
-}
-
 export async function onRequestPost(context) {
   const { request, env } = context;
   const db = env.DB;
@@ -100,6 +98,15 @@ export async function onRequestPost(context) {
 
   if (!esDocumentoValido(tipo_documento, documento_identificacion)) {
     return json({ ok: false, error: "El documento no coincide con el tipo seleccionado" }, 400);
+  }
+
+  const validacionPassword = validarPoliticaPassword(password);
+  if (!validacionPassword.ok) {
+    return json({
+      ok: false,
+      error: mensajePoliticaPassword(),
+      detalles: validacionPassword.errores
+    }, 400);
   }
 
   // comprobar email existente

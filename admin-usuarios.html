@@ -294,6 +294,10 @@
       <input type="password" id="password">
     </div>
 
+    <div class="campo">
+      <div style="font-size:12px;color:#5f6d7a;line-height:1.45;">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
+    </div>
+
     <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
 
     <div id="mensajeCrear" class="mensaje"></div>
@@ -359,6 +363,16 @@
 <script>
 let usuariosCache = [];
 let usuarioSeleccionado = null;
+
+function validarPoliticaPassword(password) {
+  const valor = String(password || "");
+  if (valor.length < 8) return false;
+  if (!/[A-ZÁÉÍÓÚÜÑ]/.test(valor)) return false;
+  if (!/[a-záéíóúüñ]/.test(valor)) return false;
+  if (!/[0-9]/.test(valor)) return false;
+  if (!/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(valor)) return false;
+  return true;
+}
 
 function mostrarMensajeCrear(tipo, texto) {
   const msg = document.getElementById("mensajeCrear");
@@ -439,6 +453,11 @@ async function crearUsuario() {
 
   if (!nombre || !email || !password) {
     mostrarMensajeCrear("error", "Debe rellenar nombre, email y contraseña.");
+    return;
+  }
+
+  if (!validarPoliticaPassword(password)) {
+    mostrarMensajeCrear("error", "La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.");
     return;
   }
 

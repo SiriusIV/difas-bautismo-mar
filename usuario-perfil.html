@@ -1225,6 +1225,7 @@
         <label for="modal_password_confirmacion">Confirmar nueva contraseña</label>
         <input type="password" id="modal_password_confirmacion" autocomplete="new-password">
       </div>
+      <p class="nota" style="margin-top:0;">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</p>
       <div class="modal-acciones">
         <button type="button" class="btn" id="btnAceptarPasswordNueva">Aceptar</button>
       </div>
@@ -1475,6 +1476,16 @@
           temporizadorMensajePassword = null;
         }, duracionMs);
       }
+    }
+
+    function validarPoliticaPassword(password) {
+      const valor = String(password || "");
+      if (valor.length < 8) return false;
+      if (!/[A-ZÁÉÍÓÚÜÑ]/.test(valor)) return false;
+      if (!/[a-záéíóúüñ]/.test(valor)) return false;
+      if (!/[0-9]/.test(valor)) return false;
+      if (!/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(valor)) return false;
+      return true;
     }
 
     function mostrarMensajePerfilTemporal(tipo, texto, duracionMs = 4000) {
@@ -3671,6 +3682,11 @@
 
       if (nueva !== confirmacion) {
         mostrarMensajePasswordTemporal("error", "La nueva contraseña y su confirmación no coinciden.");
+        return;
+      }
+
+      if (!validarPoliticaPassword(nueva)) {
+        mostrarMensajePasswordTemporal("error", "La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.");
         return;
       }
 

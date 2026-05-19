@@ -1722,7 +1722,7 @@
       <div class="campo">
         <label for="passwordLogin">Contraseña</label>
         <div class="campo-password-wrap">
-          <input type="password" id="passwordLogin" autocomplete="new-password">
+          <input type="password" id="passwordLogin" autocomplete="current-password">
           <button type="button" class="btn-ver-password" id="btnVerPassword">Ver</button>
         </div>
       </div>
@@ -4078,7 +4078,11 @@ function continuarSolicitudActividad() {
 
     function recuperarPassword(event) {
       event.preventDefault();
-      alert("Recuperación de contraseña pendiente de implementar.");
+      const email = document.getElementById("emailLogin").value.trim();
+      const destino = email
+        ? `usuario-password-recuperar.html?email=${encodeURIComponent(email)}`
+        : "usuario-password-recuperar.html";
+      location.href = destino;
     }
 
     function irRegistro() {

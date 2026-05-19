@@ -1,4 +1,9 @@
 import { getUserSession } from "./_auth.js";
+import {
+  hashPassword,
+  mensajePoliticaPassword,
+  validarPoliticaPassword
+} from "./_password.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -11,13 +16,6 @@ function json(data, status = 200) {
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
-}
-
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 
 export async function onRequestPost(context) {
@@ -63,6 +61,15 @@ export async function onRequestPost(context) {
         ok: true,
         mensaje: "Contraseña actual validada correctamente"
       });
+    }
+
+    const validacionPassword = validarPoliticaPassword(passwordNueva);
+    if (!validacionPassword.ok) {
+      return json({
+        ok: false,
+        error: mensajePoliticaPassword(),
+        detalles: validacionPassword.errores
+      }, 400);
     }
 
     const nuevaHash = await hashPassword(passwordNueva);
