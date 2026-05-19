@@ -740,9 +740,43 @@
     .cargando { opacity: 0.7; pointer-events: none; }
     @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
+      .contenedor {
+        margin: 10px auto 18px;
+        padding: 0 10px 12px;
+      }
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
       .preview-imagen { min-height: 208px; }
+      .bloque { padding: 12px; }
+      .acciones-superiores {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .acciones-superiores .btn,
+      .acciones-superiores .btn-icono,
+      .acciones-superiores .btn-guardar-icono {
+        flex: 0 0 auto;
+      }
+      .campo-documento-inline {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        grid-template-columns: 1fr 1fr;
+      }
+      .fila-password-solicitante {
+        align-items: stretch;
+      }
+      .tabla-docs-wrap,
+      .tabla-documentacion-admin-wrap,
+      .tabla-pendientes-admin-wrap,
+      .tabla-organizadores-wrap,
+      .tabla-estados-expediente-wrap,
+      .tabla-detalle-docs-wrap,
+      .tabla-estados-wrap {
+        overflow-x: auto;
+      }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
       .tabla-revision-expediente { min-width: 0; table-layout: auto; }
       .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2),
@@ -768,6 +802,49 @@
       .detalle-documentacion-toolbar {
         width: 100%;
         justify-content: flex-end;
+      }
+      .modal-fondo {
+        padding: 10px;
+      }
+      .modal {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+        padding: 18px 14px;
+      }
+      .modal h3 {
+        font-size: 19px;
+      }
+      .modal-acciones {
+        justify-content: stretch;
+      }
+      .modal-acciones .btn {
+        width: 100%;
+      }
+      .modal-detalle-docs {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        padding: 16px 12px;
+      }
+      .modal-detalle-head,
+      .modal-detalle-toolbar-wrap,
+      .modal-detalle-toolbar-zona,
+      .tabs-modal-detalle-linea {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .modal-detalle-toolbar,
+      .tabs-modal-detalle {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .modal-doc-base {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        min-width: 0;
+        padding: 18px 12px;
       }
     }
   </style>
