@@ -326,6 +326,10 @@
       color: #123a63;
       overflow-wrap: anywhere;
     }
+    .mobile-dato-etiqueta,
+    .plazas-mobile-resumen {
+      display: none;
+    }
     .estado-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -636,11 +640,81 @@
         border: 1px solid #dde4ea;
         border-radius: 8px;
         overflow: hidden;
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-areas:
+          "sel actividad"
+          ". estado"
+          ". fecha"
+          ". horario"
+          ". plazas";
+        align-items: start;
       }
       td {
         border-bottom: 1px solid #eef2f6;
         white-space: normal !important;
         text-align: left !important;
+      }
+      td.obs-col,
+      td.tiempo-col {
+        display: none;
+      }
+      td.sel-col {
+        grid-area: sel;
+        border-bottom: none;
+        padding: 16px 0 0 14px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      td.actividad-col {
+        grid-area: actividad;
+        border-bottom: none;
+        padding: 14px 14px 6px 8px;
+        min-width: 0;
+      }
+      td.actividad-col .actividad-nombre {
+        font-size: 17px;
+        line-height: 1.35;
+      }
+      td.estado-col {
+        grid-area: estado;
+        border-bottom: none;
+        padding: 0 14px 10px 8px;
+      }
+      td.estado-col .estado-trigger {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+      td.fecha-col,
+      td.horario-col,
+      td.plazas-col {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 8px 14px 8px 8px;
+      }
+      td.fecha-col { grid-area: fecha; }
+      td.horario-col { grid-area: horario; }
+      td.plazas-col {
+        grid-area: plazas;
+        border-bottom: none;
+        padding-bottom: 14px;
+      }
+      .mobile-dato-etiqueta {
+        display: inline-block;
+        flex: 0 0 68px;
+        font-weight: 700;
+        color: #123a63;
+      }
+      td.plazas-col .plazas-linea {
+        display: none;
+      }
+      .plazas-mobile-resumen {
+        display: inline-block;
+        min-width: 0;
+        color: #1e2a36;
       }
       table { min-width: 100%; }
     }
@@ -1435,6 +1509,10 @@
       tbody.innerHTML = lista.map((r) => {
         const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
         const tiempoRestante = formatearTiempoRestante(r);
+        const fechaTexto = formatearFechaCorta(r.fecha);
+        const horarioTexto = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`;
+        const plazasPreReservadas = Number(r.plazas_reservadas_historicas || 0);
+        const plazasAsignadas = Number(r.plazas_asignadas || 0);
         return `
           <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}">
             <td class="sel-col">
@@ -1452,7 +1530,7 @@
               ` : ``}
             </td>
             <td class="actividad-col"><div class="actividad-nombre">${r.actividad || ""}</div></td>
-            <td class="tiempo-col">
+            <td class="tiempo-col${tiempoRestante.texto ? "" : " sin-tiempo"}">
               ${tiempoRestante.texto
                 ? `<span class="tiempo-restante${tiempoRestante.finalizada ? " finalizada" : ""}">${escapeHtml(tiempoRestante.texto)}</span>`
                 : ""}
@@ -1462,13 +1540,15 @@
                 <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
               </button>
             </td>
-            <td class="fecha-col">${formatearFechaCorta(r.fecha)}</td>
-            <td class="horario-col">${r.hora_inicio || "-"} - ${r.hora_fin || "-"}</td>
+            <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
+            <td class="horario-col"><span class="mobile-dato-etiqueta">Horario</span><span class="mobile-dato-valor">${horarioTexto}</span></td>
             <td class="plazas-col">
               ${tiempoRestante.finalizada
                 ? ``
-                : `<span class="plazas-linea">Pre-reservadas: ${Number(r.plazas_reservadas_historicas || 0)}</span>`}
-              <span class="plazas-linea">Asignadas: ${Number(r.plazas_asignadas || 0)}</span>
+                : `<span class="plazas-linea">Pre-reservadas: ${plazasPreReservadas}</span>`}
+              <span class="plazas-linea">Asignadas: ${plazasAsignadas}</span>
+              <span class="mobile-dato-etiqueta">Plazas</span>
+              <span class="plazas-mobile-resumen">${tiempoRestante.finalizada ? `Asignadas ${plazasAsignadas}` : `Pre-reservadas ${plazasPreReservadas} - Asignadas ${plazasAsignadas}`}</span>
             </td>
           </tr>
         `;
