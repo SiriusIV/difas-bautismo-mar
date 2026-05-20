@@ -680,12 +680,14 @@
       td.estado-col {
         grid-area: estado;
         border-bottom: none;
-        padding: 0 14px 10px 8px;
+        padding: 0 14px 8px 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
       td.estado-col .estado-trigger {
-        width: 100%;
-        display: flex;
-        justify-content: center;
+        display: inline-flex;
+        justify-content: flex-start;
       }
       td.fecha-col,
       td.horario-col,
@@ -708,13 +710,25 @@
         font-weight: 700;
         color: #123a63;
       }
+      .mobile-dato-valor {
+        min-width: 0;
+      }
+      td.horario-col .mobile-dato-valor {
+        white-space: nowrap;
+      }
       td.plazas-col .plazas-linea {
         display: none;
       }
       .plazas-mobile-resumen {
-        display: inline-block;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 2px;
         min-width: 0;
         color: #1e2a36;
+      }
+      .plazas-mobile-resumen .linea-plaza {
+        display: block;
+        white-space: nowrap;
       }
       table { min-width: 100%; }
     }
@@ -1536,6 +1550,7 @@
                 : ""}
             </td>
             <td class="estado-col">
+              <span class="mobile-dato-etiqueta">Estado</span>
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
                 <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
               </button>
@@ -1548,7 +1563,11 @@
                 : `<span class="plazas-linea">Pre-reservadas: ${plazasPreReservadas}</span>`}
               <span class="plazas-linea">Asignadas: ${plazasAsignadas}</span>
               <span class="mobile-dato-etiqueta">Plazas</span>
-              <span class="plazas-mobile-resumen">${tiempoRestante.finalizada ? `Asignadas ${plazasAsignadas}` : `Pre-reservadas ${plazasPreReservadas} - Asignadas ${plazasAsignadas}`}</span>
+              <span class="plazas-mobile-resumen">${
+                tiempoRestante.finalizada
+                  ? `<span class="linea-plaza">Asignadas: ${plazasAsignadas}</span>`
+                  : `<span class="linea-plaza">Pre-reservadas: ${plazasPreReservadas}</span><span class="linea-plaza">Asignadas: ${plazasAsignadas}</span>`
+              }</span>
             </td>
           </tr>
         `;
