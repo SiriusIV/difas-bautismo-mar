@@ -157,6 +157,16 @@
       font-size: 15px;
       color: #123a63;
     }
+    .bloque-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .bloque-head h3 {
+      margin: 0;
+    }
     label {
       display: block;
       font-weight: bold;
@@ -176,15 +186,15 @@
     }
     .filtros {
       display: grid;
-      grid-template-columns: 282px 170px 150px minmax(180px, 1fr) auto;
+      grid-template-columns: 282px 170px 150px minmax(180px, 1fr);
       gap: 10px;
       align-items: end;
     }
     .filtro-acciones-rapidas {
       display: flex;
-      align-items: end;
-      justify-content: center;
-      min-height: 40px;
+      align-items: center;
+      justify-content: flex-end;
+      min-height: 0;
     }
     .btn-filtros-reset {
       width: 40px;
@@ -667,6 +677,12 @@
         align-items: flex-start;
         justify-content: center;
       }
+      tr.fila-seleccionable-movil {
+        cursor: pointer;
+      }
+      tr.fila-seleccionable-movil td {
+        cursor: inherit;
+      }
       td.actividad-col {
         grid-area: actividad;
         border-bottom: none;
@@ -778,8 +794,30 @@
         grid-template-columns: 1fr;
         gap: 8px;
       }
+      .bloque-head {
+        align-items: flex-start;
+      }
       .filtro-acciones-rapidas {
-        justify-content: flex-start;
+        justify-content: flex-end;
+      }
+      tr.fila-seleccionable-movil td.sel-col {
+        display: none;
+      }
+      tr.fila-seleccionable-movil {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "actividad"
+          "estado"
+          "fecha"
+          "horario"
+          "plazas";
+      }
+      tr.fila-seleccionable-movil td.actividad-col,
+      tr.fila-seleccionable-movil td.estado-col,
+      tr.fila-seleccionable-movil td.fecha-col,
+      tr.fila-seleccionable-movil td.horario-col,
+      tr.fila-seleccionable-movil td.plazas-col {
+        padding-left: 14px;
       }
       .modal-fondo {
         padding: 10px;
@@ -844,7 +882,14 @@
     </div>
 
     <div class="bloque">
-      <h3>Filtros</h3>
+      <div class="bloque-head">
+        <h3>Filtros</h3>
+        <div class="filtro-acciones-rapidas">
+          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
+            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
+          </button>
+        </div>
+      </div>
       <div class="filtros">
         <div>
           <label for="filtroActividad">Actividad</label>
@@ -870,11 +915,6 @@
         <div>
           <label for="filtroBuscar">Buscar</label>
           <input type="text" id="filtroBuscar" placeholder="Codigo, actividad u horario">
-        </div>
-        <div class="filtro-acciones-rapidas">
-          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
-            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
-          </button>
         </div>
       </div>
     </div>
@@ -1528,7 +1568,7 @@
         const plazasPreReservadas = Number(r.plazas_reservadas_historicas || 0);
         const plazasAsignadas = Number(r.plazas_asignadas || 0);
         return `
-          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}">
+          <tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""} fila-seleccionable-movil" data-reserva-id="${r.id}">
             <td class="sel-col">
               <input type="radio" name="seleccionReserva" ${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "checked" : ""} onchange="seleccionarReserva(${r.id})">
             </td>
@@ -1767,6 +1807,17 @@ async function anularSolicitudSeleccionada() {
     document.getElementById("btnLimpiarFiltros").addEventListener("click", limpiarFiltros);
     document.getElementById("btnCalendario").addEventListener("click", irCalendario);
     document.getElementById("btnPortal").addEventListener("click", irPortal);
+    document.getElementById("tbodyReservas").addEventListener("click", function (event) {
+      if (window.innerWidth > 700) return;
+      if (event.target.closest(".estado-trigger")) return;
+      if (event.target.closest('input[name="seleccionReserva"]')) return;
+
+      const fila = event.target.closest("tr[data-reserva-id]");
+      if (!fila) return;
+      const id = Number.parseInt(fila.dataset.reservaId || "", 10);
+      if (!Number.isInteger(id) || id <= 0) return;
+      seleccionarReserva(id);
+    });
     document.getElementById("btnEditar").addEventListener("click", () => {
       if (reservaSeleccionada) editarReserva(reservaSeleccionada.token_edicion, reservaSeleccionada.estado);
     });
