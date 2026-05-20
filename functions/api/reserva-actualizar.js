@@ -24,14 +24,6 @@ function normalizarContactoComparacion(valor) {
   return limpiarTexto(valor).toUpperCase();
 }
 
-function normalizarTelefonoComparacion(valor) {
-  return limpiarTexto(valor).toUpperCase();
-}
-
-function normalizarEmailComparacion(valor) {
-  return limpiarTexto(valor).toUpperCase();
-}
-
 function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -522,7 +514,7 @@ function franjaTieneCapacidadLimitada(actividad, franja) {
   return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
 }
 
-async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion, reservaIdExcluir) {
+async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, centroComparacion, contactoComparacion, reservaIdExcluir) {
   const sql = `
     SELECT
       r.id,
@@ -531,11 +523,7 @@ async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, c
     FROM reservas r
     WHERE r.franja_id = ?
       AND UPPER(TRIM(r.centro)) = ?
-      AND (
-        UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
-        OR UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
-        OR UPPER(TRIM(COALESCE(r.email, ''))) = ?
-      )
+      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
       AND r.id <> ?
       AND (
         r.estado = 'CONFIRMADA'
@@ -559,11 +547,11 @@ async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, c
   `;
 
   return await env.DB.prepare(sql)
-    .bind(franjaId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion, reservaIdExcluir)
+    .bind(franjaId, centroComparacion, contactoComparacion, reservaIdExcluir)
     .first();
 }
 
-async function existeSolicitudActivaMismoCentroActividadSinFranjaExcluyendo(env, actividadId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion, reservaIdExcluir) {
+async function existeSolicitudActivaMismoCentroActividadSinFranjaExcluyendo(env, actividadId, centroComparacion, contactoComparacion, reservaIdExcluir) {
   const sql = `
     SELECT
       r.id,
@@ -573,11 +561,7 @@ async function existeSolicitudActivaMismoCentroActividadSinFranjaExcluyendo(env,
     WHERE r.actividad_id = ?
       AND r.franja_id IS NULL
       AND UPPER(TRIM(r.centro)) = ?
-      AND (
-        UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
-        OR UPPER(TRIM(COALESCE(r.telefono, ''))) = ?
-        OR UPPER(TRIM(COALESCE(r.email, ''))) = ?
-      )
+      AND UPPER(TRIM(COALESCE(r.contacto, ''))) = ?
       AND r.id <> ?
       AND (
         r.estado = 'CONFIRMADA'
@@ -601,7 +585,7 @@ async function existeSolicitudActivaMismoCentroActividadSinFranjaExcluyendo(env,
   `;
 
   return await env.DB.prepare(sql)
-    .bind(actividadId, centroComparacion, contactoComparacion, telefonoComparacion, emailComparacion, reservaIdExcluir)
+    .bind(actividadId, centroComparacion, contactoComparacion, reservaIdExcluir)
     .first();
 }
 
@@ -696,8 +680,6 @@ export async function onRequestPost(context) {
     const totalReenvioRechazada = Math.max(asistentesCargados, plazasSolicitadas);
     const centroComparacion = normalizarCentroComparacion(centro);
     const contactoComparacion = normalizarContactoComparacion(contacto);
-    const telefonoComparacion = normalizarTelefonoComparacion(telefono);
-    const emailComparacion = normalizarEmailComparacion(email);
 
     let franjaNueva = null;
     let disponibilidadActual = null;
@@ -733,8 +715,6 @@ export async function onRequestPost(context) {
           franjaIdNueva,
           centroComparacion,
           contactoComparacion,
-          telefonoComparacion,
-          emailComparacion,
           reservaActual.id
         )
         : await existeSolicitudActivaMismoCentroActividadSinFranjaExcluyendo(
@@ -742,8 +722,6 @@ export async function onRequestPost(context) {
           reservaActual.actividad_id,
           centroComparacion,
           contactoComparacion,
-          telefonoComparacion,
-          emailComparacion,
           reservaActual.id
         );
 
