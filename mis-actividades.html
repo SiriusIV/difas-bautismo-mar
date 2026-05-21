@@ -580,7 +580,16 @@
       }
 
       table {
-        min-width: 760px;
+        min-width: 0;
+      }
+
+      th.sel-col,
+      td.sel-col {
+        display: none;
+      }
+
+      #tabla tr {
+        cursor: pointer;
       }
     }
   </style>
@@ -927,6 +936,12 @@
       actualizarBotones();
     }
 
+    function manejarSeleccionFilaActividad(event, id) {
+      if (!window.matchMedia("(max-width: 700px)").matches) return;
+      if (event?.target?.closest("input, button, a, label, select, textarea")) return;
+      seleccionarActividad(id);
+    }
+
     function pintarTabla() {
       const tbody = document.getElementById("tabla");
 
@@ -946,7 +961,7 @@
         ].filter(Boolean).join(" ");
 
         return `
-          <tr class="${filaClases}">
+          <tr class="${filaClases}" onclick="manejarSeleccionFilaActividad(event, ${a.id})">
             <td class="sel-col">
               <input
                 type="radio"
@@ -1155,6 +1170,7 @@
     });
 
     window.seleccionarActividad = seleccionarActividad;
+    window.manejarSeleccionFilaActividad = manejarSeleccionFilaActividad;
 
     (async function init() {
       const ok = await cargarSesion();
