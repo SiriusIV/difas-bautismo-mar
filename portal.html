@@ -691,6 +691,10 @@
       white-space: nowrap;
     }
 
+    .accionesPublicas.publicas-login {
+      width: 100%;
+    }
+
     .detalle {
       background: #fff;
       border-radius: 14px;
@@ -1390,16 +1394,47 @@
 
       .filtro-panel {
         padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
       }
 
       .filtro-panel-izq,
       .filtro-panel-der {
         width: 100%;
       }
+
+      .filtro-panel-der {
+        order: -1;
+        justify-content: center;
+      }
+
       .filtro-panel-izq {
         display: grid;
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .accionesPublicas.publicas-login {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .accionesPublicas.publicas-login .aviso-login {
+        white-space: normal;
+        text-align: center;
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .accionesPublicas.publicas-login .nav-btn {
+        min-width: 148px;
+        text-align: center;
+        padding: 10px 22px;
+        font-size: 15px;
       }
 
       .carrusel {
@@ -1669,7 +1704,7 @@
 </div>
 
         <div class="filtro-panel-der">
-          <div id="accionesPublicas" class="accionesPublicas">
+          <div id="accionesPublicas" class="accionesPublicas publicas-login">
             <div id="franjaAvisoPortal" class="aviso-login">
               Iniciar sesión para solicitar una actividad.
             </div>
