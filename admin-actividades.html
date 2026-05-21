@@ -1196,19 +1196,22 @@
       display: grid;
       grid-template-columns: 300px minmax(0, 1fr);
       gap: 16px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .detalle-col-izq-preview {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      align-self: start;
+      gap: 10px;
       min-width: 0;
     }
 
     .detalle-contenido-preview {
+      display: flex;
+      flex-direction: column;
+      align-self: stretch;
       min-width: 0;
+      min-height: 100%;
     }
 
     .detalle-img-preview {
@@ -1334,8 +1337,8 @@
     }
 
     .detalle-contenido-preview h3 {
-      margin: 0 0 8px;
-      font-size: 22px;
+      margin: 0 0 6px;
+      font-size: 21px;
       color: #123a63;
       line-height: 1.2;
     }
@@ -1350,14 +1353,14 @@
       font-size: 13px;
       color: #4d5966;
       line-height: 1.5;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
 
     .detalle-texto-preview {
       line-height: 1.45;
       color: #37424d;
       white-space: pre-wrap;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       font-size: 13px;
     }
 
@@ -1379,61 +1382,79 @@
     }
 
     .tabla-franjas-preview {
-      font-size: 13px;
+      font-size: 12px;
       display: none;
-      margin-top: 12px;
+      margin-top: 6px;
+      flex: 1 1 auto;
+      width: 100%;
+      align-items: flex-start;
     }
 
     .tabla-franjas-preview h4 {
       margin: 0 0 8px;
-      font-size: 16px;
+      font-size: 15px;
       color: #123a63;
     }
 
     .tabla-franjas-preview table {
-      width: 100%;
+      width: auto;
+      min-width: 0;
+      margin-left: 0;
       border-collapse: separate;
       border-spacing: 0 6px;
     }
 
     .tabla-franjas-preview th,
     .tabla-franjas-preview td {
-      padding: 6px 12px 6px 0;
+      padding: 5px 8px 5px 0;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
     }
 
     .tabla-franjas-preview th {
       color: #123a63;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       border-bottom: 1px solid #dde4ea;
-      padding-bottom: 7px;
+      padding-bottom: 6px;
     }
 
     .tabla-franjas-preview td {
       color: #37424d;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .tabla-franjas-preview th:nth-child(1),
     .tabla-franjas-preview td:nth-child(1) {
-      min-width: 240px;
-      padding-right: 18px;
+      min-width: 0;
+      width: auto;
+      white-space: nowrap;
+      padding-right: 16px;
     }
 
     .tabla-franjas-preview th:nth-child(2),
     .tabla-franjas-preview td:nth-child(2),
     .tabla-franjas-preview th:nth-child(3),
     .tabla-franjas-preview td:nth-child(3) {
-      min-width: 70px;
+      min-width: 54px;
       white-space: nowrap;
+    }
+
+    .tabla-franjas-preview th:nth-child(4),
+    .tabla-franjas-preview td:nth-child(4) {
+      min-width: 72px;
+      white-space: nowrap;
+    }
+
+    .tabla-franjas-preview tbody td {
+      vertical-align: middle;
     }
 
     .tabla-franjas-preview th:nth-child(3),
     .tabla-franjas-preview th:nth-child(4),
+    .tabla-franjas-preview td:nth-child(3),
     .tabla-franjas-preview td:nth-child(4) {
-      text-align: center;
+      text-align: left;
     }
 
     .requisitos-head {
@@ -1885,6 +1906,10 @@
         height: 200px;
         min-height: 200px;
       }
+
+      .detalle-grid-preview {
+        gap: 12px;
+      }
     }
 
     @media (max-width: 700px) {
@@ -2026,6 +2051,14 @@
 
       .tabla-franjas {
         min-width: 620px;
+      }
+
+      .tabla-franjas-preview {
+        overflow-x: auto;
+      }
+
+      .tabla-franjas-preview table {
+        min-width: 540px;
       }
     }
   </style>
