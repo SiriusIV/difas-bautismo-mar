@@ -986,6 +986,10 @@
       .bloque-vista-calendario {
         gap: 10px;
       }
+      .selector-vista {
+        display: flex;
+        margin: 0 auto;
+      }
       .navegacion-superior-calendario,
       .acciones-vista-calendario {
         width: 100%;
@@ -1820,7 +1824,16 @@
       return `${capitalizarTextoCalendario(weekday)} ${day}`;
     }
 
+    function construirTextoDiaMovilCompleto(fecha) {
+      const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
+      const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
+      return `${capitalizarTextoCalendario(weekday)}, ${day}`;
+    }
+
     function construirTextoDiaListaCompleto(fecha) {
+      if (esMovilCalendario()) {
+        return construirTextoDiaMovilCompleto(fecha);
+      }
       const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
       const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
       const month = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(fecha);
@@ -1863,7 +1876,7 @@
           const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
           return `${obtenerInicialDiaSemana(fecha)} ${day}`;
         }
-        return obtenerInicialDiaSemana(fecha);
+        return construirTextoDiaMovilCompleto(fecha);
       }
       return construirTextoDiaSemanaCompleto(fecha);
     }
