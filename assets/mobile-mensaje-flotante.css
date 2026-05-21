@@ -1,0 +1,36 @@
+@media (max-width: 700px) {
+  .mensaje-mobile-flotante-activa {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 9998 !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(42vh, 340px);
+    overflow: auto;
+    margin: 0 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(10px);
+  }
+
+  .mensaje-mobile-flotante-activa .mensaje-inner,
+  .mensaje-mobile-flotante-activa .mensaje-contenido {
+    align-items: flex-start;
+  }
+
+  .mensaje-mobile-flotante-activa .mensaje-acciones,
+  .mensaje-mobile-flotante-activa .mensaje-accion-wrap {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .mensaje-mobile-flotante-activa .mensaje-texto,
+  .mensaje-mobile-flotante-activa .mensaje-texto-linea,
+  .mensaje-mobile-flotante-activa #mensajeActividadTexto,
+  .mensaje-mobile-flotante-activa #mensajeTexto,
+  .mensaje-mobile-flotante-activa #mensajePantallaTexto {
+    min-width: 0;
+  }
+}
