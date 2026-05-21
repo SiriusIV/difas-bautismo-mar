@@ -1973,16 +1973,14 @@
       .contexto-head-top {
         gap: 12px;
         position: relative;
-        padding-bottom: 52px;
+        padding-bottom: 0;
       }
 
       .contexto-cabecera-superior {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        align-items: start;
-        gap: 10px;
-        justify-items: center;
-        padding-right: 46px;
+        display: block;
+        position: relative;
+        padding-inline: 44px;
+        min-height: 38px;
       }
 
       .contexto-titulos {
@@ -2004,23 +2002,24 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: 0;
+        top: 0;
         width: 100%;
-        min-height: 36px;
+        min-height: 38px;
         pointer-events: none;
       }
 
       .contexto-acciones-grupo.estado-actividad {
         width: auto;
-        align-self: start;
+        align-self: center;
         justify-content: center;
-        padding: 10px 14px;
-        margin: 0 auto;
+        padding: 8px 12px;
+        margin: 0;
+        gap: 8px;
       }
 
       .contexto-acciones {
         width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 8px;
         flex-direction: row;
         align-items: center;
@@ -2028,8 +2027,8 @@
       }
 
       .contexto-acciones-secundarias {
-        justify-content: center;
-        padding-inline: 46px;
+        justify-content: flex-start;
+        padding-inline: 0;
       }
 
       .contexto-acciones-grupo {
@@ -2041,6 +2040,10 @@
       .contexto-acciones-grupo.portal-acceso {
         gap: 8px;
         flex-wrap: nowrap;
+      }
+
+      .contexto-acciones-grupo.acciones-edicion {
+        margin-left: auto;
       }
 
       .contexto-acciones-grupo.pasos #btnAnterior {
@@ -2059,15 +2062,14 @@
         pointer-events: auto;
       }
 
-      .contexto-acciones-grupo.portal-acceso {
-        position: absolute;
-        top: 0;
-        right: 0;
-        margin: 0;
+      .contexto-acciones .btn-icono {
+        width: 34px;
+        height: 34px;
       }
 
-      .contexto-acciones-grupo.portal-acceso > :not(#btnVolverPortal) {
-        display: none;
+      .contexto-acciones-grupo.portal-acceso {
+        position: static;
+        margin: 0;
       }
 
       .step-title {
@@ -4210,6 +4212,24 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
   return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2, 3] : [0, 2, 3];
 }
 
+function reubicarCabeceraActividadSegunViewport() {
+  const grupoEstado = document.querySelector(".contexto-acciones-grupo.estado-actividad");
+  const cabeceraSuperior = document.querySelector(".contexto-cabecera-superior");
+  const grupoPasos = cabeceraSuperior?.querySelector(".contexto-acciones-grupo.pasos");
+  const accionesSecundarias = document.querySelector(".contexto-acciones.contexto-acciones-secundarias");
+  const esMovil = window.matchMedia("(max-width: 700px)").matches;
+
+  if (!grupoEstado || !cabeceraSuperior || !grupoPasos || !accionesSecundarias) return;
+
+  if (esMovil) {
+    if (grupoEstado.parentElement !== accionesSecundarias) {
+      accionesSecundarias.insertBefore(grupoEstado, accionesSecundarias.firstChild);
+    }
+  } else if (grupoEstado.parentElement !== cabeceraSuperior) {
+    cabeceraSuperior.insertBefore(grupoEstado, grupoPasos);
+  }
+}
+
 function normalizarPasoSegunFlujo(pasoDeseado) {
   const flow = getPasoFlowActividad();
   if (flow.includes(pasoDeseado)) return pasoDeseado;
@@ -5738,8 +5758,26 @@ function mostrarPaso(index) {
   });
 
   const indiceActual = flow.indexOf(pasoActual);
-  document.getElementById("btnAnterior").style.display = indiceActual <= 0 ? "none" : "inline-flex";
-  document.getElementById("btnSiguiente").classList.toggle("oculto", indiceActual === flow.length - 1);
+  const btnAnterior = document.getElementById("btnAnterior");
+  const btnSiguiente = document.getElementById("btnSiguiente");
+  const esMovil = window.matchMedia("(max-width: 700px)").matches;
+  const puedeRetroceder = indiceActual > 0;
+  const puedeAvanzar = indiceActual < flow.length - 1;
+
+  if (esMovil) {
+    btnAnterior.style.display = "inline-flex";
+    btnSiguiente.style.display = "inline-flex";
+    btnAnterior.disabled = !puedeRetroceder;
+    btnSiguiente.disabled = !puedeAvanzar;
+    btnSiguiente.classList.remove("oculto");
+  } else {
+    btnAnterior.style.display = puedeRetroceder ? "inline-flex" : "none";
+    btnAnterior.disabled = !puedeRetroceder;
+    btnSiguiente.style.display = "";
+    btnSiguiente.disabled = !puedeAvanzar;
+    btnSiguiente.classList.toggle("oculto", !puedeAvanzar);
+  }
+
   document.getElementById("btnGuardarActividad").classList.remove("oculto");
 
   actualizarPreview();
@@ -6164,6 +6202,7 @@ function retrocederPaso() {
       } finally {
         cargandoActividad = false;
         sincronizarTogglesPanelConfiguracion();
+        reubicarCabeceraActividadSegunViewport();
         app.style.display = "block";
       }
 
@@ -6182,6 +6221,8 @@ function retrocederPaso() {
         event.preventDefault();
         event.returnValue = "";
       });
+
+      window.addEventListener("resize", reubicarCabeceraActividadSegunViewport);
     });
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
