@@ -887,6 +887,57 @@
       margin-top: 16px;
     }
 
+    .lista-eventos-dia {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .opcion-evento-dia {
+      border: 1px solid #d7e2ee;
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      text-align: left;
+      color: #1e2a36;
+    }
+
+    .opcion-evento-dia:hover {
+      background: #f7f9fb;
+      border-color: #9fc0ff;
+    }
+
+    .opcion-evento-dia-marcador {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
+    .opcion-evento-dia-texto {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .opcion-evento-dia-hora {
+      font-size: 12px;
+      color: #5f6d7a;
+      line-height: 1.2;
+    }
+
+    .opcion-evento-dia-titulo {
+      font-size: 14px;
+      font-weight: 700;
+      color: #123a63;
+      line-height: 1.3;
+    }
+
     .bloque-estado {
       background: #f7f9fb;
       border: 1px solid #dde4ea;
@@ -1037,6 +1088,20 @@
       .acciones-vista-calendario {
         width: 100%;
         justify-content: center;
+      }
+      #calendar .fc-list-event-graphic {
+        width: 18px;
+      }
+      #calendar .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
+        padding-left: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      #calendar .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title a {
+        display: inline-block;
+        min-width: max-content;
       }
       #calendar .fc-daygrid-event {
         min-height: 10px;
@@ -1201,6 +1266,16 @@
           <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
           <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
           <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalEventosDia" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="modalEventosDiaTitulo">Actividades del día</h3>
+      <div id="modalEventosDiaLista" class="lista-eventos-dia"></div>
+      <div class="acciones-modal">
+        <button type="button" id="btnCerrarModalEventosDia" class="btn-secundario">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1923,6 +1998,93 @@
       return titulo.split("·")[0].trim() || titulo;
     }
 
+    function obtenerColorEventoCalendario(event) {
+      return String(event?.backgroundColor || event?.borderColor || "#0b5ed7");
+    }
+
+    function obtenerEventosCalendarioPorFecha(fecha) {
+      if (!calendar) return [];
+      const objetivo = formatearFechaIsoLocal(fecha instanceof Date ? fecha : new Date(fecha));
+      return calendar.getEvents().filter((event) => {
+        if (event.extendedProps?.placeholder_lista) return false;
+        const inicio = event.start;
+        if (!(inicio instanceof Date) || Number.isNaN(inicio.getTime())) return false;
+        return formatearFechaIsoLocal(inicio) === objetivo;
+      });
+    }
+
+    function cerrarModalEventosDia() {
+      document.getElementById("modalEventosDia").classList.remove("activo");
+      document.getElementById("modalEventosDia").setAttribute("aria-hidden", "true");
+      document.getElementById("modalEventosDiaLista").innerHTML = "";
+    }
+
+    function abrirModalEventosDia(fecha, eventosDia) {
+      const lista = document.getElementById("modalEventosDiaLista");
+      const titulo = document.getElementById("modalEventosDiaTitulo");
+      if (!lista || !titulo) return;
+
+      const fechaTexto = construirTextoDiaMovilCompleto(fecha instanceof Date ? fecha : new Date(fecha));
+      titulo.textContent = `Actividades del ${fechaTexto}`;
+      lista.innerHTML = "";
+
+      eventosDia.forEach((event) => {
+        const opcion = document.createElement("button");
+        opcion.type = "button";
+        opcion.className = "opcion-evento-dia";
+        const marcador = document.createElement("span");
+        marcador.className = "opcion-evento-dia-marcador";
+        marcador.style.backgroundColor = obtenerColorEventoCalendario(event);
+        const texto = document.createElement("span");
+        texto.className = "opcion-evento-dia-texto";
+        const hora = document.createElement("span");
+        hora.className = "opcion-evento-dia-hora";
+        const horaInicio = String(event.extendedProps?.hora_inicio || "").trim();
+        const horaFin = String(event.extendedProps?.hora_fin || "").trim();
+        hora.textContent = horaInicio && horaFin ? `${horaInicio} - ${horaFin}` : (event.timeText || "Sin horario");
+        const tituloEvento = document.createElement("span");
+        tituloEvento.className = "opcion-evento-dia-titulo";
+        tituloEvento.textContent = String(
+          event.extendedProps?.actividad_nombre || event.title || "Actividad"
+        ).trim();
+        texto.appendChild(hora);
+        texto.appendChild(tituloEvento);
+        opcion.appendChild(marcador);
+        opcion.appendChild(texto);
+        opcion.addEventListener("click", () => {
+          cerrarModalEventosDia();
+          abrirModalEvento({ event, view: calendar?.view || null });
+        });
+        lista.appendChild(opcion);
+      });
+
+      document.getElementById("modalEventosDia").classList.add("activo");
+      document.getElementById("modalEventosDia").setAttribute("aria-hidden", "false");
+    }
+
+    function manejarSeleccionDiaMesMovil(fecha, eventoPreferido = null) {
+      const eventosDia = obtenerEventosCalendarioPorFecha(fecha).filter((event) => {
+        return String(event.extendedProps?.tipo_evento || "") === "ACTIVIDAD_PROGRAMADA";
+      });
+      if (!eventosDia.length) return;
+
+      if (eventosDia.length === 1) {
+        abrirModalEvento({ event: eventosDia[0], view: calendar?.view || null });
+        return;
+      }
+
+      const ordenados = [...eventosDia].sort((a, b) => {
+        const aTs = a.start instanceof Date ? a.start.getTime() : 0;
+        const bTs = b.start instanceof Date ? b.start.getTime() : 0;
+        if (aTs !== bTs) return aTs - bTs;
+        if (eventoPreferido && a.id === eventoPreferido.id) return -1;
+        if (eventoPreferido && b.id === eventoPreferido.id) return 1;
+        return String(a.title || "").localeCompare(String(b.title || ""), "es");
+      });
+
+      abrirModalEventosDia(fecha, ordenados);
+    }
+
     function obtenerInicialDiaSemana(fecha) {
       const dia = new Date(fecha).getDay();
       const iniciales = ["D", "L", "M", "X", "J", "V", "S"];
@@ -2076,7 +2238,9 @@
             const label = document.createElement("span");
             label.className = "evento-texto-movil-label";
             label.textContent = obtenerTituloBreveEventoCalendario(arg.event);
-            wrap.appendChild(marcador);
+            if (tipoVista === "timeGridDay") {
+              wrap.appendChild(marcador);
+            }
             wrap.appendChild(label);
             return { domNodes: [wrap] };
           }
@@ -2092,7 +2256,15 @@
           if (info.event.extendedProps?.placeholder_lista) {
             return;
           }
+          if (esVistaMesMovil(info?.view?.type)) {
+            manejarSeleccionDiaMesMovil(info.event.start || new Date(), info.event);
+            return;
+          }
           abrirModalEvento(info);
+        },
+        dateClick: function(info) {
+          if (!esVistaMesMovil(info?.view?.type)) return;
+          manejarSeleccionDiaMesMovil(info.date || new Date());
         },
         datesSet: function(info) {
           actualizarEtiquetaRango(info);
@@ -2134,6 +2306,7 @@
       aplicarRolPantallaCalendario();
 
       document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
+      document.getElementById("btnCerrarModalEventosDia").addEventListener("click", cerrarModalEventosDia);
       document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", async function() {
         await aplicarVistaCalendario("reservas");
       });
@@ -2174,6 +2347,11 @@
       document.getElementById("modalEvento").addEventListener("click", function(e) {
         if (e.target.id === "modalEvento") {
           cerrarModalEvento();
+        }
+      });
+      document.getElementById("modalEventosDia").addEventListener("click", function(e) {
+        if (e.target.id === "modalEventosDia") {
+          cerrarModalEventosDia();
         }
       });
 
