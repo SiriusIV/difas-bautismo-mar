@@ -1981,6 +1981,8 @@
         grid-template-columns: minmax(0, 1fr);
         align-items: start;
         gap: 10px;
+        justify-items: center;
+        padding-right: 46px;
       }
 
       .contexto-titulos {
@@ -1989,12 +1991,13 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
-        align-items: flex-start;
+        align-items: center;
       }
 
       .contexto-titulos-texto {
         min-width: 0;
         width: 100%;
+        text-align: center;
       }
 
       .contexto-acciones-grupo.pasos {
@@ -2004,16 +2007,15 @@
         bottom: 0;
         width: 100%;
         min-height: 36px;
-        justify-content: space-between;
-        align-items: center;
         pointer-events: none;
       }
 
       .contexto-acciones-grupo.estado-actividad {
-        width: 100%;
+        width: auto;
         align-self: start;
-        justify-content: space-between;
+        justify-content: center;
         padding: 10px 14px;
+        margin: 0 auto;
       }
 
       .contexto-acciones {
@@ -2027,7 +2029,7 @@
 
       .contexto-acciones-secundarias {
         justify-content: center;
-        padding-inline: 48px;
+        padding-inline: 46px;
       }
 
       .contexto-acciones-grupo {
@@ -2041,8 +2043,31 @@
         flex-wrap: nowrap;
       }
 
+      .contexto-acciones-grupo.pasos #btnAnterior {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      .contexto-acciones-grupo.pasos #btnSiguiente {
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+
       .contexto-acciones-grupo.pasos .btn-icono {
         pointer-events: auto;
+      }
+
+      .contexto-acciones-grupo.portal-acceso {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 0;
+      }
+
+      .contexto-acciones-grupo.portal-acceso > :not(#btnVolverPortal) {
+        display: none;
       }
 
       .step-title {
