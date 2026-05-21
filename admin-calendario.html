@@ -1084,6 +1084,9 @@
         display: flex;
         margin: 0 auto;
       }
+      #calendar .fc-list-table td {
+        vertical-align: middle;
+      }
       .navegacion-superior-calendario,
       .acciones-vista-calendario {
         width: 100%;
@@ -1092,16 +1095,23 @@
       #calendar .fc-list-event-graphic {
         width: 18px;
       }
+      #calendar .fc-list-event:not(.evento-dia-vacio) .fc-list-event-time {
+        white-space: nowrap;
+        padding-right: 8px;
+      }
       #calendar .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
-        padding-left: 8px;
+        padding-left: 4px;
         overflow-x: auto;
         overflow-y: hidden;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        max-width: calc(100vw - 150px);
       }
       #calendar .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title a {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         min-width: max-content;
+        padding-right: 16px;
       }
       #calendar .fc-daygrid-event {
         min-height: 10px;
