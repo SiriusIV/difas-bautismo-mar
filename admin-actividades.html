@@ -1514,26 +1514,31 @@
     }
 
     .tabla-requisitos .col-acciones {
-      width: 34px;
+      width: 64px;
       text-align: left;
       white-space: nowrap;
     }
 
     .tabla-requisitos .celda-acciones {
-      width: 34px;
+      width: 64px;
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
-      padding-right: 14px;
+      padding-right: 10px;
     }
 
+    .celda-acciones-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      vertical-align: middle;
+    }
+
+    .btn-requisito-editar,
     .btn-requisito-eliminar {
       width: 22px;
       height: 22px;
       border-radius: 999px;
-      border: 1px solid #e6b1b1;
-      background: #fdeaea;
-      color: #9b1c1c;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1543,6 +1548,24 @@
       padding: 0;
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
       vertical-align: middle;
+    }
+
+    .btn-requisito-editar {
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #1d4f91;
+    }
+
+    .btn-requisito-editar:hover {
+      background: #ddeafe;
+      border-color: #9ebfe9;
+      transform: translateY(-1px);
+    }
+
+    .btn-requisito-eliminar {
+      border: 1px solid #e6b1b1;
+      background: #fdeaea;
+      color: #9b1c1c;
     }
 
     .btn-requisito-eliminar:hover {
@@ -1569,6 +1592,15 @@
       display: block;
       text-align: left;
       margin: 0;
+    }
+
+    .input-requisito[readonly] {
+      cursor: default;
+    }
+
+    .input-requisito.editando {
+      border-bottom: 1px solid #9ebfe9;
+      cursor: text;
     }
 
     .input-requisito:focus {
@@ -2625,6 +2657,7 @@
     let actividadEsBorradorTecnico = false;
     let franjaSeleccionadaId = null;
     let requisitosParticulares = [];
+    let requisitoEditandoId = null;
     let catalogoDocumentacionAdminSesion = [];
     let catalogoDocumentacionActividad = [];
     let modoDocumentacionActividad = "HEREDADA";
@@ -3759,6 +3792,23 @@ function actualizarTituloRequisitos() {
     "Nueva actividad";
 }
 
+function activarEdicionRequisito(id) {
+  requisitoEditandoId = id;
+  renderTablaRequisitos();
+  requestAnimationFrame(() => {
+    const input = document.querySelector(`.input-requisito[data-requisito-id="${String(id)}"]`);
+    if (!input) return;
+    input.focus();
+    input.select();
+  });
+}
+
+function finalizarEdicionRequisito() {
+  if (!requisitoEditandoId) return;
+  requisitoEditandoId = null;
+  renderTablaRequisitos();
+}
+
 function renderTablaRequisitos() {
   const tbody = document.getElementById("tablaRequisitosBody");
   const vacia = document.getElementById("tablaRequisitosVacia");
@@ -3774,10 +3824,28 @@ function renderTablaRequisitos() {
   vacia.classList.add("oculto");
 
   requisitosParticulares.forEach((requisito, index) => {
+    const estaEditando = requisitoEditandoId === requisito.id;
     const tr = document.createElement("tr");
 
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
+    const accionesWrap = document.createElement("div");
+    accionesWrap.className = "celda-acciones-wrap";
+
+    const btnEditar = document.createElement("button");
+    btnEditar.type = "button";
+    btnEditar.className = "btn-requisito-editar";
+    btnEditar.setAttribute("aria-label", estaEditando ? "Confirmar edición del requisito" : "Editar requisito");
+    btnEditar.setAttribute("title", estaEditando ? "Confirmar edición" : "Editar requisito");
+    btnEditar.textContent = estaEditando ? "✓" : "✎";
+    btnEditar.addEventListener("click", () => {
+      if (estaEditando) {
+        finalizarEdicionRequisito();
+      } else {
+        activarEdicionRequisito(requisito.id);
+      }
+    });
+
     const btnEliminar = document.createElement("button");
     btnEliminar.type = "button";
     btnEliminar.className = "btn-requisito-eliminar";
@@ -3785,21 +3853,44 @@ function renderTablaRequisitos() {
     btnEliminar.setAttribute("title", "Eliminar requisito");
     btnEliminar.textContent = "×";
     btnEliminar.addEventListener("click", () => {
+      if (requisitoEditandoId === requisito.id) {
+        requisitoEditandoId = null;
+      }
       requisitosParticulares.splice(index, 1);
       marcarCambiosPendientesActividad();
       renderTablaRequisitos();
     });
-    tdAcciones.appendChild(btnEliminar);
+    accionesWrap.append(btnEditar, btnEliminar);
+    tdAcciones.appendChild(accionesWrap);
 
     const tdTexto = document.createElement("td");
     const input = document.createElement("input");
     input.type = "text";
     input.className = "input-requisito";
+    if (estaEditando) input.classList.add("editando");
     input.placeholder = "Escribe aquí un requisito particular de esta actividad.";
     input.value = requisito.texto || "";
+    input.dataset.requisitoId = requisito.id;
+    input.readOnly = !estaEditando;
     input.addEventListener("input", () => {
       requisitosParticulares[index].texto = input.value;
       marcarCambiosPendientesActividad();
+    });
+    input.addEventListener("blur", () => {
+      if (requisitoEditandoId === requisito.id) {
+        finalizarEdicionRequisito();
+      }
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        finalizarEdicionRequisito();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        input.value = requisito.texto || "";
+        finalizarEdicionRequisito();
+      }
     });
     tdTexto.appendChild(input);
 
@@ -3809,6 +3900,7 @@ function renderTablaRequisitos() {
 }
 
 function cargarRequisitosActividad(actividad) {
+  requisitoEditandoId = null;
   requisitosParticulares = normalizarListaRequisitos(actividad?.requisitos_particulares).map((texto) =>
     crearRequisitoLocal(texto)
   );
