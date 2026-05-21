@@ -286,75 +286,6 @@
   background: #f4f8ff;
 }
 
-.debug-traza-actividad {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  width: min(460px, calc(100vw - 32px));
-  max-height: 42vh;
-  overflow: auto;
-  z-index: 9999;
-  border: 1px solid rgba(18, 58, 99, 0.22);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(8px);
-  font-size: 12px;
-  color: #22313f;
-}
-
-.debug-traza-actividad-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid #dbe5f0;
-  background: #eef4ff;
-  position: sticky;
-  top: 0;
-}
-
-.debug-traza-actividad-head strong {
-  color: #123a63;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-
-.debug-traza-actividad-acciones {
-  display: flex;
-  gap: 6px;
-}
-
-.debug-traza-actividad-btn {
-  border: 1px solid #c6d7ef;
-  background: #fff;
-  color: #123a63;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.debug-traza-actividad-lista {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.debug-traza-actividad-item {
-  padding: 10px 12px;
-  border-bottom: 1px solid #edf2f7;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: Consolas, "Courier New", monospace;
-  line-height: 1.4;
-}
-
-.debug-traza-actividad-item:last-child {
-  border-bottom: none;
-}
-    
 .pantalla-bloqueada .bloque-superior,
 .pantalla-bloqueada .bloque-inferior {
   pointer-events: none;
@@ -392,6 +323,12 @@
     }
 
     .contexto-head-top {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .contexto-cabecera-superior {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -431,7 +368,11 @@
       justify-content: flex-end;
       gap: 16px;
       flex-wrap: wrap;
-      flex: 0 0 auto;
+      width: 100%;
+    }
+
+    .contexto-acciones-secundarias {
+      justify-content: flex-end;
     }
 
     .contexto-acciones-grupo {
@@ -457,12 +398,12 @@
     }
 
     .contexto-acciones-grupo.pasos {
-      margin-left: 6px;
-      align-self: center;
+      margin-left: 0;
+      align-self: flex-start;
     }
 
     .contexto-acciones-grupo.portal-acceso {
-      margin-left: 18px;
+      margin-left: 0;
     }
 
     .nav-btn {
@@ -1973,43 +1914,61 @@
       }
 
       .contexto-head-top {
-        align-items: flex-start;
-        gap: 10px;
+        gap: 12px;
+      }
+
+      .contexto-cabecera-superior {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: start;
+        gap: 10px 8px;
       }
 
       .contexto-titulos {
-        width: 100%;
+        min-width: 0;
+        width: auto;
         display: flex;
         flex-direction: column;
         gap: 8px;
         align-items: flex-start;
       }
 
+      .contexto-titulos-texto {
+        min-width: 0;
+      }
+
       .contexto-acciones-grupo.pasos {
-        margin-left: 0;
-        width: 100%;
-        justify-content: flex-start;
-      }
-
-      .contexto-acciones {
-        width: 100%;
-        justify-content: flex-start;
-        gap: 10px;
-        flex-direction: row;
-        align-items: center;
-      }
-
-      .contexto-acciones-grupo {
         width: auto;
-        justify-content: flex-start;
+        justify-content: flex-end;
+        align-self: start;
       }
 
       .contexto-acciones-grupo.estado-actividad {
         width: auto;
+        align-self: start;
+        padding: 6px 10px;
       }
 
+      .contexto-acciones {
+        width: 100%;
+        justify-content: center;
+        gap: 8px;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .contexto-acciones-secundarias {
+        justify-content: center;
+      }
+
+      .contexto-acciones-grupo {
+        width: auto;
+        justify-content: center;
+      }
+
+      .contexto-acciones-grupo.acciones-edicion,
       .contexto-acciones-grupo.portal-acceso {
-        margin-left: 0;
+        gap: 8px;
       }
 
       .step-title {
@@ -2068,13 +2027,6 @@
       .tabla-franjas {
         min-width: 620px;
       }
-
-      .debug-traza-actividad {
-        width: calc(100vw - 20px);
-        right: 10px;
-        bottom: 10px;
-        max-height: 38vh;
-      }
     }
   </style>
 </head>
@@ -2105,24 +2057,25 @@
         </div>
       </div>
 
-      <aside id="debugTrazaActividad" class="debug-traza-actividad">
-        <div class="debug-traza-actividad-head">
-          <strong>Traza temporal de edición</strong>
-          <div class="debug-traza-actividad-acciones">
-            <button type="button" id="btnLimpiarTrazaActividad" class="debug-traza-actividad-btn">Limpiar</button>
-          </div>
-        </div>
-        <ul id="debugTrazaActividadLista" class="debug-traza-actividad-lista"></ul>
-      </aside>
-
       <div class="bloque-superior">
           <div class="contexto-head">
             <div class="contexto-head-top">
-              <div class="contexto-titulos">
-                <div class="contexto-titulos-texto">
-                  <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
-                  <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+              <div class="contexto-cabecera-superior">
+                <div class="contexto-titulos">
+                  <div class="contexto-titulos-texto">
+                    <div class="contexto-modo" id="tituloFormulario">Nueva actividad</div>
+                    <div class="contexto-actividad" id="tituloActividadContexto">Nueva actividad</div>
+                  </div>
                 </div>
+
+                <div class="contexto-acciones-grupo estado-actividad">
+                  <span class="estado-actividad-label">Activación</span>
+                  <label class="toggle-switch" for="toggleActividadActiva">
+                    <input type="checkbox" id="toggleActividadActiva" aria-label="Actividad activa">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
                 <div class="contexto-acciones-grupo pasos">
                   <button type="button" class="btn-icono" id="btnAnterior" title="Anterior" aria-label="Anterior" style="display:none;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2138,16 +2091,8 @@
                 </div>
               </div>
 
-              <div class="contexto-acciones">
-                <div class="contexto-acciones-grupo">
-                  <div class="contexto-acciones-grupo estado-actividad">
-                    <span class="estado-actividad-label">Activación</span>
-                    <label class="toggle-switch" for="toggleActividadActiva">
-                      <input type="checkbox" id="toggleActividadActiva" aria-label="Actividad activa">
-                      <span class="toggle-slider"></span>
-                    </label>
-                  </div>
-
+              <div class="contexto-acciones contexto-acciones-secundarias">
+                <div class="contexto-acciones-grupo acciones-edicion">
                   <button type="submit" form="formActividad" class="btn-icono btn-icono-primario" id="btnGuardarActividad" title="Guardar actividad" aria-label="Guardar actividad">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -2671,15 +2616,15 @@
     const valoresPreviosCamposCriticos = {};
 
     let callbackAceptarMensajeActividad = null;
-    let callbackCancelarMensajeActividad = null;
-    let pantallaBloqueadaPorErrorActividad = false;
-    let temporizadorMensajeActividad = null;
+      let callbackCancelarMensajeActividad = null;
+      let pantallaBloqueadaPorErrorActividad = false;
+      let temporizadorMensajeActividad = null;
       let formularioActividadModificado = false;
       let salidaPendienteAlPortal = false;
       let destinoSalidaPendiente = "portal.html";
       let desactivacionActividadPendiente = false;
       let permitirSubmitExplicitoActividadHasta = 0;
-      const TRAZA_ACTIVIDAD_ACTIVA = true;
+      const TRAZA_ACTIVIDAD_ACTIVA = false;
 
       function asegurarTrazaActividadUI() {
         if (!TRAZA_ACTIVIDAD_ACTIVA) return null;
