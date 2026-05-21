@@ -635,6 +635,30 @@
       font-weight: 600;
     }
 
+    .fc .fc-daygrid-event.evento-movil-compacto {
+      margin: 1px 2px;
+      padding: 0;
+      min-height: 10px;
+      border-radius: 999px;
+    }
+
+    .fc .fc-daygrid-event.evento-movil-compacto .fc-event-main {
+      padding: 0;
+      min-height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .marcador-evento-movil {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
     .fc .fc-list-event.evento-dia-vacio {
       cursor: default;
     }
@@ -995,6 +1019,12 @@
         width: 100%;
         justify-content: center;
       }
+      #calendar .fc-daygrid-event {
+        min-height: 10px;
+      }
+      #calendar .fc-daygrid-day-events {
+        margin-top: 2px;
+      }
       #calendar.vista-con-scroll {
         height: 62vh;
         max-height: 62vh;
@@ -1148,6 +1178,7 @@
       </div>
 
         <div class="acciones-modal" id="accionesModalReserva">
+          <a href="#" id="btnAbrirActividadModal" class="btn-enlace oculto">Abrir actividad</a>
           <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
           <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
           <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
@@ -1514,16 +1545,21 @@
       const p = info.event.extendedProps;
       const tipoEvento = p.tipo_evento || "RESERVA";
       const bloqueEstado = document.getElementById("bloqueEstadoReserva");
+      const btnAbrirActividad = document.getElementById("btnAbrirActividadModal");
       const btnEditar = document.getElementById("btnAbrirEditar");
       const btnAsistentes = document.getElementById("btnAbrirAsistentes");
       const estadoClass = String(p.estado || "").toLowerCase();
+      const esMesMovil = esVistaMesMovil(info?.view?.type);
+
+      btnAbrirActividad.classList.add("oculto");
+      btnAbrirActividad.removeAttribute("href");
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
-        if (!p.editable_actividad) {
+        if (!p.editable_actividad && !esMesMovil) {
           return;
         }
         const actividadId = Number(p.actividad_id || 0);
-        if (actividadId > 0) {
+        if (actividadId > 0 && !esMesMovil) {
           window.location.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
           return;
         }
@@ -1542,6 +1578,10 @@
         bloqueEstado.classList.add("oculto");
         btnEditar.classList.add("oculto");
         btnAsistentes.classList.add("oculto");
+        if (actividadId > 0) {
+          btnAbrirActividad.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
+          btnAbrirActividad.classList.remove("oculto");
+        }
         document.getElementById("modalEvento").classList.add("activo");
         document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
         return;
@@ -1824,6 +1864,14 @@
       return `${capitalizarTextoCalendario(weekday)} ${day}`;
     }
 
+    function construirTextoDiaSemanaAbreviado(fecha, incluirDia = false) {
+      const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "short" }).format(fecha).replace(".", "");
+      const texto = capitalizarTextoCalendario(weekday);
+      if (!incluirDia) return texto;
+      const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
+      return `${texto} ${day}`;
+    }
+
     function construirTextoDiaMovilCompleto(fecha) {
       const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
       const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
@@ -1842,6 +1890,11 @@
 
     function esMovilCalendario() {
       return window.matchMedia("(max-width: 720px)").matches;
+    }
+
+    function esVistaMesMovil(tipoVista = null) {
+      const vista = String(tipoVista || calendar?.view?.type || "");
+      return esMovilCalendario() && vista === "dayGridMonth";
     }
 
     function obtenerInicialDiaSemana(fecha) {
@@ -1872,9 +1925,11 @@
       const fecha = arg?.date || new Date();
       if (esMovilCalendario()) {
         const tipoVista = String(arg?.view?.type || calendar?.view?.type || "");
+        if (tipoVista === "dayGridMonth") {
+          return construirTextoDiaSemanaAbreviado(fecha, false);
+        }
         if (tipoVista === "timeGridWeek") {
-          const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
-          return `${obtenerInicialDiaSemana(fecha)} ${day}`;
+          return construirTextoDiaSemanaAbreviado(fecha, true);
         }
         return construirTextoDiaMovilCompleto(fecha);
       }
@@ -1965,6 +2020,22 @@
           if (arg?.el && arg?.event?.start) {
             arg.el.dataset.eventStartTs = String(arg.event.start.getTime());
           }
+          if (esVistaMesMovil(arg?.view?.type) && arg?.el) {
+            arg.el.classList.add("evento-movil-compacto");
+          }
+        },
+        eventContent: function(arg) {
+          if (!esVistaMesMovil(arg?.view?.type) || arg.event.extendedProps?.placeholder_lista) {
+            return undefined;
+          }
+          const marcador = document.createElement("span");
+          marcador.className = "marcador-evento-movil";
+          const accesible = [
+            arg.timeText || "",
+            String(arg.event.title || "").trim()
+          ].filter(Boolean).join(" ");
+          marcador.setAttribute("aria-label", accesible || "Evento");
+          return { domNodes: [marcador] };
         },
         eventClick: function(info) {
           if (info.event.extendedProps?.placeholder_lista) {
