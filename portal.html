@@ -1504,6 +1504,55 @@
       .franja-sesion-inner #barraSecretaria .nav-btn {
         white-space: nowrap;
       }
+
+      .franja-sesion-inner.modo-admin {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "perfil texto logout"
+          "nav nav nav";
+      }
+
+      .franja-sesion-inner.modo-admin #textoSesion {
+        text-align: center;
+        justify-self: center;
+      }
+
+      .franja-sesion-inner.modo-admin #btnNotificacionesSesion {
+        display: none !important;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, max-content));
+        grid-template-areas:
+          "actividades reservas reservas"
+          "plantillas calendario informes";
+        justify-content: center;
+        align-items: center;
+        gap: 8px 10px;
+        width: 100%;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(1) {
+        grid-area: actividades;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(2) {
+        grid-area: reservas;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(3) {
+        grid-area: plantillas;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(4) {
+        grid-area: informes;
+      }
+
+      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(5) {
+        grid-area: calendario;
+        justify-self: center;
+      }
     }
   </style>
 </head>
