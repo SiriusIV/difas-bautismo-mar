@@ -1972,38 +1972,48 @@
 
       .contexto-head-top {
         gap: 12px;
+        position: relative;
+        padding-bottom: 52px;
       }
 
       .contexto-cabecera-superior {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr);
         align-items: start;
-        gap: 10px 8px;
+        gap: 10px;
       }
 
       .contexto-titulos {
         min-width: 0;
-        width: auto;
+        width: 100%;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         align-items: flex-start;
       }
 
       .contexto-titulos-texto {
         min-width: 0;
+        width: 100%;
       }
 
       .contexto-acciones-grupo.pasos {
-        width: auto;
-        justify-content: flex-end;
-        align-self: start;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        min-height: 36px;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: none;
       }
 
       .contexto-acciones-grupo.estado-actividad {
-        width: auto;
+        width: 100%;
         align-self: start;
-        padding: 6px 10px;
+        justify-content: space-between;
+        padding: 10px 14px;
       }
 
       .contexto-acciones {
@@ -2012,10 +2022,12 @@
         gap: 8px;
         flex-direction: row;
         align-items: center;
+        flex-wrap: nowrap;
       }
 
       .contexto-acciones-secundarias {
         justify-content: center;
+        padding-inline: 48px;
       }
 
       .contexto-acciones-grupo {
@@ -2026,6 +2038,11 @@
       .contexto-acciones-grupo.acciones-edicion,
       .contexto-acciones-grupo.portal-acceso {
         gap: 8px;
+        flex-wrap: nowrap;
+      }
+
+      .contexto-acciones-grupo.pasos .btn-icono {
+        pointer-events: auto;
       }
 
       .step-title {
