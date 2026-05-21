@@ -98,6 +98,8 @@ async function obtenerReservasCalendario(env, filtros, session) {
 
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
   where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'");
+  where.push("COALESCE(a.activa, 0) = 1");
+  where.push("COALESCE(a.visible_portal, 0) = 1");
   where.push("(date(f.fecha) >= date('now') OR UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA')");
 
   if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
@@ -170,7 +172,9 @@ async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
   const where = [
     "f.fecha IS NOT NULL",
     "f.hora_inicio IS NOT NULL",
-    "f.hora_fin IS NOT NULL"
+    "f.hora_fin IS NOT NULL",
+    "COALESCE(a.activa, 0) = 1",
+    "COALESCE(a.visible_portal, 0) = 1"
   ];
   const binds = [];
 

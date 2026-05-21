@@ -636,9 +636,11 @@
     }
 
     .fc .fc-daygrid-event.evento-movil-compacto {
-      margin: 1px 2px;
+      margin: 2px auto;
       padding: 0;
       min-height: 10px;
+      width: 14px;
+      min-width: 14px;
       border-radius: 999px;
     }
 
@@ -654,9 +656,26 @@
       width: 8px;
       height: 8px;
       border-radius: 999px;
-      background: currentColor;
       display: inline-block;
       flex: 0 0 auto;
+    }
+
+    .evento-texto-movil {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      color: inherit;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .evento-texto-movil-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
     }
 
     .fc .fc-list-event.evento-dia-vacio {
@@ -1549,17 +1568,17 @@
       const btnEditar = document.getElementById("btnAbrirEditar");
       const btnAsistentes = document.getElementById("btnAbrirAsistentes");
       const estadoClass = String(p.estado || "").toLowerCase();
-      const esMesMovil = esVistaMesMovil(info?.view?.type);
+      const esMovilConPasoIntermedio = esMovilCalendario();
 
       btnAbrirActividad.classList.add("oculto");
       btnAbrirActividad.removeAttribute("href");
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
-        if (!p.editable_actividad && !esMesMovil) {
+        if (!p.editable_actividad && !esMovilConPasoIntermedio) {
           return;
         }
         const actividadId = Number(p.actividad_id || 0);
-        if (actividadId > 0 && !esMesMovil) {
+        if (actividadId > 0 && !esMovilConPasoIntermedio) {
           window.location.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
           return;
         }
@@ -1897,6 +1916,13 @@
       return esMovilCalendario() && vista === "dayGridMonth";
     }
 
+    function obtenerTituloBreveEventoCalendario(event) {
+      const p = event?.extendedProps || {};
+      const titulo = String(p.actividad_nombre || event?.title || "").trim();
+      if (!titulo) return "Actividad";
+      return titulo.split("·")[0].trim() || titulo;
+    }
+
     function obtenerInicialDiaSemana(fecha) {
       const dia = new Date(fecha).getDay();
       const iniciales = ["D", "L", "M", "X", "J", "V", "S"];
@@ -2025,11 +2051,36 @@
           }
         },
         eventContent: function(arg) {
-          if (!esVistaMesMovil(arg?.view?.type) || arg.event.extendedProps?.placeholder_lista) {
+          if (arg.event.extendedProps?.placeholder_lista) {
             return undefined;
           }
+          const tipoVista = String(arg?.view?.type || "");
+          const esActividad = String(arg.event.extendedProps?.tipo_evento || "") === "ACTIVIDAD_PROGRAMADA";
+          if (!esMovilCalendario() || !esActividad) {
+            return undefined;
+          }
+
           const marcador = document.createElement("span");
           marcador.className = "marcador-evento-movil";
+          marcador.style.backgroundColor = String(
+            arg.event.backgroundColor || arg.event.borderColor || "#0b5ed7"
+          );
+
+          if (tipoVista === "dayGridMonth") {
+            return { domNodes: [marcador] };
+          }
+
+          if (tipoVista === "timeGridDay" || tipoVista === "listContinuo") {
+            const wrap = document.createElement("span");
+            wrap.className = "evento-texto-movil";
+            const label = document.createElement("span");
+            label.className = "evento-texto-movil-label";
+            label.textContent = obtenerTituloBreveEventoCalendario(arg.event);
+            wrap.appendChild(marcador);
+            wrap.appendChild(label);
+            return { domNodes: [wrap] };
+          }
+
           const accesible = [
             arg.timeText || "",
             String(arg.event.title || "").trim()
