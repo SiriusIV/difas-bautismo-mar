@@ -64,12 +64,35 @@ function esDocumentoValido(tipo, documento) {
   return false;
 }
 
+async function asegurarTablaSolicitudesArmada(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS solicitudes_registro_armada (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      centro TEXT NOT NULL,
+      localidad TEXT,
+      responsable_legal TEXT NOT NULL,
+      tipo_documento TEXT NOT NULL,
+      documento_identificacion TEXT NOT NULL,
+      email TEXT NOT NULL,
+      telefono_contacto TEXT NOT NULL,
+      estado TEXT NOT NULL DEFAULT 'PENDIENTE',
+      fecha_solicitud TEXT NOT NULL DEFAULT (datetime('now')),
+      fecha_resolucion TEXT,
+      resuelto_por_superadmin_id INTEGER,
+      motivo_resolucion TEXT
+    )
+  `).run();
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const db = env.DB;
 
   const body = await request.json();
 
+  const tipo_cuenta = limpiarTexto(body.tipo_cuenta).toUpperCase() === "ARMADA"
+    ? "ARMADA"
+    : "PUBLICO";
   const centro = limpiarTexto(body.centro);
   const localidad = limpiarTexto(body.localidad);
   const responsable_legal = limpiarTexto(body.responsable_legal);
@@ -80,7 +103,7 @@ export async function onRequestPost(context) {
   const password = String(body.password || "");
   const nombre = centro;
 
-  if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || !password) {
+  if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || (tipo_cuenta === "PUBLICO" && !password)) {
     return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
   }
 
@@ -100,13 +123,15 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "El documento no coincide con el tipo seleccionado" }, 400);
   }
 
-  const validacionPassword = validarPoliticaPassword(password);
-  if (!validacionPassword.ok) {
-    return json({
-      ok: false,
-      error: mensajePoliticaPassword(),
-      detalles: validacionPassword.errores
-    }, 400);
+  if (tipo_cuenta === "PUBLICO") {
+    const validacionPassword = validarPoliticaPassword(password);
+    if (!validacionPassword.ok) {
+      return json({
+        ok: false,
+        error: mensajePoliticaPassword(),
+        detalles: validacionPassword.errores
+      }, 400);
+    }
   }
 
   // comprobar email existente
@@ -127,6 +152,58 @@ export async function onRequestPost(context) {
 
   if (existingCentro) {
     return json({ ok: false, error: "Ya existe un usuario para ese centro" }, 400);
+  }
+
+  if (tipo_cuenta === "ARMADA") {
+    await asegurarTablaSolicitudesArmada(db);
+
+    const solicitudPendiente = await db.prepare(`
+      SELECT id
+      FROM solicitudes_registro_armada
+      WHERE estado = 'PENDIENTE'
+        AND (
+          email = ?
+          OR UPPER(TRIM(centro)) = ?
+          OR UPPER(TRIM(documento_identificacion)) = ?
+        )
+      LIMIT 1
+    `).bind(email, normalizarCentro(centro), documento_identificacion).first();
+
+    if (solicitudPendiente) {
+      return json({
+        ok: false,
+        error: "Ya existe una solicitud pendiente de Usuario Armada con esos datos."
+      }, 400);
+    }
+
+    await db.prepare(`
+      INSERT INTO solicitudes_registro_armada (
+        centro,
+        localidad,
+        responsable_legal,
+        tipo_documento,
+        documento_identificacion,
+        email,
+        telefono_contacto,
+        estado,
+        fecha_solicitud
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
+    `).bind(
+      centro,
+      localidad,
+      responsable_legal,
+      tipo_documento,
+      documento_identificacion,
+      email,
+      telefono_contacto
+    ).run();
+
+    return json({
+      ok: true,
+      pendiente_aprobacion: true,
+      mensaje: "Solicitud de Usuario Armada enviada correctamente. Queda pendiente de revisión por el superadministrador."
+    });
   }
 
   const password_hash = await hashPassword(password);

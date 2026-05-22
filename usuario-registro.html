@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -328,6 +328,18 @@
       color: var(--muted);
     }
 
+    .aviso-cuenta {
+      margin: 0 0 14px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      border: 1px solid #cfe0ff;
+      background: #f4f8ff;
+      color: #294a72;
+      font-size: 12px;
+      line-height: 1.55;
+      display: none;
+    }
+
     .acciones {
       margin-top: 18px;
       display: flex;
@@ -429,7 +441,7 @@
 <body>
   <div class="contenedor">
     <div class="registro-cabecera">
-      <h1>Actividades Públicas Institucionales</h1>
+      <h1>Actividades PÃºblicas Institucionales</h1>
     </div>
 
     <div class="registro-card">
@@ -439,9 +451,9 @@
         </div>
 
         <div class="registro-aside-cuerpo">
-          <h1>Alta de entidad solicitante</h1>
-          <p>
-            Crea una cuenta con los datos básicos del centro o entidad para la gestión de solicitudes.
+          <h1 id="registroAsideTitulo">Alta de usuario pÃºblico</h1>
+          <p id="registroAsideDescripcion">
+            Crea una cuenta con los datos bÃ¡sicos del centro o entidad para la gestiÃ³n de solicitudes.
           </p>
         </div>
       </aside>
@@ -469,11 +481,22 @@
         <div class="nota-obligatorios">* Campos obligatorios</div>
 
         <div id="msg" class="mensaje"></div>
+        <div id="avisoCuentaArmada" class="aviso-cuenta">
+          Las altas de <strong>Usuario Armada</strong> no generan acceso inmediato. La solicitud quedará pendiente de revisión y aprobación por el superadministrador.
+        </div>
 
         <form id="formRegistro">
           <div class="form-grid">
             <div class="campo-completo">
-              <label for="centro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
+              <label for="tipo_cuenta">Tipo de cuenta<span class="campo-obligatorio">*</span></label>
+              <select id="tipo_cuenta" name="tipo_cuenta" required>
+                <option value="PUBLICO">Usuario público</option>
+                <option value="ARMADA">Usuario Armada</option>
+              </select>
+            </div>
+
+            <div class="campo-completo">
+              <label for="centro" id="labelCentro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
                 <input type="text" id="centro" name="centro" autocomplete="organization" required>
                 <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
@@ -482,7 +505,7 @@
             </div>
 
             <div class="campo-completo">
-              <label for="responsable_legal">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
+              <label for="responsable_legal" id="labelResponsable">Responsable legal / entidad titular<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
                 <input type="text" id="responsable_legal" name="responsable_legal" autocomplete="organization-title" required>
                 <button type="button" class="btn-ayuda-campo" id="btnAyudaResponsable" aria-label="Información sobre responsable legal o entidad titular" title="Información">i</button>
@@ -517,17 +540,17 @@
               <input type="text" id="localidad" name="localidad" autocomplete="address-level2">
             </div>
 
-            <div>
+            <div id="bloquePassword">
               <label for="password">Contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password" name="password" autocomplete="new-password" required>
             </div>
 
-            <div>
+            <div id="bloquePasswordConfirmacion">
               <label for="password_confirmacion">Confirmar contraseña<span class="campo-obligatorio">*</span></label>
               <input type="password" id="password_confirmacion" name="password_confirmacion" autocomplete="new-password" required>
             </div>
 
-            <div class="campo-completo">
+            <div class="campo-completo" id="bloqueNotaPassword">
               <div class="nota">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
             </div>
           </div>
@@ -540,7 +563,7 @@
   <div id="modalAyudaCampo" class="ayuda-modal-fondo" aria-hidden="true">
     <div class="ayuda-modal" role="dialog" aria-modal="true" aria-labelledby="tituloAyudaCampo">
       <div class="ayuda-modal-icono" aria-hidden="true">i</div>
-      <h3 id="tituloAyudaCampo">Información</h3>
+      <h3 id="tituloAyudaCampo">InformaciÃ³n</h3>
       <p id="textoAyudaCampo"></p>
     </div>
   </div>
@@ -655,10 +678,86 @@
       return true;
     }
 
+    function esCuentaArmada() {
+      return document.getElementById("tipo_cuenta").value === "ARMADA";
+    }
+
+    function actualizarFormularioSegunTipoCuenta() {
+      const armada = esCuentaArmada();
+      const bloquePassword = document.getElementById("bloquePassword");
+      const bloquePasswordConfirmacion = document.getElementById("bloquePasswordConfirmacion");
+      const bloqueNotaPassword = document.getElementById("bloqueNotaPassword");
+      const avisoCuentaArmada = document.getElementById("avisoCuentaArmada");
+      const inputPassword = document.getElementById("password");
+      const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
+      const labelCentro = document.getElementById("labelCentro");
+      const labelResponsable = document.getElementById("labelResponsable");
+      const notaCentro = document.querySelector(".nota");
+      const labelEmail = document.querySelector('label[for="email"]');
+      const labelTelefono = document.querySelector('label[for="telefono_contacto"]');
+      const asideTitulo = document.querySelector(".registro-aside-cuerpo h1");
+      const asideDescripcion = document.querySelector(".registro-aside-cuerpo p");
+
+      if (labelCentro) {
+        labelCentro.innerHTML = armada
+          ? 'Unidad / dependencia Armada<span class="campo-obligatorio">*</span>'
+          : 'Nombre del centro / entidad<span class="campo-obligatorio">*</span>';
+      }
+
+      if (labelResponsable) {
+        labelResponsable.innerHTML = armada
+          ? 'Persona de contacto<span class="campo-obligatorio">*</span>'
+          : 'Responsable legal / entidad titular<span class="campo-obligatorio">*</span>';
+      }
+
+      if (labelEmail) {
+        labelEmail.innerHTML = armada
+          ? 'Correo electrónico de contacto<span class="campo-obligatorio">*</span>'
+          : 'Correo electrónico del centro<span class="campo-obligatorio">*</span>';
+      }
+
+      if (labelTelefono) {
+        labelTelefono.innerHTML = armada
+          ? 'Teléfono de contacto<span class="campo-obligatorio">*</span>'
+          : 'Teléfono del centro<span class="campo-obligatorio">*</span>';
+      }
+
+      if (notaCentro) {
+        notaCentro.textContent = armada
+          ? "Este dato identificará la solicitud de alta administrativa y la unidad a validar."
+          : "Este dato identifica la cuenta y no podrá cambiarse después.";
+      }
+
+      if (asideTitulo) {
+        asideTitulo.textContent = armada ? "Solicitud de usuario Armada" : "Alta de usuario público";
+      }
+
+      if (asideDescripcion) {
+        asideDescripcion.textContent = armada
+          ? "Solicita el alta de una cuenta administrativa. El acceso quedará pendiente de revisión y aprobación por el superadministrador."
+          : "Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.";
+      }
+
+      if (bloquePassword) bloquePassword.style.display = armada ? "none" : "";
+      if (bloquePasswordConfirmacion) bloquePasswordConfirmacion.style.display = armada ? "none" : "";
+      if (bloqueNotaPassword) bloqueNotaPassword.style.display = armada ? "none" : "";
+      if (avisoCuentaArmada) avisoCuentaArmada.style.display = armada ? "block" : "none";
+
+      inputPassword.required = !armada;
+      inputPasswordConfirmacion.required = !armada;
+
+      if (armada) {
+        inputPassword.value = "";
+        inputPasswordConfirmacion.value = "";
+      }
+    }
+
     async function registro(event) {
       event.preventDefault();
       limpiarMensaje();
 
+      const tipo_cuenta = document.getElementById("tipo_cuenta").value.trim().toUpperCase();
+      const armada = tipo_cuenta === "ARMADA";
       const centro = document.getElementById("centro").value.trim();
       const responsable_legal = document.getElementById("responsable_legal").value.trim();
       const tipo_documento = document.getElementById("tipo_documento").value.trim().toUpperCase();
@@ -671,7 +770,7 @@
 
       limpiarAyudaCampo();
 
-      if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || !password || !passwordConfirmacion) {
+      if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
         return;
       }
@@ -682,7 +781,7 @@
       }
 
       if (!esTelefonoValido(telefono_contacto)) {
-        mostrarMensaje("error", "El teléfono del centro no tiene un formato válido.");
+        mostrarMensaje("error", armada ? "El teléfono de contacto no tiene un formato válido." : "El teléfono del centro no tiene un formato válido.");
         return;
       }
 
@@ -691,14 +790,21 @@
         return;
       }
 
-      if (password !== passwordConfirmacion) {
-        mostrarMensaje("error", "La contraseña y su confirmación no coinciden.");
-        return;
-      }
+      if (!armada) {
+        if (!password || !passwordConfirmacion) {
+          mostrarMensaje("error", "Debe completar los campos obligatorios.");
+          return;
+        }
 
-      if (!validarPoliticaPassword(password)) {
-        mostrarMensaje("error", "La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.");
-        return;
+        if (password !== passwordConfirmacion) {
+          mostrarMensaje("error", "La contraseña y su confirmación no coinciden.");
+          return;
+        }
+
+        if (!validarPoliticaPassword(password)) {
+          mostrarMensaje("error", "La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.");
+          return;
+        }
       }
 
       const res = await fetch("/api/usuario/registro", {
@@ -706,6 +812,7 @@
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          tipo_cuenta,
           centro,
           responsable_legal,
           tipo_documento,
@@ -720,22 +827,49 @@
       const data = await res.json();
 
       if (res.ok && data.ok) {
+        if (armada) {
+          document.getElementById("formRegistro").reset();
+          document.getElementById("tipo_cuenta").value = "ARMADA";
+          actualizarFormularioSegunTipoCuenta();
+          aplicarFormatoDocumento();
+          mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente. Queda pendiente de revisión por el superadministrador.");
+          return;
+        }
+
         window.location.href = "usuario-panel.html";
-      } else {
-        mostrarMensaje("error", data.error || "No se pudo crear la cuenta.");
+        return;
       }
+
+      mostrarMensaje("error", data.error || "No se pudo completar el registro.");
     }
 
     document.getElementById("formRegistro").addEventListener("submit", registro);
+    document.getElementById("tipo_cuenta").addEventListener("change", actualizarFormularioSegunTipoCuenta);
     document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
     document.getElementById("btnAyudaCentro").addEventListener("click", function () {
+      if (esCuentaArmada()) {
+        mostrarAyudaCampo(
+          "Unidad / dependencia Armada",
+          "Indique la unidad, organismo o dependencia de la Armada desde la que se solicita el alta administrativa."
+        );
+        return;
+      }
+
       mostrarAyudaCampo(
         "Nombre del centro / entidad",
         "Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
       );
     });
     document.getElementById("btnAyudaResponsable").addEventListener("click", function () {
+      if (esCuentaArmada()) {
+        mostrarAyudaCampo(
+          "Persona de contacto",
+          "Indique la persona responsable o interlocutora que solicita el alta de la cuenta administrativa de Usuario Armada."
+        );
+        return;
+      }
+
       mostrarAyudaCampo(
         "Responsable legal / entidad titular",
         "Indique la persona física o jurídica que actúa como responsable legal o titular de la entidad asociada a esta cuenta. Puede tratarse de una persona física, una sociedad, una fundación, una empresa u otra entidad jurídica titular del centro o institución."
@@ -754,7 +888,11 @@
     document.getElementById("btnVolver").addEventListener("click", function () {
       window.location.href = "portal.html";
     });
+
+    actualizarFormularioSegunTipoCuenta();
+    aplicarFormatoDocumento();
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
