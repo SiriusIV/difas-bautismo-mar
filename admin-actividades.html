@@ -2118,11 +2118,58 @@
         justify-content: flex-start;
       }
 
-      .tabla-wrap-franjas {
-        overflow-x: auto;
+      .subbloque-head {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
       }
 
-      .tabla-franjas {
+      .subbloque-head-texto {
+        width: 100%;
+        text-align: center;
+      }
+
+      .acciones-franja-toolbar {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .acciones-franja-botones {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .acciones-franja-guardar-slot {
+        display: flex;
+        justify-content: center;
+      }
+
+      .acciones-franja-config {
+        width: 100%;
+        margin-left: 0;
+        order: 3;
+      }
+
+      .acciones-franja-combo,
+      .acciones-franja-config .acciones-franja-select {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+
+      .campo-franja-accion {
+        display: none;
+      }
+
+      .tabla-wrap-franjas {
+        overflow-x: auto;
+        width: 100%;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .tabla-franjas-admin {
         min-width: 620px;
       }
 
@@ -2437,6 +2484,8 @@
       </button>
       </div>
 
+      <div class="acciones-franja-guardar-slot" id="accionesFranjaGuardarSlot"></div>
+
     </div>
   </div>
 
@@ -2470,7 +2519,7 @@
       <input type="number" id="fr_capacidad" min="1" step="1">
     </div>
 
-    <div class="campo-franja-accion">
+    <div class="campo-franja-accion" id="campoFranjaGuardarWrap">
       <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -3241,6 +3290,22 @@
         combo.append(selectorWrap);
         configWrap.append(combo);
         toolbar.appendChild(configWrap);
+      }
+    }
+
+    function reubicarBotonGuardarFranjaSegunViewport() {
+      const btnGuardar = document.getElementById("btnGuardarFranja");
+      const slotToolbar = document.getElementById("accionesFranjaGuardarSlot");
+      const slotFormulario = document.getElementById("campoFranjaGuardarWrap");
+      if (!btnGuardar || !slotToolbar || !slotFormulario) return;
+
+      const esMovil = window.matchMedia("(max-width: 700px)").matches;
+      if (esMovil) {
+        if (btnGuardar.parentElement !== slotToolbar) {
+          slotToolbar.appendChild(btnGuardar);
+        }
+      } else if (btnGuardar.parentElement !== slotFormulario) {
+        slotFormulario.appendChild(btnGuardar);
       }
     }
 
@@ -4858,6 +4923,7 @@ async function borrarFranjaSeleccionada() {
     
 function renderListaFranjas() {
   const wrap = document.getElementById("listaFranjas");
+  const esMovil = window.matchMedia("(max-width: 700px)").matches;
 
   if (!franjasCache.length) {
     franjaSeleccionadaId = null;
@@ -4889,7 +4955,8 @@ function renderListaFranjas() {
     `;
 
     return `
-      <tr class="${seleccionada ? "seleccionada" : ""}">
+      <tr class="${seleccionada ? "seleccionada" : ""}" data-franja-id="${f.id}">
+        ${esMovil ? "" : `
         <td class="col-seleccion-franja">
           <input
             type="radio"
@@ -4898,7 +4965,7 @@ function renderListaFranjas() {
             data-id="${f.id}"
             ${seleccionada ? "checked" : ""}
           >
-        </td>
+        </td>`}
         <td>${programacionHtml}</td>
         <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
         <td class="col-num">${capacidad}</td>
@@ -4909,10 +4976,11 @@ function renderListaFranjas() {
   }).join("");
 
   wrap.innerHTML = `
+    <div class="tabla-wrap-franjas">
     <table class="tabla-franjas-admin">
       <thead>
         <tr>
-          <th class="col-seleccion-franja"></th>
+          ${esMovil ? "" : '<th class="col-seleccion-franja"></th>'}
           <th>Fecha / Periodicidad</th>
           <th>Horario</th>
           <th class="col-num">Capacidad</th>
@@ -4922,11 +4990,21 @@ function renderListaFranjas() {
       </thead>
       <tbody>${filas}</tbody>
     </table>
+    </div>
   `;
 
-  wrap.querySelectorAll('input[name="franjaSeleccionada"]').forEach(input => {
-    input.addEventListener("change", () => {
-      seleccionarFranja(input.dataset.id);
+  if (!esMovil) {
+    wrap.querySelectorAll('input[name="franjaSeleccionada"]').forEach(input => {
+      input.addEventListener("change", () => {
+        seleccionarFranja(input.dataset.id);
+      });
+    });
+  }
+
+  wrap.querySelectorAll("tbody tr[data-franja-id]").forEach((fila) => {
+    fila.addEventListener("click", (event) => {
+      if (event.target.closest("input, button, a")) return;
+      seleccionarFranja(fila.dataset.franjaId);
     });
   });
 
@@ -5936,6 +6014,7 @@ function retrocederPaso() {
         const app = document.getElementById("app");
         reorganizarLayoutEditorActividad();
         compactarCabeceraFranjas();
+        reubicarBotonGuardarFranjaSegunViewport();
 
       document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("btnGuardarActividad").addEventListener("click", () => {
@@ -6200,6 +6279,7 @@ function retrocederPaso() {
         cargandoActividad = false;
         sincronizarTogglesPanelConfiguracion();
         reubicarCabeceraActividadSegunViewport();
+        reubicarBotonGuardarFranjaSegunViewport();
         app.style.display = "block";
       }
 
@@ -6219,7 +6299,13 @@ function retrocederPaso() {
         event.returnValue = "";
       });
 
-      window.addEventListener("resize", reubicarCabeceraActividadSegunViewport);
+      window.addEventListener("resize", () => {
+        reubicarCabeceraActividadSegunViewport();
+        reubicarBotonGuardarFranjaSegunViewport();
+        if (Array.isArray(franjasCache) && document.getElementById("listaFranjas")) {
+          renderListaFranjas();
+        }
+      });
     });
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
