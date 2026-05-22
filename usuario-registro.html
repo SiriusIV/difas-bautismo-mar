@@ -267,6 +267,39 @@
       padding-right: 34px;
     }
 
+    .input-con-icono {
+      position: relative;
+    }
+
+    .input-con-icono input {
+      padding-right: 42px;
+    }
+
+    .btn-toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: #5a6a7a;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-toggle-password svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      fill: currentColor;
+      stroke: none;
+    }
+
     label {
       display: block;
       margin-bottom: 5px;
@@ -556,12 +589,18 @@
 
             <div id="bloquePassword">
               <label for="password">Contraseña<span class="campo-obligatorio">*</span></label>
-              <input type="password" id="password" name="password" autocomplete="new-password" required>
+              <div class="input-con-icono">
+                <input type="password" id="password" name="password" autocomplete="new-password" required>
+                <button type="button" class="btn-toggle-password" id="btnTogglePasswordRegistro" aria-label="Mostrar contraseña" title="Mostrar contraseña"></button>
+              </div>
             </div>
 
             <div id="bloquePasswordConfirmacion">
               <label for="password_confirmacion">Confirmar contraseña<span class="campo-obligatorio">*</span></label>
-              <input type="password" id="password_confirmacion" name="password_confirmacion" autocomplete="new-password" required>
+              <div class="input-con-icono">
+                <input type="password" id="password_confirmacion" name="password_confirmacion" autocomplete="new-password" required>
+                <button type="button" class="btn-toggle-password" id="btnTogglePasswordConfirmacionRegistro" aria-label="Mostrar contraseña" title="Mostrar contraseña"></button>
+              </div>
             </div>
 
             <div class="campo-completo" id="bloqueNotaPassword">
@@ -583,6 +622,9 @@
   </div>
 
   <script>
+    const ICONO_PASSWORD_VISIBLE = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><path d="M61.9219,31.6118C61.8389,31.416,53.416,12,32,12S2.1611,31.416,2.0781,31.6118a1.005,1.005,0,0,0,0,.7764C2.1611,32.584,10.584,52,32,52S61.8389,32.584,61.9219,32.3882A1.005,1.005,0,0,0,61.9219,31.6118ZM32,50C13.5811,50,5.3828,34.6592,4.1016,32,5.3828,29.3408,13.5811,14,32,14S58.6172,29.3408,59.8984,32C58.6172,34.6592,50.4189,50,32,50Z"/><path d="M32,20A12,12,0,1,0,44,32,12.0137,12.0137,0,0,0,32,20Zm0,22A10,10,0,1,1,42,32,10.0111,10.0111,0,0,1,32,42Z"/></g></svg>`;
+    const ICONO_PASSWORD_OCULTO = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.992,18.611l-2.679,2.682c-0.39,0.391 -0.39,1.024 0,1.414c0.391,0.391 1.025,0.39 1.415,-0l3.027,-3.031c2.098,1.149 4.577,2.094 7.249,2.288l0.016,4.04c0.002,0.552 0.452,0.998 1.004,0.996c0.552,-0.002 0.998,-0.452 0.996,-1.004l-0.016,-4.033c2.281,-0.166 4.421,-0.88 6.302,-1.8c0.002,0.002 0.004,0.004 0.007,0.006l3.533,3.538c0.391,0.39 1.024,0.391 1.415,0c0.39,-0.39 0.39,-1.023 0,-1.414l-3.126,-3.13c3.415,-2.063 5.61,-4.496 5.61,-4.496c0.368,-0.411 0.333,-1.043 -0.078,-1.412c-0.411,-0.368 -1.043,-0.333 -1.412,0.078c0,-0 -5.93,6.667 -13.255,6.667c-7.325,0 -13.255,-6.667 -13.255,-6.667c-0.369,-0.411 -1.001,-0.446 -1.412,-0.078c-0.411,0.369 -0.446,1.001 -0.078,1.412c0,0 1.826,2.024 4.737,3.944Z"/></svg>`;
+
     function mostrarMensaje(tipo, texto) {
       const msg = document.getElementById("msg");
       msg.className = "mensaje " + tipo;
@@ -615,6 +657,23 @@
       const msg = document.getElementById("msg");
       msg.className = "mensaje";
       msg.textContent = "";
+    }
+
+    function actualizarBotonPasswordVisible(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (!input || !button) return;
+      const visible = input.type === "text";
+      button.innerHTML = visible ? ICONO_PASSWORD_VISIBLE : ICONO_PASSWORD_OCULTO;
+      button.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+      button.setAttribute("title", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    }
+
+    function alternarVisibilidadPassword(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.type = input.type === "password" ? "text" : "password";
+      actualizarBotonPasswordVisible(inputId, buttonId);
     }
 
     function mostrarAyudaCampo(titulo, texto) {
@@ -901,24 +960,31 @@
         }
       }
 
-      const res = await fetch("/api/usuario/registro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          tipo_cuenta,
-          centro,
-          responsable_legal,
-          tipo_documento,
-          documento_identificacion,
-          email,
-          telefono_contacto,
-          localidad,
-          password
-        })
-      });
+      let res;
+      let data = null;
+      try {
+        res = await fetch("/api/usuario/registro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            tipo_cuenta,
+            centro,
+            responsable_legal,
+            tipo_documento,
+            documento_identificacion,
+            email,
+            telefono_contacto,
+            localidad,
+            password
+          })
+        });
 
-      const data = await res.json();
+        data = await res.json().catch(() => null);
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo completar el registro.");
+        return;
+      }
 
       if (res.ok && data.ok) {
         if (armada) {
@@ -937,13 +1003,19 @@
         return;
       }
 
-      mostrarMensaje("error", data.error || "No se pudo completar el registro.");
+      mostrarMensaje("error", data?.error || data?.detalle || "No se pudo completar el registro.");
     }
 
     document.getElementById("formRegistro").addEventListener("submit", registro);
     document.getElementById("tipo_cuenta").addEventListener("change", actualizarFormularioSegunTipoCuenta);
     document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
+    document.getElementById("btnTogglePasswordRegistro").addEventListener("click", function () {
+      alternarVisibilidadPassword("password", "btnTogglePasswordRegistro");
+    });
+    document.getElementById("btnTogglePasswordConfirmacionRegistro").addEventListener("click", function () {
+      alternarVisibilidadPassword("password_confirmacion", "btnTogglePasswordConfirmacionRegistro");
+    });
     document.getElementById("btnAyudaCentro").addEventListener("click", function () {
       if (esCuentaArmada()) {
         mostrarAyudaCampo(
@@ -988,6 +1060,8 @@
 
     actualizarFormularioSegunTipoCuenta();
     aplicarFormatoDocumento();
+    actualizarBotonPasswordVisible("password", "btnTogglePasswordRegistro");
+    actualizarBotonPasswordVisible("password_confirmacion", "btnTogglePasswordConfirmacionRegistro");
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
