@@ -32,11 +32,6 @@ function esTelefonoValido(telefono) {
   return /^\+?[0-9]{9,15}$/.test(valor);
 }
 
-function letraDni(numero) {
-  const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
-  return letras[numero % 23];
-}
-
 function esTipoDocumentoValido(tipo) {
   return ["DNI_NIF", "NIE", "CIF"].includes(String(tipo || "").toUpperCase());
 }
@@ -46,15 +41,11 @@ function esDocumentoValido(tipo, documento) {
   const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (t === "DNI_NIF") {
-    if (!/^[0-9]{8}[A-Z]$/.test(d)) return false;
-    return letraDni(parseInt(d.slice(0, 8), 10)) === d.slice(-1);
+    return /^[0-9]{8}[A-Z]$/.test(d);
   }
 
   if (t === "NIE") {
-    if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) return false;
-    const mapa = { X: "0", Y: "1", Z: "2" };
-    const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
-    return letraDni(numero) === d.slice(-1);
+    return /^[XYZ][0-9]{7}[A-Z]$/.test(d);
   }
 
   if (t === "CIF") {
