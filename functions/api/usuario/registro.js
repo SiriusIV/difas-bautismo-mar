@@ -36,23 +36,69 @@ function esTipoDocumentoValido(tipo) {
   return ["DNI_NIF", "NIE", "CIF"].includes(String(tipo || "").toUpperCase());
 }
 
-function esDocumentoValido(tipo, documento) {
+function validarDocumentoDetallado(tipo, documento) {
   const t = String(tipo || "").toUpperCase();
   const d = String(documento || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (t === "DNI_NIF") {
-    return /^[0-9]{8}[A-Z]$/.test(d);
+    if (!d) {
+      return { ok: false, error: "Debes indicar el documento identificativo." };
+    }
+    if (d.length < 9) {
+      return { ok: false, error: "El DNI/NIF debe tener 8 dígitos y 1 letra." };
+    }
+    if (d.length > 9) {
+      return { ok: false, error: "El DNI/NIF no puede tener más de 8 dígitos y 1 letra." };
+    }
+    if (!/^[0-9]{8}[A-Z]$/.test(d)) {
+      return { ok: false, error: "El DNI/NIF debe tener 8 dígitos seguidos de una letra." };
+    }
+    const letraEsperada = letraDni(parseInt(d.slice(0, 8), 10));
+    if (letraEsperada !== d.slice(-1)) {
+      return { ok: false, error: `La letra del DNI/NIF no es correcta. Debe ser ${letraEsperada}.` };
+    }
+    return { ok: true };
   }
 
   if (t === "NIE") {
-    return /^[XYZ][0-9]{7}[A-Z]$/.test(d);
+    if (!d) {
+      return { ok: false, error: "Debes indicar el documento identificativo." };
+    }
+    if (d.length < 9) {
+      return { ok: false, error: "El NIE debe tener una letra inicial, 7 dígitos y una letra final." };
+    }
+    if (d.length > 9) {
+      return { ok: false, error: "El NIE no puede tener más de una letra inicial, 7 dígitos y una letra final." };
+    }
+    if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) {
+      return { ok: false, error: "El NIE debe comenzar por X, Y o Z, seguir con 7 dígitos y terminar en letra." };
+    }
+    const mapa = { X: "0", Y: "1", Z: "2" };
+    const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
+    const letraEsperada = letraDni(numero);
+    if (letraEsperada !== d.slice(-1)) {
+      return { ok: false, error: `La letra del NIE no es correcta. Debe ser ${letraEsperada}.` };
+    }
+    return { ok: true };
   }
 
   if (t === "CIF") {
-    return /^[A-Z][0-9]{7}[A-Z0-9]$/.test(d);
+    if (!d) {
+      return { ok: false, error: "Debes indicar el documento identificativo." };
+    }
+    if (d.length < 9) {
+      return { ok: false, error: "El CIF debe tener 1 letra, 7 dígitos y 1 carácter de control." };
+    }
+    if (d.length > 9) {
+      return { ok: false, error: "El CIF no puede tener más de 1 letra, 7 dígitos y 1 carácter de control." };
+    }
+    if (!/^[A-Z][0-9]{7}[A-Z0-9]$/.test(d)) {
+      return { ok: false, error: "El CIF debe comenzar por una letra, seguir con 7 dígitos y terminar en carácter de control." };
+    }
+    return { ok: true };
   }
 
-  return false;
+  return { ok: false, error: "Debe seleccionar un tipo de documento valido" };
 }
 
 export async function onRequestPost(context) {
@@ -90,8 +136,9 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "Debe seleccionar un tipo de documento valido" }, 400);
   }
 
-  if (!esDocumentoValido(tipo_documento, documento_identificacion)) {
-    return json({ ok: false, error: "El documento no coincide con el tipo seleccionado" }, 400);
+  const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
+  if (!validacionDocumento.ok) {
+    return json({ ok: false, error: validacionDocumento.error || "El documento no coincide con el tipo seleccionado" }, 400);
   }
 
   if (tipo_cuenta === "PUBLICO") {
