@@ -1594,7 +1594,7 @@
 
       .franja-sesion-inner.modo-admin #barraSuperadmin {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, max-content));
+        grid-template-columns: repeat(3, minmax(0, max-content));
         justify-content: center;
         align-items: center;
         gap: 8px 10px;
@@ -1663,6 +1663,7 @@
         <div id="barraSuperadmin" class="barra-superadmin franja-sesion-nav">
           <button class="nav-btn activo" onclick="gestionAdmins()">Administradores</button>
           <button class="nav-btn" onclick="irSolicitudesArmada()">Solicitudes Armada</button>
+          <button class="nav-btn" onclick="irUsuariosPublicosSuperadmin()">Usuarios públicos</button>
         </div>
         <button
           id="btnNotificacionesSesion"
@@ -4131,6 +4132,10 @@ function continuarSolicitudActividad() {
 
     function irSolicitudesArmada() {
       location.href = "superadmin-solicitudes-armada.html";
+    }
+
+    function irUsuariosPublicosSuperadmin() {
+      location.href = "superadmin-usuarios-publicos.html";
     }
 
     function recuperarPassword(event) {

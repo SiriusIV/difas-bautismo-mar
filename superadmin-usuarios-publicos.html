@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Usuarios públicos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #123a63;
+    }
+
+    .contenedor {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .bloque {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .cabecera-bloque {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .subtitulo {
+      margin: 0;
+      color: #5f6d7a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .btn-secundario {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #334250;
+      font-size: 14px;
+    }
+
+    .btn-secundario:hover {
+      background: #f7f9fb;
+    }
+
+    .barra-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icono {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #f8fafc;
+      color: #8a98a8;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .tabla-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    th.sel-col, td.sel-col {
+      width: 36px;
+      text-align: center;
+    }
+
+    .fila-seleccionada {
+      background: #f2f7ff;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-activo {
+      background: #eaf7ea;
+      color: #146c2e;
+    }
+
+    .pill-inactivo {
+      background: #fdeaea;
+      color: #9b1c1c;
+    }
+
+    .mensaje {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.ok {
+      background: #eaf7ea;
+      color: #146c2e;
+      display: block;
+    }
+
+    .mensaje.error {
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: block;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 760px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 24px;
+      color: #123a63;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 8px 14px;
+    }
+
+    .modal-grid dt {
+      font-weight: 700;
+      color: #35506a;
+    }
+
+    .modal-grid dd {
+      margin: 0;
+      color: #243648;
+      line-height: 1.5;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+      }
+
+      .bloque {
+        padding: 12px;
+      }
+
+      .barra-acciones {
+        justify-content: center;
+      }
+
+      .modal {
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+        padding: 16px 14px;
+      }
+
+      .modal h3 {
+        font-size: 20px;
+      }
+
+      .modal-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .modal-acciones .btn-secundario {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 8px;
+      }
+
+      .bloque {
+        padding: 10px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
+</head>
+<body>
+  <div class="contenedor">
+    <div class="bloque">
+      <div class="cabecera-bloque">
+        <div>
+          <h1>Usuarios públicos</h1>
+          <p class="subtitulo">Consulta todas las cuentas de solicitante registradas en la aplicación y sus datos básicos de filiación.</p>
+        </div>
+        <button type="button" class="btn-secundario" id="btnVolverPortal">Volver al portal</button>
+      </div>
+      <div id="mensajePantalla" class="mensaje"></div>
+    </div>
+
+    <div class="bloque">
+      <div class="cabecera-bloque">
+        <h3>Listado de cuentas</h3>
+      </div>
+
+      <div class="barra-acciones">
+        <button type="button" class="btn-icono" id="btnVerUsuario" title="Ver ficha" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sel-col"></th>
+              <th>Centro / entidad</th>
+              <th>Responsable</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Localidad</th>
+              <th>Estado</th>
+              <th>Alta</th>
+            </tr>
+          </thead>
+          <tbody id="tablaUsuariosPublicos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalUsuarioPublico" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="tituloModalUsuarioPublico">Ficha de usuario público</h3>
+      <dl class="modal-grid" id="detalleUsuarioPublico"></dl>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" id="btnCerrarModalUsuarioPublico">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let usuariosCache = [];
+    let usuarioSeleccionado = null;
+
+    function mostrarMensaje(tipo, texto) {
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje " + tipo;
+      box.textContent = texto;
+      box.style.display = "block";
+    }
+
+    function actualizarBotonVer() {
+      document.getElementById("btnVerUsuario").disabled = !usuarioSeleccionado;
+    }
+
+    function estadoUsuarioPill(activo) {
+      return Number(activo || 0) === 1
+        ? '<span class="pill pill-activo">Activa</span>'
+        : '<span class="pill pill-inactivo">Inactiva</span>';
+    }
+
+    function formatearFecha(valor) {
+      if (!valor) return "";
+      const fecha = new Date(String(valor).replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return valor;
+      return fecha.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function seleccionarUsuario(id) {
+      usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(id)) || null;
+      renderizarTabla();
+      actualizarBotonVer();
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById("tablaUsuariosPublicos");
+      tbody.innerHTML = (usuariosCache || []).map((item) => `
+        <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "fila-seleccionada" : ""}">
+          <td class="sel-col">
+            <input
+              type="radio"
+              name="seleccionUsuarioPublico"
+              ${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "checked" : ""}
+              onchange="seleccionarUsuario(${Number(item.id)})"
+            >
+          </td>
+          <td>${item.centro || item.nombre || ""}</td>
+          <td>${item.responsable_legal || "-"}</td>
+          <td>${item.email || ""}</td>
+          <td>${item.telefono_contacto || "-"}</td>
+          <td>${item.localidad || "-"}</td>
+          <td>${estadoUsuarioPill(item.activo)}</td>
+          <td>${formatearFecha(item.fecha_alta)}</td>
+        </tr>
+      `).join("");
+      actualizarBotonVer();
+    }
+
+    async function cargarUsuarios() {
+      const res = await fetch("/api/admin/usuarios-publicos-lista", {
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "No se pudo cargar la lista de usuarios públicos.");
+      }
+      usuariosCache = Array.isArray(data.usuarios) ? data.usuarios : [];
+      if (usuarioSeleccionado) {
+        usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(usuarioSeleccionado.id)) || null;
+      }
+      renderizarTabla();
+    }
+
+    function abrirModalUsuario() {
+      if (!usuarioSeleccionado) return;
+      document.getElementById("tituloModalUsuarioPublico").textContent = `Ficha · ${usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "Usuario público"}`;
+      document.getElementById("detalleUsuarioPublico").innerHTML = `
+        <dt>Centro / entidad</dt><dd>${usuarioSeleccionado.centro || usuarioSeleccionado.nombre || ""}</dd>
+        <dt>Responsable</dt><dd>${usuarioSeleccionado.responsable_legal || "-"}</dd>
+        <dt>Email</dt><dd>${usuarioSeleccionado.email || ""}</dd>
+        <dt>Teléfono</dt><dd>${usuarioSeleccionado.telefono_contacto || "-"}</dd>
+        <dt>Localidad</dt><dd>${usuarioSeleccionado.localidad || "-"}</dd>
+        <dt>Documento</dt><dd>${usuarioSeleccionado.tipo_documento || "-"} · ${usuarioSeleccionado.documento_identificacion || "-"}</dd>
+        <dt>Estado</dt><dd>${Number(usuarioSeleccionado.activo || 0) === 1 ? "Activa" : "Inactiva"}</dd>
+        <dt>Fecha de alta</dt><dd>${formatearFecha(usuarioSeleccionado.fecha_alta)}</dd>
+      `;
+      const modal = document.getElementById("modalUsuarioPublico");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalUsuario() {
+      const modal = document.getElementById("modalUsuarioPublico");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    document.getElementById("btnVolverPortal").addEventListener("click", function () {
+      window.location.href = "portal.html";
+    });
+    document.getElementById("btnVerUsuario").addEventListener("click", abrirModalUsuario);
+    document.getElementById("btnCerrarModalUsuarioPublico").addEventListener("click", cerrarModalUsuario);
+    document.getElementById("modalUsuarioPublico").addEventListener("click", function (e) {
+      if (e.target.id === "modalUsuarioPublico") cerrarModalUsuario();
+    });
+
+    (async function init() {
+      try {
+        await cargarUsuarios();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo cargar la consola de usuarios públicos.");
+      }
+    })();
+
+    window.seleccionarUsuario = seleccionarUsuario;
+  </script>
+  <script src="assets/mobile-mensaje-flotante.js"></script>
+</body>
+</html>
