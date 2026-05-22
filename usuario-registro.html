@@ -240,6 +240,14 @@
       gap: 12px 10px;
     }
 
+    .campo-telefono-localidad {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 10px;
+      align-items: end;
+    }
+
     .campo-completo {
       grid-column: 1 / -1;
     }
@@ -424,6 +432,10 @@
         grid-template-columns: 1fr;
       }
 
+      .campo-telefono-localidad {
+        grid-template-columns: 1fr;
+      }
+
       .acciones {
         justify-content: stretch;
       }
@@ -442,7 +454,7 @@
 <body>
   <div class="contenedor">
     <div class="registro-cabecera">
-      <h1>Actividades PÃºblicas Institucionales</h1>
+      <h1>Actividades Públicas Institucionales</h1>
     </div>
 
     <div class="registro-card">
@@ -452,9 +464,9 @@
         </div>
 
         <div class="registro-aside-cuerpo">
-          <h1 id="registroAsideTitulo">Alta de usuario pÃºblico</h1>
+          <h1 id="registroAsideTitulo">Alta de usuario público</h1>
           <p id="registroAsideDescripcion">
-            Crea una cuenta con los datos bÃ¡sicos del centro o entidad para la gestiÃ³n de solicitudes.
+            Crea una cuenta con los datos básicos del centro o entidad para la gestión de solicitudes.
           </p>
         </div>
       </aside>
@@ -470,8 +482,8 @@
                 <path d="M9 21v-6h6v6"></path>
               </svg>
             </button>
-            <button type="submit" form="formRegistro" class="btn btn-icono" aria-label="Crear cuenta" title="Crear cuenta">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+            <button type="submit" form="formRegistro" class="btn btn-icono" id="btnEnviarRegistro" aria-label="Crear cuenta" title="Crear cuenta">
+              <svg id="iconoRegistroAccion" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
                 <polyline points="7 3 7 8 15 8"></polyline>
@@ -531,14 +543,15 @@
               <input type="email" id="email" name="email" autocomplete="email" required>
             </div>
 
-            <div class="campo-completo">
-              <label for="telefono_contacto">Teléfono del centro<span class="campo-obligatorio">*</span></label>
-              <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel" required>
-            </div>
-
-            <div class="campo-completo">
-              <label for="localidad">Localidad</label>
-              <input type="text" id="localidad" name="localidad" autocomplete="address-level2">
+            <div class="campo-telefono-localidad">
+              <div>
+                <label for="telefono_contacto">Teléfono del centro<span class="campo-obligatorio">*</span></label>
+                <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel" required>
+              </div>
+              <div>
+                <label for="localidad">Localidad</label>
+                <input type="text" id="localidad" name="localidad" autocomplete="address-level2">
+              </div>
             </div>
 
             <div id="bloquePassword">
@@ -762,6 +775,8 @@
       const labelTelefono = document.querySelector('label[for="telefono_contacto"]');
       const asideTitulo = document.querySelector(".registro-aside-cuerpo h1");
       const asideDescripcion = document.querySelector(".registro-aside-cuerpo p");
+      const btnAccion = document.getElementById("btnEnviarRegistro");
+      const iconoAccion = document.getElementById("iconoRegistroAccion");
 
       if (labelCentro) {
         labelCentro.innerHTML = armada
@@ -801,6 +816,19 @@
         asideDescripcion.textContent = armada
           ? "Solicita el alta de una cuenta administrativa. El acceso quedará pendiente de revisión y aprobación por el superadministrador."
           : "Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.";
+      }
+
+      if (btnAccion) {
+        btnAccion.setAttribute("aria-label", armada ? "Enviar solicitud" : "Crear cuenta");
+        btnAccion.setAttribute("title", armada ? "Enviar solicitud" : "Crear cuenta");
+      }
+
+      if (iconoAccion) {
+        if (armada) {
+          iconoAccion.innerHTML = '<path d="M22 2L11 13"></path><path d="M22 2L15 22l-4-9-9-4 20-7z"></path>';
+        } else {
+          iconoAccion.innerHTML = '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline>';
+        }
       }
 
       if (bloquePassword) bloquePassword.style.display = armada ? "none" : "";
