@@ -206,7 +206,7 @@
           return;
         }
 
-        const destino = new URLSearchParams(window.location.search).get("next") || "/admin-reservas.html";
+        const destino = data?.redirect_to || new URLSearchParams(window.location.search).get("next") || "/admin-reservas.html";
         window.location.href = destino;
 
       } catch (error) {

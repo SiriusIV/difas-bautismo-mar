@@ -1,4 +1,5 @@
 import { createSessionCookie } from "./_auth.js";
+import { asegurarColumnaForzarCambioPassword } from "../usuario/_password.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -13,6 +14,8 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaForzarCambioPassword(env.DB);
+
     const body = await request.json();
 
     const username = String(body.username || "").trim();
@@ -35,48 +38,55 @@ export async function onRequestPost(context) {
       return json(
         {
           ok: false,
-          error: "Usuario o contraseña incorrectos."
+          error: "Usuario o contraseÃ±a incorrectos."
         },
         { status: 401 }
       );
     }
 
-const { results } = await env.DB.prepare(`
-  SELECT id, rol, email, nombre, centro, logo_url, web_externa_url, telefono_contacto
-  FROM usuarios
-  WHERE email = ?
-    AND activo = 1
-    AND rol IN ('ADMIN', 'SUPERADMIN')
-  LIMIT 1
-`)
-.bind(username)
-.all();
+    const { results } = await env.DB.prepare(`
+      SELECT id, rol, email, nombre, centro, logo_url, web_externa_url, telefono_contacto, forzar_cambio_password
+      FROM usuarios
+      WHERE email = ?
+        AND activo = 1
+        AND rol IN ('ADMIN', 'SUPERADMIN')
+      LIMIT 1
+    `)
+      .bind(username)
+      .all();
 
-if (!results || results.length === 0) {
-  return json(
-    {
-      ok: false,
-      error: "El usuario administrador no existe en la base de datos."
-    },
-    { status: 401 }
-  );
-}
+    if (!results || results.length === 0) {
+      return json(
+        {
+          ok: false,
+          error: "El usuario administrador no existe en la base de datos."
+        },
+        { status: 401 }
+      );
+    }
 
-const usuario_id = results[0].id;
-const rol = results[0].rol;
+    const usuario = results[0];
+    const usuario_id = usuario.id;
+    const rol = usuario.rol;
+    const requiereCambioPassword = Number(usuario.forzar_cambio_password || 0) === 1;
 
-const cookie = await createSessionCookie(env, username, usuario_id, rol, {
-  nombre: results[0].nombre || "",
-  centro: results[0].centro || "",
-  logo_url: results[0].logo_url || "",
-  web_externa_url: results[0].web_externa_url || "",
-  telefono_contacto: results[0].telefono_contacto || ""
-});
+    const cookie = await createSessionCookie(env, username, usuario_id, rol, {
+      nombre: usuario.nombre || "",
+      centro: usuario.centro || "",
+      logo_url: usuario.logo_url || "",
+      web_externa_url: usuario.web_externa_url || "",
+      telefono_contacto: usuario.telefono_contacto || "",
+      forzar_cambio_password: requiereCambioPassword ? 1 : 0
+    });
 
     return new Response(
       JSON.stringify({
         ok: true,
-        mensaje: "Sesión iniciada correctamente."
+        mensaje: "SesiÃ³n iniciada correctamente.",
+        requiere_cambio_password: requiereCambioPassword,
+        redirect_to: requiereCambioPassword
+          ? "/usuario-perfil.html?forzar_password=1"
+          : "/admin-reservas.html"
       }),
       {
         status: 200,
@@ -90,7 +100,7 @@ const cookie = await createSessionCookie(env, username, usuario_id, rol, {
     return json(
       {
         ok: false,
-        error: "Error al iniciar sesión.",
+        error: "Error al iniciar sesiÃ³n.",
         detalle: error.message
       },
       { status: 500 }

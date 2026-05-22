@@ -82,3 +82,21 @@ export async function asegurarTablaResetPassword(db) {
     "ON password_reset_tokens(token_hash)"
   ).run();
 }
+
+export async function asegurarColumnaForzarCambioPassword(db) {
+  try {
+    await db.prepare(
+      "ALTER TABLE usuarios ADD COLUMN forzar_cambio_password INTEGER NOT NULL DEFAULT 0"
+    ).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("duplicate") ||
+      detalle.includes("already exists")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}

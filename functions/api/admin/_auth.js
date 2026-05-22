@@ -20,6 +20,10 @@ export async function getAdminSession(request, env) {
 
   if (!session) return null;
 
+  if (Number(session.forzar_cambio_password || 0) === 1) {
+    return null;
+  }
+
   if (session.rol !== "ADMIN" && session.rol !== "SUPERADMIN") {
     return null;
   }

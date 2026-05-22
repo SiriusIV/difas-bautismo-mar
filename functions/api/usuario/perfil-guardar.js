@@ -1,4 +1,5 @@
 import { createSessionCookie, getUserSession } from "./_auth.js";
+import { asegurarColumnaForzarCambioPassword } from "./_password.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -76,9 +77,14 @@ export async function onRequestPost(context) {
 
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
+    await asegurarColumnaForzarCambioPassword(env.DB);
 
     if (!session || !session.id) {
       return json({ ok: false, error: "No autorizado" }, 401);
+    }
+
+    if (Number(session.forzar_cambio_password || 0) === 1) {
+      return json({ ok: false, error: "Debes cambiar la contraseña temporal antes de continuar." }, 403);
     }
 
     const body = await request.json();
@@ -127,7 +133,8 @@ export async function onRequestPost(context) {
           documento_identificacion,
           logo_url,
           web_externa_url,
-          web_externa_activa
+          web_externa_activa,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -146,7 +153,8 @@ export async function onRequestPost(context) {
           tipo_documento,
           documento_identificacion,
           logo_url,
-          web_externa_url
+          web_externa_url,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -306,7 +314,8 @@ export async function onRequestPost(context) {
           web_externa_url,
           web_externa_activa,
           logo_url,
-          rol
+          rol,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -326,7 +335,8 @@ export async function onRequestPost(context) {
           documento_identificacion,
           web_externa_url,
           logo_url,
-          rol
+          rol,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -347,7 +357,8 @@ export async function onRequestPost(context) {
         documento_identificacion: perfil.documento_identificacion || "",
         logo_url: perfil.logo_url || "",
         web_externa_url: perfil.web_externa_url || "",
-        web_externa_activa: Number(perfil.web_externa_activa ?? webExternaActivaRespuesta ?? 0)
+        web_externa_activa: Number(perfil.web_externa_activa ?? webExternaActivaRespuesta ?? 0),
+        forzar_cambio_password: Number(perfil.forzar_cambio_password || 0) === 1 ? 1 : 0
       },
       env.SECRET_KEY
     );
@@ -370,7 +381,8 @@ export async function onRequestPost(context) {
           web_externa_url: perfil.web_externa_url || "",
           web_externa_activa: Number(perfil.web_externa_activa ?? webExternaActivaRespuesta ?? 0),
           logo_url: perfil.logo_url || "",
-          rol: perfil.rol || ""
+          rol: perfil.rol || "",
+          forzar_cambio_password: Number(perfil.forzar_cambio_password || 0) === 1 ? 1 : 0
         }
       },
       200,

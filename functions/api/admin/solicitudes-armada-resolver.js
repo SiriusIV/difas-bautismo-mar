@@ -1,5 +1,8 @@
 import { getAdminSession } from "./_auth.js";
-import { hashPassword } from "../usuario/_password.js";
+import {
+  asegurarColumnaForzarCambioPassword,
+  hashPassword
+} from "../usuario/_password.js";
 import {
   asegurarTablaSolicitudesArmada,
   generarPasswordTemporal,
@@ -28,6 +31,7 @@ export async function onRequestPost(context) {
     }
 
     await asegurarTablaSolicitudesArmada(env.DB);
+    await asegurarColumnaForzarCambioPassword(env.DB);
 
     const body = await request.json();
     const solicitudId = Number(body.solicitud_id || 0);
@@ -108,14 +112,15 @@ export async function onRequestPost(context) {
         email,
         password_hash,
         rol,
-        telefono_contacto,
-        responsable_legal,
-        tipo_documento,
-        documento_identificacion,
-        activo,
-        fecha_alta
-      )
-      VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, 1, datetime('now'))
+      telefono_contacto,
+      responsable_legal,
+      tipo_documento,
+      documento_identificacion,
+      forzar_cambio_password,
+      activo,
+      fecha_alta
+    )
+      VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, 1, 1, datetime('now'))
     `).bind(
       limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
       limpiarTexto(solicitud.centro),

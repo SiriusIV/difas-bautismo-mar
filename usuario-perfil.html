@@ -1438,6 +1438,7 @@
     let organizadorPendienteId = null;
     let adminIdPreferentePerfil = null;
     let actividadIdPreferentePerfil = null;
+    let forzarCambioPasswordObligatorio = false;
     let temporizadorMensajePassword = null;
     let temporizadorMensajePerfil = null;
     let temporizadorMensajeDetalle = null;
@@ -3216,7 +3217,8 @@
         logo_url: perfil.logo_url || "",
         web_externa_url: perfil.web_externa_url || "",
         web_externa_activa: Number(perfil.web_externa_activa || 0) === 1 ? 1 : 0,
-        rol: rolActual
+        rol: rolActual,
+        forzar_cambio_password: Number(perfil.forzar_cambio_password || 0) === 1 ? 1 : 0
       };
 
       aplicarFormatoDocumento();
@@ -3247,8 +3249,23 @@
         tipo_documento: perfil.tipo_documento || sesion?.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || sesion?.documento_identificacion || "",
         logo_url: perfil.logo_url || sesion?.logo_url || "",
-        rol: String(perfil.rol || sesion?.rol || "").toUpperCase()
+        rol: String(perfil.rol || sesion?.rol || "").toUpperCase(),
+        forzar_cambio_password: Number(perfil.forzar_cambio_password ?? sesion?.forzar_cambio_password ?? 0) === 1 ? 1 : 0
       };
+    }
+
+    function aplicarEstadoForzadoPassword() {
+      const btnPortal = document.getElementById("btnPortal");
+      const btnGuardar = document.getElementById("btnGuardar");
+
+      if (btnPortal) btnPortal.disabled = forzarCambioPasswordObligatorio;
+      if (btnGuardar) btnGuardar.disabled = forzarCambioPasswordObligatorio;
+
+      if (forzarCambioPasswordObligatorio) {
+        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+      } else {
+        limpiarMensaje("mensajePassword");
+      }
     }
 
     async function cargarResumenDocumentacion() {
@@ -3303,13 +3320,23 @@
       } catch (_) {}
 
       if (!perfil) perfil = normalizarPerfil({}, sesion);
+      forzarCambioPasswordObligatorio =
+        Number(perfil.forzar_cambio_password || 0) === 1 ||
+        new URLSearchParams(window.location.search).get("forzar_password") === "1";
       rellenarFormulario(perfil);
+      aplicarEstadoForzadoPassword();
       await cargarResumenDocumentacion();
       await cargarDocumentacionAdmin();
       if (esSolicitante() && Number(adminIdPreferentePerfil || 0) > 0) {
         activarTabBloqueDocumentacion("documentos");
       }
       appPerfil.classList.remove("app-perfil-cargando");
+
+      if (forzarCambioPasswordObligatorio) {
+        setTimeout(() => {
+          abrirModalPasswordActual();
+        }, 120);
+      }
     }
 
     function abrirAyudaCampo(titulo, texto) {
@@ -3534,6 +3561,11 @@
         event.preventDefault();
       }
 
+      if (forzarCambioPasswordObligatorio) {
+        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+        return false;
+      }
+
       limpiarMensaje("mensajePerfil");
       const validacion = validarFormularioPerfil();
       if (!validacion.ok) {
@@ -3630,6 +3662,10 @@
     }
 
     function irPortal() {
+      if (forzarCambioPasswordObligatorio) {
+        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+        return;
+      }
       if (tieneCambiosPendientesDetalle()) {
         abrirModalCambiosPendientesDocumentos("portal");
         return;
@@ -3664,11 +3700,19 @@
     }
 
     function salirSinGuardar() {
+      if (forzarCambioPasswordObligatorio) {
+        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+        return;
+      }
       cerrarModalCambiosPendientes();
       location.href = "portal.html";
     }
 
     async function guardarYSalir() {
+      if (forzarCambioPasswordObligatorio) {
+        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+        return;
+      }
       const ok = await guardarPerfil();
       if (ok) {
         cerrarModalCambiosPendientes();
@@ -3771,6 +3815,8 @@
         }
 
         cerrarModalPasswordNueva();
+        forzarCambioPasswordObligatorio = false;
+        aplicarEstadoForzadoPassword();
         mostrarMensajePasswordTemporal("ok", data.mensaje || "Contraseña actualizada correctamente.");
       } catch (error) {
         mostrarMensajePasswordTemporal("error", error.message || "No se pudo actualizar la contraseña.");

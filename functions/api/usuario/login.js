@@ -1,4 +1,5 @@
 import { createSessionCookie } from "./_auth.js";
+import { asegurarColumnaForzarCambioPassword } from "./_password.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -26,6 +27,8 @@ export async function onRequestPost(context) {
   const db = env.DB;
 
   try {
+    await asegurarColumnaForzarCambioPassword(db);
+
     const body = await request.json();
     const email = limpiarTexto(body.email).toLowerCase();
     const password = String(body.password || "").trim();
@@ -35,7 +38,7 @@ export async function onRequestPost(context) {
     }
 
     const user = await db.prepare(`
-      SELECT id, nombre, nombre_publico, localidad, centro, email, password_hash, rol, activo, logo_url, web_externa_url, telefono_contacto, responsable_legal, tipo_documento, documento_identificacion
+      SELECT id, nombre, nombre_publico, localidad, centro, email, password_hash, rol, activo, logo_url, web_externa_url, telefono_contacto, responsable_legal, tipo_documento, documento_identificacion, forzar_cambio_password
       FROM usuarios
       WHERE email = ?
       LIMIT 1
@@ -73,6 +76,7 @@ export async function onRequestPost(context) {
       responsable_legal: user.responsable_legal || "",
       tipo_documento: user.tipo_documento || "",
       documento_identificacion: user.documento_identificacion || "",
+      forzar_cambio_password: Number(user.forzar_cambio_password || 0) === 1 ? 1 : 0,
       logo_url: user.logo_url || "",
       web_externa_url: user.web_externa_url || ""
     };
@@ -83,10 +87,13 @@ export async function onRequestPost(context) {
       {
         ok: true,
         user: sessionUser,
+        requiere_cambio_password: Number(user.forzar_cambio_password || 0) === 1,
         redirect_to:
-          user.rol === "SOLICITANTE"
-            ? "/usuario-panel.html"
-            : "/portal.html"
+          Number(user.forzar_cambio_password || 0) === 1
+            ? "/usuario-perfil.html?forzar_password=1"
+            : (user.rol === "SOLICITANTE"
+                ? "/usuario-panel.html"
+                : "/portal.html")
       },
       200,
       { "Set-Cookie": cookie }

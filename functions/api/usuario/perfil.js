@@ -1,4 +1,5 @@
 import { getUserSession } from "./_auth.js";
+import { asegurarColumnaForzarCambioPassword } from "./_password.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -14,6 +15,7 @@ export async function onRequestGet(context) {
 
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
+    await asegurarColumnaForzarCambioPassword(env.DB);
 
     if (!session || !session.id) {
       return json(
@@ -39,7 +41,8 @@ export async function onRequestGet(context) {
           web_externa_url,
           web_externa_activa,
           logo_url,
-          rol
+          rol,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -59,7 +62,8 @@ export async function onRequestGet(context) {
           documento_identificacion,
           web_externa_url,
           logo_url,
-          rol
+          rol,
+          forzar_cambio_password
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -89,7 +93,8 @@ export async function onRequestGet(context) {
         web_externa_url: user.web_externa_url || "",
         web_externa_activa: Number(user.web_externa_activa ?? session.web_externa_activa ?? 0),
         logo_url: user.logo_url || "",
-        rol: user.rol || ""
+        rol: user.rol || "",
+        forzar_cambio_password: Number(user.forzar_cambio_password || 0) === 1 ? 1 : 0
       }
     });
   } catch (error) {

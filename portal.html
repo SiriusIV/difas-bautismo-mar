@@ -2952,6 +2952,10 @@ function actualizarBotonSolicitarSegunFranja() {
 
       const data = await res.json();
       usuarioAutenticado = data.ok && data.authenticated ? data.user : null;
+      if (Number(usuarioAutenticado?.forzar_cambio_password || 0) === 1) {
+        location.href = "usuario-perfil.html?forzar_password=1";
+        return;
+      }
       actualizarModoAcceso();
       await cargarNotificacionesPortal();
       if (usuarioAutenticado) {
@@ -4091,6 +4095,10 @@ function continuarSolicitudActividad() {
 
       if (data.ok) {
         cerrarModalLogin();
+        if (Number(data?.user?.forzar_cambio_password || 0) === 1) {
+          location.href = data?.redirect_to || "usuario-perfil.html?forzar_password=1";
+          return;
+        }
         await comprobarSesionUsuario();
         if (intentarRedireccionPendientePortal()) return;
         if (obtenerDestinoPendientePortal()) {
