@@ -1401,12 +1401,12 @@
       min-width: 0;
       margin-left: 0;
       border-collapse: separate;
-      border-spacing: 0 6px;
+      border-spacing: 0 4px;
     }
 
     .tabla-franjas-preview th,
     .tabla-franjas-preview td {
-      padding: 5px 8px 5px 0;
+      padding: 4px 6px 4px 0;
       text-align: left;
       vertical-align: middle;
     }
@@ -1429,20 +1429,20 @@
       min-width: 0;
       width: auto;
       white-space: nowrap;
-      padding-right: 16px;
+      padding-right: 10px;
     }
 
     .tabla-franjas-preview th:nth-child(2),
     .tabla-franjas-preview td:nth-child(2),
     .tabla-franjas-preview th:nth-child(3),
     .tabla-franjas-preview td:nth-child(3) {
-      min-width: 54px;
+      min-width: 46px;
       white-space: nowrap;
     }
 
     .tabla-franjas-preview th:nth-child(4),
     .tabla-franjas-preview td:nth-child(4) {
-      min-width: 72px;
+      min-width: 56px;
       white-space: nowrap;
     }
 
@@ -1616,6 +1616,15 @@
       margin-top: 22px;
       padding-top: 18px;
       border-top: 1px solid var(--border);
+    }
+
+    .documentacion-actividad-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
     .documentacion-actividad-opciones {
@@ -2090,6 +2099,19 @@
       .config-periodo-card,
       .subbloque {
         padding: 10px;
+      }
+
+      .documentacion-actividad-head {
+        align-items: center;
+      }
+
+      .documentacion-actividad-head .step-title {
+        margin: 0;
+      }
+
+      .documentacion-actividad-head-acciones {
+        margin-left: auto;
+        flex: 0 0 auto;
       }
 
       .control-row {
@@ -2580,16 +2602,18 @@
             <div id="tablaRequisitosVacia" class="sin-franjas tabla-requisitos-vacia">Todavía no hay requisitos particulares definidos para esta actividad.</div>
 
             <div class="documentacion-actividad-panel">
-              <h3 class="step-title">Documentación preceptiva</h3>
+              <div class="documentacion-actividad-head">
+                <h3 class="step-title">Documentación preceptiva</h3>
+                <div class="documentacion-actividad-head-acciones">
+                  <button type="button" class="btn-mini" id="btnAgregarDocumentoActividad">Añadir</button>
+                </div>
+              </div>
               <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
 
               <div class="documentacion-actividad-opciones" id="documentacionActividadOpciones">
                 <div class="documentacion-actividad-controles">
                   <div class="documentacion-actividad-select">
                     <select id="documentacionActividadSelect"></select>
-                  </div>
-                  <div class="documentacion-actividad-acciones">
-                    <button type="button" class="btn-mini" id="btnAgregarDocumentoActividad">Añadir</button>
                   </div>
                 </div>
 
