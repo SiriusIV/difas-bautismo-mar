@@ -3295,14 +3295,14 @@
 
     function reubicarBotonGuardarFranjaSegunViewport() {
       const btnGuardar = document.getElementById("btnGuardarFranja");
-      const slotToolbar = document.getElementById("accionesFranjaGuardarSlot");
+      const grupoBotones = document.getElementById("accionesFranjasBotones");
       const slotFormulario = document.getElementById("campoFranjaGuardarWrap");
-      if (!btnGuardar || !slotToolbar || !slotFormulario) return;
+      if (!btnGuardar || !grupoBotones || !slotFormulario) return;
 
       const esMovil = window.matchMedia("(max-width: 700px)").matches;
       if (esMovil) {
-        if (btnGuardar.parentElement !== slotToolbar) {
-          slotToolbar.appendChild(btnGuardar);
+        if (btnGuardar.parentElement !== grupoBotones) {
+          grupoBotones.appendChild(btnGuardar);
         }
       } else if (btnGuardar.parentElement !== slotFormulario) {
         slotFormulario.appendChild(btnGuardar);
