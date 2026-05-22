@@ -5,6 +5,7 @@ export async function asegurarTablaSolicitudesArmada(db) {
       centro TEXT NOT NULL,
       localidad TEXT,
       responsable_legal TEXT NOT NULL,
+      cargo_puesto TEXT,
       tipo_documento TEXT NOT NULL,
       documento_identificacion TEXT NOT NULL,
       email TEXT NOT NULL,
@@ -17,6 +18,24 @@ export async function asegurarTablaSolicitudesArmada(db) {
       usuario_creado_id INTEGER
     )
   `).run();
+
+  await asegurarColumnaSolicitudArmada(db, "cargo_puesto", "TEXT");
+}
+
+async function asegurarColumnaSolicitudArmada(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE solicitudes_registro_armada ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("duplicate") ||
+      detalle.includes("already exists")
+    ) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export function limpiarTexto(valor) {
@@ -28,7 +47,7 @@ export function normalizarCentro(valor) {
 }
 
 export function generarPasswordTemporal() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*_-";
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*_-.";
   const bytes = new Uint8Array(12);
   crypto.getRandomValues(bytes);
   let out = "";

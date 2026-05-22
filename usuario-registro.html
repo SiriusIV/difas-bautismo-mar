@@ -558,6 +558,12 @@
               </div>
             </div>
 
+            <div class="campo-completo" id="bloqueCargoPuesto" style="display:none;">
+              <label for="cargo_puesto" id="labelCargoPuesto">Cargo / puesto del solicitante<span class="campo-obligatorio">*</span></label>
+              <input type="text" id="cargo_puesto" name="cargo_puesto" autocomplete="organization-title">
+              <div class="nota">Indique el cargo o puesto que ocupa la persona que solicita el alta administrativa.</div>
+            </div>
+
             <div class="campo-completo">
               <label>Documento<span class="campo-obligatorio">*</span></label>
               <div class="campo-documento-inline">
@@ -827,6 +833,8 @@
       const avisoCuentaArmada = document.getElementById("avisoCuentaArmada");
       const inputPassword = document.getElementById("password");
       const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
+      const bloqueCargoPuesto = document.getElementById("bloqueCargoPuesto");
+      const inputCargoPuesto = document.getElementById("cargo_puesto");
       const labelCentro = document.getElementById("labelCentro");
       const labelResponsable = document.getElementById("labelResponsable");
       const notaCentro = document.querySelector(".nota");
@@ -893,14 +901,18 @@
       if (bloquePassword) bloquePassword.style.display = armada ? "none" : "";
       if (bloquePasswordConfirmacion) bloquePasswordConfirmacion.style.display = armada ? "none" : "";
       if (bloqueNotaPassword) bloqueNotaPassword.style.display = armada ? "none" : "";
+      if (bloqueCargoPuesto) bloqueCargoPuesto.style.display = armada ? "" : "none";
       if (avisoCuentaArmada) avisoCuentaArmada.style.display = armada ? "block" : "none";
 
       inputPassword.required = !armada;
       inputPasswordConfirmacion.required = !armada;
+      inputCargoPuesto.required = armada;
 
       if (armada) {
         inputPassword.value = "";
         inputPasswordConfirmacion.value = "";
+      } else {
+        inputCargoPuesto.value = "";
       }
     }
 
@@ -912,6 +924,7 @@
       const armada = tipo_cuenta === "ARMADA";
       const centro = document.getElementById("centro").value.trim();
       const responsable_legal = document.getElementById("responsable_legal").value.trim();
+      const cargo_puesto = document.getElementById("cargo_puesto").value.trim();
       const tipo_documento = document.getElementById("tipo_documento").value.trim().toUpperCase();
       const documento_identificacion = document.getElementById("documento_identificacion").value.trim().toUpperCase();
       const email = document.getElementById("email").value.trim();
@@ -924,6 +937,11 @@
 
       if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
+        return;
+      }
+
+      if (armada && !cargo_puesto) {
+        mostrarMensaje("error", "Debe indicar el cargo o puesto del solicitante.");
         return;
       }
 
@@ -971,6 +989,7 @@
             tipo_cuenta,
             centro,
             responsable_legal,
+            cargo_puesto,
             tipo_documento,
             documento_identificacion,
             email,

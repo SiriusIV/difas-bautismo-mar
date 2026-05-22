@@ -6,6 +6,7 @@ import {
 } from "./_password.js";
 import {
   asegurarTablaSolicitudesArmada,
+  limpiarTexto as limpiarTextoSolicitud,
   normalizarCentro
 } from "../admin/_solicitudes_armada.js";
 
@@ -79,7 +80,7 @@ function validarDocumentoDetallado(tipo, documento) {
     return { ok: true };
   }
 
-  return { ok: false, error: "Debe seleccionar un tipo de documento valido" };
+  return { ok: false, error: "Debe seleccionar un tipo de documento válido." };
 }
 
 export async function onRequestPost(context) {
@@ -93,6 +94,7 @@ export async function onRequestPost(context) {
     const centro = limpiarTexto(body.centro);
     const localidad = limpiarTexto(body.localidad);
     const responsable_legal = limpiarTexto(body.responsable_legal);
+    const cargo_puesto = limpiarTextoSolicitud(body.cargo_puesto);
     const tipo_documento = limpiarTexto(body.tipo_documento).toUpperCase();
     const documento_identificacion = limpiarTexto(body.documento_identificacion).toUpperCase();
     const email = limpiarTexto(body.email).toLowerCase();
@@ -104,16 +106,20 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
     }
 
+    if (tipo_cuenta === "ARMADA" && !cargo_puesto) {
+      return json({ ok: false, error: "Debe indicar el cargo o puesto del solicitante." }, 400);
+    }
+
     if (!esEmailValido(email)) {
-      return json({ ok: false, error: "El email no es valido" }, 400);
+      return json({ ok: false, error: "El email no es válido" }, 400);
     }
 
     if (!esTelefonoValido(telefono_contacto)) {
-      return json({ ok: false, error: "El telefono no es valido" }, 400);
+      return json({ ok: false, error: "El teléfono no es válido" }, 400);
     }
 
     if (!esTipoDocumentoValido(tipo_documento)) {
-      return json({ ok: false, error: "Debe seleccionar un tipo de documento valido" }, 400);
+      return json({ ok: false, error: "Debe seleccionar un tipo de documento válido" }, 400);
     }
 
     const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
@@ -172,6 +178,7 @@ export async function onRequestPost(context) {
           centro,
           localidad,
           responsable_legal,
+          cargo_puesto,
           tipo_documento,
           documento_identificacion,
           email,
@@ -179,11 +186,12 @@ export async function onRequestPost(context) {
           estado,
           fecha_solicitud
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
       `).bind(
         centro,
         localidad,
         responsable_legal,
+        cargo_puesto,
         tipo_documento,
         documento_identificacion,
         email,

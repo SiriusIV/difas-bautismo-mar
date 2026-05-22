@@ -29,6 +29,7 @@ export async function onRequestGet(context) {
         centro,
         localidad,
         responsable_legal,
+        cargo_puesto,
         tipo_documento,
         documento_identificacion,
         email,
@@ -47,12 +48,15 @@ export async function onRequestGet(context) {
           WHEN 'RECHAZADA' THEN 2
           ELSE 3
         END,
-        datetime(fecha_solicitud) DESC
+        datetime(COALESCE(fecha_resolucion, fecha_solicitud)) DESC
     `).all();
 
+    const solicitudes = rows.results || [];
     return json({
       ok: true,
-      solicitudes: rows.results || []
+      solicitudes,
+      pendientes: solicitudes.filter((item) => String(item.estado || "").toUpperCase() === "PENDIENTE"),
+      tramitadas: solicitudes.filter((item) => String(item.estado || "").toUpperCase() !== "PENDIENTE")
     });
   } catch (error) {
     return json({
