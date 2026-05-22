@@ -1,4 +1,5 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
+import { enviarEmail } from "../_email.js";
 import {
   asegurarColumnaForzarCambioPassword,
   hashPassword
@@ -15,6 +16,42 @@ function json(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function construirCorreoAltaArmadaTexto({ unidad, email, passwordTemporal, baseUrl }) {
+  return [
+    "Tu solicitud de Usuario Armada ha sido aprobada.",
+    "",
+    `Unidad / dependencia: ${unidad}`,
+    `Correo de acceso: ${email}`,
+    `Código temporal de un solo uso: ${passwordTemporal}`,
+    "",
+    `Accede desde: ${baseUrl}/portal.html`,
+    "Una vez inicies sesión con ese código temporal, el sistema te obligará a crear una contraseña personal antes de poder continuar.",
+    "",
+    "Si no reconoces esta solicitud, contacta con la administración de la plataforma."
+  ].join("\n");
+}
+
+function construirCorreoAltaArmadaHtml({ unidad, email, passwordTemporal, baseUrl }) {
+  return `
+    <p>Tu solicitud de <strong>Usuario Armada</strong> ha sido aprobada.</p>
+    <p><strong>Unidad / dependencia:</strong> ${escaparHtml(unidad)}</p>
+    <p><strong>Correo de acceso:</strong> ${escaparHtml(email)}</p>
+    <p><strong>Código temporal de un solo uso:</strong> <span style="font-size:16px;font-weight:700;">${escaparHtml(passwordTemporal)}</span></p>
+    <p><a href="${escaparHtml(baseUrl)}/portal.html" target="_blank" rel="noopener noreferrer">Acceder al portal</a></p>
+    <p>Una vez inicies sesión con ese código temporal, el sistema te obligará a crear una contraseña personal antes de poder continuar.</p>
+    <p>Si no reconoces esta solicitud, contacta con la administración de la plataforma.</p>
+  `;
 }
 
 export async function onRequestPost(context) {
@@ -112,14 +149,14 @@ export async function onRequestPost(context) {
         email,
         password_hash,
         rol,
-      telefono_contacto,
-      responsable_legal,
-      tipo_documento,
-      documento_identificacion,
-      forzar_cambio_password,
-      activo,
-      fecha_alta
-    )
+        telefono_contacto,
+        responsable_legal,
+        tipo_documento,
+        documento_identificacion,
+        forzar_cambio_password,
+        activo,
+        fecha_alta
+      )
       VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, 1, 1, datetime('now'))
     `).bind(
       limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
@@ -135,6 +172,39 @@ export async function onRequestPost(context) {
 
     const usuarioCreadoId = Number(creado.meta?.last_row_id || 0);
 
+    const baseUrl = new URL(request.url).origin;
+    const envio = await enviarEmail(env, {
+      to: email,
+      subject: "Aprobación de cuenta Usuario Armada",
+      text: construirCorreoAltaArmadaTexto({
+        unidad: limpiarTexto(solicitud.centro),
+        email,
+        passwordTemporal,
+        baseUrl
+      }),
+      html: construirCorreoAltaArmadaHtml({
+        unidad: limpiarTexto(solicitud.centro),
+        email,
+        passwordTemporal,
+        baseUrl
+      })
+    });
+
+    if (!envio.ok) {
+      await env.DB.prepare(`
+        DELETE FROM usuarios
+        WHERE id = ?
+      `).bind(usuarioCreadoId).run();
+
+      return json({
+        ok: false,
+        error: envio.skipped
+          ? "No se pudo aprobar la solicitud porque el servicio de correo no está configurado."
+          : (envio.error || "No se pudo enviar el correo al solicitante."),
+        detalle: envio.error || ""
+      }, 503);
+    }
+
     await env.DB.prepare(`
       UPDATE solicitudes_registro_armada
       SET
@@ -149,11 +219,7 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       estado: "APROBADA",
-      mensaje: "Solicitud aprobada correctamente.",
-      credenciales_temporales: {
-        email,
-        password_temporal: passwordTemporal
-      }
+      mensaje: "Solicitud aprobada correctamente. Se ha enviado el código temporal al correo del solicitante."
     });
   } catch (error) {
     return json({

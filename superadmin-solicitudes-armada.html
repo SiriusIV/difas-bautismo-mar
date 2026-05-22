@@ -400,7 +400,6 @@
         <label for="motivoResolucion">Observaciones / motivo</label>
         <textarea id="motivoResolucion" placeholder="Añade observaciones internas o el motivo de rechazo, si procede."></textarea>
       </div>
-      <div id="credencialesTemporales" class="credenciales-temporales" style="display:none;"></div>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" id="btnCerrarModalSolicitud">Cerrar</button>
         <button type="button" class="btn-secundario" id="btnModalRechazarSolicitud">Rechazar</button>
@@ -514,9 +513,6 @@
         <dt>Motivo / observaciones</dt><dd>${solicitudSeleccionada.motivo_resolucion || "-"}</dd>
       `;
       document.getElementById("motivoResolucion").value = solicitudSeleccionada.motivo_resolucion || "";
-      document.getElementById("credencialesTemporales").style.display = "none";
-      document.getElementById("credencialesTemporales").textContent = "";
-
       const pendiente = String(solicitudSeleccionada.estado || "").toUpperCase() === "PENDIENTE";
       document.getElementById("btnModalAprobarSolicitud").style.display = pendiente ? "inline-block" : "none";
       document.getElementById("btnModalRechazarSolicitud").style.display = pendiente ? "inline-block" : "none";
@@ -552,18 +548,7 @@
         mostrarMensaje("error", data.error || "No se pudo resolver la solicitud.");
         return;
       }
-
-      if (String(data.estado || "").toUpperCase() === "APROBADA" && data.credenciales_temporales) {
-        const box = document.getElementById("credencialesTemporales");
-        box.innerHTML = `
-          <strong>Cuenta aprobada</strong><br>
-          Email: ${data.credenciales_temporales.email}<br>
-          Contraseña temporal: <strong>${data.credenciales_temporales.password_temporal}</strong>
-        `;
-        box.style.display = "block";
-      } else {
-        cerrarModalSolicitud();
-      }
+      cerrarModalSolicitud();
 
       mostrarMensaje("ok", data.mensaje || "Solicitud resuelta correctamente.");
       await cargarSolicitudes();
@@ -602,3 +587,4 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
