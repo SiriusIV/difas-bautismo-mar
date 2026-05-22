@@ -927,6 +927,9 @@
           actualizarFormularioSegunTipoCuenta();
           aplicarFormatoDocumento();
           mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente. Queda pendiente de revisión por el superadministrador.");
+          setTimeout(() => {
+            window.location.href = "portal.html";
+          }, 1500);
           return;
         }
 
