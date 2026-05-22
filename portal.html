@@ -215,7 +215,8 @@
       .franja-sesion-inner.modo-admin .franja-sesion-spacer {
         display: none;
       }
-      .franja-sesion-inner.modo-admin #barraAdmin {
+      .franja-sesion-inner.modo-admin #barraAdmin,
+      .franja-sesion-inner.modo-admin #barraSuperadmin {
         position: absolute;
         left: 50%;
         top: 50%;
@@ -1528,6 +1529,7 @@
 
       .franja-sesion-inner #barraUsuario,
       .franja-sesion-inner #barraAdmin,
+      .franja-sesion-inner #barraSuperadmin,
       .franja-sesion-inner #barraSecretaria {
         grid-area: nav;
         justify-self: center;
@@ -1536,6 +1538,7 @@
 
       .franja-sesion-inner #barraUsuario .nav-btn,
       .franja-sesion-inner #barraAdmin .nav-btn,
+      .franja-sesion-inner #barraSuperadmin .nav-btn,
       .franja-sesion-inner #barraSecretaria .nav-btn {
         white-space: nowrap;
       }
@@ -1587,6 +1590,15 @@
       .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(5) {
         grid-area: calendario;
         justify-self: center;
+      }
+
+      .franja-sesion-inner.modo-admin #barraSuperadmin {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, max-content));
+        justify-content: center;
+        align-items: center;
+        gap: 8px 10px;
+        width: 100%;
       }
     }
   </style>
@@ -1647,6 +1659,10 @@
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
           </button>
+        </div>
+        <div id="barraSuperadmin" class="barra-superadmin franja-sesion-nav">
+          <button class="nav-btn activo" onclick="gestionAdmins()">Administradores</button>
+          <button class="nav-btn" onclick="irSolicitudesArmada()">Solicitudes Armada</button>
         </div>
         <button
           id="btnNotificacionesSesion"
@@ -2951,7 +2967,8 @@ function actualizarBotonSolicitarSegunFranja() {
 
       document.getElementById("accionesPublicas").style.display = usuarioAutenticado ? "none" : "flex";
       document.getElementById("accionesAdminPortal").style.display = "none";
-      document.getElementById("barraAdmin").style.display = admin ? "flex" : "none";
+      document.getElementById("barraAdmin").style.display = admin && !superadmin ? "flex" : "none";
+      document.getElementById("barraSuperadmin").style.display = superadmin ? "flex" : "none";
       document.getElementById("barraUsuario").style.display = solicitante ? "flex" : "none";
       document.getElementById("barraSecretaria").style.display = secretaria ? "flex" : "none";
 
@@ -4110,6 +4127,10 @@ function continuarSolicitudActividad() {
 
     function gestionAdmins() {
       location.href = "admin-usuarios.html";
+    }
+
+    function irSolicitudesArmada() {
+      location.href = "superadmin-solicitudes-armada.html";
     }
 
     function recuperarPassword(event) {

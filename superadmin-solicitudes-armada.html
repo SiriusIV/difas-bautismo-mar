@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Solicitudes Usuario Armada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #123a63;
+    }
+
+    .contenedor {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .bloque {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .cabecera-bloque {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .cabecera-bloque h3 {
+      margin: 0;
+      color: #123a63;
+    }
+
+    .subtitulo {
+      margin: 0;
+      color: #5f6d7a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .barra-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn,
+    .btn-secundario {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #0b5ed7;
+      color: #fff;
+    }
+
+    .btn:hover {
+      background: #094db1;
+    }
+
+    .btn-secundario {
+      background: #fff;
+      border-color: #c9cfd6;
+      color: #334250;
+    }
+
+    .btn-secundario:hover {
+      background: #f7f9fb;
+    }
+
+    .btn-icono {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .btn-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .btn-icono:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #f8fafc;
+      color: #8a98a8;
+    }
+
+    .btn-icono svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .tabla-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    th.sel-col, td.sel-col {
+      width: 36px;
+      text-align: center;
+    }
+
+    .fila-seleccionada {
+      background: #f2f7ff;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .pill-pendiente {
+      background: #fff5d6;
+      color: #8b6b00;
+    }
+
+    .pill-aprobada {
+      background: #eaf7ea;
+      color: #146c2e;
+    }
+
+    .pill-rechazada {
+      background: #fdeaea;
+      color: #9b1c1c;
+    }
+
+    .mensaje {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .mensaje.ok {
+      background: #eaf7ea;
+      color: #146c2e;
+      display: block;
+    }
+
+    .mensaje.error {
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: block;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-fondo.activo {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      width: 100%;
+      max-width: 760px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 24px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 24px;
+      color: #123a63;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 8px 14px;
+      margin-bottom: 16px;
+    }
+
+    .modal-grid dt {
+      font-weight: 700;
+      color: #35506a;
+    }
+
+    .modal-grid dd {
+      margin: 0;
+      color: #243648;
+      line-height: 1.5;
+    }
+
+    .campo {
+      margin-top: 12px;
+    }
+
+    .campo label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #35506a;
+    }
+
+    .campo textarea {
+      width: 100%;
+      min-height: 88px;
+      resize: vertical;
+      padding: 10px 11px;
+      border-radius: 8px;
+      border: 1px solid #c9cfd6;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .credenciales-temporales {
+      border: 1px solid #cfe0ff;
+      background: #f4f8ff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #23476e;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+      }
+
+      .bloque {
+        padding: 12px;
+      }
+
+      .barra-acciones {
+        justify-content: center;
+      }
+
+      .modal {
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+        padding: 16px 14px;
+      }
+
+      .modal h3 {
+        font-size: 20px;
+      }
+
+      .modal-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .modal-acciones {
+        justify-content: stretch;
+      }
+
+      .modal-acciones .btn,
+      .modal-acciones .btn-secundario {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 8px;
+      }
+
+      .bloque {
+        padding: 10px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
+</head>
+<body>
+  <div class="contenedor">
+    <div class="bloque">
+      <div class="cabecera-bloque">
+        <div>
+          <h1>Solicitudes Usuario Armada</h1>
+          <p class="subtitulo">Revisa, aprueba o rechaza las solicitudes de alta administrativa remitidas desde el portal público.</p>
+        </div>
+        <button type="button" class="btn-secundario" id="btnVolverPortal">Volver al portal</button>
+      </div>
+      <div id="mensajePantalla" class="mensaje"></div>
+    </div>
+
+    <div class="bloque">
+      <div class="cabecera-bloque">
+        <h3>Solicitudes recibidas</h3>
+      </div>
+
+      <div class="barra-acciones">
+        <button type="button" class="btn-icono" id="btnVerSolicitud" title="Ver solicitud" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button type="button" class="btn-icono" id="btnAprobarSolicitud" title="Aprobar solicitud" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+        </button>
+        <button type="button" class="btn-icono" id="btnRechazarSolicitud" title="Rechazar solicitud" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sel-col"></th>
+              <th>Unidad / dependencia</th>
+              <th>Contacto</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="tablaSolicitudes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalSolicitudArmada" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3 id="tituloModalSolicitud">Solicitud Usuario Armada</h3>
+      <dl class="modal-grid" id="detalleSolicitud"></dl>
+      <div class="campo">
+        <label for="motivoResolucion">Observaciones / motivo</label>
+        <textarea id="motivoResolucion" placeholder="Añade observaciones internas o el motivo de rechazo, si procede."></textarea>
+      </div>
+      <div id="credencialesTemporales" class="credenciales-temporales" style="display:none;"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" id="btnCerrarModalSolicitud">Cerrar</button>
+        <button type="button" class="btn-secundario" id="btnModalRechazarSolicitud">Rechazar</button>
+        <button type="button" class="btn" id="btnModalAprobarSolicitud">Aprobar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let solicitudesCache = [];
+    let solicitudSeleccionada = null;
+
+    function mostrarMensaje(tipo, texto) {
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje " + tipo;
+      box.textContent = texto;
+      box.style.display = "block";
+    }
+
+    function limpiarMensaje() {
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje";
+      box.textContent = "";
+      box.style.display = "none";
+    }
+
+    function etiquetaEstado(estado) {
+      const valor = String(estado || "").toUpperCase();
+      if (valor === "APROBADA") return '<span class="pill pill-aprobada">Aprobada</span>';
+      if (valor === "RECHAZADA") return '<span class="pill pill-rechazada">Rechazada</span>';
+      return '<span class="pill pill-pendiente">Pendiente</span>';
+    }
+
+    function actualizarBotones() {
+      const hay = !!solicitudSeleccionada;
+      const pendiente = hay && String(solicitudSeleccionada.estado || "").toUpperCase() === "PENDIENTE";
+      document.getElementById("btnVerSolicitud").disabled = !hay;
+      document.getElementById("btnAprobarSolicitud").disabled = !pendiente;
+      document.getElementById("btnRechazarSolicitud").disabled = !pendiente;
+    }
+
+    function seleccionarSolicitud(id) {
+      solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(id)) || null;
+      renderizarTabla();
+      actualizarBotones();
+    }
+
+    function formatearFecha(valor) {
+      if (!valor) return "";
+      const fecha = new Date(valor.replace(" ", "T"));
+      if (Number.isNaN(fecha.getTime())) return valor;
+      return fecha.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById("tablaSolicitudes");
+      tbody.innerHTML = (solicitudesCache || []).map((item) => `
+        <tr class="${solicitudSeleccionada && Number(solicitudSeleccionada.id) === Number(item.id) ? 'fila-seleccionada' : ''}">
+          <td class="sel-col">
+            <input
+              type="radio"
+              name="seleccionSolicitudArmada"
+              ${solicitudSeleccionada && Number(solicitudSeleccionada.id) === Number(item.id) ? "checked" : ""}
+              onchange="seleccionarSolicitud(${Number(item.id)})"
+            >
+          </td>
+          <td>${item.centro || ""}</td>
+          <td>${item.responsable_legal || ""}</td>
+          <td>${item.email || ""}</td>
+          <td>${item.telefono_contacto || ""}</td>
+          <td>${etiquetaEstado(item.estado)}</td>
+          <td>${formatearFecha(item.fecha_solicitud)}</td>
+        </tr>
+      `).join("");
+      actualizarBotones();
+    }
+
+    async function cargarSolicitudes() {
+      const res = await fetch("/api/admin/solicitudes-armada-lista", {
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "No se pudieron cargar las solicitudes.");
+      }
+      solicitudesCache = Array.isArray(data.solicitudes) ? data.solicitudes : [];
+      if (solicitudSeleccionada) {
+        solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(solicitudSeleccionada.id)) || null;
+      }
+      renderizarTabla();
+    }
+
+    function abrirModalSolicitud() {
+      if (!solicitudSeleccionada) return;
+      document.getElementById("tituloModalSolicitud").textContent = `Solicitud · ${solicitudSeleccionada.centro || "Usuario Armada"}`;
+      document.getElementById("detalleSolicitud").innerHTML = `
+        <dt>Unidad / dependencia</dt><dd>${solicitudSeleccionada.centro || ""}</dd>
+        <dt>Contacto</dt><dd>${solicitudSeleccionada.responsable_legal || ""}</dd>
+        <dt>Email</dt><dd>${solicitudSeleccionada.email || ""}</dd>
+        <dt>Teléfono</dt><dd>${solicitudSeleccionada.telefono_contacto || ""}</dd>
+        <dt>Localidad</dt><dd>${solicitudSeleccionada.localidad || "-"}</dd>
+        <dt>Documento</dt><dd>${solicitudSeleccionada.tipo_documento || ""} · ${solicitudSeleccionada.documento_identificacion || ""}</dd>
+        <dt>Estado</dt><dd>${String(solicitudSeleccionada.estado || "").toUpperCase()}</dd>
+        <dt>Fecha de solicitud</dt><dd>${formatearFecha(solicitudSeleccionada.fecha_solicitud)}</dd>
+        <dt>Motivo / observaciones</dt><dd>${solicitudSeleccionada.motivo_resolucion || "-"}</dd>
+      `;
+      document.getElementById("motivoResolucion").value = solicitudSeleccionada.motivo_resolucion || "";
+      document.getElementById("credencialesTemporales").style.display = "none";
+      document.getElementById("credencialesTemporales").textContent = "";
+
+      const pendiente = String(solicitudSeleccionada.estado || "").toUpperCase() === "PENDIENTE";
+      document.getElementById("btnModalAprobarSolicitud").style.display = pendiente ? "inline-block" : "none";
+      document.getElementById("btnModalRechazarSolicitud").style.display = pendiente ? "inline-block" : "none";
+
+      const modal = document.getElementById("modalSolicitudArmada");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalSolicitud() {
+      const modal = document.getElementById("modalSolicitudArmada");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    async function resolverSolicitud(accion) {
+      if (!solicitudSeleccionada) return;
+      limpiarMensaje();
+
+      const res = await fetch("/api/admin/solicitudes-armada-resolver", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          solicitud_id: solicitudSeleccionada.id,
+          accion,
+          motivo: document.getElementById("motivoResolucion").value.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        mostrarMensaje("error", data.error || "No se pudo resolver la solicitud.");
+        return;
+      }
+
+      if (String(data.estado || "").toUpperCase() === "APROBADA" && data.credenciales_temporales) {
+        const box = document.getElementById("credencialesTemporales");
+        box.innerHTML = `
+          <strong>Cuenta aprobada</strong><br>
+          Email: ${data.credenciales_temporales.email}<br>
+          Contraseña temporal: <strong>${data.credenciales_temporales.password_temporal}</strong>
+        `;
+        box.style.display = "block";
+      } else {
+        cerrarModalSolicitud();
+      }
+
+      mostrarMensaje("ok", data.mensaje || "Solicitud resuelta correctamente.");
+      await cargarSolicitudes();
+      if (solicitudSeleccionada) {
+        solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(solicitudSeleccionada.id)) || null;
+      }
+    }
+
+    document.getElementById("btnVolverPortal").addEventListener("click", function () {
+      window.location.href = "portal.html";
+    });
+    document.getElementById("btnVerSolicitud").addEventListener("click", abrirModalSolicitud);
+    document.getElementById("btnAprobarSolicitud").addEventListener("click", abrirModalSolicitud);
+    document.getElementById("btnRechazarSolicitud").addEventListener("click", abrirModalSolicitud);
+    document.getElementById("btnCerrarModalSolicitud").addEventListener("click", cerrarModalSolicitud);
+    document.getElementById("btnModalAprobarSolicitud").addEventListener("click", function () {
+      resolverSolicitud("APROBAR");
+    });
+    document.getElementById("btnModalRechazarSolicitud").addEventListener("click", function () {
+      resolverSolicitud("RECHAZAR");
+    });
+    document.getElementById("modalSolicitudArmada").addEventListener("click", function (e) {
+      if (e.target.id === "modalSolicitudArmada") cerrarModalSolicitud();
+    });
+
+    (async function init() {
+      try {
+        await cargarSolicitudes();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo cargar la consola de solicitudes.");
+      }
+    })();
+
+    window.seleccionarSolicitud = seleccionarSolicitud;
+  </script>
+  <script src="assets/mobile-mensaje-flotante.js"></script>
+</body>
+</html>

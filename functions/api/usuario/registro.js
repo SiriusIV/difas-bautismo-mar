@@ -4,6 +4,10 @@ import {
   mensajePoliticaPassword,
   validarPoliticaPassword
 } from "./_password.js";
+import {
+  asegurarTablaSolicitudesArmada,
+  normalizarCentro
+} from "../admin/_solicitudes_armada.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -17,10 +21,6 @@ function json(data, status = 200, headers = {}) {
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
-}
-
-function normalizarCentro(valor) {
-  return limpiarTexto(valor).replace(/\s+/g, " ").toUpperCase();
 }
 
 function esEmailValido(email) {
@@ -62,26 +62,6 @@ function esDocumentoValido(tipo, documento) {
   }
 
   return false;
-}
-
-async function asegurarTablaSolicitudesArmada(db) {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS solicitudes_registro_armada (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      centro TEXT NOT NULL,
-      localidad TEXT,
-      responsable_legal TEXT NOT NULL,
-      tipo_documento TEXT NOT NULL,
-      documento_identificacion TEXT NOT NULL,
-      email TEXT NOT NULL,
-      telefono_contacto TEXT NOT NULL,
-      estado TEXT NOT NULL DEFAULT 'PENDIENTE',
-      fecha_solicitud TEXT NOT NULL DEFAULT (datetime('now')),
-      fecha_resolucion TEXT,
-      resuelto_por_superadmin_id INTEGER,
-      motivo_resolucion TEXT
-    )
-  `).run();
 }
 
 export async function onRequestPost(context) {
