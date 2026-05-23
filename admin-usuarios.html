@@ -366,65 +366,58 @@
       margin-top: 12px;
     }
 
-    .lista-actividades {
-      margin: 0;
-      padding-left: 18px;
+    .tabla-actividades-modal-wrap {
+      overflow-x: auto;
+      border: 1px solid #dde4ea;
+      border-radius: 14px;
+      background: #fff;
     }
 
-    .lista-actividades li + li {
-      margin-top: 6px;
+    .tabla-actividades-modal {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+    }
+
+    .tabla-actividades-modal th,
+    .tabla-actividades-modal td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e5ebf0;
+      font-size: 13px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .tabla-actividades-modal thead th {
+      background: #f7f9fb;
+      color: #35506a;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .tabla-actividades-modal tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tabla-actividades-modal td.col-solicitudes,
+    .tabla-actividades-modal th.col-solicitudes {
+      width: 110px;
+      text-align: center;
+      white-space: nowrap;
     }
 
     .lista-actividades-enlace {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
       color: #123a63;
       text-decoration: none;
       font-weight: 600;
       cursor: pointer;
     }
 
-    .lista-actividades-enlace.publicada {
-      color: #146c2e;
-    }
-
-    .actividad-etiqueta {
-      display: inline-flex;
-      margin-left: 10px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      background: #f1f5f9;
-      color: #4a5a6a;
-    }
-
-    .actividad-etiqueta.publicada {
-      background: #eaf7ea;
-      color: #146c2e;
-    }
-
-    .actividad-fila-meta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-left: 10px;
-    }
-
-    .actividad-solicitudes-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      background: #eef4ff;
-      color: #123a63;
+    .lista-actividades-enlace:hover {
+      text-decoration: underline;
     }
 
     .actividad-ofertadas-btn {
@@ -984,25 +977,33 @@
     function abrirModalActividades() {
       if (!usuarioSeleccionado) return;
 
-      document.getElementById("modalActividadesTitulo").textContent = `Actividades asociadas · ${usuarioSeleccionado.nombre || "Administrador"}`;
-      const actividades = Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [];
+      document.getElementById("modalActividadesTitulo").textContent = `Actividades ofertadas · ${usuarioSeleccionado.nombre || "Administrador"}`;
+      const actividades = (Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [])
+        .filter((item) => Number(item.publicada_vigente || 0) === 1);
       document.getElementById("modalActividadesContenido").innerHTML = actividades.length
-        ? `<ul class="lista-actividades">${actividades.map((item, index) => `
-            <li>
-              <a class="lista-actividades-enlace ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}" onclick="abrirVistaActividad(${index}); return false;">
-                <span>${escapeHtml(item.actividad_nombre || "Actividad")}</span>
-              </a>
-              <span class="actividad-fila-meta">
-                <span class="actividad-etiqueta ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}">
-                  ${Number(item.publicada_vigente || 0) === 1 ? "Publicada" : "No publicada"}
-                </span>
-                <span class="actividad-solicitudes-badge">
-                  ${Number(item.solicitudes_total || 0)} solicitudes
-                </span>
-              </span>
-            </li>
-          `).join("")}</ul>`
-        : "Este administrador no tiene actividades asociadas actualmente.";
+        ? `<div class="tabla-actividades-modal-wrap">
+            <table class="tabla-actividades-modal">
+              <thead>
+                <tr>
+                  <th>Actividad</th>
+                  <th class="col-solicitudes">Solicitudes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${actividades.map((item) => `
+                  <tr>
+                    <td>
+                      <a class="lista-actividades-enlace" onclick="abrirVistaActividad(${Number(item.actividad_id || 0)}); return false;">
+                        ${escapeHtml(item.actividad_nombre || "Actividad")}
+                      </a>
+                    </td>
+                    <td class="col-solicitudes">${Number(item.solicitudes_total || 0)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>`
+        : "Este administrador no tiene actividades ofertadas actualmente.";
 
       abrirModal("modalActividades");
     }
@@ -1183,10 +1184,10 @@
       abrirModal("modalConfirmacionAdmin");
     }
 
-    function abrirVistaActividad(indice) {
+    function abrirVistaActividad(actividadId) {
       if (!usuarioSeleccionado) return;
       const actividades = Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [];
-      const actividad = actividades[Number(indice)];
+      const actividad = actividades.find((item) => Number(item.actividad_id || 0) === Number(actividadId));
       if (!actividad) return;
       actividadVistaActual = actividad;
 
