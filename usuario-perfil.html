@@ -3334,7 +3334,7 @@
 
       if (forzarCambioPasswordObligatorio) {
         setTimeout(() => {
-          abrirModalPasswordActual();
+          abrirModalCambioPasswordObligatorio();
         }, 120);
       }
     }
@@ -3682,6 +3682,7 @@
     }
 
     function cerrarModalPasswordActual() {
+      if (forzarCambioPasswordObligatorio) return;
       document.getElementById("modalPasswordActual").classList.remove("activo");
       document.getElementById("modal_password_actual").value = "";
       document.getElementById("modal_password_actual").type = "password";
@@ -3689,6 +3690,7 @@
     }
 
     function cerrarModalPasswordNueva() {
+      if (forzarCambioPasswordObligatorio) return;
       document.getElementById("modalPasswordNueva").classList.remove("activo");
       document.getElementById("modal_password_nueva").value = "";
       document.getElementById("modal_password_confirmacion").value = "";
@@ -3722,11 +3724,30 @@
 
     function abrirModalPasswordActual() {
       limpiarMensaje("mensajePassword");
+      if (forzarCambioPasswordObligatorio) {
+        abrirModalCambioPasswordObligatorio();
+        return;
+      }
       document.getElementById("modalPasswordActual").classList.add("activo");
       document.getElementById("modal_password_actual").type = "password";
       actualizarBotonPasswordVisible("modal_password_actual", "btnTogglePasswordActual");
       setTimeout(() => {
         document.getElementById("modal_password_actual").focus();
+      }, 0);
+    }
+
+    function abrirModalCambioPasswordObligatorio() {
+      limpiarMensaje("mensajePassword");
+      passwordActualValidada = "__FORZADA_TEMPORAL__";
+      document.getElementById("modalPasswordActual").classList.remove("activo");
+      document.getElementById("modal_password_actual").value = "";
+      document.getElementById("modal_password_nueva").type = "password";
+      document.getElementById("modal_password_confirmacion").type = "password";
+      actualizarBotonPasswordVisible("modal_password_nueva", "btnTogglePasswordNueva");
+      actualizarBotonPasswordVisible("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
+      document.getElementById("modalPasswordNueva").classList.add("activo");
+      setTimeout(() => {
+        document.getElementById("modal_password_nueva").focus();
       }, 0);
     }
 
@@ -3797,14 +3818,18 @@
         return;
       }
 
+      const cambioForzadoTemporal =
+        forzarCambioPasswordObligatorio && passwordActualValidada === "__FORZADA_TEMPORAL__";
+
       try {
         const res = await fetch("/api/usuario/password-cambiar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            password_actual: passwordActualValidada,
-            password_nueva: nueva
+            password_actual: cambioForzadoTemporal ? "" : passwordActualValidada,
+            password_nueva: nueva,
+            omitir_password_actual: cambioForzadoTemporal ? 1 : 0
           })
         });
 
@@ -3814,7 +3839,14 @@
           return;
         }
 
-        cerrarModalPasswordNueva();
+        document.getElementById("modalPasswordNueva").classList.remove("activo");
+        document.getElementById("modal_password_nueva").value = "";
+        document.getElementById("modal_password_confirmacion").value = "";
+        document.getElementById("modal_password_nueva").type = "password";
+        document.getElementById("modal_password_confirmacion").type = "password";
+        actualizarBotonPasswordVisible("modal_password_nueva", "btnTogglePasswordNueva");
+        actualizarBotonPasswordVisible("modal_password_confirmacion", "btnTogglePasswordConfirmacion");
+        passwordActualValidada = "";
         forzarCambioPasswordObligatorio = false;
         aplicarEstadoForzadoPassword();
         mostrarMensajePasswordTemporal("ok", data.mensaje || "Contraseña actualizada correctamente.");
@@ -4163,8 +4195,8 @@
       document.getElementById(id).addEventListener("click", (event) => {
         if (event.target.id !== id) return;
         if (id === "modalCambiosPendientes") cerrarModalCambiosPendientes();
-        if (id === "modalPasswordActual") cerrarModalPasswordActual();
-        if (id === "modalPasswordNueva") cerrarModalPasswordNueva();
+        if (id === "modalPasswordActual" && !forzarCambioPasswordObligatorio) cerrarModalPasswordActual();
+        if (id === "modalPasswordNueva" && !forzarCambioPasswordObligatorio) cerrarModalPasswordNueva();
         if (id === "modalAyudaCampo") cerrarAyudaCampo();
         if (id === "modalDocumentoBaseAdmin") cerrarModalDocumentoBaseAdmin();
         if (id === "modalInfoDocumentoBaseAdmin") cerrarModalInfoDocumentoBaseAdmin();

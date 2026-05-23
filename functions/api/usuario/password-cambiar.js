@@ -35,8 +35,11 @@ export async function onRequestPost(context) {
     const passwordActual = limpiarTexto(body.password_actual);
     const passwordNueva = limpiarTexto(body.password_nueva);
     const soloValidar = Number(body.solo_validar || 0) === 1;
+    const omitirPasswordActual =
+      Number(body.omitir_password_actual || 0) === 1 &&
+      Number(session.forzar_cambio_password || 0) === 1;
 
-    if (!passwordActual || (!soloValidar && !passwordNueva)) {
+    if ((!omitirPasswordActual && !passwordActual) || (!soloValidar && !passwordNueva)) {
       return json({ ok: false, error: "Faltan datos obligatorios" }, 400);
     }
 
@@ -53,16 +56,18 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Usuario no encontrado" }, 404);
     }
 
-    const actualHash = await hashPassword(passwordActual);
+    if (!omitirPasswordActual) {
+      const actualHash = await hashPassword(passwordActual);
 
-    if (String(user.password_hash || "") !== actualHash) {
-      return json({ ok: false, error: "La contraseÃ±a actual no es correcta" }, 400);
+      if (String(user.password_hash || "") !== actualHash) {
+        return json({ ok: false, error: "La contraseña actual no es correcta" }, 400);
+      }
     }
 
     if (soloValidar) {
       return json({
         ok: true,
-        mensaje: "ContraseÃ±a actual validada correctamente"
+        mensaje: "Contraseña actual validada correctamente"
       });
     }
 
@@ -95,7 +100,7 @@ export async function onRequestPost(context) {
     return json(
       {
         ok: true,
-        mensaje: "ContraseÃ±a actualizada correctamente"
+        mensaje: "Contraseña actualizada correctamente"
       },
       200,
       { "Set-Cookie": cookie }
@@ -104,7 +109,7 @@ export async function onRequestPost(context) {
     return json(
       {
         ok: false,
-        error: "Error al cambiar la contraseÃ±a",
+        error: "Error al cambiar la contraseña",
         detalle: error.message
       },
       500
