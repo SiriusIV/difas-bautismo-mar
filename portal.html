@@ -210,20 +210,30 @@
     .franja-sesion-spacer { flex: 1 1 auto; }
     @media (min-width: 701px) {
       .franja-sesion-inner.modo-admin {
-        position: relative;
+        flex-wrap: nowrap;
       }
       .franja-sesion-inner.modo-admin .franja-sesion-spacer {
         display: none;
       }
+      .franja-sesion-inner.modo-admin #textoSesion {
+        flex: 1 1 auto;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 10px;
+      }
       .franja-sesion-inner.modo-admin #barraAdmin,
       .franja-sesion-inner.modo-admin #barraSuperadmin {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        position: static;
+        margin-left: auto;
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
       }
       .franja-sesion-inner.modo-admin #btnLogoutSesion {
-        margin-left: auto;
+        margin-left: 18px;
+        flex: 0 0 auto;
       }
     }
     .btn-notificaciones {
