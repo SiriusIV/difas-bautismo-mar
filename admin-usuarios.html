@@ -799,6 +799,8 @@
         box-shadow: 0 4px 14px rgba(0,0,0,0.05);
         padding: 14px;
         box-sizing: border-box;
+        position: relative;
+        overflow: hidden;
       }
 
       .tabla-wrap td {
@@ -816,6 +818,11 @@
         justify-content: flex-end;
         margin: 0;
         order: 1;
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: auto;
+        z-index: 2;
       }
 
       .tabla-wrap td.toggle-col::before {
@@ -824,11 +831,15 @@
 
       .tabla-wrap td.celda-nombre {
         order: 0;
-        margin: -26px 52px 0 0;
+        margin: 0;
+        padding-right: 78px;
         font-size: 17px;
         font-weight: 700;
         color: #123a63;
         line-height: 1.25;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       .tabla-wrap td.celda-nombre::before {
@@ -865,9 +876,10 @@
         justify-content: flex-start;
         gap: 12px;
         margin-top: 10px;
-        margin-right: 52px;
+        margin-right: 0;
         padding-bottom: 12px;
         border-bottom: 1px solid #e5ebf0;
+        padding-right: 78px;
       }
 
       .tabla-wrap td.celda-actividades::before {
@@ -893,6 +905,7 @@
       .dato-texto {
         min-width: 0;
         overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       .tabla-wrap tr.fila-seleccionada {
