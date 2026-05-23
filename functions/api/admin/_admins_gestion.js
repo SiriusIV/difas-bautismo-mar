@@ -26,6 +26,25 @@ function dbPrimaria(env) {
   return env.DB;
 }
 
+function actividadSigueVigente(actividad) {
+  const tipo = limpiarTexto(actividad?.tipo).toUpperCase();
+  if (tipo === "PERMANENTE") return true;
+  if (tipo === "PENDIENTE") return true;
+
+  const fechaFin = limpiarTexto(actividad?.fecha_fin);
+  if (!fechaFin) return true;
+
+  const hoy = new Date();
+  const isoHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+  return fechaFin >= isoHoy;
+}
+
+function actividadPublicadaYVigente(actividad) {
+  return Number(actividad?.activa || 0) === 1 &&
+    Number(actividad?.visible_portal || 0) === 1 &&
+    actividadSigueVigente(actividad);
+}
+
 async function asegurarColumnaUsuarioAdmin(db, nombre, definicion) {
   try {
     await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
@@ -72,6 +91,25 @@ export async function listarAdministradores(env) {
     SELECT
       id,
       admin_id,
+      nombre,
+      titulo_publico,
+      subtitulo_publico,
+      organizador_publico,
+      organizador_web_externa_url,
+      organizador_web_externa_activa,
+      lugar,
+      provincia,
+      tipo,
+      fecha_inicio,
+      fecha_fin,
+      descripcion_corta,
+      descripcion_larga,
+      imagen_url,
+      latitud,
+      longitud,
+      direccion_postal,
+      activa,
+      visible_portal,
       COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre
     FROM actividades
     WHERE admin_id IS NOT NULL
@@ -86,7 +124,27 @@ export async function listarAdministradores(env) {
     }
     actividadesPorAdmin.get(adminId).push({
       actividad_id: Number(actividad.id || 0),
-      actividad_nombre: actividad.actividad_nombre || ""
+      actividad_nombre: actividad.actividad_nombre || "",
+      nombre: actividad.nombre || "",
+      titulo_publico: actividad.titulo_publico || "",
+      subtitulo_publico: actividad.subtitulo_publico || "",
+      organizador_publico: actividad.organizador_publico || "",
+      organizador_web_externa_url: actividad.organizador_web_externa_url || "",
+      organizador_web_externa_activa: Number(actividad.organizador_web_externa_activa ?? 1) === 1 ? 1 : 0,
+      lugar: actividad.lugar || "",
+      provincia: actividad.provincia || "",
+      tipo: actividad.tipo || "",
+      fecha_inicio: actividad.fecha_inicio || "",
+      fecha_fin: actividad.fecha_fin || "",
+      descripcion_corta: actividad.descripcion_corta || "",
+      descripcion_larga: actividad.descripcion_larga || "",
+      imagen_url: actividad.imagen_url || "",
+      latitud: actividad.latitud ?? "",
+      longitud: actividad.longitud ?? "",
+      direccion_postal: actividad.direccion_postal || "",
+      activa: Number(actividad.activa || 0) === 1 ? 1 : 0,
+      visible_portal: Number(actividad.visible_portal || 0) === 1 ? 1 : 0,
+      publicada_vigente: actividadPublicadaYVigente(actividad) ? 1 : 0
     });
   }
 
@@ -123,7 +181,8 @@ export async function listarAdministradores(env) {
     documento_identificacion: row.documento_identificacion || "",
     activo: Number(row.activo || 0) === 1 ? 1 : 0,
     fecha_alta: row.fecha_alta || "",
-    actividades: actividadesPorAdmin.get(Number(row.id || 0)) || []
+    actividades: actividadesPorAdmin.get(Number(row.id || 0)) || [],
+    actividades_publicadas: (actividadesPorAdmin.get(Number(row.id || 0)) || []).filter((item) => Number(item.publicada_vigente || 0) === 1).length
   }));
 }
 
@@ -320,12 +379,7 @@ function actividadEsReactivable(actividad) {
   const tipo = limpiarTexto(actividad?.tipo).toUpperCase();
   if (tipo === "PERMANENTE") return true;
 
-  const fechaFin = limpiarTexto(actividad?.fecha_fin);
-  if (!fechaFin) return true;
-
-  const hoy = new Date();
-  const isoHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
-  return fechaFin >= isoHoy;
+  return actividadSigueVigente(actividad);
 }
 
 export async function actualizarEstadoAdministrador(env, adminId, activo, actor = {}) {

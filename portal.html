@@ -1984,7 +1984,7 @@
     }
 
     function esAdmin() {
-      return usuarioAutenticado && (usuarioAutenticado.rol === "ADMIN" || usuarioAutenticado.rol === "SUPERADMIN");
+      return usuarioAutenticado && usuarioAutenticado.rol === "ADMIN";
     }
 
     function esSecretaria() {
@@ -2508,7 +2508,7 @@ function actualizarBotonSolicitarSegunFranja() {
           franjaInner.classList.toggle("modo-solicitante", rol === "SOLICITANTE");
           franjaInner.classList.toggle("modo-admin", rol === "ADMIN" || rol === "SUPERADMIN");
         }
-        btnPerfil.style.display = texto.textContent ? "inline-flex" : "none";
+        btnPerfil.style.display = texto.textContent && rol !== "SUPERADMIN" ? "inline-flex" : "none";
         btnNotificaciones.style.display = "none";
         franja.style.display = texto.textContent ? "block" : "none";
     }
@@ -4209,6 +4209,7 @@ function continuarSolicitudActividad() {
     }
 
     function irPerfilUsuario() {
+      if (esSuperAdmin()) return;
       location.href = "usuario-perfil.html";
     }
 

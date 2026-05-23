@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <title>Gestión de administradores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <link rel="stylesheet" href="assets/superadmin-theme.css">
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css">
   <style>
@@ -87,7 +98,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 700px;
+      min-width: 780px;
     }
 
     th,
@@ -304,6 +315,51 @@
       margin-top: 6px;
     }
 
+    .lista-actividades-enlace {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #123a63;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .lista-actividades-enlace.publicada {
+      color: #146c2e;
+    }
+
+    .actividad-indicador {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #98a7b6;
+      flex: 0 0 10px;
+      box-shadow: 0 0 0 3px rgba(152, 167, 182, 0.16);
+    }
+
+    .lista-actividades-enlace.publicada .actividad-indicador {
+      background: #2db95b;
+      box-shadow: 0 0 0 3px rgba(45, 185, 91, 0.16);
+    }
+
+    .actividad-etiqueta {
+      display: inline-flex;
+      margin-left: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: #f1f5f9;
+      color: #4a5a6a;
+    }
+
+    .actividad-etiqueta.publicada {
+      background: #eaf7ea;
+      color: #146c2e;
+    }
+
     .pill-password {
       display: inline-flex;
       align-items: center;
@@ -342,6 +398,101 @@
       flex: 0 0 16px;
     }
 
+    .modal-actividad-detalle {
+      max-width: 980px;
+    }
+
+    .actividad-detalle-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.95fr) minmax(300px, 1.05fr);
+      gap: 18px;
+    }
+
+    .actividad-detalle-imagen-wrap {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #dde4ea;
+      background: #f4f6f8;
+      min-height: 220px;
+    }
+
+    .actividad-detalle-imagen {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .actividad-detalle-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: rgba(255,255,255,0.92);
+      color: #35506a;
+      border: 1px solid rgba(221,228,234,0.95);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .actividad-detalle-badge.publicada {
+      background: rgba(234,247,234,0.96);
+      color: #146c2e;
+      border-color: rgba(185,224,192,0.98);
+    }
+
+    .actividad-detalle-badge.no-publicada {
+      background: rgba(255,245,214,0.96);
+      color: #8b6b00;
+      border-color: rgba(216,194,122,0.98);
+    }
+
+    .actividad-detalle-contenido h4 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+      color: #123a63;
+    }
+
+    .actividad-detalle-subtitulo {
+      margin: 6px 0 14px;
+      color: #5f6d7a;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .actividad-detalle-meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: #243648;
+      font-size: 14px;
+    }
+
+    .actividad-detalle-texto {
+      color: #2f3f50;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .actividad-detalle-mapa {
+      margin-top: 14px;
+      height: 220px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #dde4ea;
+      background: #eef2f6;
+    }
+
     @media (max-width: 760px) {
       .cabecera-seccion {
         justify-content: center;
@@ -377,6 +528,10 @@
       .modal-acciones .pill-password {
         width: 100%;
         justify-content: center;
+      }
+
+      .actividad-detalle-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -431,6 +586,7 @@
             <tr>
               <th class="toggle-col"></th>
               <th>Nombre</th>
+              <th>Actividades publicadas</th>
               <th>Email</th>
               <th>Teléfono</th>
             </tr>
@@ -446,6 +602,27 @@
       <button type="button" class="modal-cerrar-icono" data-modal-close="modalActividades" aria-label="Cerrar">×</button>
       <h3 id="modalActividadesTitulo">Actividades asociadas</h3>
       <div class="modal-contenido" id="modalActividadesContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalVistaActividad" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-actividad-detalle">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalVistaActividad" aria-label="Cerrar">×</button>
+      <div class="actividad-detalle-grid">
+        <div>
+          <div class="actividad-detalle-imagen-wrap">
+            <img id="actividadDetalleImagen" class="actividad-detalle-imagen" src="logo.png" alt="Imagen de la actividad">
+            <div id="actividadDetalleBadge" class="actividad-detalle-badge">Actividad</div>
+          </div>
+          <div id="actividadDetalleMapa" class="actividad-detalle-mapa"></div>
+        </div>
+        <div class="actividad-detalle-contenido">
+          <h4 id="actividadDetalleTitulo">Actividad</h4>
+          <div id="actividadDetalleSubtitulo" class="actividad-detalle-subtitulo"></div>
+          <div id="actividadDetalleMeta" class="actividad-detalle-meta"></div>
+          <div id="actividadDetalleTexto" class="actividad-detalle-texto"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -491,6 +668,7 @@
     let actualizandoEstado = false;
     let adminPendienteBloqueo = null;
     let mensajeTimer = null;
+    let mapaVistaActividad = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -571,6 +749,7 @@
             </label>
           </td>
           <td>${escapeHtml(item.nombre || "")}</td>
+          <td>${Number(item.actividades_publicadas || 0)}</td>
           <td>${escapeHtml(item.email || "")}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
         </tr>
@@ -614,10 +793,114 @@
       document.getElementById("modalActividadesTitulo").textContent = `Actividades asociadas · ${usuarioSeleccionado.nombre || "Administrador"}`;
       const actividades = Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [];
       document.getElementById("modalActividadesContenido").innerHTML = actividades.length
-        ? `<ul class="lista-actividades">${actividades.map((item) => `<li>${escapeHtml(item.actividad_nombre || "Actividad")}</li>`).join("")}</ul>`
+        ? `<ul class="lista-actividades">${actividades.map((item, index) => `
+            <li>
+              <a class="lista-actividades-enlace ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}" onclick="abrirVistaActividad(${index}); return false;">
+                <span class="actividad-indicador"></span>
+                <span>${escapeHtml(item.actividad_nombre || "Actividad")}</span>
+              </a>
+              <span class="actividad-etiqueta ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}">
+                ${Number(item.publicada_vigente || 0) === 1 ? "Publicada" : "No publicada"}
+              </span>
+            </li>
+          `).join("")}</ul>`
         : "Este administrador no tiene actividades asociadas actualmente.";
 
       abrirModal("modalActividades");
+    }
+
+    function formatearIntervaloFecha(fechaInicio, fechaFin, tipo) {
+      const t = String(tipo || "").toUpperCase();
+      if (t === "PERMANENTE") return "Permanente";
+      if (t === "PENDIENTE") return "Pendiente de determinar";
+      if (!fechaInicio && !fechaFin) return "-";
+
+      function normalizar(fecha) {
+        const valor = String(fecha || "").trim();
+        if (!valor) return "";
+        const partes = valor.split("-");
+        if (partes.length !== 3) return valor;
+        const obj = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+        if (Number.isNaN(obj.getTime())) return valor;
+        return obj.toLocaleDateString("es-ES", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        });
+      }
+
+      const inicio = normalizar(fechaInicio);
+      const fin = normalizar(fechaFin);
+      if (inicio && fin && inicio === fin) return inicio;
+      if (inicio && fin) return `De ${inicio} a ${fin}`;
+      return inicio || fin || "-";
+    }
+
+    function renderMapaVistaActividad(actividad) {
+      const wrap = document.getElementById("actividadDetalleMapa");
+      const lat = Number(actividad?.latitud);
+      const lng = Number(actividad?.longitud);
+
+      if (mapaVistaActividad) {
+        mapaVistaActividad.remove();
+        mapaVistaActividad = null;
+      }
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        wrap.innerHTML = "<div style=\"padding:18px;color:#5f6d7a;font-size:14px;\">Esta actividad no tiene ubicación geográfica disponible.</div>";
+        return;
+      }
+
+      wrap.innerHTML = "";
+      mapaVistaActividad = L.map(wrap, {
+        zoomControl: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        scrollWheelZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false
+      }).setView([lat, lng], 14);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(mapaVistaActividad);
+
+      L.marker([lat, lng]).addTo(mapaVistaActividad);
+    }
+
+    function abrirVistaActividad(indice) {
+      if (!usuarioSeleccionado) return;
+      const actividades = Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [];
+      const actividad = actividades[Number(indice)];
+      if (!actividad) return;
+
+      document.getElementById("actividadDetalleTitulo").textContent = actividad.titulo_publico || actividad.nombre || actividad.actividad_nombre || "Actividad";
+      document.getElementById("actividadDetalleSubtitulo").textContent = actividad.subtitulo_publico || "";
+      document.getElementById("actividadDetalleImagen").src = actividad.imagen_url || "logo.png";
+      document.getElementById("actividadDetalleMeta").innerHTML = `
+        ${actividad.organizador_publico ? `<div><strong>Organiza:</strong> ${escapeHtml(actividad.organizador_publico)}</div>` : ""}
+        ${actividad.lugar ? `<div><strong>Lugar:</strong> ${escapeHtml(actividad.lugar)}</div>` : ""}
+        ${actividad.provincia ? `<div><strong>Localidad:</strong> ${escapeHtml(actividad.provincia)}</div>` : ""}
+        <div><strong>Fechas:</strong> ${escapeHtml(formatearIntervaloFecha(actividad.fecha_inicio, actividad.fecha_fin, actividad.tipo))}</div>
+        ${actividad.direccion_postal ? `<div><strong>Dirección:</strong> ${escapeHtml(actividad.direccion_postal)}</div>` : ""}
+      `;
+      document.getElementById("actividadDetalleTexto").textContent = actividad.descripcion_larga || actividad.descripcion_corta || "Sin descripción adicional.";
+
+      const badge = document.getElementById("actividadDetalleBadge");
+      if (Number(actividad.publicada_vigente || 0) === 1) {
+        badge.textContent = "Publicada";
+        badge.className = "actividad-detalle-badge publicada";
+      } else {
+        badge.textContent = Number(actividad.activa || 0) === 1 ? "No publicada" : "Inactiva";
+        badge.className = "actividad-detalle-badge no-publicada";
+      }
+
+      renderMapaVistaActividad(actividad);
+      abrirModal("modalVistaActividad");
     }
 
     function abrirModalFicha() {
@@ -768,16 +1051,24 @@
           adminPendienteBloqueo = null;
           renderizarTabla();
         }
+        if (id === "modalVistaActividad" && mapaVistaActividad) {
+          mapaVistaActividad.remove();
+          mapaVistaActividad = null;
+        }
         cerrarModal(id);
       });
     });
 
-    ["modalActividades", "modalFichaAdmin", "modalBloqueoAdmin"].forEach(function (id) {
+    ["modalActividades", "modalFichaAdmin", "modalBloqueoAdmin", "modalVistaActividad"].forEach(function (id) {
       document.getElementById(id).addEventListener("click", function (event) {
         if (event.target.id === id) {
           if (id === "modalBloqueoAdmin") {
             adminPendienteBloqueo = null;
             renderizarTabla();
+          }
+          if (id === "modalVistaActividad" && mapaVistaActividad) {
+            mapaVistaActividad.remove();
+            mapaVistaActividad = null;
           }
           cerrarModal(id);
         }
@@ -795,6 +1086,7 @@
     window.seleccionarUsuario = seleccionarUsuario;
     window.prepararCambioEstado = prepararCambioEstado;
     window.cerrarMensaje = cerrarMensaje;
+    window.abrirVistaActividad = abrirVistaActividad;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
