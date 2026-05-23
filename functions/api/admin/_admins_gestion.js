@@ -89,32 +89,10 @@ export async function listarAdministradores(env) {
   await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
 
   const actividades = await env.DB.prepare(`
-    SELECT
-      id,
-      admin_id,
-      nombre,
-      titulo_publico,
-      subtitulo_publico,
-      organizador_publico,
-      organizador_web_externa_url,
-      organizador_web_externa_activa,
-      lugar,
-      provincia,
-      tipo,
-      fecha_inicio,
-      fecha_fin,
-      descripcion_corta,
-      descripcion_larga,
-      imagen_url,
-      latitud,
-      longitud,
-      direccion_postal,
-      activa,
-      visible_portal,
-      COALESCE(titulo_publico, nombre, 'Actividad') AS actividad_nombre
+    SELECT *
     FROM actividades
     WHERE admin_id IS NOT NULL
-    ORDER BY COALESCE(titulo_publico, nombre, 'Actividad') ASC
+    ORDER BY id ASC
   `).all();
 
   const actividadesPorAdmin = new Map();
@@ -125,7 +103,7 @@ export async function listarAdministradores(env) {
     }
     actividadesPorAdmin.get(adminId).push({
       actividad_id: Number(actividad.id || 0),
-      actividad_nombre: actividad.actividad_nombre || "",
+      actividad_nombre: actividad.titulo_publico || actividad.nombre || "Actividad",
       nombre: actividad.nombre || "",
       titulo_publico: actividad.titulo_publico || "",
       subtitulo_publico: actividad.subtitulo_publico || "",
@@ -150,20 +128,7 @@ export async function listarAdministradores(env) {
   }
 
   const rows = await env.DB.prepare(`
-    SELECT
-      id,
-      nombre,
-      nombre_publico,
-      email,
-      centro,
-      localidad,
-      telefono_contacto,
-      responsable_legal,
-      cargo_puesto,
-      tipo_documento,
-      documento_identificacion,
-      activo,
-      fecha_alta
+    SELECT *
     FROM usuarios
     WHERE rol = 'ADMIN'
     ORDER BY UPPER(COALESCE(NULLIF(TRIM(nombre), ''), email)) ASC
