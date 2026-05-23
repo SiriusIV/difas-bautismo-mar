@@ -583,7 +583,7 @@
     .password-linea { display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: nowrap; }
     .fila-admin-url-web { grid-template-columns: minmax(0, 1fr); align-items: end; }
     #filaAdminCuentaNombre { grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: end; }
-    #filaAdminNombrePublicoEmail { grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.08fr) minmax(0, 0.78fr); align-items: end; }
+    #filaAdminNombrePublicoEmail { grid-template-columns: minmax(0, 0.48fr) minmax(0, 0.42fr) minmax(0, 0.9fr) minmax(0, 0.6fr); align-items: end; }
     .campos-inline-admin { display: contents; }
     .password-icono { color: #123a63; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .btn-password-admin-header { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; margin-right: 10px; }
@@ -944,6 +944,7 @@
           </div>
           <div class="fila oculto" id="filaAdminNombrePublicoEmail">
             <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
+            <div class="campo-linea oculto" id="campoTelefonoRpvAdmin"><label for="telefonoRpvAdmin">RPV</label><input type="tel" id="telefonoRpvAdmin" name="telefonoRpvAdmin" placeholder="123 4567"></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"></div>
             <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
           </div>
@@ -3161,6 +3162,7 @@
       ["filaAdminCuentaNombre","filaAdminNombrePublicoEmail","filaAdminUrlWeb","filaSuperadminNombreEmail","filaSuperadminTelefono","filaSolicitanteCuentaCentro","filaSolicitanteResponsableDocumento","filaSolicitanteEmailTelefono","filaSolicitantePassword"].forEach((id) => {
         document.getElementById(id).classList.add("oculto");
       });
+      document.getElementById("campoTelefonoRpvAdmin").classList.add("oculto");
     }
 
     function aplicarRol(perfil) {
@@ -3178,6 +3180,7 @@
         } else if (esAdmin()) {
           document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
           document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
+          document.getElementById("campoTelefonoRpvAdmin").classList.remove("oculto");
           document.getElementById("filaAdminUrlWeb").classList.remove("oculto");
           btnPasswordHeader.classList.remove("oculto");
           layout.classList.remove("sin-imagen");
@@ -3203,6 +3206,7 @@
       document.getElementById("nombrePublicoAdmin").value = perfil.nombre_publico || "";
       document.getElementById("emailAdmin").value = perfil.email || "";
       document.getElementById("telefonoAdmin").value = perfil.telefono_contacto || "";
+      document.getElementById("telefonoRpvAdmin").value = perfil.telefono_rpv || "";
       document.getElementById("localidadAdmin").value = perfil.localidad || "";
       document.getElementById("webExternaAdmin").value = perfil.web_externa_url || "";
       document.getElementById("webExternaActivaAdmin").value = Number(perfil.web_externa_activa || 0) === 1 ? "1" : "0";
@@ -3226,6 +3230,7 @@
         centro: perfil.centro || "",
         email: perfil.email || "",
         telefono_contacto: perfil.telefono_contacto || "",
+        telefono_rpv: perfil.telefono_rpv || "",
         responsable_legal: perfil.responsable_legal || "",
         tipo_documento: perfil.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || "",
@@ -3258,6 +3263,7 @@
         centro: perfil.centro || sesion?.centro || "",
         email: perfil.email || sesion?.email || "",
         telefono_contacto: perfil.telefono_contacto || sesion?.telefono_contacto || "",
+        telefono_rpv: perfil.telefono_rpv || sesion?.telefono_rpv || "",
         web_externa_url: perfil.web_externa_url || sesion?.web_externa_url || "",
         web_externa_activa: Number(perfil.web_externa_activa ?? sesion?.web_externa_activa ?? 0) === 1 ? 1 : 0,
         responsable_legal: perfil.responsable_legal || sesion?.responsable_legal || "",
@@ -3390,6 +3396,11 @@
       return /^\+?[0-9]{9,15}$/.test(String(telefono || "").replace(/\s+/g, ""));
     }
 
+    function esTelefonoRpvValido(telefono) {
+      const limpio = String(telefono || "").replace(/\s+/g, "");
+      return limpio === "" || /^[0-9]{7}$/.test(limpio);
+    }
+
     function letraDni(numero) {
       const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
       return letras[numero % 23];
@@ -3448,6 +3459,7 @@
           localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
+          telefono_rpv: document.getElementById("telefonoRpvAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim(),
           web_externa_url: webExternaAdmin,
           web_externa_activa: webExternaAdmin && esUrlWebValida(webExternaAdmin) ? 1 : 0
@@ -3483,6 +3495,7 @@
           actual.localidad !== (perfilOriginal.localidad || "") ||
           actual.email !== (perfilOriginal.email || "") ||
           actual.telefono_contacto !== (perfilOriginal.telefono_contacto || "") ||
+          actual.telefono_rpv !== (perfilOriginal.telefono_rpv || "") ||
           actual.logo_url !== (perfilOriginal.logo_url || "") ||
           actual.web_externa_url !== (perfilOriginal.web_externa_url || "") ||
           Number(actual.web_externa_activa || 0) !== Number(perfilOriginal.web_externa_activa || 0);
@@ -3524,6 +3537,7 @@
           localidad: document.getElementById("localidadAdmin").value.trim(),
           email: document.getElementById("emailAdmin").value.trim(),
           telefono_contacto: document.getElementById("telefonoAdmin").value.trim(),
+          telefono_rpv: document.getElementById("telefonoRpvAdmin").value.trim(),
           logo_url: document.getElementById("logo_url").value.trim(),
           web_externa_url: webExternaAdmin,
           web_externa_activa: webExternaAdmin && esUrlWebValida(webExternaAdmin) ? 1 : 0
@@ -3543,6 +3557,12 @@
         const webExternaAdmin = document.getElementById("webExternaAdmin").value.trim();
         if (webExternaAdmin && !esUrlWebValida(webExternaAdmin)) {
           return { ok: false, error: "La URL del administrador debe empezar por http:// o https://." };
+        }
+        if (esAdmin()) {
+          const telefonoRpv = document.getElementById("telefonoRpvAdmin").value.trim();
+          if (!esTelefonoRpvValido(telefonoRpv)) {
+            return { ok: false, error: "El teléfono RPV debe tener 7 dígitos." };
+          }
         }
         return { ok: true };
       }

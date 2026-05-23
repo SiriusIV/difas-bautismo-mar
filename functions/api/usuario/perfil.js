@@ -1,6 +1,16 @@
 import { getUserSession } from "./_auth.js";
 import { asegurarColumnaForzarCambioPassword } from "./_password.js";
 
+async function asegurarColumnaUsuario(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (detalle.includes("duplicate") || detalle.includes("already exists")) return;
+    throw error;
+  }
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -16,6 +26,7 @@ export async function onRequestGet(context) {
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
     await asegurarColumnaForzarCambioPassword(env.DB);
+    await asegurarColumnaUsuario(env.DB, "telefono_rpv", "TEXT");
 
     if (!session || !session.id) {
       return json(
@@ -35,6 +46,7 @@ export async function onRequestGet(context) {
           centro,
           email,
           telefono_contacto,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -57,6 +69,7 @@ export async function onRequestGet(context) {
           centro,
           email,
           telefono_contacto,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -87,6 +100,7 @@ export async function onRequestGet(context) {
         centro: user.centro || "",
         email: user.email || "",
         telefono_contacto: user.telefono_contacto || "",
+        telefono_rpv: user.telefono_rpv || "",
         responsable_legal: user.responsable_legal || "",
         tipo_documento: user.tipo_documento || "",
         documento_identificacion: user.documento_identificacion || "",

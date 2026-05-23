@@ -1,6 +1,16 @@
 import { createSessionCookie, getUserSession } from "./_auth.js";
 import { asegurarColumnaForzarCambioPassword } from "./_password.js";
 
+async function asegurarColumnaUsuario(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (detalle.includes("duplicate") || detalle.includes("already exists")) return;
+    throw error;
+  }
+}
+
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -22,6 +32,11 @@ function esEmailValido(email) {
 function esTelefonoValido(telefono) {
   const valor = String(telefono || "").replace(/\s+/g, "");
   return /^\+?[0-9]{9,15}$/.test(valor);
+}
+
+function esTelefonoRpvValido(telefono) {
+  const valor = String(telefono || "").replace(/\s+/g, "");
+  return valor === "" || /^[0-9]{7}$/.test(valor);
 }
 
 function letraDni(numero) {
@@ -78,6 +93,7 @@ export async function onRequestPost(context) {
   try {
     const session = await getUserSession(request, env.SECRET_KEY);
     await asegurarColumnaForzarCambioPassword(env.DB);
+    await asegurarColumnaUsuario(env.DB, "telefono_rpv", "TEXT");
 
     if (!session || !session.id) {
       return json({ ok: false, error: "No autorizado" }, 401);
@@ -94,6 +110,7 @@ export async function onRequestPost(context) {
     const localidadRecibida = limpiarTexto(body.localidad);
     const email = limpiarTexto(body.email).toLowerCase();
     const telefono_contacto = limpiarTexto(body.telefono_contacto);
+    const telefono_rpv = limpiarTexto(body.telefono_rpv);
     const webExternaRecibida = limpiarTexto(body.web_externa_url);
     const webExternaActivaRecibida = Number(body.web_externa_activa || 0) === 1 ? 1 : 0;
     const logo_url_recibido = normalizarNullable(body.logo_url);
@@ -113,6 +130,10 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "El telefono no es valido" }, 400);
     }
 
+    if (!esTelefonoRpvValido(telefono_rpv)) {
+      return json({ ok: false, error: "El telefono RPV debe tener 7 digitos" }, 400);
+    }
+
     if (!esUrlValidaOpcional(webExternaRecibida)) {
       return json({ ok: false, error: "La web externa no es valida" }, 400);
     }
@@ -128,6 +149,7 @@ export async function onRequestPost(context) {
           centro,
           email,
           rol,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -149,6 +171,7 @@ export async function onRequestPost(context) {
           centro,
           email,
           rol,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -193,6 +216,7 @@ export async function onRequestPost(context) {
       : (user.nombre_publico || "");
 
     const localidad = localidadRecibida || "";
+    const telefono_rpv_final = esAdmin ? telefono_rpv : (user.telefono_rpv || "");
 
     const responsable_legal = esSolicitante
       ? responsableLegalRecibido
@@ -242,6 +266,7 @@ export async function onRequestPost(context) {
           centro = ?,
           email = ?,
           telefono_contacto = ?,
+          telefono_rpv = ?,
           responsable_legal = ?,
           tipo_documento = ?,
           documento_identificacion = ?,
@@ -256,6 +281,7 @@ export async function onRequestPost(context) {
         centro,
         email,
         telefono_contacto,
+        telefono_rpv_final,
         responsable_legal,
         tipo_documento,
         documento_identificacion,
@@ -274,6 +300,7 @@ export async function onRequestPost(context) {
           centro = ?,
           email = ?,
           telefono_contacto = ?,
+          telefono_rpv = ?,
           responsable_legal = ?,
           tipo_documento = ?,
         documento_identificacion = ?,
@@ -287,6 +314,7 @@ export async function onRequestPost(context) {
         centro,
         email,
         telefono_contacto,
+        telefono_rpv_final,
         responsable_legal,
         tipo_documento,
         documento_identificacion,
@@ -308,6 +336,7 @@ export async function onRequestPost(context) {
           centro,
           email,
           telefono_contacto,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -330,6 +359,7 @@ export async function onRequestPost(context) {
           centro,
           email,
           telefono_contacto,
+          telefono_rpv,
           responsable_legal,
           tipo_documento,
           documento_identificacion,
@@ -352,6 +382,7 @@ export async function onRequestPost(context) {
         centro: perfil.centro || "",
         email: perfil.email || "",
         rol: perfil.rol || "",
+        telefono_rpv: perfil.telefono_rpv || "",
         responsable_legal: perfil.responsable_legal || "",
         tipo_documento: perfil.tipo_documento || "",
         documento_identificacion: perfil.documento_identificacion || "",
@@ -375,6 +406,7 @@ export async function onRequestPost(context) {
           centro: perfil.centro || "",
           email: perfil.email || "",
           telefono_contacto: perfil.telefono_contacto || "",
+          telefono_rpv: perfil.telefono_rpv || "",
           responsable_legal: perfil.responsable_legal || "",
           tipo_documento: perfil.tipo_documento || "",
           documento_identificacion: perfil.documento_identificacion || "",
