@@ -1129,12 +1129,91 @@
       }
     }
 
+    async function eliminarActividadCorregida() {
+      if (!actividadSeleccionada) return;
+
+      const id = actividadSeleccionada.id;
+      const nombreActividad = actividadSeleccionada.titulo_publico || actividadSeleccionada.nombre || "esta actividad";
+
+      try {
+        const resPrevio = await fetch("/api/admin/actividades-eliminar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ id })
+        });
+
+        const dataPrevio = await resPrevio.json().catch(() => null);
+
+        if (!resPrevio.ok && !dataPrevio?.requiere_confirmacion) {
+          mostrarMensaje("error", dataPrevio?.error || "No se pudo comprobar si la actividad puede eliminarse.");
+          return;
+        }
+
+        if (dataPrevio?.bloqueado) {
+          mostrarMensaje("error", dataPrevio.error || "La actividad no se puede eliminar.");
+          return;
+        }
+
+        let textoConfirmacion = `Se eliminara la actividad "${nombreActividad}". Esta accion puede cancelar reservas relacionadas y notificara a los usuarios afectados.`;
+        let requiereObservaciones = false;
+
+        if (dataPrevio?.requiere_confirmacion) {
+          textoConfirmacion = dataPrevio.mensaje || textoConfirmacion;
+          requiereObservaciones = !!dataPrevio.requiere_observaciones;
+        }
+
+        const confirmar = confirm(`${textoConfirmacion}\n\n¿Deseas continuar?`);
+        if (!confirmar) return;
+
+        if (resPrevio.ok && dataPrevio?.ok && !dataPrevio?.requiere_confirmacion) {
+          mostrarMensaje("ok", dataPrevio.mensaje || "Actividad eliminada correctamente.");
+          actividadSeleccionada = null;
+          await cargarActividades();
+          return;
+        }
+
+        let observacionesAdmin = "";
+        if (requiereObservaciones) {
+          observacionesAdmin = String(prompt("Indica el motivo de la anulacion que se enviara a los usuarios afectados:", "") || "").trim();
+          if (!observacionesAdmin) {
+            mostrarMensaje("error", "Debes indicar el motivo de la anulacion para continuar.");
+            return;
+          }
+        }
+
+        const resFinal = await fetch("/api/admin/actividades-eliminar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            id,
+            confirmado: true,
+            observaciones_admin: observacionesAdmin
+          })
+        });
+
+        const dataFinal = await resFinal.json().catch(() => null);
+
+        if (!resFinal.ok || !dataFinal?.ok) {
+          mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la actividad.");
+          return;
+        }
+
+        mostrarMensaje("ok", dataFinal.mensaje || "Actividad eliminada correctamente.");
+        actividadSeleccionada = null;
+        await cargarActividades();
+      } catch (error) {
+        mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
+      }
+    }
+
     document.getElementById("btnNuevaTexto").addEventListener("click", nueva);
     document.getElementById("btnPlantillasTexto").addEventListener("click", plantillas);
     document.getElementById("btnEditar").addEventListener("click", editar);
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
-    document.getElementById("btnEliminar").addEventListener("click", eliminarActividad);
+    document.getElementById("btnEliminar").addEventListener("click", eliminarActividadCorregida);
 
     document.getElementById("filtroPrograma").addEventListener("change", function () {
       filtroPrograma = this.value;
