@@ -752,7 +752,9 @@
 
       .tabla-wrap td.celda-email,
       .tabla-wrap td.celda-telefono {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin-top: 8px;
         color: #2f3f50;
         line-height: 1.4;
@@ -772,14 +774,15 @@
       }
 
       .tabla-wrap td.celda-actividades {
-        order: 4;
+        order: 1;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 12px;
-        margin-top: 14px;
-        padding-top: 12px;
-        border-top: 1px solid #e5ebf0;
+        margin-top: 10px;
+        margin-right: 52px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5ebf0;
       }
 
       .tabla-wrap td.celda-actividades::before {
@@ -793,6 +796,23 @@
 
       .tabla-wrap td.celda-actividades .actividad-ofertadas-btn {
         justify-self: auto;
+      }
+
+      .dato-icono {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 14px;
+        color: #5f6d7a;
+      }
+
+      .dato-texto {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .tabla-wrap tr.fila-seleccionada {
+        background: #eef5ff;
+        border-color: #c9dcff;
       }
 
       .tabla-wrap td:not(.toggle-col):not(.celda-nombre):not(.celda-email):not(.celda-telefono):not(.celda-actividades) {
@@ -1070,8 +1090,19 @@
               aria-label="Ver actividades ofertadas"
             >${Number(item.actividades_publicadas || 0)}</button>
           </td>
-          <td class="celda-email" data-label="Email">${escapeHtml(item.email || "")}</td>
-          <td class="celda-telefono" data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td class="celda-email" data-label="Email">
+            <svg class="dato-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+              <path d="M4 7l8 6 8-6"></path>
+            </svg>
+            <span class="dato-texto">${escapeHtml(item.email || "")}</span>
+          </td>
+          <td class="celda-telefono" data-label="Teléfono">
+            <svg class="dato-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.62a2 2 0 0 1-.45 2.11L8 9.99a16 16 0 0 0 6 6l1.54-1.28a2 2 0 0 1 2.11-.45c.84.29 1.72.5 2.62.62A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <span class="dato-texto">${escapeHtml(item.telefono_contacto || "-")}</span>
+          </td>
         </tr>
       `).join("");
 
