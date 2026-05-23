@@ -121,6 +121,13 @@ export async function listarAdministradores(env) {
       latitud: actividad.latitud ?? "",
       longitud: actividad.longitud ?? "",
       direccion_postal: actividad.direccion_postal || "",
+      usa_franjas: Number(actividad.usa_franjas || 0) === 1 ? 1 : 0,
+      requiere_reserva: Number(actividad.requiere_reserva || 0) === 1 ? 1 : 0,
+      aforo_limitado: Number(actividad.aforo_limitado || 0) === 1 ? 1 : 0,
+      plazas_totales: Number(actividad.plazas_totales || 0),
+      requisitos_particulares: Array.isArray(actividad.requisitos_particulares)
+        ? actividad.requisitos_particulares
+        : [],
       activa: Number(actividad.activa || 0) === 1 ? 1 : 0,
       visible_portal: Number(actividad.visible_portal || 0) === 1 ? 1 : 0,
       publicada_vigente: actividadPublicadaYVigente(actividad) ? 1 : 0

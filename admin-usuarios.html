@@ -330,23 +330,9 @@
       color: #146c2e;
     }
 
-    .actividad-indicador {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: #98a7b6;
-      flex: 0 0 10px;
-      box-shadow: 0 0 0 3px rgba(152, 167, 182, 0.16);
-    }
-
-    .lista-actividades-enlace.publicada .actividad-indicador {
-      background: #2db95b;
-      box-shadow: 0 0 0 3px rgba(45, 185, 91, 0.16);
-    }
-
     .actividad-etiqueta {
       display: inline-flex;
-      margin-left: 8px;
+      margin-left: 10px;
       padding: 3px 8px;
       border-radius: 999px;
       font-size: 11px;
@@ -494,6 +480,62 @@
       background: #eef2f6;
     }
 
+    .actividad-detalle-programacion,
+    .actividad-detalle-masinfo {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #e2e8ef;
+    }
+
+    .actividad-detalle-programacion h5,
+    .actividad-detalle-masinfo h5 {
+      margin: 0 0 8px;
+      color: #123a63;
+      font-size: 15px;
+    }
+
+    .actividad-detalle-tabla-wrap {
+      overflow-x: auto;
+    }
+
+    .actividad-detalle-tabla {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+      min-width: 360px;
+    }
+
+    .actividad-detalle-tabla th,
+    .actividad-detalle-tabla td {
+      padding: 4px 8px 4px 0;
+      text-align: left;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .actividad-detalle-tabla th {
+      color: #123a63;
+      font-weight: 600;
+    }
+
+    .actividad-detalle-masinfo-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #123a63;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .actividad-detalle-masinfo-btn:hover {
+      background: #e1ecff;
+    }
+
     @media (max-width: 760px) {
       .cabecera-seccion {
         justify-content: center;
@@ -587,7 +629,7 @@
             <tr>
               <th class="toggle-col"></th>
               <th>Nombre</th>
-              <th>Actividades publicadas</th>
+              <th style="text-align:center;">Actividades ofertadas</th>
               <th>Email</th>
               <th>Teléfono</th>
             </tr>
@@ -622,7 +664,38 @@
           <div id="actividadDetalleSubtitulo" class="actividad-detalle-subtitulo"></div>
           <div id="actividadDetalleMeta" class="actividad-detalle-meta"></div>
           <div id="actividadDetalleTexto" class="actividad-detalle-texto"></div>
+          <div id="actividadDetalleProgramacion" class="actividad-detalle-programacion" style="display:none;">
+            <h5>Programación</h5>
+            <div class="actividad-detalle-tabla-wrap">
+              <table class="actividad-detalle-tabla">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                  </tr>
+                </thead>
+                <tbody id="actividadDetalleProgramacionBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="actividadDetalleMasInfo" class="actividad-detalle-masinfo" style="display:none;">
+            <h5>Más información</h5>
+            <button type="button" class="actividad-detalle-masinfo-btn" id="btnAbrirMasInfoActividad">Más información</button>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirmacionAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalConfirmacionAdmin" aria-label="Cerrar">×</button>
+      <h3 id="tituloConfirmacionAdmin">Confirmación</h3>
+      <div id="textoConfirmacionAdmin" class="modal-contenido"></div>
+      <div class="modal-acciones">
+        <button type="button" class="super-btn-secundario" id="btnCancelarConfirmacionAdmin">Cancelar</button>
+        <button type="button" class="super-btn-peligro" id="btnAceptarConfirmacionAdmin">Continuar</button>
       </div>
     </div>
   </div>
@@ -670,6 +743,8 @@
     let adminPendienteBloqueo = null;
     let mensajeTimer = null;
     let mapaVistaActividad = null;
+    let actividadVistaActual = null;
+    let accionConfirmacionPendiente = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -750,7 +825,7 @@
             </label>
           </td>
           <td>${escapeHtml(item.nombre || "")}</td>
-          <td>${Number(item.actividades_publicadas || 0)}</td>
+          <td style="text-align:center;">${Number(item.actividades_publicadas || 0)}</td>
           <td>${escapeHtml(item.email || "")}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
         </tr>
@@ -797,7 +872,6 @@
         ? `<ul class="lista-actividades">${actividades.map((item, index) => `
             <li>
               <a class="lista-actividades-enlace ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}" onclick="abrirVistaActividad(${index}); return false;">
-                <span class="actividad-indicador"></span>
                 <span>${escapeHtml(item.actividad_nombre || "Actividad")}</span>
               </a>
               <span class="actividad-etiqueta ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}">
@@ -871,6 +945,83 @@
       }).addTo(mapaVistaActividad);
 
       L.marker([lat, lng]).addTo(mapaVistaActividad);
+      window.setTimeout(function () {
+        if (mapaVistaActividad) {
+          mapaVistaActividad.invalidateSize();
+          mapaVistaActividad.setView([lat, lng], 14);
+        }
+      }, 80);
+    }
+
+    function formatearFechaSimple(fecha) {
+      const valor = String(fecha || "").trim();
+      if (!valor) return "-";
+      const partes = valor.split("-");
+      if (partes.length !== 3) return valor;
+      const obj = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+      if (Number.isNaN(obj.getTime())) return valor;
+      return obj.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit"
+      });
+    }
+
+    async function cargarProgramacionActividad(actividad) {
+      const wrap = document.getElementById("actividadDetalleProgramacion");
+      const body = document.getElementById("actividadDetalleProgramacionBody");
+
+      wrap.style.display = "none";
+      body.innerHTML = "";
+
+      if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.actividad_id || actividad.id)}`, { credentials: "include" });
+        const data = await res.json();
+        if (!res.ok || !data.ok || !Array.isArray(data.franjas) || !data.franjas.length) {
+          return;
+        }
+
+        body.innerHTML = data.franjas
+          .filter((item) => item && item.hora_inicio && item.hora_fin)
+          .map((item) => `
+            <tr>
+              <td>${escapeHtml(formatearFechaSimple(item.fecha || actividad.fecha_inicio || ""))}</td>
+              <td>${escapeHtml(item.hora_inicio || "-")}</td>
+              <td>${escapeHtml(item.hora_fin || "-")}</td>
+            </tr>
+          `).join("");
+
+        if (body.innerHTML.trim()) {
+          wrap.style.display = "block";
+        }
+      } catch (_) {
+        // vista informativa, no bloquea si falla
+      }
+    }
+
+    function abrirMasInfoActividad() {
+      if (!actividadVistaActual) return;
+      const items = Array.isArray(actividadVistaActual.requisitos_particulares)
+        ? actividadVistaActual.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean)
+        : [];
+      if (!items.length) return;
+
+      const contenido = items.map((item) => `<div style="margin-bottom:10px; line-height:1.6;">${escapeHtml(item)}</div>`).join("");
+      document.getElementById("modalActividadesTitulo").textContent = `Más información · ${actividadVistaActual.titulo_publico || actividadVistaActual.nombre || "Actividad"}`;
+      document.getElementById("modalActividadesContenido").innerHTML = contenido;
+      cerrarModal("modalVistaActividad");
+      abrirModal("modalActividades");
+    }
+
+    function abrirConfirmacionAdmin(titulo, textoHtml, onAceptar) {
+      accionConfirmacionPendiente = onAceptar;
+      document.getElementById("tituloConfirmacionAdmin").textContent = titulo;
+      document.getElementById("textoConfirmacionAdmin").innerHTML = textoHtml;
+      abrirModal("modalConfirmacionAdmin");
     }
 
     function abrirVistaActividad(indice) {
@@ -878,6 +1029,7 @@
       const actividades = Array.isArray(usuarioSeleccionado.actividades) ? usuarioSeleccionado.actividades : [];
       const actividad = actividades[Number(indice)];
       if (!actividad) return;
+      actividadVistaActual = actividad;
 
       document.getElementById("actividadDetalleTitulo").textContent = actividad.titulo_publico || actividad.nombre || actividad.actividad_nombre || "Actividad";
       document.getElementById("actividadDetalleSubtitulo").textContent = actividad.subtitulo_publico || "";
@@ -901,6 +1053,11 @@
       }
 
       renderMapaVistaActividad(actividad);
+      cargarProgramacionActividad(actividad);
+      const masInfo = Array.isArray(actividad.requisitos_particulares)
+        ? actividad.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean)
+        : [];
+      document.getElementById("actividadDetalleMasInfo").style.display = masInfo.length ? "block" : "none";
       abrirModal("modalVistaActividad");
     }
 
@@ -962,7 +1119,15 @@
       adminPendienteBloqueo = admin;
       document.getElementById("modalBloqueoTitulo").textContent = `Bloquear temporalmente sesión · ${admin.nombre || "Administrador"}`;
       document.getElementById("observacionesBloqueo").value = "";
-      abrirModal("modalBloqueoAdmin");
+      const ofertadas = Number(admin.actividades_publicadas || 0);
+      abrirConfirmacionAdmin(
+        "Confirmar bloqueo temporal",
+        `Esta acción bloqueará temporalmente la sesión del administrador <strong>${escapeHtml(admin.nombre || "Administrador")}</strong>.<br><br>${ofertadas > 0 ? `Tiene <strong>${ofertadas}</strong> actividades ofertadas que quedarán automáticamente desactivadas y se suspenderán las solicitudes relacionadas con ellas.` : "No tiene actividades ofertadas activas en este momento."}<br><br>Si continúas, a continuación deberás introducir las observaciones del bloqueo.`,
+        function () {
+          cerrarModal("modalConfirmacionAdmin");
+          abrirModal("modalBloqueoAdmin");
+        }
+      );
     }
 
     async function cambiarEstadoAdmin(id, checked, motivo) {
@@ -1011,29 +1176,35 @@
 
     async function eliminarAdminSeleccionado() {
       if (!usuarioSeleccionado) return;
-      const ok = window.confirm(`Se eliminará el administrador ${usuarioSeleccionado.nombre} y también todas sus actividades. ¿Deseas continuar?`);
-      if (!ok) return;
+      const admin = usuarioSeleccionado;
+      const ofertadas = Number(admin.actividades_publicadas || 0);
+      abrirConfirmacionAdmin(
+        "Confirmar eliminación",
+        `Se eliminará definitivamente el administrador <strong>${escapeHtml(admin.nombre || "Administrador")}</strong>.<br><br>Esta acción implica la eliminación de sus usuarios secretaría vinculados, de sus actividades y la suspensión de las reservas relacionadas con ese ámbito.${ofertadas > 0 ? `<br><br>Actualmente tiene <strong>${ofertadas}</strong> actividades ofertadas activas.` : ""}`,
+        async function () {
+          cerrarModal("modalConfirmacionAdmin");
+          try {
+            limpiarMensaje();
+            const res = await fetch("/api/admin/usuarios-eliminar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ usuario_id: admin.id })
+            });
 
-      try {
-        limpiarMensaje();
-        const res = await fetch("/api/admin/usuarios-eliminar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ usuario_id: usuarioSeleccionado.id })
-        });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+              throw new Error(data.error || "No se pudo eliminar el administrador.");
+            }
 
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo eliminar el administrador.");
+            usuarioSeleccionado = null;
+            mostrarMensaje("ok", data.mensaje || "Administrador eliminado correctamente.");
+            await cargarUsuarios();
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo eliminar el administrador.");
+          }
         }
-
-        usuarioSeleccionado = null;
-        mostrarMensaje("ok", data.mensaje || "Administrador eliminado correctamente.");
-        await cargarUsuarios();
-      } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo eliminar el administrador.");
-      }
+      );
     }
 
     document.getElementById("btnVolverPortal").addEventListener("click", function () {
@@ -1044,6 +1215,18 @@
     document.getElementById("btnEliminarAdmin").addEventListener("click", eliminarAdminSeleccionado);
     document.getElementById("btnEnviarPasswordTemporal").addEventListener("click", enviarNuevaPasswordTemporal);
     document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueo);
+    document.getElementById("btnAbrirMasInfoActividad").addEventListener("click", abrirMasInfoActividad);
+    document.getElementById("btnCancelarConfirmacionAdmin").addEventListener("click", function () {
+      accionConfirmacionPendiente = null;
+      cerrarModal("modalConfirmacionAdmin");
+    });
+    document.getElementById("btnAceptarConfirmacionAdmin").addEventListener("click", function () {
+      if (typeof accionConfirmacionPendiente === "function") {
+        const accion = accionConfirmacionPendiente;
+        accionConfirmacionPendiente = null;
+        accion();
+      }
+    });
 
     document.querySelectorAll("[data-modal-close]").forEach(function (boton) {
       boton.addEventListener("click", function () {
@@ -1056,11 +1239,17 @@
           mapaVistaActividad.remove();
           mapaVistaActividad = null;
         }
+        if (id === "modalVistaActividad") {
+          actividadVistaActual = null;
+        }
+        if (id === "modalConfirmacionAdmin") {
+          accionConfirmacionPendiente = null;
+        }
         cerrarModal(id);
       });
     });
 
-    ["modalActividades", "modalFichaAdmin", "modalBloqueoAdmin", "modalVistaActividad"].forEach(function (id) {
+    ["modalActividades", "modalFichaAdmin", "modalBloqueoAdmin", "modalVistaActividad", "modalConfirmacionAdmin"].forEach(function (id) {
       document.getElementById(id).addEventListener("click", function (event) {
         if (event.target.id === id) {
           if (id === "modalBloqueoAdmin") {
@@ -1070,6 +1259,12 @@
           if (id === "modalVistaActividad" && mapaVistaActividad) {
             mapaVistaActividad.remove();
             mapaVistaActividad = null;
+          }
+          if (id === "modalVistaActividad") {
+            actividadVistaActual = null;
+          }
+          if (id === "modalConfirmacionAdmin") {
+            accionConfirmacionPendiente = null;
           }
           cerrarModal(id);
         }
