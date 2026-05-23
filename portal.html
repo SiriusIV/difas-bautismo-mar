@@ -124,6 +124,28 @@
       transition: all 0.15s ease;
     }
 
+    .nav-btn-con-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #fde2e2;
+      color: #b42318;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.12);
+    }
+
     .nav-btn:hover {
       background: #f7f9fb;
     }
@@ -2980,7 +3002,8 @@ function actualizarBotonSolicitarSegunFranja() {
       const btn = document.getElementById("btnSolicitudesArmadaNav");
       if (!btn) return;
 
-      btn.textContent = "Solicitudes Armada";
+      btn.classList.remove("nav-btn-con-badge");
+      btn.innerHTML = "<span>Solicitudes Armada</span>";
 
       if (!esSuperAdmin()) return;
 
@@ -2991,7 +3014,8 @@ function actualizarBotonSolicitarSegunFranja() {
         const data = await res.json().catch(() => null);
         const pendientes = Array.isArray(data?.solicitudes) ? data.solicitudes.length : 0;
         if (pendientes > 0) {
-          btn.textContent = `Solicitudes Armada (${pendientes})`;
+          btn.classList.add("nav-btn-con-badge");
+          btn.innerHTML = `<span>Solicitudes Armada</span><span class="nav-btn-badge">${pendientes}</span>`;
         }
       } catch (_) {}
     }

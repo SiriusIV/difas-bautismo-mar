@@ -1043,11 +1043,18 @@
           mostrarMensaje("ok", data.mensaje || "Solicitud enviada correctamente. Queda pendiente de revisión por el superadministrador.");
           setTimeout(() => {
             window.location.href = "portal.html";
-          }, 1500);
+          }, 5000);
           return;
         }
 
-        window.location.href = "usuario-panel.html";
+        document.getElementById("formRegistro").reset();
+        document.getElementById("tipo_cuenta").value = "PUBLICO";
+        actualizarFormularioSegunTipoCuenta();
+        aplicarFormatoDocumento();
+        mostrarMensaje("ok", data.mensaje || "Cuenta creada correctamente.");
+        setTimeout(() => {
+          window.location.href = "portal.html";
+        }, 5000);
         return;
       }
 
