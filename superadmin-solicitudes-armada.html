@@ -292,6 +292,69 @@
       .modal-acciones button {
         width: 100%;
       }
+
+      .tabla-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+      }
+
+      .tabla-wrap table,
+      .tabla-wrap thead,
+      .tabla-wrap tbody,
+      .tabla-wrap tr,
+      .tabla-wrap th,
+      .tabla-wrap td {
+        display: block;
+        width: 100%;
+      }
+
+      .tabla-wrap thead {
+        display: none;
+      }
+
+      .tabla-wrap table {
+        min-width: 0;
+      }
+
+      .tabla-wrap tbody {
+        display: grid;
+        gap: 12px;
+      }
+
+      .tabla-wrap tr {
+        border: 1px solid #dde4ea;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        padding: 14px;
+      }
+
+      .tabla-wrap td {
+        border: none;
+        padding: 0;
+        text-align: left !important;
+      }
+
+      .tabla-wrap td + td {
+        margin-top: 10px;
+      }
+
+      .tabla-wrap td {
+        display: grid;
+        grid-template-columns: minmax(110px, 40%) 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .tabla-wrap td::before {
+        content: attr(data-label);
+        color: #5f6d7a;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
     }
   </style>
 </head>
@@ -470,13 +533,13 @@
       const tbody = document.getElementById("tablaSolicitudes");
       tbody.innerHTML = solicitudesCache.map((item) => `
         <tr>
-          <td>${escapeHtml(item.centro || "")}</td>
-          <td class="centrado">${escapeHtml(item.responsable_legal || "")}</td>
-          <td class="centrado">${escapeHtml(item.cargo_puesto || "-")}</td>
-          <td class="centrado">${escapeHtml(item.email || "")}</td>
-          <td class="centrado">${escapeHtml(item.telefono_contacto || "")}</td>
-          <td class="centrado"><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
-          <td class="centrado">${formatearFecha(item.fecha_solicitud)}</td>
+          <td data-label="Unidad / dependencia">${escapeHtml(item.centro || "")}</td>
+          <td class="centrado" data-label="Contacto">${escapeHtml(item.responsable_legal || "")}</td>
+          <td class="centrado" data-label="Cargo / puesto">${escapeHtml(item.cargo_puesto || "-")}</td>
+          <td class="centrado" data-label="Email">${escapeHtml(item.email || "")}</td>
+          <td class="centrado" data-label="Teléfono">${escapeHtml(item.telefono_contacto || "")}</td>
+          <td class="centrado" data-label="Estado"><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
+          <td class="centrado" data-label="Fecha solicitud">${formatearFecha(item.fecha_solicitud)}</td>
         </tr>
       `).join("");
       document.getElementById("sinSolicitudes").style.display = solicitudesCache.length ? "none" : "block";

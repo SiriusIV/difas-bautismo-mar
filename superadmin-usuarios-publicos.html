@@ -226,6 +226,78 @@
       .modal-acciones button {
         width: 100%;
       }
+
+      .tabla-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+      }
+
+      .tabla-wrap table,
+      .tabla-wrap thead,
+      .tabla-wrap tbody,
+      .tabla-wrap tr,
+      .tabla-wrap th,
+      .tabla-wrap td {
+        display: block;
+        width: 100%;
+      }
+
+      .tabla-wrap thead {
+        display: none;
+      }
+
+      .tabla-wrap table {
+        min-width: 0;
+      }
+
+      .tabla-wrap tbody {
+        display: grid;
+        gap: 12px;
+      }
+
+      .tabla-wrap tr {
+        border: 1px solid #dde4ea;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        padding: 14px;
+      }
+
+      .tabla-wrap td {
+        border: none;
+        padding: 0;
+      }
+
+      .tabla-wrap td + td {
+        margin-top: 10px;
+      }
+
+      .tabla-wrap td.sel-col {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 0 6px;
+      }
+
+      .tabla-wrap td.sel-col::before {
+        display: none;
+      }
+
+      .tabla-wrap td:not(.sel-col) {
+        display: grid;
+        grid-template-columns: minmax(110px, 40%) 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .tabla-wrap td:not(.sel-col)::before {
+        content: attr(data-label);
+        color: #5f6d7a;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
     }
   </style>
 </head>
@@ -346,8 +418,8 @@
     function renderizarTabla() {
       const tbody = document.getElementById("tablaUsuariosPublicos");
       tbody.innerHTML = (usuariosCache || []).map((item) => `
-        <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "fila-seleccionada" : ""}">
-          <td class="sel-col">
+        <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "fila-seleccionada" : ""}" onclick="seleccionarUsuario(${Number(item.id)})">
+          <td class="sel-col" onclick="event.stopPropagation()">
             <input
               type="radio"
               name="seleccionUsuarioPublico"
@@ -355,13 +427,13 @@
               onchange="seleccionarUsuario(${Number(item.id)})"
             >
           </td>
-          <td>${escapeHtml(item.centro || item.nombre || "")}</td>
-          <td>${escapeHtml(item.responsable_legal || "-")}</td>
-          <td>${escapeHtml(item.email || "")}</td>
-          <td>${escapeHtml(item.telefono_contacto || "-")}</td>
-          <td>${escapeHtml(item.localidad || "-")}</td>
-          <td>${estadoUsuarioPill(item.activo)}</td>
-          <td>${formatearFecha(item.fecha_alta)}</td>
+          <td data-label="Centro / entidad">${escapeHtml(item.centro || item.nombre || "")}</td>
+          <td data-label="Responsable">${escapeHtml(item.responsable_legal || "-")}</td>
+          <td data-label="Email">${escapeHtml(item.email || "")}</td>
+          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td data-label="Localidad">${escapeHtml(item.localidad || "-")}</td>
+          <td data-label="Estado">${estadoUsuarioPill(item.activo)}</td>
+          <td data-label="Alta">${formatearFecha(item.fecha_alta)}</td>
         </tr>
       `).join("");
       actualizarBotonVer();

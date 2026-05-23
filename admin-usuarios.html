@@ -677,6 +677,86 @@
       .actividad-detalle-grid {
         grid-template-columns: 1fr;
       }
+
+      .tabla-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+      }
+
+      .tabla-wrap table,
+      .tabla-wrap thead,
+      .tabla-wrap tbody,
+      .tabla-wrap tr,
+      .tabla-wrap th,
+      .tabla-wrap td {
+        display: block;
+        width: 100%;
+      }
+
+      .tabla-wrap thead {
+        display: none;
+      }
+
+      .tabla-wrap table {
+        min-width: 0;
+      }
+
+      .tabla-wrap tbody {
+        display: grid;
+        gap: 12px;
+      }
+
+      .tabla-wrap tr {
+        border: 1px solid #dde4ea;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        padding: 14px;
+      }
+
+      .tabla-wrap td {
+        border: none;
+        padding: 0;
+      }
+
+      .tabla-wrap td + td {
+        margin-top: 10px;
+      }
+
+      .tabla-wrap td.toggle-col {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 0 6px;
+      }
+
+      .tabla-wrap td.toggle-col::before {
+        display: none;
+      }
+
+      .tabla-wrap td:not(.toggle-col) {
+        display: grid;
+        grid-template-columns: minmax(110px, 38%) 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .tabla-wrap td:not(.toggle-col)::before {
+        content: attr(data-label);
+        color: #5f6d7a;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      .tabla-wrap td[data-label="Actividades ofertadas"] {
+        align-items: center;
+      }
+
+      .tabla-wrap td[data-label="Actividades ofertadas"] .actividad-ofertadas-btn {
+        justify-self: start;
+      }
     }
   </style>
 </head>
@@ -928,8 +1008,8 @@
               <span class="slider"></span>
             </label>
           </td>
-          <td>${escapeHtml(item.nombre_publico || item.centro || item.nombre || "")}</td>
-          <td style="text-align:center;">
+          <td data-label="Nombre">${escapeHtml(item.nombre_publico || item.centro || item.nombre || "")}</td>
+          <td data-label="Actividades ofertadas" style="text-align:center;">
             <button
               type="button"
               class="actividad-ofertadas-btn ${Number(item.actividades_publicadas || 0) > 0 ? "" : "vacio"}"
@@ -937,8 +1017,8 @@
               aria-label="Ver actividades ofertadas"
             >${Number(item.actividades_publicadas || 0)}</button>
           </td>
-          <td>${escapeHtml(item.email || "")}</td>
-          <td>${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td data-label="Email">${escapeHtml(item.email || "")}</td>
+          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
         </tr>
       `).join("");
 
