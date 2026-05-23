@@ -347,6 +347,34 @@
       color: #146c2e;
     }
 
+    .actividad-ofertadas-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #123a63;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .actividad-ofertadas-btn:hover {
+      background: #e1ecff;
+      border-color: #b8ccf4;
+    }
+
+    .actividad-ofertadas-btn.vacio {
+      border-color: #d7dee5;
+      background: #f5f7f9;
+      color: #7a8793;
+      cursor: default;
+    }
+
     .pill-password {
       display: inline-flex;
       align-items: center;
@@ -616,7 +644,6 @@
         </div>
         <div class="acciones-seccion">
           <button type="button" class="super-btn-secundario" id="btnVerFicha" disabled>Ficha</button>
-          <button type="button" class="super-btn-secundario" id="btnConsultarActividades" disabled>Actividades</button>
           <button type="button" class="super-btn-peligro" id="btnEliminarAdmin" disabled>Eliminar</button>
         </div>
       </div>
@@ -799,7 +826,6 @@
     function actualizarBotonesAccion() {
       const hay = !!usuarioSeleccionado;
       document.getElementById("btnVerFicha").disabled = !hay;
-      document.getElementById("btnConsultarActividades").disabled = !hay;
       document.getElementById("btnEliminarAdmin").disabled = !hay;
     }
 
@@ -825,7 +851,14 @@
             </label>
           </td>
           <td>${escapeHtml(item.nombre || "")}</td>
-          <td style="text-align:center;">${Number(item.actividades_publicadas || 0)}</td>
+          <td style="text-align:center;">
+            <button
+              type="button"
+              class="actividad-ofertadas-btn ${Number(item.actividades_publicadas || 0) > 0 ? "" : "vacio"}"
+              ${Number(item.actividades_publicadas || 0) > 0 ? `onclick="abrirActividadesAdmin(${Number(item.id)}); event.stopPropagation();"` : "disabled"}
+              aria-label="Ver actividades ofertadas"
+            >${Number(item.actividades_publicadas || 0)}</button>
+          </td>
           <td>${escapeHtml(item.email || "")}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
         </tr>
@@ -882,6 +915,14 @@
         : "Este administrador no tiene actividades asociadas actualmente.";
 
       abrirModal("modalActividades");
+    }
+
+    function abrirActividadesAdmin(id) {
+      const admin = usuariosCache.find((item) => Number(item.id) === Number(id)) || null;
+      if (!admin) return;
+      usuarioSeleccionado = admin;
+      renderizarTabla();
+      abrirModalActividades();
     }
 
     function formatearIntervaloFecha(fechaInicio, fechaFin, tipo) {
@@ -967,6 +1008,22 @@
       });
     }
 
+    function construirFilasProgramacionFallback(actividad) {
+      const inicio = String(actividad?.fecha_inicio || "").trim();
+      const fin = String(actividad?.fecha_fin || "").trim();
+      if (!inicio && !fin) return "";
+      const fecha = inicio && fin && inicio !== fin
+        ? `${formatearFechaSimple(inicio)} - ${formatearFechaSimple(fin)}`
+        : formatearFechaSimple(inicio || fin);
+      return `
+        <tr>
+          <td>${escapeHtml(fecha)}</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      `;
+    }
+
     async function cargarProgramacionActividad(actividad) {
       const wrap = document.getElementById("actividadDetalleProgramacion");
       const body = document.getElementById("actividadDetalleProgramacionBody");
@@ -974,32 +1031,36 @@
       wrap.style.display = "none";
       body.innerHTML = "";
 
-      if (!actividad || Number(actividad.usa_franjas || 0) !== 1) {
+      if (!actividad) {
         return;
       }
 
       try {
-        const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.actividad_id || actividad.id)}`, { credentials: "include" });
-        const data = await res.json();
-        if (!res.ok || !data.ok || !Array.isArray(data.franjas) || !data.franjas.length) {
-          return;
-        }
-
-        body.innerHTML = data.franjas
-          .filter((item) => item && item.hora_inicio && item.hora_fin)
-          .map((item) => `
-            <tr>
-              <td>${escapeHtml(formatearFechaSimple(item.fecha || actividad.fecha_inicio || ""))}</td>
-              <td>${escapeHtml(item.hora_inicio || "-")}</td>
-              <td>${escapeHtml(item.hora_fin || "-")}</td>
-            </tr>
-          `).join("");
-
-        if (body.innerHTML.trim()) {
-          wrap.style.display = "block";
+        if (actividad.actividad_id || actividad.id) {
+          const res = await fetch(`/api/franjas?actividad_id=${encodeURIComponent(actividad.actividad_id || actividad.id)}`, { credentials: "include" });
+          const data = await res.json();
+          if (res.ok && data.ok && Array.isArray(data.franjas) && data.franjas.length) {
+            body.innerHTML = data.franjas
+              .filter((item) => item && item.hora_inicio && item.hora_fin)
+              .map((item) => `
+                <tr>
+                  <td>${escapeHtml(formatearFechaSimple(item.fecha || actividad.fecha_inicio || ""))}</td>
+                  <td>${escapeHtml(item.hora_inicio || "-")}</td>
+                  <td>${escapeHtml(item.hora_fin || "-")}</td>
+                </tr>
+              `).join("");
+          }
         }
       } catch (_) {
         // vista informativa, no bloquea si falla
+      }
+
+      if (!body.innerHTML.trim()) {
+        body.innerHTML = construirFilasProgramacionFallback(actividad);
+      }
+
+      if (body.innerHTML.trim()) {
+        wrap.style.display = "block";
       }
     }
 
@@ -1068,7 +1129,7 @@
       document.getElementById("detalleAdministrador").innerHTML = `
         <dt>Nombre</dt><dd>${escapeHtml(usuarioSeleccionado.nombre || "-")}</dd>
         <dt>Nombre público</dt><dd>${escapeHtml(usuarioSeleccionado.nombre_publico || "-")}</dd>
-        <dt>Email</dt><dd>${escapeHtml(usuarioSeleccionado.email || "-")}</dd>
+        <dt>Email</dt><dd>${usuarioSeleccionado.email ? `<a href="mailto:${escapeHtml(usuarioSeleccionado.email)}">${escapeHtml(usuarioSeleccionado.email)}</a>` : "-"}</dd>
         <dt>Teléfono</dt><dd>${escapeHtml(usuarioSeleccionado.telefono_contacto || "-")}</dd>
         <dt>Centro / unidad</dt><dd>${escapeHtml(usuarioSeleccionado.centro || "-")}</dd>
         <dt>Localidad</dt><dd>${escapeHtml(usuarioSeleccionado.localidad || "-")}</dd>
@@ -1211,7 +1272,6 @@
       window.location.href = "portal.html";
     });
     document.getElementById("btnVerFicha").addEventListener("click", abrirModalFicha);
-    document.getElementById("btnConsultarActividades").addEventListener("click", abrirModalActividades);
     document.getElementById("btnEliminarAdmin").addEventListener("click", eliminarAdminSeleccionado);
     document.getElementById("btnEnviarPasswordTemporal").addEventListener("click", enviarNuevaPasswordTemporal);
     document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueo);
@@ -1283,6 +1343,7 @@
     window.prepararCambioEstado = prepararCambioEstado;
     window.cerrarMensaje = cerrarMensaje;
     window.abrirVistaActividad = abrirVistaActividad;
+    window.abrirActividadesAdmin = abrirActividadesAdmin;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>

@@ -19,6 +19,28 @@ function escapeHtml(valor) {
     .replace(/'/g, "&#39;");
 }
 
+function normalizarListaTexto(valor) {
+  if (Array.isArray(valor)) {
+    return valor.map((item) => limpiarTexto(item)).filter(Boolean);
+  }
+  const texto = limpiarTexto(valor);
+  if (!texto) return [];
+  if (texto.startsWith("[")) {
+    try {
+      const parseado = JSON.parse(texto);
+      if (Array.isArray(parseado)) {
+        return parseado.map((item) => limpiarTexto(item)).filter(Boolean);
+      }
+    } catch (_) {
+      // sigue con fallback textual
+    }
+  }
+  return texto
+    .split(/\r?\n+/)
+    .map((item) => limpiarTexto(item))
+    .filter(Boolean);
+}
+
 function dbPrimaria(env) {
   if (typeof env?.DB?.withSession === "function") {
     return env.DB.withSession("first-primary");
@@ -125,9 +147,7 @@ export async function listarAdministradores(env) {
       requiere_reserva: Number(actividad.requiere_reserva || 0) === 1 ? 1 : 0,
       aforo_limitado: Number(actividad.aforo_limitado || 0) === 1 ? 1 : 0,
       plazas_totales: Number(actividad.plazas_totales || 0),
-      requisitos_particulares: Array.isArray(actividad.requisitos_particulares)
-        ? actividad.requisitos_particulares
-        : [],
+      requisitos_particulares: normalizarListaTexto(actividad.requisitos_particulares),
       activa: Number(actividad.activa || 0) === 1 ? 1 : 0,
       visible_portal: Number(actividad.visible_portal || 0) === 1 ? 1 : 0,
       publicada_vigente: actividadPublicadaYVigente(actividad) ? 1 : 0
