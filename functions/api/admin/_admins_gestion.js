@@ -93,6 +93,7 @@ async function obtenerAdministrador(env, adminId) {
       centro,
       localidad,
       telefono_contacto,
+      telefono_rpv,
       responsable_legal,
       cargo_puesto,
       tipo_documento,
@@ -109,6 +110,7 @@ async function obtenerAdministrador(env, adminId) {
 export async function listarAdministradores(env) {
   await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
   await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "telefono_rpv", "TEXT");
 
   const actividades = await env.DB.prepare(`
     SELECT *
@@ -193,6 +195,7 @@ export async function listarAdministradores(env) {
     centro: row.centro || "",
     localidad: row.localidad || "",
     telefono_contacto: row.telefono_contacto || "",
+    telefono_rpv: row.telefono_rpv || "",
     responsable_legal: row.responsable_legal || "",
     cargo_puesto: row.cargo_puesto || "",
     tipo_documento: row.tipo_documento || "",
