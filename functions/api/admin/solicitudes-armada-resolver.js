@@ -64,7 +64,40 @@ function construirCorreoAltaArmadaHtml({ unidad, cargoPuesto, email, passwordTem
   `;
 }
 
-async function enviarCodigoTemporalPorCorreo(env, request, solicitud, passwordTemporal) {
+function construirCorreoRechazoTexto({ unidad, cargoPuesto, motivo }) {
+  const lineas = [
+    "Tu solicitud de Usuario Armada ha sido rechazada.",
+    "",
+    `Unidad / dependencia: ${unidad}`
+  ];
+
+  if (cargoPuesto) {
+    lineas.push(`Cargo / puesto: ${cargoPuesto}`);
+  }
+
+  lineas.push(
+    "",
+    "Observaciones del superadministrador:",
+    motivo,
+    "",
+    "Si deseas volver a intentarlo, deberás generar una nueva solicitud desde el portal."
+  );
+
+  return lineas.join("\n");
+}
+
+function construirCorreoRechazoHtml({ unidad, cargoPuesto, motivo }) {
+  return `
+    <p>Tu solicitud de <strong>Usuario Armada</strong> ha sido rechazada.</p>
+    <p><strong>Unidad / dependencia:</strong> ${escaparHtml(unidad)}</p>
+    ${cargoPuesto ? `<p><strong>Cargo / puesto:</strong> ${escaparHtml(cargoPuesto)}</p>` : ""}
+    <p><strong>Observaciones del superadministrador:</strong></p>
+    <p>${escaparHtml(motivo)}</p>
+    <p>Si deseas volver a intentarlo, deberás generar una nueva solicitud desde el portal.</p>
+  `;
+}
+
+async function enviarCorreoAprobacion(env, request, solicitud, passwordTemporal) {
   const email = limpiarTexto(solicitud.email).toLowerCase();
   const baseUrl = new URL(request.url).origin;
 
@@ -88,6 +121,32 @@ async function enviarCodigoTemporalPorCorreo(env, request, solicitud, passwordTe
   });
 }
 
+async function enviarCorreoRechazo(env, solicitud, motivo) {
+  const email = limpiarTexto(solicitud.email).toLowerCase();
+  return enviarEmail(env, {
+    to: email,
+    subject: "Rechazo de solicitud Usuario Armada",
+    text: construirCorreoRechazoTexto({
+      unidad: limpiarTexto(solicitud.centro),
+      cargoPuesto: limpiarTexto(solicitud.cargo_puesto),
+      motivo
+    }),
+    html: construirCorreoRechazoHtml({
+      unidad: limpiarTexto(solicitud.centro),
+      cargoPuesto: limpiarTexto(solicitud.cargo_puesto),
+      motivo
+    })
+  });
+}
+
+function errorCorreo(envio, mensajeConfiguracion, mensajeEnvio) {
+  return json({
+    ok: false,
+    error: envio.skipped ? mensajeConfiguracion : (envio.error || mensajeEnvio),
+    detalle: envio.error || ""
+  }, 503);
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -109,8 +168,12 @@ export async function onRequestPost(context) {
     const accion = limpiarTexto(body.accion).toUpperCase();
     const motivo = limpiarTexto(body.motivo);
 
-    if (!solicitudId || !["APROBAR", "RECHAZAR", "REENVIAR_CODIGO", "RECUPERAR"].includes(accion)) {
+    if (!solicitudId || !["APROBAR", "RECHAZAR"].includes(accion)) {
       return json({ ok: false, error: "Datos de resolución no válidos" }, 400);
+    }
+
+    if (accion === "RECHAZAR" && !motivo) {
+      return json({ ok: false, error: "Las observaciones son obligatorias para rechazar una solicitud." }, 400);
     }
 
     const solicitud = await env.DB.prepare(`
@@ -124,114 +187,34 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Solicitud no encontrada" }, 404);
     }
 
-    const estadoActual = String(solicitud.estado || "").toUpperCase();
+    if (String(solicitud.estado || "").toUpperCase() !== "PENDIENTE") {
+      return json({ ok: false, error: "La solicitud ya no está pendiente de resolución." }, 400);
+    }
 
-    if (accion === "RECUPERAR") {
-      if (estadoActual !== "RECHAZADA") {
-        return json({ ok: false, error: "Solo pueden recuperarse solicitudes rechazadas." }, 400);
+    if (accion === "RECHAZAR") {
+      const envio = await enviarCorreoRechazo(env, solicitud, motivo);
+      if (!envio.ok) {
+        return errorCorreo(
+          envio,
+          "No se pudo rechazar la solicitud porque el servicio de correo no está configurado.",
+          "No se pudo enviar el correo de rechazo al solicitante."
+        );
       }
 
       await env.DB.prepare(`
-        UPDATE solicitudes_registro_armada
-        SET
-          estado = 'PENDIENTE',
-          fecha_resolucion = NULL,
-          resuelto_por_superadmin_id = NULL,
-          motivo_resolucion = NULL
+        DELETE FROM solicitudes_registro_armada
         WHERE id = ?
       `).bind(solicitudId).run();
 
       return json({
         ok: true,
-        estado: "PENDIENTE",
-        mensaje: "Solicitud recuperada correctamente. Vuelve a quedar pendiente de resolución."
-      });
-    }
-
-    if (accion === "RECHAZAR") {
-      if (estadoActual !== "PENDIENTE") {
-        return json({ ok: false, error: "Solo pueden rechazarse solicitudes pendientes." }, 400);
-      }
-
-      await env.DB.prepare(`
-        UPDATE solicitudes_registro_armada
-        SET
-          estado = 'RECHAZADA',
-          fecha_resolucion = datetime('now'),
-          resuelto_por_superadmin_id = ?,
-          motivo_resolucion = ?
-        WHERE id = ?
-      `).bind(session.usuario_id, motivo, solicitudId).run();
-
-      return json({
-        ok: true,
         estado: "RECHAZADA",
-        mensaje: "Solicitud rechazada correctamente."
+        mensaje: "Solicitud rechazada correctamente. Se ha enviado el correo al solicitante."
       });
     }
 
     const email = limpiarTexto(solicitud.email).toLowerCase();
     const centroNormalizado = normalizarCentro(solicitud.centro);
-
-    if (accion === "REENVIAR_CODIGO") {
-      if (estadoActual !== "APROBADA" || !Number(solicitud.usuario_creado_id || 0)) {
-        return json({ ok: false, error: "Solo puede reenviarse código a solicitudes ya aprobadas." }, 400);
-      }
-
-      const usuario = await env.DB.prepare(`
-        SELECT id
-        FROM usuarios
-        WHERE id = ?
-          AND rol = 'ADMIN'
-        LIMIT 1
-      `).bind(Number(solicitud.usuario_creado_id)).first();
-
-      if (!usuario) {
-        return json({ ok: false, error: "La cuenta administrativa asociada ya no existe." }, 404);
-      }
-
-      const passwordTemporal = generarPasswordTemporal();
-      const passwordHash = await hashPassword(passwordTemporal);
-
-      await env.DB.prepare(`
-        UPDATE usuarios
-        SET
-          password_hash = ?,
-          forzar_cambio_password = 1,
-          activo = 1
-        WHERE id = ?
-      `).bind(passwordHash, Number(solicitud.usuario_creado_id)).run();
-
-      const envio = await enviarCodigoTemporalPorCorreo(env, request, solicitud, passwordTemporal);
-      if (!envio.ok) {
-        return json({
-          ok: false,
-          error: envio.skipped
-            ? "No se pudo reenviar el código porque el servicio de correo no está configurado."
-            : (envio.error || "No se pudo enviar el correo al solicitante."),
-          detalle: envio.error || ""
-        }, 503);
-      }
-
-      await env.DB.prepare(`
-        UPDATE solicitudes_registro_armada
-        SET
-          fecha_resolucion = datetime('now'),
-          resuelto_por_superadmin_id = ?,
-          motivo_resolucion = COALESCE(NULLIF(?, ''), motivo_resolucion)
-        WHERE id = ?
-      `).bind(session.usuario_id, motivo, solicitudId).run();
-
-      return json({
-        ok: true,
-        estado: "APROBADA",
-        mensaje: "Se ha reenviado un nuevo código temporal al correo del solicitante."
-      });
-    }
-
-    if (estadoActual !== "PENDIENTE") {
-      return json({ ok: false, error: "La solicitud ya fue resuelta anteriormente." }, 400);
-    }
 
     const existingEmail = await env.DB.prepare(`
       SELECT id
@@ -289,7 +272,7 @@ export async function onRequestPost(context) {
     ).run();
 
     const usuarioCreadoId = Number(creado.meta?.last_row_id || 0);
-    const envio = await enviarCodigoTemporalPorCorreo(env, request, solicitud, passwordTemporal);
+    const envio = await enviarCorreoAprobacion(env, request, solicitud, passwordTemporal);
 
     if (!envio.ok) {
       await env.DB.prepare(`
@@ -297,25 +280,17 @@ export async function onRequestPost(context) {
         WHERE id = ?
       `).bind(usuarioCreadoId).run();
 
-      return json({
-        ok: false,
-        error: envio.skipped
-          ? "No se pudo aprobar la solicitud porque el servicio de correo no está configurado."
-          : (envio.error || "No se pudo enviar el correo al solicitante."),
-        detalle: envio.error || ""
-      }, 503);
+      return errorCorreo(
+        envio,
+        "No se pudo aprobar la solicitud porque el servicio de correo no está configurado.",
+        "No se pudo enviar el correo al solicitante."
+      );
     }
 
     await env.DB.prepare(`
-      UPDATE solicitudes_registro_armada
-      SET
-        estado = 'APROBADA',
-        fecha_resolucion = datetime('now'),
-        resuelto_por_superadmin_id = ?,
-        motivo_resolucion = ?,
-        usuario_creado_id = ?
+      DELETE FROM solicitudes_registro_armada
       WHERE id = ?
-    `).bind(session.usuario_id, motivo, usuarioCreadoId, solicitudId).run();
+    `).bind(solicitudId).run();
 
     return json({
       ok: true,

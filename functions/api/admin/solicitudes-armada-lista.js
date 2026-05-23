@@ -35,28 +35,15 @@ export async function onRequestGet(context) {
         email,
         telefono_contacto,
         estado,
-        fecha_solicitud,
-        fecha_resolucion,
-        resuelto_por_superadmin_id,
-        motivo_resolucion,
-        usuario_creado_id
+        fecha_solicitud
       FROM solicitudes_registro_armada
-      ORDER BY
-        CASE estado
-          WHEN 'PENDIENTE' THEN 0
-          WHEN 'APROBADA' THEN 1
-          WHEN 'RECHAZADA' THEN 2
-          ELSE 3
-        END,
-        datetime(COALESCE(fecha_resolucion, fecha_solicitud)) DESC
+      WHERE estado = 'PENDIENTE'
+      ORDER BY datetime(fecha_solicitud) DESC
     `).all();
 
-    const solicitudes = rows.results || [];
     return json({
       ok: true,
-      solicitudes,
-      pendientes: solicitudes.filter((item) => String(item.estado || "").toUpperCase() === "PENDIENTE"),
-      tramitadas: solicitudes.filter((item) => String(item.estado || "").toUpperCase() !== "PENDIENTE")
+      solicitudes: rows.results || []
     });
   } catch (error) {
     return json({

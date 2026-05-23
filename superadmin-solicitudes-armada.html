@@ -52,152 +52,6 @@
       line-height: 1.5;
     }
 
-    .tabs {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .tab-btn {
-      border: 1px solid #c9cfd6;
-      background: #fff;
-      color: #334250;
-      padding: 10px 16px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .tab-btn.activo {
-      background: #0b5ed7;
-      border-color: #0b5ed7;
-      color: #fff;
-    }
-
-    .barra-acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
-    .btn,
-    .btn-secundario {
-      padding: 10px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 1px solid transparent;
-      font-size: 14px;
-    }
-
-    .btn {
-      background: #0b5ed7;
-      color: #fff;
-    }
-
-    .btn:hover {
-      background: #094db1;
-    }
-
-    .btn-secundario {
-      background: #fff;
-      border-color: #c9cfd6;
-      color: #334250;
-    }
-
-    .btn-secundario:hover {
-      background: #f7f9fb;
-    }
-
-    .btn-icono {
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: 1px solid #bfc9d4;
-      background: #fff;
-      color: #4a5a6a;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      padding: 0;
-    }
-
-    .btn-icono:hover {
-      background: #f7f9fb;
-      color: #0b5ed7;
-      border-color: #9fb2c7;
-    }
-
-    .btn-icono:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      background: #f8fafc;
-      color: #8a98a8;
-    }
-
-    .btn-icono svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .tabla-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 940px;
-    }
-
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      font-size: 14px;
-      vertical-align: middle;
-    }
-
-    th.sel-col, td.sel-col {
-      width: 36px;
-      text-align: center;
-    }
-
-    .fila-seleccionada {
-      background: #f2f7ff;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    .pill-pendiente {
-      background: #fff5d6;
-      color: #8b6b00;
-    }
-
-    .pill-aprobada {
-      background: #eaf7ea;
-      color: #146c2e;
-    }
-
-    .pill-rechazada {
-      background: #fdeaea;
-      color: #9b1c1c;
-    }
-
     .mensaje {
       margin-top: 10px;
       padding: 8px;
@@ -217,11 +71,50 @@
       display: block;
     }
 
+    .tabla-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    .pill-boton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      border: 1px solid #d8c27a;
+      background: #fff5d6;
+      color: #8b6b00;
+      cursor: pointer;
+    }
+
+    .pill-boton:hover {
+      background: #ffefbc;
+    }
+
     .sin-datos {
       padding: 20px 10px;
       color: #5f6d7a;
       text-align: center;
       font-size: 14px;
+      display: none;
     }
 
     .modal-fondo {
@@ -286,7 +179,7 @@
 
     .campo textarea {
       width: 100%;
-      min-height: 88px;
+      min-height: 100px;
       resize: vertical;
       padding: 10px 11px;
       border-radius: 8px;
@@ -294,6 +187,12 @@
       font-family: inherit;
       font-size: 14px;
       box-sizing: border-box;
+    }
+
+    .nota-campo {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #5f6d7a;
     }
 
     .modal-acciones {
@@ -304,10 +203,37 @@
       flex-wrap: wrap;
     }
 
+    .btn,
+    .btn-secundario {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #0b5ed7;
+      color: #fff;
+    }
+
+    .btn:hover {
+      background: #094db1;
+    }
+
+    .btn-secundario {
+      background: #fff;
+      border-color: #c9cfd6;
+      color: #334250;
+    }
+
+    .btn-secundario:hover {
+      background: #f7f9fb;
+    }
+
     @media (max-width: 760px) {
       body { padding: 10px; }
       .bloque { padding: 12px; }
-      .barra-acciones, .tabs { justify-content: center; }
       .modal {
         max-width: calc(100vw - 20px);
         max-height: calc(100vh - 20px);
@@ -337,7 +263,7 @@
       <div class="cabecera-bloque">
         <div>
           <h1>Solicitudes Usuario Armada</h1>
-          <p class="subtitulo">Revisa, aprueba, rechaza, recupera o reenvía credenciales temporales de las solicitudes administrativas remitidas desde el portal público.</p>
+          <p class="subtitulo">Bandeja de solicitudes pendientes de resolución. Al aprobar o rechazar, se envía el correo correspondiente y la solicitud desaparece del panel.</p>
         </div>
         <button type="button" class="btn-secundario" id="btnVolverPortal">Volver al portal</button>
       </div>
@@ -346,51 +272,13 @@
 
     <div class="bloque">
       <div class="cabecera-bloque">
-        <h3>Consola de solicitudes</h3>
-      </div>
-
-      <div class="tabs">
-        <button type="button" class="tab-btn activo" id="tabPendientes">Pendientes</button>
-        <button type="button" class="tab-btn" id="tabTramitadas">Tramitadas</button>
-      </div>
-
-      <div class="barra-acciones">
-        <button type="button" class="btn-icono" id="btnVerSolicitud" title="Ver solicitud" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
-        <button type="button" class="btn-icono" id="btnAprobarSolicitud" title="Aprobar solicitud" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 6L9 17l-5-5"></path>
-          </svg>
-        </button>
-        <button type="button" class="btn-icono" id="btnRechazarSolicitud" title="Rechazar solicitud" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-        <button type="button" class="btn-icono" id="btnRecuperarSolicitud" title="Recuperar solicitud rechazada" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.708"></path>
-            <polyline points="3 3 3 9 9 9"></polyline>
-          </svg>
-        </button>
-        <button type="button" class="btn-icono" id="btnReenviarCodigo" title="Reenviar código temporal" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2L11 13"></path>
-            <path d="M22 2L15 22l-4-9-9-4 20-7z"></path>
-          </svg>
-        </button>
+        <h3>Solicitudes pendientes</h3>
       </div>
 
       <div class="tabla-wrap">
         <table>
           <thead>
             <tr>
-              <th class="sel-col"></th>
               <th>Unidad / dependencia</th>
               <th>Contacto</th>
               <th>Cargo / puesto</th>
@@ -398,13 +286,12 @@
               <th>Teléfono</th>
               <th>Estado</th>
               <th>Fecha solicitud</th>
-              <th>Fecha resolución</th>
             </tr>
           </thead>
           <tbody id="tablaSolicitudes"></tbody>
         </table>
       </div>
-      <div id="sinSolicitudes" class="sin-datos" style="display:none;">No hay solicitudes en esta vista.</div>
+      <div id="sinSolicitudes" class="sin-datos">No hay solicitudes pendientes.</div>
     </div>
   </div>
 
@@ -413,14 +300,13 @@
       <h3 id="tituloModalSolicitud">Solicitud Usuario Armada</h3>
       <dl class="modal-grid" id="detalleSolicitud"></dl>
       <div class="campo">
-        <label for="motivoResolucion">Observaciones / motivo</label>
-        <textarea id="motivoResolucion" placeholder="Añade observaciones internas o el motivo, si procede."></textarea>
+        <label for="motivoResolucion">Observaciones del superadministrador</label>
+        <textarea id="motivoResolucion" placeholder="En caso de rechazo, este campo es obligatorio."></textarea>
+        <div class="nota-campo">Si rechazas la solicitud, este texto se enviará por correo al solicitante.</div>
       </div>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" id="btnCerrarModalSolicitud">Cerrar</button>
         <button type="button" class="btn-secundario" id="btnModalRechazarSolicitud">Rechazar</button>
-        <button type="button" class="btn-secundario" id="btnModalRecuperarSolicitud">Recuperar</button>
-        <button type="button" class="btn-secundario" id="btnModalReenviarCodigo">Reenviar código</button>
         <button type="button" class="btn" id="btnModalAprobarSolicitud">Aprobar</button>
       </div>
     </div>
@@ -429,7 +315,6 @@
   <script>
     let solicitudesCache = [];
     let solicitudSeleccionada = null;
-    let vistaActiva = "PENDIENTES";
 
     function mostrarMensaje(tipo, texto) {
       const box = document.getElementById("mensajePantalla");
@@ -443,51 +328,6 @@
       box.className = "mensaje";
       box.textContent = "";
       box.style.display = "none";
-    }
-
-    function etiquetaEstado(estado) {
-      const valor = String(estado || "").toUpperCase();
-      if (valor === "APROBADA") return '<span class="pill pill-aprobada">Aprobada</span>';
-      if (valor === "RECHAZADA") return '<span class="pill pill-rechazada">Rechazada</span>';
-      return '<span class="pill pill-pendiente">Pendiente</span>';
-    }
-
-    function solicitudesVisibles() {
-      if (vistaActiva === "PENDIENTES") {
-        return solicitudesCache.filter((item) => String(item.estado || "").toUpperCase() === "PENDIENTE");
-      }
-      return solicitudesCache.filter((item) => String(item.estado || "").toUpperCase() !== "PENDIENTE");
-    }
-
-    function actualizarTabs() {
-      document.getElementById("tabPendientes").classList.toggle("activo", vistaActiva === "PENDIENTES");
-      document.getElementById("tabTramitadas").classList.toggle("activo", vistaActiva === "TRAMITADAS");
-    }
-
-    function actualizarBotones() {
-      const hay = !!solicitudSeleccionada;
-      const estado = String(solicitudSeleccionada?.estado || "").toUpperCase();
-      document.getElementById("btnVerSolicitud").disabled = !hay;
-      document.getElementById("btnAprobarSolicitud").disabled = !(hay && estado === "PENDIENTE");
-      document.getElementById("btnRechazarSolicitud").disabled = !(hay && estado === "PENDIENTE");
-      document.getElementById("btnRecuperarSolicitud").disabled = !(hay && estado === "RECHAZADA");
-      document.getElementById("btnReenviarCodigo").disabled = !(hay && estado === "APROBADA");
-    }
-
-    function seleccionarSolicitud(id) {
-      solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(id)) || null;
-      renderizarTabla();
-      actualizarBotones();
-    }
-
-    function cambiarVista(vista) {
-      vistaActiva = vista;
-      const visibles = solicitudesVisibles();
-      if (!visibles.some((item) => Number(item.id) === Number(solicitudSeleccionada?.id))) {
-        solicitudSeleccionada = visibles[0] || null;
-      }
-      actualizarTabs();
-      renderizarTabla();
     }
 
     function formatearFecha(valor) {
@@ -512,31 +352,49 @@
         .replace(/'/g, "&#39;");
     }
 
+    function abrirSolicitud(id) {
+      solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(id)) || null;
+      if (!solicitudSeleccionada) return;
+
+      document.getElementById("tituloModalSolicitud").textContent = `Solicitud · ${solicitudSeleccionada.centro || "Usuario Armada"}`;
+      document.getElementById("detalleSolicitud").innerHTML = `
+        <dt>Unidad / dependencia</dt><dd>${escapeHtml(solicitudSeleccionada.centro || "")}</dd>
+        <dt>Contacto</dt><dd>${escapeHtml(solicitudSeleccionada.responsable_legal || "")}</dd>
+        <dt>Cargo / puesto</dt><dd>${escapeHtml(solicitudSeleccionada.cargo_puesto || "-")}</dd>
+        <dt>Email</dt><dd>${escapeHtml(solicitudSeleccionada.email || "")}</dd>
+        <dt>Teléfono</dt><dd>${escapeHtml(solicitudSeleccionada.telefono_contacto || "")}</dd>
+        <dt>Localidad</dt><dd>${escapeHtml(solicitudSeleccionada.localidad || "-")}</dd>
+        <dt>Documento</dt><dd>${escapeHtml(solicitudSeleccionada.tipo_documento || "")} · ${escapeHtml(solicitudSeleccionada.documento_identificacion || "")}</dd>
+        <dt>Estado</dt><dd>PENDIENTE</dd>
+        <dt>Fecha de solicitud</dt><dd>${formatearFecha(solicitudSeleccionada.fecha_solicitud)}</dd>
+      `;
+      document.getElementById("motivoResolucion").value = "";
+
+      const modal = document.getElementById("modalSolicitudArmada");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalSolicitud() {
+      const modal = document.getElementById("modalSolicitudArmada");
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
     function renderizarTabla() {
       const tbody = document.getElementById("tablaSolicitudes");
-      const visibles = solicitudesVisibles();
-      tbody.innerHTML = visibles.map((item) => `
-        <tr class="${solicitudSeleccionada && Number(solicitudSeleccionada.id) === Number(item.id) ? "fila-seleccionada" : ""}">
-          <td class="sel-col">
-            <input
-              type="radio"
-              name="seleccionSolicitudArmada"
-              ${solicitudSeleccionada && Number(solicitudSeleccionada.id) === Number(item.id) ? "checked" : ""}
-              onchange="seleccionarSolicitud(${Number(item.id)})"
-            >
-          </td>
+      tbody.innerHTML = solicitudesCache.map((item) => `
+        <tr>
           <td>${escapeHtml(item.centro || "")}</td>
           <td>${escapeHtml(item.responsable_legal || "")}</td>
           <td>${escapeHtml(item.cargo_puesto || "-")}</td>
           <td>${escapeHtml(item.email || "")}</td>
           <td>${escapeHtml(item.telefono_contacto || "")}</td>
-          <td>${etiquetaEstado(item.estado)}</td>
+          <td><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
           <td>${formatearFecha(item.fecha_solicitud)}</td>
-          <td>${formatearFecha(item.fecha_resolucion)}</td>
         </tr>
       `).join("");
-      document.getElementById("sinSolicitudes").style.display = visibles.length ? "none" : "block";
-      actualizarBotones();
+      document.getElementById("sinSolicitudes").style.display = solicitudesCache.length ? "none" : "block";
     }
 
     async function cargarSolicitudes() {
@@ -548,51 +406,7 @@
         throw new Error(data.error || "No se pudieron cargar las solicitudes.");
       }
       solicitudesCache = Array.isArray(data.solicitudes) ? data.solicitudes : [];
-      const visibles = solicitudesVisibles();
-      if (!visibles.some((item) => Number(item.id) === Number(solicitudSeleccionada?.id))) {
-        solicitudSeleccionada = visibles[0] || null;
-      } else if (solicitudSeleccionada) {
-        solicitudSeleccionada = solicitudesCache.find((item) => Number(item.id) === Number(solicitudSeleccionada.id)) || null;
-      }
       renderizarTabla();
-    }
-
-    function configurarAccionesModal(estado) {
-      document.getElementById("btnModalAprobarSolicitud").style.display = estado === "PENDIENTE" ? "inline-block" : "none";
-      document.getElementById("btnModalRechazarSolicitud").style.display = estado === "PENDIENTE" ? "inline-block" : "none";
-      document.getElementById("btnModalRecuperarSolicitud").style.display = estado === "RECHAZADA" ? "inline-block" : "none";
-      document.getElementById("btnModalReenviarCodigo").style.display = estado === "APROBADA" ? "inline-block" : "none";
-    }
-
-    function abrirModalSolicitud() {
-      if (!solicitudSeleccionada) return;
-      const estado = String(solicitudSeleccionada.estado || "").toUpperCase();
-      document.getElementById("tituloModalSolicitud").textContent = `Solicitud · ${solicitudSeleccionada.centro || "Usuario Armada"}`;
-      document.getElementById("detalleSolicitud").innerHTML = `
-        <dt>Unidad / dependencia</dt><dd>${escapeHtml(solicitudSeleccionada.centro || "")}</dd>
-        <dt>Contacto</dt><dd>${escapeHtml(solicitudSeleccionada.responsable_legal || "")}</dd>
-        <dt>Cargo / puesto</dt><dd>${escapeHtml(solicitudSeleccionada.cargo_puesto || "-")}</dd>
-        <dt>Email</dt><dd>${escapeHtml(solicitudSeleccionada.email || "")}</dd>
-        <dt>Teléfono</dt><dd>${escapeHtml(solicitudSeleccionada.telefono_contacto || "")}</dd>
-        <dt>Localidad</dt><dd>${escapeHtml(solicitudSeleccionada.localidad || "-")}</dd>
-        <dt>Documento</dt><dd>${escapeHtml(solicitudSeleccionada.tipo_documento || "")} · ${escapeHtml(solicitudSeleccionada.documento_identificacion || "")}</dd>
-        <dt>Estado</dt><dd>${String(solicitudSeleccionada.estado || "").toUpperCase()}</dd>
-        <dt>Fecha de solicitud</dt><dd>${formatearFecha(solicitudSeleccionada.fecha_solicitud)}</dd>
-        <dt>Fecha de resolución</dt><dd>${formatearFecha(solicitudSeleccionada.fecha_resolucion)}</dd>
-        <dt>Motivo / observaciones</dt><dd>${escapeHtml(solicitudSeleccionada.motivo_resolucion || "-")}</dd>
-      `;
-      document.getElementById("motivoResolucion").value = solicitudSeleccionada.motivo_resolucion || "";
-      configurarAccionesModal(estado);
-
-      const modal = document.getElementById("modalSolicitudArmada");
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
-    }
-
-    function cerrarModalSolicitud() {
-      const modal = document.getElementById("modalSolicitudArmada");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
     }
 
     async function resolverSolicitud(accion) {
@@ -617,6 +431,7 @@
       }
 
       cerrarModalSolicitud();
+      solicitudSeleccionada = null;
       mostrarMensaje("ok", data.mensaje || "Solicitud resuelta correctamente.");
       await cargarSolicitudes();
     }
@@ -624,29 +439,12 @@
     document.getElementById("btnVolverPortal").addEventListener("click", function () {
       window.location.href = "portal.html";
     });
-    document.getElementById("tabPendientes").addEventListener("click", function () {
-      cambiarVista("PENDIENTES");
-    });
-    document.getElementById("tabTramitadas").addEventListener("click", function () {
-      cambiarVista("TRAMITADAS");
-    });
-    document.getElementById("btnVerSolicitud").addEventListener("click", abrirModalSolicitud);
-    document.getElementById("btnAprobarSolicitud").addEventListener("click", abrirModalSolicitud);
-    document.getElementById("btnRechazarSolicitud").addEventListener("click", abrirModalSolicitud);
-    document.getElementById("btnRecuperarSolicitud").addEventListener("click", abrirModalSolicitud);
-    document.getElementById("btnReenviarCodigo").addEventListener("click", abrirModalSolicitud);
     document.getElementById("btnCerrarModalSolicitud").addEventListener("click", cerrarModalSolicitud);
     document.getElementById("btnModalAprobarSolicitud").addEventListener("click", function () {
       resolverSolicitud("APROBAR");
     });
     document.getElementById("btnModalRechazarSolicitud").addEventListener("click", function () {
       resolverSolicitud("RECHAZAR");
-    });
-    document.getElementById("btnModalRecuperarSolicitud").addEventListener("click", function () {
-      resolverSolicitud("RECUPERAR");
-    });
-    document.getElementById("btnModalReenviarCodigo").addEventListener("click", function () {
-      resolverSolicitud("REENVIAR_CODIGO");
     });
     document.getElementById("modalSolicitudArmada").addEventListener("click", function (e) {
       if (e.target.id === "modalSolicitudArmada") cerrarModalSolicitud();
@@ -660,7 +458,7 @@
       }
     })();
 
-    window.seleccionarSolicitud = seleccionarSolicitud;
+    window.abrirSolicitud = abrirSolicitud;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
