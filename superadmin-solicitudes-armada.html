@@ -328,12 +328,14 @@
         background: #fff;
         box-shadow: 0 4px 14px rgba(0,0,0,0.05);
         padding: 14px;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td {
         border: none;
         padding: 0;
         text-align: left !important;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td + td {
@@ -354,6 +356,11 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+      }
+
+      .tabla-wrap tr.fila-seleccionada {
+        background: #eef5ff;
+        border-color: #c9dcff;
       }
     }
   </style>
@@ -436,6 +443,7 @@
   <script>
     let solicitudesCache = [];
     let solicitudSeleccionada = null;
+    let solicitudTactilSeleccionada = null;
     let mensajeTimer = null;
 
     function mostrarMensaje(tipo, texto) {
@@ -517,6 +525,11 @@
       abrirModal();
     }
 
+    function seleccionarSolicitud(id) {
+      solicitudTactilSeleccionada = Number(id);
+      renderizarTabla();
+    }
+
     function abrirModal() {
       const modal = document.getElementById("modalSolicitudArmada");
       modal.classList.add("activo");
@@ -532,13 +545,13 @@
     function renderizarTabla() {
       const tbody = document.getElementById("tablaSolicitudes");
       tbody.innerHTML = solicitudesCache.map((item) => `
-        <tr>
+        <tr class="${Number(solicitudTactilSeleccionada) === Number(item.id) ? "fila-seleccionada" : ""}" onclick="seleccionarSolicitud(${Number(item.id)})">
           <td data-label="Unidad / dependencia">${escapeHtml(item.centro || "")}</td>
           <td class="centrado" data-label="Contacto">${escapeHtml(item.responsable_legal || "")}</td>
           <td class="centrado" data-label="Cargo / puesto">${escapeHtml(item.cargo_puesto || "-")}</td>
           <td class="centrado" data-label="Email">${escapeHtml(item.email || "")}</td>
           <td class="centrado" data-label="Teléfono">${escapeHtml(item.telefono_contacto || "")}</td>
-          <td class="centrado" data-label="Estado"><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
+          <td class="centrado" data-label="Estado"><button type="button" class="pill-boton" onclick="event.stopPropagation(); abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
           <td class="centrado" data-label="Fecha solicitud">${formatearFecha(item.fecha_solicitud)}</td>
         </tr>
       `).join("");
@@ -607,6 +620,7 @@
     })();
 
     window.abrirSolicitud = abrirSolicitud;
+    window.seleccionarSolicitud = seleccionarSolicitud;
     window.cerrarMensaje = cerrarMensaje;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
