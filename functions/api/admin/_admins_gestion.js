@@ -86,6 +86,7 @@ async function obtenerAdministrador(env, adminId) {
 
 export async function listarAdministradores(env) {
   await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
 
   const actividades = await env.DB.prepare(`
     SELECT
@@ -152,6 +153,7 @@ export async function listarAdministradores(env) {
     SELECT
       id,
       nombre,
+      nombre_publico,
       email,
       centro,
       localidad,
@@ -384,6 +386,7 @@ function actividadEsReactivable(actividad) {
 
 export async function actualizarEstadoAdministrador(env, adminId, activo, actor = {}) {
   await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
   const admin = await obtenerAdministrador(env, adminId);
   if (!admin || String(admin.rol || "").toUpperCase() !== "ADMIN") {
     throw new Error("Administrador no encontrado.");
@@ -490,6 +493,7 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
 }
 
 export async function eliminarAdministrador(env, adminId, actor = {}) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
   const admin = await obtenerAdministrador(env, adminId);
   if (!admin || String(admin.rol || "").toUpperCase() !== "ADMIN") {
     throw new Error("Administrador no encontrado.");
