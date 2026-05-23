@@ -1626,11 +1626,27 @@
 
       .franja-sesion-inner.modo-admin #barraSuperadmin {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, max-content));
+        grid-template-columns: repeat(2, minmax(0, max-content));
+        grid-template-areas:
+          "admins publicos"
+          "solicitudes solicitudes";
         justify-content: center;
         align-items: center;
         gap: 8px 10px;
         width: 100%;
+      }
+
+      .franja-sesion-inner.modo-admin #barraSuperadmin > :nth-child(1) {
+        grid-area: admins;
+      }
+
+      .franja-sesion-inner.modo-admin #barraSuperadmin > :nth-child(2) {
+        grid-area: solicitudes;
+        justify-self: center;
+      }
+
+      .franja-sesion-inner.modo-admin #barraSuperadmin > :nth-child(3) {
+        grid-area: publicos;
       }
     }
   </style>
