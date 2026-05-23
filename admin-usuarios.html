@@ -713,11 +713,13 @@
         background: #fff;
         box-shadow: 0 4px 14px rgba(0,0,0,0.05);
         padding: 14px;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td {
         border: none;
         padding: 0;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td + td {
@@ -727,22 +729,61 @@
       .tabla-wrap td.toggle-col {
         display: flex;
         justify-content: flex-end;
-        margin: 0 0 6px;
+        margin: 0;
+        order: 1;
       }
 
       .tabla-wrap td.toggle-col::before {
         display: none;
       }
 
-      .tabla-wrap td:not(.toggle-col) {
-        display: grid;
-        grid-template-columns: minmax(110px, 38%) 1fr;
-        gap: 10px;
-        align-items: start;
+      .tabla-wrap td.celda-nombre {
+        order: 0;
+        margin: -26px 52px 0 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #123a63;
+        line-height: 1.25;
       }
 
-      .tabla-wrap td:not(.toggle-col)::before {
-        content: attr(data-label);
+      .tabla-wrap td.celda-nombre::before {
+        display: none;
+      }
+
+      .tabla-wrap td.celda-email,
+      .tabla-wrap td.celda-telefono {
+        display: block;
+        margin-top: 8px;
+        color: #2f3f50;
+        line-height: 1.4;
+      }
+
+      .tabla-wrap td.celda-email {
+        order: 2;
+      }
+
+      .tabla-wrap td.celda-telefono {
+        order: 3;
+      }
+
+      .tabla-wrap td.celda-email::before,
+      .tabla-wrap td.celda-telefono::before {
+        display: none;
+      }
+
+      .tabla-wrap td.celda-actividades {
+        order: 4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #e5ebf0;
+      }
+
+      .tabla-wrap td.celda-actividades::before {
+        content: "Actividades ofertadas";
         color: #5f6d7a;
         font-size: 11px;
         font-weight: 700;
@@ -750,12 +791,24 @@
         letter-spacing: 0.02em;
       }
 
-      .tabla-wrap td[data-label="Actividades ofertadas"] {
-        align-items: center;
+      .tabla-wrap td.celda-actividades .actividad-ofertadas-btn {
+        justify-self: auto;
       }
 
-      .tabla-wrap td[data-label="Actividades ofertadas"] .actividad-ofertadas-btn {
-        justify-self: start;
+      .tabla-wrap td:not(.toggle-col):not(.celda-nombre):not(.celda-email):not(.celda-telefono):not(.celda-actividades) {
+        display: grid;
+        grid-template-columns: minmax(110px, 38%) 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .tabla-wrap td:not(.toggle-col):not(.celda-nombre):not(.celda-email):not(.celda-telefono):not(.celda-actividades)::before {
+        content: attr(data-label);
+        color: #5f6d7a;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
       }
     }
   </style>
@@ -1008,8 +1061,8 @@
               <span class="slider"></span>
             </label>
           </td>
-          <td data-label="Nombre">${escapeHtml(item.nombre_publico || item.centro || item.nombre || "")}</td>
-          <td data-label="Actividades ofertadas" style="text-align:center;">
+          <td class="celda-nombre" data-label="Nombre">${escapeHtml(item.nombre_publico || item.centro || item.nombre || "")}</td>
+          <td class="celda-actividades" data-label="Actividades ofertadas" style="text-align:center;">
             <button
               type="button"
               class="actividad-ofertadas-btn ${Number(item.actividades_publicadas || 0) > 0 ? "" : "vacio"}"
@@ -1017,8 +1070,8 @@
               aria-label="Ver actividades ofertadas"
             >${Number(item.actividades_publicadas || 0)}</button>
           </td>
-          <td data-label="Email">${escapeHtml(item.email || "")}</td>
-          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td class="celda-email" data-label="Email">${escapeHtml(item.email || "")}</td>
+          <td class="celda-telefono" data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
         </tr>
       `).join("");
 

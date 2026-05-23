@@ -262,11 +262,13 @@
         background: #fff;
         box-shadow: 0 4px 14px rgba(0,0,0,0.05);
         padding: 14px;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td {
         border: none;
         padding: 0;
+        box-sizing: border-box;
       }
 
       .tabla-wrap td + td {
@@ -274,12 +276,6 @@
       }
 
       .tabla-wrap td.sel-col {
-        display: flex;
-        justify-content: flex-end;
-        margin: 0 0 6px;
-      }
-
-      .tabla-wrap td.sel-col::before {
         display: none;
       }
 
@@ -403,9 +399,7 @@
       return fecha.toLocaleString("es-ES", {
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
+        year: "numeric"
       });
     }
 
