@@ -99,6 +99,11 @@
       letter-spacing: 0.02em;
     }
 
+    .tabla-wrap th:nth-child(n+2),
+    .tabla-wrap td:nth-child(n+2) {
+      text-align: center;
+    }
+
     .pill-boton {
       display: inline-flex;
       align-items: center;
@@ -117,6 +122,18 @@
 
     .pill-boton:hover {
       background: #ffefbc;
+    }
+
+    .btn-portal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-portal svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
     }
 
     .sin-datos {
@@ -145,61 +162,66 @@
     .modal {
       background: #fff;
       width: 100%;
-      max-width: 760px;
-      border-radius: 18px;
+      max-width: 640px;
+      border-radius: 16px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      padding: 20px;
+      padding: 16px 16px 14px;
+      position: relative;
     }
 
     .modal h3 {
-      margin: 0 0 12px;
-      font-size: 22px;
+      margin: 0 28px 10px 0;
+      font-size: 18px;
       color: #123a63;
+      line-height: 1.2;
     }
 
     .modal-grid {
       display: grid;
       grid-template-columns: 170px 1fr;
-      gap: 6px 12px;
-      margin-bottom: 14px;
+      gap: 4px 10px;
+      margin-bottom: 10px;
     }
 
     .modal-grid dt {
       font-weight: 700;
       color: #35506a;
+      font-size: 12px;
     }
 
     .modal-grid dd {
       margin: 0;
       color: #243648;
-      line-height: 1.4;
+      line-height: 1.35;
+      font-size: 12px;
     }
 
     .campo {
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .campo label {
       display: block;
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       color: #35506a;
+      font-size: 12px;
     }
 
     .campo textarea {
       width: 100%;
-      min-height: 92px;
+      min-height: 76px;
       resize: vertical;
-      padding: 9px 10px;
+      padding: 8px 10px;
       border-radius: 10px;
       border: 1px solid #c9cfd6;
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12px;
       box-sizing: border-box;
     }
 
     .nota-campo {
-      margin-top: 5px;
+      margin-top: 4px;
       font-size: 11px;
       color: #5f6d7a;
       line-height: 1.35;
@@ -211,6 +233,34 @@
       gap: 8px;
       margin-top: 14px;
       flex-wrap: wrap;
+    }
+
+    .modal-cerrar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid #d6dde5;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .modal-cerrar:hover {
+      background: #f7f9fb;
+      color: #334250;
+    }
+
+    .centrado {
+      text-align: center;
     }
 
     @media (max-width: 760px) {
@@ -264,10 +314,10 @@
         <h3>Solicitudes de Usuario Armada</h3>
         <p>Bandeja de solicitudes pendientes de resolución por parte del superadministrador.</p>
       </div>
-      <button type="button" class="super-btn-secundario" id="btnVolverPortal">
+      <button type="button" class="super-btn-secundario btn-portal" id="btnVolverPortal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 10.5 12 3l9 7.5"></path>
-          <path d="M5 9.5V21h14V9.5"></path>
+          <path d="M5.5 9.5V21h13V9.5"></path>
           <path d="M9.5 21v-6h5v6"></path>
         </svg>
         <span>Volver al portal</span>
@@ -288,12 +338,12 @@
           <thead>
             <tr>
               <th>Unidad / dependencia</th>
-              <th>Contacto</th>
-              <th>Cargo / puesto</th>
-              <th>Email</th>
-              <th>Teléfono</th>
-              <th>Estado</th>
-              <th>Fecha solicitud</th>
+              <th class="centrado">Contacto</th>
+              <th class="centrado">Cargo / puesto</th>
+              <th class="centrado">Email</th>
+              <th class="centrado">Teléfono</th>
+              <th class="centrado">Estado</th>
+              <th class="centrado">Fecha solicitud</th>
             </tr>
           </thead>
           <tbody id="tablaSolicitudes"></tbody>
@@ -305,6 +355,7 @@
 
   <div id="modalSolicitudArmada" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="modal-cerrar" id="btnCerrarModalSolicitud" aria-label="Cerrar">×</button>
       <h3 id="tituloModalSolicitud">Solicitud Usuario Armada</h3>
       <dl class="modal-grid" id="detalleSolicitud"></dl>
       <div class="campo">
@@ -313,7 +364,6 @@
         <div class="nota-campo">Si rechazas la solicitud, este texto se enviará por correo al solicitante.</div>
       </div>
       <div class="modal-acciones">
-        <button type="button" class="super-btn-secundario" id="btnCerrarModalSolicitud">Cerrar</button>
         <button type="button" class="super-btn-peligro" id="btnModalRechazarSolicitud">Rechazar</button>
         <button type="button" class="super-btn" id="btnModalAprobarSolicitud">Aprobar</button>
       </div>
@@ -421,12 +471,12 @@
       tbody.innerHTML = solicitudesCache.map((item) => `
         <tr>
           <td>${escapeHtml(item.centro || "")}</td>
-          <td>${escapeHtml(item.responsable_legal || "")}</td>
-          <td>${escapeHtml(item.cargo_puesto || "-")}</td>
-          <td>${escapeHtml(item.email || "")}</td>
-          <td>${escapeHtml(item.telefono_contacto || "")}</td>
-          <td><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
-          <td>${formatearFecha(item.fecha_solicitud)}</td>
+          <td class="centrado">${escapeHtml(item.responsable_legal || "")}</td>
+          <td class="centrado">${escapeHtml(item.cargo_puesto || "-")}</td>
+          <td class="centrado">${escapeHtml(item.email || "")}</td>
+          <td class="centrado">${escapeHtml(item.telefono_contacto || "")}</td>
+          <td class="centrado"><button type="button" class="pill-boton" onclick="abrirSolicitud(${Number(item.id)})">Pendiente</button></td>
+          <td class="centrado">${formatearFecha(item.fecha_solicitud)}</td>
         </tr>
       `).join("");
       document.getElementById("sinSolicitudes").style.display = solicitudesCache.length ? "none" : "block";
