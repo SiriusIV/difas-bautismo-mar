@@ -26,7 +26,47 @@ function dbPrimaria(env) {
   return env.DB;
 }
 
+async function asegurarColumnaUsuarioAdmin(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("duplicate") ||
+      detalle.includes("already exists")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
+async function obtenerAdministrador(env, adminId) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      nombre,
+      email,
+      centro,
+      localidad,
+      telefono_contacto,
+      responsable_legal,
+      cargo_puesto,
+      tipo_documento,
+      documento_identificacion,
+      activo,
+      rol,
+      fecha_alta
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(adminId).first();
+}
+
 export async function listarAdministradores(env) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
+
   const actividades = await env.DB.prepare(`
     SELECT
       id,
@@ -54,7 +94,13 @@ export async function listarAdministradores(env) {
       id,
       nombre,
       email,
+      centro,
+      localidad,
       telefono_contacto,
+      responsable_legal,
+      cargo_puesto,
+      tipo_documento,
+      documento_identificacion,
       activo,
       fecha_alta
     FROM usuarios
@@ -66,20 +112,43 @@ export async function listarAdministradores(env) {
     id: Number(row.id || 0),
     nombre: row.nombre || "",
     email: row.email || "",
+    centro: row.centro || "",
+    localidad: row.localidad || "",
     telefono_contacto: row.telefono_contacto || "",
+    responsable_legal: row.responsable_legal || "",
+    cargo_puesto: row.cargo_puesto || "",
+    tipo_documento: row.tipo_documento || "",
+    documento_identificacion: row.documento_identificacion || "",
     activo: Number(row.activo || 0) === 1 ? 1 : 0,
     fecha_alta: row.fecha_alta || "",
     actividades: actividadesPorAdmin.get(Number(row.id || 0)) || []
   }));
 }
 
-async function obtenerAdministrador(env, adminId) {
-  return await env.DB.prepare(`
-    SELECT id, nombre, email, telefono_contacto, activo, rol
-    FROM usuarios
-    WHERE id = ?
-    LIMIT 1
-  `).bind(adminId).first();
+function construirCorreoBloqueoAdministrador(admin, motivo) {
+  const nombre = limpiarTexto(admin?.nombre || "administrador");
+  const texto = [
+    `Hola ${nombre},`,
+    "",
+    "Tu sesión de administrador ha sido bloqueada temporalmente por el superadministrador.",
+    "",
+    `Observaciones: ${motivo}`,
+    "",
+    "Mientras la cuenta permanezca inactiva no podrás acceder al panel."
+  ].join("\n");
+
+  const html = `
+    <p>Hola ${escapeHtml(nombre)},</p>
+    <p>Tu sesión de administrador ha sido bloqueada temporalmente por el superadministrador.</p>
+    <p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>
+    <p>Mientras la cuenta permanezca inactiva no podrás acceder al panel.</p>
+  `;
+
+  return {
+    asunto: "Bloqueo temporal de sesión de administrador",
+    texto,
+    html
+  };
 }
 
 async function obtenerActividadesAdministrador(env, adminId) {
@@ -131,7 +200,7 @@ async function borrarActividadFisicamente(env, actividadId) {
     // tabla opcional
   }
 
-  return await env.DB.prepare(`
+  await env.DB.prepare(`
     DELETE FROM actividades
     WHERE id = ?
   `).bind(actividadId).run();
@@ -258,6 +327,7 @@ function actividadEsReactivable(actividad) {
 }
 
 export async function actualizarEstadoAdministrador(env, adminId, activo, actor = {}) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
   const admin = await obtenerAdministrador(env, adminId);
   if (!admin || String(admin.rol || "").toUpperCase() !== "ADMIN") {
     throw new Error("Administrador no encontrado.");
@@ -266,6 +336,11 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
   const db = dbPrimaria(env);
   const actividades = await obtenerActividadesAdministrador(env, adminId);
   const activar = Number(activo) === 1;
+  const motivo = limpiarTexto(actor?.motivo || "");
+
+  if (!activar && !motivo) {
+    throw new Error("Debes indicar observaciones para bloquear temporalmente la sesión.");
+  }
 
   await db.prepare(`
     UPDATE usuarios
@@ -285,6 +360,17 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
   };
 
   if (!activar) {
+    const destinatario = limpiarTexto(admin.email);
+    if (destinatario) {
+      const correo = construirCorreoBloqueoAdministrador(admin, motivo);
+      await enviarEmail(env, {
+        to: destinatario,
+        subject: correo.asunto,
+        text: correo.texto,
+        html: correo.html
+      });
+    }
+
     for (const actividad of actividades) {
       if (Number(actividad.activa || 0) !== 1 && Number(actividad.visible_portal || 0) !== 1) {
         continue;

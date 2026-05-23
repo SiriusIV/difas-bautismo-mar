@@ -24,6 +24,7 @@ export async function onRequestPost(context) {
     const body = await request.json().catch(() => ({}));
     const adminId = Number(body.usuario_id || 0);
     const activo = body.activo === true || body.activo === 1 || body.activo === "1" ? 1 : 0;
+    const motivo = String(body.motivo || "").trim();
 
     if (!(adminId > 0)) {
       return json({ ok: false, error: "Administrador no válido." }, 400);
@@ -32,7 +33,8 @@ export async function onRequestPost(context) {
     const resumen = await actualizarEstadoAdministrador(env, adminId, activo, {
       actorUsuarioId: session.usuario_id,
       actorRol: session.rol,
-      actorNombre: session.username
+      actorNombre: session.username,
+      motivo
     });
 
     return json({

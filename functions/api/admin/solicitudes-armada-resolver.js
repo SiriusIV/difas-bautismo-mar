@@ -1,15 +1,28 @@
 import { getAdminSession } from "./_auth.js";
 import { enviarEmail } from "../_email.js";
-import {
-  asegurarColumnaForzarCambioPassword,
-  hashPassword
-} from "../usuario/_password.js";
+import { asegurarColumnaForzarCambioPassword, hashPassword } from "../usuario/_password.js";
 import {
   asegurarTablaSolicitudesArmada,
   generarPasswordTemporal,
   limpiarTexto,
   normalizarCentro
 } from "./_solicitudes_armada.js";
+
+async function asegurarColumnaUsuarioCargoPuesto(db) {
+  try {
+    await db.prepare("ALTER TABLE usuarios ADD COLUMN cargo_puesto TEXT").run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("duplicate") ||
+      detalle.includes("already exists")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -101,7 +114,7 @@ async function enviarCorreoAprobacion(env, request, solicitud, passwordTemporal)
   const email = limpiarTexto(solicitud.email).toLowerCase();
   const baseUrl = new URL(request.url).origin;
 
-  return enviarEmail(env, {
+  return await enviarEmail(env, {
     to: email,
     subject: "Aprobación de cuenta Usuario Armada",
     text: construirCorreoAltaArmadaTexto({
@@ -123,7 +136,7 @@ async function enviarCorreoAprobacion(env, request, solicitud, passwordTemporal)
 
 async function enviarCorreoRechazo(env, solicitud, motivo) {
   const email = limpiarTexto(solicitud.email).toLowerCase();
-  return enviarEmail(env, {
+  return await enviarEmail(env, {
     to: email,
     subject: "Rechazo de solicitud Usuario Armada",
     text: construirCorreoRechazoTexto({
@@ -162,8 +175,9 @@ export async function onRequestPost(context) {
 
     await asegurarTablaSolicitudesArmada(env.DB);
     await asegurarColumnaForzarCambioPassword(env.DB);
+    await asegurarColumnaUsuarioCargoPuesto(env.DB);
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const solicitudId = Number(body.solicitud_id || 0);
     const accion = limpiarTexto(body.accion).toUpperCase();
     const motivo = limpiarTexto(body.motivo);
@@ -252,13 +266,14 @@ export async function onRequestPost(context) {
         rol,
         telefono_contacto,
         responsable_legal,
+        cargo_puesto,
         tipo_documento,
         documento_identificacion,
         forzar_cambio_password,
         activo,
         fecha_alta
       )
-      VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, 1, 1, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, ?, 1, 1, datetime('now'))
     `).bind(
       limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
       limpiarTexto(solicitud.centro),
@@ -267,6 +282,7 @@ export async function onRequestPost(context) {
       passwordHash,
       limpiarTexto(solicitud.telefono_contacto),
       limpiarTexto(solicitud.responsable_legal),
+      limpiarTexto(solicitud.cargo_puesto),
       limpiarTexto(solicitud.tipo_documento).toUpperCase(),
       limpiarTexto(solicitud.documento_identificacion).toUpperCase()
     ).run();
