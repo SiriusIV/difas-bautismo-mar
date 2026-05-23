@@ -1226,6 +1226,7 @@
   <div id="modalPasswordActual" class="modal-fondo" aria-hidden="true">
       <div class="modal">
         <h3>Validar contraseña actual</h3>
+        <div id="mensajePasswordActual" class="mensaje"></div>
         <div class="campo-linea">
           <label for="modal_password_actual">Contraseña actual</label>
           <div class="input-password-wrap">
@@ -1242,6 +1243,7 @@
   <div id="modalPasswordNueva" class="modal-fondo" aria-hidden="true">
       <div class="modal">
         <h3>Cambiar contraseña</h3>
+        <div id="mensajePasswordNueva" class="mensaje"></div>
         <div class="campo-linea">
           <label for="modal_password_nueva">Nueva contraseña</label>
           <div class="input-password-wrap">
@@ -1496,17 +1498,30 @@
       box.innerHTML = "";
     }
 
+    function obtenerContenedorMensajePassword() {
+      const modalNueva = document.getElementById("modalPasswordNueva");
+      const modalActual = document.getElementById("modalPasswordActual");
+      if (modalNueva?.classList.contains("activo")) return "mensajePasswordNueva";
+      if (modalActual?.classList.contains("activo")) return "mensajePasswordActual";
+      return "mensajePassword";
+    }
+
     function mostrarMensajePasswordTemporal(tipo, texto, duracionMs = 4000) {
       if (temporizadorMensajePassword) {
         clearTimeout(temporizadorMensajePassword);
         temporizadorMensajePassword = null;
       }
 
-      jsonMessage("mensajePassword", tipo, texto);
+      limpiarMensaje("mensajePassword");
+      limpiarMensaje("mensajePasswordActual");
+      limpiarMensaje("mensajePasswordNueva");
+
+      const destino = obtenerContenedorMensajePassword();
+      jsonMessage(destino, tipo, texto);
 
       if (String(tipo || "").toLowerCase() !== "error") {
         temporizadorMensajePassword = setTimeout(() => {
-          limpiarMensaje("mensajePassword");
+          limpiarMensaje(destino);
           temporizadorMensajePassword = null;
         }, duracionMs);
       }
@@ -3262,9 +3277,13 @@
       if (btnGuardar) btnGuardar.disabled = forzarCambioPasswordObligatorio;
 
       if (forzarCambioPasswordObligatorio) {
-        mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
+        limpiarMensaje("mensajePassword");
+        limpiarMensaje("mensajePasswordActual");
+        limpiarMensaje("mensajePasswordNueva");
       } else {
         limpiarMensaje("mensajePassword");
+        limpiarMensaje("mensajePasswordActual");
+        limpiarMensaje("mensajePasswordNueva");
       }
     }
 
@@ -3748,6 +3767,7 @@
       document.getElementById("modalPasswordNueva").classList.add("activo");
       setTimeout(() => {
         document.getElementById("modal_password_nueva").focus();
+        mostrarMensajePasswordTemporal("error", "Debes definir una contraseña definitiva antes de continuar.");
       }, 0);
     }
 

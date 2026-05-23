@@ -117,6 +117,18 @@ export async function listarAdministradores(env) {
     ORDER BY id ASC
   `).all();
 
+  const solicitudesActividad = await env.DB.prepare(`
+    SELECT actividad_id, COUNT(*) AS total
+    FROM reservas
+    WHERE actividad_id IS NOT NULL
+    GROUP BY actividad_id
+  `).all();
+
+  const solicitudesPorActividad = new Map();
+  for (const fila of (solicitudesActividad.results || [])) {
+    solicitudesPorActividad.set(Number(fila.actividad_id || 0), Number(fila.total || 0));
+  }
+
   const actividadesPorAdmin = new Map();
   for (const actividad of (actividades.results || [])) {
     const adminId = Number(actividad.admin_id || 0);
@@ -150,8 +162,20 @@ export async function listarAdministradores(env) {
       requisitos_particulares: normalizarListaTexto(actividad.requisitos_particulares),
       activa: Number(actividad.activa || 0) === 1 ? 1 : 0,
       visible_portal: Number(actividad.visible_portal || 0) === 1 ? 1 : 0,
-      publicada_vigente: actividadPublicadaYVigente(actividad) ? 1 : 0
+      publicada_vigente: actividadPublicadaYVigente(actividad) ? 1 : 0,
+      solicitudes_total: solicitudesPorActividad.get(Number(actividad.id || 0)) || 0
     });
+  }
+
+  for (const [adminId, lista] of actividadesPorAdmin.entries()) {
+    actividadesPorAdmin.set(
+      adminId,
+      [...lista].sort((a, b) => {
+        const porSolicitudes = Number(b.solicitudes_total || 0) - Number(a.solicitudes_total || 0);
+        if (porSolicitudes !== 0) return porSolicitudes;
+        return String(a.actividad_nombre || "").localeCompare(String(b.actividad_nombre || ""), "es", { sensitivity: "base" });
+      })
+    );
   }
 
   const rows = await env.DB.prepare(`

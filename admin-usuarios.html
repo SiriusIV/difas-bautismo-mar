@@ -347,6 +347,27 @@
       color: #146c2e;
     }
 
+    .actividad-fila-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: 10px;
+    }
+
+    .actividad-solicitudes-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: #eef4ff;
+      color: #123a63;
+    }
+
     .actividad-ofertadas-btn {
       display: inline-flex;
       align-items: center;
@@ -907,8 +928,13 @@
               <a class="lista-actividades-enlace ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}" onclick="abrirVistaActividad(${index}); return false;">
                 <span>${escapeHtml(item.actividad_nombre || "Actividad")}</span>
               </a>
-              <span class="actividad-etiqueta ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}">
-                ${Number(item.publicada_vigente || 0) === 1 ? "Publicada" : "No publicada"}
+              <span class="actividad-fila-meta">
+                <span class="actividad-etiqueta ${Number(item.publicada_vigente || 0) === 1 ? "publicada" : ""}">
+                  ${Number(item.publicada_vigente || 0) === 1 ? "Publicada" : "No publicada"}
+                </span>
+                <span class="actividad-solicitudes-badge">
+                  ${Number(item.solicitudes_total || 0)} solicitudes
+                </span>
               </span>
             </li>
           `).join("")}</ul>`

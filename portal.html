@@ -1672,7 +1672,7 @@
         </div>
         <div id="barraSuperadmin" class="barra-superadmin franja-sesion-nav">
           <button class="nav-btn activo" onclick="gestionAdmins()">Administradores</button>
-          <button class="nav-btn" onclick="irSolicitudesArmada()">Solicitudes Armada</button>
+          <button class="nav-btn" id="btnSolicitudesArmadaNav" onclick="irSolicitudesArmada()">Solicitudes Armada</button>
           <button class="nav-btn" onclick="irUsuariosPublicosSuperadmin()">Usuarios públicos</button>
         </div>
         <button
@@ -2957,6 +2957,7 @@ function actualizarBotonSolicitarSegunFranja() {
       if (!res.ok) {
         usuarioAutenticado = null;
         actualizarModoAcceso();
+        await actualizarContadorSolicitudesSuperadmin();
         await cargarNotificacionesPortal();
         return;
       }
@@ -2968,10 +2969,31 @@ function actualizarBotonSolicitarSegunFranja() {
         return;
       }
       actualizarModoAcceso();
+      await actualizarContadorSolicitudesSuperadmin();
       await cargarNotificacionesPortal();
       if (usuarioAutenticado) {
         intentarRedireccionPendientePortal();
       }
+    }
+
+    async function actualizarContadorSolicitudesSuperadmin() {
+      const btn = document.getElementById("btnSolicitudesArmadaNav");
+      if (!btn) return;
+
+      btn.textContent = "Solicitudes Armada";
+
+      if (!esSuperAdmin()) return;
+
+      try {
+        const res = await fetch("/api/admin/solicitudes-armada-lista", {
+          credentials: "include"
+        });
+        const data = await res.json().catch(() => null);
+        const pendientes = Array.isArray(data?.solicitudes) ? data.solicitudes.length : 0;
+        if (pendientes > 0) {
+          btn.textContent = `Solicitudes Armada (${pendientes})`;
+        }
+      } catch (_) {}
     }
 
     function actualizarModoAcceso() {
