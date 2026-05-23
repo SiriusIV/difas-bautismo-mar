@@ -45,7 +45,7 @@ export async function onRequestPost(context) {
     }
 
     const { results } = await env.DB.prepare(`
-      SELECT id, rol, email, nombre, centro, logo_url, web_externa_url, telefono_contacto, forzar_cambio_password
+      SELECT id, rol, email, nombre, nombre_publico, centro, logo_url, web_externa_url, telefono_contacto, forzar_cambio_password
       FROM usuarios
       WHERE email = ?
         AND activo = 1
@@ -72,6 +72,7 @@ export async function onRequestPost(context) {
 
     const cookie = await createSessionCookie(env, username, usuario_id, rol, {
       nombre: usuario.nombre || "",
+      nombre_publico: usuario.nombre_publico || "",
       centro: usuario.centro || "",
       logo_url: usuario.logo_url || "",
       web_externa_url: usuario.web_externa_url || "",

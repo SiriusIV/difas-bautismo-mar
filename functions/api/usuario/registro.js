@@ -91,6 +91,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
 
     const tipo_cuenta = limpiarTexto(body.tipo_cuenta).toUpperCase() === "ARMADA" ? "ARMADA" : "PUBLICO";
+    const nombre_interno = limpiarTextoSolicitud(body.nombre_interno);
     const centro = limpiarTexto(body.centro);
     const localidad = limpiarTexto(body.localidad);
     const responsable_legal = limpiarTexto(body.responsable_legal);
@@ -104,6 +105,10 @@ export async function onRequestPost(context) {
 
     if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || (tipo_cuenta === "PUBLICO" && !password)) {
       return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
+    }
+
+    if (tipo_cuenta === "ARMADA" && !nombre_interno) {
+      return json({ ok: false, error: "Debe indicar el nombre interno de la cuenta." }, 400);
     }
 
     if (tipo_cuenta === "ARMADA" && !cargo_puesto) {
@@ -175,6 +180,7 @@ export async function onRequestPost(context) {
 
       await db.prepare(`
         INSERT INTO solicitudes_registro_armada (
+          nombre_interno,
           centro,
           localidad,
           responsable_legal,
@@ -186,8 +192,9 @@ export async function onRequestPost(context) {
           estado,
           fecha_solicitud
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
       `).bind(
+        nombre_interno,
         centro,
         localidad,
         responsable_legal,

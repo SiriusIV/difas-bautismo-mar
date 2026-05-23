@@ -541,13 +541,22 @@
               </select>
             </div>
 
+            <div class="campo-completo" id="campoNombreInterno" style="display:none;">
+              <label for="nombre_interno" id="labelNombreInterno">Nombre interno<span class="campo-obligatorio">*</span></label>
+              <div class="input-con-ayuda">
+                <input type="text" id="nombre_interno" name="nombre_interno" autocomplete="organization-title">
+                <button type="button" class="btn-ayuda-campo" id="btnAyudaNombreInterno" aria-label="Información sobre nombre interno" title="Información">i</button>
+              </div>
+              <div class="nota" id="notaNombreInterno">Este nombre identifica internamente la cuenta administrativa.</div>
+            </div>
+
             <div class="campo-completo">
               <label for="centro" id="labelCentro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
                 <input type="text" id="centro" name="centro" autocomplete="organization" required>
                 <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
               </div>
-              <div class="nota">Este dato identifica la cuenta y no podrá cambiarse después.</div>
+              <div class="nota" id="notaCentro">Este dato identifica la cuenta y no podrá cambiarse después.</div>
             </div>
 
             <div class="campo-completo">
@@ -831,19 +840,26 @@
       const bloquePasswordConfirmacion = document.getElementById("bloquePasswordConfirmacion");
       const bloqueNotaPassword = document.getElementById("bloqueNotaPassword");
       const avisoCuentaArmada = document.getElementById("avisoCuentaArmada");
+      const campoNombreInterno = document.getElementById("campoNombreInterno");
       const inputPassword = document.getElementById("password");
       const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
       const bloqueCargoPuesto = document.getElementById("bloqueCargoPuesto");
       const inputCargoPuesto = document.getElementById("cargo_puesto");
+      const inputNombreInterno = document.getElementById("nombre_interno");
+      const labelNombreInterno = document.getElementById("labelNombreInterno");
       const labelCentro = document.getElementById("labelCentro");
       const labelResponsable = document.getElementById("labelResponsable");
-      const notaCentro = document.querySelector(".nota");
+      const notaCentro = document.getElementById("notaCentro");
       const labelEmail = document.querySelector('label[for="email"]');
       const labelTelefono = document.querySelector('label[for="telefono_contacto"]');
       const asideTitulo = document.querySelector(".registro-aside-cuerpo h1");
       const asideDescripcion = document.querySelector(".registro-aside-cuerpo p");
       const btnAccion = document.getElementById("btnEnviarRegistro");
       const iconoAccion = document.getElementById("iconoRegistroAccion");
+
+      if (labelNombreInterno) {
+        labelNombreInterno.innerHTML = 'Nombre interno<span class="campo-obligatorio">*</span>';
+      }
 
       if (labelCentro) {
         labelCentro.innerHTML = armada
@@ -902,11 +918,17 @@
       if (bloquePasswordConfirmacion) bloquePasswordConfirmacion.style.display = armada ? "none" : "";
       if (bloqueNotaPassword) bloqueNotaPassword.style.display = armada ? "none" : "";
       if (bloqueCargoPuesto) bloqueCargoPuesto.style.display = armada ? "" : "none";
+      if (campoNombreInterno) campoNombreInterno.style.display = armada ? "" : "none";
       if (avisoCuentaArmada) avisoCuentaArmada.style.display = armada ? "block" : "none";
 
       inputPassword.required = !armada;
       inputPasswordConfirmacion.required = !armada;
       inputCargoPuesto.required = armada;
+      inputNombreInterno.required = armada;
+
+      if (!armada) {
+        inputNombreInterno.value = "";
+      }
 
       if (armada) {
         inputPassword.value = "";
@@ -922,6 +944,7 @@
 
       const tipo_cuenta = document.getElementById("tipo_cuenta").value.trim().toUpperCase();
       const armada = tipo_cuenta === "ARMADA";
+      const nombre_interno = document.getElementById("nombre_interno").value.trim();
       const centro = document.getElementById("centro").value.trim();
       const responsable_legal = document.getElementById("responsable_legal").value.trim();
       const cargo_puesto = document.getElementById("cargo_puesto").value.trim();
@@ -937,6 +960,11 @@
 
       if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
+        return;
+      }
+
+      if (armada && !nombre_interno) {
+        mostrarMensaje("error", "Debe indicar el nombre interno de la cuenta.");
         return;
       }
 
@@ -987,6 +1015,7 @@
           credentials: "include",
           body: JSON.stringify({
             tipo_cuenta,
+            nombre_interno,
             centro,
             responsable_legal,
             cargo_puesto,
@@ -1047,6 +1076,12 @@
       mostrarAyudaCampo(
         "Nombre del centro / entidad",
         "Indique el nombre oficial del centro o institución titular de la cuenta. En el caso de centros educativos, debe consignarse el nombre del centro al que corresponde esta cuenta."
+      );
+    });
+    document.getElementById("btnAyudaNombreInterno").addEventListener("click", function () {
+      mostrarAyudaCampo(
+        "Nombre interno",
+        "Indique el nombre interno con el que se identificará esta cuenta administrativa dentro del sistema."
       );
     });
     document.getElementById("btnAyudaResponsable").addEventListener("click", function () {

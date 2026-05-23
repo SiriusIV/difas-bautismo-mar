@@ -24,6 +24,22 @@ async function asegurarColumnaUsuarioCargoPuesto(db) {
   }
 }
 
+async function asegurarColumnaUsuarioNombrePublico(db) {
+  try {
+    await db.prepare("ALTER TABLE usuarios ADD COLUMN nombre_publico TEXT").run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("duplicate") ||
+      detalle.includes("already exists")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -176,6 +192,7 @@ export async function onRequestPost(context) {
     await asegurarTablaSolicitudesArmada(env.DB);
     await asegurarColumnaForzarCambioPassword(env.DB);
     await asegurarColumnaUsuarioCargoPuesto(env.DB);
+    await asegurarColumnaUsuarioNombrePublico(env.DB);
 
     const body = await request.json().catch(() => ({}));
     const solicitudId = Number(body.solicitud_id || 0);
@@ -259,6 +276,7 @@ export async function onRequestPost(context) {
     const creado = await env.DB.prepare(`
       INSERT INTO usuarios (
         nombre,
+        nombre_publico,
         centro,
         localidad,
         email,
@@ -273,9 +291,10 @@ export async function onRequestPost(context) {
         activo,
         fecha_alta
       )
-      VALUES (?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, ?, 1, 1, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, ?, 1, 1, datetime('now'))
     `).bind(
-      limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
+      limpiarTexto(solicitud.nombre_interno) || limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
+      limpiarTexto(solicitud.centro),
       limpiarTexto(solicitud.centro),
       limpiarTexto(solicitud.localidad),
       email,

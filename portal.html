@@ -2493,11 +2493,12 @@ function actualizarBotonSolicitarSegunFranja() {
       const rol = String(usuarioAutenticado.rol || "").toUpperCase();
       const centro = String(usuarioAutenticado.centro || "").trim();
       const nombre = String(usuarioAutenticado.nombre || "").trim();
+      const nombrePublico = String(usuarioAutenticado.nombre_publico || "").trim();
 
       if (rol === "SOLICITANTE") {
         texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
       } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
-        texto.textContent = `Administrador: ${(nombre || centro || "").toUpperCase()}`;
+        texto.textContent = `Administrador: ${(nombrePublico || centro || nombre || "").toUpperCase()}`;
       } else if (rol === "SECRETARIA") {
         texto.textContent = `Secretaría: ${(nombre || centro || "").toUpperCase()}`;
       } else {

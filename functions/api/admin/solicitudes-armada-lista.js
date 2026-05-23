@@ -26,6 +26,7 @@ export async function onRequestGet(context) {
     const rows = await env.DB.prepare(`
       SELECT
         id,
+        nombre_interno,
         centro,
         localidad,
         responsable_legal,

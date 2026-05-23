@@ -339,6 +339,7 @@
 
       document.getElementById("tituloModalSolicitud").textContent = `Solicitud · ${solicitudSeleccionada.centro || "Usuario Armada"}`;
       document.getElementById("detalleSolicitud").innerHTML = `
+        <dt>Nombre interno</dt><dd>${escapeHtml(solicitudSeleccionada.nombre_interno || "-")}</dd>
         <dt>Unidad / dependencia</dt><dd>${escapeHtml(solicitudSeleccionada.centro || "")}</dd>
         <dt>Contacto</dt><dd>${escapeHtml(solicitudSeleccionada.responsable_legal || "")}</dd>
         <dt>Cargo / puesto</dt><dd>${escapeHtml(solicitudSeleccionada.cargo_puesto || "-")}</dd>
