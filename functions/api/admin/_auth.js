@@ -28,10 +28,21 @@ export async function getAdminSession(request, env) {
     return null;
   }
 
+  const usuario = await env.DB.prepare(`
+    SELECT id, rol, activo
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(Number(session.id || 0)).first();
+
+  if (!usuario) return null;
+  if (Number(usuario.activo || 0) !== 1) return null;
+  if (usuario.rol !== "ADMIN" && usuario.rol !== "SUPERADMIN") return null;
+
   return {
     username: session.email,
-    usuario_id: session.id,
-    rol: session.rol
+    usuario_id: Number(usuario.id || 0),
+    rol: usuario.rol
   };
 }
 

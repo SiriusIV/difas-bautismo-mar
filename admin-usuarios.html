@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -48,6 +48,16 @@
       border-radius: 6px;
       border: 1px solid #ccc;
       box-sizing: border-box;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .campo-completo {
+      grid-column: 1 / -1;
     }
 
     .btn {
@@ -118,13 +128,17 @@
       vertical-align: middle;
     }
 
-    th.sel-col, td.sel-col {
-      width: 36px;
+    th.toggle-col, td.toggle-col {
+      width: 74px;
       text-align: center;
     }
 
     .fila-seleccionada {
       background: #f2f7ff;
+    }
+
+    .fila-admin {
+      cursor: pointer;
     }
 
     .mensaje {
@@ -144,6 +158,58 @@
       background: #fdeaea;
       color: #9b1c1c;
       display: block;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #c7d0da;
+      transition: .2s;
+      border-radius: 999px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      top: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    .switch input:checked + .slider {
+      background-color: #2db95b;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    .switch input:disabled + .slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .tabla-wrap {
+      overflow-x: auto;
     }
 
     .modal-fondo {
@@ -207,15 +273,15 @@
       }
 
       .barra-acciones {
-        justify-content: flex-start;
+        justify-content: center;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
       }
 
       table {
-        min-width: 520px;
-      }
-
-      .contenedor {
-        overflow-x: auto;
+        min-width: 580px;
       }
 
       .modal-fondo {
@@ -241,33 +307,6 @@
         width: 100%;
       }
     }
-    @media (max-width: 560px) {
-      body {
-        padding: 8px;
-      }
-
-      .bloque {
-        padding: 10px;
-        margin-bottom: 12px;
-      }
-
-      .barra-acciones {
-        justify-content: center;
-      }
-
-      table {
-        min-width: 480px;
-      }
-
-      .modal h3 {
-        font-size: 18px;
-      }
-
-      .modal-contenido {
-        padding: 10px;
-        font-size: 13px;
-      }
-    }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
@@ -280,23 +319,30 @@
   <div class="bloque">
     <h3>Crear nuevo administrador</h3>
 
-    <div class="campo">
-      <label for="nombre">Nombre</label>
-      <input id="nombre">
-    </div>
+    <div class="form-grid">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input id="nombre">
+      </div>
 
-    <div class="campo">
-      <label for="email">Email</label>
-      <input id="email" type="email">
-    </div>
+      <div class="campo">
+        <label for="email">Email</label>
+        <input id="email" type="email">
+      </div>
 
-    <div class="campo">
-      <label for="password">Contraseña</label>
-      <input type="password" id="password">
-    </div>
+      <div class="campo">
+        <label for="telefono_contacto">Teléfono de contacto</label>
+        <input id="telefono_contacto" type="tel">
+      </div>
 
-    <div class="campo">
-      <div style="font-size:12px;color:#5f6d7a;line-height:1.45;">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
+      <div class="campo">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password">
+      </div>
+
+      <div class="campo campo-completo">
+        <div style="font-size:12px;color:#5f6d7a;line-height:1.45;">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
+      </div>
     </div>
 
     <button class="btn" onclick="crearUsuario()">Crear ADMIN</button>
@@ -305,7 +351,8 @@
   </div>
 
   <div class="bloque">
-    <h3>Administradores y superadministrador</h3>
+    <h3>Administradores</h3>
+    <p style="margin:0 0 10px;color:#5f6d7a;font-size:13px;line-height:1.5;">Aquí solo se muestran cuentas de administrador. El superadministrador no aparece en esta tabla.</p>
 
     <div class="barra-acciones">
       <button type="button" class="btn-icono" id="btnConsultarActividades" title="Consultar actividades asociadas" disabled>
@@ -314,13 +361,6 @@
           <path d="M9 9l12-2"></path>
           <circle cx="6" cy="18" r="3"></circle>
           <circle cx="18" cy="16" r="3"></circle>
-        </svg>
-      </button>
-
-      <button type="button" class="btn-icono" id="btnEditarAdmin" title="Editar administrador" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"></path>
-          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
         </svg>
       </button>
 
@@ -335,17 +375,19 @@
       </button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th class="sel-col"></th>
-          <th>Nombre</th>
-          <th>Email</th>
-          <th>Rol</th>
-        </tr>
-      </thead>
-      <tbody id="tablaUsuarios"></tbody>
-    </table>
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="toggle-col">Activo</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody id="tablaUsuarios"></tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -364,6 +406,7 @@
 <script>
 let usuariosCache = [];
 let usuarioSeleccionado = null;
+let actualizandoEstado = false;
 
 function validarPoliticaPassword(password) {
   const valor = String(password || "");
@@ -392,12 +435,7 @@ function limpiarMensajeCrear() {
 function actualizarBotonesAccion() {
   const hay = !!usuarioSeleccionado;
   document.getElementById("btnConsultarActividades").disabled = !hay;
-  document.getElementById("btnEditarAdmin").disabled = !hay;
   document.getElementById("btnEliminarAdmin").disabled = !hay;
-
-  if (usuarioSeleccionado && usuarioSeleccionado.rol === "SUPERADMIN") {
-    document.getElementById("btnEliminarAdmin").disabled = true;
-  }
 }
 
 function seleccionarUsuario(id) {
@@ -406,19 +444,29 @@ function seleccionarUsuario(id) {
   actualizarBotonesAccion();
 }
 
+function escapeHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderizarTabla() {
   const tbody = document.getElementById("tablaUsuarios");
 
   tbody.innerHTML = (usuariosCache || []).map(u => `
-    <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(u.id) ? 'fila-seleccionada' : ''}">
-      <td class="sel-col">
-        <input type="radio" name="seleccionUsuario"
-          ${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(u.id) ? 'checked' : ''}
-          onchange="seleccionarUsuario(${u.id})">
+    <tr class="fila-admin ${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(u.id) ? 'fila-seleccionada' : ''}" onclick="seleccionarUsuario(${u.id})">
+      <td class="toggle-col" onclick="event.stopPropagation()">
+        <label class="switch">
+          <input type="checkbox" ${Number(u.activo || 0) === 1 ? 'checked' : ''} onchange="cambiarEstadoAdmin(${u.id}, this.checked)">
+          <span class="slider"></span>
+        </label>
       </td>
-      <td>${u.nombre || ""}</td>
-      <td>${u.email || ""}</td>
-      <td>${u.rol || ""}</td>
+      <td>${escapeHtml(u.nombre || "")}</td>
+      <td>${escapeHtml(u.email || "")}</td>
+      <td>${escapeHtml(u.telefono_contacto || "-")}</td>
     </tr>
   `).join("");
 
@@ -450,6 +498,7 @@ async function crearUsuario() {
 
   const nombre = document.getElementById("nombre").value.trim();
   const email = document.getElementById("email").value.trim();
+  const telefono_contacto = document.getElementById("telefono_contacto").value.trim();
   const password = document.getElementById("password").value;
 
   if (!nombre || !email || !password) {
@@ -469,6 +518,7 @@ async function crearUsuario() {
     body: JSON.stringify({
       nombre,
       email,
+      telefono_contacto,
       password,
       rol: "ADMIN"
     })
@@ -480,10 +530,40 @@ async function crearUsuario() {
     mostrarMensajeCrear("ok", "Administrador creado");
     document.getElementById("nombre").value = "";
     document.getElementById("email").value = "";
+    document.getElementById("telefono_contacto").value = "";
     document.getElementById("password").value = "";
     await cargarUsuarios();
   } else {
     mostrarMensajeCrear("error", data.error || "Error al crear el administrador");
+  }
+}
+
+async function cambiarEstadoAdmin(id, checked) {
+  if (actualizandoEstado) return;
+  actualizandoEstado = true;
+  try {
+    const res = await fetch("/api/admin/usuarios-estado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        usuario_id: id,
+        activo: checked ? 1 : 0
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "No se pudo actualizar el administrador.");
+    }
+
+    mostrarMensajeCrear("ok", data.mensaje || "Estado del administrador actualizado.");
+    await cargarUsuarios();
+  } catch (error) {
+    mostrarMensajeCrear("error", error.message || "No se pudo actualizar el administrador.");
+    await cargarUsuarios();
+  } finally {
+    actualizandoEstado = false;
   }
 }
 
@@ -498,13 +578,9 @@ function abrirModalActividades() {
     : [];
 
   document.getElementById("modalActividadesContenido").innerHTML =
-    usuarioSeleccionado.rol === "SUPERADMIN"
-      ? "El superadministrador tiene visibilidad global sobre todos los eventos."
-      : (
-          actividades.length
-            ? actividades.map(a => `• ${a.actividad_nombre}`).join("<br>")
-            : "Este administrador no tiene actividades asociadas actualmente."
-        );
+    actividades.length
+      ? actividades.map(a => `• ${escapeHtml(a.actividad_nombre)}`).join("<br>")
+      : "Este administrador no tiene actividades asociadas actualmente.";
 
   document.getElementById("modalActividades").classList.add("activo");
   document.getElementById("modalActividades").setAttribute("aria-hidden", "false");
@@ -515,18 +591,33 @@ function cerrarModalActividades() {
   document.getElementById("modalActividades").setAttribute("aria-hidden", "true");
 }
 
-function editarAdminSeleccionado() {
+async function eliminarAdminSeleccionado() {
   if (!usuarioSeleccionado) return;
-  alert("Edición de administrador pendiente de implementar.");
-}
+  const ok = window.confirm(`Se eliminará el administrador ${usuarioSeleccionado.nombre} y también todas sus actividades. ¿Deseas continuar?`);
+  if (!ok) return;
 
-function eliminarAdminSeleccionado() {
-  if (!usuarioSeleccionado) return;
-  alert("Eliminación de administrador pendiente de implementar.");
+  try {
+    const res = await fetch("/api/admin/usuarios-eliminar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ usuario_id: usuarioSeleccionado.id })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "No se pudo eliminar el administrador.");
+    }
+
+    usuarioSeleccionado = null;
+    mostrarMensajeCrear("ok", data.mensaje || "Administrador eliminado correctamente.");
+    await cargarUsuarios();
+  } catch (error) {
+    mostrarMensajeCrear("error", error.message || "No se pudo eliminar el administrador.");
+  }
 }
 
 document.getElementById("btnConsultarActividades").addEventListener("click", abrirModalActividades);
-document.getElementById("btnEditarAdmin").addEventListener("click", editarAdminSeleccionado);
 document.getElementById("btnEliminarAdmin").addEventListener("click", eliminarAdminSeleccionado);
 document.getElementById("btnCerrarModalActividades").addEventListener("click", cerrarModalActividades);
 
@@ -543,8 +634,9 @@ document.getElementById("modalActividades").addEventListener("click", function (
 })();
 
 window.seleccionarUsuario = seleccionarUsuario;
+window.cambiarEstadoAdmin = cambiarEstadoAdmin;
 </script>
 
-  <script src="assets/mobile-mensaje-flotante.js"></script>
+<script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>

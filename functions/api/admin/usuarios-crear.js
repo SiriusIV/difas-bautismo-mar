@@ -27,6 +27,7 @@ export async function onRequestPost(context) {
     const nombre = String(body.nombre || "").trim();
     const email = String(body.email || "").trim();
     const password = String(body.password || "").trim();
+    const telefono_contacto = String(body.telefono_contacto || "").trim();
     const rol = "ADMIN";
 
     // ❌ ELIMINADO: actividad_id obligatorio
@@ -57,9 +58,9 @@ export async function onRequestPost(context) {
 
     // 1. Crear usuario (SIN actividad)
     const result = await db.prepare(`
-      INSERT INTO usuarios (nombre, email, password_hash, rol, activo, fecha_alta)
-      VALUES (?, ?, ?, ?, 1, datetime('now'))
-    `).bind(nombre, email, password_hash, rol).run();
+      INSERT INTO usuarios (nombre, email, telefono_contacto, password_hash, rol, activo, fecha_alta)
+      VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+    `).bind(nombre, email, telefono_contacto, password_hash, rol).run();
 
     const usuario_id = result.meta.last_row_id;
 
