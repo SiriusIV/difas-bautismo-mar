@@ -47,6 +47,7 @@ async function obtenerAdministrador(env, adminId) {
     SELECT
       id,
       nombre,
+      nombre_publico,
       email,
       centro,
       localidad,
@@ -111,6 +112,7 @@ export async function listarAdministradores(env) {
   return (rows.results || []).map((row) => ({
     id: Number(row.id || 0),
     nombre: row.nombre || "",
+    nombre_publico: row.nombre_publico || "",
     email: row.email || "",
     centro: row.centro || "",
     localidad: row.localidad || "",

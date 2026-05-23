@@ -37,11 +37,13 @@
     }
 
     .mensaje {
+      position: relative;
       margin-bottom: 12px;
-      padding: 10px 12px;
+      padding: 11px 44px 11px 13px;
       border-radius: 10px;
       display: none;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .mensaje.ok {
@@ -56,6 +58,25 @@
       display: block;
     }
 
+    .mensaje-cerrar {
+      position: absolute;
+      right: 10px;
+      top: 9px;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.8);
+      color: inherit;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
     .tabla-wrap {
       overflow-x: auto;
       border-radius: 14px;
@@ -66,7 +87,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 720px;
+      min-width: 700px;
     }
 
     th,
@@ -88,8 +109,10 @@
 
     th.toggle-col,
     td.toggle-col {
-      width: 78px;
+      width: 52px;
       text-align: center;
+      padding-left: 8px;
+      padding-right: 8px;
     }
 
     .fila-admin {
@@ -108,8 +131,8 @@
     .switch {
       position: relative;
       display: inline-block;
-      width: 48px;
-      height: 26px;
+      width: 38px;
+      height: 22px;
     }
 
     .switch input {
@@ -130,8 +153,8 @@
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 16px;
+      width: 16px;
       left: 3px;
       top: 3px;
       background-color: white;
@@ -145,7 +168,7 @@
     }
 
     .switch input:checked + .slider:before {
-      transform: translateX(22px);
+      transform: translateX(16px);
     }
 
     .switch input:disabled + .slider {
@@ -169,6 +192,7 @@
     }
 
     .modal {
+      position: relative;
       background: #fff;
       width: 100%;
       max-width: 780px;
@@ -178,8 +202,32 @@
     }
 
     .modal h3 {
-      margin: 0 0 14px;
+      margin: 0 34px 14px 0;
       font-size: 24px;
+      color: #123a63;
+    }
+
+    .modal-cerrar-icono {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #d7dee5;
+      background: #fff;
+      color: #5b6b7c;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .modal-cerrar-icono:hover {
+      background: #f7f9fb;
       color: #123a63;
     }
 
@@ -256,6 +304,44 @@
       margin-top: 6px;
     }
 
+    .pill-password {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid #c9dcff;
+      background: #eef4ff;
+      color: #123a63;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .pill-password:hover {
+      background: #e1ecff;
+      border-color: #b8ccf4;
+    }
+
+    .pill-password svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+    }
+
+    .btn-portal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-portal svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+    }
+
     @media (max-width: 760px) {
       .cabecera-seccion {
         justify-content: center;
@@ -287,8 +373,10 @@
         justify-content: stretch;
       }
 
-      .modal-acciones button {
+      .modal-acciones button,
+      .modal-acciones .pill-password {
         width: 100%;
+        justify-content: center;
       }
     }
   </style>
@@ -312,7 +400,14 @@
         <h3>Superadministración</h3>
         <p>Control de sesiones administrativas y supervisión general de la aplicación.</p>
       </div>
-      <button type="button" class="super-btn-secundario" id="btnVolverPortal">Volver al portal</button>
+      <button type="button" class="super-btn-secundario btn-portal" id="btnVolverPortal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10.5 12 3l9 7.5"></path>
+          <path d="M5.5 9.5V21h13V9.5"></path>
+          <path d="M9.5 21v-6h5v6"></path>
+        </svg>
+        <span>Volver al portal</span>
+      </button>
     </section>
 
     <section class="super-card">
@@ -334,7 +429,7 @@
         <table>
           <thead>
             <tr>
-              <th class="toggle-col">Activo</th>
+              <th class="toggle-col"></th>
               <th>Nombre</th>
               <th>Email</th>
               <th>Teléfono</th>
@@ -348,27 +443,33 @@
 
   <div id="modalActividades" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalActividades" aria-label="Cerrar">×</button>
       <h3 id="modalActividadesTitulo">Actividades asociadas</h3>
       <div class="modal-contenido" id="modalActividadesContenido"></div>
-      <div class="modal-acciones">
-        <button type="button" class="super-btn" id="btnCerrarModalActividades">Cerrar</button>
-      </div>
     </div>
   </div>
 
   <div id="modalFichaAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalFichaAdmin" aria-label="Cerrar">×</button>
       <h3 id="modalFichaTitulo">Ficha del administrador</h3>
       <dl class="modal-grid" id="detalleAdministrador"></dl>
       <div class="modal-acciones">
-        <button type="button" class="super-btn-secundario" id="btnCerrarModalFicha">Cerrar</button>
-        <button type="button" class="super-btn" id="btnEnviarPasswordTemporal">Enviar nueva contraseña temporal</button>
+        <button type="button" class="pill-password" id="btnEnviarPasswordTemporal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+            <path d="M7 11V8a5 5 0 0 1 10 0v3"></path>
+            <circle cx="12" cy="16" r="1.2"></circle>
+          </svg>
+          <span>Enviar nueva contraseña temporal</span>
+        </button>
       </div>
     </div>
   </div>
 
   <div id="modalBloqueoAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalBloqueoAdmin" aria-label="Cerrar">×</button>
       <h3 id="modalBloqueoTitulo">Bloquear temporalmente sesión</h3>
       <div class="modal-contenido">
         La cuenta dejará de poder acceder al sistema y sus actividades se desactivarán automáticamente mientras dure el bloqueo.
@@ -379,7 +480,6 @@
         <div class="nota-campo">Estas observaciones se enviarán por correo al administrador afectado.</div>
       </div>
       <div class="modal-acciones">
-        <button type="button" class="super-btn-secundario" id="btnCerrarModalBloqueo">Cancelar</button>
         <button type="button" class="super-btn-peligro" id="btnConfirmarBloqueo">Enviar aviso y bloquear</button>
       </div>
     </div>
@@ -390,6 +490,7 @@
     let usuarioSeleccionado = null;
     let actualizandoEstado = false;
     let adminPendienteBloqueo = null;
+    let mensajeTimer = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -413,18 +514,32 @@
       });
     }
 
-    function mostrarMensaje(tipo, texto) {
-      const box = document.getElementById("mensajePantalla");
-      box.className = "mensaje " + tipo;
-      box.textContent = texto;
-      box.style.display = "block";
-    }
-
     function limpiarMensaje() {
+      if (mensajeTimer) {
+        clearTimeout(mensajeTimer);
+        mensajeTimer = null;
+      }
       const box = document.getElementById("mensajePantalla");
       box.className = "mensaje";
-      box.textContent = "";
+      box.innerHTML = "";
       box.style.display = "none";
+    }
+
+    function cerrarMensaje() {
+      limpiarMensaje();
+    }
+
+    function mostrarMensaje(tipo, texto) {
+      limpiarMensaje();
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje " + tipo;
+      if (tipo === "error") {
+        box.innerHTML = `${escapeHtml(texto)}<button type="button" class="mensaje-cerrar" aria-label="Cerrar" onclick="cerrarMensaje()">×</button>`;
+      } else {
+        box.textContent = texto;
+        mensajeTimer = window.setTimeout(limpiarMensaje, 4000);
+      }
+      box.style.display = "block";
     }
 
     function actualizarBotonesAccion() {
@@ -511,6 +626,7 @@
       document.getElementById("modalFichaTitulo").textContent = `Ficha · ${usuarioSeleccionado.nombre || "Administrador"}`;
       document.getElementById("detalleAdministrador").innerHTML = `
         <dt>Nombre</dt><dd>${escapeHtml(usuarioSeleccionado.nombre || "-")}</dd>
+        <dt>Nombre público</dt><dd>${escapeHtml(usuarioSeleccionado.nombre_publico || "-")}</dd>
         <dt>Email</dt><dd>${escapeHtml(usuarioSeleccionado.email || "-")}</dd>
         <dt>Teléfono</dt><dd>${escapeHtml(usuarioSeleccionado.telefono_contacto || "-")}</dd>
         <dt>Centro / unidad</dt><dd>${escapeHtml(usuarioSeleccionado.centro || "-")}</dd>
@@ -642,19 +758,19 @@
     document.getElementById("btnVerFicha").addEventListener("click", abrirModalFicha);
     document.getElementById("btnConsultarActividades").addEventListener("click", abrirModalActividades);
     document.getElementById("btnEliminarAdmin").addEventListener("click", eliminarAdminSeleccionado);
-    document.getElementById("btnCerrarModalActividades").addEventListener("click", function () {
-      cerrarModal("modalActividades");
-    });
-    document.getElementById("btnCerrarModalFicha").addEventListener("click", function () {
-      cerrarModal("modalFichaAdmin");
-    });
     document.getElementById("btnEnviarPasswordTemporal").addEventListener("click", enviarNuevaPasswordTemporal);
-    document.getElementById("btnCerrarModalBloqueo").addEventListener("click", function () {
-      adminPendienteBloqueo = null;
-      cerrarModal("modalBloqueoAdmin");
-      renderizarTabla();
-    });
     document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueo);
+
+    document.querySelectorAll("[data-modal-close]").forEach(function (boton) {
+      boton.addEventListener("click", function () {
+        const id = boton.getAttribute("data-modal-close");
+        if (id === "modalBloqueoAdmin") {
+          adminPendienteBloqueo = null;
+          renderizarTabla();
+        }
+        cerrarModal(id);
+      });
+    });
 
     ["modalActividades", "modalFichaAdmin", "modalBloqueoAdmin"].forEach(function (id) {
       document.getElementById(id).addEventListener("click", function (event) {
@@ -678,6 +794,7 @@
 
     window.seleccionarUsuario = seleccionarUsuario;
     window.prepararCambioEstado = prepararCambioEstado;
+    window.cerrarMensaje = cerrarMensaje;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
