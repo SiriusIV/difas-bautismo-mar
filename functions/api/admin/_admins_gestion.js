@@ -230,6 +230,32 @@ function construirCorreoBloqueoAdministrador(admin, motivo) {
   };
 }
 
+function construirCorreoEliminacionAdministrador(admin, motivo) {
+  const nombre = limpiarTexto(admin?.nombre_publico || admin?.nombre || "administrador");
+  const texto = [
+    `Hola ${nombre},`,
+    "",
+    "Tu cuenta de administrador ha sido eliminada por el superadministrador.",
+    "",
+    `Observaciones: ${motivo}`,
+    "",
+    "A partir de este momento ya no podrás acceder al sistema con esta cuenta."
+  ].join("\n");
+
+  const html = `
+    <p>Hola ${escapeHtml(nombre)},</p>
+    <p>Tu cuenta de administrador ha sido eliminada por el superadministrador.</p>
+    <p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>
+    <p>A partir de este momento ya no podrás acceder al sistema con esta cuenta.</p>
+  `;
+
+  return {
+    asunto: "Eliminación de cuenta de administrador",
+    texto,
+    html
+  };
+}
+
 async function obtenerActividadesAdministrador(env, adminId) {
   const rows = await env.DB.prepare(`
     SELECT *
@@ -515,6 +541,11 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
     throw new Error("Administrador no encontrado.");
   }
 
+  const motivo = limpiarTexto(actor?.motivo);
+  if (!motivo) {
+    throw new Error("Debes indicar observaciones para eliminar la cuenta del administrador.");
+  }
+
   const actividades = await obtenerActividadesAdministrador(env, adminId);
   const resumen = {
     administrador_id: Number(adminId),
@@ -535,6 +566,18 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
 
     await borrarActividadFisicamente(env, Number(actividad.id));
     resumen.actividades_eliminadas += 1;
+  }
+
+  const destinatario = limpiarTexto(admin.email);
+  if (destinatario) {
+    const correo = construirCorreoEliminacionAdministrador(admin, motivo);
+    await enviarEmail(env, {
+      to: destinatario,
+      subject: correo.asunto,
+      text: correo.texto,
+      html: correo.html
+    });
+    resumen.correos_enviados += 1;
   }
 
   await env.DB.prepare(`

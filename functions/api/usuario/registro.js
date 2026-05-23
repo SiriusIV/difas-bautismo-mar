@@ -33,6 +33,14 @@ function esTelefonoValido(telefono) {
   return /^\+?[0-9]{9,15}$/.test(valor);
 }
 
+function limpiarTelefonoRpv(valor) {
+  return String(valor || "").replace(/\D/g, "").slice(0, 7);
+}
+
+function esTelefonoRpvValido(valor) {
+  return /^\d{7}$/.test(limpiarTelefonoRpv(valor));
+}
+
 function letraDni(numero) {
   const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
   return letras[numero % 23];
@@ -100,10 +108,11 @@ export async function onRequestPost(context) {
     const documento_identificacion = limpiarTexto(body.documento_identificacion).toUpperCase();
     const email = limpiarTexto(body.email).toLowerCase();
     const telefono_contacto = limpiarTexto(body.telefono_contacto);
+    const telefono_rpv = limpiarTelefonoRpv(body.telefono_rpv);
     const password = String(body.password || "");
     const nombre = centro;
 
-    if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto || (tipo_cuenta === "PUBLICO" && !password)) {
+    if (!centro || !responsable_legal || !email || !telefono_contacto || (tipo_cuenta === "PUBLICO" && !password)) {
       return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
     }
 
@@ -115,6 +124,10 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Debe indicar el cargo o puesto del solicitante." }, 400);
     }
 
+    if (tipo_cuenta === "ARMADA" && !telefono_rpv) {
+      return json({ ok: false, error: "Debe indicar el teléfono RPV." }, 400);
+    }
+
     if (!esEmailValido(email)) {
       return json({ ok: false, error: "El email no es válido" }, 400);
     }
@@ -123,16 +136,24 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "El teléfono no es válido" }, 400);
     }
 
-    if (!esTipoDocumentoValido(tipo_documento)) {
-      return json({ ok: false, error: "Debe seleccionar un tipo de documento válido" }, 400);
-    }
-
-    const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
-    if (!validacionDocumento.ok) {
-      return json({ ok: false, error: validacionDocumento.error || "El documento no coincide con el tipo seleccionado" }, 400);
+    if (tipo_cuenta === "ARMADA" && !esTelefonoRpvValido(telefono_rpv)) {
+      return json({ ok: false, error: "El teléfono RPV debe tener el formato 123 4567." }, 400);
     }
 
     if (tipo_cuenta === "PUBLICO") {
+      if (!tipo_documento || !documento_identificacion) {
+        return json({ ok: false, error: "Faltan campos obligatorios" }, 400);
+      }
+
+      if (!esTipoDocumentoValido(tipo_documento)) {
+        return json({ ok: false, error: "Debe seleccionar un tipo de documento válido" }, 400);
+      }
+
+      const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
+      if (!validacionDocumento.ok) {
+        return json({ ok: false, error: validacionDocumento.error || "El documento no coincide con el tipo seleccionado" }, 400);
+      }
+
       const validacionPassword = validarPoliticaPassword(password);
       if (!validacionPassword.ok) {
         return json({
@@ -166,10 +187,10 @@ export async function onRequestPost(context) {
           AND (
             email = ?
             OR UPPER(TRIM(centro)) = ?
-            OR UPPER(TRIM(documento_identificacion)) = ?
+            OR UPPER(TRIM(nombre_interno)) = ?
           )
         LIMIT 1
-      `).bind(email, normalizarCentro(centro), documento_identificacion).first();
+      `).bind(email, normalizarCentro(centro), normalizarCentro(nombre_interno)).first();
 
       if (solicitudPendiente) {
         return json({
@@ -189,20 +210,22 @@ export async function onRequestPost(context) {
           documento_identificacion,
           email,
           telefono_contacto,
+          telefono_rpv,
           estado,
           fecha_solicitud
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
       `).bind(
         nombre_interno,
         centro,
-        localidad,
+        "",
         responsable_legal,
         cargo_puesto,
-        tipo_documento,
-        documento_identificacion,
+        "",
+        "",
         email,
-        telefono_contacto
+        telefono_contacto,
+        telefono_rpv
       ).run();
 
       return json({

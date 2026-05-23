@@ -11,6 +11,7 @@ export async function asegurarTablaSolicitudesArmada(db) {
       documento_identificacion TEXT NOT NULL,
       email TEXT NOT NULL,
       telefono_contacto TEXT NOT NULL,
+      telefono_rpv TEXT,
       estado TEXT NOT NULL DEFAULT 'PENDIENTE',
       fecha_solicitud TEXT NOT NULL DEFAULT (datetime('now')),
       fecha_resolucion TEXT,
@@ -22,6 +23,7 @@ export async function asegurarTablaSolicitudesArmada(db) {
 
   await asegurarColumnaSolicitudArmada(db, "nombre_interno", "TEXT");
   await asegurarColumnaSolicitudArmada(db, "cargo_puesto", "TEXT");
+  await asegurarColumnaSolicitudArmada(db, "telefono_rpv", "TEXT");
 }
 
 async function asegurarColumnaSolicitudArmada(db, nombre, definicion) {

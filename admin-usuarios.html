@@ -338,10 +338,26 @@
       margin-top: 10px;
     }
 
+    #modalConfirmacionAdmin .campo {
+      margin-top: 10px;
+    }
+
     #modalBloqueoAdmin textarea {
       min-height: 84px;
       padding: 8px 10px;
       font-size: 12px;
+    }
+
+    #modalConfirmacionAdmin textarea {
+      min-height: 84px;
+      padding: 8px 10px;
+      font-size: 12px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #c9cfd6;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
     }
 
     #modalConfirmacionAdmin .modal-acciones,
@@ -784,6 +800,11 @@
       <button type="button" class="modal-cerrar-icono" data-modal-close="modalConfirmacionAdmin" aria-label="Cerrar">×</button>
       <h3 id="tituloConfirmacionAdmin">Confirmación</h3>
       <div id="textoConfirmacionAdmin" class="modal-contenido"></div>
+      <div id="campoObservacionesEliminacion" class="campo" style="display:none;">
+        <label for="observacionesEliminacion">Observaciones del superadministrador</label>
+        <textarea id="observacionesEliminacion" placeholder="Indica el motivo de la eliminación de la cuenta."></textarea>
+        <div class="nota-campo">Estas observaciones se enviarán por correo al administrador afectado.</div>
+      </div>
       <div class="modal-acciones">
         <button type="button" class="super-btn-secundario" id="btnCancelarConfirmacionAdmin">Cancelar</button>
         <button type="button" class="super-btn-peligro" id="btnAceptarConfirmacionAdmin">Continuar</button>
@@ -1147,10 +1168,18 @@
       abrirModal("modalActividades");
     }
 
-    function abrirConfirmacionAdmin(titulo, textoHtml, onAceptar) {
+    function abrirConfirmacionAdmin(titulo, textoHtml, onAceptar, opciones = {}) {
       accionConfirmacionPendiente = onAceptar;
       document.getElementById("tituloConfirmacionAdmin").textContent = titulo;
       document.getElementById("textoConfirmacionAdmin").innerHTML = textoHtml;
+      const campoObservaciones = document.getElementById("campoObservacionesEliminacion");
+      const textareaObservaciones = document.getElementById("observacionesEliminacion");
+      if (campoObservaciones && textareaObservaciones) {
+        const requiereObservaciones = opciones.requiereObservaciones === true;
+        campoObservaciones.style.display = requiereObservaciones ? "block" : "none";
+        textareaObservaciones.required = requiereObservaciones;
+        textareaObservaciones.value = "";
+      }
       abrirModal("modalConfirmacionAdmin");
     }
 
@@ -1312,6 +1341,11 @@
         "Confirmar eliminación",
         `Se eliminará definitivamente el administrador <strong>${escapeHtml(admin.nombre || "Administrador")}</strong>.<br><br>Esta acción implica la eliminación de sus usuarios secretaría vinculados, de sus actividades y la suspensión de las reservas relacionadas con ese ámbito.${ofertadas > 0 ? `<br><br>Actualmente tiene <strong>${ofertadas}</strong> actividades ofertadas activas.` : ""}`,
         async function () {
+          const motivo = document.getElementById("observacionesEliminacion").value.trim();
+          if (!motivo) {
+            mostrarMensaje("error", "Debes indicar observaciones para eliminar la cuenta del administrador.");
+            return;
+          }
           cerrarModal("modalConfirmacionAdmin");
           try {
             limpiarMensaje();
@@ -1319,7 +1353,10 @@
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
-              body: JSON.stringify({ usuario_id: admin.id })
+              body: JSON.stringify({
+                usuario_id: admin.id,
+                motivo
+              })
             });
 
             const data = await res.json();
@@ -1333,7 +1370,8 @@
           } catch (error) {
             mostrarMensaje("error", error.message || "No se pudo eliminar el administrador.");
           }
-        }
+        },
+        { requiereObservaciones: true }
       );
     }
 

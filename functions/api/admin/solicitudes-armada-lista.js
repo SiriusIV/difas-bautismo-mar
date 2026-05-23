@@ -35,6 +35,7 @@ export async function onRequestGet(context) {
         documento_identificacion,
         email,
         telefono_contacto,
+        telefono_rpv,
         estado,
         fecha_solicitud
       FROM solicitudes_registro_armada

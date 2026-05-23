@@ -573,7 +573,7 @@
               <div class="nota">Indique el cargo o puesto que ocupa la persona que solicita el alta administrativa.</div>
             </div>
 
-            <div class="campo-completo">
+            <div class="campo-completo" id="campoDocumento">
               <label>Documento<span class="campo-obligatorio">*</span></label>
               <div class="campo-documento-inline">
                 <select id="tipo_documento" name="tipo_documento" required>
@@ -596,9 +596,13 @@
                 <label for="telefono_contacto">Teléfono del centro<span class="campo-obligatorio">*</span></label>
                 <input type="tel" id="telefono_contacto" name="telefono_contacto" autocomplete="tel" required>
               </div>
-              <div>
+              <div id="campoLocalidad">
                 <label for="localidad">Localidad</label>
                 <input type="text" id="localidad" name="localidad" autocomplete="address-level2">
+              </div>
+              <div id="campoTelefonoRpv" style="display:none;">
+                <label for="telefono_rpv">Teléfono RPV<span class="campo-obligatorio">*</span></label>
+                <input type="tel" id="telefono_rpv" name="telefono_rpv" autocomplete="off" inputmode="numeric" maxlength="8">
               </div>
             </div>
 
@@ -765,6 +769,25 @@
       return /^\+?[0-9]{9,15}$/.test(String(telefono || "").replace(/\s+/g, ""));
     }
 
+    function limpiarTelefonoRpv(valor) {
+      return String(valor || "").replace(/\D/g, "").slice(0, 7);
+    }
+
+    function aplicarFormatoTelefonoRpv() {
+      const input = document.getElementById("telefono_rpv");
+      if (!input) return;
+      const limpio = limpiarTelefonoRpv(input.value);
+      if (limpio.length <= 3) {
+        input.value = limpio;
+      } else {
+        input.value = `${limpio.slice(0, 3)} ${limpio.slice(3)}`;
+      }
+    }
+
+    function esTelefonoRpvValido(valor) {
+      return /^\d{7}$/.test(limpiarTelefonoRpv(valor));
+    }
+
     function letraDni(numero) {
       const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
       return letras[numero % 23];
@@ -859,8 +882,15 @@
       const inputPassword = document.getElementById("password");
       const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
       const bloqueCargoPuesto = document.getElementById("bloqueCargoPuesto");
+      const campoDocumento = document.getElementById("campoDocumento");
+      const campoLocalidad = document.getElementById("campoLocalidad");
+      const campoTelefonoRpv = document.getElementById("campoTelefonoRpv");
       const inputCargoPuesto = document.getElementById("cargo_puesto");
       const inputNombreInterno = document.getElementById("nombre_interno");
+      const inputTipoDocumento = document.getElementById("tipo_documento");
+      const inputDocumento = document.getElementById("documento_identificacion");
+      const inputLocalidad = document.getElementById("localidad");
+      const inputTelefonoRpv = document.getElementById("telefono_rpv");
       const labelNombreInterno = document.getElementById("labelNombreInterno");
       const labelCentro = document.getElementById("labelCentro");
       const labelResponsable = document.getElementById("labelResponsable");
@@ -933,6 +963,9 @@
       if (bloquePasswordConfirmacion) bloquePasswordConfirmacion.style.display = armada ? "none" : "";
       if (bloqueNotaPassword) bloqueNotaPassword.style.display = armada ? "none" : "";
       if (bloqueCargoPuesto) bloqueCargoPuesto.style.display = armada ? "" : "none";
+      if (campoDocumento) campoDocumento.style.display = armada ? "none" : "";
+      if (campoLocalidad) campoLocalidad.style.display = armada ? "none" : "";
+      if (campoTelefonoRpv) campoTelefonoRpv.style.display = armada ? "" : "none";
       if (campoNombreInterno) campoNombreInterno.style.display = armada ? "" : "none";
       if (avisoCuentaArmada) avisoCuentaArmada.style.display = armada ? "block" : "none";
 
@@ -940,6 +973,9 @@
       inputPasswordConfirmacion.required = !armada;
       inputCargoPuesto.required = armada;
       inputNombreInterno.required = armada;
+      inputTipoDocumento.required = !armada;
+      inputDocumento.required = !armada;
+      inputTelefonoRpv.required = armada;
 
       if (!armada) {
         inputNombreInterno.value = "";
@@ -948,8 +984,12 @@
       if (armada) {
         inputPassword.value = "";
         inputPasswordConfirmacion.value = "";
+        inputTipoDocumento.value = "";
+        inputDocumento.value = "";
+        inputLocalidad.value = "";
       } else {
         inputCargoPuesto.value = "";
+        inputTelefonoRpv.value = "";
       }
     }
 
@@ -968,12 +1008,13 @@
       const email = document.getElementById("email").value.trim();
       const telefono_contacto = document.getElementById("telefono_contacto").value.trim();
       const localidad = document.getElementById("localidad").value.trim();
+      const telefono_rpv = document.getElementById("telefono_rpv").value.trim();
       const password = document.getElementById("password").value;
       const passwordConfirmacion = document.getElementById("password_confirmacion").value;
 
       limpiarAyudaCampo();
 
-      if (!centro || !responsable_legal || !tipo_documento || !documento_identificacion || !email || !telefono_contacto) {
+      if (!centro || !responsable_legal || !email || !telefono_contacto) {
         mostrarMensaje("error", "Debe completar los campos obligatorios.");
         return;
       }
@@ -988,6 +1029,11 @@
         return;
       }
 
+      if (armada && !telefono_rpv) {
+        mostrarMensaje("error", "Debe indicar el teléfono RPV.");
+        return;
+      }
+
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         mostrarMensaje("error", "El correo electrónico no tiene un formato válido.");
         return;
@@ -998,13 +1044,23 @@
         return;
       }
 
-      const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
-      if (!validacionDocumento.ok) {
-        mostrarMensaje("error", validacionDocumento.error || "El documento no coincide con el tipo seleccionado.");
+      if (armada && !esTelefonoRpvValido(telefono_rpv)) {
+        mostrarMensaje("error", "El teléfono RPV debe tener el formato 123 4567.");
         return;
       }
 
       if (!armada) {
+        if (!tipo_documento || !documento_identificacion) {
+          mostrarMensaje("error", "Debe completar los campos obligatorios.");
+          return;
+        }
+
+        const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
+        if (!validacionDocumento.ok) {
+          mostrarMensaje("error", validacionDocumento.error || "El documento no coincide con el tipo seleccionado.");
+          return;
+        }
+
         if (!password || !passwordConfirmacion) {
           mostrarMensaje("error", "Debe completar los campos obligatorios.");
           return;
@@ -1039,6 +1095,7 @@
             email,
             telefono_contacto,
             localidad,
+            telefono_rpv,
             password
           })
         });
@@ -1080,6 +1137,7 @@
     document.getElementById("tipo_cuenta").addEventListener("change", actualizarFormularioSegunTipoCuenta);
     document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
+    document.getElementById("telefono_rpv").addEventListener("input", aplicarFormatoTelefonoRpv);
     document.getElementById("btnTogglePasswordRegistro").addEventListener("click", function () {
       alternarVisibilidadPassword("password", "btnTogglePasswordRegistro");
     });

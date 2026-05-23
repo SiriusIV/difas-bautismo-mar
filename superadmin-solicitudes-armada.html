@@ -391,6 +391,15 @@
         <dt>Estado</dt><dd>PENDIENTE</dd>
         <dt>Fecha de solicitud</dt><dd>${formatearFecha(solicitudSeleccionada.fecha_solicitud)}</dd>
       `;
+      const detalle = document.getElementById("detalleSolicitud");
+      if (detalle) {
+        if (solicitudSeleccionada.telefono_rpv) {
+          detalle.insertAdjacentHTML(
+            "beforeend",
+            `<dt>Teléfono RPV</dt><dd>${escapeHtml(solicitudSeleccionada.telefono_rpv || "")}</dd>`
+          );
+        }
+      }
       document.getElementById("motivoResolucion").value = "";
       abrirModal();
     }
