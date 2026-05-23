@@ -375,6 +375,10 @@
       justify-content: flex-end;
     }
 
+    .contexto-acciones-secundarias .estado-actividad {
+      margin-right: auto;
+    }
+
     .contexto-acciones-grupo {
       display: flex;
       align-items: center;
@@ -4303,19 +4307,12 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
 
 function reubicarCabeceraActividadSegunViewport() {
   const grupoEstado = document.querySelector(".contexto-acciones-grupo.estado-actividad");
-  const cabeceraSuperior = document.querySelector(".contexto-cabecera-superior");
-  const grupoPasos = cabeceraSuperior?.querySelector(".contexto-acciones-grupo.pasos");
   const accionesSecundarias = document.querySelector(".contexto-acciones.contexto-acciones-secundarias");
-  const esMovil = window.matchMedia("(max-width: 700px)").matches;
 
-  if (!grupoEstado || !cabeceraSuperior || !grupoPasos || !accionesSecundarias) return;
+  if (!grupoEstado || !accionesSecundarias) return;
 
-  if (esMovil) {
-    if (grupoEstado.parentElement !== accionesSecundarias) {
-      accionesSecundarias.insertBefore(grupoEstado, accionesSecundarias.firstChild);
-    }
-  } else if (grupoEstado.parentElement !== cabeceraSuperior) {
-    cabeceraSuperior.insertBefore(grupoEstado, grupoPasos);
+  if (grupoEstado.parentElement !== accionesSecundarias) {
+    accionesSecundarias.insertBefore(grupoEstado, accionesSecundarias.firstChild);
   }
 }
 
