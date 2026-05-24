@@ -237,6 +237,21 @@
       color: #123a63;
       line-height: 1.2;
     }
+    .franja-sesion-rol {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #123a63;
+    }
+    .franja-sesion-nombre {
+      display: block;
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: #123a63;
+    }
     .franja-sesion-nav {
       display: none;
       gap: 8px;
@@ -1632,6 +1647,14 @@
         padding: 0 8px;
       }
 
+      .franja-sesion-inner #textoSesion .franja-sesion-rol {
+        margin-bottom: 4px;
+      }
+
+      .franja-sesion-inner #textoSesion .franja-sesion-nombre {
+        margin-top: 0;
+      }
+
       .franja-sesion-inner #btnNotificacionesSesion {
         grid-area: noti;
         justify-self: end;
@@ -2629,14 +2652,27 @@ function actualizarBotonSolicitarSegunFranja() {
       const nombre = String(usuarioAutenticado.nombre || "").trim();
       const nombrePublico = String(usuarioAutenticado.nombre_publico || "").trim();
 
+      const ponerTextoSesion = (rolTexto, nombreTexto = "") => {
+        const rolSeguro = String(rolTexto || "").trim();
+        const nombreSeguro = String(nombreTexto || "").trim();
+        if (!rolSeguro) {
+          texto.textContent = "";
+          return;
+        }
+        texto.innerHTML = `
+          <span class="franja-sesion-rol">${escapeHtml(rolSeguro)}</span>
+          ${nombreSeguro ? `<span class="franja-sesion-nombre">${escapeHtml(nombreSeguro)}</span>` : ``}
+        `;
+      };
+
       if (rol === "SOLICITANTE") {
-        texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
+        ponerTextoSesion("Usuario", (centro || nombre || "").toUpperCase());
       } else if (rol === "SUPERADMIN") {
-        texto.textContent = "Superadministrador";
+        ponerTextoSesion("Superadministrador");
       } else if (rol === "ADMIN") {
-        texto.textContent = `Administrador: ${(nombrePublico || centro || nombre || "").toUpperCase()}`;
+        ponerTextoSesion("Administrador", (nombrePublico || centro || nombre || "").toUpperCase());
       } else if (rol === "SECRETARIA") {
-        texto.textContent = `Secretaría: ${(nombre || centro || "").toUpperCase()}`;
+        ponerTextoSesion("Secretaría", (nombre || centro || "").toUpperCase());
       } else {
         texto.textContent = "";
       }
