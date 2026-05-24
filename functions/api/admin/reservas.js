@@ -918,16 +918,26 @@ export async function onRequestGet(context) {
       );
     }
 
+    const limpiarObservacionesRechazo =
+      estadoActual === "RECHAZADA" && (nuevoEstado === "CONFIRMADA" || nuevoEstado === "PENDIENTE");
+
     const result = await env.DB.prepare(`
       UPDATE reservas
       SET estado = ?,
           observaciones_admin = CASE
+            WHEN ? = 1 THEN ''
             WHEN ? <> '' THEN ?
             ELSE observaciones_admin
           END,
           fecha_modificacion = datetime('now')
       WHERE id = ?
-    `).bind(nuevoEstado, observacionesAdmin, observacionesAdmin, id).run();
+    `).bind(
+      nuevoEstado,
+      limpiarObservacionesRechazo ? 1 : 0,
+      observacionesAdmin,
+      observacionesAdmin,
+      id
+    ).run();
 
     if ((result?.meta?.changes || 0) === 0) {
       return json(
@@ -952,7 +962,9 @@ export async function onRequestGet(context) {
       const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
       const contextoNotificacion = {
         ...contextoReserva,
-        observaciones_admin: observacionesAdmin || contextoReserva?.observaciones_admin || "",
+        observaciones_admin: limpiarObservacionesRechazo
+          ? ""
+          : (observacionesAdmin || contextoReserva?.observaciones_admin || ""),
         base_url: baseUrl
       };
     try {
