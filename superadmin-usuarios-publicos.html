@@ -155,6 +155,7 @@
     }
 
     .modal {
+      position: relative;
       background: #fff;
       width: 100%;
       max-width: 760px;
@@ -164,8 +165,32 @@
     }
 
     .modal h3 {
-      margin: 0 0 14px;
+      margin: 0 34px 14px 0;
       font-size: 24px;
+      color: #123a63;
+    }
+
+    .modal-cerrar-icono {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #d7dee5;
+      background: #fff;
+      color: #5b6b7c;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .modal-cerrar-icono:hover {
+      background: #f7f9fb;
       color: #123a63;
     }
 
@@ -213,6 +238,11 @@
 
       .modal h3 {
         font-size: 20px;
+      }
+
+      .modal-cerrar-icono {
+        right: 12px;
+        top: 12px;
       }
 
       .modal-grid {
@@ -372,11 +402,9 @@
 
   <div id="modalUsuarioPublico" class="modal-fondo" aria-hidden="true">
     <div class="modal">
+      <button type="button" class="modal-cerrar-icono" id="btnCerrarModalUsuarioPublico" aria-label="Cerrar">×</button>
       <h3 id="tituloModalUsuarioPublico">Ficha de usuario público</h3>
       <dl class="modal-grid" id="detalleUsuarioPublico"></dl>
-      <div class="modal-acciones">
-        <button type="button" class="super-btn-secundario" id="btnCerrarModalUsuarioPublico">Cerrar</button>
-      </div>
     </div>
   </div>
 
