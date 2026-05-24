@@ -816,6 +816,7 @@
       .tabla-actividades-modal tbody {
         display: grid;
         gap: 10px;
+        width: 100%;
       }
 
       .tabla-actividades-modal tr {
@@ -824,11 +825,16 @@
         background: #fff;
         box-shadow: 0 4px 14px rgba(0,0,0,0.05);
         padding: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .tabla-actividades-modal td {
         border: none;
         padding: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .tabla-actividades-modal td + td {
@@ -842,24 +848,27 @@
       .tabla-actividades-modal td.col-solicitudes {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        justify-content: flex-start;
+        gap: 6px;
         width: 100%;
         text-align: left;
+        flex-wrap: wrap;
       }
 
       .tabla-actividades-modal td.col-solicitudes::before {
-        content: attr(data-label);
+        content: attr(data-label) ":";
         color: #5f6d7a;
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+        flex: 0 0 auto;
       }
 
       .tabla-actividades-modal td.col-solicitudes > span {
         font-weight: 700;
         color: #123a63;
+        flex: 0 0 auto;
       }
 
       .tabla-wrap {
