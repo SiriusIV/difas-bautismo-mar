@@ -409,6 +409,19 @@
       white-space: nowrap;
     }
 
+    .tabla-actividades-encabezado {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tabla-actividades-encabezado-icono {
+      width: 14px;
+      height: 14px;
+      color: #6b7d90;
+      flex: 0 0 auto;
+    }
+
     .lista-actividades-enlace {
       display: inline-flex;
       align-items: center;
@@ -775,6 +788,78 @@
         width: 100%;
         font-size: 12px;
         padding: 7px 10px;
+      }
+
+      .tabla-actividades-modal-wrap {
+        overflow: visible;
+        border: none;
+        background: transparent;
+      }
+
+      .tabla-actividades-modal {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .tabla-actividades-modal thead {
+        display: none;
+      }
+
+      .tabla-actividades-modal,
+      .tabla-actividades-modal tbody,
+      .tabla-actividades-modal tr,
+      .tabla-actividades-modal td {
+        display: block;
+        width: 100%;
+      }
+
+      .tabla-actividades-modal tbody {
+        display: grid;
+        gap: 10px;
+      }
+
+      .tabla-actividades-modal tr {
+        border: 1px solid #dde4ea;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        padding: 12px;
+      }
+
+      .tabla-actividades-modal td {
+        border: none;
+        padding: 0;
+      }
+
+      .tabla-actividades-modal td + td {
+        margin-top: 10px;
+      }
+
+      .tabla-actividades-modal td.col-actividad {
+        margin: 0;
+      }
+
+      .tabla-actividades-modal td.col-solicitudes {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+      }
+
+      .tabla-actividades-modal td.col-solicitudes::before {
+        content: attr(data-label);
+        color: #5f6d7a;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      .tabla-actividades-modal td.col-solicitudes > span {
+        font-weight: 700;
+        color: #123a63;
       }
 
       .tabla-wrap {
@@ -1261,19 +1346,29 @@
             <table class="tabla-actividades-modal">
               <thead>
                 <tr>
-                  <th>Actividad</th>
+                  <th>
+                    <span class="tabla-actividades-encabezado">
+                      <span>Actividad</span>
+                      <svg class="tabla-actividades-encabezado-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 6.5a2.5 2.5 0 1 0-5 0V13"></path>
+                        <path d="M9 13V4.5a2.5 2.5 0 1 0-5 0V14"></path>
+                        <path d="M14 11V8a2.5 2.5 0 1 1 5 0v6"></path>
+                        <path d="M19 14.5 21 16c.6.45 1 1.17 1 1.92V20a2 2 0 0 1-2 2H9.5a4.5 4.5 0 0 1-4.26-3.06L3 12.5"></path>
+                      </svg>
+                    </span>
+                  </th>
                   <th class="col-solicitudes">Solicitudes</th>
                 </tr>
               </thead>
               <tbody>
                 ${actividades.map((item) => `
                   <tr>
-                    <td>
+                    <td class="col-actividad">
                       <a class="lista-actividades-enlace" onclick="abrirVistaActividad(${Number(item.actividad_id || 0)}); return false;">
                         ${escapeHtml(item.actividad_nombre || "Actividad")}
                       </a>
                     </td>
-                    <td class="col-solicitudes">${Number(item.solicitudes_total || 0)}</td>
+                    <td class="col-solicitudes" data-label="Solicitudes"><span>${Number(item.solicitudes_total || 0)}</span></td>
                   </tr>
                 `).join("")}
               </tbody>
