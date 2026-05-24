@@ -114,12 +114,23 @@ function construirCorreoUsuarioPublico(usuario, accion, motivo, reservas = []) {
   const cabecera = esEliminacion
     ? "Tu cuenta de usuario publico ha sido eliminada por el superadministrador."
     : "Tu cuenta de usuario publico ha sido suspendida temporalmente por el superadministrador.";
-  const items = deduplicarTextos(
-    (reservas || []).map((reserva) => {
-      const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
-      const codigo = limpiarTexto(reserva.codigo_reserva || "");
-      return codigo ? `${actividad} (${codigo})` : actividad;
-    })
+  const solicitudesRechazadas = deduplicarTextos(
+    (reservas || [])
+      .filter((reserva) => limpiarTexto(reserva.estado).toUpperCase() !== "BORRADOR")
+      .map((reserva) => {
+        const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
+        const codigo = limpiarTexto(reserva.codigo_reserva || "");
+        return codigo ? `${actividad} (${codigo})` : actividad;
+      })
+  );
+  const borradoresEliminados = deduplicarTextos(
+    (reservas || [])
+      .filter((reserva) => limpiarTexto(reserva.estado).toUpperCase() === "BORRADOR")
+      .map((reserva) => {
+        const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
+        const codigo = limpiarTexto(reserva.codigo_reserva || "");
+        return codigo ? `${actividad} (${codigo})` : actividad;
+      })
   );
 
   const texto = [
@@ -136,15 +147,27 @@ function construirCorreoUsuarioPublico(usuario, accion, motivo, reservas = []) {
     <p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>
   `;
 
-  if (items.length) {
+  if (solicitudesRechazadas.length) {
     texto.push(
       "",
-      "Como consecuencia de esta accion, las siguientes solicitudes han quedado anuladas o rechazadas:"
+      "Como consecuencia de esta accion, las siguientes solicitudes tramitadas han quedado rechazadas:"
     );
-    items.forEach((item) => texto.push(`- ${item}`));
+    solicitudesRechazadas.forEach((item) => texto.push(`- ${item}`));
     html += `
-      <p>Como consecuencia de esta accion, las siguientes solicitudes han quedado anuladas o rechazadas:</p>
-      <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <p>Como consecuencia de esta accion, las siguientes solicitudes tramitadas han quedado rechazadas:</p>
+      <ul>${solicitudesRechazadas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    `;
+  }
+
+  if (borradoresEliminados.length) {
+    texto.push(
+      "",
+      "Ademas, los siguientes borradores asociados a actividades han quedado cancelados:"
+    );
+    borradoresEliminados.forEach((item) => texto.push(`- ${item}`));
+    html += `
+      <p>Ademas, los siguientes borradores asociados a actividades han quedado cancelados:</p>
+      <ul>${borradoresEliminados.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     `;
   }
 
