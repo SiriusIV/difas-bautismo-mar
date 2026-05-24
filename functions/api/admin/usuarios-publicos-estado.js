@@ -1,0 +1,54 @@
+import { getAdminSession } from "./_auth.js";
+import { actualizarEstadoUsuarioPublico } from "./_usuarios_publicos_gestion.js";
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  });
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  try {
+    const session = await getAdminSession(request, env);
+    if (!session) {
+      return json({ ok: false, error: "No autorizado" }, 401);
+    }
+
+    if (String(session.rol || "").toUpperCase() !== "SUPERADMIN") {
+      return json({ ok: false, error: "Solo SUPERADMIN" }, 403);
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const usuarioId = Number(body.usuario_id || 0);
+    const activo = body.activo === true || body.activo === 1 || body.activo === "1" ? 1 : 0;
+    const motivo = String(body.motivo || "").trim();
+
+    if (!(usuarioId > 0)) {
+      return json({ ok: false, error: "Usuario publico no valido." }, 400);
+    }
+
+    const resumen = await actualizarEstadoUsuarioPublico(env, usuarioId, activo, {
+      actorUsuarioId: session.usuario_id,
+      actorRol: session.rol,
+      actorNombre: session.username,
+      motivo
+    });
+
+    return json({
+      ok: true,
+      mensaje: activo
+        ? "Usuario publico reactivado correctamente."
+        : "Usuario publico suspendido correctamente.",
+      resumen
+    });
+  } catch (error) {
+    return json({
+      ok: false,
+      error: "Error actualizando el estado del usuario publico.",
+      detalle: error.message
+    }, 500);
+  }
+}

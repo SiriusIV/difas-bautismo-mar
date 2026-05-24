@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Usuarios públicos</title>
+  <title>Usuarios publicos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="assets/superadmin-theme.css">
   <link rel="stylesheet" href="assets/fondo-cabecera-movil-unificado.css">
@@ -56,6 +56,47 @@
     .btn-ficha:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    .mensaje {
+      position: relative;
+      margin-top: 10px;
+      padding: 10px 42px 10px 12px;
+      border-radius: 10px;
+      display: none;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .mensaje.ok {
+      background: #eaf7ea;
+      color: #146c2e;
+      display: block;
+    }
+
+    .mensaje.error {
+      background: #fdeaea;
+      color: #9b1c1c;
+      display: block;
+    }
+
+    .mensaje-cerrar {
+      position: absolute;
+      right: 10px;
+      top: 9px;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.8);
+      color: inherit;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
 
     .tabla-wrap {
@@ -119,26 +160,6 @@
       color: #9b1c1c;
     }
 
-    .mensaje {
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      display: none;
-      font-size: 14px;
-    }
-
-    .mensaje.ok {
-      background: #eaf7ea;
-      color: #146c2e;
-      display: block;
-    }
-
-    .mensaje.error {
-      background: #fdeaea;
-      color: #9b1c1c;
-      display: block;
-    }
-
     .modal-fondo {
       position: fixed;
       inset: 0;
@@ -165,7 +186,7 @@
     }
 
     .modal h3 {
-      margin: 0 34px 14px 0;
+      margin: 0;
       font-size: 24px;
       color: #123a63;
     }
@@ -194,6 +215,77 @@
       color: #123a63;
     }
 
+    .modal-cabecera-usuario {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 42px 14px 0;
+    }
+
+    .modal-estado-usuario {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #d9e3ed;
+      background: #f8fbff;
+      color: #35506a;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 42px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background-color: #c7d0da;
+      transition: .2s;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    .switch input:checked + .slider {
+      background-color: #2db95b;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    .switch input:disabled + .slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .modal-grid {
       display: grid;
       grid-template-columns: 170px 1fr;
@@ -211,12 +303,101 @@
       line-height: 1.5;
     }
 
+    .modal-contenido {
+      background: #f7f9fb;
+      border: 1px solid #dde4ea;
+      border-radius: 12px;
+      padding: 12px;
+      line-height: 1.5;
+      min-height: 64px;
+    }
+
+    .campo {
+      margin-top: 12px;
+    }
+
+    .campo label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #35506a;
+      font-size: 13px;
+    }
+
+    .campo textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid #c9cfd6;
+      font-family: inherit;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .nota-campo {
+      margin-top: 6px;
+      color: #5f6d7a;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .modal-acciones {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
       margin-top: 18px;
       flex-wrap: wrap;
+    }
+
+    #modalConfirmacionUsuarioPublico .modal,
+    #modalBloqueoUsuarioPublico .modal {
+      max-width: 620px;
+      padding: 16px 18px;
+    }
+
+    #modalConfirmacionUsuarioPublico .modal h3,
+    #modalBloqueoUsuarioPublico .modal h3 {
+      margin: 0 30px 8px 0;
+      font-size: 18px;
+    }
+
+    #modalConfirmacionUsuarioPublico .modal-contenido,
+    #modalBloqueoUsuarioPublico .modal-contenido {
+      line-height: 1.35;
+      margin-top: 34px;
+      font-size: 12px;
+    }
+
+    #modalConfirmacionUsuarioPublico .campo,
+    #modalBloqueoUsuarioPublico .campo {
+      margin-top: 10px;
+    }
+
+    #modalConfirmacionUsuarioPublico textarea,
+    #modalBloqueoUsuarioPublico textarea {
+      min-height: 84px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    #modalConfirmacionUsuarioPublico .modal-acciones,
+    #modalBloqueoUsuarioPublico .modal-acciones {
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-portal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-portal svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
     }
 
     @media (max-width: 760px) {
@@ -238,6 +419,22 @@
 
       .modal h3 {
         font-size: 20px;
+      }
+
+      .modal-cabecera-usuario {
+        margin-right: 36px;
+        margin-bottom: 12px;
+        gap: 10px;
+      }
+
+      .modal-cabecera-usuario h3 {
+        font-size: 19px;
+      }
+
+      .modal-estado-usuario {
+        gap: 8px;
+        padding: 6px 10px;
+        font-size: 11px;
       }
 
       .modal-cerrar-icono {
@@ -268,6 +465,13 @@
 
       .modal-acciones button {
         width: 100%;
+      }
+
+      .campo label,
+      .nota-campo,
+      #modalConfirmacionUsuarioPublico .modal-contenido,
+      #modalBloqueoUsuarioPublico .modal-contenido {
+        font-size: 12px;
       }
 
       .tabla-wrap {
@@ -343,18 +547,6 @@
         letter-spacing: 0.02em;
       }
     }
-
-    .btn-portal {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-portal svg {
-      width: 16px;
-      height: 16px;
-      flex: 0 0 16px;
-    }
   </style>
 </head>
 <body class="superadmin-body fondo-cabecera-unificada">
@@ -363,7 +555,7 @@
       <div class="super-bloque-marca">
         <img src="logo.png" alt="Armada" class="super-logo">
         <div class="super-titulos">
-          <h1>Actividades Públicas Institucionales</h1>
+          <h1>Actividades Publicas Institucionales</h1>
           <h2>Armada</h2>
         </div>
       </div>
@@ -373,8 +565,8 @@
   <main class="super-shell">
     <section class="super-franja">
       <div class="super-franja-texto">
-        <h3>Usuarios públicos</h3>
-        <p>Consulta todas las cuentas de solicitante registradas en la aplicación y su información básica de filiación.</p>
+        <h3>Usuarios publicos</h3>
+        <p>Consulta, suspende o elimina cuentas de solicitante y revisa su informacion basica de filiacion.</p>
       </div>
       <button type="button" class="super-btn-secundario btn-portal" id="btnVolverPortal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg><span>Volver al portal</span></button>
     </section>
@@ -383,13 +575,14 @@
       <div class="cabecera-bloque">
         <div>
           <h2>Listado de cuentas</h2>
-          <p class="subtitulo">Esta consola es solo de consulta y permite revisar la ficha completa del usuario público seleccionado.</p>
+          <p class="subtitulo">Revisa la ficha completa del usuario publico seleccionado y aplica, cuando proceda, la suspension o la eliminacion de la cuenta.</p>
         </div>
       </div>
       <div id="mensajePantalla" class="mensaje"></div>
 
       <div class="barra-acciones">
         <button type="button" class="btn-ficha" id="btnVerUsuario" disabled>Ver ficha</button>
+        <button type="button" class="super-btn-peligro" id="btnEliminarUsuario" disabled>Eliminar</button>
       </div>
 
       <div class="tabla-wrap">
@@ -400,7 +593,7 @@
               <th>Centro / entidad</th>
               <th>Responsable</th>
               <th>Email</th>
-              <th>Teléfono</th>
+              <th>Telefono</th>
               <th>Localidad</th>
               <th>Estado</th>
               <th>Alta</th>
@@ -415,21 +608,62 @@
   <div id="modalUsuarioPublico" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <button type="button" class="modal-cerrar-icono" id="btnCerrarModalUsuarioPublico" aria-label="Cerrar">×</button>
-      <h3 id="tituloModalUsuarioPublico">Ficha de usuario público</h3>
+      <div class="modal-cabecera-usuario">
+        <h3 id="tituloModalUsuarioPublico">Ficha de usuario publico</h3>
+        <div class="modal-estado-usuario">
+          <span id="textoEstadoUsuarioPublico">Activa</span>
+          <label class="switch" aria-label="Activar o suspender usuario publico">
+            <input type="checkbox" id="toggleEstadoUsuarioPublico">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
       <dl class="modal-grid" id="detalleUsuarioPublico"></dl>
+    </div>
+  </div>
+
+  <div id="modalConfirmacionUsuarioPublico" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalConfirmacionUsuarioPublico" aria-label="Cerrar">×</button>
+      <h3 id="tituloConfirmacionUsuarioPublico">Confirmacion</h3>
+      <div id="textoConfirmacionUsuarioPublico" class="modal-contenido"></div>
+      <div id="campoObservacionesEliminacionUsuario" class="campo" style="display:none;">
+        <label for="observacionesEliminacionUsuario">Observaciones del superadministrador</label>
+        <textarea id="observacionesEliminacionUsuario" placeholder="Indica el motivo de la eliminacion de la cuenta."></textarea>
+        <div class="nota-campo">Estas observaciones se enviaran por correo al usuario afectado.</div>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="super-btn-secundario" id="btnCancelarConfirmacionUsuarioPublico">Cancelar</button>
+        <button type="button" class="super-btn-peligro" id="btnAceptarConfirmacionUsuarioPublico">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalBloqueoUsuarioPublico" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar-icono" data-modal-close="modalBloqueoUsuarioPublico" aria-label="Cerrar">×</button>
+      <h3 id="modalBloqueoUsuarioTitulo">Suspender temporalmente cuenta</h3>
+      <div class="modal-contenido">
+        La cuenta dejara de poder acceder al sistema. Si el usuario tiene solicitudes activas, se rechazaran automaticamente, se liberaran las plazas afectadas y se notificara tanto al usuario como a los administradores de las actividades implicadas.
+      </div>
+      <div class="campo">
+        <label for="observacionesBloqueoUsuarioPublico">Observaciones del superadministrador</label>
+        <textarea id="observacionesBloqueoUsuarioPublico" placeholder="Indica el motivo de la suspension temporal."></textarea>
+        <div class="nota-campo">Estas observaciones se enviaran por correo al usuario afectado.</div>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="super-btn-peligro" id="btnConfirmarBloqueoUsuarioPublico">Enviar aviso y suspender</button>
+      </div>
     </div>
   </div>
 
   <script>
     let usuariosCache = [];
     let usuarioSeleccionado = null;
-
-    function mostrarMensaje(tipo, texto) {
-      const box = document.getElementById("mensajePantalla");
-      box.className = "mensaje " + tipo;
-      box.textContent = texto;
-      box.style.display = "block";
-    }
+    let actualizandoEstado = false;
+    let usuarioPendienteBloqueo = null;
+    let accionConfirmacionPendiente = null;
+    let mensajeTimer = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -440,8 +674,62 @@
         .replace(/'/g, "&#39;");
     }
 
-    function actualizarBotonVer() {
-      document.getElementById("btnVerUsuario").disabled = !usuarioSeleccionado;
+    function limpiarMensaje() {
+      if (mensajeTimer) {
+        window.clearTimeout(mensajeTimer);
+        mensajeTimer = null;
+      }
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje";
+      box.innerHTML = "";
+      box.style.display = "none";
+    }
+
+    function cerrarMensaje() {
+      limpiarMensaje();
+    }
+
+    function mostrarMensaje(tipo, texto) {
+      limpiarMensaje();
+      const box = document.getElementById("mensajePantalla");
+      box.className = "mensaje " + tipo;
+      if (tipo === "error") {
+        box.innerHTML = `${escapeHtml(texto)}<button type="button" class="mensaje-cerrar" aria-label="Cerrar" onclick="cerrarMensaje()">×</button>`;
+      } else {
+        box.textContent = texto;
+        mensajeTimer = window.setTimeout(limpiarMensaje, 4000);
+      }
+      box.style.display = "block";
+    }
+
+    function abrirModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function actualizarBotonesAccion() {
+      const hay = !!usuarioSeleccionado;
+      document.getElementById("btnVerUsuario").disabled = !hay;
+      document.getElementById("btnEliminarUsuario").disabled = !hay;
+    }
+
+    function actualizarCabeceraEstadoUsuario() {
+      const texto = document.getElementById("textoEstadoUsuarioPublico");
+      const toggle = document.getElementById("toggleEstadoUsuarioPublico");
+      if (!texto || !toggle || !usuarioSeleccionado) return;
+      const activa = Number(usuarioSeleccionado.activo || 0) === 1;
+      texto.textContent = activa ? "Activa" : "Inactiva";
+      toggle.checked = activa;
+      toggle.disabled = actualizandoEstado;
     }
 
     function estadoUsuarioPill(activo) {
@@ -464,7 +752,8 @@
     function seleccionarUsuario(id) {
       usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(id)) || null;
       renderizarTabla();
-      actualizarBotonVer();
+      actualizarBotonesAccion();
+      actualizarCabeceraEstadoUsuario();
     }
 
     function renderizarTabla() {
@@ -482,13 +771,13 @@
           <td data-label="Centro / entidad">${escapeHtml(item.centro || item.nombre || "")}</td>
           <td data-label="Responsable">${escapeHtml(item.responsable_legal || "-")}</td>
           <td data-label="Email">${escapeHtml(item.email || "")}</td>
-          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td data-label="Telefono">${escapeHtml(item.telefono_contacto || "-")}</td>
           <td data-label="Localidad">${escapeHtml(item.localidad || "-")}</td>
           <td data-label="Estado">${estadoUsuarioPill(item.activo)}</td>
           <td data-label="Alta">${formatearFecha(item.fecha_alta)}</td>
         </tr>
       `).join("");
-      actualizarBotonVer();
+      actualizarBotonesAccion();
     }
 
     async function cargarUsuarios() {
@@ -497,57 +786,215 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "No se pudo cargar la lista de usuarios públicos.");
+        throw new Error(data.error || "No se pudo cargar la lista de usuarios publicos.");
       }
       usuariosCache = Array.isArray(data.usuarios) ? data.usuarios : [];
       if (usuarioSeleccionado) {
         usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(usuarioSeleccionado.id)) || null;
       }
       renderizarTabla();
+      actualizarCabeceraEstadoUsuario();
     }
 
     function abrirModalUsuario() {
       if (!usuarioSeleccionado) return;
-      document.getElementById("tituloModalUsuarioPublico").textContent = `Ficha · ${usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "Usuario público"}`;
+      document.getElementById("tituloModalUsuarioPublico").textContent = `Ficha · ${usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "Usuario publico"}`;
       document.getElementById("detalleUsuarioPublico").innerHTML = `
         <dt>Centro / entidad</dt><dd>${escapeHtml(usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "")}</dd>
         <dt>Responsable</dt><dd>${escapeHtml(usuarioSeleccionado.responsable_legal || "-")}</dd>
         <dt>Email</dt><dd>${escapeHtml(usuarioSeleccionado.email || "")}</dd>
-        <dt>Teléfono</dt><dd>${escapeHtml(usuarioSeleccionado.telefono_contacto || "-")}</dd>
+        <dt>Telefono</dt><dd>${escapeHtml(usuarioSeleccionado.telefono_contacto || "-")}</dd>
         <dt>Localidad</dt><dd>${escapeHtml(usuarioSeleccionado.localidad || "-")}</dd>
         <dt>Documento</dt><dd>${escapeHtml(usuarioSeleccionado.tipo_documento || "-")} · ${escapeHtml(usuarioSeleccionado.documento_identificacion || "-")}</dd>
-        <dt>Estado</dt><dd>${Number(usuarioSeleccionado.activo || 0) === 1 ? "Activa" : "Inactiva"}</dd>
         <dt>Fecha de alta</dt><dd>${formatearFecha(usuarioSeleccionado.fecha_alta)}</dd>
       `;
-      const modal = document.getElementById("modalUsuarioPublico");
-      modal.classList.add("activo");
-      modal.setAttribute("aria-hidden", "false");
+      actualizarCabeceraEstadoUsuario();
+      abrirModal("modalUsuarioPublico");
     }
 
-    function cerrarModalUsuario() {
-      const modal = document.getElementById("modalUsuarioPublico");
-      modal.classList.remove("activo");
-      modal.setAttribute("aria-hidden", "true");
+    function reiniciarConfirmacionUsuarioPublico() {
+      accionConfirmacionPendiente = null;
+      document.getElementById("textoConfirmacionUsuarioPublico").innerHTML = "";
+      document.getElementById("campoObservacionesEliminacionUsuario").style.display = "none";
+      document.getElementById("observacionesEliminacionUsuario").value = "";
+    }
+
+    function abrirConfirmacionUsuarioPublico(titulo, html, accion, opciones = {}) {
+      document.getElementById("tituloConfirmacionUsuarioPublico").textContent = titulo;
+      document.getElementById("textoConfirmacionUsuarioPublico").innerHTML = html;
+      document.getElementById("campoObservacionesEliminacionUsuario").style.display = opciones.requiereObservaciones ? "block" : "none";
+      document.getElementById("observacionesEliminacionUsuario").value = "";
+      accionConfirmacionPendiente = accion;
+      abrirModal("modalConfirmacionUsuarioPublico");
+    }
+
+    function prepararCambioEstadoUsuarioPublico(checked) {
+      if (!usuarioSeleccionado || actualizandoEstado) return;
+      if (checked) {
+        cambiarEstadoUsuarioPublico(usuarioSeleccionado.id, true, "");
+        return;
+      }
+
+      usuarioPendienteBloqueo = usuarioSeleccionado;
+      document.getElementById("observacionesBloqueoUsuarioPublico").value = "";
+      abrirConfirmacionUsuarioPublico(
+        "Confirmar suspension temporal",
+        `Esta accion suspendera temporalmente la cuenta de <strong>${escapeHtml(usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "Usuario publico")}</strong>.<br><br>Si esta cuenta mantiene solicitudes activas, se rechazaran automaticamente, se liberaran las plazas afectadas y se avisara por correo tanto al solicitante como a los administradores de las actividades implicadas.<br><br>Si continuas, a continuacion deberas introducir las observaciones de la suspension.`,
+        function () {
+          cerrarModal("modalConfirmacionUsuarioPublico");
+          abrirModal("modalBloqueoUsuarioPublico");
+        }
+      );
+    }
+
+    async function cambiarEstadoUsuarioPublico(id, checked, motivo) {
+      if (actualizandoEstado) return;
+      actualizandoEstado = true;
+      actualizarCabeceraEstadoUsuario();
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-estado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            usuario_id: id,
+            activo: checked ? 1 : 0,
+            motivo: motivo || ""
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || "No se pudo actualizar el usuario publico.");
+        }
+        mostrarMensaje("ok", data.mensaje || "Estado del usuario publico actualizado.");
+        await cargarUsuarios();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo actualizar el usuario publico.");
+        await cargarUsuarios();
+      } finally {
+        actualizandoEstado = false;
+        actualizarCabeceraEstadoUsuario();
+      }
+    }
+
+    async function confirmarBloqueoUsuarioPublico() {
+      if (!usuarioPendienteBloqueo) return;
+      const motivo = document.getElementById("observacionesBloqueoUsuarioPublico").value.trim();
+      if (!motivo) {
+        mostrarMensaje("error", "Debes indicar observaciones para suspender temporalmente la cuenta.");
+        return;
+      }
+      cerrarModal("modalBloqueoUsuarioPublico");
+      const usuarioId = usuarioPendienteBloqueo.id;
+      usuarioPendienteBloqueo = null;
+      await cambiarEstadoUsuarioPublico(usuarioId, false, motivo);
+    }
+
+    async function eliminarUsuarioSeleccionado() {
+      if (!usuarioSeleccionado) return;
+      const usuario = usuarioSeleccionado;
+      abrirConfirmacionUsuarioPublico(
+        "Confirmar eliminacion",
+        `Se eliminara definitivamente la cuenta de <strong>${escapeHtml(usuario.centro || usuario.nombre || "Usuario publico")}</strong>.<br><br>Si esta cuenta mantiene solicitudes o reservas activas, se cancelaran automaticamente, se liberaran las plazas afectadas y se notificara por correo tanto al solicitante como a los administradores responsables de las actividades implicadas.`,
+        async function () {
+          const motivo = document.getElementById("observacionesEliminacionUsuario").value.trim();
+          if (!motivo) {
+            mostrarMensaje("error", "Debes indicar observaciones para eliminar la cuenta.");
+            return;
+          }
+          cerrarModal("modalConfirmacionUsuarioPublico");
+          try {
+            limpiarMensaje();
+            const res = await fetch("/api/admin/usuarios-publicos-eliminar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                usuario_id: usuario.id,
+                motivo
+              })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+              throw new Error(data.error || "No se pudo eliminar el usuario publico.");
+            }
+            usuarioSeleccionado = null;
+            cerrarModal("modalUsuarioPublico");
+            mostrarMensaje("ok", data.mensaje || "Usuario publico eliminado correctamente.");
+            await cargarUsuarios();
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo eliminar el usuario publico.");
+          }
+        },
+        { requiereObservaciones: true }
+      );
     }
 
     document.getElementById("btnVolverPortal").addEventListener("click", function () {
       window.location.href = "portal.html";
     });
     document.getElementById("btnVerUsuario").addEventListener("click", abrirModalUsuario);
-    document.getElementById("btnCerrarModalUsuarioPublico").addEventListener("click", cerrarModalUsuario);
-    document.getElementById("modalUsuarioPublico").addEventListener("click", function (event) {
-      if (event.target.id === "modalUsuarioPublico") cerrarModalUsuario();
+    document.getElementById("btnEliminarUsuario").addEventListener("click", eliminarUsuarioSeleccionado);
+    document.getElementById("btnCerrarModalUsuarioPublico").addEventListener("click", function () {
+      cerrarModal("modalUsuarioPublico");
+    });
+    document.getElementById("btnConfirmarBloqueoUsuarioPublico").addEventListener("click", confirmarBloqueoUsuarioPublico);
+    document.getElementById("btnCancelarConfirmacionUsuarioPublico").addEventListener("click", function () {
+      reiniciarConfirmacionUsuarioPublico();
+      cerrarModal("modalConfirmacionUsuarioPublico");
+      actualizarCabeceraEstadoUsuario();
+    });
+    document.getElementById("btnAceptarConfirmacionUsuarioPublico").addEventListener("click", function () {
+      if (typeof accionConfirmacionPendiente === "function") {
+        const accion = accionConfirmacionPendiente;
+        accionConfirmacionPendiente = null;
+        accion();
+      }
+    });
+
+    document.querySelectorAll("[data-modal-close]").forEach(function (boton) {
+      boton.addEventListener("click", function () {
+        const id = boton.getAttribute("data-modal-close");
+        if (id === "modalBloqueoUsuarioPublico") {
+          usuarioPendienteBloqueo = null;
+        }
+        if (id === "modalConfirmacionUsuarioPublico") {
+          reiniciarConfirmacionUsuarioPublico();
+        }
+        cerrarModal(id);
+        actualizarCabeceraEstadoUsuario();
+      });
+    });
+
+    document.getElementById("toggleEstadoUsuarioPublico").addEventListener("change", function () {
+      prepararCambioEstadoUsuarioPublico(this.checked);
+    });
+
+    ["modalUsuarioPublico", "modalConfirmacionUsuarioPublico", "modalBloqueoUsuarioPublico"].forEach(function (id) {
+      document.getElementById(id).addEventListener("click", function (event) {
+        if (event.target.id === id) {
+          if (id === "modalBloqueoUsuarioPublico") {
+            usuarioPendienteBloqueo = null;
+          }
+          if (id === "modalConfirmacionUsuarioPublico") {
+            reiniciarConfirmacionUsuarioPublico();
+          }
+          cerrarModal(id);
+          actualizarCabeceraEstadoUsuario();
+        }
+      });
     });
 
     (async function init() {
       try {
         await cargarUsuarios();
       } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo cargar la consola de usuarios públicos.");
+        mostrarMensaje("error", error.message || "No se pudo cargar la consola de usuarios publicos.");
       }
     })();
 
     window.seleccionarUsuario = seleccionarUsuario;
+    window.cerrarMensaje = cerrarMensaje;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
