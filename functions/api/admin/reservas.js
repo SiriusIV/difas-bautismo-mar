@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { checkAdminActividad, getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { crearNotificacion } from "../_notificaciones.js";
@@ -155,6 +155,7 @@ async function obtenerReservas(env, filtros) {
   const sql = `
     SELECT
       r.id,
+      r.usuario_id,
       r.franja_id,
       r.actividad_id,
       r.codigo_reserva,
@@ -166,6 +167,7 @@ async function obtenerReservas(env, filtros) {
       r.email,
       r.observaciones,
       COALESCE(r.observaciones_admin, '') AS observaciones_admin,
+      COALESCE(us.activo, 1) AS solicitante_activo,
       r.fecha_solicitud,
       r.fecha_modificacion,
       r.plazas_prereservadas,
@@ -203,6 +205,8 @@ async function obtenerReservas(env, filtros) {
       ON f.id = r.franja_id
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
+    LEFT JOIN usuarios us
+      ON us.id = r.usuario_id
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
     ORDER BY
       f.fecha ASC,
@@ -322,6 +326,22 @@ async function obtenerActividadIdDeReserva(env, reservaId) {
   return result?.results?.[0]?.actividad_id || null;
 }
 
+async function obtenerSolicitanteReserva(env, reservaId) {
+  const db = obtenerDbLectura(env);
+  return await db.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      COALESCE(us.activo, 1) AS solicitante_activo,
+      COALESCE(us.rol, '') AS solicitante_rol
+    FROM reservas r
+    LEFT JOIN usuarios us
+      ON us.id = r.usuario_id
+    WHERE r.id = ?
+    LIMIT 1
+  `).bind(reservaId).first();
+}
+
 async function obtenerContextoNotificacionReserva(env, reservaId) {
   const db = obtenerDbLectura(env);
   const contexto = await db.prepare(`
@@ -383,7 +403,7 @@ function construirDescripcionProgramacionCorreoSolicitante(contexto = {}) {
   const fecha = limpiarTexto(contexto?.fecha || "");
   const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
   const horaFin = limpiarTexto(contexto?.hora_fin || "");
-  if (fecha && horaInicio && horaFin) return `${fecha} � ${horaInicio} - ${horaFin}`;
+  if (fecha && horaInicio && horaFin) return `${fecha} · ${horaInicio} - ${horaFin}`;
   if (fecha) return fecha;
   return "";
 }
@@ -412,12 +432,12 @@ function construirUrlPanelSolicitanteCorreo(contexto = {}) {
 function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevoEstado = "") {
   const actividad = limpiarTexto(contexto?.actividad_nombre || "Actividad");
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
-  const organizador = limpiarTexto(contexto?.organizador_nombre || "la organización");
+  const organizador = limpiarTexto(contexto?.organizador_nombre || "la organizaciÃ³n");
   const estado = limpiarTexto(nuevoEstado || contexto?.estado || "").toUpperCase();
 
   if (estado === "CONFIRMADA") {
     return {
-      asunto: `${actividad} · Solicitud aceptada`,
+      asunto: `${actividad} Â· Solicitud aceptada`,
       etiqueta: "Solicitud aceptada",
       mensaje: "La solicitud ha sido validada correctamente.",
       colorFondo: "#eef8f1",
@@ -428,15 +448,15 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido aceptada por ${organizador}.`,
       siguientesPasos: [
         "La actividad queda reservada y lista para su seguimiento desde tu panel.",
-        "Si la actividad tiene aforo limitado, podrás gestionar la relación definitiva de asistentes desde esta misma solicitud.",
-        "Revisa con antelación la programación y la ubicación antes del día de la actividad."
+        "Si la actividad tiene aforo limitado, podrÃ¡s gestionar la relaciÃ³n definitiva de asistentes desde esta misma solicitud.",
+        "Revisa con antelaciÃ³n la programaciÃ³n y la ubicaciÃ³n antes del dÃ­a de la actividad."
       ]
     };
   }
 
   if (estado === "RECHAZADA") {
     return {
-      asunto: `${actividad} · Solicitud rechazada`,
+      asunto: `${actividad} Â· Solicitud rechazada`,
       etiqueta: "Solicitud rechazada",
       mensaje: "La solicitud no puede continuar en su estado actual.",
       colorFondo: "#fff4f1",
@@ -448,16 +468,16 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       siguientesPasos: [
         "Revisa las observaciones administrativas incluidas en este correo.",
         "Accede a tu panel para decidir si conviene corregir la solicitud, rehacerla o dejarla sin continuidad.",
-        "Si necesitas más contexto, consulta el detalle completo desde tu área de usuario."
+        "Si necesitas mÃ¡s contexto, consulta el detalle completo desde tu Ã¡rea de usuario."
       ]
     };
   }
 
   if (estado === "SUSPENDIDA") {
     return {
-      asunto: `${actividad} · Solicitud suspendida`,
+      asunto: `${actividad} Â· Solicitud suspendida`,
       etiqueta: "Solicitud suspendida",
-      mensaje: "La solicitud queda temporalmente detenida hasta resolver su situación.",
+      mensaje: "La solicitud queda temporalmente detenida hasta resolver su situaciÃ³n.",
       colorFondo: "#fff8e8",
       colorBorde: "#f1d58b",
       colorEtiqueta: "#8a5b00",
@@ -466,35 +486,35 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha quedado suspendida por ${organizador}.`,
       siguientesPasos: [
         "Consulta los requisitos u observaciones pendientes asociados a la actividad.",
-        "La solicitud no seguirá avanzando hasta que se resuelva la causa de la suspensión.",
-        "Cuando la situación quede regularizada, la actividad podrá reactivarse desde el panel."
+        "La solicitud no seguirÃ¡ avanzando hasta que se resuelva la causa de la suspensiÃ³n.",
+        "Cuando la situaciÃ³n quede regularizada, la actividad podrÃ¡ reactivarse desde el panel."
       ]
     };
   }
 
   if (estado === "PENDIENTE") {
     return {
-      asunto: `${actividad} · Solicitud reabierta`,
+      asunto: `${actividad} Â· Solicitud reabierta`,
       etiqueta: "Solicitud reabierta",
-      mensaje: "La solicitud vuelve a estar en revisión.",
+      mensaje: "La solicitud vuelve a estar en revisiÃ³n.",
       colorFondo: "#eef4ff",
       colorBorde: "#c9dcff",
       colorEtiqueta: "#1d4f91",
       colorTitulo: "#123a63",
       colorTexto: "#355679",
-      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisión del organizador.`,
+      cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisiÃ³n del organizador.`,
       siguientesPasos: [
-        "Revisa las observaciones administrativas para saber qué debe ajustarse.",
-        "La solicitud permanecerá en trámite hasta que el organizador complete una nueva revisión.",
-        "Puedes seguir su evolución desde tu panel de usuario."
+        "Revisa las observaciones administrativas para saber quÃ© debe ajustarse.",
+        "La solicitud permanecerÃ¡ en trÃ¡mite hasta que el organizador complete una nueva revisiÃ³n.",
+        "Puedes seguir su evoluciÃ³n desde tu panel de usuario."
       ]
     };
   }
 
   return {
-    asunto: `${actividad} · Actualización de la solicitud`,
+    asunto: `${actividad} Â· ActualizaciÃ³n de la solicitud`,
     etiqueta: "Solicitud actualizada",
-    mensaje: "Se ha producido una actualización en la solicitud.",
+    mensaje: "Se ha producido una actualizaciÃ³n en la solicitud.",
     colorFondo: "#eef4ff",
     colorBorde: "#c9dcff",
     colorEtiqueta: "#1d4f91",
@@ -526,14 +546,14 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
   const configuracion = obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto, nuevoEstado);
 
   const resumenTexto = [
-    codigo ? `Código de solicitud: ${codigo}` : "",
+    codigo ? `CÃ³digo de solicitud: ${codigo}` : "",
     centro ? `Centro: ${centro}` : "",
     `Organiza: ${organizador}`,
     programacion ? `Fecha y hora: ${programacion}` : "",
     plazas > 0 ? `Plazas solicitadas: ${plazas}` : "",
-    ubicacion ? `Ubicación: ${ubicacion}` : "",
+    ubicacion ? `UbicaciÃ³n: ${ubicacion}` : "",
     urlMaps ? `Google Maps: ${urlMaps}` : "",
-    telefono ? `Teléfono de contacto: ${telefono}` : "",
+    telefono ? `TelÃ©fono de contacto: ${telefono}` : "",
     correoContacto ? `Correo de contacto: ${correoContacto}` : ""
   ].filter(Boolean);
 
@@ -571,24 +591,24 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
           <tbody>
-            ${codigo ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Código</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(codigo)}</td></tr>` : ""}
+            ${codigo ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">CÃ³digo</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(codigo)}</td></tr>` : ""}
             ${centro ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Centro</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(centro)}</td></tr>` : ""}
             <tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Organiza</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(organizador)}</td></tr>
             ${programacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Fecha y hora</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(programacion)}</td></tr>` : ""}
             ${plazas > 0 ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Plazas</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(plazas)}</td></tr>` : ""}
-            ${ubicacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Ubicación</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(ubicacion)}</td></tr>` : ""}
-            ${urlMaps ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Mapa</td><td style="padding:4px 0;color:#22313f;"><a href="${escaparHtmlCorreo(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación</a></td></tr>` : ""}
-            ${telefono ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Teléfono</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(telefono)}</td></tr>` : ""}
+            ${ubicacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">UbicaciÃ³n</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(ubicacion)}</td></tr>` : ""}
+            ${urlMaps ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Mapa</td><td style="padding:4px 0;color:#22313f;"><a href="${escaparHtmlCorreo(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicaciÃ³n</a></td></tr>` : ""}
+            ${telefono ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">TelÃ©fono</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(telefono)}</td></tr>` : ""}
             ${correoContacto ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Correo</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(correoContacto)}</td></tr>` : ""}
           </tbody>
         </table>
       </div>
       ${urlMaps ? `
         <div style="margin-bottom:14px;border:1px solid #d8e6fb;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#f7fbff 0%,#eef4ff 100%);">
-          <div style="padding:12px 16px 8px 16px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;">Ubicación de la actividad</div>
+          <div style="padding:12px 16px 8px 16px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#1d4f91;">UbicaciÃ³n de la actividad</div>
           <div style="padding:0 16px 12px 16px;font-size:14px;color:#22313f;">
             <div style="font-weight:700;color:#123a63;margin-bottom:4px;">${escaparHtmlCorreo(actividad)}</div>
-            <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtmlCorreo(ubicacion || "Consulta la localización en Google Maps.")}</div>
+            <div style="color:#4a5b6d;margin-bottom:12px;">${escaparHtmlCorreo(ubicacion || "Consulta la localizaciÃ³n en Google Maps.")}</div>
             <a href="${escaparHtmlCorreo(urlMaps)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Abrir en Google Maps</a>
           </div>
         </div>
@@ -632,7 +652,7 @@ async function enviarCorreoSolicitanteCambioEstado(env, contexto = {}, nuevoEsta
   const correo = !incluirRequisitos
     ? correoBase
     : (() => {
-        const avisoRequisitos = "Si en el momento de comenzar la actividad no se cumplen algunos de los requisitos necesarios, la actividad no podrá desarrollarse en las condiciones previstas.";
+        const avisoRequisitos = "Si en el momento de comenzar la actividad no se cumplen algunos de los requisitos necesarios, la actividad no podrÃ¡ desarrollarse en las condiciones previstas.";
         const bloqueTexto = [
           "",
           "REQUISITOS ASOCIADOS",
@@ -689,7 +709,7 @@ async function crearNotificacionSolicitanteReservaRechazada(env, contexto = {}) 
     rolDestino: "SOLICITANTE",
     tipo: "RESERVA",
     titulo: "Solicitud rechazada",
-    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Revisa su estado para corregirla o decidir quÃ© hacer a continuaciÃ³n.`,
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Revisa su estado para corregirla o decidir quÃƒÂ© hacer a continuaciÃƒÂ³n.`,
     urlDestino: "/usuario-panel.html"
   });
 }
@@ -757,6 +777,7 @@ export async function onRequestGet(context) {
 
     const reservas = rows.map(row => ({
       id: row.id,
+      usuario_id: row.usuario_id,
       franja_id: row.franja_id,
       actividad_id: row.actividad_id,
       actividad_nombre: row.actividad_nombre,
@@ -769,6 +790,7 @@ export async function onRequestGet(context) {
       email: row.email || "",
       observaciones: row.observaciones || "",
       observaciones_admin: row.observaciones_admin || "",
+      solicitante_activo: Number(row.solicitante_activo || 0) === 1 ? 1 : 0,
       fecha_solicitud: row.fecha_solicitud,
       fecha_modificacion: row.fecha_modificacion,
       fecha: row.fecha,
@@ -839,13 +861,14 @@ export async function onRequestGet(context) {
 
     if (!id || !accion) {
       return json(
-        { ok: false, error: "Faltan datos para ejecutar la acción." },
+        { ok: false, error: "Faltan datos para ejecutar la acciÃ³n." },
         { status: 400 }
       );
     }
 
     const actividadId = await obtenerActividadIdDeReserva(env, id);
     const contextoReserva = await obtenerContextoNotificacionReserva(env, id);
+    const solicitanteReserva = await obtenerSolicitanteReserva(env, id);
 
     if (!actividadId) {
       return json(
@@ -864,7 +887,22 @@ export async function onRequestGet(context) {
 
     if (!nuevoEstado) {
       return json(
-        { ok: false, error: "Acción no válida." },
+        { ok: false, error: "AcciÃ³n no vÃ¡lida." },
+        { status: 400 }
+      );
+    }
+
+    const solicitanteSuspendido =
+      Number(solicitanteReserva?.usuario_id || 0) > 0 &&
+      String(solicitanteReserva?.solicitante_rol || "").toUpperCase() === "SOLICITANTE" &&
+      Number(solicitanteReserva?.solicitante_activo || 0) !== 1;
+
+    if (solicitanteSuspendido && (nuevoEstado === "CONFIRMADA" || nuevoEstado === "PENDIENTE")) {
+      return json(
+        {
+          ok: false,
+          error: "No se puede readmitir ni confirmar esta solicitud mientras la cuenta del solicitante siga suspendida."
+        },
         { status: 400 }
       );
     }
@@ -964,10 +1002,11 @@ export async function onRequestGet(context) {
     return json(
       {
         ok: false,
-        error: "No se pudo ejecutar la acción sobre la reserva.",
+        error: "No se pudo ejecutar la acciÃ³n sobre la reserva.",
         detalle: error.message
       },
       { status: 500 }
     );
   }
 }
+

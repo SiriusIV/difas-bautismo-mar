@@ -54,6 +54,12 @@ function deduplicarTextos(items = []) {
   return salida;
 }
 
+function describirReservaParaListado(reserva = {}) {
+  const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
+  const codigo = limpiarTexto(reserva.codigo_reserva || "");
+  return codigo ? `${actividad} (${codigo})` : actividad;
+}
+
 async function obtenerUsuarioPublico(env, usuarioId) {
   return await env.DB.prepare(`
     SELECT
@@ -114,23 +120,15 @@ function construirCorreoUsuarioPublico(usuario, accion, motivo, reservas = []) {
   const cabecera = esEliminacion
     ? "Tu cuenta de usuario publico ha sido eliminada por el superadministrador."
     : "Tu cuenta de usuario publico ha sido suspendida temporalmente por el superadministrador.";
-  const solicitudesRechazadas = deduplicarTextos(
+  const solicitudesProcesadas = deduplicarTextos(
     (reservas || [])
       .filter((reserva) => limpiarTexto(reserva.estado).toUpperCase() !== "BORRADOR")
-      .map((reserva) => {
-        const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
-        const codigo = limpiarTexto(reserva.codigo_reserva || "");
-        return codigo ? `${actividad} (${codigo})` : actividad;
-      })
+      .map((reserva) => describirReservaParaListado(reserva))
   );
   const borradoresEliminados = deduplicarTextos(
     (reservas || [])
       .filter((reserva) => limpiarTexto(reserva.estado).toUpperCase() === "BORRADOR")
-      .map((reserva) => {
-        const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
-        const codigo = limpiarTexto(reserva.codigo_reserva || "");
-        return codigo ? `${actividad} (${codigo})` : actividad;
-      })
+      .map((reserva) => describirReservaParaListado(reserva))
   );
 
   const texto = [
@@ -147,15 +145,18 @@ function construirCorreoUsuarioPublico(usuario, accion, motivo, reservas = []) {
     <p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>
   `;
 
-  if (solicitudesRechazadas.length) {
+  if (solicitudesProcesadas.length) {
+    const textoProcesadas = esEliminacion
+      ? "Como consecuencia de esta accion, las siguientes solicitudes tramitadas han sido eliminadas del sistema:"
+      : "Como consecuencia de esta accion, las siguientes solicitudes tramitadas han quedado rechazadas:";
     texto.push(
       "",
-      "Como consecuencia de esta accion, las siguientes solicitudes tramitadas han quedado rechazadas:"
+      textoProcesadas
     );
-    solicitudesRechazadas.forEach((item) => texto.push(`- ${item}`));
+    solicitudesProcesadas.forEach((item) => texto.push(`- ${item}`));
     html += `
-      <p>Como consecuencia de esta accion, las siguientes solicitudes tramitadas han quedado rechazadas:</p>
-      <ul>${solicitudesRechazadas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <p>${escapeHtml(textoProcesadas)}</p>
+      <ul>${solicitudesProcesadas.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     `;
   }
 
@@ -202,11 +203,12 @@ function construirCorreoAdministradorAfectado(admin, usuario, accion, motivo, re
     ? `Se ha eliminado la cuenta del solicitante ${solicitante}.`
     : `Se ha suspendido temporalmente la cuenta del solicitante ${solicitante}.`;
   const items = (reservas || []).map((reserva) => {
-    const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
-    const codigo = limpiarTexto(reserva.codigo_reserva || "");
+    const descripcion = describirReservaParaListado(reserva);
     const estado = limpiarTexto(reserva.estado || "").toUpperCase();
-    const etiqueta = estado === "BORRADOR" ? "borrador eliminado" : "solicitud rechazada";
-    return codigo ? `${actividad} (${codigo}) - ${etiqueta}` : `${actividad} - ${etiqueta}`;
+    const etiqueta = estado === "BORRADOR"
+      ? "borrador eliminado"
+      : (esEliminacion ? "solicitud eliminada" : "solicitud rechazada");
+    return `${descripcion} - ${etiqueta}`;
   });
 
   const texto = [
@@ -268,6 +270,7 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
   const resumen = {
     total_reservas_afectadas: reservas.length,
     reservas_rechazadas: 0,
+    reservas_eliminadas: 0,
     borradores_eliminados: 0,
     actividades_afectadas: 0,
     administradores_notificados: 0,
@@ -320,6 +323,36 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
         continue;
       }
 
+      if (accion === "eliminar") {
+        await registrarEventoReserva(env, {
+          reservaId: Number(reserva.id || 0),
+          accion: "ELIMINACION_SOLICITANTE_SUPERADMIN",
+          estadoOrigen,
+          estadoDestino: "ELIMINADA",
+          observaciones: motivo,
+          actorUsuarioId: actor.actorUsuarioId,
+          actorRol: actor.actorRol,
+          actorNombre: actor.actorNombre
+        });
+        await borrarHistorialReservas(env, [Number(reserva.id || 0)]);
+        await db.prepare(`
+          DELETE FROM visitantes
+          WHERE reserva_id = ?
+        `).bind(Number(reserva.id || 0)).run();
+        const borrado = await db.prepare(`
+          DELETE FROM reservas
+          WHERE id = ?
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+        `).bind(Number(reserva.id || 0)).run();
+
+        if (Number(borrado?.meta?.changes || 0) > 0) {
+          resumen.reservas_eliminadas += 1;
+        } else {
+          resumen.incidencias.push(`Reserva ${Number(reserva.id || 0)}: no se pudo eliminar.`);
+        }
+        continue;
+      }
+
       const update = await db.prepare(`
         UPDATE reservas
         SET estado = 'RECHAZADA',
@@ -333,7 +366,7 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
         resumen.reservas_rechazadas += 1;
         await registrarEventoReserva(env, {
           reservaId: Number(reserva.id || 0),
-          accion: accion === "eliminar" ? "ELIMINACION_SOLICITANTE_SUPERADMIN" : "SUSPENSION_SOLICITANTE_SUPERADMIN",
+          accion: "SUSPENSION_SOLICITANTE_SUPERADMIN",
           estadoOrigen,
           estadoDestino: "RECHAZADA",
           observaciones: motivo,
@@ -418,6 +451,7 @@ export async function actualizarEstadoUsuarioPublico(env, usuarioId, activo, act
     usuario_activo: activar ? 1 : 0,
     total_reservas_afectadas: 0,
     reservas_rechazadas: 0,
+    reservas_eliminadas: 0,
     borradores_eliminados: 0,
     actividades_afectadas: 0,
     administradores_notificados: 0,
@@ -434,6 +468,7 @@ export async function actualizarEstadoUsuarioPublico(env, usuarioId, activo, act
   Object.assign(resumen, {
     total_reservas_afectadas: impacto.resumen.total_reservas_afectadas,
     reservas_rechazadas: impacto.resumen.reservas_rechazadas,
+    reservas_eliminadas: impacto.resumen.reservas_eliminadas,
     borradores_eliminados: impacto.resumen.borradores_eliminados,
     actividades_afectadas: impacto.resumen.actividades_afectadas,
     administradores_notificados: impacto.resumen.administradores_notificados,
@@ -476,6 +511,7 @@ export async function eliminarUsuarioPublico(env, usuarioId, actor = {}) {
     usuario_id: Number(usuarioId || 0),
     total_reservas_afectadas: impacto.resumen.total_reservas_afectadas,
     reservas_rechazadas: impacto.resumen.reservas_rechazadas,
+    reservas_eliminadas: impacto.resumen.reservas_eliminadas,
     borradores_eliminados: impacto.resumen.borradores_eliminados,
     actividades_afectadas: impacto.resumen.actividades_afectadas,
     administradores_notificados: impacto.resumen.administradores_notificados,
