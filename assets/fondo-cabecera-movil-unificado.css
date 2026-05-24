@@ -1,0 +1,22 @@
+@media (max-width: 760px) {
+  body.fondo-cabecera-unificada {
+    background: transparent !important;
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+  }
+
+  body.fondo-cabecera-unificada::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.972) 0%, rgba(255,255,255,0.83) 12%, rgba(255,255,255,0.49) 26%, rgba(255,255,255,0.27) 42%, rgba(255,255,255,0.18) 100%),
+      linear-gradient(180deg, rgba(244,246,248,0.20) 0%, rgba(244,246,248,0.27) 100%),
+      url("fondo_cabecera.png") top center / 165% auto no-repeat,
+      #f4f6f8;
+    background-blend-mode: normal, screen, normal;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
