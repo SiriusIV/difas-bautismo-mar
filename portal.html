@@ -1006,6 +1006,13 @@
   height: 220px;
 }
 
+.detalle-vacio .detalle-contenido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+}
+
 
     
     .btn {
@@ -1530,6 +1537,39 @@
         gap: 12px;
       }
 
+      .detalle-vacio .detalle-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .detalle-vacio .detalle-contenido {
+        min-height: 0;
+        justify-content: flex-start;
+      }
+
+      .estado-vacio-portal {
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        gap: 8px;
+        padding: 0 8px 4px;
+      }
+
+      .estado-vacio-portal-titulo {
+        font-size: 19px;
+        line-height: 1.2;
+      }
+
+      .estado-vacio-portal-texto {
+        max-width: 100%;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .detalle-vacio .detalle-img {
+        height: 190px;
+      }
+
       .detalle-acciones-inferiores {
         flex-direction: column;
         align-items: stretch;
@@ -1582,10 +1622,13 @@
       .franja-sesion-inner #textoSesion {
         grid-area: texto;
         min-width: 0;
-        text-align: left;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        max-width: 100%;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.28;
+        padding: 0 46px;
       }
 
       .franja-sesion-inner #btnNotificacionesSesion {
@@ -1623,7 +1666,8 @@
 
       .franja-sesion-inner.modo-admin #textoSesion {
         text-align: center;
-        justify-self: center;
+        justify-self: stretch;
+        align-self: center;
       }
 
       .franja-sesion-inner.modo-admin #btnNotificacionesSesion {
