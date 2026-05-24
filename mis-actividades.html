@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -586,20 +586,117 @@
       }
 
       .tabla-wrap {
-        overflow-x: auto;
+        overflow-x: hidden;
+      }
+
+      table,
+      tbody {
+        display: block;
+        width: 100%;
+      }
+
+      thead {
+        display: none;
       }
 
       table {
         min-width: 0;
-      }
-
-      th.sel-col,
-      td.sel-col {
-        display: none;
+        background: transparent;
       }
 
       #tabla tr {
+        display: block;
+        width: 100%;
+        margin: 0 0 12px;
+        padding: 12px;
+        border: 1px solid #dde4ea;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
         cursor: pointer;
+      }
+
+      #tabla td {
+        display: block;
+        width: 100% !important;
+        border: 0;
+        padding: 0;
+        text-align: left !important;
+      }
+
+      th.sel-col,
+      td.sel-col,
+      td.activa-col {
+        display: none !important;
+      }
+
+      #tabla td.nombre-col {
+        margin-bottom: 10px;
+        font-size: 18px;
+        line-height: 1.28;
+        font-weight: 700;
+        color: #123a63;
+      }
+
+      #tabla td.tipo-col,
+      #tabla td.programa-col,
+      #tabla td.inicio-col,
+      #tabla td.fin-col,
+      #tabla td.estado-col {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0;
+      }
+
+      #tabla td.tipo-col::before,
+      #tabla td.programa-col::before,
+      #tabla td.inicio-col::before,
+      #tabla td.fin-col::before,
+      #tabla td.estado-col::before {
+        content: attr(data-label);
+        flex: 0 0 108px;
+        max-width: 108px;
+        font-size: 12px;
+        line-height: 1.3;
+        font-weight: 700;
+        color: #5f6d7a;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      #tabla td.tipo-col > span,
+      #tabla td.programa-col > span,
+      #tabla td.inicio-col > span,
+      #tabla td.fin-col > span,
+      #tabla td.estado-col > span,
+      #tabla td.estado-col > div,
+      #tabla td.estado-col > .estado-mobile-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      #tabla td.programa-col .valor-vacio,
+      #tabla td.inicio-col .valor-vacio,
+      #tabla td.fin-col .valor-vacio {
+        color: #6b7280;
+      }
+
+      #tabla td.estado-col {
+        align-items: center;
+      }
+
+      #tabla td.estado-col .estado-mobile-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      #tabla td.estado-col .estado-extra {
+        margin-top: 0;
+        text-align: right;
       }
     }
   </style>
@@ -970,6 +1067,15 @@
           actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "fila-seleccionada" : "",
           estaVisible ? "" : "fila-inactiva"
         ].filter(Boolean).join(" ");
+        const tipoTexto = String(a.tipo || "").toUpperCase() === "PENDIENTE" ? "PENDIENTE" : (a.tipo || "");
+        const programaTexto = a.subtitulo_publico ? a.subtitulo_publico : `<span class="valor-vacio">-</span>`;
+        const inicioTexto = a.tipo === "TEMPORAL" && a.fecha_inicio ? formatearFechaES(a.fecha_inicio) : `<span class="valor-vacio">-</span>`;
+        const finTexto = a.tipo === "TEMPORAL" && a.fecha_fin ? formatearFechaES(a.fecha_fin) : `<span class="valor-vacio">-</span>`;
+        const estadoExtra = Number(a.aforo_limitado || 0) === 1 &&
+          Number(a.usa_franjas || 0) === 1 &&
+          Number(a.plazas_totales || 0) > 0
+            ? `<div class="estado-extra">Plazas: ${Number(a.plazas_disponibles || 0)} disponibles de ${Number(a.plazas_totales || 0)}</div>`
+            : ``;
 
         return `
           <tr class="${filaClases}" onclick="manejarSeleccionFilaActividad(event, ${a.id})">
@@ -982,23 +1088,19 @@
               >
             </td>
             <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
-            <td class="tipo-col">${String(a.tipo || "").toUpperCase() === "PENDIENTE" ? "PENDIENTE" : (a.tipo || "")}</td>
-            <td class="programa-col">${a.subtitulo_publico || "-"}</td>
-            <td class="inicio-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_inicio) : "-"}</td>
-            <td class="fin-col">${a.tipo === "TEMPORAL" ? formatearFechaES(a.fecha_fin) : "-"}</td>
-            <td class="estado-col">
-              <span class="badge estado-badge ${estado.clase}">${estado.texto}</span>
-              ${
-                Number(a.aforo_limitado || 0) === 1 &&
-                Number(a.usa_franjas || 0) === 1 &&
-                Number(a.plazas_totales || 0) > 0
-                  ? `<div class="estado-extra">Plazas: ${Number(a.plazas_disponibles || 0)} disponibles de ${Number(a.plazas_totales || 0)}</div>`
-                  : ``
-              }
+            <td class="tipo-col" data-label="Tipo"><span>${tipoTexto}</span></td>
+            <td class="programa-col" data-label="Programa"><span>${programaTexto}</span></td>
+            <td class="inicio-col" data-label="Comienza"><span>${inicioTexto}</span></td>
+            <td class="fin-col" data-label="Finaliza"><span>${finTexto}</span></td>
+            <td class="estado-col" data-label="Estado">
+              <div class="estado-mobile-wrap">
+                <span class="badge estado-badge ${estado.clase}">${estado.texto}</span>
+                ${estadoExtra}
+              </div>
             </td>
             <td class="activa-col">
               <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
-                ${Number(a.activa || 0) === 1 ? "Sí" : "No"}
+                ${Number(a.activa || 0) === 1 ? "SÃ­" : "No"}
               </span>
             </td>
           </tr>
@@ -1104,7 +1206,7 @@
           return;
         }
 
-        let textoConfirmacion = "¿Seguro que deseas eliminar esta actividad?";
+        let textoConfirmacion = "Â¿Seguro que deseas eliminar esta actividad?";
 
         if (dataPrevio?.requiere_confirmacion) {
           textoConfirmacion = dataPrevio.mensaje || textoConfirmacion;
@@ -1173,7 +1275,7 @@
           requiereObservaciones = !!dataPrevio.requiere_observaciones;
         }
 
-        const confirmar = confirm(`${textoConfirmacion}\n\n¿Deseas continuar?`);
+        const confirmar = confirm(`${textoConfirmacion}\n\nÂ¿Deseas continuar?`);
         if (!confirmar) return;
 
         if (resPrevio.ok && dataPrevio?.ok && !dataPrevio?.requiere_confirmacion) {
@@ -1276,3 +1378,4 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
