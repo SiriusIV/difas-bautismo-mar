@@ -426,13 +426,23 @@
       display: inline-flex;
       align-items: center;
       color: #123a63;
-      text-decoration: none;
       font-weight: 600;
+      text-decoration: none;
+    }
+
+    .tabla-actividades-modal tr.actividad-modal-item {
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
       cursor: pointer;
     }
 
-    .lista-actividades-enlace:hover {
-      text-decoration: underline;
+    .tabla-actividades-modal tr.actividad-modal-item:hover {
+      background: #f8fbff;
+    }
+
+    .tabla-actividades-modal tr.actividad-modal-item.activa {
+      background: #eef5ff;
+      border-color: #c9dcff;
+      box-shadow: 0 5px 16px rgba(28, 91, 183, 0.12);
     }
 
     .actividad-ofertadas-btn {
@@ -653,6 +663,16 @@
     }
 
     @media (max-width: 760px) {
+      #modalActividades {
+        align-items: flex-start;
+        padding-top: max(96px, calc(env(safe-area-inset-top, 0px) + 96px));
+        padding-bottom: 14px;
+      }
+
+      #modalActividades .modal {
+        max-height: calc(100vh - 120px);
+      }
+
       .cabecera-seccion {
         justify-content: center;
         text-align: center;
@@ -828,6 +848,12 @@
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+      }
+
+      .tabla-actividades-modal tr.actividad-modal-item.activa {
+        background: #eef5ff;
+        border-color: #c9dcff;
+        box-shadow: 0 5px 16px rgba(28, 91, 183, 0.12);
       }
 
       .tabla-actividades-modal td {
@@ -1208,6 +1234,7 @@
     let mensajeTimer = null;
     let mapaVistaActividad = null;
     let actividadVistaActual = null;
+    let actividadModalSeleccionadaId = null;
     let accionConfirmacionPendiente = null;
 
     function escapeHtml(valor) {
@@ -1344,6 +1371,20 @@
       modal.setAttribute("aria-hidden", "true");
     }
 
+    function marcarActividadModalSeleccionada(actividadId) {
+      actividadModalSeleccionadaId = Number(actividadId) || null;
+      document.querySelectorAll("#modalActividades .actividad-modal-item").forEach((fila) => {
+        fila.classList.toggle("activa", Number(fila.getAttribute("data-actividad-id") || 0) === actividadModalSeleccionadaId);
+      });
+    }
+
+    function seleccionarActividadModal(actividadId) {
+      marcarActividadModalSeleccionada(actividadId);
+      window.setTimeout(() => {
+        abrirVistaActividad(actividadId);
+      }, 90);
+    }
+
     function abrirModalActividades() {
       if (!usuarioSeleccionado) return;
 
@@ -1371,11 +1412,11 @@
               </thead>
               <tbody>
                 ${actividades.map((item) => `
-                  <tr>
+                  <tr class="actividad-modal-item ${actividadModalSeleccionadaId === Number(item.actividad_id || 0) ? "activa" : ""}" data-actividad-id="${Number(item.actividad_id || 0)}" onclick="seleccionarActividadModal(${Number(item.actividad_id || 0)})">
                     <td class="col-actividad">
-                      <a class="lista-actividades-enlace" onclick="abrirVistaActividad(${Number(item.actividad_id || 0)}); return false;">
+                      <span class="lista-actividades-enlace">
                         ${escapeHtml(item.actividad_nombre || "Actividad")}
-                      </a>
+                      </span>
                     </td>
                     <td class="col-solicitudes" data-label="Solicitudes"><span>${Number(item.solicitudes_total || 0)}</span></td>
                   </tr>
