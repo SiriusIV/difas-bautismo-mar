@@ -55,6 +55,8 @@
     #btnEditarSeleccion, #btnAsistentesSeleccion { display: none !important; }
     .bloque { padding: 14px; margin-bottom: 10px; }
     .bloque h3 { margin: 0 0 12px; font-size: 15px; color: #123a63; }
+    .bloque-cabecera-filtros { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .bloque-cabecera-filtros h3 { margin: 0; }
     .filtros { display: grid; grid-template-columns: 282px 150px 150px minmax(180px, 1fr) auto; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
@@ -181,6 +183,7 @@
   .logo-cabecera.logo-admin-personal { width: 82px; }
   .contenedor { padding: 0 10px 18px; }
   .filtros { grid-template-columns: 1fr; gap: 8px; }
+  .bloque-cabecera-filtros { align-items: flex-start; }
   .resumen-linea { grid-template-columns: 1fr; gap: 10px; }
   .resumen-centro select { max-width: 100%; }
   .acciones-superiores { width: 100%; justify-content: center; }
@@ -228,17 +231,17 @@
       </div>
       <div id="mensaje" class="mensaje"></div>
       <div class="bloque">
-        <h3>Filtros</h3>
+        <div class="bloque-cabecera-filtros">
+          <h3>Filtros</h3>
+          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
+            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
+          </button>
+        </div>
         <div class="filtros">
           <div><label for="filtroActividad">Actividad</label><select id="filtroActividad"><option value="">Todas</option></select></div>
           <div><label for="filtroFechaInicio">Fecha inicio</label><input type="date" id="filtroFechaInicio"></div>
           <div><label for="filtroFechaFin">Fecha fin</label><input type="date" id="filtroFechaFin"></div>
           <div><label for="filtroBuscar">Solicitante</label><select id="filtroBuscar"><option value="">Todos</option></select></div>
-          <div class="filtro-acciones-rapidas">
-            <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
-              <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
-            </button>
-          </div>
         </div>
       </div>
       <div class="bloque">
