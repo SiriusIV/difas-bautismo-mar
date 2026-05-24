@@ -237,16 +237,27 @@ function construirCorreoAdministradorAfectado(admin, usuario, accion, motivo, re
   return { asunto, texto: texto.join("\n"), html };
 }
 
-async function crearNotificacionAdministradorAfectado(env, adminId, usuario, accion, totalSolicitudes) {
+async function crearNotificacionAdministradorAfectado(env, adminId, usuario, accion, reservas = []) {
   if (!(Number(adminId) > 0)) return { ok: false, skipped: true };
   const solicitante = nombreVisibleUsuarioPublico(usuario);
   const esEliminacion = accion === "eliminar";
+  const actividades = deduplicarTextos(
+    (reservas || []).map((reserva) => {
+      const actividad = limpiarTexto(reserva.actividad_nombre || "Actividad");
+      const codigo = limpiarTexto(reserva.codigo_reserva || "");
+      return codigo ? `${actividad} (${codigo})` : actividad;
+    })
+  );
+  const totalSolicitudes = Array.isArray(reservas) ? reservas.length : 0;
+  const resumenActividades = actividades.length
+    ? ` Actividades afectadas: ${actividades.join(", ")}.`
+    : "";
   return await crearNotificacion(env, {
     usuarioId: Number(adminId),
     rolDestino: "ADMIN",
     tipo: "RESERVA",
     titulo: esEliminacion ? "Solicitudes canceladas por eliminacion de usuario" : "Solicitudes canceladas por suspension de usuario",
-    mensaje: `${totalSolicitudes} solicitud(es) de ${solicitante} han quedado canceladas automaticamente por ${esEliminacion ? "eliminacion" : "suspension"} de su cuenta.`,
+    mensaje: `${totalSolicitudes} solicitud(es) de ${solicitante} han quedado canceladas automaticamente por ${esEliminacion ? "eliminacion" : "suspension"} de su cuenta.${resumenActividades}`,
     urlDestino: "/admin-reservas.html"
   });
 }
@@ -369,7 +380,7 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
         Number(grupo.adminId || 0),
         usuario,
         accion,
-        Array.isArray(grupo.reservas) ? grupo.reservas.length : 0
+        grupo.reservas
       );
       if (notificacion?.ok) {
         resumen.notificaciones_admin_creadas += 1;
