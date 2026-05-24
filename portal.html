@@ -2584,7 +2584,9 @@ function actualizarBotonSolicitarSegunFranja() {
 
       if (rol === "SOLICITANTE") {
         texto.textContent = `Usuario: ${(centro || nombre || "").toUpperCase()}`;
-      } else if (rol === "ADMIN" || rol === "SUPERADMIN") {
+      } else if (rol === "SUPERADMIN") {
+        texto.textContent = "Superadministrador";
+      } else if (rol === "ADMIN") {
         texto.textContent = `Administrador: ${(nombrePublico || centro || nombre || "").toUpperCase()}`;
       } else if (rol === "SECRETARIA") {
         texto.textContent = `Secretaría: ${(nombre || centro || "").toUpperCase()}`;
