@@ -1704,31 +1704,35 @@
         display: grid;
         grid-template-columns: repeat(3, minmax(0, max-content));
         grid-template-areas:
-          "actividades reservas reservas"
-          "plantillas calendario informes";
+          "actividades reservas usuarios"
+          "plantillas informes calendario";
         justify-content: center;
         align-items: center;
         gap: 8px 10px;
         width: 100%;
       }
 
-      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(1) {
+      .franja-sesion-inner.modo-admin #btnNavAdminActividades {
         grid-area: actividades;
       }
 
-      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(2) {
+      .franja-sesion-inner.modo-admin #btnNavAdminReservas {
         grid-area: reservas;
       }
 
-      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(3) {
+      .franja-sesion-inner.modo-admin #btnNavAdminUsuariosPublicos {
+        grid-area: usuarios;
+      }
+
+      .franja-sesion-inner.modo-admin #btnNavAdminPlantillas {
         grid-area: plantillas;
       }
 
-      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(4) {
+      .franja-sesion-inner.modo-admin #btnNavAdminInformes {
         grid-area: informes;
       }
 
-      .franja-sesion-inner.modo-admin #barraAdmin > :nth-child(5) {
+      .franja-sesion-inner.modo-admin #btnNavAdminCalendario {
         grid-area: calendario;
         justify-self: center;
       }
@@ -1798,12 +1802,13 @@
         </div>
         <div id="barraSecretaria" class="barra-secretaria franja-sesion-nav"></div>
         <div id="barraAdmin" class="barra-admin franja-sesion-nav">
-          <button class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
-          <button class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
-          <button class="nav-btn" onclick="irUsuariosPublicosAdmin()">Usuarios públicos</button>
-          <button class="nav-btn" onclick="irPanelPlantillas()">Plantillas</button>
-          <button class="nav-btn" onclick="irInformesActividad()">Informes</button>
+          <button id="btnNavAdminActividades" class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+          <button id="btnNavAdminReservas" class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
+          <button id="btnNavAdminUsuariosPublicos" class="nav-btn" onclick="irUsuariosPublicosAdmin()">Usuarios públicos</button>
+          <button id="btnNavAdminPlantillas" class="nav-btn" onclick="irPanelPlantillas()">Plantillas</button>
+          <button id="btnNavAdminInformes" class="nav-btn" onclick="irInformesActividad()">Informes</button>
           <button
+            id="btnNavAdminCalendario"
             class="nav-btn-icon"
             type="button"
             onclick="irCalendarioAdmin()"
