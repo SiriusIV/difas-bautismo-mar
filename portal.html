@@ -207,6 +207,13 @@
       display: block;
     }
 
+    .nav-btn-icon .btn-label-mobile {
+      display: none;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
     .franja-sesion {
       display: none;
       max-width: 1108px;
@@ -1734,6 +1741,17 @@
       .franja-sesion-inner.modo-admin #btnNavAdminUsuariosPublicos {
         grid-area: usuarios;
       }
+      .franja-sesion-inner.modo-admin #btnNavAdminUsuariosPublicos {
+        width: auto;
+        min-width: 0;
+        height: 32px;
+        padding: 0 10px;
+        gap: 6px;
+        border-radius: 999px;
+      }
+      .franja-sesion-inner.modo-admin #btnNavAdminUsuariosPublicos .btn-label-mobile {
+        display: inline;
+      }
 
       .franja-sesion-inner.modo-admin #btnNavAdminPlantillas {
         grid-area: plantillas;
@@ -1817,6 +1835,7 @@
           <button id="btnNavAdminReservas" class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
           <button id="btnNavAdminUsuariosPublicos" class="nav-btn-icon" type="button" onclick="irUsuariosPublicosAdmin()" title="Usuarios públicos" aria-label="Usuarios públicos">
             <img src="assets/icono-usuarios-publicos.svg" alt="">
+            <span class="btn-label-mobile">Usuarios públicos</span>
           </button>
           <button id="btnNavAdminPlantillas" class="nav-btn" onclick="irPanelPlantillas()">Plantillas</button>
           <button id="btnNavAdminInformes" class="nav-btn" onclick="irInformesActividad()">Informes</button>
