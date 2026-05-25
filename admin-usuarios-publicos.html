@@ -338,8 +338,7 @@
         </div>
         <div class="tabla-toolbar-der">
           <p class="aviso-ambito">
-            Desactivar solicitudes restringe al usuario público la solicitud de actividades dentro del ámbito de
-            <strong id="txtAdminAmbito">este administrador</strong>.
+            La desactivación de solicitudes impide al usuario la participación en las actividades ofertadas por la organización.
           </p>
         </div>
       </div>
@@ -426,8 +425,6 @@
         const nombre = data.user.nombre || data.user.email || "Administrador";
         const textoVisible = data.user.nombre_publico || nombre;
         document.getElementById("subtituloCabecera").textContent = String(textoVisible).toUpperCase();
-        const elAmbito = document.getElementById("txtAdminAmbito");
-        if (elAmbito) elAmbito.textContent = String(textoVisible);
         aplicarLogoCabeceraAdmin(logoEl, data.user);
       } catch (_) {
         const logoEl = document.getElementById("logoCabeceraAdminUsuariosPublicos");
