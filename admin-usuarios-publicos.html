@@ -143,8 +143,8 @@
     .estado-wrap { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
     .switch-mini {
       position: relative;
-      width: 58px;
-      height: 22px;
+      width: 50px;
+      height: 20px;
       display: inline-block;
     }
     .switch-mini input {
@@ -163,8 +163,8 @@
     .slider-mini:before {
       content: "";
       position: absolute;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       left: 3px;
       top: 3px;
       border-radius: 50%;
@@ -176,8 +176,17 @@
       background: #16a34a;
     }
     .switch-mini input:checked + .slider-mini:before {
-      transform: translateX(36px);
+      transform: translateX(30px);
     }
+    .aviso-ambito {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #4c6074;
+      text-align: right;
+      max-width: 520px;
+    }
+    .aviso-ambito strong { color: #123a63; }
     .situacion-btn {
       border: 1px solid #c8d3de;
       background: #fff;
@@ -285,6 +294,7 @@
       .tabla-toolbar { align-items: stretch; }
       .tabla-toolbar-izq, .tabla-toolbar-der { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
       .campo-busqueda { max-width: none; }
+      .aviso-ambito { text-align: left; max-width: none; }
     }
   </style>
 </head>
@@ -326,7 +336,12 @@
             <input id="inputBuscarUsuario" type="text" placeholder="Escribe nombre o centro...">
           </div>
         </div>
-        <div class="tabla-toolbar-der"></div>
+        <div class="tabla-toolbar-der">
+          <p class="aviso-ambito">
+            Desactivar solicitudes restringe al usuario público la solicitud de actividades dentro del ámbito de
+            <strong id="txtAdminAmbito">este administrador</strong>.
+          </p>
+        </div>
       </div>
 
       <div class="tabla-wrap">
@@ -411,6 +426,8 @@
         const nombre = data.user.nombre || data.user.email || "Administrador";
         const textoVisible = data.user.nombre_publico || nombre;
         document.getElementById("subtituloCabecera").textContent = String(textoVisible).toUpperCase();
+        const elAmbito = document.getElementById("txtAdminAmbito");
+        if (elAmbito) elAmbito.textContent = String(textoVisible);
         aplicarLogoCabeceraAdmin(logoEl, data.user);
       } catch (_) {
         const logoEl = document.getElementById("logoCabeceraAdminUsuariosPublicos");
