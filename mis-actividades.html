@@ -249,6 +249,9 @@
       border: 1px solid #dde4ea;
       border-radius: 10px;
       padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .panel-topbar {
@@ -310,73 +313,12 @@
       background-repeat: no-repeat;
     }
 
-    .filtro-multiselect {
-      position: relative;
-      min-width: 240px;
-    }
-
-    .filtro-multiselect-btn {
-      width: 100%;
-      min-height: 37px;
-      padding: 8px 38px 8px 10px;
-      border: 1px solid #c9cfd6;
-      border-radius: 8px;
-      background: #fff;
-      color: #1e2a36;
-      font-size: 13px;
-      line-height: 1.35;
-      text-align: left;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .filtro-multiselect-btn::after {
-      content: "";
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      width: 8px;
-      height: 8px;
-      border-right: 1.8px solid #5f6d7a;
-      border-bottom: 1.8px solid #5f6d7a;
-      transform: translateY(-65%) rotate(45deg);
-      pointer-events: none;
-    }
-
-    .filtro-multiselect-menu {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0;
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #d6dde6;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
-      display: none;
-      z-index: 30;
-    }
-
-    .filtro-multiselect.abierto .filtro-multiselect-menu {
-      display: block;
-    }
-
-    .filtro-multiselect-opcion {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 6px 4px;
-      font-size: 13px;
-      color: #1e2a36;
-      cursor: pointer;
-    }
-
-    .filtro-multiselect-opcion input {
-      margin: 0;
-    }
-
     .tabla-wrap {
       overflow-x: hidden;
+      overflow-y: auto;
+      min-height: 0;
+      max-height: 690px;
+      border-radius: 10px;
     }
 
     table {
@@ -401,6 +343,9 @@
       color: #1d4f91;
       font-weight: bold;
       font-size: 13px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
     }
 
     th.sel-col, td.sel-col {
@@ -567,16 +512,10 @@
       }
 
       .filtro-grupo select,
-      .filtro-multiselect {
-        width: 100%;
-      }
+      .filtro-grupo select { width: 100%; }
 
       .panel-topbar select {
         min-width: 0;
-        width: 100%;
-      }
-
-      .filtro-multiselect-btn {
         width: 100%;
       }
 
@@ -611,7 +550,7 @@
       .tabla-wrap {
         overflow-x: hidden;
         overflow-y: auto;
-        max-height: calc(100vh - 360px);
+        max-height: calc(100vh - 355px);
         padding-right: 2px;
       }
 
@@ -728,6 +667,10 @@
         gap: 4px;
       }
 
+      #tabla td.estado-col .badge {
+        align-self: flex-start;
+      }
+
       #tabla td.estado-col .estado-extra {
         margin-top: 0;
         text-align: left;
@@ -776,39 +719,19 @@
           <div class="panel-topbar">
             <div class="panel-topbar-izq">
               <div class="filtro-grupo">
-                <label for="filtroPrograma">Programa</label>
-                <select id="filtroPrograma">
-                  <option value="">Todos</option>
+                <label for="filtroTipoActividad">Tipo actividad</label>
+                <select id="filtroTipoActividad">
+                  <option value="activas" selected>Actividades activas</option>
+                  <option value="inactivas">Actividades inactivas</option>
+                  <option value="todas">Todas</option>
                 </select>
               </div>
 
               <div class="filtro-grupo">
-                <label for="btnFiltroTipoActividad">Tipo actividad</label>
-                <div class="filtro-multiselect" id="filtroTipoActividadWrap">
-                  <button type="button" class="filtro-multiselect-btn" id="btnFiltroTipoActividad">Todas</button>
-                  <div class="filtro-multiselect-menu" id="menuFiltroTipoActividad">
-                    <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="permanentes" checked>
-                      <span>Permanentes</span>
-                    </label>
-                    <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="temporales" checked>
-                      <span>Temporales</span>
-                    </label>
-                    <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="pendientes" checked>
-                      <span>Pendientes</span>
-                    </label>
-                    <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="activas" checked>
-                      <span>Activas</span>
-                    </label>
-                    <label class="filtro-multiselect-opcion">
-                      <input type="checkbox" value="inactivas" checked>
-                      <span>Inactivas</span>
-                    </label>
-                  </div>
-                </div>
+                <label for="filtroPrograma">Programa</label>
+                <select id="filtroPrograma">
+                  <option value="">Todos</option>
+                </select>
               </div>
             </div>
 
@@ -884,7 +807,7 @@
       img.classList.remove("logo-pendiente");
     }
     let filtroPrograma = "";
-    let filtrosTipoActividad = new Set(["permanentes", "temporales", "pendientes", "activas", "inactivas"]);
+    let filtroTipoActividad = "activas";
 
     function mostrarMensaje(tipo, texto) {
       const el = document.getElementById("mensaje");
@@ -987,61 +910,17 @@
       return Number(a.visible_portal || 0) === 1 && Number(a.activa || 0) === 1;
     }
 
-    function actualizarResumenFiltroTipoActividad() {
-      const btn = document.getElementById("btnFiltroTipoActividad");
-      const orden = ["permanentes", "temporales", "pendientes", "activas", "inactivas"];
-      const etiquetas = {
-        permanentes: "Permanentes",
-        temporales: "Temporales",
-        pendientes: "Pendientes",
-        activas: "Activas",
-        inactivas: "Inactivas"
-      };
-
-      const activas = orden.filter(clave => filtrosTipoActividad.has(clave));
-
-      if (activas.length === orden.length) {
-        btn.textContent = "Todas";
-        return;
-      }
-
-      if (!activas.length) {
-        btn.textContent = "Ninguna";
-        return;
-      }
-
-      btn.textContent = activas.map(clave => etiquetas[clave]).join(", ");
-    }
-
-    function sincronizarChecksFiltroTipoActividad() {
-      document.querySelectorAll("#menuFiltroTipoActividad input[type='checkbox']").forEach(input => {
-        input.checked = filtrosTipoActividad.has(input.value);
-      });
-      actualizarResumenFiltroTipoActividad();
-    }
-
     function aplicarFiltroPrograma() {
       actividadesFiltradas = actividadesCache.filter(a => {
         if (filtroPrograma && String(a.subtitulo_publico || "").trim() !== filtroPrograma) {
           return false;
         }
 
-        const esPermanente = String(a.tipo || "").toUpperCase() === "PERMANENTE";
-        const esTemporal = String(a.tipo || "").toUpperCase() === "TEMPORAL";
-        const esPendiente = String(a.tipo || "").toUpperCase() === "PENDIENTE";
         const esActiva = esActividadVisibleActiva(a);
         const esInactiva = !esActiva;
-
-        const coincideTipo =
-          (filtrosTipoActividad.has("permanentes") && esPermanente) ||
-          (filtrosTipoActividad.has("temporales") && esTemporal) ||
-          (filtrosTipoActividad.has("pendientes") && esPendiente);
-
-        const coincideEstado =
-          (filtrosTipoActividad.has("activas") && esActiva) ||
-          (filtrosTipoActividad.has("inactivas") && esInactiva);
-
-        return coincideTipo && coincideEstado;
+        if (filtroTipoActividad === "activas") return esActiva;
+        if (filtroTipoActividad === "inactivas") return esInactiva;
+        return true;
       });
 
       if (
@@ -1186,7 +1065,8 @@
         .sort(compararActividadesPanel);
 
       poblarFiltroPrograma();
-      sincronizarChecksFiltroTipoActividad();
+      const selectTipo = document.getElementById("filtroTipoActividad");
+      if (selectTipo) selectTipo.value = filtroTipoActividad;
       aplicarFiltroPrograma();
       actividadSeleccionada = null;
       pintarTabla();
@@ -1367,32 +1247,10 @@
       pintarTabla();
     });
 
-    document.getElementById("btnFiltroTipoActividad").addEventListener("click", function () {
-      document.getElementById("filtroTipoActividadWrap").classList.toggle("abierto");
-    });
-
-    document.querySelectorAll("#menuFiltroTipoActividad input[type='checkbox']").forEach(input => {
-      input.addEventListener("change", function () {
-        if (this.checked) {
-          filtrosTipoActividad.add(this.value);
-        } else if (filtrosTipoActividad.size > 1) {
-          filtrosTipoActividad.delete(this.value);
-        } else {
-          this.checked = true;
-          return;
-        }
-
-        actualizarResumenFiltroTipoActividad();
-        aplicarFiltroPrograma();
-        pintarTabla();
-      });
-    });
-
-    document.addEventListener("click", function (event) {
-      const wrap = document.getElementById("filtroTipoActividadWrap");
-      if (!wrap.contains(event.target)) {
-        wrap.classList.remove("abierto");
-      }
+    document.getElementById("filtroTipoActividad").addEventListener("change", function () {
+      filtroTipoActividad = this.value || "activas";
+      aplicarFiltroPrograma();
+      pintarTabla();
     });
 
     window.seleccionarActividad = seleccionarActividad;
