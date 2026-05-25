@@ -900,9 +900,13 @@
 
     function actualizarBotones() {
       const hay = !!actividadSeleccionada;
+      const admiteReservas = hay && Number(actividadSeleccionada.requiere_reserva || 0) === 1;
       document.getElementById("btnEditar").disabled = !hay;
       document.getElementById("btnFranjas").disabled = !hay;
-      document.getElementById("btnReservas").disabled = !hay;
+      document.getElementById("btnReservas").disabled = !admiteReservas;
+      document.getElementById("btnReservas").title = !hay
+        ? "Reservas"
+        : (admiteReservas ? "Reservas" : "Esta actividad no admite reservas");
       document.getElementById("btnEliminar").disabled = !hay;
     }
 
@@ -1092,6 +1096,7 @@
 
     function reservas() {
       if (!actividadSeleccionada) return;
+      if (Number(actividadSeleccionada.requiere_reserva || 0) !== 1) return;
       location.href = "admin-reservas.html?actividad_id=" + encodeURIComponent(actividadSeleccionada.id);
     }
 

@@ -3986,15 +3986,18 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
 
       btnSolicitar.textContent = "Solicitar actividad";
       const tieneRequisitos = Array.isArray(a.requisitos_particulares) && a.requisitos_particulares.some((item) => String(item || "").trim() !== "");
+      const admiteReservas = Number(a.requiere_reserva || 0) === 1;
       btnRequisitos.style.display = tieneRequisitos ? "inline-block" : "none";
       
       btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
+      btnReservas.disabled = !admiteReservas;
+      btnReservas.title = admiteReservas ? "Ver reservas" : "Esta actividad no admite reservas";
 
       if (
         usuarioAutenticado &&
         usuarioAutenticado.rol === "SOLICITANTE" &&
-        Number(a.requiere_reserva || 0) === 1
+        admiteReservas
       ) {
         btnSolicitar.style.display = "inline-block";
       } else {
@@ -4273,6 +4276,7 @@ function continuarSolicitudActividad() {
 
     function verReservasActividadActual() {
       if (!actividadSeleccionada) return;
+      if (Number(actividadSeleccionada.requiere_reserva || 0) !== 1) return;
       location.href = `admin-reservas.html?actividad_id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 
