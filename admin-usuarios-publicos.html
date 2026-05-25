@@ -59,7 +59,7 @@
     }
     .logo-cabecera { width: 77px; height: auto; object-fit: contain; display: block; }
     .logo-cabecera.logo-pendiente { opacity: 0.5; }
-    .logo-cabecera.logo-admin-personal { border: 0; border-radius: 0; background: transparent; padding: 0; }
+    .logo-cabecera.logo-admin-personal { width: 101px; border: 0; border-radius: 0; background: transparent; padding: 0; }
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: 400; color: #4a5a6a; }
 
@@ -87,7 +87,7 @@
       grid-column: 2;
       text-align: center;
       color: #123a63;
-      font-size: 38px;
+      font-size: 24px;
       font-weight: 700;
       letter-spacing: 0.2px;
     }
@@ -124,7 +124,7 @@
     .tabla-toolbar-izq { display: flex; align-items: center; gap: 10px; flex: 1 1 360px; min-width: 260px; }
     .tabla-toolbar-der { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 320px; min-width: 260px; }
     .campo-busqueda { width: 100%; max-width: 420px; }
-    .campo-busqueda label { display: block; font-size: 13px; color: #35506a; margin-bottom: 4px; font-weight: 600; }
+    .campo-busqueda label { display: block; font-size: 13px; color: #35506a; margin-bottom: 4px; font-weight: 600; padding-left: 8px; }
     .campo-busqueda input {
       width: 100%;
       height: 36px;
@@ -135,27 +135,49 @@
       color: #1e2a36;
       font-size: 14px;
     }
-    .btn-ficha {
-      padding: 9px 14px;
-      border-radius: 999px;
-      border: 1px solid #bcc9d7;
-      background: #fff;
-      color: #2d4257;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .btn-ficha:disabled { opacity: 0.45; cursor: not-allowed; }
-
     .tabla-wrap { overflow-x: auto; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; }
     table { width: 100%; min-width: 920px; border-collapse: collapse; }
     th, td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 14px; }
     thead th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
-    th.sel-col, td.sel-col { width: 36px; text-align: center; }
-    .fila-seleccionada { background: #eef5ff; }
-    .pill { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; }
-    .pill-bloqueado { background: #fdeaea; color: #9b1c1c; }
-    .pill-permitido { background: #eaf7ea; color: #146c2e; }
     .muted { color: #6e7e90; }
+    .estado-wrap { display: inline-flex; align-items: center; gap: 8px; }
+    .switch-mini {
+      position: relative;
+      width: 54px;
+      height: 26px;
+      display: inline-block;
+    }
+    .switch-mini input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-mini {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #d64f4f;
+      transition: background 0.16s ease;
+      cursor: pointer;
+    }
+    .slider-mini:before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.16s ease;
+    }
+    .switch-mini input:checked + .slider-mini {
+      background: #16a34a;
+    }
+    .switch-mini input:checked + .slider-mini:before {
+      transform: translateX(28px);
+    }
 
     @media (max-width: 920px) {
       .bloque-marca { gap: 24px; }
@@ -163,7 +185,7 @@
       .titulos-cabecera h1 { font-size: 22px; }
       .titulos-cabecera h2 { font-size: 13px; }
       .bloque-cabecera { grid-template-columns: 1fr; }
-      .bloque-titulo { grid-column: auto; font-size: 28px; text-align: left; }
+      .bloque-titulo { grid-column: auto; font-size: 22px; text-align: left; }
       .bloque-cabecera-der { grid-column: auto; justify-self: start; }
       .tabla-toolbar { align-items: stretch; }
       .tabla-toolbar-izq, .tabla-toolbar-der { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
@@ -209,18 +231,13 @@
             <input id="inputBuscarUsuario" type="text" placeholder="Escribe nombre o centro...">
           </div>
         </div>
-        <div class="tabla-toolbar-der">
-          <button id="btnBloquear" class="btn-ficha" disabled>Bloquear para mis actividades</button>
-          <button id="btnDesbloquear" class="btn-ficha" disabled>Desbloquear para mis actividades</button>
-          <button id="btnRecargar" class="btn-ficha">Recargar</button>
-        </div>
+        <div class="tabla-toolbar-der"></div>
       </div>
 
       <div class="tabla-wrap">
         <table>
           <thead>
             <tr>
-              <th class="sel-col"></th>
               <th>Centro</th>
               <th>Responsable</th>
               <th>Email</th>
@@ -238,7 +255,6 @@
   <script>
     let usuarios = [];
     let usuariosFiltrados = [];
-    let usuarioSeleccionado = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -289,18 +305,6 @@
       el.style.display = "block";
     }
 
-    function actualizarAcciones() {
-      const bloqueado = Number(usuarioSeleccionado?.bloqueado_para_admin || 0) === 1;
-      document.getElementById("btnBloquear").disabled = !usuarioSeleccionado || bloqueado;
-      document.getElementById("btnDesbloquear").disabled = !usuarioSeleccionado || !bloqueado;
-    }
-
-    function seleccionarUsuario(id) {
-      usuarioSeleccionado = usuarios.find((item) => Number(item.id) === Number(id)) || null;
-      renderTabla();
-      actualizarAcciones();
-    }
-
     function aplicarFiltroUsuarios() {
       const termino = String(document.getElementById("inputBuscarUsuario")?.value || "").trim().toUpperCase();
       if (!termino) {
@@ -318,23 +322,68 @@
       const tbody = document.getElementById("tbodyUsuarios");
       const lista = usuariosFiltrados;
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
       }
       tbody.innerHTML = lista.map((item) => {
-        const seleccionado = usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id);
         const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
         const nombreCentro = item.centro || item.nombre || "(Sin nombre)";
-        return `<tr class="${seleccionado ? "fila-seleccionada" : ""}" onclick="seleccionarUsuario(${Number(item.id)})">
-          <td class="sel-col"><input type="radio" name="selUsuario" ${seleccionado ? "checked" : ""} onchange="seleccionarUsuario(${Number(item.id)})"></td>
+        const checked = bloqueado ? "" : "checked";
+        return `<tr>
           <td>${escapeHtml(nombreCentro)}</td>
           <td>${escapeHtml(item.nombre || "-")}</td>
           <td>${escapeHtml(item.email || "-")}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
-          <td><span class="pill ${bloqueado ? "pill-bloqueado" : "pill-permitido"}">${bloqueado ? "Bloqueado" : "Permitido"}</span></td>
+          <td>
+            <span class="estado-wrap">
+              <label class="switch-mini" title="${bloqueado ? "Bloqueado" : "Permitido"}">
+                <input type="checkbox" ${checked} onchange="cambiarEstadoUsuario(${Number(item.id)}, this.checked)">
+                <span class="slider-mini"></span>
+              </label>
+            </span>
+          </td>
           <td>${escapeHtml(item.motivo_bloqueo || "-")}</td>
         </tr>`;
       }).join("");
+    }
+
+    async function cambiarEstadoUsuario(usuarioId, permitido) {
+      const usuario = usuarios.find((item) => Number(item.id) === Number(usuarioId));
+      if (!usuario) return;
+
+      const bloqueado = permitido ? 0 : 1;
+      let motivo = "";
+      if (bloqueado === 1) {
+        motivo = window.prompt("Indica el motivo del bloqueo para tus actividades:") || "";
+        if (!motivo.trim()) {
+          setMensaje("error", "Debes indicar un motivo para bloquear.");
+          renderTabla();
+          return;
+        }
+      }
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-ambito-estado", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            usuario_id: Number(usuario.id),
+            bloqueado,
+            motivo
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setMensaje("error", data?.error || "No se pudo actualizar el estado.");
+          renderTabla();
+          return;
+        }
+        setMensaje("ok", data.mensaje || "Estado actualizado.");
+        await cargarUsuarios();
+      } catch (_) {
+        setMensaje("error", "Error de conexión al actualizar el estado.");
+        renderTabla();
+      }
     }
 
     async function cargarUsuarios() {
@@ -346,59 +395,16 @@
           setMensaje("error", data?.error || "No se pudo cargar el listado.");
           usuarios = [];
           usuariosFiltrados = [];
-          usuarioSeleccionado = null;
           renderTabla();
-          actualizarAcciones();
           return;
         }
         usuarios = Array.isArray(data.usuarios) ? data.usuarios : [];
-        if (usuarioSeleccionado) {
-          usuarioSeleccionado = usuarios.find((item) => Number(item.id) === Number(usuarioSeleccionado.id)) || null;
-        }
         aplicarFiltroUsuarios();
         renderTabla();
-        actualizarAcciones();
       } catch (_) {
         setMensaje("error", "Error de conexión al cargar usuarios.");
       }
     }
-
-    async function actualizarBloqueo(bloqueado) {
-      if (!usuarioSeleccionado) return;
-      let motivo = "";
-      if (bloqueado) {
-        motivo = window.prompt("Indica el motivo del bloqueo para tus actividades:") || "";
-        if (!motivo.trim()) {
-          setMensaje("error", "Debes indicar un motivo para bloquear.");
-          return;
-        }
-      }
-      try {
-        const res = await fetch("/api/admin/usuarios-publicos-ambito-estado", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            usuario_id: Number(usuarioSeleccionado.id),
-            bloqueado: bloqueado ? 1 : 0,
-            motivo
-          })
-        });
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data?.ok) {
-          setMensaje("error", data?.error || "No se pudo actualizar el estado.");
-          return;
-        }
-        setMensaje("ok", data.mensaje || "Estado actualizado.");
-        await cargarUsuarios();
-      } catch (_) {
-        setMensaje("error", "Error de conexión al actualizar el estado.");
-      }
-    }
-
-    document.getElementById("btnBloquear").addEventListener("click", () => actualizarBloqueo(true));
-    document.getElementById("btnDesbloquear").addEventListener("click", () => actualizarBloqueo(false));
-    document.getElementById("btnRecargar").addEventListener("click", cargarUsuarios);
     document.getElementById("inputBuscarUsuario").addEventListener("input", () => {
       aplicarFiltroUsuarios();
       renderTabla();
