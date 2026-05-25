@@ -183,8 +183,12 @@
       font-size: 12px;
       line-height: 1.35;
       color: #4c6074;
-      text-align: right;
-      max-width: 520px;
+      text-align: left;
+      max-width: 560px;
+      border: 1px solid #cfe0f5;
+      background: #eef5ff;
+      border-radius: 10px;
+      padding: 8px 10px;
     }
     .aviso-ambito strong { color: #123a63; }
     .situacion-btn {
@@ -312,6 +316,7 @@
       .aviso-ambito { text-align: left; max-width: none; }
 
       .tabla-wrap { border: 0; background: transparent; overflow: visible; }
+      table { min-width: 0; width: 100%; }
       table, thead, tbody, tr, th, td { display: block; width: 100%; }
       thead { display: none; }
       tbody { display: flex; flex-direction: column; gap: 10px; }
@@ -325,8 +330,8 @@
       td {
         border-bottom: 1px solid #edf2f7;
         padding: 8px 2px;
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 42% minmax(0, 1fr);
         align-items: center;
         gap: 10px;
         font-size: 13px;
@@ -337,13 +342,15 @@
         content: attr(data-label);
         color: #4a6076;
         font-weight: 700;
-        flex: 0 0 42%;
+        width: auto;
       }
-      .td-solicitudes, .td-situacion { text-align: right; }
+      .td-solicitudes, .td-situacion { text-align: left; }
       .td-solicitudes .estado-wrap,
-      .td-situacion .situacion-btn { margin-left: auto; }
-      .td-solicitudes::before,
-      .td-situacion::before { flex-basis: auto; }
+      .td-situacion .situacion-btn { margin-left: 0; }
+      .switch-mini { width: 46px; height: 18px; }
+      .slider-mini:before { width: 12px; height: 12px; top: 3px; left: 3px; }
+      .switch-mini input:checked + .slider-mini:before { transform: translateX(28px); }
+      .situacion-label { min-width: 0; width: auto; max-width: 100%; font-size: 11px; padding: 5px 8px; }
     }
   </style>
 </head>
