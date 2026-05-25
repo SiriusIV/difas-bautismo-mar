@@ -201,6 +201,12 @@
       display: block;
     }
 
+    .nav-btn-icon img {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
     .franja-sesion {
       display: none;
       max-width: 1108px;
@@ -227,6 +233,11 @@
     }
 
     .franja-sesion .nav-btn-icon svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .franja-sesion .nav-btn-icon img {
       width: 15px;
       height: 15px;
     }
@@ -1804,7 +1815,9 @@
         <div id="barraAdmin" class="barra-admin franja-sesion-nav">
           <button id="btnNavAdminActividades" class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
           <button id="btnNavAdminReservas" class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
-          <button id="btnNavAdminUsuariosPublicos" class="nav-btn" onclick="irUsuariosPublicosAdmin()">Usuarios públicos</button>
+          <button id="btnNavAdminUsuariosPublicos" class="nav-btn-icon" type="button" onclick="irUsuariosPublicosAdmin()" title="Usuarios públicos" aria-label="Usuarios públicos">
+            <img src="assets/icono-usuarios-publicos.svg" alt="">
+          </button>
           <button id="btnNavAdminPlantillas" class="nav-btn" onclick="irPanelPlantillas()">Plantillas</button>
           <button id="btnNavAdminInformes" class="nav-btn" onclick="irInformesActividad()">Informes</button>
           <button
