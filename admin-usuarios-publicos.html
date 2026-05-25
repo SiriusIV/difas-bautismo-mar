@@ -284,17 +284,66 @@
     }
 
     @media (max-width: 920px) {
-      .bloque-marca { gap: 24px; }
+      .bloque-marca {
+        gap: 10px;
+        flex-direction: column;
+        text-align: center;
+      }
       .logo-cabecera { width: 66px; }
       .titulos-cabecera h1 { font-size: 22px; }
       .titulos-cabecera h2 { font-size: 13px; }
-      .bloque-cabecera { grid-template-columns: 1fr; }
-      .bloque-titulo { grid-column: auto; font-size: 22px; text-align: left; }
-      .bloque-cabecera-der { grid-column: auto; justify-self: start; }
+      .bloque-cabecera {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+      }
+      .bloque-cabecera > div:first-child { display: none; }
+      .bloque-titulo {
+        grid-column: 1;
+        font-size: 18px;
+        text-align: left;
+      }
+      .bloque-cabecera-der {
+        grid-column: 2;
+        justify-self: end;
+      }
       .tabla-toolbar { align-items: stretch; }
       .tabla-toolbar-izq, .tabla-toolbar-der { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
       .campo-busqueda { max-width: none; }
       .aviso-ambito { text-align: left; max-width: none; }
+
+      .tabla-wrap { border: 0; background: transparent; overflow: visible; }
+      table, thead, tbody, tr, th, td { display: block; width: 100%; }
+      thead { display: none; }
+      tbody { display: flex; flex-direction: column; gap: 10px; }
+      tr {
+        border: 1px solid #dbe4ee;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 8px 10px;
+      }
+      td {
+        border-bottom: 1px solid #edf2f7;
+        padding: 8px 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        text-align: left;
+      }
+      td:last-child { border-bottom: 0; }
+      td::before {
+        content: attr(data-label);
+        color: #4a6076;
+        font-weight: 700;
+        flex: 0 0 42%;
+      }
+      .td-solicitudes, .td-situacion { text-align: right; }
+      .td-solicitudes .estado-wrap,
+      .td-situacion .situacion-btn { margin-left: auto; }
+      .td-solicitudes::before,
+      .td-situacion::before { flex-basis: auto; }
     }
   </style>
 </head>
@@ -475,11 +524,11 @@
           ? `Bloqueada desde ${textoFecha}`
           : `Activada desde ${textoFecha}`;
         return `<tr>
-          <td>${escapeHtml(nombreCentro)}</td>
-          <td>${escapeHtml(item.nombre || "-")}</td>
-          <td>${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
-          <td>${escapeHtml(item.telefono_contacto || "-")}</td>
-          <td class="td-solicitudes">
+          <td data-label="Centro">${escapeHtml(nombreCentro)}</td>
+          <td data-label="Responsable">${escapeHtml(item.nombre || "-")}</td>
+          <td data-label="Email">${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
+          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td class="td-solicitudes" data-label="Solicitudes">
             <span class="estado-wrap">
               <label class="switch-mini" title="${bloqueado ? "Bloqueado" : "Permitido"}">
                 <input type="checkbox" ${checked} onchange="cambiarEstadoUsuario(${Number(item.id)}, this.checked)">
@@ -487,7 +536,7 @@
               </label>
             </span>
           </td>
-          <td class="td-situacion">
+          <td class="td-situacion" data-label="Situación">
             <button type="button" class="situacion-btn" onclick="abrirModalSituacion(${Number(item.id)})">
               <span class="situacion-label ${bloqueado ? "situacion-bloqueada" : "situacion-activa"}">${escapeHtml(etiquetaSituacion)}</span>
             </button>
