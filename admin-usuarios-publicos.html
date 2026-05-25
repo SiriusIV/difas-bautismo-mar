@@ -2,66 +2,167 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Usuarios públicos (ámbito administrador)</title>
+  <title>Usuarios públicos - Gestión por administrador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="assets/superadmin-theme.css">
+  <link rel="stylesheet" href="assets/fondo-cabecera-movil-unificado.css">
+  <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css">
   <style>
-    .cabecera-bloque { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
-    .cabecera-bloque h2 { margin:0; color:#123a63; }
-    .subtitulo { margin:4px 0 0; color:#5f6d7a; font-size:13px; }
-    .barra-acciones { display:flex; justify-content:flex-end; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-    .btn-ficha { padding:10px 14px; border-radius:999px; border:1px solid #c9cfd6; background:#fff; color:#334250; font-size:14px; cursor:pointer; }
-    .btn-ficha:hover { background:#f7f9fb; }
-    .btn-ficha:disabled { opacity:0.45; cursor:not-allowed; }
-    .tabla-wrap { overflow-x:auto; border-radius:14px; border:1px solid #dde4ea; background:#fff; }
-    table { width:100%; min-width:860px; border-collapse:collapse; }
-    th, td { padding:10px 12px; border-bottom:1px solid #e5ebf0; text-align:left; font-size:14px; vertical-align:middle; }
-    thead th { background:#f7f9fb; color:#35506a; font-size:13px; text-transform:uppercase; }
-    th.sel-col, td.sel-col { width:36px; text-align:center; }
-    .fila-seleccionada { background:#eef5ff; }
-    .pill { display:inline-flex; align-items:center; justify-content:center; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
-    .pill-activo { background:#fdeaea; color:#9b1c1c; }
-    .pill-inactivo { background:#eaf7ea; color:#146c2e; }
-    .muted { color:#6c7c8c; }
+    .contenedor { max-width: 1120px; margin: 14px auto 24px; padding: 0 16px 20px; }
+    .barra-navegacion {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid #dbe5ef;
+      border-radius: 16px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.92);
+      margin-bottom: 12px;
+    }
+    .panel-titulo { font-size: 17px; font-weight: 700; color: #123a63; }
+    .nav-btn-pildora {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #c9d5e2;
+      border-radius: 999px;
+      padding: 9px 13px;
+      color: #22466c;
+      text-decoration: none;
+      background: #fff;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .nav-btn-pildora svg { width: 16px; height: 16px; }
+    .bloque-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .bloque-cabecera h3 { margin: 0; color: #123a63; }
+    .subtitulo-bloque { margin: 5px 0 0; color: #5f6d7a; font-size: 13px; line-height: 1.45; }
+    .barra-acciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .btn-ficha {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #334250;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-ficha:hover { background: #f7f9fb; }
+    .btn-ficha:disabled { opacity: 0.45; cursor: not-allowed; }
+    .tabla-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid #dde4ea; background: #fff; }
+    table { width: 100%; min-width: 880px; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #e5ebf0; text-align: left; font-size: 14px; vertical-align: middle; }
+    thead th { background: #f7f9fb; color: #35506a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em; }
+    th.sel-col, td.sel-col { width: 36px; text-align: center; }
+    .fila-seleccionada { background: #eef5ff; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .pill-bloqueado { background: #fdeaea; color: #9b1c1c; }
+    .pill-permitido { background: #eaf7ea; color: #146c2e; }
+    .muted { color: #6c7c8c; }
+    .logo-cabecera.logo-pendiente { opacity: 0.5; }
+    .logo-cabecera.logo-admin-personal {
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid #d9e2ec;
+      padding: 4px;
+    }
+    @media (max-width: 920px) {
+      .contenedor { max-width: 100%; padding: 0 10px 16px; }
+      .barra-navegacion { align-items: stretch; flex-direction: column; }
+      .panel-titulo { text-align: center; width: 100%; }
+      .bloque-cabecera { align-items: stretch; }
+      .barra-acciones { justify-content: stretch; width: 100%; }
+      .barra-acciones .btn-ficha { width: 100%; }
+    }
   </style>
 </head>
-<body>
-  <main class="contenedor-principal">
-    <section class="tarjeta">
-      <div class="cabecera-bloque">
-        <div>
-          <h2>Usuarios públicos de mi ámbito</h2>
-          <p class="subtitulo">Bloquea o desbloquea centros solo para tus actividades, sin afectar su acceso global a la cuenta.</p>
+<body class="fondo-cabecera-unificada">
+  <div class="cabecera-global">
+    <div class="cabecera-global-inner">
+      <div class="bloque-marca">
+        <img src="logo.png" alt="Logo administrador" class="logo-cabecera logo-pendiente" id="logoCabeceraAdminUsuariosPublicos">
+        <div class="titulos-cabecera">
+          <h1>Actividades Públicas Institucionales</h1>
+          <h2 id="subtituloCabecera">Administrador</h2>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="barra-acciones">
-        <button id="btnBloquear" class="btn-ficha" disabled>Bloquear para mis actividades</button>
-        <button id="btnDesbloquear" class="btn-ficha" disabled>Desbloquear para mis actividades</button>
-        <button id="btnRecargar" class="btn-ficha">Recargar</button>
-        <button class="btn-ficha" onclick="location.href='portal.html'">Volver al portal</button>
+  <div class="app-scroll">
+    <div class="contenedor">
+      <div class="barra-navegacion">
+        <a class="nav-btn-pildora" href="mis-actividades.html" title="Volver al panel de actividades" aria-label="Volver al panel de actividades">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"></path>
+            <path d="M21 12H9"></path>
+          </svg>
+          <span>Panel de actividades</span>
+        </a>
+        <span class="panel-titulo">Usuarios públicos de mi ámbito</span>
+        <a class="nav-btn-pildora" href="portal.html" title="Volver al portal" aria-label="Volver al portal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5L12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
+          </svg>
+          <span>Portal</span>
+        </a>
       </div>
 
-      <div id="mensajeEstado" class="franja-alerta" style="display:none;"></div>
+      <div id="mensajeEstado" class="mensaje" style="display:none;"></div>
 
-      <div class="tabla-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="sel-col"></th>
-              <th>Centro</th>
-              <th>Responsable</th>
-              <th>Email</th>
-              <th>Teléfono</th>
-              <th>Estado para mí</th>
-              <th>Último motivo</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyUsuarios"></tbody>
-        </table>
+      <div class="bloque">
+        <div class="bloque-cabecera">
+          <div>
+            <h3>Bloqueo por ámbito del administrador</h3>
+            <p class="subtitulo-bloque">
+              Lista global de usuarios públicos activos. El bloqueo aquí solo afecta a solicitudes hacia tus actividades.
+            </p>
+          </div>
+          <div class="barra-acciones">
+            <button id="btnBloquear" class="btn-ficha" disabled>Bloquear para mis actividades</button>
+            <button id="btnDesbloquear" class="btn-ficha" disabled>Desbloquear para mis actividades</button>
+            <button id="btnRecargar" class="btn-ficha">Recargar</button>
+          </div>
+        </div>
+
+        <div class="tabla-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sel-col"></th>
+                <th>Centro</th>
+                <th>Responsable</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Estado para mí</th>
+                <th>Motivo de bloqueo</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuarios"></tbody>
+          </table>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script>
     let usuarios = [];
@@ -76,17 +177,43 @@
         .replace(/'/g, "&#39;");
     }
 
+    function aplicarLogoCabeceraAdmin(img, userLike = {}) {
+      if (!img) return;
+      const logoUsuario = String(userLike?.logo_url || "").trim();
+      img.src = logoUsuario || "logo.png";
+      img.classList.remove("logo-pendiente");
+      img.classList.toggle("logo-admin-personal", !!logoUsuario);
+    }
+
+    async function cargarSesionCabecera() {
+      try {
+        const res = await fetch("/api/usuario/session", { credentials: "same-origin" });
+        const data = await res.json().catch(() => null);
+        const logoEl = document.getElementById("logoCabeceraAdminUsuariosPublicos");
+        if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) {
+          if (logoEl) logoEl.classList.remove("logo-pendiente");
+          return;
+        }
+        const nombre = data.user.nombre || data.user.email || "Administrador";
+        document.getElementById("subtituloCabecera").textContent = String(nombre).toUpperCase();
+        aplicarLogoCabeceraAdmin(logoEl, data.user);
+      } catch (_) {
+        const logoEl = document.getElementById("logoCabeceraAdminUsuariosPublicos");
+        if (logoEl) logoEl.classList.remove("logo-pendiente");
+      }
+    }
+
     function setMensaje(tipo, texto) {
       const el = document.getElementById("mensajeEstado");
       if (!texto) {
-        el.style.display = "none";
+        el.className = "mensaje";
         el.textContent = "";
-        el.className = "franja-alerta";
+        el.style.display = "none";
         return;
       }
-      el.style.display = "block";
+      el.className = `mensaje ${tipo === "ok" ? "ok" : "error"}`;
       el.textContent = texto;
-      el.className = `franja-alerta ${tipo === "ok" ? "ok" : "error"}`;
+      el.style.display = "block";
     }
 
     function actualizarAcciones() {
@@ -104,20 +231,22 @@
     function renderTabla() {
       const tbody = document.getElementById("tbodyUsuarios");
       if (!usuarios.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos en el ámbito actual del administrador.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
       }
+
       tbody.innerHTML = usuarios.map((item) => {
         const seleccionado = usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id);
         const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
         const nombreCentro = item.centro || item.nombre || "(Sin nombre)";
+
         return `<tr class="${seleccionado ? "fila-seleccionada" : ""}" onclick="seleccionarUsuario(${Number(item.id)})">
           <td class="sel-col"><input type="radio" name="selUsuario" ${seleccionado ? "checked" : ""} onchange="seleccionarUsuario(${Number(item.id)})"></td>
           <td>${escapeHtml(nombreCentro)}</td>
           <td>${escapeHtml(item.nombre || "-")}</td>
           <td>${escapeHtml(item.email || "-")}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
-          <td><span class="pill ${bloqueado ? "pill-activo" : "pill-inactivo"}">${bloqueado ? "Bloqueado" : "Permitido"}</span></td>
+          <td><span class="pill ${bloqueado ? "pill-bloqueado" : "pill-permitido"}">${bloqueado ? "Bloqueado" : "Permitido"}</span></td>
           <td>${escapeHtml(item.motivo_bloqueo || "-")}</td>
         </tr>`;
       }).join("");
@@ -185,7 +314,9 @@
     document.getElementById("btnDesbloquear").addEventListener("click", () => actualizarBloqueo(false));
     document.getElementById("btnRecargar").addEventListener("click", cargarUsuarios);
 
-    cargarUsuarios();
+    (async function init() {
+      await Promise.all([cargarSesionCabecera(), cargarUsuarios()]);
+    })();
   </script>
 </body>
 </html>
