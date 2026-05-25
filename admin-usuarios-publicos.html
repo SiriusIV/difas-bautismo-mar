@@ -140,11 +140,11 @@
     th, td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 14px; }
     thead th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     .muted { color: #6e7e90; }
-    .estado-wrap { display: inline-flex; align-items: center; gap: 8px; }
+    .estado-wrap { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
     .switch-mini {
       position: relative;
-      width: 54px;
-      height: 26px;
+      width: 58px;
+      height: 22px;
       display: inline-block;
     }
     .switch-mini input {
@@ -163,8 +163,8 @@
     .slider-mini:before {
       content: "";
       position: absolute;
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       left: 3px;
       top: 3px;
       border-radius: 50%;
@@ -176,7 +176,102 @@
       background: #16a34a;
     }
     .switch-mini input:checked + .slider-mini:before {
-      transform: translateX(28px);
+      transform: translateX(36px);
+    }
+    .situacion-btn {
+      border: 1px solid #c8d3de;
+      background: #fff;
+      border-radius: 8px;
+      padding: 2px;
+      cursor: pointer;
+      display: inline-flex;
+    }
+    .situacion-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 132px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    .situacion-activa { background: #eaf7ea; color: #146c2e; }
+    .situacion-bloqueada { background: #fdeaea; color: #9b1c1c; }
+    .th-solicitudes, .td-solicitudes { text-align: center; }
+    .th-situacion, .td-situacion { text-align: center; }
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.42);
+      z-index: 9999;
+    }
+    .modal-fondo.activo { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 620px;
+      border-radius: 14px;
+      border: 1px solid #d8e2ec;
+      background: #fff;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.22);
+      padding: 18px;
+      position: relative;
+    }
+    .modal-cerrar {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #d5dde6;
+      background: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: #506275;
+    }
+    .modal h4 { margin: 0 36px 10px 0; font-size: 22px; color: #123a63; }
+    .modal p { margin: 0 0 10px; color: #435a70; font-size: 14px; line-height: 1.45; }
+    .modal .grupo { margin-top: 10px; }
+    .modal label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: #35506a; }
+    .modal textarea {
+      width: 100%;
+      min-height: 110px;
+      border: 1px solid #c3cfdb;
+      border-radius: 10px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .modal-acciones {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-modal {
+      border: 1px solid #bfc9d4;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+      color: #1e2a36;
+    }
+    .btn-modal.principal {
+      background: #0b5ed7;
+      border-color: #0b5ed7;
+      color: #fff;
+      font-weight: 700;
     }
 
     @media (max-width: 920px) {
@@ -242,8 +337,8 @@
               <th>Responsable</th>
               <th>Email</th>
               <th>Teléfono</th>
-              <th>Estado para mí</th>
-              <th>Motivo de bloqueo</th>
+              <th class="th-solicitudes">Solicitudes</th>
+              <th class="th-situacion">Situación</th>
             </tr>
           </thead>
           <tbody id="tbodyUsuarios"></tbody>
@@ -252,9 +347,40 @@
     </div>
   </div>
 
+  <div id="modalBloqueo" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar" id="btnCerrarModalBloqueo" aria-label="Cerrar">×</button>
+      <h4>Confirmar bloqueo por ámbito</h4>
+      <p>Si continúas, este usuario no podrá solicitar actividades que dependan de tu administración.</p>
+      <p>Las solicitudes activas en este ámbito pasarán automáticamente a rechazadas y sus plazas quedarán liberadas.</p>
+      <div class="grupo">
+        <label for="txtMotivoBloqueo">Observaciones del bloqueo (obligatorio)</label>
+        <textarea id="txtMotivoBloqueo" placeholder="Indica el motivo del bloqueo..."></textarea>
+      </div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-modal" id="btnCancelarBloqueo">Cancelar</button>
+        <button type="button" class="btn-modal principal" id="btnConfirmarBloqueo">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalSituacion" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar" id="btnCerrarModalSituacion" aria-label="Cerrar">×</button>
+      <h4>Situación del usuario</h4>
+      <p id="txtSituacionEstado"></p>
+      <p id="txtSituacionFecha"></p>
+      <div class="grupo">
+        <label>Observaciones</label>
+        <p id="txtSituacionMotivo"></p>
+      </div>
+    </div>
+  </div>
+
   <script>
     let usuarios = [];
     let usuariosFiltrados = [];
+    let cambioPendienteBloqueo = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -329,12 +455,17 @@
         const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
         const nombreCentro = item.centro || item.nombre || "(Sin nombre)";
         const checked = bloqueado ? "" : "checked";
+        const fechaEstado = String(item?.bloqueo_actualizado_en || item?.fecha_alta || "").trim();
+        const textoFecha = fechaEstado ? formatearFechaUI(fechaEstado) : "-";
+        const etiquetaSituacion = bloqueado
+          ? `Bloqueada desde ${textoFecha}`
+          : `Activada desde ${textoFecha}`;
         return `<tr>
           <td>${escapeHtml(nombreCentro)}</td>
           <td>${escapeHtml(item.nombre || "-")}</td>
-          <td>${escapeHtml(item.email || "-")}</td>
+          <td>${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
           <td>${escapeHtml(item.telefono_contacto || "-")}</td>
-          <td>
+          <td class="td-solicitudes">
             <span class="estado-wrap">
               <label class="switch-mini" title="${bloqueado ? "Bloqueado" : "Permitido"}">
                 <input type="checkbox" ${checked} onchange="cambiarEstadoUsuario(${Number(item.id)}, this.checked)">
@@ -342,9 +473,52 @@
               </label>
             </span>
           </td>
-          <td>${escapeHtml(item.motivo_bloqueo || "-")}</td>
+          <td class="td-situacion">
+            <button type="button" class="situacion-btn" onclick="abrirModalSituacion(${Number(item.id)})">
+              <span class="situacion-label ${bloqueado ? "situacion-bloqueada" : "situacion-activa"}">${escapeHtml(etiquetaSituacion)}</span>
+            </button>
+          </td>
         </tr>`;
       }).join("");
+    }
+
+    function formatearFechaUI(valor) {
+      const texto = String(valor || "").trim();
+      if (!texto) return "";
+      const normalizado = texto.includes("T") ? texto : texto.replace(" ", "T");
+      const fecha = new Date(normalizado);
+      if (Number.isNaN(fecha.getTime())) return texto;
+      const yyyy = fecha.getFullYear();
+      const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dd = String(fecha.getDate()).padStart(2, "0");
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function abrirModalSituacion(usuarioId) {
+      const usuario = usuarios.find((item) => Number(item.id) === Number(usuarioId));
+      if (!usuario) return;
+      const bloqueado = Number(usuario.bloqueado_para_admin || 0) === 1;
+      const fecha = formatearFechaUI(usuario.bloqueo_actualizado_en || usuario.fecha_alta || "");
+      document.getElementById("txtSituacionEstado").textContent = bloqueado ? "Estado: Bloqueada" : "Estado: Activa";
+      document.getElementById("txtSituacionFecha").textContent = bloqueado ? `Bloqueada desde: ${fecha || "-"}` : `Activada desde: ${fecha || "-"}`;
+      document.getElementById("txtSituacionMotivo").textContent = (usuario.motivo_bloqueo || "").trim() || "Sin observaciones registradas.";
+      document.getElementById("modalSituacion").classList.add("activo");
+    }
+
+    function cerrarModalSituacion() {
+      document.getElementById("modalSituacion").classList.remove("activo");
+    }
+
+    function abrirModalBloqueo(usuarioId, permitido) {
+      cambioPendienteBloqueo = { usuarioId, permitido };
+      document.getElementById("txtMotivoBloqueo").value = "";
+      document.getElementById("modalBloqueo").classList.add("activo");
+    }
+
+    function cerrarModalBloqueo() {
+      cambioPendienteBloqueo = null;
+      document.getElementById("modalBloqueo").classList.remove("activo");
+      renderTabla();
     }
 
     async function cambiarEstadoUsuario(usuarioId, permitido) {
@@ -354,12 +528,8 @@
       const bloqueado = permitido ? 0 : 1;
       let motivo = "";
       if (bloqueado === 1) {
-        motivo = window.prompt("Indica el motivo del bloqueo para tus actividades:") || "";
-        if (!motivo.trim()) {
-          setMensaje("error", "Debes indicar un motivo para bloquear.");
-          renderTabla();
-          return;
-        }
+        abrirModalBloqueo(usuarioId, permitido);
+        return;
       }
       try {
         const res = await fetch("/api/admin/usuarios-publicos-ambito-estado", {
@@ -386,6 +556,43 @@
       }
     }
 
+    async function confirmarBloqueoPendiente() {
+      const datos = cambioPendienteBloqueo;
+      if (!datos) return;
+      const usuario = usuarios.find((item) => Number(item.id) === Number(datos.usuarioId));
+      if (!usuario) return;
+      const motivo = String(document.getElementById("txtMotivoBloqueo").value || "").trim();
+      if (!motivo) {
+        setMensaje("error", "Debes indicar observaciones para bloquear.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-ambito-estado", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            usuario_id: Number(usuario.id),
+            bloqueado: 1,
+            motivo
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setMensaje("error", data?.error || "No se pudo actualizar el estado.");
+          cerrarModalBloqueo();
+          return;
+        }
+        setMensaje("ok", data.mensaje || "Estado actualizado.");
+        cerrarModalBloqueo();
+        await cargarUsuarios();
+      } catch (_) {
+        setMensaje("error", "Error de conexión al actualizar el estado.");
+        cerrarModalBloqueo();
+      }
+    }
+
     async function cargarUsuarios() {
       setMensaje("", "");
       try {
@@ -409,6 +616,10 @@
       aplicarFiltroUsuarios();
       renderTabla();
     });
+    document.getElementById("btnCerrarModalSituacion").addEventListener("click", cerrarModalSituacion);
+    document.getElementById("btnCerrarModalBloqueo").addEventListener("click", cerrarModalBloqueo);
+    document.getElementById("btnCancelarBloqueo").addEventListener("click", cerrarModalBloqueo);
+    document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueoPendiente);
 
     (async function init() {
       await Promise.all([cargarSesionCabecera(), cargarUsuarios()]);
