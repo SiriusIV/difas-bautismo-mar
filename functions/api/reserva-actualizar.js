@@ -4,6 +4,7 @@ import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
+import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -659,9 +660,24 @@ export async function onRequestPost(context) {
     const reenviarRechazada = esRechazada && accion !== "guardar_borrador";
     const guardarBorrador = (esBorrador || esRechazada) && (accion === "" || accion === "guardar_borrador");
     const enviarBorrador = esBorrador && accion === "enviar_borrador";
+    const enviaSolicitud = enviarBorrador || reenviarRechazada;
 
     if (Number(actividad.activa || 0) !== 1 && !guardarBorrador) {
       return json({ ok: false, error: "La actividad asociada estÃ¡ desactivada y no admite el envÃ­o de la solicitud." }, { status: 400 });
+    }
+
+    if (enviaSolicitud && Number(user.id || 0) > 0) {
+      const bloqueadoPorAdmin = await estaUsuarioPublicoBloqueadoParaAdmin(
+        env,
+        Number(actividad.admin_id || 0),
+        Number(user.id || 0)
+      );
+      if (bloqueadoPorAdmin) {
+        return json(
+          { ok: false, error: "Tu cuenta está bloqueada para solicitar actividades de este organizador." },
+          { status: 403 }
+        );
+      }
     }
 
     if (usaFranjas && (!Number.isInteger(franjaIdNueva) || franjaIdNueva <= 0)) {

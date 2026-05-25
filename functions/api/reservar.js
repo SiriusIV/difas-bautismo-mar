@@ -5,6 +5,7 @@ import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail } from "./_email.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
+import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -606,6 +607,22 @@ if (Number(actividad.activa || 0) !== 1) {
     { status: 400 }
   );
 }
+    if (!guardarComoBorrador && Number(usuarioId || 0) > 0) {
+      const bloqueadoPorAdmin = await estaUsuarioPublicoBloqueadoParaAdmin(
+        env,
+        Number(actividad.admin_id || 0),
+        Number(usuarioId || 0)
+      );
+      if (bloqueadoPorAdmin) {
+        return json(
+          {
+            ok: false,
+            error: "Tu cuenta está bloqueada para solicitar actividades de este organizador."
+          },
+          { status: 403 }
+        );
+      }
+    }
     const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
 
     if (!centro || !contacto || !telefono || !email) {

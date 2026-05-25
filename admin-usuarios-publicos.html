@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Usuarios públicos (ámbito administrador)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/superadmin-theme.css">
+  <style>
+    .cabecera-bloque { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+    .cabecera-bloque h2 { margin:0; color:#123a63; }
+    .subtitulo { margin:4px 0 0; color:#5f6d7a; font-size:13px; }
+    .barra-acciones { display:flex; justify-content:flex-end; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+    .btn-ficha { padding:10px 14px; border-radius:999px; border:1px solid #c9cfd6; background:#fff; color:#334250; font-size:14px; cursor:pointer; }
+    .btn-ficha:hover { background:#f7f9fb; }
+    .btn-ficha:disabled { opacity:0.45; cursor:not-allowed; }
+    .tabla-wrap { overflow-x:auto; border-radius:14px; border:1px solid #dde4ea; background:#fff; }
+    table { width:100%; min-width:860px; border-collapse:collapse; }
+    th, td { padding:10px 12px; border-bottom:1px solid #e5ebf0; text-align:left; font-size:14px; vertical-align:middle; }
+    thead th { background:#f7f9fb; color:#35506a; font-size:13px; text-transform:uppercase; }
+    th.sel-col, td.sel-col { width:36px; text-align:center; }
+    .fila-seleccionada { background:#eef5ff; }
+    .pill { display:inline-flex; align-items:center; justify-content:center; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+    .pill-activo { background:#fdeaea; color:#9b1c1c; }
+    .pill-inactivo { background:#eaf7ea; color:#146c2e; }
+    .muted { color:#6c7c8c; }
+  </style>
+</head>
+<body>
+  <main class="contenedor-principal">
+    <section class="tarjeta">
+      <div class="cabecera-bloque">
+        <div>
+          <h2>Usuarios públicos de mi ámbito</h2>
+          <p class="subtitulo">Bloquea o desbloquea centros solo para tus actividades, sin afectar su acceso global a la cuenta.</p>
+        </div>
+      </div>
+
+      <div class="barra-acciones">
+        <button id="btnBloquear" class="btn-ficha" disabled>Bloquear para mis actividades</button>
+        <button id="btnDesbloquear" class="btn-ficha" disabled>Desbloquear para mis actividades</button>
+        <button id="btnRecargar" class="btn-ficha">Recargar</button>
+        <button class="btn-ficha" onclick="location.href='portal.html'">Volver al portal</button>
+      </div>
+
+      <div id="mensajeEstado" class="franja-alerta" style="display:none;"></div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sel-col"></th>
+              <th>Centro</th>
+              <th>Responsable</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Estado para mí</th>
+              <th>Último motivo</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyUsuarios"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let usuarios = [];
+    let usuarioSeleccionado = null;
+
+    function escapeHtml(valor) {
+      return String(valor || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setMensaje(tipo, texto) {
+      const el = document.getElementById("mensajeEstado");
+      if (!texto) {
+        el.style.display = "none";
+        el.textContent = "";
+        el.className = "franja-alerta";
+        return;
+      }
+      el.style.display = "block";
+      el.textContent = texto;
+      el.className = `franja-alerta ${tipo === "ok" ? "ok" : "error"}`;
+    }
+
+    function actualizarAcciones() {
+      const bloqueado = Number(usuarioSeleccionado?.bloqueado_para_admin || 0) === 1;
+      document.getElementById("btnBloquear").disabled = !usuarioSeleccionado || bloqueado;
+      document.getElementById("btnDesbloquear").disabled = !usuarioSeleccionado || !bloqueado;
+    }
+
+    function seleccionarUsuario(id) {
+      usuarioSeleccionado = usuarios.find((item) => Number(item.id) === Number(id)) || null;
+      renderTabla();
+      actualizarAcciones();
+    }
+
+    function renderTabla() {
+      const tbody = document.getElementById("tbodyUsuarios");
+      if (!usuarios.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos en el ámbito actual del administrador.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = usuarios.map((item) => {
+        const seleccionado = usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id);
+        const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
+        const nombreCentro = item.centro || item.nombre || "(Sin nombre)";
+        return `<tr class="${seleccionado ? "fila-seleccionada" : ""}" onclick="seleccionarUsuario(${Number(item.id)})">
+          <td class="sel-col"><input type="radio" name="selUsuario" ${seleccionado ? "checked" : ""} onchange="seleccionarUsuario(${Number(item.id)})"></td>
+          <td>${escapeHtml(nombreCentro)}</td>
+          <td>${escapeHtml(item.nombre || "-")}</td>
+          <td>${escapeHtml(item.email || "-")}</td>
+          <td>${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td><span class="pill ${bloqueado ? "pill-activo" : "pill-inactivo"}">${bloqueado ? "Bloqueado" : "Permitido"}</span></td>
+          <td>${escapeHtml(item.motivo_bloqueo || "-")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function cargarUsuarios() {
+      setMensaje("", "");
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-ambito-lista", { credentials: "include" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setMensaje("error", data?.error || "No se pudo cargar el listado.");
+          usuarios = [];
+          usuarioSeleccionado = null;
+          renderTabla();
+          actualizarAcciones();
+          return;
+        }
+        usuarios = Array.isArray(data.usuarios) ? data.usuarios : [];
+        if (usuarioSeleccionado) {
+          usuarioSeleccionado = usuarios.find((item) => Number(item.id) === Number(usuarioSeleccionado.id)) || null;
+        }
+        renderTabla();
+        actualizarAcciones();
+      } catch (_) {
+        setMensaje("error", "Error de conexión al cargar usuarios.");
+      }
+    }
+
+    async function actualizarBloqueo(bloqueado) {
+      if (!usuarioSeleccionado) return;
+      let motivo = "";
+      if (bloqueado) {
+        motivo = window.prompt("Indica el motivo del bloqueo para tus actividades:") || "";
+        if (!motivo.trim()) {
+          setMensaje("error", "Debes indicar un motivo para bloquear.");
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-ambito-estado", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            usuario_id: Number(usuarioSeleccionado.id),
+            bloqueado: bloqueado ? 1 : 0,
+            motivo
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setMensaje("error", data?.error || "No se pudo actualizar el estado.");
+          return;
+        }
+        setMensaje("ok", data.mensaje || "Estado actualizado.");
+        await cargarUsuarios();
+      } catch (_) {
+        setMensaje("error", "Error de conexión al actualizar el estado.");
+      }
+    }
+
+    document.getElementById("btnBloquear").addEventListener("click", () => actualizarBloqueo(true));
+    document.getElementById("btnDesbloquear").addEventListener("click", () => actualizarBloqueo(false));
+    document.getElementById("btnRecargar").addEventListener("click", cargarUsuarios);
+
+    cargarUsuarios();
+  </script>
+</body>
+</html>
