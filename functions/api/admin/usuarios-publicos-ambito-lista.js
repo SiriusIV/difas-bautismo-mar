@@ -37,20 +37,13 @@ export async function onRequestGet(context) {
         COALESCE(b.motivo, '') AS motivo_bloqueo,
         b.updated_at AS bloqueo_actualizado_en
       FROM usuarios u
-      INNER JOIN (
-        SELECT DISTINCT r.usuario_id
-        FROM reservas r
-        INNER JOIN actividades a ON a.id = r.actividad_id
-        WHERE a.admin_id = ?
-          AND r.usuario_id IS NOT NULL
-      ) scope ON scope.usuario_id = u.id
       LEFT JOIN usuarios_publicos_bloqueos_admin b
         ON b.admin_usuario_id = ?
        AND b.usuario_publico_id = u.id
       WHERE u.rol = 'SOLICITANTE'
+        AND COALESCE(u.activo, 0) = 1
       ORDER BY UPPER(COALESCE(NULLIF(TRIM(u.centro), ''), NULLIF(TRIM(u.nombre), ''), u.email)) ASC
     `).bind(
-      Number(session.usuario_id || 0),
       Number(session.usuario_id || 0)
     ).all();
 
