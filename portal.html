@@ -1714,14 +1714,14 @@
 
       .franja-sesion-inner.modo-admin #barraAdmin {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, max-content));
+        grid-template-columns: repeat(8, max-content);
         grid-template-areas:
-          "actividades actividades reservas reservas"
-          "usuarios plantillas informes calendario";
+          "actividades actividades actividades actividades reservas reservas reservas reservas"
+          ". . usuarios plantillas informes calendario . .";
         justify-content: center;
         align-items: center;
         row-gap: 10px;
-        column-gap: 1px;
+        column-gap: 8px;
         width: 100%;
         margin-top: 6px;
       }
@@ -1730,8 +1730,8 @@
       .franja-sesion-inner.modo-admin #btnNavAdminPlantillas,
       .franja-sesion-inner.modo-admin #btnNavAdminInformes,
       .franja-sesion-inner.modo-admin #btnNavAdminCalendario {
-        margin-left: -1px;
-        margin-right: -1px;
+        margin-left: 0;
+        margin-right: 0;
       }
 
       .franja-sesion-inner.modo-admin #btnNavAdminActividades {
