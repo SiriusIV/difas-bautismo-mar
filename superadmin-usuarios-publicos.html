@@ -57,6 +57,33 @@
       opacity: 0.45;
       cursor: not-allowed;
     }
+    .btn-icono-circulo {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #9b1c1c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-icono-circulo svg {
+      width: 17px;
+      height: 17px;
+      display: block;
+    }
+    .btn-icono-circulo:hover {
+      background: #fff6f6;
+      border-color: #e0b4b4;
+    }
+    .btn-icono-circulo:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
 
     .mensaje {
       position: relative;
@@ -159,6 +186,54 @@
       background: #fdeaea;
       color: #9b1c1c;
     }
+    .estado-celda-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .estado-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 42px;
+    }
+    .estado-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .estado-slider {
+      position: absolute;
+      inset: 0;
+      background-color: #c7d0da;
+      transition: .2s;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .estado-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .estado-switch input:checked + .estado-slider {
+      background-color: #2db95b;
+    }
+    .estado-switch input:checked + .estado-slider:before {
+      transform: translateX(18px);
+    }
+    .estado-switch input:disabled + .estado-slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .modal-fondo {
       position: fixed;
@@ -223,68 +298,6 @@
       margin: 0 42px 14px 0;
     }
 
-    .modal-estado-usuario {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid #d9e3ed;
-      background: #f8fbff;
-      color: #35506a;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 42px;
-      height: 24px;
-      flex: 0 0 42px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      inset: 0;
-      background-color: #c7d0da;
-      transition: .2s;
-      border-radius: 999px;
-      cursor: pointer;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      top: 3px;
-      background-color: white;
-      transition: .2s;
-      border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-    }
-
-    .switch input:checked + .slider {
-      background-color: #2db95b;
-    }
-
-    .switch input:checked + .slider:before {
-      transform: translateX(18px);
-    }
-
-    .switch input:disabled + .slider {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
 
     .modal-grid {
       display: grid;
@@ -431,12 +444,6 @@
         font-size: 19px;
       }
 
-      .modal-estado-usuario {
-        gap: 8px;
-        padding: 6px 10px;
-        font-size: 11px;
-      }
-
       .modal-cerrar-icono {
         right: 12px;
         top: 12px;
@@ -577,13 +584,20 @@
           <h2>Listado de cuentas</h2>
           <p class="subtitulo">Revisa la ficha completa del usuario publico seleccionado y aplica, cuando proceda, la suspension o la eliminacion de la cuenta.</p>
         </div>
+        <div class="barra-acciones">
+          <button type="button" class="btn-ficha" id="btnVerUsuario" disabled>Ficha de usuario</button>
+          <button type="button" class="btn-icono-circulo" id="btnEliminarUsuario" disabled title="Eliminar cuenta" aria-label="Eliminar cuenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M6 6l1 14h10l1-14"></path>
+              <path d="M10 10v7"></path>
+              <path d="M14 10v7"></path>
+            </svg>
+          </button>
+        </div>
       </div>
       <div id="mensajePantalla" class="mensaje"></div>
-
-      <div class="barra-acciones">
-        <button type="button" class="btn-ficha" id="btnVerUsuario" disabled>Ver ficha</button>
-        <button type="button" class="super-btn-peligro" id="btnEliminarUsuario" disabled>Eliminar</button>
-      </div>
 
       <div class="tabla-wrap">
         <table>
@@ -610,13 +624,6 @@
       <button type="button" class="modal-cerrar-icono" id="btnCerrarModalUsuarioPublico" aria-label="Cerrar">×</button>
       <div class="modal-cabecera-usuario">
         <h3 id="tituloModalUsuarioPublico">Ficha de usuario publico</h3>
-        <div class="modal-estado-usuario">
-          <span id="textoEstadoUsuarioPublico">Activa</span>
-          <label class="switch" aria-label="Activar o suspender usuario publico">
-            <input type="checkbox" id="toggleEstadoUsuarioPublico">
-            <span class="slider"></span>
-          </label>
-        </div>
       </div>
       <dl class="modal-grid" id="detalleUsuarioPublico"></dl>
     </div>
@@ -722,16 +729,6 @@
       document.getElementById("btnEliminarUsuario").disabled = !hay;
     }
 
-    function actualizarCabeceraEstadoUsuario() {
-      const texto = document.getElementById("textoEstadoUsuarioPublico");
-      const toggle = document.getElementById("toggleEstadoUsuarioPublico");
-      if (!texto || !toggle || !usuarioSeleccionado) return;
-      const activa = Number(usuarioSeleccionado.activo || 0) === 1;
-      texto.textContent = activa ? "Activa" : "Inactiva";
-      toggle.checked = activa;
-      toggle.disabled = actualizandoEstado;
-    }
-
     function estadoUsuarioPill(activo) {
       return Number(activo || 0) === 1
         ? '<span class="pill pill-activo">Activa</span>'
@@ -753,7 +750,6 @@
       usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(id)) || null;
       renderizarTabla();
       actualizarBotonesAccion();
-      actualizarCabeceraEstadoUsuario();
     }
 
     function renderizarTabla() {
@@ -773,7 +769,19 @@
           <td data-label="Email">${escapeHtml(item.email || "")}</td>
           <td data-label="Telefono">${escapeHtml(item.telefono_contacto || "-")}</td>
           <td data-label="Localidad">${escapeHtml(item.localidad || "-")}</td>
-          <td data-label="Estado">${estadoUsuarioPill(item.activo)}</td>
+          <td data-label="Estado" onclick="event.stopPropagation()">
+            <span class="estado-celda-wrap">
+              <label class="estado-switch" aria-label="Activar o suspender usuario publico">
+                <input
+                  type="checkbox"
+                  ${Number(item.activo || 0) === 1 ? "checked" : ""}
+                  ${actualizandoEstado ? "disabled" : ""}
+                  onchange="prepararCambioEstadoUsuarioPublicoFila(${Number(item.id)}, this.checked)"
+                >
+                <span class="estado-slider"></span>
+              </label>
+            </span>
+          </td>
           <td data-label="Alta">${formatearFecha(item.fecha_alta)}</td>
         </tr>
       `).join("");
@@ -793,7 +801,6 @@
         usuarioSeleccionado = usuariosCache.find((item) => Number(item.id) === Number(usuarioSeleccionado.id)) || null;
       }
       renderizarTabla();
-      actualizarCabeceraEstadoUsuario();
     }
 
     function abrirModalUsuario() {
@@ -808,7 +815,6 @@
         <dt>Documento</dt><dd>${escapeHtml(usuarioSeleccionado.tipo_documento || "-")} · ${escapeHtml(usuarioSeleccionado.documento_identificacion || "-")}</dd>
         <dt>Fecha de alta</dt><dd>${formatearFecha(usuarioSeleccionado.fecha_alta)}</dd>
       `;
-      actualizarCabeceraEstadoUsuario();
       abrirModal("modalUsuarioPublico");
     }
 
@@ -847,10 +853,33 @@
       );
     }
 
+    function prepararCambioEstadoUsuarioPublicoFila(id, checked) {
+      if (actualizandoEstado) return;
+      const usuario = usuariosCache.find((item) => Number(item.id) === Number(id)) || null;
+      if (!usuario) return;
+      usuarioSeleccionado = usuario;
+      actualizarBotonesAccion();
+      if (checked) {
+        cambiarEstadoUsuarioPublico(usuarioSeleccionado.id, true, "");
+        return;
+      }
+
+      usuarioPendienteBloqueo = usuarioSeleccionado;
+      document.getElementById("observacionesBloqueoUsuarioPublico").value = "";
+      abrirConfirmacionUsuarioPublico(
+        "Confirmar suspension temporal",
+        `Esta accion suspendera temporalmente la cuenta de <strong>${escapeHtml(usuarioSeleccionado.centro || usuarioSeleccionado.nombre || "Usuario publico")}</strong>.<br><br>Si esta cuenta mantiene solicitudes activas, se rechazaran automaticamente, se liberaran las plazas afectadas y se avisara por correo tanto al solicitante como a los administradores de las actividades implicadas.<br><br>Si continuas, a continuacion deberas introducir las observaciones de la suspension.`,
+        function () {
+          cerrarModal("modalConfirmacionUsuarioPublico");
+          abrirModal("modalBloqueoUsuarioPublico");
+        }
+      );
+    }
+
     async function cambiarEstadoUsuarioPublico(id, checked, motivo) {
       if (actualizandoEstado) return;
       actualizandoEstado = true;
-      actualizarCabeceraEstadoUsuario();
+      renderizarTabla();
       try {
         const res = await fetch("/api/admin/usuarios-publicos-estado", {
           method: "POST",
@@ -873,7 +902,7 @@
         await cargarUsuarios();
       } finally {
         actualizandoEstado = false;
-        actualizarCabeceraEstadoUsuario();
+        renderizarTabla();
       }
     }
 
@@ -942,7 +971,7 @@
     document.getElementById("btnCancelarConfirmacionUsuarioPublico").addEventListener("click", function () {
       reiniciarConfirmacionUsuarioPublico();
       cerrarModal("modalConfirmacionUsuarioPublico");
-      actualizarCabeceraEstadoUsuario();
+      renderizarTabla();
     });
     document.getElementById("btnAceptarConfirmacionUsuarioPublico").addEventListener("click", function () {
       if (typeof accionConfirmacionPendiente === "function") {
@@ -962,12 +991,8 @@
           reiniciarConfirmacionUsuarioPublico();
         }
         cerrarModal(id);
-        actualizarCabeceraEstadoUsuario();
+        renderizarTabla();
       });
-    });
-
-    document.getElementById("toggleEstadoUsuarioPublico").addEventListener("change", function () {
-      prepararCambioEstadoUsuarioPublico(this.checked);
     });
 
     ["modalUsuarioPublico", "modalConfirmacionUsuarioPublico", "modalBloqueoUsuarioPublico"].forEach(function (id) {
@@ -980,7 +1005,7 @@
             reiniciarConfirmacionUsuarioPublico();
           }
           cerrarModal(id);
-          actualizarCabeceraEstadoUsuario();
+          renderizarTabla();
         }
       });
     });
@@ -994,6 +1019,7 @@
     })();
 
     window.seleccionarUsuario = seleccionarUsuario;
+    window.prepararCambioEstadoUsuarioPublicoFila = prepararCambioEstadoUsuarioPublicoFila;
     window.cerrarMensaje = cerrarMensaje;
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
