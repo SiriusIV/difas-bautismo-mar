@@ -653,6 +653,25 @@
       justify-content: center;
     }
 
+    .fc .fc-daygrid-event.evento-mes-unico {
+      margin: 2px auto;
+      padding: 0;
+      min-height: 10px;
+      width: 14px;
+      min-width: 14px;
+      border: 0;
+      background: transparent !important;
+      border-radius: 999px;
+    }
+
+    .fc .fc-daygrid-event.evento-mes-unico .fc-event-main {
+      padding: 0;
+      min-height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .marcador-evento-movil {
       width: 8px;
       height: 8px;
@@ -2011,6 +2030,20 @@
       return esMovilCalendario() && vista === "dayGridMonth";
     }
 
+    const diasConMarcadorMensual = new Set();
+
+    function limpiarMarcadoresMensuales() {
+      diasConMarcadorMensual.clear();
+    }
+
+    function obtenerClaveDiaLocal(fecha) {
+      if (!(fecha instanceof Date) || Number.isNaN(fecha.getTime())) return "";
+      const anio = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dia = String(fecha.getDate()).padStart(2, "0");
+      return `${anio}-${mes}-${dia}`;
+    }
+
     function obtenerTituloBreveEventoCalendario(event) {
       const p = event?.extendedProps || {};
       const titulo = String(p.actividad_nombre || event?.title || "").trim();
@@ -2218,6 +2251,11 @@
             failureCallback(error);
           }
         },
+        loading: function(isLoading) {
+          if (isLoading) {
+            limpiarMarcadoresMensuales();
+          }
+        },
         eventClassNames: function(arg) {
           const p = arg.event.extendedProps || {};
           if (p.placeholder_lista) return ["evento-dia-vacio"];
@@ -2225,6 +2263,19 @@
           return [p.editable_actividad ? "evento-actividad-editable" : "evento-actividad-noeditable"];
         },
         eventDidMount: function(arg) {
+          if (String(arg?.view?.type || "") === "dayGridMonth") {
+            if (arg?.el) {
+              arg.el.classList.add("evento-mes-unico");
+            }
+            const claveDia = obtenerClaveDiaLocal(arg?.event?.start);
+            if (claveDia) {
+              if (diasConMarcadorMensual.has(claveDia)) {
+                if (arg?.el) arg.el.style.display = "none";
+                return;
+              }
+              diasConMarcadorMensual.add(claveDia);
+            }
+          }
           if (arg?.el && arg?.event?.start) {
             arg.el.dataset.eventStartTs = String(arg.event.start.getTime());
           }
@@ -2237,6 +2288,13 @@
             return undefined;
           }
           const tipoVista = String(arg?.view?.type || "");
+          if (tipoVista === "dayGridMonth") {
+            const marcadorMes = document.createElement("span");
+            marcadorMes.className = "marcador-evento-movil";
+            marcadorMes.style.backgroundColor = "#1d63d8";
+            marcadorMes.setAttribute("aria-label", "Dia con actividad o solicitud");
+            return { domNodes: [marcadorMes] };
+          }
           const esActividad = String(arg.event.extendedProps?.tipo_evento || "") === "ACTIVIDAD_PROGRAMADA";
           if (!esMovilCalendario() || !esActividad) {
             return undefined;
@@ -2247,10 +2305,6 @@
           marcador.style.backgroundColor = String(
             arg.event.backgroundColor || arg.event.borderColor || "#0b5ed7"
           );
-
-          if (tipoVista === "dayGridMonth") {
-            return { domNodes: [marcador] };
-          }
 
           if (tipoVista === "timeGridDay" || tipoVista === "listContinuo") {
             const wrap = document.createElement("span");
