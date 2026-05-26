@@ -48,6 +48,37 @@
       align-items: center;
     }
 
+    .btn-icono-circulo {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #9b1c1c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icono-circulo svg {
+      width: 17px;
+      height: 17px;
+      display: block;
+    }
+
+    .btn-icono-circulo:hover {
+      background: #fff6f6;
+      border-color: #e0b4b4;
+    }
+
+    .btn-icono-circulo:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     .mensaje {
       position: relative;
       margin-bottom: 10px;
@@ -1140,7 +1171,15 @@
         </div>
         <div class="acciones-seccion">
           <button type="button" class="super-btn-secundario" id="btnVerFicha" disabled>Ficha</button>
-          <button type="button" class="super-btn-peligro" id="btnEliminarAdmin" disabled>Eliminar</button>
+          <button type="button" class="btn-icono-circulo" id="btnEliminarAdmin" disabled title="Eliminar administrador" aria-label="Eliminar administrador">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M6 6l1 14h10l1-14"></path>
+              <path d="M10 10v7"></path>
+              <path d="M14 10v7"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
