@@ -1457,7 +1457,7 @@
     .tabla-franjas-preview th:nth-child(3),
     .tabla-franjas-preview td:nth-child(2),
     .tabla-franjas-preview td:nth-child(3) {
-      text-align: left;
+      text-align: center;
     }
 
     .requisitos-head {
@@ -5083,7 +5083,7 @@ function renderPreviewFranjas() {
           <tr>
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
-            <td>${f.hora_fin || "?"}</td>
+            <td>${f.hora_fin || "-"}</td>
             ${aforoLimitado ? `<td>${f.capacidad == null ? "—" : f.capacidad}</td>` : ""}
           </tr>
         `)

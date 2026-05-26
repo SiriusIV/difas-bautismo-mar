@@ -1354,6 +1354,11 @@
   white-space: nowrap;
 }
 
+.tabla-franjas th:nth-child(4),
+.tabla-franjas td:nth-child(4) {
+  text-align: center;
+}
+
 .tabla-franjas th:nth-child(5),
 .tabla-franjas td:nth-child(5) {
   min-width: 210px;
@@ -2560,7 +2565,7 @@ async function cargarFranjasActividad(actividad) {
           </td>
           <td>${textoProgramacionFranja(f)}</td>
           <td>${f.hora_inicio}</td>
-          <td>${f.hora_fin || "?"}</td>
+          <td>${f.hora_fin || "-"}</td>
           <td class="estado-franja ${estadoClase}">${estadoTexto}</td>
         </tr>
       `;
