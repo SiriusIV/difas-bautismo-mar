@@ -156,10 +156,13 @@
       letter-spacing: 0.02em;
     }
 
-    th.sel-col,
-    td.sel-col {
-      width: 36px;
-      text-align: center;
+    .tabla-wrap tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .tabla-wrap tbody tr:hover {
+      background: #f8fbff;
     }
 
     .fila-seleccionada {
@@ -534,18 +537,14 @@
         margin-top: 10px;
       }
 
-      .tabla-wrap td.sel-col {
-        display: none;
-      }
-
-      .tabla-wrap td:not(.sel-col) {
+      .tabla-wrap td {
         display: grid;
         grid-template-columns: minmax(110px, 40%) 1fr;
         gap: 10px;
         align-items: start;
       }
 
-      .tabla-wrap td:not(.sel-col)::before {
+      .tabla-wrap td::before {
         content: attr(data-label);
         color: #5f6d7a;
         font-size: 11px;
@@ -603,7 +602,6 @@
         <table>
           <thead>
             <tr>
-              <th class="sel-col"></th>
               <th>Centro / entidad</th>
               <th>Responsable</th>
               <th>Email</th>
@@ -756,14 +754,6 @@
       const tbody = document.getElementById("tablaUsuariosPublicos");
       tbody.innerHTML = (usuariosCache || []).map((item) => `
         <tr class="${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "fila-seleccionada" : ""}" onclick="seleccionarUsuario(${Number(item.id)})">
-          <td class="sel-col" onclick="event.stopPropagation()">
-            <input
-              type="radio"
-              name="seleccionUsuarioPublico"
-              ${usuarioSeleccionado && Number(usuarioSeleccionado.id) === Number(item.id) ? "checked" : ""}
-              onchange="seleccionarUsuario(${Number(item.id)})"
-            >
-          </td>
           <td data-label="Centro / entidad">${escapeHtml(item.centro || item.nombre || "")}</td>
           <td data-label="Responsable">${escapeHtml(item.responsable_legal || "-")}</td>
           <td data-label="Email">${escapeHtml(item.email || "")}</td>
