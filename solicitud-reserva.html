@@ -1603,7 +1603,14 @@
       limpiarSolicitudPendiente();
     }
 
-    function obtenerDisponiblesFormulario(franja) {
+    function formatearHorarioFranja(inicio, fin) {
+  const horaInicio = String(inicio || '').trim();
+  const horaFin = String(fin || '').trim();
+  if (!horaInicio) return '-';
+  return horaFin ? `${horaInicio} a ${horaFin}` : `Desde las ${horaInicio}`;
+}
+
+function obtenerDisponiblesFormulario(franja) {
       if (franja?.disponibles == null) {
         return null;
       }
@@ -1795,7 +1802,7 @@
         const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
         const option = document.createElement("option");
         option.value = f.id;
-        option.textContent = `${etiquetaFecha} - ${f.hora_inicio} a ${f.hora_fin}`;
+        option.textContent = `${etiquetaFecha} - ${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}`;
         select.appendChild(option);
       });
 

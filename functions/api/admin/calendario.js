@@ -172,14 +172,13 @@ async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
   const where = [
     "f.fecha IS NOT NULL",
     "f.hora_inicio IS NOT NULL",
-    "f.hora_fin IS NOT NULL",
     "COALESCE(a.activa, 0) = 1",
     "COALESCE(a.visible_portal, 0) = 1"
   ];
   const binds = [];
 
   if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
-    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(f.hora_fin) >= time('now')))");
+    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(COALESCE(NULLIF(TRIM(f.hora_fin), ''), f.hora_inicio)) >= time('now')))");
   }
 
   if (filtros.start) {
@@ -247,6 +246,7 @@ async function obtenerBloqueoPorFranja(env, franjaIds) {
 }
 
 function construirIsoLocal(fecha, hora) {
+  if (!fecha || !hora) return null;
   return `${fecha}T${hora}`;
 }
 

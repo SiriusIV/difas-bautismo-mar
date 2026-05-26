@@ -24,6 +24,11 @@ function normalizarHora(valor) {
   return normalizarTexto(valor);
 }
 
+function normalizarHoraFinOpcional(valor) {
+  const hora = normalizarHora(valor);
+  return hora || null;
+}
+
 function parsearCapacidad(valor) {
   if (valor === null || valor === undefined || String(valor).trim() === "") return null;
   const n = parseInt(valor, 10);
@@ -65,10 +70,14 @@ function escaparHtml(valor) {
 }
 
 function descripcionFranja(row = {}) {
+  const horaFin = normalizarTexto(row.hora_fin);
+  const horario = horaFin
+    ? `${normalizarTexto(row.hora_inicio)}-${horaFin}`
+    : `Desde las ${normalizarTexto(row.hora_inicio)}`;
   if (Number(row.es_recurrente || 0) === 1) {
-    return `${normalizarTexto(row.patron_recurrencia)} · ${normalizarTexto(row.hora_inicio)}-${normalizarTexto(row.hora_fin)}`.trim();
+    return `${normalizarTexto(row.patron_recurrencia)} - ${horario}`.trim();
   }
-  return `${normalizarTexto(row.fecha)} · ${normalizarTexto(row.hora_inicio)}-${normalizarTexto(row.hora_fin)}`.trim();
+  return `${normalizarTexto(row.fecha)} - ${horario}`.trim();
 }
 
 function franjaHaCambiado(existente = {}, siguiente = {}) {
@@ -245,15 +254,19 @@ function validarDatosFranja({
   patron_recurrencia,
   aforo_limitado
 }) {
-  if (!hora_inicio || !hora_fin) {
-    return "Faltan las horas de la franja.";
+  if (!hora_inicio) {
+    return "La hora de inicio es obligatoria.";
   }
 
-  if (!/^\d{2}:\d{2}$/.test(hora_inicio) || !/^\d{2}:\d{2}$/.test(hora_fin)) {
-    return "Las horas deben tener formato HH:MM.";
+  if (!/^\d{2}:\d{2}$/.test(hora_inicio)) {
+    return "La hora de inicio debe tener formato HH:MM.";
   }
 
-  if (hora_inicio >= hora_fin) {
+  if (hora_fin && !/^\d{2}:\d{2}$/.test(hora_fin)) {
+    return "La hora de fin debe tener formato HH:MM.";
+  }
+
+  if (hora_fin && hora_inicio >= hora_fin) {
     return "La hora de inicio debe ser anterior a la hora de fin.";
   }
 
@@ -521,7 +534,7 @@ export async function onRequestPost(context) {
     const actividad_id = parsearIdPositivo(data.actividad_id);
     const fecha = normalizarFecha(data.fecha);
     const hora_inicio = normalizarHora(data.hora_inicio);
-    const hora_fin = normalizarHora(data.hora_fin);
+    const hora_fin = normalizarHoraFinOpcional(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
     const es_recurrente = parsearFlag(data.es_recurrente, 0);
     const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
@@ -571,7 +584,7 @@ export async function onRequestPost(context) {
           AND es_recurrente = 1
           AND patron_recurrencia = ?
           AND hora_inicio = ?
-          AND hora_fin = ?
+          AND COALESCE(hora_fin, '') = COALESCE(?, '')
         LIMIT 1
       `)
         .bind(actividad_id, patron_recurrencia, hora_inicio, hora_fin)
@@ -584,7 +597,7 @@ export async function onRequestPost(context) {
           AND COALESCE(es_recurrente, 0) = 0
           AND fecha = ?
           AND hora_inicio = ?
-          AND hora_fin = ?
+          AND COALESCE(hora_fin, '') = COALESCE(?, '')
         LIMIT 1
       `)
         .bind(actividad_id, fecha, hora_inicio, hora_fin)
@@ -663,7 +676,7 @@ export async function onRequestPut(context) {
     const id = parsearIdPositivo(data.id);
     const fecha = normalizarFecha(data.fecha);
     const hora_inicio = normalizarHora(data.hora_inicio);
-    const hora_fin = normalizarHora(data.hora_fin);
+    const hora_fin = normalizarHoraFinOpcional(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
     const es_recurrente = parsearFlag(data.es_recurrente, 0);
     const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
@@ -726,7 +739,7 @@ export async function onRequestPut(context) {
           AND es_recurrente = 1
           AND patron_recurrencia = ?
           AND hora_inicio = ?
-          AND hora_fin = ?
+          AND COALESCE(hora_fin, '') = COALESCE(?, '')
           AND id <> ?
         LIMIT 1
       `)
@@ -740,7 +753,7 @@ export async function onRequestPut(context) {
           AND COALESCE(es_recurrente, 0) = 0
           AND fecha = ?
           AND hora_inicio = ?
-          AND hora_fin = ?
+          AND COALESCE(hora_fin, '') = COALESCE(?, '')
           AND id <> ?
         LIMIT 1
       `)

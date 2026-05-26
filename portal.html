@@ -2450,7 +2450,7 @@ async function cargarFranjasActividad(actividad) {
     const ahora = new Date();
 
     franjasActividadActual = data.franjas
-      .filter(f => f && f.hora_inicio && f.hora_fin)
+      .filter(f => f && f.hora_inicio)
       .map(f => {
         const ocupadas = Number(f.ocupadas || 0);
         const disponibles = f.disponibles == null ? null : Number(f.disponibles);
@@ -2560,7 +2560,7 @@ async function cargarFranjasActividad(actividad) {
           </td>
           <td>${textoProgramacionFranja(f)}</td>
           <td>${f.hora_inicio}</td>
-          <td>${f.hora_fin}</td>
+          <td>${f.hora_fin || "?"}</td>
           <td class="estado-franja ${estadoClase}">${estadoTexto}</td>
         </tr>
       `;

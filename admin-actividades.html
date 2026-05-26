@@ -2546,7 +2546,7 @@
     </div>
 
     <div class="campo-franja-inline">
-      <label>Fin</label>
+      <label>Fin (opcional)</label>
       <input type="time" id="fr_hora_fin">
     </div>
 
@@ -4998,7 +4998,7 @@ function renderListaFranjas() {
           >
         </td>`}
         <td>${programacionHtml}</td>
-        <td>${f.hora_inicio || "-"} - ${f.hora_fin || "-"}</td>
+        <td>${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}</td>
         <td class="col-num">${capacidad}</td>
         <td class="col-num">${ocupadas}</td>
         <td class="col-num">${disponibles}</td>
@@ -5042,7 +5042,14 @@ function renderListaFranjas() {
   actualizarAccionesFranjaUI();
 }
 
-    function renderPreviewFranjas() {
+    function formatearHorarioFranja(inicio, fin) {
+  const horaInicio = String(inicio || '').trim();
+  const horaFin = String(fin || '').trim();
+  if (!horaInicio) return '-';
+  return horaFin ? `${horaInicio} - ${horaFin}` : `Desde las ${horaInicio}`;
+}
+
+function renderPreviewFranjas() {
       const wrap = document.getElementById("tablaFranjasPreviewWrap");
       const body = document.getElementById("tablaFranjasPreviewBody");
       const tabla = wrap?.querySelector("table");
@@ -5071,12 +5078,12 @@ function renderListaFranjas() {
       const nuevoBody = document.getElementById("tablaFranjasPreviewBody");
 
       nuevoBody.innerHTML = franjasCache
-        .filter(f => f && f.hora_inicio && f.hora_fin)
+        .filter(f => f && f.hora_inicio)
         .map(f => `
           <tr>
             <td>${textoProgramacionFranja(f)}</td>
             <td>${f.hora_inicio}</td>
-            <td>${f.hora_fin}</td>
+            <td>${f.hora_fin || "?"}</td>
             ${aforoLimitado ? `<td>${f.capacidad == null ? "—" : f.capacidad}</td>` : ""}
           </tr>
         `)

@@ -158,7 +158,10 @@ function construirDescripcionProgramacion(contexto = {}) {
   const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
   const horaFin = limpiarTexto(contexto?.hora_fin || "");
   if (fecha && horaInicio && horaFin) {
-    return `${fecha} · ${horaInicio} - ${horaFin}`;
+    return `${fecha} - ${horaInicio} - ${horaFin}`;
+  }
+  if (fecha && horaInicio) {
+    return `${fecha} - Desde las ${horaInicio}`;
   }
   if (fecha) return fecha;
   return "";
