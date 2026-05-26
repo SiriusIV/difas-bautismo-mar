@@ -10,10 +10,27 @@ function json(data, status = 200) {
   });
 }
 
+async function asegurarColumnaUsuario(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("already exists") ||
+      detalle.includes("duplicate")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaUsuario(env.DB, "secretaria_admin_creador_id", "INTEGER");
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -24,7 +41,7 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, 403);
     }
 
-    const rows = await env.DB.prepare(`
+    let sql = `
       SELECT
         id,
         nombre,
@@ -34,13 +51,21 @@ export async function onRequestGet(context) {
       FROM usuarios
       WHERE rol = 'SECRETARIA'
         AND activo = 1
-      ORDER BY
+    `;
+    const binds = [];
+    if (String(rol || "").toUpperCase() === "ADMIN") {
+      sql += " AND secretaria_admin_creador_id = ? ";
+      binds.push(Number(session.usuario_id || 0));
+    }
+    sql += ` ORDER BY
         CASE
           WHEN nombre_publico IS NOT NULL AND TRIM(nombre_publico) <> '' THEN TRIM(nombre_publico)
           ELSE TRIM(nombre)
         END COLLATE NOCASE ASC,
         id ASC
-    `).all();
+    `;
+    const stmt = env.DB.prepare(sql);
+    const rows = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
 
     return json({
       ok: true,

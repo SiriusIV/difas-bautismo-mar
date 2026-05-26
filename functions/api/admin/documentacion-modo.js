@@ -24,6 +24,22 @@ function parsearIdPositivo(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+async function asegurarColumnaUsuario(db, nombre, definicion) {
+  try {
+    await db.prepare(`ALTER TABLE usuarios ADD COLUMN ${nombre} ${definicion}`).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (
+      detalle.includes("duplicate column name") ||
+      detalle.includes("already exists") ||
+      detalle.includes("duplicate")
+    ) {
+      return;
+    }
+    throw error;
+  }
+}
+
 async function resolverAdminObjetivo(env, session, adminIdParam) {
   const rol = await getRolUsuario(env, session.usuario_id);
   if (rol === "SUPERADMIN") {
@@ -40,7 +56,8 @@ async function obtenerSecretaria(env, secretariaUsuarioId) {
       nombre_publico,
       localidad,
       email,
-      rol
+      rol,
+      secretaria_admin_creador_id
     FROM usuarios
     WHERE id = ?
       AND rol = 'SECRETARIA'
@@ -251,10 +268,12 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnaUsuario(env.DB, "secretaria_admin_creador_id", "INTEGER");
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
     }
+    const rolSesion = await getRolUsuario(env, session.usuario_id);
 
     const body = await request.json().catch(() => ({}));
     const baseUrl = new URL(request.url).origin;
@@ -288,6 +307,13 @@ export async function onRequestPost(context) {
       const secretaria = await obtenerSecretaria(env, secretariaUsuarioId);
       if (!secretaria) {
         return json({ ok: false, error: "La secretaría indicada no existe o no es válida." }, 404);
+      }
+
+      if (
+        String(rolSesion || "").toUpperCase() === "ADMIN" &&
+        Number(secretaria.secretaria_admin_creador_id || 0) !== Number(adminId || 0)
+      ) {
+        return json({ ok: false, error: "Solo puedes adscribirte a secretarías creadas desde tu cuenta de administrador." }, 403);
       }
 
       if (Number(secretaria.id || 0) === Number(adminId || 0)) {
