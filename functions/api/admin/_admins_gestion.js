@@ -107,6 +107,64 @@ async function obtenerAdministrador(env, adminId) {
   `).bind(adminId).first();
 }
 
+async function asegurarColumnasSecretaria(db) {
+  await asegurarColumnaUsuarioAdmin(db, "secretaria_admin_creador_id", "INTEGER");
+  await asegurarColumnaUsuarioAdmin(db, "secretaria_onboarding_completo", "INTEGER NOT NULL DEFAULT 0");
+}
+
+async function listarSecretariasDeAdministrador(env, adminId) {
+  const rows = await env.DB.prepare(`
+    SELECT id, nombre, nombre_publico, email, activo
+    FROM usuarios
+    WHERE rol = 'SECRETARIA'
+      AND secretaria_admin_creador_id = ?
+  `).bind(adminId).all();
+  return rows?.results || [];
+}
+
+async function eliminarDocumentacionAsociadaSecretaria(env, secretariaId) {
+  try {
+    const expedientes = await env.DB.prepare(`
+      SELECT id
+      FROM centro_admin_documentacion
+      WHERE centro_usuario_id = ?
+    `).bind(secretariaId).all();
+    const ids = (expedientes?.results || []).map((item) => Number(item.id || 0)).filter((id) => id > 0);
+    for (const id of ids) {
+      await env.DB.prepare(`DELETE FROM centro_admin_documentacion_archivos WHERE documentacion_id = ?`).bind(id).run();
+    }
+    await env.DB.prepare(`DELETE FROM centro_admin_documentacion WHERE centro_usuario_id = ?`).bind(secretariaId).run();
+  } catch (_) {
+    // tablas opcionales o esquema parcial
+  }
+}
+
+async function notificarCambioCuentaSecretaria(env, secretaria, accion) {
+  const email = limpiarTexto(secretaria?.email);
+  if (!email) return;
+
+  const nombre = limpiarTexto(secretaria?.nombre_publico || secretaria?.nombre || "Secretaría");
+  let subject = "[Acceso] Cuenta de Secretaría actualizada";
+  let text = `Tu cuenta de Secretaría ha sido actualizada: ${accion}.`;
+  if (accion === "suspendida") {
+    subject = "[Acceso] Cuenta de Secretaría suspendida";
+    text = "Tu cuenta de Secretaría ha sido suspendida porque la cuenta administradora vinculada está suspendida.";
+  } else if (accion === "reactivada") {
+    subject = "[Acceso] Cuenta de Secretaría reactivada";
+    text = "Tu cuenta de Secretaría ha sido reactivada y vuelve a estar disponible.";
+  } else if (accion === "eliminada") {
+    subject = "[Acceso] Cuenta de Secretaría eliminada";
+    text = "Tu cuenta de Secretaría ha sido eliminada porque la cuenta administradora vinculada fue eliminada.";
+  }
+
+  await enviarEmail(env, {
+    to: email,
+    subject,
+    text: `Hola ${nombre},\n\n${text}`,
+    html: `<p>Hola ${escapeHtml(nombre)},</p><p>${escapeHtml(text)}</p>`
+  });
+}
+
 export async function listarAdministradores(env) {
   await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
   await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
@@ -432,6 +490,7 @@ function actividadEsReactivable(actividad) {
 export async function actualizarEstadoAdministrador(env, adminId, activo, actor = {}) {
   await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
   await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnasSecretaria(env.DB);
   const admin = await obtenerAdministrador(env, adminId);
   if (!admin || String(admin.rol || "").toUpperCase() !== "ADMIN") {
     throw new Error("Administrador no encontrado.");
@@ -439,6 +498,7 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
 
   const db = dbPrimaria(env);
   const actividades = await obtenerActividadesAdministrador(env, adminId);
+  const secretarias = await listarSecretariasDeAdministrador(env, adminId);
   const activar = Number(activo) === 1;
   const motivo = limpiarTexto(actor?.motivo || "");
 
@@ -460,7 +520,8 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
     actividades_actualizadas: 0,
     actividades_reactivadas: 0,
     reservas_afectadas: 0,
-    correos_enviados: 0
+    correos_enviados: 0,
+    secretarias_actualizadas: 0
   };
 
   if (!activar) {
@@ -499,6 +560,19 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
       resumen.correos_enviados += Number(rechazo.correos_enviados || 0);
     }
 
+    for (const secretaria of secretarias) {
+      if (Number(secretaria.activo || 0) !== 0) {
+        await db.prepare(`
+          UPDATE usuarios
+          SET activo = 0
+          WHERE id = ?
+            AND rol = 'SECRETARIA'
+        `).bind(Number(secretaria.id)).run();
+        resumen.secretarias_actualizadas += 1;
+      }
+      await notificarCambioCuentaSecretaria(env, secretaria, "suspendida");
+    }
+
     return resumen;
   }
 
@@ -534,11 +608,25 @@ export async function actualizarEstadoAdministrador(env, adminId, activo, actor 
     }
   }
 
+  for (const secretaria of secretarias) {
+    if (Number(secretaria.activo || 0) !== 1) {
+      await db.prepare(`
+        UPDATE usuarios
+        SET activo = 1
+        WHERE id = ?
+          AND rol = 'SECRETARIA'
+      `).bind(Number(secretaria.id)).run();
+      resumen.secretarias_actualizadas += 1;
+    }
+    await notificarCambioCuentaSecretaria(env, secretaria, "reactivada");
+  }
+
   return resumen;
 }
 
 export async function eliminarAdministrador(env, adminId, actor = {}) {
   await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnasSecretaria(env.DB);
   const admin = await obtenerAdministrador(env, adminId);
   if (!admin || String(admin.rol || "").toUpperCase() !== "ADMIN") {
     throw new Error("Administrador no encontrado.");
@@ -550,11 +638,13 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
   }
 
   const actividades = await obtenerActividadesAdministrador(env, adminId);
+  const secretarias = await listarSecretariasDeAdministrador(env, adminId);
   const resumen = {
     administrador_id: Number(adminId),
     actividades_eliminadas: 0,
     reservas_afectadas: 0,
-    correos_enviados: 0
+    correos_enviados: 0,
+    secretarias_eliminadas: 0
   };
 
   for (const actividad of actividades) {
@@ -569,6 +659,17 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
 
     await borrarActividadFisicamente(env, Number(actividad.id));
     resumen.actividades_eliminadas += 1;
+  }
+
+  for (const secretaria of secretarias) {
+    await eliminarDocumentacionAsociadaSecretaria(env, Number(secretaria.id || 0));
+    await env.DB.prepare(`
+      DELETE FROM usuarios
+      WHERE id = ?
+        AND rol = 'SECRETARIA'
+    `).bind(Number(secretaria.id)).run();
+    await notificarCambioCuentaSecretaria(env, secretaria, "eliminada");
+    resumen.secretarias_eliminadas += 1;
   }
 
   const destinatario = limpiarTexto(admin.email);

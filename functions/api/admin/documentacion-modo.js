@@ -61,6 +61,8 @@ async function obtenerSecretaria(env, secretariaUsuarioId) {
     FROM usuarios
     WHERE id = ?
       AND rol = 'SECRETARIA'
+      AND COALESCE(activo, 1) = 1
+      AND COALESCE(secretaria_onboarding_completo, 0) = 1
     LIMIT 1
   `).bind(secretariaUsuarioId).first();
 }
@@ -269,6 +271,7 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaUsuario(env.DB, "secretaria_admin_creador_id", "INTEGER");
+    await asegurarColumnaUsuario(env.DB, "secretaria_onboarding_completo", "INTEGER NOT NULL DEFAULT 0");
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);

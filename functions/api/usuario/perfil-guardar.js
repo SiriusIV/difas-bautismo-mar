@@ -1,5 +1,7 @@
 import { createSessionCookie, getUserSession } from "./_auth.js";
 import { asegurarColumnaForzarCambioPassword } from "./_password.js";
+import { crearNotificacion } from "../_notificaciones.js";
+import { enviarEmail } from "../_email.js";
 
 async function asegurarColumnaUsuario(db, nombre, definicion) {
   try {
@@ -8,6 +10,40 @@ async function asegurarColumnaUsuario(db, nombre, definicion) {
     const detalle = String(error?.message || "").toLowerCase();
     if (detalle.includes("duplicate") || detalle.includes("already exists")) return;
     throw error;
+  }
+}
+
+async function notificarActivacionSecretaria(env, secretaria) {
+  const adminCreadorId = Number(secretaria?.secretaria_admin_creador_id || 0);
+  if (!(adminCreadorId > 0)) return;
+
+  const admin = await env.DB.prepare(`
+    SELECT id, nombre, nombre_publico, email
+    FROM usuarios
+    WHERE id = ?
+      AND rol = 'ADMIN'
+    LIMIT 1
+  `).bind(adminCreadorId).first();
+  if (!admin) return;
+
+  const nombreSecretaria = String(secretaria?.nombre_publico || secretaria?.nombre || "la Secretaría").trim();
+  await crearNotificacion(env, {
+    usuarioId: adminCreadorId,
+    rolDestino: "ADMIN",
+    tipo: "SISTEMA",
+    titulo: "Cuenta de Secretaría activada",
+    mensaje: `${nombreSecretaria} ha completado su activación inicial.`,
+    urlDestino: "/admin-secretarias.html"
+  });
+
+  const correoAdmin = String(admin?.email || "").trim();
+  if (correoAdmin) {
+    await enviarEmail(env, {
+      to: correoAdmin,
+      subject: "[Secretaría] Cuenta activada",
+      text: `${nombreSecretaria} ha completado su activación inicial y ya está disponible.`,
+      html: `<p><strong>${nombreSecretaria}</strong> ha completado su activación inicial y ya está disponible.</p>`
+    });
   }
 }
 
@@ -94,6 +130,8 @@ export async function onRequestPost(context) {
     const session = await getUserSession(request, env.SECRET_KEY);
     await asegurarColumnaForzarCambioPassword(env.DB);
     await asegurarColumnaUsuario(env.DB, "telefono_rpv", "TEXT");
+    await asegurarColumnaUsuario(env.DB, "secretaria_admin_creador_id", "INTEGER");
+    await asegurarColumnaUsuario(env.DB, "secretaria_onboarding_completo", "INTEGER NOT NULL DEFAULT 0");
 
     if (!session || !session.id) {
       return json({ ok: false, error: "No autorizado" }, 401);
@@ -157,6 +195,8 @@ export async function onRequestPost(context) {
           web_externa_url,
           web_externa_activa,
           forzar_cambio_password
+          , secretaria_admin_creador_id
+          , secretaria_onboarding_completo
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -178,6 +218,8 @@ export async function onRequestPost(context) {
           logo_url,
           web_externa_url,
           forzar_cambio_password
+          , secretaria_admin_creador_id
+          , secretaria_onboarding_completo
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -272,7 +314,14 @@ export async function onRequestPost(context) {
           documento_identificacion = ?,
           web_externa_url = ?,
           web_externa_activa = ?,
-          logo_url = ?
+          logo_url = ?,
+          secretaria_onboarding_completo = CASE
+            WHEN rol = 'SECRETARIA'
+                 AND COALESCE(secretaria_admin_creador_id, 0) > 0
+                 AND COALESCE(secretaria_onboarding_completo, 0) = 0
+            THEN 1
+            ELSE COALESCE(secretaria_onboarding_completo, 0)
+          END
         WHERE id = ?
       `).bind(
         nombre,
@@ -344,7 +393,9 @@ export async function onRequestPost(context) {
           web_externa_activa,
           logo_url,
           rol,
-          forzar_cambio_password
+          forzar_cambio_password,
+          secretaria_admin_creador_id,
+          secretaria_onboarding_completo
         FROM usuarios
         WHERE id = ?
         LIMIT 1
@@ -366,11 +417,21 @@ export async function onRequestPost(context) {
           web_externa_url,
           logo_url,
           rol,
-          forzar_cambio_password
+          forzar_cambio_password,
+          secretaria_admin_creador_id,
+          secretaria_onboarding_completo
         FROM usuarios
         WHERE id = ?
         LIMIT 1
       `).bind(user.id).first();
+    }
+
+    if (
+      esSecretaria &&
+      Number(user.secretaria_onboarding_completo || 0) === 0 &&
+      Number(perfil.secretaria_onboarding_completo || 0) === 1
+    ) {
+      await notificarActivacionSecretaria(env, perfil);
     }
 
     const cookie = await createSessionCookie(

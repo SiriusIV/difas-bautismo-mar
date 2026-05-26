@@ -31,6 +31,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaUsuario(env.DB, "secretaria_admin_creador_id", "INTEGER");
+    await asegurarColumnaUsuario(env.DB, "secretaria_onboarding_completo", "INTEGER NOT NULL DEFAULT 0");
     const session = await getAdminSession(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -51,6 +52,7 @@ export async function onRequestGet(context) {
       FROM usuarios
       WHERE rol = 'SECRETARIA'
         AND activo = 1
+        AND COALESCE(secretaria_onboarding_completo, 0) = 1
     `;
     const binds = [];
     if (String(rol || "").toUpperCase() === "ADMIN") {
