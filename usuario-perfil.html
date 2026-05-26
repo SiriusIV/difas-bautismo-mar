@@ -3978,7 +3978,12 @@
     document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
     document.getElementById("btnCuentasSecretariaAdmin").addEventListener("click", function () {
       if (!esAdmin()) return;
-      window.location.href = "admin-secretarias.html";
+      const nombrePublico = (document.getElementById("nombrePublicoAdmin")?.value || "").trim();
+      const logoUrl = (document.getElementById("logo_url")?.value || "").trim();
+      const url = new URL("admin-secretarias.html", window.location.origin);
+      if (nombrePublico) url.searchParams.set("admin_nombre_publico", nombrePublico);
+      if (logoUrl) url.searchParams.set("admin_logo", logoUrl);
+      window.location.href = url.pathname + url.search;
     });
     document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
