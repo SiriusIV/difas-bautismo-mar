@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -65,7 +65,7 @@
       flex: 0 0 auto;
       transition: opacity 0.12s ease;
     }
-    .logo-cabecera.logo-admin-personal { width: 101px; }
+    .logo-cabecera.logo-admin-personal { width: 120px; }
     .logo-cabecera.logo-pendiente { opacity: 0; }
 
     .cabecera-titulos h1 {
@@ -490,7 +490,7 @@
         <div>
           <h3>Expedientes documentales del administrador</h3>
           <p>
-            Aquí puedes revisar la documentación remitida por los centros, validar los expedientes pendientes y consultar en cualquier momento la documentación vigente de cada centro.
+            AquÃ­ puedes revisar la documentaciÃ³n remitida por los centros, validar los expedientes pendientes y consultar en cualquier momento la documentaciÃ³n vigente de cada centro.
           </p>
         </div>
         <div class="acciones-superiores">
@@ -520,8 +520,8 @@
       <div class="bloque">
         <div class="bloque-head">
           <div>
-            <h3 id="tituloListado">Pendientes de revisión</h3>
-            <p id="textoListado">Se muestran únicamente los expedientes que están en revisión manual.</p>
+            <h3 id="tituloListado">Pendientes de revisiÃ³n</h3>
+            <p id="textoListado">Se muestran Ãºnicamente los expedientes que estÃ¡n en revisiÃ³n manual.</p>
           </div>
         </div>
         <div id="listaExpedientes" class="lista-expedientes"></div>
@@ -531,12 +531,12 @@
         <div class="bloque-head">
           <div>
             <h3>Detalle del expediente</h3>
-            <p>Selecciona un centro para consultar su documentación vigente actual y resolver la validación si está pendiente.</p>
+            <p>Selecciona un centro para consultar su documentaciÃ³n vigente actual y resolver la validaciÃ³n si estÃ¡ pendiente.</p>
           </div>
         </div>
 
         <div id="detalleVacio" class="estado-vacio">
-          Selecciona un expediente para ver el detalle de la documentación vigente de ese centro.
+          Selecciona un expediente para ver el detalle de la documentaciÃ³n vigente de ese centro.
         </div>
 
         <div id="detalleExpediente" class="oculto">
@@ -550,27 +550,27 @@
               <div class="valor"><span id="detalleEstado" class="pill pill-estado">-</span></div>
             </div>
             <div class="detalle-campo">
-              <label>Correo electrónico</label>
+              <label>Correo electrÃ³nico</label>
               <div class="valor" id="detalleEmail"></div>
             </div>
             <div class="detalle-campo">
-              <label>Teléfono</label>
+              <label>TelÃ©fono</label>
               <div class="valor" id="detalleTelefono"></div>
             </div>
             <div class="detalle-campo">
-              <label>Versión requerida</label>
+              <label>VersiÃ³n requerida</label>
               <div class="valor" id="detalleVersionRequerida"></div>
             </div>
             <div class="detalle-campo">
-              <label>Versión aportada</label>
+              <label>VersiÃ³n aportada</label>
               <div class="valor" id="detalleVersionAportada"></div>
             </div>
             <div class="detalle-campo">
-              <label>Última entrega</label>
+              <label>Ãšltima entrega</label>
               <div class="valor" id="detalleFechaEntrega"></div>
             </div>
             <div class="detalle-campo">
-              <label>Fecha de validación</label>
+              <label>Fecha de validaciÃ³n</label>
               <div class="valor" id="detalleFechaValidacion"></div>
             </div>
           </div>
@@ -672,11 +672,11 @@
       }
 
       document.getElementById("tituloListado").textContent = filtroActual === "pendientes"
-        ? "Pendientes de revisión"
+        ? "Pendientes de revisiÃ³n"
         : "Todos los centros con expediente";
 
       document.getElementById("textoListado").textContent = filtroActual === "pendientes"
-        ? "Se muestran únicamente los expedientes que están en revisión manual."
+        ? "Se muestran Ãºnicamente los expedientes que estÃ¡n en revisiÃ³n manual."
         : "Se muestran todos los centros que tienen expediente documental actual con este administrador.";
     }
 
@@ -700,10 +700,10 @@
         const fragment = tpl.content.cloneNode(true);
         const card = fragment.querySelector(".expediente-card");
         card.querySelector(".exp-centro").textContent = exp.centro || "Centro";
-        card.querySelector(".exp-contacto").textContent = [exp.email, exp.telefono_contacto].filter(Boolean).join(" · ") || "Sin datos de contacto";
-        card.querySelector(".exp-version").textContent = `Versión requerida ${exp.version_requerida} · aportada ${exp.version_aportada}`;
+        card.querySelector(".exp-contacto").textContent = [exp.email, exp.telefono_contacto].filter(Boolean).join(" Â· ") || "Sin datos de contacto";
+        card.querySelector(".exp-version").textContent = `VersiÃ³n requerida ${exp.version_requerida} Â· aportada ${exp.version_aportada}`;
         card.querySelector(".exp-fecha").textContent = exp.fecha_ultima_entrega
-          ? `Última entrega: ${exp.fecha_ultima_entrega}`
+          ? `Ãšltima entrega: ${exp.fecha_ultima_entrega}`
           : "Sin fecha de entrega";
         pintarEstado(card.querySelector(".exp-estado"), exp.estado);
 
@@ -765,7 +765,7 @@
         docs.forEach((doc) => {
           const fragment = tpl.content.cloneNode(true);
           fragment.querySelector(".doc-nombre").textContent = doc.nombre_documento || "Documento";
-          fragment.querySelector(".doc-meta").textContent = `Versión ${doc.version_documental || 0} · Subido ${doc.fecha_subida || ""}`;
+          fragment.querySelector(".doc-meta").textContent = `VersiÃ³n ${doc.version_documental || 0} Â· Subido ${doc.fecha_subida || ""}`;
           fragment.querySelector(".documento-link").href = doc.archivo_url || "#";
           pintarEstado(fragment.querySelector(".doc-estado"), doc.estado || "EN_REVISION");
 
@@ -836,8 +836,8 @@
 
       const observaciones = document.getElementById("detalleObservaciones").value.trim();
       const texto = accion === "validar"
-        ? "¿Deseas validar este documento?"
-        : "¿Deseas rechazar este documento?";
+        ? "Â¿Deseas validar este documento?"
+        : "Â¿Deseas rechazar este documento?";
 
       if (!window.confirm(texto)) return;
 
@@ -857,7 +857,7 @@
 
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        mostrarMensaje("error", data?.error || "No se pudo resolver la validación documental.");
+        mostrarMensaje("error", data?.error || "No se pudo resolver la validaciÃ³n documental.");
         return;
       }
 
@@ -922,3 +922,5 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
+
