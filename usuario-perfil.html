@@ -3341,6 +3341,10 @@
 
     function rellenarFormulario(perfil) {
       rolActual = String(perfil.rol || "").toUpperCase();
+      const cuentaAdminEl = document.getElementById("cuentaAdmin");
+      if (cuentaAdminEl) {
+        cuentaAdminEl.textContent = esSecretaria() ? "Secretaría" : "Administrador";
+      }
       document.getElementById("nombre").value = perfil.nombre || "";
       document.getElementById("nombrePublicoAdmin").value = perfil.nombre_publico || "";
       document.getElementById("emailAdmin").value = perfil.email || "";
