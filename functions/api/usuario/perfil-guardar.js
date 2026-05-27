@@ -33,7 +33,7 @@ async function notificarActivacionSecretaria(env, secretaria) {
     tipo: "SISTEMA",
     titulo: "Cuenta de Secretaría activada",
     mensaje: `${nombreSecretaria} ha completado su activación inicial.`,
-    urlDestino: "/admin-secretarias.html"
+    urlDestino: "/usuario-perfil.html?tab=documentacion"
   });
 
   const correoAdmin = String(admin?.email || "").trim();

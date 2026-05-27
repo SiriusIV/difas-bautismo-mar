@@ -1063,7 +1063,6 @@
           </div>
         </div>
         <div class="documentacion-admin-toolbar">
-          <button type="button" class="btn-toolbar-secretaria" id="btnCuentasSecretariaAdmin" title="Cuentas de secretaría">Cuentas de secretaría</button>
           <button type="button" class="btn-icono" id="btnNuevoDocumentoBaseAdmin" title="Nuevo documento" aria-label="Nuevo documento">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
           </button>
@@ -1428,11 +1427,16 @@
 
   <div id="modalCambioModoDocumentalAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-cambio-modo-admin">
-      <h3>Cambiar responsable</h3>
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarCambioModoDocumentalAdminTop" aria-label="Cerrar gestor documental" style="position:absolute; top:16px; right:18px;">✕</button>
+      <h3>Gestor documental</h3>
       <p>Elige si este administrador seguirá autogestionando su documentación o pasará a depender de una secretaría disponible.</p>
       <div class="campo-linea">
         <label for="selectCambioModoDocumentalAdmin">Responsable documental</label>
         <select id="selectCambioModoDocumentalAdmin"></select>
+      </div>
+      <div class="campo-linea oculto" id="bloqueNombreNuevaSecretaria">
+        <label for="inputNombreNuevaSecretaria">Nombre nueva Secretaría</label>
+        <input type="text" id="inputNombreNuevaSecretaria" placeholder="Escribe el nombre de la Secretaría" />
       </div>
       <p class="modal-cambio-modo-admin-ayuda" id="textoCambioModoDocumentalAdmin">Selecciona una opción para continuar.</p>
       <div class="modal-cambio-modo-admin-aviso" id="avisoCambioModoDocumentalAdmin">
@@ -2335,12 +2339,18 @@
 
     function actualizarEstadoModalCambioModoDocumentalAdmin() {
       const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const inputNombreNueva = document.getElementById("inputNombreNuevaSecretaria");
+      const bloqueNombreNueva = document.getElementById("bloqueNombreNuevaSecretaria");
       const texto = document.getElementById("textoCambioModoDocumentalAdmin");
       const aviso = document.getElementById("avisoCambioModoDocumentalAdmin");
       const btn = document.getElementById("btnConfirmarCambioModoDocumentalAdmin");
       const valorActual = obtenerValorModoDocumentalActualAdmin();
       const valorDestino = String(select.value || "");
       const modoActual = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
+      const esNuevaSecretaria = valorDestino === "NUEVA_SECRETARIA";
+      const nombreNueva = String(inputNombreNueva?.value || "").trim();
+
+      if (bloqueNombreNueva) bloqueNombreNueva.classList.toggle("oculto", !esNuevaSecretaria);
 
       if (!valorDestino) {
         texto.textContent = "Selecciona una opción para continuar.";
@@ -2353,6 +2363,15 @@
         texto.textContent = "Ese modo documental ya está activo actualmente para este administrador.";
         aviso.textContent = "No se realizará ningún cambio mientras mantengas seleccionada la modalidad actual.";
         btn.disabled = true;
+        return;
+      }
+
+      if (esNuevaSecretaria) {
+        texto.textContent = nombreNueva
+          ? `Se buscará una Secretaría llamada "${nombreNueva}". Si no existe, se te pedirá crearla y enviar su invitación.`
+          : "Escribe el nombre de la nueva Secretaría para continuar.";
+        aviso.textContent = "La nueva Secretaría recibirá correo con credenciales temporales y solo podrá seleccionarse como responsable tras completar su alta inicial.";
+        btn.disabled = !nombreNueva;
         return;
       }
 
@@ -2396,6 +2415,8 @@
 
     function rellenarSelectCambioModoDocumentalAdmin() {
       const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const inputNombreNueva = document.getElementById("inputNombreNuevaSecretaria");
+      const bloqueNombreNueva = document.getElementById("bloqueNombreNuevaSecretaria");
       const valorActual = obtenerValorModoDocumentalActualAdmin();
       const actualSecretariaId = Number(documentacionAdminContexto?.responsable_documental?.id || 0);
 
@@ -2416,7 +2437,14 @@
         select.appendChild(option);
       });
 
+      const opcionNueva = document.createElement("option");
+      opcionNueva.value = "NUEVA_SECRETARIA";
+      opcionNueva.textContent = "Añadir nueva Secretaría…";
+      select.appendChild(opcionNueva);
+
       select.value = valorActual;
+      if (inputNombreNueva) inputNombreNueva.value = "";
+      if (bloqueNombreNueva) bloqueNombreNueva.classList.add("oculto");
       actualizarEstadoModalCambioModoDocumentalAdmin();
     }
 
@@ -2433,18 +2461,87 @@
 
     function cerrarModalCambioModoDocumentalAdmin() {
       document.getElementById("modalCambioModoDocumentalAdmin").classList.remove("activo");
+      const inputNombreNueva = document.getElementById("inputNombreNuevaSecretaria");
+      const bloqueNombreNueva = document.getElementById("bloqueNombreNuevaSecretaria");
+      if (inputNombreNueva) inputNombreNueva.value = "";
+      if (bloqueNombreNueva) bloqueNombreNueva.classList.add("oculto");
       limpiarMensaje("mensajeCambioModoDocumentalAdmin");
+    }
+
+    function buscarSecretariaPorNombre(nombre) {
+      const objetivo = String(nombre || "").trim().toLocaleLowerCase("es");
+      if (!objetivo) return null;
+      return secretariasDisponiblesAdmin.find((item) => {
+        const nombrePublico = String(item?.nombre_publico || "").trim().toLocaleLowerCase("es");
+        const nombreInterno = String(item?.nombre || "").trim().toLocaleLowerCase("es");
+        return nombrePublico === objetivo || nombreInterno === objetivo;
+      }) || null;
+    }
+
+    async function crearSecretariaDesdeGestorDocumental(nombre) {
+      const nombreLimpio = String(nombre || "").trim();
+      const email = window.prompt(`Indica el email para enviar la invitación de "${nombreLimpio}":`, "");
+      const emailLimpio = String(email || "").trim();
+      if (!emailLimpio) {
+        throw new Error("Debes indicar un email para enviar la invitación.");
+      }
+
+      const res = await fetch("/api/admin/secretarias-gestion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          nombre: nombreLimpio,
+          nombre_publico: nombreLimpio,
+          email: emailLimpio
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo crear la invitación de Secretaría.");
+      }
+      return data;
     }
 
     async function confirmarCambioModoDocumentalAdmin() {
       const select = document.getElementById("selectCambioModoDocumentalAdmin");
+      const inputNombreNueva = document.getElementById("inputNombreNuevaSecretaria");
       const btn = document.getElementById("btnConfirmarCambioModoDocumentalAdmin");
-      const valorDestino = String(select.value || "");
+      let valorDestino = String(select.value || "");
       const valorActual = obtenerValorModoDocumentalActualAdmin();
       const modoActual = String(documentacionAdminContexto?.modo_documental || "").toUpperCase();
+      const nombreNuevaSecretaria = String(inputNombreNueva?.value || "").trim();
 
       if (!valorDestino || valorDestino === valorActual) {
         return;
+      }
+
+      if (valorDestino === "NUEVA_SECRETARIA") {
+        if (!nombreNuevaSecretaria) {
+          jsonMessage("mensajeCambioModoDocumentalAdmin", "error", "Debes indicar el nombre de la nueva Secretaría.");
+          return;
+        }
+
+        const existente = buscarSecretariaPorNombre(nombreNuevaSecretaria);
+        if (existente) {
+          valorDestino = String(existente.id);
+        } else {
+          const confirmarCreacion = window.confirm(`"${nombreNuevaSecretaria}" no existe. ¿Deseas crear la cuenta de Secretaría e invitarla por correo?`);
+          if (!confirmarCreacion) return;
+          try {
+            btn.disabled = true;
+            const dataCreacion = await crearSecretariaDesdeGestorDocumental(nombreNuevaSecretaria);
+            await cargarSecretariasDisponiblesAdmin();
+            rellenarSelectCambioModoDocumentalAdmin();
+            jsonMessage("mensajeCambioModoDocumentalAdmin", "ok", dataCreacion?.mensaje || "Invitación creada. Cuando complete su alta podrás seleccionarla como responsable documental.");
+            return;
+          } catch (error) {
+            jsonMessage("mensajeCambioModoDocumentalAdmin", "error", error.message || "No se pudo crear la invitación.");
+            return;
+          } finally {
+            btn.disabled = false;
+          }
+        }
       }
 
       const payload = valorDestino === "AUTOGESTION"
@@ -2766,7 +2863,6 @@
       const btnNuevo = document.getElementById("btnNuevoDocumentoBaseAdmin");
       const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
       const btnEliminar = document.getElementById("btnEliminarDocumentoBaseAdmin");
-      const btnCuentasSecretaria = document.getElementById("btnCuentasSecretariaAdmin");
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
       const btnCambioModo = document.getElementById("btnCambiarModoDocumentalAdmin");
       const doc = obtenerDocumentoBaseAdminSeleccionado();
@@ -2790,8 +2886,6 @@
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnCambioModo.classList.toggle("oculto", !esAdmin());
       btnCambioModo.disabled = !esAdmin();
-      btnCuentasSecretaria.classList.toggle("oculto", !esAdmin());
-      btnCuentasSecretaria.disabled = !esAdmin();
     }
 
     function activarVistaDocumentacionAdmin(vista = "base") {
@@ -3976,15 +4070,6 @@
       window.open(doc.archivo_url, "_blank", "noopener");
     });
     document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
-    document.getElementById("btnCuentasSecretariaAdmin").addEventListener("click", function () {
-      if (!esAdmin()) return;
-      const nombrePublico = (document.getElementById("nombrePublicoAdmin")?.value || "").trim();
-      const logoUrl = (document.getElementById("logo_url")?.value || "").trim();
-      const url = new URL("admin-secretarias.html", window.location.origin);
-      if (nombrePublico) url.searchParams.set("admin_nombre_publico", nombrePublico);
-      if (logoUrl) url.searchParams.set("admin_logo", logoUrl);
-      window.location.href = url.pathname + url.search;
-    });
     document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
       abrirModalDocumentoBaseAdmin(null);
@@ -4075,7 +4160,9 @@
       }
     });
     document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
+    document.getElementById("inputNombreNuevaSecretaria").addEventListener("input", actualizarEstadoModalCambioModoDocumentalAdmin);
     document.getElementById("btnCancelarCambioModoDocumentalAdmin").addEventListener("click", cerrarModalCambioModoDocumentalAdmin);
+    document.getElementById("btnCerrarCambioModoDocumentalAdminTop").addEventListener("click", cerrarModalCambioModoDocumentalAdmin);
     document.getElementById("btnConfirmarCambioModoDocumentalAdmin").addEventListener("click", confirmarCambioModoDocumentalAdmin);
     document.getElementById("btnSeleccionarArchivoDocumentoBaseAdmin").addEventListener("click", function () {
       document.getElementById("documentoBaseAdminArchivo").click();

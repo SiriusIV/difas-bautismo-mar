@@ -236,7 +236,7 @@ export async function onRequestPost(context) {
       tipo: "SISTEMA",
       titulo: "Invitación de Secretaría enviada",
       mensaje: `Se ha enviado la invitación de Secretaría a ${email}.`,
-      urlDestino: "/admin-secretarias.html"
+      urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
 
     return json({
@@ -309,7 +309,7 @@ export async function onRequestDelete(context) {
       tipo: "SISTEMA",
       titulo: "Cuenta de Secretaría desactivada",
       mensaje: `Se ha desactivado la cuenta de Secretaría ${secretaria.nombre_publico || secretaria.nombre || ""}.`,
-      urlDestino: "/admin-secretarias.html"
+      urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
 
     const secretarias = await obtenerSecretariasDeAdmin(env, Number(session.usuario_id || 0));
@@ -364,7 +364,7 @@ export async function onRequestPatch(context) {
       tipo: "SISTEMA",
       titulo: `Cuenta de Secretaría ${accion}`,
       mensaje: `La cuenta ${secretaria.nombre_publico || secretaria.nombre || ""} ha sido ${accion}.`,
-      urlDestino: "/admin-secretarias.html"
+      urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
 
     const destinatario = limpiarTexto(secretaria.email);
