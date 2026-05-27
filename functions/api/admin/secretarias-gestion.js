@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { hashPassword, validarPoliticaPassword } from "../usuario/_password.js";
 import { enviarEmail } from "../_email.js";
@@ -113,7 +113,7 @@ export async function onRequestGet(context) {
     const secretarias = await obtenerSecretariasDeAdmin(env, Number(session.usuario_id || 0));
     return json({ ok: true, secretarias });
   } catch (error) {
-    return json({ ok: false, error: "No se pudieron cargar las cuentas de secretaría.", detalle: error.message }, 500);
+    return json({ ok: false, error: "No se pudieron cargar las cuentas de secretarÃ­a.", detalle: error.message }, 500);
   }
 }
 
@@ -142,13 +142,13 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Debes indicar nombre y email." }, 400);
     }
     if (!esEmailValido(email)) {
-      return json({ ok: false, error: "El email no es válido." }, 400);
+      return json({ ok: false, error: "El email no es vÃ¡lido." }, 400);
     }
     if (!esTelefonoValidoOpcional(telefono)) {
-      return json({ ok: false, error: "El teléfono general no es válido." }, 400);
+      return json({ ok: false, error: "El telÃ©fono general no es vÃ¡lido." }, 400);
     }
     if (!esTelefonoRpvValidoOpcional(telefonoRpv)) {
-      return json({ ok: false, error: "El teléfono RPV debe tener 7 dígitos." }, 400);
+      return json({ ok: false, error: "El telÃ©fono RPV debe tener 7 dÃ­gitos." }, 400);
     }
 
     const existe = await env.DB.prepare(`
@@ -194,14 +194,18 @@ export async function onRequestPost(context) {
 
     const secretariaId = Number(insert?.meta?.last_row_id || 0);
     if (!(secretariaId > 0)) {
-      return json({ ok: false, error: "No se pudo crear la invitación de Secretaría." }, 500);
+      return json({ ok: false, error: "No se pudo crear la invitaciÃ³n de SecretarÃ­a." }, 500);
     }
 
     const nombreAdmin = limpiarTexto(admin?.nombre_publico || admin?.nombre || "el administrador");
+    const origen = new URL(request.url).origin;
+    const enlaceAcceso = `${origen}/portal.html?invite_email=${encodeURIComponent(email)}`;
     const texto = [
       `Hola ${nombrePublico || nombre},`,
       "",
       `Se ha creado tu cuenta de Secretaría vinculada a ${nombreAdmin}.`,
+      "",
+      `Acceso directo al portal: ${enlaceAcceso}`,
       "",
       `Usuario: ${email}`,
       `Contraseña temporal de un solo uso: ${passwordTemporal}`,
@@ -213,6 +217,7 @@ export async function onRequestPost(context) {
     const html = `
       <p>Hola ${nombrePublico || nombre},</p>
       <p>Se ha creado tu cuenta de Secretaría vinculada a <strong>${nombreAdmin}</strong>.</p>
+      <p><a href="${enlaceAcceso}">Acceder al portal</a> (el email quedará precargado para tu primer acceso).</p>
       <p><strong>Usuario:</strong> ${email}<br><strong>Contraseña temporal de un solo uso:</strong> ${passwordTemporal}</p>
       <p>Al entrar por primera vez en la aplicación tendrás que cambiar la contraseña de forma obligatoria.</p>
       <p>Después deberás completar y guardar tu ficha de perfil para activar definitivamente tu cuenta.</p>
@@ -220,31 +225,31 @@ export async function onRequestPost(context) {
 
     const correo = await enviarEmail(env, {
       to: email,
-      subject: "[Acceso] Invitación de cuenta de Secretaría",
+      subject: "[Acceso] InvitaciÃ³n de cuenta de SecretarÃ­a",
       text: texto,
       html
     });
 
     if (!correo?.ok && !correo?.skipped) {
       await env.DB.prepare(`DELETE FROM usuarios WHERE id = ? AND rol = 'SECRETARIA'`).bind(secretariaId).run();
-      return json({ ok: false, error: correo?.error || "No se pudo enviar el correo de invitación." }, 500);
+      return json({ ok: false, error: correo?.error || "No se pudo enviar el correo de invitaciÃ³n." }, 500);
     }
 
     await crearNotificacion(env, {
       usuarioId: Number(session.usuario_id || 0),
       rolDestino: "ADMIN",
       tipo: "SISTEMA",
-      titulo: "Invitación de Secretaría enviada",
-      mensaje: `Se ha enviado la invitación de Secretaría a ${email}.`,
+      titulo: "InvitaciÃ³n de SecretarÃ­a enviada",
+      mensaje: `Se ha enviado la invitaciÃ³n de SecretarÃ­a a ${email}.`,
       urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
 
     return json({
       ok: true,
-      mensaje: "Invitación enviada. La cuenta aparecerá en el listado cuando complete su primer acceso y perfil."
+      mensaje: "InvitaciÃ³n enviada. La cuenta aparecerÃ¡ en el listado cuando complete su primer acceso y perfil."
     });
   } catch (error) {
-    return json({ ok: false, error: "No se pudo crear la invitación de Secretaría.", detalle: error.message }, 500);
+    return json({ ok: false, error: "No se pudo crear la invitaciÃ³n de SecretarÃ­a.", detalle: error.message }, 500);
   }
 }
 
@@ -263,7 +268,7 @@ export async function onRequestDelete(context) {
     const body = await request.json().catch(() => ({}));
     const secretariaId = parsearIdPositivo(body?.secretaria_usuario_id);
     if (!secretariaId) {
-      return json({ ok: false, error: "Debes indicar una cuenta de secretaría válida." }, 400);
+      return json({ ok: false, error: "Debes indicar una cuenta de secretarÃ­a vÃ¡lida." }, 400);
     }
 
     const secretaria = await env.DB.prepare(`
@@ -275,11 +280,11 @@ export async function onRequestDelete(context) {
     `).bind(secretariaId).first();
 
     if (!secretaria) {
-      return json({ ok: false, error: "La cuenta de secretaría indicada no existe." }, 404);
+      return json({ ok: false, error: "La cuenta de secretarÃ­a indicada no existe." }, 404);
     }
 
     if (Number(secretaria.secretaria_admin_creador_id || 0) !== Number(session.usuario_id || 0)) {
-      return json({ ok: false, error: "Solo puedes eliminar cuentas de secretaría creadas desde tu sesión." }, 403);
+      return json({ ok: false, error: "Solo puedes eliminar cuentas de secretarÃ­a creadas desde tu sesiÃ³n." }, 403);
     }
 
     const adscritos = await env.DB.prepare(`
@@ -293,7 +298,7 @@ export async function onRequestDelete(context) {
     if (Number(adscritos?.total || 0) > 0) {
       return json({
         ok: false,
-        error: "No se puede eliminar esta cuenta porque hay administradores adscritos. Activa primero la autogestión documental."
+        error: "No se puede eliminar esta cuenta porque hay administradores adscritos. Activa primero la autogestiÃ³n documental."
       }, 409);
     }
 
@@ -307,15 +312,15 @@ export async function onRequestDelete(context) {
       usuarioId: Number(session.usuario_id || 0),
       rolDestino: "ADMIN",
       tipo: "SISTEMA",
-      titulo: "Cuenta de Secretaría desactivada",
-      mensaje: `Se ha desactivado la cuenta de Secretaría ${secretaria.nombre_publico || secretaria.nombre || ""}.`,
+      titulo: "Cuenta de SecretarÃ­a desactivada",
+      mensaje: `Se ha desactivado la cuenta de SecretarÃ­a ${secretaria.nombre_publico || secretaria.nombre || ""}.`,
       urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
 
     const secretarias = await obtenerSecretariasDeAdmin(env, Number(session.usuario_id || 0));
-    return json({ ok: true, mensaje: "Cuenta de secretaría eliminada.", secretarias });
+    return json({ ok: true, mensaje: "Cuenta de secretarÃ­a eliminada.", secretarias });
   } catch (error) {
-    return json({ ok: false, error: "No se pudo eliminar la cuenta de secretaría.", detalle: error.message }, 500);
+    return json({ ok: false, error: "No se pudo eliminar la cuenta de secretarÃ­a.", detalle: error.message }, 500);
   }
 }
 
@@ -333,7 +338,7 @@ export async function onRequestPatch(context) {
     const body = await request.json().catch(() => ({}));
     const secretariaId = parsearIdPositivo(body?.secretaria_usuario_id);
     const activo = Number(body?.activo) === 1 ? 1 : 0;
-    if (!secretariaId) return json({ ok: false, error: "Cuenta de Secretaría no válida." }, 400);
+    if (!secretariaId) return json({ ok: false, error: "Cuenta de SecretarÃ­a no vÃ¡lida." }, 400);
 
     const secretaria = await env.DB.prepare(`
       SELECT id, nombre, nombre_publico, email, secretaria_admin_creador_id, secretaria_onboarding_completo
@@ -342,12 +347,12 @@ export async function onRequestPatch(context) {
         AND rol = 'SECRETARIA'
       LIMIT 1
     `).bind(secretariaId).first();
-    if (!secretaria) return json({ ok: false, error: "Cuenta de Secretaría no encontrada." }, 404);
+    if (!secretaria) return json({ ok: false, error: "Cuenta de SecretarÃ­a no encontrada." }, 404);
     if (Number(secretaria.secretaria_admin_creador_id || 0) !== Number(session.usuario_id || 0)) {
-      return json({ ok: false, error: "No puedes gestionar esta cuenta de Secretaría." }, 403);
+      return json({ ok: false, error: "No puedes gestionar esta cuenta de SecretarÃ­a." }, 403);
     }
     if (Number(secretaria.secretaria_onboarding_completo || 0) !== 1) {
-      return json({ ok: false, error: "La cuenta aún no ha completado su activación inicial." }, 409);
+      return json({ ok: false, error: "La cuenta aÃºn no ha completado su activaciÃ³n inicial." }, 409);
     }
 
     await env.DB.prepare(`
@@ -362,7 +367,7 @@ export async function onRequestPatch(context) {
       usuarioId: Number(session.usuario_id || 0),
       rolDestino: "ADMIN",
       tipo: "SISTEMA",
-      titulo: `Cuenta de Secretaría ${accion}`,
+      titulo: `Cuenta de SecretarÃ­a ${accion}`,
       mensaje: `La cuenta ${secretaria.nombre_publico || secretaria.nombre || ""} ha sido ${accion}.`,
       urlDestino: "/usuario-perfil.html?tab=documentacion"
     });
@@ -371,9 +376,9 @@ export async function onRequestPatch(context) {
     if (destinatario) {
       await enviarEmail(env, {
         to: destinatario,
-        subject: `[Acceso] Cuenta de Secretaría ${accion}`,
-        text: `Tu cuenta de Secretaría vinculada al administrador ha sido ${accion}.`,
-        html: `<p>Tu cuenta de Secretaría vinculada al administrador ha sido <strong>${accion}</strong>.</p>`
+        subject: `[Acceso] Cuenta de SecretarÃ­a ${accion}`,
+        text: `Tu cuenta de SecretarÃ­a vinculada al administrador ha sido ${accion}.`,
+        html: `<p>Tu cuenta de SecretarÃ­a vinculada al administrador ha sido <strong>${accion}</strong>.</p>`
       });
     }
 
@@ -383,3 +388,4 @@ export async function onRequestPatch(context) {
     return json({ ok: false, error: "No se pudo actualizar el estado de la cuenta.", detalle: error.message }, 500);
   }
 }
+

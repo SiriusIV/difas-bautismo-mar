@@ -2226,6 +2226,15 @@
       }
     }
 
+    function obtenerEmailInvitacionPortal() {
+      try {
+        const valor = String(new URLSearchParams(window.location.search).get("invite_email") || "").trim();
+        return valor;
+      } catch {
+        return "";
+      }
+    }
+
     function intentarRedireccionPendientePortal() {
       const destino = obtenerDestinoPendientePortal();
       if (!destino) return false;
@@ -2253,19 +2262,31 @@
       return false;
     }
 
-    function abrirModalLogin() {
+    function abrirModalLogin(opciones = {}) {
       limpiarMensaje("mensajeLogin");
 
       const email = document.getElementById("emailLogin");
       const password = document.getElementById("passwordLogin");
+      const emailPrefill = String(opciones?.emailPrefill || "").trim();
+      const enfocarPassword = !!opciones?.enfocarPassword;
 
-      email.value = "";
+      email.value = emailPrefill;
       password.value = "";
       password.type = "password";
       actualizarBotonPasswordLogin();
 
       document.getElementById("modalLogin").classList.add("activo");
       document.getElementById("modalLogin").setAttribute("aria-hidden", "false");
+      setTimeout(() => {
+        if (enfocarPassword) {
+          password.focus();
+        } else if (email.value) {
+          email.focus();
+          email.setSelectionRange(email.value.length, email.value.length);
+        } else {
+          email.focus();
+        }
+      }, 0);
     }
 
     function cerrarModalLogin() {
@@ -4575,6 +4596,7 @@ function continuarSolicitudActividad() {
     (async function init() {
       const appScrollPortal = document.getElementById("appScrollPortal");
       const cabeceraPortal = document.getElementById("cabeceraPortal");
+      const emailInvitacion = obtenerEmailInvitacionPortal();
       appScrollPortal.classList.add("portal-cargando");
       if (cabeceraPortal) cabeceraPortal.classList.add("portal-cargando");
       try {
@@ -4582,6 +4604,9 @@ function continuarSolicitudActividad() {
       if (await gestionarAccesoPendientePortal()) {
         await cargarActividades();
         return;
+      }
+      if (!usuarioAutenticado && emailInvitacion) {
+        abrirModalLogin({ emailPrefill: emailInvitacion, enfocarPassword: true });
       }
       await cargarActividades();
 
