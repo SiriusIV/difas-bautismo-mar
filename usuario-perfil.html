@@ -351,9 +351,28 @@
     .tabla-documentacion-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-documentacion-admin tr:last-child td { border-bottom: none; }
     .tabla-documentacion-admin tr.fila-seleccionada td { background: #f5f9ff; }
+    .tabla-documentacion-admin th:nth-child(2), .tabla-documentacion-admin td:nth-child(2),
     .tabla-documentacion-admin th:nth-child(3), .tabla-documentacion-admin td:nth-child(3),
     .tabla-documentacion-admin th:nth-child(4), .tabla-documentacion-admin td:nth-child(4),
     .tabla-documentacion-admin th:nth-child(5), .tabla-documentacion-admin td:nth-child(5) { text-align: center; }
+    .fila-doc-base { cursor: pointer; }
+    .fila-doc-base:hover td { background: #f8fbff; }
+    .btn-ver-doc-base-fila {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #c9cfd6;
+      background: #fff;
+      color: #4a5a6a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-ver-doc-base-fila img { width: 16px; height: 16px; display: block; object-fit: contain; }
+    .btn-ver-doc-base-fila:hover:not(:disabled) { background: #f0f6ff; border-color: #9fb2c7; color: #123a63; }
+    .btn-ver-doc-base-fila:disabled { opacity: .45; cursor: not-allowed; }
     .tabla-pendientes-admin-wrap { width: 100%; overflow-x: auto; max-height: 252px; overflow-y: auto; }
     .tabla-pendientes-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-pendientes-admin th, .tabla-pendientes-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -972,7 +991,7 @@
           </div>
           <div class="fila oculto" id="filaAdminNombrePublicoEmail">
             <div class="campo-linea"><label for="telefonoAdmin">Teléfono</label><input type="tel" id="telefonoAdmin" name="telefonoAdmin"></div>
-            <div class="campo-linea oculto" id="campoTelefonoRpvAdmin"><label for="telefonoRpvAdmin">RPV</label><input type="tel" id="telefonoRpvAdmin" name="telefonoRpvAdmin"></div>
+            <div class="campo-linea oculto" id="campoTelefonoRpvAdmin"><label for="telefonoRpvAdmin">Teléfono RPV</label><input type="tel" id="telefonoRpvAdmin" name="telefonoRpvAdmin"></div>
             <div class="campo-linea"><label for="emailAdmin">Correo electrónico</label><input type="email" id="emailAdmin" name="emailAdmin"></div>
             <div class="campo-linea"><label for="localidadAdmin">Localidad</label><input type="text" id="localidadAdmin" name="localidadAdmin"></div>
           </div>
@@ -1090,11 +1109,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M3 7h18"></path><path d="M6 12h12"></path><path d="M10 17h4"></path></svg>
             Bandeja de entrada
           </button>
-          <div class="tabs-documentacion-admin-acciones">
-            <button type="button" class="btn-icono" id="btnVerDocumentoBaseAdmin" title="Ver documento seleccionado" aria-label="Ver documento seleccionado" disabled>
-              <img src="assets/icono-ver-documento.svg" alt="">
-            </button>
-          </div>
+          <div class="tabs-documentacion-admin-acciones"></div>
         </div>
         <div class="documentacion-admin-meta-linea">
           <div class="documentacion-admin-meta-items">
@@ -1106,7 +1121,6 @@
             <table class="tabla-documentacion-admin">
               <thead>
                 <tr>
-                  <th class="col-seleccion"></th>
                   <th class="th-titulo-con-info">
                     <button type="button" class="btn-info-columna" id="btnInfoDocumentoBaseAdmin" title="Información del documento seleccionado" aria-label="Información del documento seleccionado" disabled>i</button>
                     <span>Título</span>
@@ -1114,6 +1128,7 @@
                   <th>Versión</th>
                   <th>Última actualización</th>
                   <th>Estado</th>
+                  <th>Ver</th>
                 </tr>
               </thead>
               <tbody id="tablaDocumentacionAdminBody"></tbody>
@@ -2858,7 +2873,6 @@
     }
 
     function actualizarAccionesDocumentacionAdmin() {
-      const btnVer = document.getElementById("btnVerDocumentoBaseAdmin");
       const btnInfo = document.getElementById("btnInfoDocumentoBaseAdmin");
       const btnNuevo = document.getElementById("btnNuevoDocumentoBaseAdmin");
       const btnEditar = document.getElementById("btnEditarDocumentoBaseAdmin");
@@ -2866,12 +2880,9 @@
       const accionesModo = document.getElementById("documentacionAdminAccionesModo");
       const btnCambioModo = document.getElementById("btnCambiarModoDocumentalAdmin");
       const doc = obtenerDocumentoBaseAdminSeleccionado();
-      const expedientePendiente = obtenerExpedientePendienteSeleccionado();
       const editable = !!documentacionAdminContexto?.editable;
       const vistaBase = documentacionAdminVistaActual === "base";
-      const vistaPendientes = documentacionAdminVistaActual === "pendientes";
 
-      btnVer.disabled = vistaBase ? (!doc || !doc.archivo_url) : (!vistaPendientes || !expedientePendiente);
       btnInfo.disabled = !vistaBase || !doc;
       btnNuevo.disabled = !editable || !vistaBase;
       btnEditar.disabled = !editable || !vistaBase || !doc;
@@ -2879,9 +2890,6 @@
       btnNuevo.classList.toggle("oculto", !editable || !vistaBase);
       btnEditar.classList.toggle("oculto", !editable || !vistaBase);
       btnEliminar.classList.toggle("oculto", !editable || !vistaBase);
-      btnVer.classList.remove("oculto");
-      btnVer.title = vistaPendientes ? "Ver documento del expediente seleccionado" : "Ver documento seleccionado";
-      btnVer.setAttribute("aria-label", btnVer.title);
       btnInfo.classList.toggle("oculto", !vistaBase);
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnCambioModo.classList.toggle("oculto", !esAdmin());
@@ -3053,11 +3061,10 @@
         const seleccionado = Number(doc.id || 0) === Number(documentacionAdminSeleccionId || 0);
         const activo = Number(doc.activo || 0) === 1;
         const tr = document.createElement("tr");
+        tr.classList.add("fila-doc-base");
         tr.classList.toggle("fila-seleccionada", seleccionado);
+        tr.dataset.docId = String(Number(doc.id || 0));
         tr.innerHTML = `
-          <td class="col-seleccion">
-            <input type="radio" name="documentacion_admin_seleccion" class="selector-doc selector-doc-admin" value="${Number(doc.id || 0)}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento base">
-          </td>
           <td>
             <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
@@ -3069,6 +3076,11 @@
               <input type="checkbox" class="toggle-estado-doc-base-input" data-doc-id="${Number(doc.id || 0)}" ${activo ? "checked" : ""} ${editable ? "" : "disabled"}>
               <span class="toggle-estado-doc-base-control" aria-hidden="true"></span>
             </label>
+          </td>
+          <td>
+            <button type="button" class="btn-ver-doc-base-fila" data-doc-id="${Number(doc.id || 0)}" ${doc.archivo_url ? "" : "disabled"} title="${doc.archivo_url ? "Ver documento" : "Sin documento disponible"}" aria-label="Ver documento">
+              <img src="assets/icono-ver-documento.svg" alt="">
+            </button>
           </td>
         `;
         body.appendChild(tr);
@@ -3313,6 +3325,7 @@
         } else if (esSecretaria()) {
           document.getElementById("filaAdminCuentaNombre").classList.remove("oculto");
           document.getElementById("filaAdminNombrePublicoEmail").classList.remove("oculto");
+          document.getElementById("campoTelefonoRpvAdmin").classList.remove("oculto");
           btnPasswordHeader.classList.remove("oculto");
           layout.classList.add("sin-imagen");
       } else if (esSuperadmin()) {
@@ -3684,11 +3697,9 @@
         if (webExternaAdmin && !esUrlWebValida(webExternaAdmin)) {
           return { ok: false, error: "La URL del administrador debe empezar por http:// o https://." };
         }
-        if (esAdmin()) {
-          const telefonoRpv = document.getElementById("telefonoRpvAdmin").value.trim();
-          if (!esTelefonoRpvValido(telefonoRpv)) {
-            return { ok: false, error: "El teléfono RPV debe tener 7 dígitos." };
-          }
+        const telefonoRpv = document.getElementById("telefonoRpvAdmin").value.trim();
+        if (!esTelefonoRpvValido(telefonoRpv)) {
+          return { ok: false, error: "El teléfono RPV debe tener 7 dígitos." };
         }
         return { ok: true };
       }
@@ -4041,9 +4052,21 @@
     });
     document.getElementById("btnCambiarPasswordAdminHeader").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("tablaDocumentacionAdminBody").addEventListener("click", function (event) {
-      const selector = event.target.closest(".selector-doc-admin");
-      if (!selector) return;
-      const docId = Number.parseInt(selector.value || "", 10);
+      const btnVerFila = event.target.closest(".btn-ver-doc-base-fila");
+      if (btnVerFila) {
+        event.stopPropagation();
+        const docId = Number.parseInt(btnVerFila.dataset.docId || "", 10);
+        const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+        if (doc && doc.archivo_url) {
+          window.open(doc.archivo_url, "_blank", "noopener");
+        }
+        return;
+      }
+
+      if (event.target.closest(".toggle-estado-doc-base")) return;
+      const fila = event.target.closest(".fila-doc-base");
+      if (!fila) return;
+      const docId = Number.parseInt(fila.dataset.docId || "", 10);
       if (!Number.isInteger(docId) || docId <= 0) return;
       documentacionAdminSeleccionId = docId;
       renderizarBloqueDocumentacionAdmin();
@@ -4059,15 +4082,6 @@
         return;
       }
       await cambiarEstadoDocumentoBaseAdmin(doc, toggle.checked, toggle);
-    });
-    document.getElementById("btnVerDocumentoBaseAdmin").addEventListener("click", async function () {
-      if (documentacionAdminVistaActual === "pendientes") {
-        await verDocumentoPendienteSeleccionado();
-        return;
-      }
-      const doc = obtenerDocumentoBaseAdminSeleccionado();
-      if (!doc || !doc.archivo_url) return;
-      window.open(doc.archivo_url, "_blank", "noopener");
     });
     document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
     document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
