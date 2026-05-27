@@ -62,6 +62,9 @@
       padding: 18px 20px 14px;
       z-index: 20;
     }
+    .cabecera.portal-cargando {
+      visibility: hidden;
+    }
 
     .cabecera-inner {
       max-width: 1108px;
@@ -1801,10 +1804,10 @@
   </style>
 </head>
 <body class="fondo-cabecera-unificada">
-  <div class="cabecera">
+  <div class="cabecera portal-cargando" id="cabeceraPortal">
     <div class="cabecera-inner">
       <div class="bloque-marca">
-        <img src="logo.png" alt="Logo Armada" class="logo-cabecera" id="logoCabeceraPortal">
+        <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente" id="logoCabeceraPortal">
         <div class="titulos-cabecera">
           <h1>Actividades Públicas Institucionales</h1>
           <h2 id="subtituloCabecera">Armada</h2>
@@ -4571,7 +4574,9 @@ function continuarSolicitudActividad() {
 
     (async function init() {
       const appScrollPortal = document.getElementById("appScrollPortal");
+      const cabeceraPortal = document.getElementById("cabeceraPortal");
       appScrollPortal.classList.add("portal-cargando");
+      if (cabeceraPortal) cabeceraPortal.classList.add("portal-cargando");
       try {
       await comprobarSesionUsuario();
       if (await gestionarAccesoPendientePortal()) {
@@ -4616,6 +4621,7 @@ if (filtroProvincia) {
 }
       } finally {
         appScrollPortal.classList.remove("portal-cargando");
+        if (cabeceraPortal) cabeceraPortal.classList.remove("portal-cargando");
       }
 
 const filtroPrograma = document.getElementById("filtroPrograma");
