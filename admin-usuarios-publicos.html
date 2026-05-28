@@ -341,16 +341,27 @@
       color: #0b4ea2;
     }
     .estado-doc.vacio { background: #f2f4f6; color: #66778a; }
+    .estado-doc.validado { background: #16a34a; color: #111827; }
+    .estado-doc.rechazado { background: #d64f4f; color: #ffffff; }
+    .estado-doc.pendiente { background: #b7791f; color: #ffffff; }
+    .estado-doc.revision { background: #b7791f; color: #ffffff; }
     .btn-link-doc {
       border: 1px solid #c5d1dd;
       border-radius: 999px;
       background: #fff;
       color: #123a63;
-      padding: 5px 10px;
-      font-size: 12px;
+      width: 34px;
+      height: 34px;
+      padding: 0;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+    }
+    .btn-link-doc img {
+      width: 16px;
+      height: 16px;
+      display: block;
     }
 
     @media (max-width: 920px) {
@@ -530,8 +541,8 @@
             <tr>
               <th>Documento</th>
               <th>Estado</th>
-              <th>Última entrega</th>
-              <th>Ver</th>
+              <th>Fecha</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="tbodyDocsUsuario"></tbody>
@@ -730,9 +741,21 @@
         tbody.innerHTML = docs.map((doc) => {
           const fecha = formatearFechaUI(doc.fecha_subida || "");
           const estado = String(doc.estado || "").trim() || "No remitido";
-          const claseEstado = doc.archivo_url ? "estado-doc" : "estado-doc vacio";
+          const estadoUpper = estado.toUpperCase();
+          let claseEstado = "estado-doc";
+          if (!doc.archivo_url) {
+            claseEstado += " vacio";
+          } else if (estadoUpper.includes("VALID")) {
+            claseEstado += " validado";
+          } else if (estadoUpper.includes("RECHAZ")) {
+            claseEstado += " rechazado";
+          } else if (estadoUpper.includes("PEND")) {
+            claseEstado += " pendiente";
+          } else if (estadoUpper.includes("REVISION") || estadoUpper.includes("REVISIÓN")) {
+            claseEstado += " revision";
+          }
           const botonVer = doc.archivo_url
-            ? `<a class="btn-link-doc" href="${escapeHtml(doc.archivo_url)}" target="_blank" rel="noopener noreferrer">Ver documento</a>`
+            ? `<a class="btn-link-doc" href="${escapeHtml(doc.archivo_url)}" target="_blank" rel="noopener noreferrer" title="Ver documento" aria-label="Ver documento"><img src="assets/icono-ver-documento.svg" alt=""></a>`
             : `<span class="muted">-</span>`;
           return `<tr>
             <td>${escapeHtml(doc.nombre_documento || "-")}</td>
