@@ -129,6 +129,13 @@ function normalizarNombreDocumento(valor) {
   return String(valor || "").trim().toLowerCase();
 }
 
+function parsearFechaComparable(valor) {
+  const texto = String(valor || "").trim();
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 async function recuperarArchivosValidadosParaNuevoMarco(env, documentacionId, documentosNuevoMarco = []) {
   const docs = Array.isArray(documentosNuevoMarco) ? documentosNuevoMarco : [];
   if (!docs.length) return [];
@@ -164,6 +171,10 @@ async function recuperarArchivosValidadosParaNuevoMarco(env, documentacionId, do
     const estado = String(row?.estado || "").trim().toUpperCase();
     if (estado !== "VALIDADO") continue;
     if (version < requerido) continue;
+    const docMarco = docs.find((doc) => normalizarNombreDocumento(doc?.nombre) === clave) || null;
+    const fechaMarco = parsearFechaComparable(docMarco?.fecha_actualizacion);
+    const fechaEntrega = parsearFechaComparable(row?.fecha_subida);
+    if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) continue;
     seleccionados.set(clave, {
       id: Number(row.id || 0),
       fecha_subida: row.fecha_subida || "",

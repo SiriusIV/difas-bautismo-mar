@@ -42,6 +42,13 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function parsearFechaComparable(valor) {
+  const texto = limpiarTexto(valor);
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 function normalizarEstadoDocumento(estado) {
   const valor = String(estado || "").trim().toUpperCase();
   return valor || "EN_REVISION";
@@ -69,6 +76,12 @@ function calcularEstadoDocumento(doc, entrega) {
   }
 
   if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+    return "NO_ACTUALIZADO";
+  }
+
+  const fechaMarco = parsearFechaComparable(doc.fecha_actualizacion);
+  const fechaEntrega = parsearFechaComparable(entrega.fecha_subida);
+  if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) {
     return "NO_ACTUALIZADO";
   }
 
@@ -238,7 +251,8 @@ export async function onRequestGet(context) {
         SELECT
           id,
           nombre,
-          version_documental
+          version_documental,
+          fecha_actualizacion
         FROM admin_documentos_comunes
         WHERE admin_id = ?
           AND activo = 1
@@ -248,7 +262,8 @@ export async function onRequestGet(context) {
       admin.documentos = (documentosRows?.results || []).map((row) => ({
         id: Number(row.id || 0),
         nombre: row.nombre || "",
-        version_documental: Number(row.version_documental || 0)
+        version_documental: Number(row.version_documental || 0),
+        fecha_actualizacion: row.fecha_actualizacion || ""
       }));
     }
 

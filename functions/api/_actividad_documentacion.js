@@ -73,7 +73,8 @@ export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
       descripcion,
       archivo_url,
       orden,
-      version_documental
+      version_documental,
+      fecha_actualizacion
     FROM admin_documentos_comunes
     WHERE admin_id = ?
       AND activo = 1
@@ -88,6 +89,8 @@ export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
     archivo_url: row.archivo_url || "",
     orden: Number(row.orden || 0),
     version_documental: Number(row.version_documental || 0)
+    ,
+    fecha_actualizacion: row.fecha_actualizacion || ""
   })).filter((row) => row.nombre);
 }
 

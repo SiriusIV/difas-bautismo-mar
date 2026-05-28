@@ -25,6 +25,13 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function parsearFechaComparable(valor) {
+  const texto = limpiarTexto(valor);
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 function parsearIdPositivo(valor) {
   const n = parseInt(valor, 10);
   return Number.isInteger(n) && n > 0 ? n : null;
@@ -180,7 +187,8 @@ async function obtenerDocumentosActivos(env, adminId) {
       descripcion,
       archivo_url,
       orden,
-      version_documental
+      version_documental,
+      fecha_actualizacion
     FROM admin_documentos_comunes
     WHERE admin_id = ?
       AND activo = 1
@@ -243,6 +251,12 @@ function calcularEstadoDocumento(doc, entrega) {
   }
 
   if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+    return "NO_ACTUALIZADO";
+  }
+
+  const fechaMarco = parsearFechaComparable(doc.fecha_actualizacion);
+  const fechaEntrega = parsearFechaComparable(entrega.fecha_subida);
+  if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) {
     return "NO_ACTUALIZADO";
   }
 
