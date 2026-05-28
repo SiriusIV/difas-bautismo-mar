@@ -1227,7 +1227,6 @@
           <table class="tabla-detalle-docs">
             <thead>
               <tr>
-                <th class="col-seleccion"></th>
                 <th>Título</th>
                 <th>Versión</th>
                 <th>Última entrega</th>
@@ -2174,8 +2173,8 @@
         const documentoBase = doc.nombre || "Documento";
 
         tr.classList.toggle("fila-seleccionada", seleccionado);
+        tr.dataset.docId = String(docId);
         tr.innerHTML = `
-          <td class="col-seleccion"><input type="radio" name="detalle_documento_seleccion" class="selector-doc" value="${docId}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento"></td>
           <td class="col-documento">
             <span class="doc-titulo-con-accion">
               <button type="button" class="btn-accion-doc-inline" data-doc-accion="descargar" data-doc-id="${docId}" title="Descargar documento base" aria-label="Descargar documento base" ${doc.archivo_url ? "" : "disabled"}>
@@ -4258,9 +4257,9 @@
         return;
       }
 
-      const selector = event.target.closest(".selector-doc");
-      if (!selector) return;
-      const docId = Number.parseInt(selector.value || "", 10);
+      const fila = event.target.closest("tr[data-doc-id]");
+      if (!fila) return;
+      const docId = Number.parseInt(fila.dataset.docId || "", 10);
       if (!Number.isInteger(docId) || docId <= 0) return;
       detalleDocumentacionSeleccionId = docId;
       renderizarDetalleDocumentacion(detalleDocumentacionDatos);
