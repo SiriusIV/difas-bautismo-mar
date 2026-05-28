@@ -842,7 +842,7 @@ export async function onRequestPost(context) {
           tipo: "DOCUMENTACION",
           titulo: "Nueva documentación remitida",
           mensaje: `${usuario.centro || "Un usuario"} ha remitido documentación para revisión en ${nombreVisibleAdmin(admin)}.`,
-          urlDestino: "/usuario-perfil.html"
+          urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(Number(admin?.id || 0)))}&tab=bandeja`
         });
       }
 
