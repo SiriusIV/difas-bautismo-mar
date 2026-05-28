@@ -355,6 +355,8 @@
     .estado-doc-sec.validado { background: #eaf7ea; color: #146c2e; }
     .estado-doc-sec.rechazado { background: #fdeaea; color: #9b1c1c; }
     .estado-doc-sec.desactualizado { background: #fff8eb; color: #8a5a00; }
+    .estado-doc-sec.revision { background: #eef4ff; color: #1d4f91; }
+    .estado-doc-sec.no-remitido { background: #f2f4f7; color: #4f5f70; }
     .panel-documentacion-admin { display: none; }
     .panel-documentacion-admin.activo { display: block; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -508,6 +510,54 @@
       line-height: 1;
       padding: 0;
     }
+    .modal-docs-usuario-secretaria {
+      width: calc(100vw - 64px);
+      max-width: 940px;
+      min-width: 680px;
+      padding: 22px 24px 20px;
+    }
+    .modal-docs-usuario-secretaria h3 {
+      margin: 0 0 8px;
+      padding-right: 36px;
+      font-size: 22px;
+    }
+    .modal-docs-usuario-secretaria .btn-cerrar-modal {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      z-index: 5;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      line-height: 1;
+      padding: 0;
+    }
+    .modal-docs-usuario-secretaria .modal-detalle-subtitulo {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria-wrap {
+      margin-top: 8px;
+    }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria {
+      min-width: 0;
+    }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th,
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td {
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(1),
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(1) { width: 44%; }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(2),
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(2) { width: 18%; text-align: center; }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(3),
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(3) { width: 22%; text-align: center; }
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(4),
+    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(4) { width: 16%; text-align: center; }
     .campo-archivo-documento-base {
       display: flex;
       align-items: center;
@@ -573,6 +623,14 @@
         width: calc(100vw - 32px);
         min-width: 0;
         padding: 22px 18px 18px;
+      }
+      .modal-docs-usuario-secretaria {
+        width: calc(100vw - 24px);
+        min-width: 0;
+        padding: 20px 14px 16px;
+      }
+      .modal-docs-usuario-secretaria h3 {
+        font-size: 18px;
       }
       .modal-doc-base-campos { grid-template-columns: 1fr; }
     }
@@ -1515,12 +1573,12 @@
   </div>
 
   <div id="modalDocsUsuarioPublicoSecretaria" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
+    <div class="modal modal-docs-usuario-secretaria">
       <button type="button" class="btn-cerrar-modal" id="btnCerrarModalDocsUsuarioPublicoSecretaria" aria-label="Cerrar">×</button>
       <h3>Documentación remitida</h3>
       <p id="txtDocsUsuarioPublicoSecretariaContexto" class="modal-detalle-subtitulo"></p>
-      <div class="tabla-usuarios-secretaria-wrap" style="margin-top:10px;">
-        <table class="tabla-usuarios-secretaria">
+      <div class="tabla-usuarios-secretaria-wrap">
+        <table class="tabla-usuarios-secretaria tabla-usuarios-secretaria-modal-docs">
           <thead>
             <tr>
               <th>Documento</th>
@@ -3109,6 +3167,15 @@
       document.getElementById("modalDocsUsuarioPublicoSecretaria").classList.remove("activo");
     }
 
+    function claseEstadoDocumentoSecretaria(estadoRaw) {
+      const estado = String(estadoRaw || "").toLowerCase();
+      if (estado.includes("valid")) return "validado";
+      if (estado.includes("rechaz")) return "rechazado";
+      if (estado.includes("desact")) return "desactualizado";
+      if (estado.includes("pend") || estado.includes("revisi")) return "revision";
+      return "no-remitido";
+    }
+
     async function abrirModalDocsUsuarioPublicoSecretaria() {
       if (!(Number(usuarioPublicoSecretariaSeleccionId) > 0)) return;
       const usuario = usuariosPublicosSecretaria.find((item) => Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId));
@@ -3132,7 +3199,7 @@
         tbody.innerHTML = docs.map((doc) => `
           <tr>
             <td>${doc.nombre_documento || "-"}</td>
-            <td>${doc.estado || "-"}</td>
+            <td><span class="estado-doc-sec ${claseEstadoDocumentoSecretaria(doc.estado)}">${doc.estado || "-"}</span></td>
             <td>${formatearFechaCorta(doc.fecha_subida || "")}</td>
             <td>${doc.archivo_url ? `<a class="btn-ver-doc-base-fila" href="${doc.archivo_url}" target="_blank" rel="noopener noreferrer"><img src="assets/icono-ver-documento.svg" alt=""></a>` : "-"}</td>
           </tr>
