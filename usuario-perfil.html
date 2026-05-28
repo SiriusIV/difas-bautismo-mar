@@ -308,6 +308,19 @@
     .tabs-documentacion-admin-acciones { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .tab-documentacion-admin-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-documentacion-admin-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
+    .tab-documentacion-admin-btn.icono-usuarios {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding-left: 10px;
+      padding-right: 13px;
+    }
+    .tab-documentacion-admin-btn.icono-usuarios img {
+      width: 14px;
+      height: 14px;
+      display: block;
+      object-fit: contain;
+    }
     .panel-documentacion-admin { display: none; }
     .panel-documentacion-admin.activo { display: block; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1110,6 +1123,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M3 7h18"></path><path d="M6 12h12"></path><path d="M10 17h4"></path></svg>
             Bandeja de entrada
           </button>
+          <button type="button" class="tab-documentacion-admin-btn icono-usuarios oculto" id="tabDocumentacionAdminUsuarios" data-tab-admin-doc="usuarios" role="tab" aria-selected="false">
+            <img src="assets/icono-usuarios-publicos.svg" alt="">
+            Usuarios públicos
+          </button>
           <div class="tabs-documentacion-admin-acciones"></div>
         </div>
         <div class="documentacion-admin-meta-linea">
@@ -1154,6 +1171,9 @@
             </table>
           </div>
           <div class="estado-vacio-docs oculto" id="estadoVacioPendientesDocumentacionAdmin">No hay expedientes pendientes de revisión documental.</div>
+        </div>
+        <div class="panel-documentacion-admin" id="panelDocumentacionAdminUsuarios" role="tabpanel" aria-labelledby="tabDocumentacionAdminUsuarios">
+          <div class="estado-vacio-docs" id="estadoVacioUsuariosPublicosSecretaria">Usuarios públicos</div>
         </div>
       </div>
     </div>
@@ -2897,18 +2917,29 @@
     }
 
     function activarVistaDocumentacionAdmin(vista = "base") {
-      const objetivo = vista === "pendientes" && esAutogestionAdminEditable() ? "pendientes" : "base";
+      const puedeVerPendientes = esAutogestionAdminEditable();
+      const puedeVerUsuariosPublicos = esSecretaria();
+      let objetivo = "base";
+      if (vista === "pendientes" && puedeVerPendientes) {
+        objetivo = "pendientes";
+      } else if (vista === "usuarios" && puedeVerUsuariosPublicos) {
+        objetivo = "usuarios";
+      }
       const tabsWrap = document.querySelector(".tabs-documentacion-admin");
       const tieneVariasVistas = esAutogestionAdminEditable();
       documentacionAdminVistaActual = objetivo;
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("activa", objetivo === "base");
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("activa", objetivo === "pendientes");
+      document.getElementById("tabDocumentacionAdminUsuarios").classList.toggle("activa", objetivo === "usuarios");
       document.getElementById("tabDocumentacionAdminBase").setAttribute("aria-selected", objetivo === "base" ? "true" : "false");
       document.getElementById("tabDocumentacionAdminPendientes").setAttribute("aria-selected", objetivo === "pendientes" ? "true" : "false");
+      document.getElementById("tabDocumentacionAdminUsuarios").setAttribute("aria-selected", objetivo === "usuarios" ? "true" : "false");
       document.getElementById("panelDocumentacionAdminBase").classList.toggle("activo", objetivo === "base");
       document.getElementById("panelDocumentacionAdminPendientes").classList.toggle("activo", objetivo === "pendientes");
+      document.getElementById("panelDocumentacionAdminUsuarios").classList.toggle("activo", objetivo === "usuarios");
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("oculto", !tieneVariasVistas);
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("oculto", !esAutogestionAdminEditable());
+      document.getElementById("tabDocumentacionAdminUsuarios").classList.toggle("oculto", !puedeVerUsuariosPublicos);
       tabsWrap?.classList.toggle("oculto", !tieneVariasVistas);
       actualizarAccionesDocumentacionAdmin();
     }
