@@ -125,6 +125,58 @@ async function obtenerArchivosActivosPorExpediente(env, documentacionId) {
   return rows?.results || [];
 }
 
+function normalizarNombreDocumento(valor) {
+  return String(valor || "").trim().toLowerCase();
+}
+
+async function recuperarArchivosValidadosParaNuevoMarco(env, documentacionId, documentosNuevoMarco = []) {
+  const docs = Array.isArray(documentosNuevoMarco) ? documentosNuevoMarco : [];
+  if (!docs.length) return [];
+
+  const requisitos = new Map();
+  for (const doc of docs) {
+    const clave = normalizarNombreDocumento(doc?.nombre);
+    if (!clave) continue;
+    requisitos.set(clave, Number(doc?.version_documental || 0));
+  }
+  if (!requisitos.size) return [];
+
+  const placeholders = Array.from(requisitos.keys()).map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT
+      id,
+      nombre_documento,
+      version_documental,
+      estado,
+      fecha_subida
+    FROM centro_admin_documentacion_archivos
+    WHERE documentacion_id = ?
+      AND LOWER(TRIM(COALESCE(nombre_documento, ''))) IN (${placeholders})
+    ORDER BY id DESC
+  `).bind(documentacionId, ...Array.from(requisitos.keys())).all();
+
+  const seleccionados = new Map();
+  for (const row of (rows?.results || [])) {
+    const clave = normalizarNombreDocumento(row?.nombre_documento);
+    if (!clave || seleccionados.has(clave)) continue;
+    const requerido = Number(requisitos.get(clave) || 0);
+    const version = Number(row?.version_documental || 0);
+    const estado = String(row?.estado || "").trim().toUpperCase();
+    if (estado !== "VALIDADO") continue;
+    if (version < requerido) continue;
+    seleccionados.set(clave, {
+      id: Number(row.id || 0),
+      fecha_subida: row.fecha_subida || "",
+      version_documental: version
+    });
+  }
+
+  if (seleccionados.size !== requisitos.size) {
+    return [];
+  }
+  return Array.from(seleccionados.values()).filter((item) => Number(item.id || 0) > 0);
+}
+
 async function desactivarArchivosActivosExpediente(env, documentacionId) {
   const archivosActivos = await obtenerArchivosActivosPorExpediente(env, documentacionId);
   if (!archivosActivos.length) return archivosActivos;
@@ -149,6 +201,48 @@ async function recalcularExpedientesPorCambioDeMarco(env, adminId, documentosNue
 
   for (const expediente of expedientes) {
     const archivosActivos = await desactivarArchivosActivosExpediente(env, expediente.id);
+    const archivosRecuperables = await recuperarArchivosValidadosParaNuevoMarco(
+      env,
+      expediente.id,
+      documentosNuevoMarco
+    );
+
+    if (archivosRecuperables.length > 0) {
+      const reactivaSentencias = archivosRecuperables.map((archivo) => env.DB.prepare(`
+        UPDATE centro_admin_documentacion_archivos
+        SET activo = 1
+        WHERE id = ?
+      `).bind(Number(archivo.id || 0)));
+      await env.DB.batch(reactivaSentencias);
+
+      const fechaUltimaEntrega = archivosRecuperables
+        .map((archivo) => String(archivo?.fecha_subida || "").trim())
+        .filter(Boolean)
+        .sort()
+        .pop() || null;
+
+      await env.DB.prepare(`
+        UPDATE centro_admin_documentacion
+        SET
+          version_requerida = ?,
+          version_aportada = ?,
+          estado = ?,
+          fecha_ultima_entrega = ?,
+          fecha_validacion = COALESCE(fecha_validacion, ?),
+          observaciones_admin = NULL,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        versionNueva,
+        versionNueva,
+        "VALIDADO",
+        fechaUltimaEntrega,
+        fechaUltimaEntrega,
+        expediente.id
+      ).run();
+      continue;
+    }
+
     if (archivosActivos.length > 0) {
       afectadosConRemision.push({
         ...expediente,
