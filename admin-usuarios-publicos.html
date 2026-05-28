@@ -374,7 +374,7 @@
     <div class="bloque">
       <div class="bloque-cabecera">
         <div></div>
-        <h3 class="bloque-titulo">Listado de usuarios pÃºblicos</h3>
+        <h3 class="bloque-titulo">Listado de usuarios públicos</h3>
         <div class="bloque-cabecera-der">
           <button class="nav-btn-icon" type="button" onclick="location.href='portal.html'" title="Volver al portal" aria-label="Volver al portal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -396,7 +396,7 @@
         </div>
         <div class="tabla-toolbar-der">
           <p class="aviso-ambito">
-            La desactivaciÃ³n de solicitudes impide al usuario la participaciÃ³n en las actividades ofertadas por la organizaciÃ³n.
+            La desactivación de solicitudes impide al usuario la participación en las actividades ofertadas por la organización.
           </p>
         </div>
       </div>
@@ -408,9 +408,9 @@
               <th>Centro</th>
               <th>Responsable</th>
               <th>Email</th>
-              <th>TelÃ©fono</th>
+              <th>Teléfono</th>
               <th class="th-solicitudes">Solicitudes</th>
-              <th class="th-situacion">SituaciÃ³n</th>
+              <th class="th-situacion">Situación</th>
             </tr>
           </thead>
           <tbody id="tbodyUsuarios"></tbody>
@@ -421,10 +421,10 @@
 
   <div id="modalBloqueo" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <button type="button" class="modal-cerrar" id="btnCerrarModalBloqueo" aria-label="Cerrar">Ã—</button>
-      <h4>Confirmar bloqueo por Ã¡mbito</h4>
-      <p>Si continÃºas, este usuario no podrÃ¡ solicitar actividades que dependan de tu administraciÃ³n.</p>
-      <p>Las solicitudes activas en este Ã¡mbito pasarÃ¡n automÃ¡ticamente a rechazadas y sus plazas quedarÃ¡n liberadas.</p>
+      <button type="button" class="modal-cerrar" id="btnCerrarModalBloqueo" aria-label="Cerrar">×</button>
+      <h4>Confirmar bloqueo por ámbito</h4>
+      <p>Si continúas, este usuario no podrá solicitar actividades que dependan de tu administración.</p>
+      <p>Las solicitudes activas en este ámbito pasarán automáticamente a rechazadas y sus plazas quedarán liberadas.</p>
       <div class="grupo">
         <label for="txtMotivoBloqueo">Observaciones del bloqueo (obligatorio)</label>
         <textarea id="txtMotivoBloqueo" placeholder="Indica el motivo del bloqueo..."></textarea>
@@ -438,8 +438,8 @@
 
   <div id="modalSituacion" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <button type="button" class="modal-cerrar" id="btnCerrarModalSituacion" aria-label="Cerrar">Ã—</button>
-      <h4>SituaciÃ³n del usuario</h4>
+      <button type="button" class="modal-cerrar" id="btnCerrarModalSituacion" aria-label="Cerrar">×</button>
+      <h4>Situación del usuario</h4>
       <p id="txtSituacionEstado"></p>
       <p id="txtSituacionFecha"></p>
       <div class="grupo">
@@ -520,7 +520,7 @@
       const tbody = document.getElementById("tbodyUsuarios");
       const lista = usuariosFiltrados;
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay usuarios pÃºblicos activos disponibles.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
       }
       tbody.innerHTML = lista.map((item) => {
@@ -536,7 +536,7 @@
           <td data-label="Centro">${escapeHtml(nombreCentro)}</td>
           <td data-label="Responsable">${escapeHtml(item.nombre || "-")}</td>
           <td data-label="Email">${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
-          <td data-label="TelÃ©fono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
           <td class="td-solicitudes" data-label="Solicitudes">
             <span class="estado-wrap">
               <label class="switch-mini" title="${bloqueado ? "Bloqueado" : "Permitido"}">
@@ -545,7 +545,7 @@
               </label>
             </span>
           </td>
-          <td class="td-situacion" data-label="SituaciÃ³n">
+          <td class="td-situacion" data-label="Situación">
             <button type="button" class="situacion-btn" onclick="abrirModalSituacion(${Number(item.id)})">
               <span class="situacion-label ${bloqueado ? "situacion-bloqueada" : "situacion-activa"}">${escapeHtml(etiquetaSituacion)}</span>
             </button>
@@ -623,7 +623,7 @@
         setMensaje("ok", data.mensaje || "Estado actualizado.");
         await cargarUsuarios();
       } catch (_) {
-        setMensaje("error", "Error de conexiÃ³n al actualizar el estado.");
+        setMensaje("error", "Error de conexión al actualizar el estado.");
         renderTabla();
       }
     }
@@ -660,7 +660,7 @@
         cerrarModalBloqueo();
         await cargarUsuarios();
       } catch (_) {
-        setMensaje("error", "Error de conexiÃ³n al actualizar el estado.");
+        setMensaje("error", "Error de conexión al actualizar el estado.");
         cerrarModalBloqueo();
       }
     }
@@ -681,7 +681,7 @@
         aplicarFiltroUsuarios();
         renderTabla();
       } catch (_) {
-        setMensaje("error", "Error de conexiÃ³n al cargar usuarios.");
+        setMensaje("error", "Error de conexión al cargar usuarios.");
       }
     }
     document.getElementById("inputBuscarUsuario").addEventListener("input", () => {
