@@ -26,12 +26,20 @@ function claveNombreDocumento(valor) {
   return limpiarTexto(valor).toLowerCase();
 }
 
+function parsearFechaComparable(valor) {
+  const texto = limpiarTexto(valor);
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 function etiquetarEstado(estado) {
   const valor = limpiarTexto(estado).toUpperCase();
   if (!valor) return "No remitido";
   if (valor === "VALIDADO") return "Validado";
   if (valor === "RECHAZADO") return "Rechazado";
-  if (valor === "EN_REVISION" || valor === "EN REVISIÓN" || valor === "EN REVISIÓN") return "En revisión";
+  if (valor === "NO_ACTUALIZADO") return "Desactualizado";
+  if (valor === "EN_REVISION" || valor === "EN REVISIÓN") return "En revisión";
   return valor;
 }
 
@@ -71,7 +79,8 @@ export async function onRequestGet(context) {
     const docsBaseRes = await env.DB.prepare(`
       SELECT
         nombre,
-        version_documental
+        version_documental,
+        fecha_actualizacion
       FROM admin_documentos_comunes
       WHERE admin_id = ?
         AND activo = 1
@@ -80,7 +89,8 @@ export async function onRequestGet(context) {
 
     const docsBase = (docsBaseRes?.results || []).map((row) => ({
       nombre: limpiarTexto(row.nombre),
-      version_documental: Number(row.version_documental || 0)
+      version_documental: Number(row.version_documental || 0),
+      fecha_actualizacion: limpiarTexto(row.fecha_actualizacion)
     })).filter((row) => row.nombre);
 
     if (!docsBase.length) {
@@ -119,6 +129,7 @@ export async function onRequestGet(context) {
           nombre_documento,
           archivo_url,
           estado,
+          version_documental,
           fecha_subida,
           id
         FROM centro_admin_documentacion_archivos
@@ -133,7 +144,8 @@ export async function onRequestGet(context) {
         archivosMap.set(clave, {
           nombre_documento: limpiarTexto(row.nombre_documento),
           archivo_url: limpiarTexto(row.archivo_url),
-          estado: etiquetarEstado(row.estado),
+          estado_bruto: limpiarTexto(row.estado).toUpperCase(),
+          version_documental: Number(row.version_documental || 0),
           fecha_subida: limpiarTexto(row.fecha_subida)
         });
       }
@@ -141,11 +153,25 @@ export async function onRequestGet(context) {
 
     const documentos = docsBase.map((doc) => {
       const archivo = archivosMap.get(claveNombreDocumento(doc.nombre));
+      const versionDoc = Number(doc.version_documental || 0);
+      const versionEntrega = Number(archivo?.version_documental || 0);
+      const fechaMarco = parsearFechaComparable(doc.fecha_actualizacion);
+      const fechaEntrega = parsearFechaComparable(archivo?.fecha_subida);
+
+      let estado = archivo?.estado_bruto || "";
+      if (archivo) {
+        if (versionEntrega !== versionDoc) {
+          estado = "NO_ACTUALIZADO";
+        } else if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) {
+          estado = "NO_ACTUALIZADO";
+        }
+      }
+
       return {
         nombre_documento: doc.nombre,
-        version_documental: doc.version_documental,
+        version_documental: versionDoc,
         archivo_url: archivo?.archivo_url || "",
-        estado: archivo?.estado || "No remitido",
+        estado: estado ? etiquetarEstado(estado) : "No remitido",
         fecha_subida: archivo?.fecha_subida || ""
       };
     });
