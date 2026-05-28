@@ -259,13 +259,6 @@ async function notificarAfectadosCambioMarco(env, admin, secretaria, afectados, 
   return notificaciones;
 }
 
-async function eliminarDocumentosBasePropiosAdmin(env, adminId) {
-  await env.DB.prepare(`
-    DELETE FROM admin_documentos_comunes
-    WHERE admin_id = ?
-  `).bind(adminId).run();
-}
-
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -333,8 +326,6 @@ export async function onRequestPost(context) {
           secretaria_usuario_id = ?
         WHERE id = ?
       `).bind(secretariaUsuarioId, adminId).run();
-
-      await eliminarDocumentosBasePropiosAdmin(env, adminId);
 
       const notificaciones = await notificarAfectadosCambioMarco(
         env,
