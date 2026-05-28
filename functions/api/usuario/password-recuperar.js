@@ -17,9 +17,9 @@ function json(data, status = 200) {
 
 function construirEmailRecuperacionTexto({ enlace, horasValidez = 2 }) {
   return [
-    "Hemos recibido una solicitud para restablecer tu contraseÃ±a.",
+    "Hemos recibido una solicitud para restablecer tu contraseña.",
     "",
-    `Este enlace estarÃ¡ disponible durante ${horasValidez} horas:`,
+    `Este enlace estará disponible durante ${horasValidez} horas:`,
     enlace,
     "",
     "Si no has solicitado este cambio, puedes ignorar este mensaje."
@@ -28,9 +28,9 @@ function construirEmailRecuperacionTexto({ enlace, horasValidez = 2 }) {
 
 function construirEmailRecuperacionHtml({ enlace, horasValidez = 2 }) {
   return `
-    <p>Hemos recibido una solicitud para restablecer tu contraseÃ±a.</p>
-    <p>Este enlace estarÃ¡ disponible durante <strong>${Number(horasValidez || 2)}</strong> horas.</p>
-    <p><a href="${enlace}" target="_blank" rel="noopener noreferrer">Restablecer contraseÃ±a</a></p>
+    <p>Hemos recibido una solicitud para restablecer tu contraseña.</p>
+    <p>Este enlace estará disponible durante <strong>${Number(horasValidez || 2)}</strong> horas.</p>
+    <p><a href="${enlace}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
     <p>Si no has solicitado este cambio, puedes ignorar este mensaje.</p>
   `;
 }
@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(body.email).toLowerCase();
 
     if (!email) {
-      return json({ ok: false, error: "Debes indicar un correo electrÃ³nico." }, 400);
+      return json({ ok: false, error: "Debes indicar un correo electrónico." }, 400);
     }
 
     await asegurarTablaResetPassword(env.DB);
@@ -85,7 +85,7 @@ export async function onRequestPost(context) {
 
     const envio = await enviarEmail(env, {
       to: usuario.email,
-      subject: "Restablecer contraseÃ±a",
+      subject: "Restablecer contraseña",
       text: construirEmailRecuperacionTexto({ enlace }),
       html: construirEmailRecuperacionHtml({ enlace })
     });
@@ -94,8 +94,8 @@ export async function onRequestPost(context) {
       return json({
         ok: false,
         error: envio.skipped
-          ? "La recuperaciÃ³n de contraseÃ±a no estÃ¡ disponible en este momento porque falta configurar el servicio de correo."
-          : (envio.error || "No se pudo enviar el correo de recuperaciÃ³n."),
+          ? "La recuperación de contraseña no está disponible en este momento porque falta configurar el servicio de correo."
+          : (envio.error || "No se pudo enviar el correo de recuperación."),
         detalle: envio.error || ""
       }, 503);
     }
@@ -107,7 +107,7 @@ export async function onRequestPost(context) {
   } catch (error) {
     return json({
       ok: false,
-      error: "No se pudo iniciar la recuperaciÃ³n de contraseÃ±a.",
+      error: "No se pudo iniciar la recuperación de contraseña.",
       detalle: error.message
     }, 500);
   }
