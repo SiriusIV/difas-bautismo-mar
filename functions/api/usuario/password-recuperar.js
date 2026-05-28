@@ -1,4 +1,4 @@
-import { enviarEmail } from "../_email.js";
+﻿import { enviarEmail } from "../_email.js";
 import {
   asegurarTablaResetPassword,
   generarTokenSeguro,
@@ -17,9 +17,9 @@ function json(data, status = 200) {
 
 function construirEmailRecuperacionTexto({ enlace, horasValidez = 2 }) {
   return [
-    "Hemos recibido una solicitud para restablecer tu contraseña.",
+    "Hemos recibido una solicitud para restablecer tu contraseÃ±a.",
     "",
-    `Este enlace estará disponible durante ${horasValidez} horas:`,
+    `Este enlace estarÃ¡ disponible durante ${horasValidez} horas:`,
     enlace,
     "",
     "Si no has solicitado este cambio, puedes ignorar este mensaje."
@@ -28,9 +28,9 @@ function construirEmailRecuperacionTexto({ enlace, horasValidez = 2 }) {
 
 function construirEmailRecuperacionHtml({ enlace, horasValidez = 2 }) {
   return `
-    <p>Hemos recibido una solicitud para restablecer tu contraseña.</p>
-    <p>Este enlace estará disponible durante <strong>${Number(horasValidez || 2)}</strong> horas.</p>
-    <p><a href="${enlace}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
+    <p>Hemos recibido una solicitud para restablecer tu contraseÃ±a.</p>
+    <p>Este enlace estarÃ¡ disponible durante <strong>${Number(horasValidez || 2)}</strong> horas.</p>
+    <p><a href="${enlace}" target="_blank" rel="noopener noreferrer">Restablecer contraseÃ±a</a></p>
     <p>Si no has solicitado este cambio, puedes ignorar este mensaje.</p>
   `;
 }
@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(body.email).toLowerCase();
 
     if (!email) {
-      return json({ ok: false, error: "Debes indicar un correo electrónico." }, 400);
+      return json({ ok: false, error: "Debes indicar un correo electrÃ³nico." }, 400);
     }
 
     await asegurarTablaResetPassword(env.DB);
@@ -55,18 +55,11 @@ export async function onRequestPost(context) {
       LIMIT 1
     `).bind(email).first();
 
-    if (!usuario) {
+    if (!usuario || Number(usuario.activo || 0) !== 1) {
       return json({
-        ok: false,
-        error: "Ese usuario no está registrado en el sistema."
-      }, 404);
-    }
-
-    if (Number(usuario.activo || 0) !== 1) {
-      return json({
-        ok: false,
-        error: "La cuenta existe pero está inactiva y no puede recuperar la contraseña."
-      }, 403);
+        ok: true,
+        mensaje: "Si existe una cuenta activa con ese correo, se enviará el enlace únicamente al correo registrado."
+      });
     }
 
     const tokenPlano = generarTokenSeguro(32);
@@ -92,7 +85,7 @@ export async function onRequestPost(context) {
 
     const envio = await enviarEmail(env, {
       to: usuario.email,
-      subject: "Restablecer contraseña",
+      subject: "Restablecer contraseÃ±a",
       text: construirEmailRecuperacionTexto({ enlace }),
       html: construirEmailRecuperacionHtml({ enlace })
     });
@@ -101,21 +94,22 @@ export async function onRequestPost(context) {
       return json({
         ok: false,
         error: envio.skipped
-          ? "La recuperación de contraseña no está disponible en este momento porque falta configurar el servicio de correo."
-          : (envio.error || "No se pudo enviar el correo de recuperación."),
+          ? "La recuperaciÃ³n de contraseÃ±a no estÃ¡ disponible en este momento porque falta configurar el servicio de correo."
+          : (envio.error || "No se pudo enviar el correo de recuperaciÃ³n."),
         detalle: envio.error || ""
       }, 503);
     }
 
     return json({
       ok: true,
-      mensaje: "Te hemos enviado un enlace de recuperación al correo registrado en el sistema."
+      mensaje: "Si existe una cuenta activa con ese correo, se enviará el enlace únicamente al correo registrado."
     });
   } catch (error) {
     return json({
       ok: false,
-      error: "No se pudo iniciar la recuperación de contraseña.",
+      error: "No se pudo iniciar la recuperaciÃ³n de contraseÃ±a.",
       detalle: error.message
     }, 500);
   }
 }
+
