@@ -455,7 +455,8 @@ export async function onRequestPost(context) {
       );
     }
 
-    const recalculo = await recalcularExpedientesPorCambioDeMarco(env, adminId, []);
+    const documentosAutogestion = await obtenerDocumentosActivosDeUsuario(env, adminId);
+    const recalculo = await recalcularExpedientesPorCambioDeMarco(env, adminId, documentosAutogestion);
 
     await env.DB.prepare(`
       UPDATE usuarios
@@ -471,7 +472,7 @@ export async function onRequestPost(context) {
       admin,
       secretariaActual,
       recalculo.afectadosConRemision,
-      0
+      documentosAutogestion.length
     );
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId,
@@ -482,10 +483,12 @@ export async function onRequestPost(context) {
 
     return json({
       ok: true,
-      mensaje: "El administrador ha pasado a autogestión y se ha reiniciado su marco documental para los usuarios afectados.",
+      mensaje: documentosAutogestion.length > 0
+        ? "El administrador ha pasado a autogestión y se ha restaurado su marco documental para los usuarios afectados."
+        : "El administrador ha pasado a autogestión y se ha reiniciado su marco documental para los usuarios afectados.",
       admin_id: adminId,
       secretaria_usuario_id: null,
-      documentos_nuevo_marco: 0,
+      documentos_nuevo_marco: documentosAutogestion.length,
       expedientes_actualizados: recalculo.expedientes.length,
       usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
       notificaciones,
