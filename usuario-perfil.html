@@ -379,11 +379,12 @@
     .tabla-pendientes-admin th { font-size: 12px; color: #334250; background: #f8fafc; font-weight: 700; position: sticky; top: 0; z-index: 1; }
     .tabla-pendientes-admin tr:last-child td { border-bottom: none; }
     .tabla-pendientes-admin tr.fila-seleccionada td { background: #f5f9ff; }
-    .tabla-pendientes-admin th:nth-child(2), .tabla-pendientes-admin td:nth-child(2) { width: 24%; }
-    .tabla-pendientes-admin th:nth-child(3), .tabla-pendientes-admin td:nth-child(3) { width: 28%; }
-    .tabla-pendientes-admin th:nth-child(4), .tabla-pendientes-admin td:nth-child(4) { width: 132px; text-align: center; }
-    .tabla-pendientes-admin th:nth-child(5), .tabla-pendientes-admin td:nth-child(5) { width: 182px; }
-    .tabla-pendientes-admin th:nth-child(5) { text-align: center; }
+    .tabla-pendientes-admin th:nth-child(1), .tabla-pendientes-admin td:nth-child(1) { width: 24%; }
+    .tabla-pendientes-admin th:nth-child(2), .tabla-pendientes-admin td:nth-child(2) { width: 30%; }
+    .tabla-pendientes-admin th:nth-child(3), .tabla-pendientes-admin td:nth-child(3) { width: 132px; text-align: center; }
+    .tabla-pendientes-admin th:nth-child(4), .tabla-pendientes-admin td:nth-child(4) { width: 182px; }
+    .tabla-pendientes-admin th:nth-child(4) { text-align: center; }
+    .tabla-pendientes-admin th:nth-child(5), .tabla-pendientes-admin td:nth-child(5) { width: 64px; text-align: center; }
     .tabla-pendientes-admin th:nth-child(6), .tabla-pendientes-admin td:nth-child(6) { width: 64px; text-align: center; }
     .tabla-pendientes-admin select { width: 100%; height: 38px; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #fff; font-size: 13px; font-weight: 600; }
     .tabla-pendientes-admin select:focus { outline: none; border-color: #7fa3cb; box-shadow: 0 0 0 3px rgba(11, 94, 215, 0.12); }
@@ -751,7 +752,6 @@
       margin: -1px auto 0;
     }
     .tabla-organizadores .selector-doc,
-    .tabla-pendientes-admin .selector-doc,
     .tabla-documentacion-admin .selector-doc,
     .tabla-estados-expediente .selector-doc {
       width: 18px;
@@ -1128,7 +1128,7 @@
                   <th>Versión</th>
                   <th>Última actualización</th>
                   <th>Estado</th>
-                  <th>Ver</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="tablaDocumentacionAdminBody"></tbody>
@@ -1141,11 +1141,11 @@
             <table class="tabla-pendientes-admin">
               <thead>
                 <tr>
-                  <th class="col-seleccion"></th>
                   <th>Solicitante</th>
                   <th>Documento pendiente</th>
                   <th>Última entrega</th>
                   <th>Estado</th>
+                  <th></th>
                   <th></th>
                 </tr>
               </thead>
@@ -2942,6 +2942,7 @@
       }
       pendientesRevisionAdmin.forEach((item) => {
         const tr = document.createElement("tr");
+        tr.dataset.archivoId = String(Number(item.archivo_id || 0));
         const seleccionado = Number(item.archivo_id || 0) === Number(pendienteRevisionSeleccionId || 0);
         tr.classList.toggle("fila-seleccionada", seleccionado);
         const sublineaSolicitante = esSecretaria()
@@ -2954,9 +2955,6 @@
             ? "estado-rechazado"
             : "estado-revision";
         tr.innerHTML = `
-          <td class="col-seleccion">
-            <input type="radio" name="pendiente_revision_admin_seleccion" class="selector-doc selector-pendiente-admin" value="${Number(item.archivo_id || 0)}" ${seleccionado ? "checked" : ""} aria-label="Seleccionar documento pendiente">
-          </td>
           <td>
             <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
             ${sublineaSolicitante}
@@ -2972,6 +2970,11 @@
               <option value="VALIDADO" ${estado === "VALIDADO" ? "selected" : ""}>Validado</option>
               <option value="RECHAZADO" ${estado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
             </select>
+          </td>
+          <td>
+            <button type="button" class="btn-ver-doc-base-fila" data-ver-documento-pendiente="${Number(item.archivo_id || 0)}" title="${item.archivo_url ? "Ver documento remitido" : "Sin documento remitido"}" aria-label="Ver documento remitido" ${item.archivo_url ? "" : "disabled"}>
+              <img src="assets/icono-ver-documento.svg" alt="">
+            </button>
           </td>
           <td>
             ${item.observaciones_admin ? `
@@ -4123,9 +4126,18 @@
     });
     document.getElementById("btnCambiarModoDocumentalAdmin").addEventListener("click", abrirModalCambioModoDocumentalAdmin);
     document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("click", function (event) {
-      const selector = event.target.closest(".selector-pendiente-admin");
-      if (selector) {
-        const expedienteId = Number.parseInt(selector.value || "", 10);
+      const botonVer = event.target.closest("[data-ver-documento-pendiente]");
+      if (botonVer) {
+        const archivoId = Number.parseInt(botonVer.dataset.verDocumentoPendiente || "", 10);
+        if (!Number.isInteger(archivoId) || archivoId <= 0) return;
+        const item = (pendientesRevisionAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
+        if (!item || !String(item.archivo_url || "").trim()) return;
+        window.open(item.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const fila = event.target.closest("tr[data-archivo-id]");
+      if (fila && !event.target.closest("button, a, select, option, input, label")) {
+        const expedienteId = Number.parseInt(fila.dataset.archivoId || "", 10);
         if (!Number.isInteger(expedienteId) || expedienteId <= 0) return;
         pendienteRevisionSeleccionId = expedienteId;
         renderizarPendientesRevisionAdmin();
