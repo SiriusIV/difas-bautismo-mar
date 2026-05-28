@@ -123,6 +123,17 @@
     }
     .tabla-toolbar-izq { display: flex; align-items: center; gap: 10px; flex: 1 1 360px; min-width: 260px; }
     .tabla-toolbar-der { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 320px; min-width: 260px; }
+    .btn-docs {
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #123a63;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-docs:disabled { opacity: .55; cursor: not-allowed; }
     .campo-busqueda { width: 100%; max-width: 420px; }
     .campo-busqueda label { display: block; font-size: 13px; color: #35506a; margin-bottom: 4px; font-weight: 600; padding-left: 8px; }
     .campo-busqueda input {
@@ -140,6 +151,8 @@
     th, td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 14px; }
     thead th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     .muted { color: #6e7e90; }
+    tbody tr { cursor: pointer; }
+    tbody tr.fila-activa td { background: #eaf3ff; }
     .estado-wrap { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
     .switch-mini {
       position: relative;
@@ -286,6 +299,50 @@
       color: #fff;
       font-weight: 700;
     }
+    .modal-docs-lista {
+      margin-top: 10px;
+      border: 1px solid #d7e2ee;
+      border-radius: 10px;
+      max-height: 360px;
+      overflow: auto;
+    }
+    .modal-docs-lista table { width: 100%; min-width: 0; border-collapse: collapse; }
+    .modal-docs-lista th,
+    .modal-docs-lista td {
+      border-bottom: 1px solid #e3ebf3;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 13px;
+      color: #263746;
+    }
+    .modal-docs-lista th {
+      position: sticky;
+      top: 0;
+      background: #f5f8fb;
+      color: #35506a;
+      z-index: 1;
+    }
+    .estado-doc {
+      display: inline-flex;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #eaf3ff;
+      color: #0b4ea2;
+    }
+    .estado-doc.vacio { background: #f2f4f6; color: #66778a; }
+    .btn-link-doc {
+      border: 1px solid #c5d1dd;
+      border-radius: 999px;
+      background: #fff;
+      color: #123a63;
+      padding: 5px 10px;
+      font-size: 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
 
     @media (max-width: 920px) {
       .bloque-marca {
@@ -312,6 +369,7 @@
       }
       .tabla-toolbar { align-items: stretch; }
       .tabla-toolbar-izq, .tabla-toolbar-der { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
+      .btn-docs { align-self: flex-start; }
       .campo-busqueda { max-width: none; }
       .aviso-ambito { text-align: left; max-width: none; }
 
@@ -395,6 +453,7 @@
           </div>
         </div>
         <div class="tabla-toolbar-der">
+          <button type="button" class="btn-docs" id="btnVerDocsUsuario" disabled>Documentación remitida</button>
           <p class="aviso-ambito">
             La desactivación de solicitudes impide al usuario la participación en las actividades ofertadas por la organización.
           </p>
@@ -449,10 +508,32 @@
     </div>
   </div>
 
+  <div id="modalDocsUsuario" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar" id="btnCerrarModalDocsUsuario" aria-label="Cerrar">×</button>
+      <h4>Documentación remitida</h4>
+      <p id="txtDocsUsuarioContexto"></p>
+      <div class="modal-docs-lista">
+        <table>
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Estado</th>
+              <th>Última entrega</th>
+              <th>Ver</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDocsUsuario"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script>
     let usuarios = [];
     let usuariosFiltrados = [];
     let cambioPendienteBloqueo = null;
+    let usuarioSeleccionadoId = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -520,8 +601,13 @@
       const tbody = document.getElementById("tbodyUsuarios");
       const lista = usuariosFiltrados;
       if (!lista.length) {
+        usuarioSeleccionadoId = null;
+        actualizarAccionesUsuarioUI();
         tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
+      }
+      if (!lista.some((item) => Number(item.id) === Number(usuarioSeleccionadoId))) {
+        usuarioSeleccionadoId = null;
       }
       tbody.innerHTML = lista.map((item) => {
         const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
@@ -532,7 +618,8 @@
         const etiquetaSituacion = bloqueado
           ? `Bloqueada desde ${textoFecha}`
           : `Activada desde ${textoFecha}`;
-        return `<tr>
+        const activa = Number(item.id) === Number(usuarioSeleccionadoId);
+        return `<tr class="${activa ? "fila-activa" : ""}" data-usuario-id="${Number(item.id)}">
           <td data-label="Centro">${escapeHtml(nombreCentro)}</td>
           <td data-label="Responsable">${escapeHtml(item.nombre || "-")}</td>
           <td data-label="Email">${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
@@ -552,6 +639,23 @@
           </td>
         </tr>`;
       }).join("");
+      tbody.querySelectorAll("tr[data-usuario-id]").forEach((fila) => {
+        fila.addEventListener("click", (event) => {
+          if (event.target.closest("input, button, a, label")) return;
+          seleccionarUsuario(fila.dataset.usuarioId);
+        });
+      });
+      actualizarAccionesUsuarioUI();
+    }
+
+    function seleccionarUsuario(usuarioId) {
+      usuarioSeleccionadoId = Number(usuarioId) || null;
+      renderTabla();
+    }
+
+    function actualizarAccionesUsuarioUI() {
+      const btn = document.getElementById("btnVerDocsUsuario");
+      if (btn) btn.disabled = !(Number(usuarioSeleccionadoId) > 0);
     }
 
     function formatearFechaUI(valor) {
@@ -579,6 +683,56 @@
 
     function cerrarModalSituacion() {
       document.getElementById("modalSituacion").classList.remove("activo");
+    }
+
+    function cerrarModalDocsUsuario() {
+      document.getElementById("modalDocsUsuario").classList.remove("activo");
+    }
+
+    async function abrirModalDocsUsuario() {
+      const usuario = usuarios.find((item) => Number(item.id) === Number(usuarioSeleccionadoId));
+      if (!usuario) {
+        setMensaje("error", "Selecciona un usuario para consultar su documentación.");
+        return;
+      }
+      const tbody = document.getElementById("tbodyDocsUsuario");
+      const nombre = usuario.centro || usuario.nombre || usuario.email || "Usuario público";
+      document.getElementById("txtDocsUsuarioContexto").textContent = `Usuario: ${nombre}`;
+      tbody.innerHTML = `<tr><td colspan="4" class="muted">Cargando documentos...</td></tr>`;
+      document.getElementById("modalDocsUsuario").classList.add("activo");
+      try {
+        const res = await fetch(`/api/admin/usuarios-publicos-documentos?usuario_id=${encodeURIComponent(String(usuario.id))}`, { credentials: "include" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHtml(data?.error || "No se pudo cargar la documentación.")}</td></tr>`;
+          return;
+        }
+        const contextoGestor = data?.gestor_documental?.nombre_publico || data?.gestor_documental?.nombre || "";
+        if (contextoGestor) {
+          document.getElementById("txtDocsUsuarioContexto").textContent = `Usuario: ${nombre} · Marco documental: ${contextoGestor}`;
+        }
+        const docs = Array.isArray(data.documentos) ? data.documentos : [];
+        if (!docs.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="muted">No hay documentos remitidos para el marco documental activo.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = docs.map((doc) => {
+          const fecha = formatearFechaUI(doc.fecha_subida || "");
+          const estado = String(doc.estado || "").trim() || "No remitido";
+          const claseEstado = doc.archivo_url ? "estado-doc" : "estado-doc vacio";
+          const botonVer = doc.archivo_url
+            ? `<a class="btn-link-doc" href="${escapeHtml(doc.archivo_url)}" target="_blank" rel="noopener noreferrer">Ver documento</a>`
+            : `<span class="muted">-</span>`;
+          return `<tr>
+            <td>${escapeHtml(doc.nombre_documento || "-")}</td>
+            <td><span class="${claseEstado}">${escapeHtml(estado)}</span></td>
+            <td>${escapeHtml(fecha || "-")}</td>
+            <td>${botonVer}</td>
+          </tr>`;
+        }).join("");
+      } catch (_) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">Error de conexión al cargar la documentación.</td></tr>`;
+      }
     }
 
     function abrirModalBloqueo(usuarioId, permitido) {
@@ -688,7 +842,9 @@
       aplicarFiltroUsuarios();
       renderTabla();
     });
+    document.getElementById("btnVerDocsUsuario").addEventListener("click", abrirModalDocsUsuario);
     document.getElementById("btnCerrarModalSituacion").addEventListener("click", cerrarModalSituacion);
+    document.getElementById("btnCerrarModalDocsUsuario").addEventListener("click", cerrarModalDocsUsuario);
     document.getElementById("btnCerrarModalBloqueo").addEventListener("click", cerrarModalBloqueo);
     document.getElementById("btnCancelarBloqueo").addEventListener("click", cerrarModalBloqueo);
     document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueoPendiente);
