@@ -321,6 +321,40 @@
       display: block;
       object-fit: contain;
     }
+    .usuarios-secretaria-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 6px 0 10px;
+    }
+    .usuarios-secretaria-toolbar input {
+      width: 100%;
+      max-width: 320px;
+      height: 36px;
+      border: 1px solid #bcc9d7;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-size: 14px;
+    }
+    .tabla-usuarios-secretaria-wrap { overflow-x: auto; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; }
+    .tabla-usuarios-secretaria { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .tabla-usuarios-secretaria th, .tabla-usuarios-secretaria td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 13px; }
+    .tabla-usuarios-secretaria th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
+    .tabla-usuarios-secretaria tr:last-child td { border-bottom: none; }
+    .tabla-usuarios-secretaria tr.fila-seleccionada td { background: #eaf3ff; }
+    .estado-doc-sec {
+      display: inline-flex;
+      border-radius: 8px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #eef4ff;
+      color: #1d4f91;
+    }
+    .estado-doc-sec.validado { background: #eaf7ea; color: #146c2e; }
+    .estado-doc-sec.rechazado { background: #fdeaea; color: #9b1c1c; }
+    .estado-doc-sec.desactualizado { background: #fff8eb; color: #8a5a00; }
     .panel-documentacion-admin { display: none; }
     .panel-documentacion-admin.activo { display: block; }
     .documentacion-admin-acciones-modo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1173,7 +1207,27 @@
           <div class="estado-vacio-docs oculto" id="estadoVacioPendientesDocumentacionAdmin">No hay expedientes pendientes de revisión documental.</div>
         </div>
         <div class="panel-documentacion-admin" id="panelDocumentacionAdminUsuarios" role="tabpanel" aria-labelledby="tabDocumentacionAdminUsuarios">
-          <div class="estado-vacio-docs" id="estadoVacioUsuariosPublicosSecretaria">Usuarios públicos</div>
+          <div class="usuarios-secretaria-toolbar">
+            <input type="text" id="inputBuscarUsuariosPublicosSecretaria" placeholder="Buscar usuario o centro...">
+            <button type="button" class="btn-icono" id="btnVerDocsUsuarioPublicoSecretaria" title="Ver documentación remitida" aria-label="Ver documentación remitida" disabled>
+              <img src="assets/icono-ver-documento.svg" alt="">
+            </button>
+          </div>
+          <div class="tabla-usuarios-secretaria-wrap">
+            <table class="tabla-usuarios-secretaria">
+              <thead>
+                <tr>
+                  <th>Centro</th>
+                  <th>Responsable</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Situación documental</th>
+                </tr>
+              </thead>
+              <tbody id="tablaUsuariosPublicosSecretariaBody"></tbody>
+            </table>
+          </div>
+          <div class="estado-vacio-docs oculto" id="estadoVacioUsuariosPublicosSecretaria">No hay usuarios públicos vinculados a administradores adscritos a esta secretaría.</div>
         </div>
       </div>
     </div>
@@ -1460,6 +1514,27 @@
     </div>
   </div>
 
+  <div id="modalDocsUsuarioPublicoSecretaria" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarModalDocsUsuarioPublicoSecretaria" aria-label="Cerrar">×</button>
+      <h3>Documentación remitida</h3>
+      <p id="txtDocsUsuarioPublicoSecretariaContexto" class="modal-detalle-subtitulo"></p>
+      <div class="tabla-usuarios-secretaria-wrap" style="margin-top:10px;">
+        <table class="tabla-usuarios-secretaria">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDocsUsuarioPublicoSecretaria"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="modalCambioModoDocumentalAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-cambio-modo-admin">
       <button type="button" class="btn-cerrar-modal" id="btnCerrarCambioModoDocumentalAdminTop" aria-label="Cerrar gestor documental" style="position:absolute; top:16px; right:18px;">✕</button>
@@ -1501,6 +1576,9 @@
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
     let pendienteRevisionSeleccionId = null;
+    let usuariosPublicosSecretaria = [];
+    let usuariosPublicosSecretariaFiltrados = [];
+    let usuarioPublicoSecretariaSeleccionId = null;
     let contextoModalObservacionesDocumento = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
@@ -2926,7 +3004,7 @@
         objetivo = "usuarios";
       }
       const tabsWrap = document.querySelector(".tabs-documentacion-admin");
-      const tieneVariasVistas = esAutogestionAdminEditable();
+      const tieneVariasVistas = esAutogestionAdminEditable() || esSecretaria();
       documentacionAdminVistaActual = objetivo;
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("activa", objetivo === "base");
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("activa", objetivo === "pendientes");
@@ -2941,7 +3019,127 @@
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("oculto", !esAutogestionAdminEditable());
       document.getElementById("tabDocumentacionAdminUsuarios").classList.toggle("oculto", !puedeVerUsuariosPublicos);
       tabsWrap?.classList.toggle("oculto", !tieneVariasVistas);
+      if (objetivo === "usuarios" && esSecretaria()) {
+        cargarUsuariosPublicosSecretaria();
+      }
       actualizarAccionesDocumentacionAdmin();
+    }
+
+    function aplicarFiltroUsuariosPublicosSecretaria() {
+      const termino = String(document.getElementById("inputBuscarUsuariosPublicosSecretaria")?.value || "").trim().toUpperCase();
+      if (!termino) {
+        usuariosPublicosSecretariaFiltrados = usuariosPublicosSecretaria.slice();
+        return;
+      }
+      usuariosPublicosSecretariaFiltrados = usuariosPublicosSecretaria.filter((item) => {
+        const centro = String(item?.centro || "").toUpperCase();
+        const nombre = String(item?.nombre || "").toUpperCase();
+        return centro.includes(termino) || nombre.includes(termino);
+      });
+    }
+
+    function renderUsuariosPublicosSecretaria() {
+      const body = document.getElementById("tablaUsuariosPublicosSecretariaBody");
+      const vacio = document.getElementById("estadoVacioUsuariosPublicosSecretaria");
+      if (!body || !vacio) return;
+      body.innerHTML = "";
+
+      const lista = usuariosPublicosSecretariaFiltrados;
+      if (!lista.length) {
+        usuarioPublicoSecretariaSeleccionId = null;
+        vacio.classList.remove("oculto");
+        document.getElementById("btnVerDocsUsuarioPublicoSecretaria").disabled = true;
+        return;
+      }
+      vacio.classList.add("oculto");
+      if (!lista.some((item) => Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId))) {
+        usuarioPublicoSecretariaSeleccionId = null;
+      }
+
+      body.innerHTML = lista.map((item) => {
+        const estado = String(item.estado_documental || "Pendiente");
+        const estadoClase = estado.toLowerCase().includes("valid")
+          ? "validado"
+          : estado.toLowerCase().includes("rechaz")
+            ? "rechazado"
+            : estado.toLowerCase().includes("desact")
+              ? "desactualizado"
+              : "";
+        const activa = Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId);
+        return `<tr class="${activa ? "fila-seleccionada" : ""}" data-usuario-sec-id="${Number(item.id)}">
+          <td>${item.centro || "-"}</td>
+          <td>${item.nombre || "-"}</td>
+          <td>${item.email ? `<a href="mailto:${item.email}">${item.email}</a>` : "-"}</td>
+          <td>${item.telefono_contacto || "-"}</td>
+          <td><span class="estado-doc-sec ${estadoClase}">${estado}</span></td>
+        </tr>`;
+      }).join("");
+
+      body.querySelectorAll("tr[data-usuario-sec-id]").forEach((fila) => {
+        fila.addEventListener("click", () => {
+          usuarioPublicoSecretariaSeleccionId = Number(fila.dataset.usuarioSecId || 0) || null;
+          renderUsuariosPublicosSecretaria();
+        });
+      });
+      document.getElementById("btnVerDocsUsuarioPublicoSecretaria").disabled = !(Number(usuarioPublicoSecretariaSeleccionId) > 0);
+    }
+
+    async function cargarUsuariosPublicosSecretaria() {
+      if (!esSecretaria()) return;
+      try {
+        const res = await fetch("/api/secretaria/usuarios-publicos-lista", { credentials: "include" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          usuariosPublicosSecretaria = [];
+          usuariosPublicosSecretariaFiltrados = [];
+          renderUsuariosPublicosSecretaria();
+          return;
+        }
+        usuariosPublicosSecretaria = Array.isArray(data.usuarios) ? data.usuarios : [];
+        aplicarFiltroUsuariosPublicosSecretaria();
+        renderUsuariosPublicosSecretaria();
+      } catch (_) {
+        usuariosPublicosSecretaria = [];
+        usuariosPublicosSecretariaFiltrados = [];
+        renderUsuariosPublicosSecretaria();
+      }
+    }
+
+    function cerrarModalDocsUsuarioPublicoSecretaria() {
+      document.getElementById("modalDocsUsuarioPublicoSecretaria").classList.remove("activo");
+    }
+
+    async function abrirModalDocsUsuarioPublicoSecretaria() {
+      if (!(Number(usuarioPublicoSecretariaSeleccionId) > 0)) return;
+      const usuario = usuariosPublicosSecretaria.find((item) => Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId));
+      if (!usuario) return;
+      const tbody = document.getElementById("tbodyDocsUsuarioPublicoSecretaria");
+      document.getElementById("txtDocsUsuarioPublicoSecretariaContexto").textContent = `Usuario: ${usuario.centro || usuario.nombre || ""}`;
+      tbody.innerHTML = `<tr><td colspan="4">Cargando...</td></tr>`;
+      document.getElementById("modalDocsUsuarioPublicoSecretaria").classList.add("activo");
+      try {
+        const res = await fetch(`/api/secretaria/usuarios-publicos-documentos?usuario_id=${encodeURIComponent(String(usuario.id))}`, { credentials: "include" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          tbody.innerHTML = `<tr><td colspan="4">${data?.error || "No se pudo cargar la documentación."}</td></tr>`;
+          return;
+        }
+        const docs = Array.isArray(data.documentos) ? data.documentos : [];
+        if (!docs.length) {
+          tbody.innerHTML = `<tr><td colspan="4">No hay documentos para mostrar.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = docs.map((doc) => `
+          <tr>
+            <td>${doc.nombre_documento || "-"}</td>
+            <td>${doc.estado || "-"}</td>
+            <td>${formatearFechaCorta(doc.fecha_subida || "")}</td>
+            <td>${doc.archivo_url ? `<a class="btn-ver-doc-base-fila" href="${doc.archivo_url}" target="_blank" rel="noopener noreferrer"><img src="assets/icono-ver-documento.svg" alt=""></a>` : "-"}</td>
+          </tr>
+        `).join("");
+      } catch (_) {
+        tbody.innerHTML = `<tr><td colspan="4">No se pudo cargar la documentación.</td></tr>`;
+      }
     }
 
     function renderizarPendientesRevisionAdmin() {
@@ -4082,6 +4280,12 @@
         activarVistaDocumentacionAdmin(this.dataset.tabAdminDoc || "base");
       });
     });
+    document.getElementById("inputBuscarUsuariosPublicosSecretaria")?.addEventListener("input", () => {
+      aplicarFiltroUsuariosPublicosSecretaria();
+      renderUsuariosPublicosSecretaria();
+    });
+    document.getElementById("btnVerDocsUsuarioPublicoSecretaria")?.addEventListener("click", abrirModalDocsUsuarioPublicoSecretaria);
+    document.getElementById("btnCerrarModalDocsUsuarioPublicoSecretaria")?.addEventListener("click", cerrarModalDocsUsuarioPublicoSecretaria);
     document.getElementById("btnEliminarImagen").addEventListener("click", eliminarImagenActual);
     document.getElementById("inputImagenAdmin").addEventListener("change", (event) => {
       const file = event.target.files && event.target.files[0];
