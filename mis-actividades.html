@@ -327,15 +327,16 @@
       border-collapse: collapse;
       background: #fff;
       table-layout: fixed;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     th, td {
       border-bottom: 1px solid #dde4ea;
-      padding: 9px 8px;
+      padding: 7px 7px;
       text-align: left;
       vertical-align: middle;
       line-height: 1.3;
+      font-size: 12px;
     }
 
     th {
@@ -348,23 +349,12 @@
       z-index: 2;
     }
 
-    th.sel-col, td.sel-col {
-      width: 34px;
-      text-align: center;
-      padding-left: 6px;
-      padding-right: 6px;
-    }
-
     th.nombre-col, td.nombre-col {
-      width: 29.5%;
-    }
-
-    th.tipo-col, td.tipo-col {
-      width: 12.5%;
+      width: 34%;
     }
 
     th.programa-col, td.programa-col {
-      width: 17.5%;
+      width: 21%;
     }
 
     th.inicio-col, td.inicio-col {
@@ -378,7 +368,7 @@
     }
 
     th.estado-col, td.estado-col {
-      width: 18.5%;
+      width: 23%;
       text-align: center;
     }
 
@@ -412,6 +402,93 @@
     .fila-seleccionada {
       background: #f2f7ff;
     }
+    .estado-trigger {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .estado-trigger:hover .badge,
+    .estado-trigger:focus-visible .badge {
+      box-shadow: 0 0 0 2px rgba(11,94,215,0.16);
+      transform: translateY(-1px);
+    }
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+    .modal-fondo.activo { display: flex; }
+    .modal {
+      position: relative;
+      background: #fff;
+      width: 100%;
+      max-width: 640px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 20px;
+    }
+    .modal h3 { margin: 0 0 12px; font-size: 22px; color: #123a63; padding-right: 28px; }
+    .modal-cerrar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #cfd9e4;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .modal-cerrar:hover { background: #f7f9fb; color: #0b5ed7; border-color: #9fb2c7; }
+    .resumen-actividad-modal {
+      background: #eef4ff;
+      border: 1px solid #c9dcff;
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      color: #21374d;
+    }
+    .resumen-grid-config {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 8px;
+    }
+    .config-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .config-item .etiqueta { font-weight: 700; color: #35506a; font-size: 12px; }
+    .badge-mini {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 56px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .badge-mini.si { background: #198754; }
+    .badge-mini.no { background: #6b7280; }
 
     tr.fila-inactiva td:not(.sel-col) {
       color: #8a95a3;
@@ -595,8 +672,6 @@
         text-align: left !important;
       }
 
-      th.sel-col,
-      td.sel-col,
       td.activa-col {
         display: none !important;
       }
@@ -610,7 +685,6 @@
         text-align: center !important;
       }
 
-      #tabla td.tipo-col,
       #tabla td.programa-col,
       #tabla td.inicio-col,
       #tabla td.fin-col,
@@ -622,7 +696,6 @@
         padding: 7px 0;
       }
 
-      #tabla td.tipo-col::before,
       #tabla td.programa-col::before,
       #tabla td.inicio-col::before,
       #tabla td.fin-col::before,
@@ -638,7 +711,6 @@
         letter-spacing: 0.02em;
       }
 
-      #tabla td.tipo-col > span,
       #tabla td.programa-col > span,
       #tabla td.inicio-col > span,
       #tabla td.fin-col > span,
@@ -675,6 +747,9 @@
         margin-top: 0;
         text-align: left;
       }
+      .modal-fondo { padding: 10px; }
+      .modal { max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); overflow-y: auto; padding: 16px; }
+      .resumen-grid-config { grid-template-columns: 1fr; }
     }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -774,9 +849,7 @@
             <table>
               <thead>
                 <tr>
-                  <th class="sel-col"></th>
                   <th class="nombre-col">Nombre</th>
-                  <th class="tipo-col">Tipo</th>
                   <th class="programa-col">Programa</th>
                   <th class="inicio-col">Comienza</th>
                   <th class="fin-col">Finaliza</th>
@@ -788,6 +861,13 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <div id="modalResumenActividad" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar" id="btnCerrarModalResumenActividad" aria-label="Cerrar">×</button>
+      <h3 id="tituloModalResumenActividad">Resumen de actividad</h3>
+      <div id="contenidoModalResumenActividad" class="resumen-actividad-modal"></div>
     </div>
   </div>
 
@@ -962,16 +1042,55 @@
     }
 
     function manejarSeleccionFilaActividad(event, id) {
-      if (!window.matchMedia("(max-width: 700px)").matches) return;
-      if (event?.target?.closest("input, button, a, label, select, textarea")) return;
+      if (event?.target?.closest("button, a, label, select, textarea")) return;
       seleccionarActividad(id);
+    }
+
+    function badgeSiNo(valor) {
+      return `<span class="badge-mini ${valor ? "si" : "no"}">${valor ? "Sí" : "No"}</span>`;
+    }
+
+    function abrirModalResumenActividad(id) {
+      const actividad = actividadesFiltradas.find(a => Number(a.id) === Number(id));
+      if (!actividad) return;
+      const estado = calcularEstadoActividad(actividad);
+      const tipo = String(actividad.tipo || "").toUpperCase() || "-";
+      const programa = String(actividad.subtitulo_publico || "").trim() || "-";
+      const inicio = actividad.tipo === "TEMPORAL" && actividad.fecha_inicio ? formatearFechaES(actividad.fecha_inicio) : "-";
+      const fin = actividad.tipo === "TEMPORAL" && actividad.fecha_fin ? formatearFechaES(actividad.fecha_fin) : "-";
+      const plazas = Number(actividad.plazas_totales || 0) > 0
+        ? `${Number(actividad.plazas_disponibles || 0)} disponibles de ${Number(actividad.plazas_totales || 0)}`
+        : "Sin aforo configurado";
+
+      document.getElementById("tituloModalResumenActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
+      document.getElementById("contenidoModalResumenActividad").innerHTML = `
+        <div>Estado: <span class="badge ${estado.clase}">${estado.texto}</span></div>
+        <div>Programa: <strong>${programa}</strong></div>
+        <div>Tipo: <strong>${tipo}</strong></div>
+        <div>Comienza: <strong>${inicio}</strong> · Finaliza: <strong>${fin}</strong></div>
+        <div>Plazas: <strong>${plazas}</strong></div>
+        <div class="resumen-grid-config">
+          <div class="config-item"><span class="etiqueta">Requiere reserva</span>${badgeSiNo(Number(actividad.requiere_reserva || 0) === 1)}</div>
+          <div class="config-item"><span class="etiqueta">Aforo limitado</span>${badgeSiNo(Number(actividad.aforo_limitado || 0) === 1)}</div>
+          <div class="config-item"><span class="etiqueta">Usa franjas</span>${badgeSiNo(Number(actividad.usa_franjas || 0) === 1)}</div>
+          <div class="config-item"><span class="etiqueta">Visible en portal</span>${badgeSiNo(Number(actividad.visible_portal || 0) === 1)}</div>
+          <div class="config-item"><span class="etiqueta">Actividad activa</span>${badgeSiNo(Number(actividad.activa || 0) === 1)}</div>
+        </div>
+      `;
+      document.getElementById("modalResumenActividad").classList.add("activo");
+      document.getElementById("modalResumenActividad").setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalResumenActividad() {
+      document.getElementById("modalResumenActividad").classList.remove("activo");
+      document.getElementById("modalResumenActividad").setAttribute("aria-hidden", "true");
     }
 
     function pintarTabla() {
       const tbody = document.getElementById("tabla");
 
       if (!actividadesFiltradas.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay actividades.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="muted">No hay actividades.</td></tr>`;
         actividadSeleccionada = null;
         actualizarBotones();
         return;
@@ -984,7 +1103,6 @@
           actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "fila-seleccionada" : "",
           estaVisible ? "" : "fila-inactiva"
         ].filter(Boolean).join(" ");
-        const tipoTexto = String(a.tipo || "").toUpperCase() === "PENDIENTE" ? "PENDIENTE" : (a.tipo || "");
         const programaTexto = a.subtitulo_publico ? a.subtitulo_publico : `<span class="valor-vacio">-</span>`;
         const inicioTexto = a.tipo === "TEMPORAL" && a.fecha_inicio ? formatearFechaES(a.fecha_inicio) : `<span class="valor-vacio">-</span>`;
         const finTexto = a.tipo === "TEMPORAL" && a.fecha_fin ? formatearFechaES(a.fecha_fin) : `<span class="valor-vacio">-</span>`;
@@ -996,28 +1114,19 @@
 
         return `
           <tr class="${filaClases}" onclick="manejarSeleccionFilaActividad(event, ${a.id})">
-            <td class="sel-col">
-              <input
-                type="radio"
-                name="seleccionActividad"
-                ${actividadSeleccionada && Number(actividadSeleccionada.id) === Number(a.id) ? "checked" : ""}
-                onchange="seleccionarActividad(${a.id})"
-              >
-            </td>
             <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
-            <td class="tipo-col" data-label="Tipo"><span>${tipoTexto}</span></td>
             <td class="programa-col" data-label="Programa"><span>${programaTexto}</span></td>
             <td class="inicio-col" data-label="Comienza"><span>${inicioTexto}</span></td>
             <td class="fin-col" data-label="Finaliza"><span>${finTexto}</span></td>
             <td class="estado-col" data-label="Estado">
               <div class="estado-mobile-wrap">
-                <span class="badge estado-badge ${estado.clase}">${estado.texto}</span>
+                <button type="button" class="estado-trigger" title="Ver resumen de actividad" onclick="event.stopPropagation(); abrirModalResumenActividad(${a.id})"><span class="badge estado-badge ${estado.clase}">${estado.texto}</span></button>
                 ${estadoExtra}
               </div>
             </td>
             <td class="activa-col">
               <span class="badge ${Number(a.activa || 0) === 1 ? "ok" : "no"}">
-                ${Number(a.activa || 0) === 1 ? "SÃ­" : "No"}
+                ${Number(a.activa || 0) === 1 ? "Sí" : "No"}
               </span>
             </td>
           </tr>
@@ -1245,6 +1354,8 @@
     document.getElementById("btnFranjas").addEventListener("click", franjas);
     document.getElementById("btnReservas").addEventListener("click", reservas);
     document.getElementById("btnEliminar").addEventListener("click", eliminarActividadCorregida);
+    document.getElementById("btnCerrarModalResumenActividad").addEventListener("click", cerrarModalResumenActividad);
+    document.getElementById("modalResumenActividad").addEventListener("click", function (event) { if (event.target.id === "modalResumenActividad") cerrarModalResumenActividad(); });
 
     document.getElementById("filtroPrograma").addEventListener("change", function () {
       filtroPrograma = this.value;
@@ -1260,6 +1371,7 @@
 
     window.seleccionarActividad = seleccionarActividad;
     window.manejarSeleccionFilaActividad = manejarSeleccionFilaActividad;
+    window.abrirModalResumenActividad = abrirModalResumenActividad;
 
     (async function init() {
       const ok = await cargarSesion();
