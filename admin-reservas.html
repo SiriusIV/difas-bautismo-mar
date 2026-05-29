@@ -60,6 +60,7 @@
     .filtros { display: grid; grid-template-columns: minmax(360px, 1fr) 150px 150px 170px auto; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
+    select { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .filtro-acciones-rapidas { display: flex; align-items: end; justify-content: center; min-height: 40px; }
     .btn-filtros-reset { width: 40px; height: 40px; border: none; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
     .btn-filtros-reset img { width: 22px; height: 22px; display: block; transition: transform 0.15s ease, opacity 0.15s ease; }
@@ -69,7 +70,7 @@
     .resumen-centro { display: flex; align-items: center; justify-content: center; }
     .resumen-centro select { width: 100%; max-width: 220px; min-width: 160px; height: 34px; padding: 7px 30px 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
     .tabla-wrap { overflow-x: auto; }
-    table { width: 100%; min-width: 930px; border-collapse: collapse; background: #fff; table-layout: fixed; font-size: 13px; }
+    table { width: 100%; min-width: 900px; border-collapse: collapse; background: #fff; table-layout: fixed; font-size: 13px; }
     th, td { border-bottom: 1px solid #dde4ea; padding: 9px 8px; text-align: left; vertical-align: middle; line-height: 1.3; }
     th { background: #eef4ff; color: #1d4f91; font-weight: bold; }
     th.sel-col, td.sel-col { width: 30px; min-width: 30px; max-width: 30px; text-align: center; }
@@ -83,7 +84,6 @@
     th.horario-col, td.horario-col { width: 96px; min-width: 96px; text-align: center; }
     th.res-col, td.res-col, th.asig-col, td.asig-col, th.tipo-col, td.tipo-col { width: 98px; min-width: 98px; text-align: center; }
     th.tipo-col, td.tipo-col { width: 132px; min-width: 132px; }
-    th.hist-col, td.hist-col { width: 54px; min-width: 54px; max-width: 54px; text-align: center; }
     thead tr:first-child th[colspan="2"] { text-align: center; }
     thead tr:nth-child(2) th.res-col,
     thead tr:nth-child(2) th.asig-col { white-space: nowrap; font-size: 12px; }
@@ -690,7 +690,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijoCalendario = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijoCalendario}`; document.getElementById("navActividadesAdmin").href = "mis-actividades.html"; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
-    async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); actualizarSubactividad(); } catch (_) {} }
+    async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); refrescarTituloSelect(sel); actualizarSubactividad(); } catch (_) {} }
     function poblarSolicitantesFiltro(solicitantes = []) {
       const sel = document.getElementById("filtroBuscar");
       const actual = sel.value || "";
@@ -704,6 +704,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         if (texto === actual) opt.selected = true;
         sel.appendChild(opt);
       });
+      refrescarTituloSelect(sel);
     }
     function leerFiltros() {
       const estado = document.getElementById("filtroEstadoCabecera").value || "";
@@ -771,6 +772,8 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function requiereObservacionesCambio(reserva, accion) { const estado = String(reserva?.estado || "").toUpperCase(); return accion === "rechazar" || (estado === "RECHAZADA" && accion === "confirmar"); }
     function mostrarMensajeModalEstado(texto) { const el = document.getElementById("mensajeModalEstado"); if (!el) return; el.className = "mensaje-modal-admin error"; el.textContent = texto; }
     function limpiarMensajeModalEstado() { const el = document.getElementById("mensajeModalEstado"); if (!el) return; el.className = "mensaje-modal-admin"; el.textContent = ""; }
+    function refrescarTituloSelect(selectEl) { if (!selectEl) return; const opt = selectEl.options?.[selectEl.selectedIndex]; selectEl.title = (opt?.textContent || "").trim(); }
+    function inicializarTitulosSelect() { document.querySelectorAll("select").forEach((sel) => { refrescarTituloSelect(sel); sel.addEventListener("change", () => refrescarTituloSelect(sel)); }); }
     function manejarSeleccionReservaFila(event, id) {
       if (event?.target?.closest("button, a, input, label, select, textarea")) return;
       seleccionarReserva(id);
@@ -792,7 +795,7 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
     document.getElementById("btnGenerarZipDocs").addEventListener("click", async function () { try { await generarZipDocumentos(); } catch (error) { mostrarAvisoGeneracion("error", error?.message || "No se pudo generar el ZIP documental."); } });
     document.getElementById("btnCerrarModalObservaciones")?.addEventListener("click", cerrarModalObservaciones); document.getElementById("btnCerrarModalObservacionesSuperior")?.addEventListener("click", cerrarModalObservaciones); asegurarBotonCerrarModalSuperior();
     document.getElementById("modalObservaciones").addEventListener("click", function (e) { if (e.target.id === "modalObservaciones") cerrarModalObservaciones(); });
-    (async function init() { await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]); await cargarPanel(); })();
+    (async function init() { inicializarTitulosSelect(); await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]); await cargarPanel(); })();
     window.seleccionarReserva = seleccionarReserva;
     window.manejarSeleccionReservaFila = manejarSeleccionReservaFila;
     window.abrirModalObservaciones = abrirModalObservaciones;
