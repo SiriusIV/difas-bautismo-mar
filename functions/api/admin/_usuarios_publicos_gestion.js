@@ -22,24 +22,43 @@ function dbPrimaria(env) {
   return env.DB;
 }
 
-async function borrarFilasUsuarioSiTablaExiste(env, tabla, columnaUsuario, usuarioId) {
-  try {
-    await env.DB.prepare(`
-      DELETE FROM ${tabla}
-      WHERE ${columnaUsuario} = ?
-    `).bind(Number(usuarioId || 0)).run();
-  } catch (error) {
-    const detalle = String(error?.message || "").toLowerCase();
-    if (detalle.includes("no such table")) return;
-    throw error;
+async function borrarFilasUsuarioSiTablaExiste(env, tabla, columnasUsuario = [], usuarioId) {
+  const id = Number(usuarioId || 0);
+  for (const columna of columnasUsuario) {
+    try {
+      await env.DB.prepare(`
+        DELETE FROM ${tabla}
+        WHERE ${columna} = ?
+      `).bind(id).run();
+      return;
+    } catch (error) {
+      const detalle = String(error?.message || "").toLowerCase();
+      if (detalle.includes("no such table")) return;
+      if (detalle.includes("no such column")) continue;
+      throw error;
+    }
   }
 }
 
 async function limpiarDependenciasUsuario(env, usuarioId) {
-  await borrarFilasUsuarioSiTablaExiste(env, "password_reset_tokens", "user_id", usuarioId);
-  await borrarFilasUsuarioSiTablaExiste(env, "notificaciones", "usuario_id", usuarioId);
-  await borrarFilasUsuarioSiTablaExiste(env, "reservas_avisos_usuario", "usuario_id", usuarioId);
-  await borrarFilasUsuarioSiTablaExiste(env, "usuario_documentacion_organizadores", "usuario_id", usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "password_reset_tokens", ["user_id", "usuario_id"], usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "notificaciones", ["usuario_id", "user_id"], usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "reservas_avisos_usuario", ["usuario_id", "user_id"], usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "usuario_documentacion_organizadores", ["centro_usuario_id", "usuario_id"], usuarioId);
+
+  try {
+    await env.DB.prepare(`
+      DELETE FROM centro_admin_documentacion_archivos
+      WHERE documentacion_id IN (
+        SELECT id FROM centro_admin_documentacion WHERE centro_usuario_id = ?
+      )
+    `).bind(Number(usuarioId || 0)).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (!detalle.includes("no such table")) throw error;
+  }
+
+  await borrarFilasUsuarioSiTablaExiste(env, "centro_admin_documentacion", ["centro_usuario_id", "usuario_id"], usuarioId);
 }
 
 async function eliminarTodasLasReservasDelUsuario(env, usuarioId) {
