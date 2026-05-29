@@ -22,6 +22,26 @@ function dbPrimaria(env) {
   return env.DB;
 }
 
+async function borrarFilasUsuarioSiTablaExiste(env, tabla, columnaUsuario, usuarioId) {
+  try {
+    await env.DB.prepare(`
+      DELETE FROM ${tabla}
+      WHERE ${columnaUsuario} = ?
+    `).bind(Number(usuarioId || 0)).run();
+  } catch (error) {
+    const detalle = String(error?.message || "").toLowerCase();
+    if (detalle.includes("no such table")) return;
+    throw error;
+  }
+}
+
+async function limpiarDependenciasUsuario(env, usuarioId) {
+  await borrarFilasUsuarioSiTablaExiste(env, "password_reset_tokens", "user_id", usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "notificaciones", "usuario_id", usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "reservas_avisos_usuario", "usuario_id", usuarioId);
+  await borrarFilasUsuarioSiTablaExiste(env, "usuario_documentacion_organizadores", "usuario_id", usuarioId);
+}
+
 function nombreVisibleUsuarioPublico(usuario = {}) {
   return (
     limpiarTexto(usuario.centro) ||
@@ -535,6 +555,8 @@ export async function eliminarUsuarioPublico(env, usuarioId, actor = {}) {
       resumen.incidencias.push(`Correo usuario ${destinatario}: ${envio?.error || "error desconocido"}`);
     }
   }
+
+  await limpiarDependenciasUsuario(env, usuarioId);
 
   await env.DB.prepare(`
     DELETE FROM usuarios
