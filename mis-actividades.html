@@ -1106,12 +1106,6 @@
         const programaTexto = a.subtitulo_publico ? a.subtitulo_publico : `<span class="valor-vacio">-</span>`;
         const inicioTexto = a.tipo === "TEMPORAL" && a.fecha_inicio ? formatearFechaES(a.fecha_inicio) : `<span class="valor-vacio">-</span>`;
         const finTexto = a.tipo === "TEMPORAL" && a.fecha_fin ? formatearFechaES(a.fecha_fin) : `<span class="valor-vacio">-</span>`;
-        const estadoExtra = Number(a.aforo_limitado || 0) === 1 &&
-          Number(a.usa_franjas || 0) === 1 &&
-          Number(a.plazas_totales || 0) > 0
-            ? `<div class="estado-extra">Plazas: ${Number(a.plazas_disponibles || 0)} disponibles de ${Number(a.plazas_totales || 0)}</div>`
-            : ``;
-
         return `
           <tr class="${filaClases}" onclick="manejarSeleccionFilaActividad(event, ${a.id})">
             <td class="nombre-col">${a.titulo_publico || a.nombre || ""}</td>
@@ -1121,7 +1115,6 @@
             <td class="estado-col" data-label="Estado">
               <div class="estado-mobile-wrap">
                 <button type="button" class="estado-trigger" title="Ver resumen de actividad" onclick="event.stopPropagation(); abrirModalResumenActividad(${a.id})"><span class="badge estado-badge ${estado.clase}">${estado.texto}</span></button>
-                ${estadoExtra}
               </div>
             </td>
             <td class="activa-col">
