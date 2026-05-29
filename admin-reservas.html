@@ -112,10 +112,66 @@
     .modal { position: relative; background: #fff; width: 100%; max-width: 720px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 24px; }
     .modal h3 { margin: 0 0 14px; font-size: 24px; }
     .modal-contenido { background: #f7f9fb; border: 1px solid #dde4ea; border-radius: 8px; padding: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-    .modal-contenido.estado-modal-admin { white-space: normal; }
+    .modal-contenido.estado-modal-admin { white-space: normal; background: #eef4ff; border-color: #c9dcff; }
     .campo-modal { margin-top: 14px; }
     .campo-modal textarea { width: 100%; min-height: 110px; box-sizing: border-box; border: 1px solid #c9cfd6; border-radius: 8px; padding: 10px 12px; font-family: Arial, sans-serif; font-size: 13px; resize: vertical; }
     .nota-modal-admin { margin-top: 10px; color: #8a5b00; font-size: 12px; line-height: 1.45; }
+    .nota-modal-admin.aviso {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5d1a2;
+      background: #fff8e8;
+      color: #1f2937;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .estado-modal-superior {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+    }
+    .estado-modal-lineas {
+      display: grid;
+      gap: 6px;
+      color: #21374d;
+      font-size: 13px;
+    }
+    .estado-modal-botones {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .btn-accion-estado-icono {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      border: 1px solid #9fb2c7;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(17, 74, 134, 0.12);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      padding: 0;
+    }
+    .btn-accion-estado-icono img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      display: block;
+    }
+    .btn-accion-estado-icono:hover,
+    .btn-accion-estado-icono:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(17, 74, 134, 0.18);
+      border-color: #7fa3cb;
+    }
+    .btn-accion-estado-icono.confirmar { background: #eefaf0; border-color: #b9e0c0; }
+    .btn-accion-estado-icono.rechazar { background: #fff1f1; border-color: #f5c2c2; }
     .mensaje-modal-admin { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; display: none; }
     .mensaje-modal-admin.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .modal.modal-historial-compacto { max-width: 680px; padding: 20px; }
@@ -322,6 +378,14 @@
   .modal { max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); overflow-y: auto; padding: 16px; }
   .modal-acciones { flex-direction: column; }
   .modal-acciones .btn-modal { width: 100%; }
+  .estado-modal-superior {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .estado-modal-botones {
+    justify-content: start;
+    grid-template-columns: repeat(2, minmax(0, 72px));
+  }
 }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -728,7 +792,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (event?.target?.closest("button, a, input, label, select, textarea")) return;
       seleccionarReserva(id);
     }
-    function abrirModalEstado(id, accionPreferida = "") { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva) return; if (!puedeGestionarEstadoReserva(reserva)) { if (solicitanteSuspendido(reserva)) { mostrarMensaje("aviso", "No se puede readmitir ni confirmar esta solicitud mientras la cuenta del solicitante siga suspendida."); } return; } reservaModalEstado = reserva; accionPreferidaModal = String(accionPreferida || "").toLowerCase(); document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); const accionesDisponibles = []; if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); else if (accionPreferidaModal === "rechazar" && puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); else { if (puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); if (puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); } const observacionesIniciales = (String(reserva.estado || "").toUpperCase() === "RECHAZADA" && accionesDisponibles.includes("confirmar")) ? "" : (reserva.observaciones_admin || ""); document.getElementById("modalObservacionesTitulo").textContent = `Tramitación de estado · ${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesSubtitulo").textContent = ""; document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin"; document.getElementById("modalObservacionesContenido").innerHTML = `<div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <strong>${escapeHtml(textoEstadoVisible(reserva.estado))}</strong></div><div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aquí las observaciones administrativas asociadas a esta decisión.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`; const botones = []; if (accionesDisponibles.includes("confirmar")) botones.push(`<button type="button" class="btn-modal${accionPreferidaModal === "confirmar" ? " btn-modal-principal" : ""}" data-accion-estado="confirmar">Confirmar</button>`); if (accionesDisponibles.includes("rechazar")) botones.push(`<button type="button" class="btn-modal${accionPreferidaModal === "rechazar" ? " btn-modal-principal" : ""}" data-accion-estado="rechazar">Rechazar</button>`); document.getElementById("modalObservacionesAcciones").innerHTML = botones.join(""); document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); }); asegurarBotonCerrarModalSuperior(); limpiarMensajeModalEstado(); establecerVisibilidadModalObservaciones(true); }
+    function abrirModalEstado(id, accionPreferida = "") { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva) return; if (!puedeGestionarEstadoReserva(reserva)) { if (solicitanteSuspendido(reserva)) { mostrarMensaje("aviso", "No se puede readmitir ni confirmar esta solicitud mientras la cuenta del solicitante siga suspendida."); } return; } reservaModalEstado = reserva; accionPreferidaModal = String(accionPreferida || "").toLowerCase(); document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); const accionesDisponibles = []; if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); else if (accionPreferidaModal === "rechazar" && puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); else { if (puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); if (puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); } const observacionesIniciales = (String(reserva.estado || "").toUpperCase() === "RECHAZADA" && accionesDisponibles.includes("confirmar")) ? "" : (reserva.observaciones_admin || ""); const estadoTexto = textoEstadoVisible(reserva.estado); const estadoClase = claseEstado(reserva.estado); document.getElementById("modalObservacionesTitulo").textContent = `${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesSubtitulo").textContent = ""; document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin"; const botonesTop = []; if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`); if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`); document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div><div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aquí las observaciones administrativas asociadas a esta decisión.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`; document.getElementById("modalObservacionesAcciones").innerHTML = ""; document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); }); asegurarBotonCerrarModalSuperior(); limpiarMensajeModalEstado(); establecerVisibilidadModalObservaciones(true); }
     async function guardarCambioEstadoDesdeModal(accion) { if (!reservaModalEstado) return; const accionFinal = String(accion || accionPreferidaModal || "").toLowerCase(); if (!accionFinal) return; const observacionesAdmin = (document.getElementById("txtObservacionesAdminEstado")?.value || "").trim(); if (requiereObservacionesCambio(reservaModalEstado, accionFinal) && !observacionesAdmin) { mostrarMensajeModalEstado("Debes indicar observaciones administrativas para este cambio de estado."); return; } limpiarMensajeModalEstado(); limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaModalEstado.id, accion: accionFinal, observaciones_admin: observacionesAdmin }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); cerrarModalObservaciones(); const correoSolicitante = data?.correo_solicitante || null; if (correoSolicitante && correoSolicitante.enviado !== true) { const detalleCorreo = String(correoSolicitante.error || "").trim(); mostrarMensaje("aviso", `${data.mensaje || "Estado actualizado correctamente."} Aviso: no se pudo enviar el correo automático al solicitante${detalleCorreo ? ` (${detalleCorreo})` : ""}.`); } else { mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); } reservaSeleccionada = null; await cargarPanel(); } catch (error) { mostrarMensajeModalEstado(error.message || "No se pudo cambiar el estado."); } }
     function pintarReservas(reservas) { reservasActuales = reservas.slice(); const tbody = document.getElementById("tbodyReservas"); if (reservaSeleccionada) { const sigue = reservasActuales.find((r) => Number(r.id) === Number(reservaSeleccionada.id)); reservaSeleccionada = sigue || null; } if (!reservas.length) { tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`; actualizarBotonesAccion(); return; } tbody.innerHTML = reservas.map((r) => { const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim()); const estadoInteractivo = puedeGestionarEstadoReserva(r); const estadoHtml = estadoInteractivo ? `<button type="button" class="estado-trigger-admin" onclick="event.stopPropagation(); abrirModalEstado(${r.id})" title="Gestionar estado y observaciones"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></button>` : `<span class="estado-badge ${claseEstado(r.estado)}" title="${solicitanteSuspendido(r) ? "Solicitud bloqueada por suspensión del solicitante" : textoEstadoVisible(r.estado)}">${textoEstadoVisible(r.estado)}</span>`; const horario = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`; return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}" onclick="manejarSeleccionReservaFila(event, ${r.id})"><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="event.stopPropagation(); abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="solicitante-col" data-label="Solicitante">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="estado-col" data-label="Estado">${estadoHtml}</td><td class="fecha-col" data-label="Fecha"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div></td><td class="horario-col" data-label="Horario"><div class="horario-principal">${horario}</div></td><td class="res-col" data-label="Plazas reservadas">${r.plazas_reservadas}</td><td class="asig-col" data-label="Plazas asignadas">${r.plazas_asignadas}</td><td class="hist-col"><button type="button" class="btn-historial" title="Ver histórico de la solicitud" onclick="event.stopPropagation(); abrirModalHistorial(${r.id})"><img src="assets/icono-historial-solicitud.svg" alt="Ver histórico"></button></td></tr>`; }).join(""); actualizarBotonesAccion(); }
     async function cambiarEstadoSeleccion(estado) { if (!reservaSeleccionada) return; abrirModalEstado(reservaSeleccionada.id, estado === "CONFIRMADA" ? "confirmar" : "rechazar"); }
