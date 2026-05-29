@@ -46,10 +46,11 @@ export async function onRequestPost(context) {
       resumen
     });
   } catch (error) {
+    const detalle = String(error?.message || "").trim();
     return json({
       ok: false,
-      error: "Error eliminando el usuario publico.",
-      detalle: error.message
+      error: detalle ? `Error eliminando el usuario publico: ${detalle}` : "Error eliminando el usuario publico.",
+      detalle
     }, 500);
   }
 }

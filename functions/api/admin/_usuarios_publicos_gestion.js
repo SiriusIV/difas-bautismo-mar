@@ -42,6 +42,36 @@ async function limpiarDependenciasUsuario(env, usuarioId) {
   await borrarFilasUsuarioSiTablaExiste(env, "usuario_documentacion_organizadores", "usuario_id", usuarioId);
 }
 
+async function eliminarTodasLasReservasDelUsuario(env, usuarioId) {
+  const db = dbPrimaria(env);
+  const result = await db.prepare(`
+    SELECT id
+    FROM reservas
+    WHERE usuario_id = ?
+  `).bind(Number(usuarioId || 0)).all();
+
+  const reservaIds = (result?.results || [])
+    .map((row) => Number(row?.id || 0))
+    .filter((id) => id > 0);
+
+  if (!reservaIds.length) return 0;
+
+  await borrarHistorialReservas(env, reservaIds);
+  const placeholders = reservaIds.map(() => "?").join(", ");
+
+  await db.prepare(`
+    DELETE FROM visitantes
+    WHERE reserva_id IN (${placeholders})
+  `).bind(...reservaIds).run();
+
+  const borradoReservas = await db.prepare(`
+    DELETE FROM reservas
+    WHERE id IN (${placeholders})
+  `).bind(...reservaIds).run();
+
+  return Number(borradoReservas?.meta?.changes || 0);
+}
+
 function nombreVisibleUsuarioPublico(usuario = {}) {
   return (
     limpiarTexto(usuario.centro) ||
@@ -555,6 +585,9 @@ export async function eliminarUsuarioPublico(env, usuarioId, actor = {}) {
       resumen.incidencias.push(`Correo usuario ${destinatario}: ${envio?.error || "error desconocido"}`);
     }
   }
+
+  const reservasEliminadasFinal = await eliminarTodasLasReservasDelUsuario(env, usuarioId);
+  resumen.reservas_eliminadas += reservasEliminadasFinal;
 
   await limpiarDependenciasUsuario(env, usuarioId);
 
