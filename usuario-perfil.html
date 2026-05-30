@@ -127,6 +127,13 @@
     .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="url"], select { width: 100%; height: 38px; padding: 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
     #emailAdmin { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #webExternaAdmin {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #0b5ed7;
+      text-decoration: underline;
+    }
     .campo-linea-valor-fijo { height: 38px; display: flex; align-items: center; padding: 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .input-solo-lectura { background: #f7f9fb !important; color: #495867; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
@@ -618,7 +625,14 @@
       margin: 0;
     }
     .modal-doc-base .mensaje { margin-top: 10px; }
+    .modal-doc-base-info { position: relative; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
+    #btnCerrarInfoDocumentoBaseAdminTop {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      z-index: 2;
+    }
     @media (max-width: 720px) {
       .modal-doc-base {
         width: calc(100vw - 32px);
