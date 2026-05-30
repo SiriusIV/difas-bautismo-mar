@@ -169,7 +169,7 @@ function construirCorreoAdminCaducidadSuspension(contexto = {}) {
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad documental";
-  const mensaje = `${centro} no regularizó a tiempo la documentación pendiente para ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud suspendida ha pasado automáticamente a rechazada.`;
+  const mensaje = `${centro} no regularizó la documentación pendiente al menos 24 horas antes del inicio de ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud suspendida ha pasado automáticamente a rechazada.`;
 
   const texto = [
     `Hola ${adminNombre},`,
@@ -211,7 +211,7 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
   });
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó antes de la fecha de la actividad.`;
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó al menos 24 horas antes del inicio de la actividad.`;
 
   const texto = [
     saludo,
@@ -254,7 +254,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "ADMIN",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó a tiempo la documentación pendiente para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
+        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente al menos 24 horas antes del inicio de ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
         urlDestino: actividadId > 0
           ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
           : "/admin-reservas.html"
@@ -269,7 +269,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse a tiempo la documentación pendiente.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente al menos 24 horas antes del inicio.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -365,7 +365,8 @@ async function rechazarReservasSuspendidasVencidas(env) {
               THEN a.fecha_inicio || ' 00:00:00'
             ELSE NULL
           END
-        )
+        ),
+        '-24 hours'
       ) <= datetime('now')
   `).all();
 
@@ -388,7 +389,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
         accion: "CADUCIDAD_SUSPENSION",
         estadoOrigen: "SUSPENDIDA",
         estadoDestino: "RECHAZADA",
-          observaciones: "La solicitud suspendida ha vencido sin regularización antes de la actividad.",
+          observaciones: "La solicitud suspendida no regularizó documentación 24 horas antes del inicio de la actividad.",
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });

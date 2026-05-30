@@ -59,6 +59,7 @@ export function construirEmailTextoReservaCondicionadaDocumentacion({
   lineas.push(
     "",
     "Mientras no regularices la documentacion, la actividad quedara suspendida documentalmente.",
+    "Si faltan menos de 24 horas para el inicio de la actividad y la documentacion sigue sin regularizarse, la solicitud pasara automaticamente a rechazada.",
     enlace_perfil ? `Acceso directo: ${enlace_perfil}` : "Accede a tu perfil para revisar y actualizar la documentacion obligatoria."
   );
 
@@ -103,6 +104,7 @@ export function construirEmailHtmlReservaCondicionadaDocumentacion({
       </table>
     ` : ""}
     <p>Mientras no regularices la documentacion, la actividad quedara suspendida documentalmente.</p>
+    <p>Si faltan menos de 24 horas para el inicio de la actividad y la documentacion sigue sin regularizarse, la solicitud pasara automaticamente a rechazada.</p>
     ${enlace_perfil ? `
       <p>
         <a href="${escaparHtml(enlace_perfil)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:bold;">
