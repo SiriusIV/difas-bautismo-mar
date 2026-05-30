@@ -925,9 +925,65 @@
       font-size: 24px;
     }
 
+    .modal-encabezado {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .modal-cerrar-superior {
+      width: 36px !important;
+      height: 36px !important;
+      min-width: 36px !important;
+      min-height: 36px !important;
+      border-radius: 999px !important;
+      border: 1px solid #bcc9d8 !important;
+      background: #fff !important;
+      color: #4f6478 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      padding: 0 !important;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .modal-cerrar-superior:hover {
+      border-color: #9fb2c7 !important;
+      color: #0b5ed7 !important;
+      background: #f7f9fb !important;
+    }
+
+    #modalEvento .modal {
+      max-width: 640px;
+      padding: 18px;
+    }
+
+    #modalEvento h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
     .detalle {
       line-height: 1.7;
       margin-bottom: 16px;
+    }
+
+    #modalEvento .detalle {
+      font-size: 14px;
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    #modalEvento .detalle-bloque {
+      padding: 10px;
+      margin-bottom: 8px;
     }
 
     .detalle-bloque {
@@ -943,6 +999,46 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-top: 16px;
+    }
+
+    .acciones-modal-iconos {
+      margin-top: 10px;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn-icono-modal {
+      width: 36px !important;
+      height: 36px !important;
+      min-width: 36px !important;
+      min-height: 36px !important;
+      border-radius: 999px !important;
+      border: 1px solid #bcc9d8 !important;
+      background: #fff !important;
+      color: #4f6478 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      flex: 0 0 auto;
+    }
+
+    .btn-icono-modal:hover {
+      border-color: #9fb2c7 !important;
+      color: #0b5ed7 !important;
+      background: #f7f9fb !important;
+    }
+
+    .btn-icono-modal svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .lista-eventos-dia {
@@ -1206,6 +1302,16 @@
       .acciones-modal .btn-enlace {
         width: 100%;
       }
+      .acciones-modal-iconos {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .acciones-modal-iconos .btn-icono-modal {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+      }
     }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -1322,7 +1428,10 @@
 
   <div id="modalEvento" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3 id="modalTitulo">Detalle de solicitud</h3>
+      <div class="modal-encabezado">
+        <h3 id="modalTitulo">Detalle de solicitud</h3>
+        <button type="button" class="modal-cerrar-superior" id="btnCerrarModalEventoSuperior" aria-label="Cerrar">X</button>
+      </div>
 
       <div id="modalDetalle" class="detalle"></div>
 
@@ -1338,11 +1447,28 @@
         </div>
       </div>
 
-        <div class="acciones-modal" id="accionesModalReserva">
-          <a href="#" id="btnAbrirActividadModal" class="btn-enlace oculto">Abrir actividad</a>
-          <a href="#" id="btnAbrirEditar" class="btn-enlace" target="_blank">Editar</a>
-          <a href="#" id="btnAbrirAsistentes" class="btn-enlace btn-secundario" target="_blank">Asistentes</a>
-          <button type="button" id="btnCerrarModal" class="btn-secundario">Cerrar</button>
+        <div class="acciones-modal acciones-modal-iconos" id="accionesModalReserva">
+          <a href="#" id="btnAbrirActividadModal" class="btn-icono-modal oculto" target="_blank" title="Abrir actividad" aria-label="Abrir actividad">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 10.5L12 3l9 7.5"></path>
+              <path d="M5 9.5V21h14V9.5"></path>
+              <path d="M9 21v-6h6v6"></path>
+            </svg>
+          </a>
+          <a href="#" id="btnAbrirEditar" class="btn-icono-modal" target="_blank" title="Editar" aria-label="Editar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+            </svg>
+          </a>
+          <a href="#" id="btnAbrirAsistentes" class="btn-icono-modal" target="_blank" title="Asistentes" aria-label="Asistentes">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </a>
       </div>
     </div>
   </div>
@@ -2424,7 +2550,7 @@ function abrirModalEvento(info) {
       await aplicarLogoCabeceraAdmin();
       aplicarRolPantallaCalendario();
 
-      document.getElementById("btnCerrarModal").addEventListener("click", cerrarModalEvento);
+      document.getElementById("btnCerrarModalEventoSuperior").addEventListener("click", cerrarModalEvento);
       document.getElementById("btnCerrarModalEventosDia").addEventListener("click", cerrarModalEventosDia);
       document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", async function() {
         await aplicarVistaCalendario("reservas");
