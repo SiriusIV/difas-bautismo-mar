@@ -795,14 +795,26 @@
         padding: 0 10px 18px;
       }
       .filtros {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) 44px;
         gap: 8px;
+      }
+      .filtros > div:nth-child(1),
+      .filtros > div:nth-child(2),
+      .filtros > div:nth-child(3) {
+        grid-column: 1 / -1;
+      }
+      .filtros > div:nth-child(4) {
+        grid-column: 1 / 2;
+      }
+      .filtros > div:nth-child(5) {
+        grid-column: 2 / 3;
+        align-self: end;
       }
       .bloque-head {
         align-items: flex-start;
       }
       .filtro-acciones-rapidas {
-        justify-content: flex-start;
+        justify-content: flex-end;
         min-height: 0;
       }
       tr.fila-seleccionable-movil {
