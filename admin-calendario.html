@@ -933,11 +933,18 @@
       margin-bottom: 10px;
     }
 
+    .modal-encabezado-acciones {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
     .modal-cerrar-superior {
-      width: 36px !important;
-      height: 36px !important;
-      min-width: 36px !important;
-      min-height: 36px !important;
+      width: 28px !important;
+      height: 28px !important;
+      min-width: 28px !important;
+      min-height: 28px !important;
       border-radius: 999px !important;
       border: 1px solid #bcc9d8 !important;
       background: #fff !important;
@@ -945,8 +952,8 @@
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      font-size: 16px !important;
-      font-weight: 700 !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
       line-height: 1 !important;
       padding: 0 !important;
       cursor: pointer;
@@ -1002,16 +1009,16 @@
     }
 
     .acciones-modal-iconos {
-      margin-top: 10px;
+      margin-top: 0;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
     }
 
     .btn-icono-modal {
-      width: 36px !important;
-      height: 36px !important;
-      min-width: 36px !important;
-      min-height: 36px !important;
+      width: 30px !important;
+      height: 30px !important;
+      min-width: 30px !important;
+      min-height: 30px !important;
       border-radius: 999px !important;
       border: 1px solid #bcc9d8 !important;
       background: #fff !important;
@@ -1032,8 +1039,8 @@
     }
 
     .btn-icono-modal svg {
-      width: 18px;
-      height: 18px;
+      width: 15px;
+      height: 15px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.9;
@@ -1307,10 +1314,10 @@
         justify-content: center;
       }
       .acciones-modal-iconos .btn-icono-modal {
-        width: 38px !important;
-        height: 38px !important;
-        min-width: 38px !important;
-        min-height: 38px !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
       }
     }
   </style>
@@ -1430,7 +1437,32 @@
     <div class="modal">
       <div class="modal-encabezado">
         <h3 id="modalTitulo">Detalle de solicitud</h3>
-        <button type="button" class="modal-cerrar-superior" id="btnCerrarModalEventoSuperior" aria-label="Cerrar">X</button>
+        <div class="modal-encabezado-acciones">
+          <div class="acciones-modal acciones-modal-iconos" id="accionesModalReserva">
+            <a href="#" id="btnAbrirActividadModal" class="btn-icono-modal oculto" target="_blank" title="Abrir actividad" aria-label="Abrir actividad">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 10.5L12 3l9 7.5"></path>
+                <path d="M5 9.5V21h14V9.5"></path>
+                <path d="M9 21v-6h6v6"></path>
+              </svg>
+            </a>
+            <a href="#" id="btnAbrirEditar" class="btn-icono-modal" target="_blank" title="Editar" aria-label="Editar">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+              </svg>
+            </a>
+            <a href="#" id="btnAbrirAsistentes" class="btn-icono-modal" target="_blank" title="Asistentes" aria-label="Asistentes">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </a>
+          </div>
+          <button type="button" class="modal-cerrar-superior" id="btnCerrarModalEventoSuperior" aria-label="Cerrar">X</button>
+        </div>
       </div>
 
       <div id="modalDetalle" class="detalle"></div>
@@ -1447,29 +1479,6 @@
         </div>
       </div>
 
-        <div class="acciones-modal acciones-modal-iconos" id="accionesModalReserva">
-          <a href="#" id="btnAbrirActividadModal" class="btn-icono-modal oculto" target="_blank" title="Abrir actividad" aria-label="Abrir actividad">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 10.5L12 3l9 7.5"></path>
-              <path d="M5 9.5V21h14V9.5"></path>
-              <path d="M9 21v-6h6v6"></path>
-            </svg>
-          </a>
-          <a href="#" id="btnAbrirEditar" class="btn-icono-modal" target="_blank" title="Editar" aria-label="Editar">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-            </svg>
-          </a>
-          <a href="#" id="btnAbrirAsistentes" class="btn-icono-modal" target="_blank" title="Asistentes" aria-label="Asistentes">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </a>
-      </div>
     </div>
   </div>
 
