@@ -439,7 +439,7 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
     return {
       asunto: `${actividad} · Solicitud aceptada`,
       etiqueta: "Solicitud aceptada",
-      mensaje: "La solicitud ha sido validada correctamente.",
+      mensaje: "Su solicitud ha sido aceptada.",
       colorFondo: "#eef8f1",
       colorBorde: "#c8ead3",
       colorEtiqueta: "#1f6f43",
@@ -449,7 +449,10 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       siguientesPasos: [
         "La actividad queda reservada y lista para su seguimiento desde tu panel.",
         "Si la actividad tiene aforo limitado, podrás gestionar la relación definitiva de asistentes desde esta misma solicitud.",
-        "Revisa con antelación la programación y la ubicación antes del día de la actividad."
+        "Revisa con antelación la programación y la ubicación antes del día de la actividad.",
+        "Una vez finalizado el plazo de tiempo de consolidación para la asignación de las plazas reservadas:",
+        "1. Si no se ha asignado ninguna plaza, la solicitud quedará CANCELADA automáticamente;",
+        "2. Si se ha realizado una asignación parcial de las plazas reservadas, se podrá seguir añadiendo asistentes a mayores de los reservadoss en función de las plazas que queden disponibles en tiempo real (ya sin la reserva garantizada en su solicitud)."
       ]
     };
   }
