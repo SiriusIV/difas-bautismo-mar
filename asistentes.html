@@ -898,10 +898,11 @@
 
     const OPCIONES_ENSENANZA = [
       { value: "NO_CORRESPONDE", label: "No corresponde" },
+      { value: "PREESCOLAR", label: "Preescolar" },
       { value: "INFANTIL", label: "Infantil" },
       { value: "PRIMARIA", label: "Primaria" },
       { value: "SECUNDARIA", label: "Secundaria" },
-      { value: "BACHILLER_FP", label: "Bachiller/FP" },
+      { value: "BACHILLER_FP", label: "Bachiller, FP" },
       { value: "ESTUDIOS_SUPERIORES", label: "Estudios Superiores" }
     ];
 
@@ -1550,10 +1551,11 @@
     function normalizarEnsenanzaImportada(valor) {
       const texto = normalizarTextoImportacion(valor);
       if (texto === "no corresponde") return "NO_CORRESPONDE";
+      if (texto === "preescolar") return "PREESCOLAR";
       if (texto === "infantil") return "INFANTIL";
       if (texto === "primaria") return "PRIMARIA";
       if (texto === "secundaria") return "SECUNDARIA";
-      if (texto === "bachiller/fp") return "BACHILLER_FP";
+      if (texto === "bachiller/fp" || texto === "bachiller, fp" || texto === "bachiller fp") return "BACHILLER_FP";
       if (texto === "estudios superiores") return "ESTUDIOS_SUPERIORES";
       return "";
     }

@@ -33,7 +33,7 @@ function normalizarEdadDesdeFila(row = {}) {
 
 function normalizarEnsenanzaDesdeFila(row = {}) {
   const ens = String(row.nivel_ensenanza || "").trim().toUpperCase();
-  if (["NO_CORRESPONDE", "INFANTIL", "PRIMARIA", "SECUNDARIA", "BACHILLER_FP", "ESTUDIOS_SUPERIORES"].includes(ens)) {
+  if (["NO_CORRESPONDE", "PREESCOLAR", "INFANTIL", "PRIMARIA", "SECUNDARIA", "BACHILLER_FP", "ESTUDIOS_SUPERIORES"].includes(ens)) {
     return ens;
   }
   return "NO_CORRESPONDE";

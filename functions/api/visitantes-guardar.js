@@ -37,6 +37,7 @@ function normalizarNivelEnsenanza(valor) {
   const v = String(valor || "").trim().toUpperCase();
   if (!v) return "";
   if (v === "NO_CORRESPONDE") return "NO_CORRESPONDE";
+  if (v === "PREESCOLAR") return "PREESCOLAR";
   if (v === "INFANTIL") return "INFANTIL";
   if (v === "PRIMARIA") return "PRIMARIA";
   if (v === "SECUNDARIA") return "SECUNDARIA";
