@@ -921,7 +921,8 @@ export async function onRequestPut(context) {
     );
 
     let resumenImpactoDocumental = null;
-    if (documentacionActividadHaCambiado) {
+    const debeRecalcularImpactoDocumental = true;
+    if (debeRecalcularImpactoDocumental) {
       let baseUrl = "";
       try {
         baseUrl = new URL(request.url).origin;
@@ -932,7 +933,9 @@ export async function onRequestPut(context) {
         resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
           adminId: p.admin_id,
           baseUrl,
-          motivo: "documentos_actualizados",
+          motivo: documentacionActividadHaCambiado
+            ? "documentos_actualizados"
+            : "actividad_guardada_revalidacion_documental",
           avisarCambioMarcoSinCambios: false
         });
       } catch (errorImpactoDocumental) {
