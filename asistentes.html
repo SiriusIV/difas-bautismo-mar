@@ -778,6 +778,51 @@
       .modal .acciones .btn-modal {
         width: 100%;
       }
+      .tabla-wrap {
+        overflow-x: visible;
+      }
+      .tabla-wrap table,
+      .tabla-wrap thead,
+      .tabla-wrap tbody,
+      .tabla-wrap tr,
+      .tabla-wrap th,
+      .tabla-wrap td {
+        display: block;
+      }
+      .tabla-wrap thead {
+        display: none;
+      }
+      .tabla-wrap table {
+        min-width: 0;
+        border: none;
+        background: transparent;
+      }
+      .tabla-wrap tbody {
+        display: grid;
+        gap: 10px;
+      }
+      .tabla-wrap tr {
+        border: 1px solid #dde4ea;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(18,58,99,0.06);
+      }
+      .tabla-wrap td {
+        border-bottom: 1px solid #eef2f6;
+        padding: 8px 12px;
+      }
+      .tabla-wrap tr td:last-child {
+        border-bottom: none;
+      }
+      .tabla-wrap td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 700;
+        color: #123a63;
+        font-size: 12px;
+      }
     }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -1302,20 +1347,20 @@
       tr.dataset.filaId = filaId;
 
       tr.innerHTML = `
-        <td class="nombre-col">
+        <td class="nombre-col" data-label="Nombre completo">
           <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
         </td>
-        <td class="tipo-col">
+        <td class="tipo-col" data-label="Perfil">
           <select class="perfil-asistente" ${editable ? "" : "disabled"}>
             ${crearOpcionesSelect(OPCIONES_PERFIL, asistente.perfil_asistente, "Seleccione perfil")}
           </select>
         </td>
-        <td class="ens-col">
+        <td class="ens-col" data-label="Enseñanza">
           <select class="ensenanza-asistente" ${editable ? "" : "disabled"}>
             ${crearOpcionesSelect(OPCIONES_ENSENANZA, asistente.nivel_ensenanza, "Seleccione enseñanza")}
           </select>
         </td>
-        <td class="edad-col">
+        <td class="edad-col" data-label="Edad">
           <select class="categoria-asistente" ${editable ? "" : "disabled"}>
             ${crearOpcionesSelect(OPCIONES_EDAD, asistente.categoria_edad, "Seleccione edad")}
           </select>
