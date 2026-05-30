@@ -513,6 +513,14 @@
       color: #4a5a6a;
       line-height: 1.3;
     }
+    .modal-estado-inline {
+      display: none;
+      justify-content: center;
+      margin: 2px 0 10px;
+    }
+    .modal-estado-inline.activo {
+      display: flex;
+    }
     .modal-estado-superior {
       display: none;
     }
@@ -767,8 +775,14 @@
       }
 
       .modal-encabezado {
-        flex-direction: column;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 10px;
+      }
+      .modal-cerrar-superior {
+        margin-top: 0;
+        margin-right: 0;
       }
       .modal-estado-superior {
         align-items: flex-start;
@@ -1022,6 +1036,7 @@
         </div>
         <button type="button" class="modal-cerrar-superior" id="btnCerrarModalObservacionesSuperior" aria-label="Cerrar">X</button>
       </div>
+      <div id="modalEstadoInline" class="modal-estado-inline" aria-hidden="true"></div>
       <div id="modalObservacionesContenido" class="modal-contenido"></div>
       <div id="modalObservacionesAcciones" class="modal-acciones">
         <button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>
@@ -1328,13 +1343,22 @@
     } = {}) {
       document.getElementById("modalObservacionesTitulo").textContent = titulo;
       document.getElementById("modalObservacionesSubtitulo").textContent = subtitulo;
+      const estadoInlineEl = document.getElementById("modalEstadoInline");
+      if (estadoInlineEl) {
+        if (estadoHtml) {
+          estadoInlineEl.innerHTML = estadoHtml;
+          estadoInlineEl.classList.add("activo");
+          estadoInlineEl.setAttribute("aria-hidden", "false");
+        } else {
+          estadoInlineEl.innerHTML = "";
+          estadoInlineEl.classList.remove("activo");
+          estadoInlineEl.setAttribute("aria-hidden", "true");
+        }
+      }
       const contenidoEl = document.getElementById("modalObservacionesContenido");
       contenidoEl.className = claseContenido;
       contenidoEl.innerHTML = contenido;
-      const accionesEstado = estadoHtml
-        ? `<div class="modal-acciones-estado">${estadoHtml}</div>`
-        : "";
-      document.getElementById("modalObservacionesAcciones").innerHTML = `${accionesEstado}${accionesHtml}`;
+      document.getElementById("modalObservacionesAcciones").innerHTML = `${accionesHtml}`;
     }
 
     function abrirModalObservaciones(id) {
