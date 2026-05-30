@@ -276,6 +276,12 @@
       font-size: 11px;
       padding: 3px 7px;
     }
+    .estado-badge.finalizada {
+      background: #dc3545;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
 
     .resumen-grid {
       display: grid;
@@ -293,6 +299,18 @@
 
     .resumen-col {
       min-width: 0;
+    }
+    .resumen-col-titulo {
+      display: inline-block;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #123a63;
+    }
+    .resumen-item-label {
+      font-weight: 700;
+      color: #1d3550;
     }
 
     .resumen-grid-reserva .resumen-col {
@@ -1314,14 +1332,14 @@
         ? `<strong>Franja horaria asignada:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
         : "";
       const lineaLimite = aforoLimitado
-        ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}`
+        ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${reservaActual.prereserva_vigente ? textoLimiteAsignacion(reservaActual.prereserva_expira_en, true) : '<span class="estado-badge finalizada">FINALIZADA</span>'}`
         : "";
       const resumenPlazas = aforoLimitado
-        ? `Pre-reservadas pendientes: ${reservadasPendientes}<br>
-            Asignadas: ${totalAsignadas}<br>
-            ${usaFranjas ? `Disponibles en la franja: ${disponiblesFranja}` : `Disponibles en la actividad: ${disponiblesFranja}`}`
-        : `Solicitadas: ${reservaOriginal}<br>
-            Asignadas: ${totalAsignadas}`;
+        ? `<span class="resumen-item-label">Pre-reservadas pendientes:</span> ${reservadasPendientes}<br>
+            <span class="resumen-item-label">Asignadas:</span> ${totalAsignadas}<br>
+            ${usaFranjas ? `<span class="resumen-item-label">Disponibles en la franja:</span> ${disponiblesFranja}` : `<span class="resumen-item-label">Disponibles en la actividad:</span> ${disponiblesFranja}`}`
+        : `<span class="resumen-item-label">Solicitadas:</span> ${reservaOriginal}<br>
+            <span class="resumen-item-label">Asignadas:</span> ${totalAsignadas}`;
 
       document.getElementById("bloqueReserva").innerHTML = `
         <strong>Código de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
@@ -1333,22 +1351,22 @@
       document.getElementById("bloqueResumen").innerHTML = `
         <div class="resumen-grid-reserva">
           <div class="resumen-col">
-            <strong>Plazas</strong><br>
+            <span class="resumen-col-titulo">PLAZAS</span><br>
             ${resumenPlazas}
           </div>
           <div class="resumen-col">
-            <strong>Perfiles</strong><br>
-            Alumnos: ${alumnos}<br>
-            Responsables de grupo: ${responsables}<br>
-            Perfil general: ${generales}
+            <span class="resumen-col-titulo">PERFILES</span><br>
+            <span class="resumen-item-label">Alumnos:</span> ${alumnos}<br>
+            <span class="resumen-item-label">Responsables de grupo:</span> ${responsables}<br>
+            <span class="resumen-item-label">Perfil general:</span> ${generales}
           </div>
           <div class="resumen-col">
-            <strong>Edades</strong><br>
-            de 3 a 5 años: ${de3a5}<br>
-            de 6 a 10 años: ${de6a10}<br>
-            de 10 a 15 años: ${de10a15}<br>
-            de 15 a 18 años: ${de15a18}<br>
-            mayores de 18 años: ${mayores18}
+            <span class="resumen-col-titulo">EDADES</span><br>
+            <span class="resumen-item-label">de 3 a 5 años:</span> ${de3a5}<br>
+            <span class="resumen-item-label">de 6 a 10 años:</span> ${de6a10}<br>
+            <span class="resumen-item-label">de 10 a 15 años:</span> ${de10a15}<br>
+            <span class="resumen-item-label">de 15 a 18 años:</span> ${de15a18}<br>
+            <span class="resumen-item-label">mayores de 18 años:</span> ${mayores18}
           </div>
         </div>
       `;
