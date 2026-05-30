@@ -652,6 +652,9 @@
         gap: 6px;
         align-items: center;
       }
+      body.portal-sin-sesion #filtroFechasWrap .filtro-fecha-etiqueta-desde {
+        display: none;
+      }
       body.portal-sin-sesion #filtroFechasWrap .filtro-fecha-etiqueta {
         font-size: 11px;
       }
@@ -663,6 +666,23 @@
       }
       body.portal-sin-sesion #franjaAvisoPortal {
         font-size: 13px;
+      }
+      body.portal-sin-sesion .filtro-panel {
+        align-items: end;
+      }
+      body.portal-sin-sesion .filtro-panel-der {
+        align-items: end;
+      }
+      body.portal-sin-sesion .accionesPublicas.publicas-login {
+        align-items: center;
+      }
+      body.portal-sin-sesion .accionesPublicas.publicas-login .aviso-login {
+        display: flex;
+        align-items: center;
+        min-height: 38px;
+      }
+      body.portal-sin-sesion .accionesPublicas.publicas-login .nav-btn {
+        align-self: center;
       }
     }
     .filtro-panel-izq > div {
@@ -2065,7 +2085,7 @@
   <div class="filtro-grupo filtro-grupo-fechas" id="filtroFechasWrap">
     <label>Fechas</label>
     <div class="filtro-fechas-rango">
-      <span class="filtro-fecha-etiqueta">Desde</span>
+      <span class="filtro-fecha-etiqueta filtro-fecha-etiqueta-desde">Desde</span>
       <input type="date" id="filtroFechaDesde" aria-label="Fecha desde">
       <span class="filtro-fecha-etiqueta">a</span>
       <input type="date" id="filtroFechaHasta" aria-label="Fecha hasta">
