@@ -936,7 +936,7 @@
     .modal-encabezado-acciones {
       display: inline-flex;
       align-items: flex-start;
-      gap: 18px;
+      gap: 22px;
       flex: 0 0 auto;
     }
 
@@ -952,10 +952,10 @@
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      font-size: 16px !important;
+      font-size: 12px !important;
       font-weight: 500 !important;
       line-height: 1 !important;
-      padding: 2px 0 0 0 !important;
+      padding: 0 !important;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -1011,6 +1011,41 @@
       margin-top: 0;
       justify-content: flex-end;
       gap: 6px;
+    }
+
+    .btn-pill-modal {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      min-height: 32px !important;
+      padding: 6px 12px !important;
+      border-radius: 999px !important;
+      border: 1px solid #bcc9d8 !important;
+      background: #fff !important;
+      color: #28435e !important;
+      text-decoration: none !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      line-height: 1 !important;
+      transition: all 0.15s ease;
+    }
+
+    .btn-pill-modal:hover {
+      border-color: #9fb2c7 !important;
+      color: #0b5ed7 !important;
+      background: #f7f9fb !important;
+    }
+
+    .btn-pill-modal svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
     }
 
     .btn-icono-modal {
@@ -1438,26 +1473,14 @@
         <h3 id="modalTitulo">Detalle de solicitud</h3>
         <div class="modal-encabezado-acciones">
           <div class="acciones-modal acciones-modal-iconos" id="accionesModalReserva">
-            <a href="#" id="btnAbrirActividadModal" class="btn-icono-modal oculto" target="_blank" title="Abrir actividad" aria-label="Abrir actividad">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 10.5L12 3l9 7.5"></path>
-                <path d="M5 9.5V21h14V9.5"></path>
-                <path d="M9 21v-6h6v6"></path>
-              </svg>
-            </a>
-            <a href="#" id="btnAbrirEditar" class="btn-icono-modal" target="_blank" title="Editar" aria-label="Editar">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-              </svg>
-            </a>
-            <a href="#" id="btnAbrirAsistentes" class="btn-icono-modal" target="_blank" title="Asistentes" aria-label="Asistentes">
+            <a href="#" id="btnAbrirAsistentes" class="btn-pill-modal" target="_blank" title="Asistentes a la actividad" aria-label="Asistentes a la actividad">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="9" cy="7" r="4"></circle>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
+              <span>Asistentes a la actividad</span>
             </a>
           </div>
           <button type="button" class="modal-cerrar-superior" id="btnCerrarModalEventoSuperior" aria-label="Cerrar">X</button>
@@ -1857,14 +1880,9 @@ function abrirModalEvento(info) {
       const p = info.event.extendedProps;
       const tipoEvento = p.tipo_evento || "RESERVA";
       const bloqueEstado = document.getElementById("bloqueEstadoReserva");
-      const btnAbrirActividad = document.getElementById("btnAbrirActividadModal");
-      const btnEditar = document.getElementById("btnAbrirEditar");
       const btnAsistentes = document.getElementById("btnAbrirAsistentes");
       const estadoClass = String(p.estado || "").toLowerCase();
       const esMovilConPasoIntermedio = esMovilCalendario();
-
-      btnAbrirActividad.classList.add("oculto");
-      btnAbrirActividad.removeAttribute("href");
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
         if (!p.editable_actividad && !esMovilConPasoIntermedio) {
@@ -1888,12 +1906,7 @@ function abrirModalEvento(info) {
           </div>
         `;
         bloqueEstado.classList.add("oculto");
-        btnEditar.classList.add("oculto");
         btnAsistentes.classList.add("oculto");
-        if (actividadId > 0) {
-          btnAbrirActividad.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
-          btnAbrirActividad.classList.remove("oculto");
-        }
         document.getElementById("modalEvento").classList.add("activo");
         document.getElementById("modalEvento").setAttribute("aria-hidden", "false");
         return;
@@ -1932,10 +1945,8 @@ function abrirModalEvento(info) {
         </div>
       `;
 
-      btnEditar.href = `editar.html?token=${encodeURIComponent(p.token_edicion)}`;
       btnAsistentes.href = `asistentes.html?token=${encodeURIComponent(p.token_edicion)}`;
       bloqueEstado.classList.toggle("oculto", modoSolicitante);
-      btnEditar.classList.toggle("oculto", !p.token_edicion);
       btnAsistentes.classList.toggle("oculto", !p.token_edicion);
 
       if (!modoSolicitante) {
