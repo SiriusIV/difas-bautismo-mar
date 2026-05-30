@@ -2155,6 +2155,7 @@ function obtenerDisponiblesFormulario(franja) {
         <p>Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con una pre-reserva de <span class="resaltado">${datos.plazas_solicitadas}</span> plazas.</p>
         <p>El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.</p>
         <p>Transcurrido ese plazo, las plazas pre-reservadas no asignadas volverán a quedar disponibles.</p>
+        <p>Si, pasado el tiempo de consolidación, no se ha asignado al menos un asistente, la solicitud quedará anulada automáticamente por el sistema.</p>
         <p>${textoCierre}</p>
       `;
       const mensaje = document.getElementById("mensajeConfirmacionEnvio");
