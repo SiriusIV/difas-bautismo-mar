@@ -1,4 +1,4 @@
-import { crearNotificacion } from "./_notificaciones.js";
+﻿import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
 
@@ -124,8 +124,9 @@ function construirCorreoSolicitanteCaducidadParcial(contexto = {}) {
   const asignadas = Number(contexto?.asistentes_total || 0);
   const reservadasOriginales = Number(contexto?.plazas_prereservadas || 0);
   const liberadas = Math.max(reservadasOriginales - asignadas, 0);
+  const estadoActual = String(contexto?.estado || "").toUpperCase() === "CONFIRMADA" ? "CONFIRMADA" : "PENDIENTE";
   const asunto = "[Reservas] Prereserva caducada y solicitud mantenida";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha agotado el tiempo de prereserva. Se mantienen ${asignadas} plaza(s) ya asignada(s) y ${liberadas} plaza(s) no asignada(s) han vuelto a quedar disponibles.`;
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} permanece en estado ${estadoActual}. Ha finalizado el tiempo de asignación de plazas: se mantienen ${asignadas} plaza(s) asignada(s) y ${liberadas} plaza(s) no asignada(s) han vuelto a quedar disponibles para otros solicitantes.`;
   const aclaracion = "No necesitas crear una nueva solicitud complementaria. Si la actividad sigue teniendo plazas disponibles, puedes editar esta misma solicitud y añadir directamente, en tiempo real, nuevas plazas nominales sobre la reserva existente.";
 
   const texto = [
@@ -135,6 +136,7 @@ function construirCorreoSolicitanteCaducidadParcial(contexto = {}) {
     "",
     `Actividad: ${actividad}`,
     codigo ? `Código de solicitud: ${codigo}` : "",
+    `Estado actual: ${estadoActual}`,
     `Organiza: ${organizador}`,
     `Programación: ${programacion}`,
     "",
@@ -146,6 +148,7 @@ function construirCorreoSolicitanteCaducidadParcial(contexto = {}) {
     <p>${escaparHtml(mensaje)}</p>
     <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
     ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    <p><strong>Estado actual:</strong> ${escaparHtml(estadoActual)}</p>
     <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
     <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
     <p>${escaparHtml(aclaracion)}</p>
@@ -385,7 +388,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
         accion: "CADUCIDAD_SUSPENSION",
         estadoOrigen: "SUSPENDIDA",
         estadoDestino: "RECHAZADA",
-        observaciones: "La solicitud suspendida ha vencido sin regularización antes de la actividad.",
+          observaciones: "La solicitud suspendida ha vencido sin regularización antes de la actividad.",
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });
@@ -518,13 +521,14 @@ async function crearAvisosCaducidadParcialSolicitante(env, reserva = {}) {
   const tareas = [];
 
   if (usuarioId > 0) {
+    const estadoActual = String(reserva?.estado || "").toUpperCase() === "CONFIRMADA" ? "confirmada" : "pendiente";
     tareas.push(
       crearNotificacion(env, {
         usuarioId,
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Prereserva caducada parcialmente",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} mantiene las plazas ya asignadas y libera automáticamente las no asignadas. Puedes seguir ampliándola sobre esta misma solicitud si aún quedan plazas disponibles.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} sigue ${estadoActual}; se mantienen las plazas asignadas y las no asignadas vuelven a estar disponibles para otros solicitantes.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -805,3 +809,4 @@ export async function ejecutarMantenimientoReservas(env) {
     franjas_eliminadas_por_fin_actividad: franjasEliminadas
   };
 }
+
