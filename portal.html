@@ -603,8 +603,15 @@
     }
     .filtro-fechas-rango {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: auto 1fr auto 1fr;
       gap: 8px;
+      align-items: center;
+    }
+    .filtro-fecha-etiqueta {
+      font-size: 12px;
+      font-weight: 700;
+      color: #123a63;
+      white-space: nowrap;
     }
     .filtro-fechas-rango input[type="date"] {
       min-width: 0;
@@ -1593,7 +1600,7 @@
         width: 100%;
       }
       .filtro-fechas-rango {
-        grid-template-columns: 1fr;
+        grid-template-columns: auto 1fr auto 1fr;
       }
 
       .filtro-panel select {
@@ -1664,11 +1671,58 @@
       }
 
       .tabla-franjas {
-        overflow-x: auto;
+        overflow-x: visible;
       }
-
+      .tabla-franjas table,
+      .tabla-franjas thead,
+      .tabla-franjas tbody,
+      .tabla-franjas tr,
+      .tabla-franjas th,
+      .tabla-franjas td {
+        display: block;
+      }
+      .tabla-franjas thead {
+        display: none;
+      }
       .tabla-franjas table {
-        min-width: 540px;
+        width: 100%;
+        min-width: 0;
+        border-spacing: 0;
+      }
+      .tabla-franjas tbody {
+        display: grid;
+        gap: 8px;
+        width: 100%;
+      }
+      .tabla-franjas tbody tr {
+        border: 1px solid #dde4ea;
+        border-radius: 10px;
+        background: #fff;
+        padding: 6px 8px;
+      }
+      .tabla-franjas tbody td {
+        border-bottom: 1px solid #eef2f6;
+        padding: 6px 0;
+        display: grid;
+        grid-template-columns: 90px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        white-space: normal !important;
+      }
+      .tabla-franjas tbody td:last-child {
+        border-bottom: none;
+      }
+      .tabla-franjas tbody td::before {
+        content: attr(data-label);
+        font-size: 12px;
+        font-weight: 700;
+        color: #123a63;
+      }
+      .tabla-franjas tbody td.col-seleccion {
+        grid-template-columns: 90px auto;
+      }
+      .tabla-franjas tbody td.col-seleccion input[type="radio"] {
+        justify-self: start;
       }
 
       .modal-login {
@@ -1970,7 +2024,9 @@
   <div class="filtro-grupo filtro-grupo-fechas" id="filtroFechasWrap">
     <label>Fechas</label>
     <div class="filtro-fechas-rango">
+      <span class="filtro-fecha-etiqueta">Desde</span>
       <input type="date" id="filtroFechaDesde" aria-label="Fecha desde">
+      <span class="filtro-fecha-etiqueta">Hasta</span>
       <input type="date" id="filtroFechaHasta" aria-label="Fecha hasta">
     </div>
   </div>
@@ -2630,7 +2686,7 @@ async function cargarFranjasActividad(actividad) {
 
       return `
         <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"}">
-          <td class="col-seleccion">
+          <td class="col-seleccion" data-label="Selección">
             ${requiereReserva ? `
               <input
                 type="radio"
@@ -2640,10 +2696,10 @@ async function cargarFranjasActividad(actividad) {
               >
             ` : ``}
           </td>
-          <td>${textoProgramacionFranja(f)}</td>
-          <td>${f.hora_inicio}</td>
-          <td>${f.hora_fin || "-"}</td>
-          <td class="estado-franja ${estadoClase}">${estadoTexto}</td>
+          <td data-label="Fecha">${textoProgramacionFranja(f)}</td>
+          <td data-label="Inicio">${f.hora_inicio}</td>
+          <td data-label="Fin">${f.hora_fin || "-"}</td>
+          <td class="estado-franja ${estadoClase}" data-label="Situación">${estadoTexto}</td>
         </tr>
       `;
     }).join("");
