@@ -3715,6 +3715,8 @@ function obtenerActividadesFiltradas() {
       const detalleTexto = document.getElementById("detalleTexto");
       const detalleImagen = document.getElementById("detalleImagen");
       const btnSolicitar = document.getElementById("btnSolicitarActividad");
+      const btnRequisitos = document.getElementById("btnVerRequisitosActividad");
+      const avisoSinReserva = document.getElementById("avisoSinReservaActividad");
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
       const direccionDiv = document.getElementById("direccionActividad");
@@ -3742,6 +3744,8 @@ function obtenerActividadesFiltradas() {
       }
       detalleImagen.alt = "Buque alejándose en el horizonte";
       btnSolicitar.style.display = "none";
+      btnRequisitos.style.display = "none";
+      if (avisoSinReserva) avisoSinReserva.style.display = "none";
       btnEditar.style.display = "none";
       btnReservas.style.display = "none";
       direccionDiv.style.display = "none";
