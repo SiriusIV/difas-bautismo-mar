@@ -1496,7 +1496,7 @@
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || "No se pudo cargar la configuraciÃ³n del evento.");
+          throw new Error(data.error || "No se pudo cargar la configuración del evento.");
         }
 
         const config = data.config || {};
@@ -1780,9 +1780,9 @@ function abrirModalEvento(info) {
           <strong>Actividad:</strong> ${p.actividad_nombre || "Actividad"}<br>
           <strong>Centro:</strong> ${p.centro || ""}<br>
           <strong>Contacto:</strong> ${p.contacto || ""}<br>
-          <strong>TelÃ©fono:</strong> ${p.telefono || ""}<br>
+          <strong>Teléfono:</strong> ${p.telefono || ""}<br>
           <strong>Email:</strong> ${p.email || ""}<br>
-          <strong>Franja:</strong> ${p.fecha} Â· ${p.hora_inicio} - ${p.hora_fin}<br>
+          <strong>Franja:</strong> ${p.fecha} · ${p.hora_inicio} - ${p.hora_fin}<br>
           <strong>Capacidad de franja:</strong> ${p.capacidad || 0}
         </div>
 
@@ -1835,10 +1835,10 @@ function abrirModalEvento(info) {
         return;
       }
 
-      let textoConfirmacion = "Â¿Desea ejecutar esta acciÃ³n?";
-      if (accion === "confirmar") textoConfirmacion = "Â¿Desea confirmar esta solicitud?";
-      if (accion === "rechazar") textoConfirmacion = "Â¿Desea rechazar esta solicitud?";
-      if (accion === "reabrir") textoConfirmacion = "Â¿Desea reabrir esta solicitud y dejarla pendiente?";
+      let textoConfirmacion = "¿Desea ejecutar esta acción?";
+      if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
+      if (accion === "rechazar") textoConfirmacion = "¿Desea rechazar esta solicitud?";
+      if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
 
       const confirmar = window.confirm(textoConfirmacion);
       if (!confirmar) return;
@@ -1867,17 +1867,17 @@ function abrirModalEvento(info) {
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo ejecutar la acciÃ³n.");
+          mostrarMensaje("error", data.error || "No se pudo ejecutar la acción.");
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "AcciÃ³n realizada correctamente.");
+        mostrarMensaje("ok", data.mensaje || "Acción realizada correctamente.");
         cerrarModalEvento();
         calendar.refetchEvents();
         await actualizarContadores();
 
       } catch (error) {
-        mostrarMensaje("error", error.message || "Error de conexiÃ³n con el servidor.");
+        mostrarMensaje("error", error.message || "Error de conexión con el servidor.");
       } finally {
         accionEnCurso = false;
         document.getElementById("btnAplicarEstado").disabled = false;
@@ -2509,5 +2509,6 @@ function abrirModalEvento(info) {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
 
 
