@@ -26,8 +26,8 @@ function normalizarCategoriaEdad(valor) {
   const v = String(valor || "").trim().toUpperCase();
   if (!v) return "";
   if (v === "DE_3_A_5") return "DE_3_A_5";
-  if (v === "DE_6_A_10" || v === "MENOR_10") return "DE_6_A_10";
-  if (v === "DE_10_A_15") return "DE_10_A_15";
+  if (v === "DE_6_A_9" || v === "DE_6_A_10" || v === "MENOR_10") return "DE_6_A_9";
+  if (v === "DE_10_A_14" || v === "DE_10_A_15") return "DE_10_A_14";
   if (v === "DE_15_A_18" || v === "MAYOR_DE_15") return "DE_15_A_18";
   if (v === "MAYOR_DE_18") return "MAYOR_DE_18";
   return "";
@@ -331,8 +331,8 @@ export async function onRequestPost(context) {
     const responsablesGrupo = visitantesNormalizados.filter((v) => v.perfil_asistente === "RESPONSABLE_GRUPO").length;
     const generales = visitantesNormalizados.filter((v) => v.perfil_asistente === "GENERAL").length;
     const de3a5 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_3_A_5").length;
-    const de6a10 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_6_A_10").length;
-    const de10a15 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_10_A_15").length;
+    const de6a9 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_6_A_9").length;
+    const de10a14 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_10_A_14").length;
     const de15a18 = visitantesNormalizados.filter((v) => v.categoria_edad === "DE_15_A_18").length;
     const mayores18 = visitantesNormalizados.filter((v) => v.categoria_edad === "MAYOR_DE_18").length;
 
@@ -352,8 +352,8 @@ export async function onRequestPost(context) {
       generales,
       profesores: responsablesGrupo,
       de_3_a_5: de3a5,
-      de_6_a_10: de6a10,
-      de_10_a_15: de10a15,
+      de_6_a_9: de6a9,
+      de_10_a_14: de10a14,
       de_15_a_18: de15a18,
       mayor_de_18: mayores18
     });
