@@ -1438,6 +1438,16 @@
 
       recalcularResumenEnPantalla();
       actualizarBotonEliminar();
+      enfocarPrimerNombreAsistente();
+    }
+
+    function enfocarPrimerNombreAsistente() {
+      const primerCampoNombre = document.querySelector("#cuerpoAsistentes .nombre-asistente:not([disabled])");
+      if (!primerCampoNombre) return;
+      requestAnimationFrame(() => {
+        primerCampoNombre.focus();
+        primerCampoNombre.select();
+      });
     }
 
     function recalcularResumenEnPantalla() {
