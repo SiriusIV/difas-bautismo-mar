@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarColumnaForzarCambioPassword, hashPassword } from "../usuario/_password.js";
 import { generarPasswordTemporal } from "./_solicitudes_armada.js";
@@ -139,3 +139,4 @@ export async function onRequestPost(context) {
     }, 500);
   }
 }
+
