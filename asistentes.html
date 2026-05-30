@@ -462,11 +462,6 @@
       font-size: 12px;
     }
 
-    th.sel-col, td.sel-col {
-      width: 34px;
-      text-align: center;
-    }
-
     th.nombre-col, td.nombre-col {
       width: 36%;
     }
@@ -783,7 +778,6 @@
         <table>
           <thead>
             <tr>
-              <th class="sel-col"></th>
               <th class="nombre-col">Nombre completo</th>
               <th class="tipo-col">Perfil</th>
               <th class="ens-col">Enseñanza</th>
@@ -855,7 +849,8 @@
       { value: "DE_3_A_5", label: "de 3 a 5 años" },
       { value: "DE_6_A_10", label: "de 6 a 10 años" },
       { value: "DE_10_A_15", label: "de 10 a 15 años" },
-      { value: "MAYOR_DE_15", label: "mayor de 15 años" }
+      { value: "DE_15_A_18", label: "de 15 a 18 años" },
+      { value: "MAYOR_DE_18", label: "mayor de 18 años" }
     ];
 
     function claseEstadoBadge(estado) {
@@ -903,7 +898,7 @@
 
     function etiquetaEdad(valor) {
       const item = OPCIONES_EDAD.find((op) => op.value === String(valor || "").trim().toUpperCase());
-      return item ? item.label : "mayor de 15 años";
+      return item ? item.label : "de 15 a 18 años";
     }
 
     function crearOpcionesSelect(opciones, valorSeleccionado, placeholder) {
@@ -1177,8 +1172,6 @@
       filaSeleccionadaId = filaId;
       obtenerFilasTabla().forEach(tr => {
         tr.classList.toggle("fila-seleccionada", tr.dataset.filaId === filaId);
-        const radio = tr.querySelector(".selector-fila");
-        if (radio) radio.checked = tr.dataset.filaId === filaId;
       });
       actualizarBotonEliminar();
     }
@@ -1209,9 +1202,6 @@
       tr.dataset.filaId = filaId;
 
       tr.innerHTML = `
-        <td class="sel-col">
-          <input type="radio" name="seleccionAsistente" class="selector-fila" ${editable ? "" : "disabled"}>
-        </td>
         <td class="nombre-col">
           <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
         </td>
@@ -1232,7 +1222,7 @@
         </td>
       `;
 
-      tr.querySelector(".selector-fila").addEventListener("change", function () {
+      tr.addEventListener("click", function () {
         seleccionarFila(filaId);
       });
 
@@ -1312,7 +1302,8 @@
       const de3a5 = visitantesValidos.filter(v => v.categoria_edad === "DE_3_A_5").length;
       const de6a10 = visitantesValidos.filter(v => v.categoria_edad === "DE_6_A_10").length;
       const de10a15 = visitantesValidos.filter(v => v.categoria_edad === "DE_10_A_15").length;
-      const mayores15 = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_DE_15").length;
+      const de15a18 = visitantesValidos.filter(v => v.categoria_edad === "DE_15_A_18" || v.categoria_edad === "MAYOR_DE_15").length;
+      const mayores18 = visitantesValidos.filter(v => v.categoria_edad === "MAYOR_DE_18").length;
 
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
@@ -1354,7 +1345,8 @@
             de 3 a 5 años: ${de3a5}<br>
             de 6 a 10 años: ${de6a10}<br>
             de 10 a 15 años: ${de10a15}<br>
-            mayores de 15 años: ${mayores15}
+            de 15 a 18 años: ${de15a18}<br>
+            mayores de 18 años: ${mayores18}
           </div>
         </div>
       `;
@@ -1409,12 +1401,9 @@
         const perfil = tr.querySelector(".perfil-asistente");
         const ensenanza = tr.querySelector(".ensenanza-asistente");
         const categoria = tr.querySelector(".categoria-asistente");
-        const selector = tr.querySelector(".selector-fila");
-
         if (nombre) nombre.disabled = !editable;
         if (perfil) perfil.disabled = !editable;
         if (ensenanza) ensenanza.disabled = !editable;
-        if (selector) selector.disabled = !editable;
 
         if (!editable && categoria) {
           categoria.disabled = true;
@@ -1515,7 +1504,8 @@
       if (texto === "de 3 a 5 anos") return "DE_3_A_5";
       if (texto === "de 6 a 10 anos") return "DE_6_A_10";
       if (texto === "de 10 a 15 anos") return "DE_10_A_15";
-      if (texto === "mayor de 15 anos") return "MAYOR_DE_15";
+      if (texto === "de 15 a 18 anos" || texto === "mayor de 15 anos") return "DE_15_A_18";
+      if (texto === "mayor de 18 anos") return "MAYOR_DE_18";
       return "";
     }
 
