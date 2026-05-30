@@ -224,6 +224,13 @@ export function construirEmailTextoDocumentacionResuelta({ admin, centro, versio
     lineas.push(`Observaciones del administrador: ${observaciones}`);
   }
 
+  if (estado === "VALIDADA") {
+    lineas.push(
+      "",
+      "IMPORTANTE: Debes volver a iniciar el proceso de solicitud de la reserva de actividad."
+    );
+  }
+
   lineas.push("", "Puedes consultar el estado actualizado desde la plataforma.");
   return lineas.join("\n");
 }
@@ -234,6 +241,9 @@ export function construirEmailHtmlDocumentacionResuelta({ admin, centro, version
   const observacionesHtml = observaciones
     ? `<p><strong>Observaciones del administrador:</strong> ${escaparHtml(observaciones)}</p>`
     : "";
+  const avisoReinicioHtml = estado === "VALIDADA"
+    ? `<p style="margin:12px 0;padding:10px 12px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Importante:</strong> Debes volver a iniciar el proceso de solicitud de la reserva de actividad.</p>`
+    : "";
 
   return `
     <p>El estado de tu documentación general ha cambiado.</p>
@@ -242,6 +252,7 @@ export function construirEmailHtmlDocumentacionResuelta({ admin, centro, version
     <p><strong>Estado actual:</strong> ${escaparHtml(estadoTexto)}</p>
     <p><strong>Versión documental:</strong> ${Number(versionRequerida || 0)}</p>
     ${observacionesHtml}
+    ${avisoReinicioHtml}
     <p>Puedes consultar el estado actualizado desde la plataforma.</p>
   `;
 }
