@@ -249,7 +249,7 @@
       color: var(--color-resumen-texto);
       padding: 11px 12px;
       border-radius: var(--radio-panel);
-      line-height: 1.5;
+      line-height: 1.72;
       font-size: 13px;
       min-height: 128px;
       box-shadow: var(--sombra-panel);
@@ -462,6 +462,7 @@
       color: #1d4f91;
       font-weight: 700;
       font-size: 12px;
+      padding-left: 11px;
     }
 
     th.nombre-col, td.nombre-col {
@@ -1310,8 +1311,7 @@
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
       const lineaFranja = usaFranjas
-        ? `<strong>Franja horaria asignada:</strong><br>
-        ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
+        ? `<strong>Franja horaria asignada:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
         : "";
       const lineaLimite = aforoLimitado
         ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${textoLimiteAsignacion(reservaActual.prereserva_expira_en, reservaActual.prereserva_vigente)}`
