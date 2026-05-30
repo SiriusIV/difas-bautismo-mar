@@ -811,17 +811,26 @@
       .tabla-wrap td {
         border-bottom: 1px solid #eef2f6;
         padding: 8px 12px;
+        display: grid;
+        grid-template-columns: 116px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
       }
       .tabla-wrap tr td:last-child {
         border-bottom: none;
       }
       .tabla-wrap td::before {
         content: attr(data-label);
-        display: block;
-        margin-bottom: 4px;
+        display: inline-block;
+        margin-bottom: 0;
         font-weight: 700;
         color: #123a63;
         font-size: 12px;
+        white-space: nowrap;
+      }
+      .tabla-wrap td > input[type="text"],
+      .tabla-wrap td > select {
+        width: 100%;
       }
     }
   </style>
