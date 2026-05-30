@@ -1693,7 +1693,7 @@
       });
 
       const indiceCabecera = filas.findIndex((fila) =>
-        normalizarTextoImportacion(fila.A) === "nombre y apellidos" &&
+        normalizarTextoImportacion(fila.A) === "nombre completo" &&
         normalizarTextoImportacion(fila.B) === "perfil" &&
         normalizarTextoImportacion(fila.C) === "ensenanza" &&
         normalizarTextoImportacion(fila.D) === "edad"
@@ -1716,7 +1716,7 @@
         if (!activa) return;
 
         const faltantes = [];
-        if (!nombre) faltantes.push("Nombre y Apellidos");
+        if (!nombre) faltantes.push("Nombre completo");
         if (!perfilTexto) faltantes.push("Perfil");
         if (!ensenanzaTexto) faltantes.push("Enseñanza");
         if (!edadTexto) faltantes.push("Edad");
