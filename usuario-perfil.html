@@ -126,6 +126,7 @@
     .btn-ayuda-campo { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 999px; border: 1px solid #6d87a3; background: #eef4ff; color: #123a63; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; }
     .btn-ayuda-campo:hover { background: #dce9ff; color: #0b5ed7; border-color: #54789a; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="url"], select { width: 100%; height: 38px; padding: 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+    #emailAdmin { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .campo-linea-valor-fijo { height: 38px; display: flex; align-items: center; padding: 7px 10px; border: 1px solid #c9cfd6; border-radius: 8px; background: #f7f9fb; color: #495867; font-size: 13px; }
     .input-solo-lectura { background: #f7f9fb !important; color: #495867; }
     .nota { margin-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; }
@@ -1564,11 +1565,9 @@
   </div>
   <div id="modalInfoDocumentoBaseAdmin" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-doc-base-info">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarInfoDocumentoBaseAdminTop" aria-label="Cerrar">×</button>
       <h3 id="modalInfoDocumentoBaseAdminTitulo">Descripción del documento</h3>
       <p id="modalInfoDocumentoBaseAdminTexto">Selecciona un documento para consultar su descripción.</p>
-      <div class="modal-acciones">
-        <button type="button" class="btn btn-suave" id="btnCerrarInfoDocumentoBaseAdmin">Cerrar</button>
-      </div>
     </div>
   </div>
 
@@ -4517,7 +4516,7 @@
     });
     document.getElementById("btnCerrarDocumentoBaseAdminTop").addEventListener("click", cerrarModalDocumentoBaseAdmin);
     document.getElementById("btnGuardarDocumentoBaseAdmin").addEventListener("click", guardarDocumentoBaseAdmin);
-    document.getElementById("btnCerrarInfoDocumentoBaseAdmin").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
+    document.getElementById("btnCerrarInfoDocumentoBaseAdminTop").addEventListener("click", cerrarModalInfoDocumentoBaseAdmin);
     document.getElementById("btnCambiarPasswordSolicitante").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("btnTogglePasswordActual").addEventListener("click", function () {
       alternarVisibilidadPassword("modal_password_actual", "btnTogglePasswordActual");
