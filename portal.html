@@ -1759,16 +1759,21 @@
         border: 1px solid #dde4ea;
         border-radius: 10px;
         background: #fff;
-        padding: 6px 8px;
+        padding: 4px 8px;
+      }
+      .tabla-franjas tbody tr.fila-franja-activa {
+        background: #eaf2ff;
+        border-color: #7fa9e6;
       }
       .tabla-franjas tbody td {
         border-bottom: 1px solid #eef2f6;
-        padding: 6px 0;
+        padding: 4px 0;
         display: grid;
         grid-template-columns: 90px minmax(0, 1fr);
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         white-space: normal !important;
+        text-align: left !important;
       }
       .tabla-franjas tbody td:last-child {
         border-bottom: none;
@@ -1780,7 +1785,7 @@
         color: #123a63;
       }
       .tabla-franjas tbody td.col-seleccion {
-        grid-template-columns: 90px auto;
+        display: none;
       }
       .tabla-franjas tbody td.col-seleccion input[type="radio"] {
         justify-self: start;
@@ -2745,8 +2750,9 @@ async function cargarFranjasActividad(actividad) {
         estadoClase = "disponible";
       }
 
+      const filaActiva = Number(franjaSeleccionadaPortalId || 0) === Number(f.id) ? "fila-franja-activa" : "";
       return `
-        <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"}">
+        <tr class="${f.seleccionable ? "" : "fila-franja-inactiva"} ${filaActiva}" data-franja-id="${f.id}">
           <td class="col-seleccion" data-label="Selección">
             ${requiereReserva ? `
               <input
@@ -2754,6 +2760,7 @@ async function cargarFranjasActividad(actividad) {
                 name="franjaPortalSeleccionada"
                 value="${f.id}"
                 ${f.seleccionable ? "" : "disabled"}
+                ${Number(franjaSeleccionadaPortalId || 0) === Number(f.id) ? "checked" : ""}
               >
             ` : ``}
           </td>
@@ -2777,6 +2784,23 @@ async function cargarFranjasActividad(actividad) {
       radios.forEach(radio => {
         radio.addEventListener("change", () => {
           franjaSeleccionadaPortalId = Number(radio.value) || null;
+          body.querySelectorAll("tr[data-franja-id]").forEach((tr) => {
+            tr.classList.toggle("fila-franja-activa", Number(tr.dataset.franjaId || 0) === Number(franjaSeleccionadaPortalId || 0));
+          });
+          actualizarBotonSolicitarSegunFranja();
+        });
+      });
+      body.querySelectorAll("tr[data-franja-id]").forEach((tr) => {
+        tr.addEventListener("click", (event) => {
+          if (event.target.closest('input[name="franjaPortalSeleccionada"]')) return;
+          const idFranja = Number(tr.dataset.franjaId || 0);
+          if (!(idFranja > 0) || tr.classList.contains("fila-franja-inactiva")) return;
+          franjaSeleccionadaPortalId = idFranja;
+          const radio = tr.querySelector('input[name="franjaPortalSeleccionada"]');
+          if (radio && !radio.disabled) radio.checked = true;
+          body.querySelectorAll("tr[data-franja-id]").forEach((fila) => {
+            fila.classList.toggle("fila-franja-activa", Number(fila.dataset.franjaId || 0) === idFranja);
+          });
           actualizarBotonSolicitarSegunFranja();
         });
       });
