@@ -598,6 +598,25 @@
       gap: 6px;
       min-width: 0;
     }
+    .filtro-grupo-fechas {
+      min-width: 250px;
+    }
+    .filtro-fechas-rango {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .filtro-fechas-rango input[type="date"] {
+      min-width: 0;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #c9cfd6;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      color: #1e2a36;
+      box-sizing: border-box;
+    }
     .filtro-panel-izq > div {
       display: flex;
       flex-direction: column;
@@ -936,6 +955,19 @@
   justify-content: flex-end;
   gap: 8px;
   flex: 0 0 auto;
+}
+.detalle-aviso-sin-reserva {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #0f4f95;
+  border: 1px solid #bcd7f5;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 11px;
+  white-space: nowrap;
 }
    
     .detalle-contenido h3 {
@@ -1560,6 +1592,9 @@
       .filtro-grupo {
         width: 100%;
       }
+      .filtro-fechas-rango {
+        grid-template-columns: 1fr;
+      }
 
       .filtro-panel select {
         min-width: 0;
@@ -1616,10 +1651,16 @@
       .detalle-acciones-inferiores-der {
         width: 100%;
         justify-content: stretch;
+        align-items: stretch;
+        flex-direction: column;
       }
 
       .detalle-acciones-inferiores-der .btn {
         width: 100%;
+      }
+      .detalle-aviso-sin-reserva {
+        width: 100%;
+        text-align: center;
       }
 
       .tabla-franjas {
@@ -1926,6 +1967,13 @@
       <option value="">Todos</option>
     </select>
   </div>
+  <div class="filtro-grupo filtro-grupo-fechas" id="filtroFechasWrap">
+    <label>Fechas</label>
+    <div class="filtro-fechas-rango">
+      <input type="date" id="filtroFechaDesde" aria-label="Fecha desde">
+      <input type="date" id="filtroFechaHasta" aria-label="Fecha hasta">
+    </div>
+  </div>
 </div>
 
         <div class="filtro-panel-der">
@@ -2020,6 +2068,7 @@
     <div id="notaFranjasPortal" class="nota-franjas" style="display:none;"></div>
   </div>
   <div class="detalle-acciones-inferiores-der">
+    <span id="avisoSinReservaActividad" class="detalle-aviso-sin-reserva" style="display:none;">Esta actividad no necesita reserva</span>
     <button id="btnVerRequisitosActividad" class="btn btn-admin" style="display:none;" type="button">Más información</button>
     <button id="btnSolicitarActividad" class="btn" style="display:none;">Solicitar actividad</button>
   </div>
@@ -2154,6 +2203,8 @@
       let provinciaSeleccionada = "";
       let estadoActividadSeleccionado = "publicadas";
       let programaSeleccionado = "";
+    let fechaDesdeSeleccionada = "";
+    let fechaHastaSeleccionada = "";
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
     let notificacionesPortal = [];
@@ -3467,6 +3518,7 @@ function renderizarFiltroProgramas() {
 
   const programas = [...new Set(
     actividadesBase
+      .filter((a) => actividadCoincideRangoFechas(a))
       .map(a => String(a.subtitulo_publico || "").trim())
       .filter(p => p !== "")
   )].sort((a, b) => a.localeCompare(b, "es"));
@@ -3480,6 +3532,39 @@ function renderizarFiltroProgramas() {
   }
 
   select.value = programaSeleccionado;
+}
+
+function parsearFechaISO(fechaIso) {
+  const valor = String(fechaIso || "").trim();
+  if (!valor) return null;
+  const [anio, mes, dia] = valor.split("-").map(Number);
+  if (!anio || !mes || !dia) return null;
+  const fecha = new Date(anio, mes - 1, dia);
+  if (Number.isNaN(fecha.getTime())) return null;
+  fecha.setHours(0, 0, 0, 0);
+  return fecha;
+}
+
+function actividadCoincideRangoFechas(actividad) {
+  if (!fechaDesdeSeleccionada && !fechaHastaSeleccionada) return true;
+
+  const inicioFiltro = parsearFechaISO(fechaDesdeSeleccionada);
+  const finFiltro = parsearFechaISO(fechaHastaSeleccionada);
+  if (!inicioFiltro && !finFiltro) return true;
+
+  const tipo = String(actividad?.tipo || "").trim().toUpperCase();
+  if (tipo !== "TEMPORAL") return false;
+
+  const inicioActividad = parsearFechaISO(actividad?.fecha_inicio);
+  const finActividad = parsearFechaISO(actividad?.fecha_fin || actividad?.fecha_inicio);
+  if (!inicioActividad || !finActividad) return false;
+
+  const inicio = inicioActividad <= finActividad ? inicioActividad : finActividad;
+  const fin = inicioActividad <= finActividad ? finActividad : inicioActividad;
+  const inicioRango = inicioFiltro || new Date(-8640000000000000);
+  const finRango = finFiltro || new Date(8640000000000000);
+
+  return inicio <= finRango && fin >= inicioRango;
 }
 
 function actualizarSubtituloCabecera() {
@@ -3524,8 +3609,9 @@ function obtenerActividadesFiltradas() {
     const coincidePrograma =
       !programaSeleccionado ||
       String(a.subtitulo_publico || "").trim() === programaSeleccionado;
+    const coincideFechas = actividadCoincideRangoFechas(a);
 
-    return coincideAdmin && coincideProvincia && coincidePrograma;
+    return coincideAdmin && coincideProvincia && coincidePrograma && coincideFechas;
   });
 }
 
@@ -3982,6 +4068,7 @@ function puedeEditarRequisitosActividadSeleccionada() {
         document.getElementById("detalleBadgeEstado").className = "badge-estado-actividad";
         document.getElementById("btnVerRequisitosActividad").style.display = "none";
         document.getElementById("btnSolicitarActividad").style.display = "none";
+        document.getElementById("avisoSinReservaActividad").style.display = "none";
         document.getElementById("btnEditarActividad").style.display = "none";
         document.getElementById("btnVerReservasActividad").style.display = "none";
         document.getElementById("direccionActividad").style.display = "none";
@@ -4053,6 +4140,7 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
 
       const btnSolicitar = document.getElementById("btnSolicitarActividad");
       const btnRequisitos = document.getElementById("btnVerRequisitosActividad");
+      const avisoSinReserva = document.getElementById("avisoSinReservaActividad");
       const btnEditar = document.getElementById("btnEditarActividad");
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
@@ -4065,6 +4153,9 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.disabled = !admiteReservas;
       btnReservas.title = admiteReservas ? "Ver reservas" : "Esta actividad no admite reservas";
+      if (avisoSinReserva) {
+        avisoSinReserva.style.display = admiteReservas ? "none" : "inline-flex";
+      }
 
       if (
         usuarioAutenticado &&
@@ -4657,6 +4748,23 @@ if (filtroPrograma) {
     carruselAutoIndex = 0;
     renderizarActividades();
   });
+}
+
+const filtroFechaDesde = document.getElementById("filtroFechaDesde");
+const filtroFechaHasta = document.getElementById("filtroFechaHasta");
+function aplicarFiltroRangoFechasPortal() {
+  fechaDesdeSeleccionada = (filtroFechaDesde?.value || "").trim();
+  fechaHastaSeleccionada = (filtroFechaHasta?.value || "").trim();
+  actividadSeleccionada = null;
+  carruselAutoIndex = 0;
+  renderizarFiltroProgramas();
+  renderizarActividades();
+}
+if (filtroFechaDesde) {
+  filtroFechaDesde.addEventListener("change", aplicarFiltroRangoFechasPortal);
+}
+if (filtroFechaHasta) {
+  filtroFechaHasta.addEventListener("change", aplicarFiltroRangoFechasPortal);
 }
 
 const filtroAdminSecretaria = document.getElementById("filtroAdminSecretaria");
