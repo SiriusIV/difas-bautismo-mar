@@ -626,28 +626,43 @@
     }
     @media (min-width: 701px) {
       body.portal-sin-sesion .filtro-panel-izq {
-        display: grid;
-        grid-template-columns: minmax(180px, 260px) minmax(180px, 260px);
-        column-gap: 10px;
-        row-gap: 8px;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
         align-items: end;
       }
-      body.portal-sin-sesion #filtroProvinciaWrap {
-        grid-column: 1;
+      body.portal-sin-sesion #filtroProvinciaWrap,
+      body.portal-sin-sesion #filtroProgramaWrap,
+      body.portal-sin-sesion #filtroFechasWrap {
+        min-width: 0;
       }
+      body.portal-sin-sesion #filtroProvinciaWrap { flex: 0 1 190px; }
+      body.portal-sin-sesion #filtroProgramaWrap { flex: 0 1 240px; }
       body.portal-sin-sesion #filtroProgramaWrap {
-        grid-column: 2;
+        max-width: 240px;
       }
       body.portal-sin-sesion #filtroFechasWrap {
-        grid-column: 1 / span 2;
-        min-width: 0;
+        flex: 0 0 auto;
       }
       body.portal-sin-sesion #filtroFechasWrap > label {
         display: none;
       }
       body.portal-sin-sesion #filtroFechasWrap .filtro-fechas-rango {
-        grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-        max-width: 100%;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      body.portal-sin-sesion #filtroFechasWrap .filtro-fecha-etiqueta {
+        font-size: 11px;
+      }
+      body.portal-sin-sesion #filtroFechasWrap input[type="date"] {
+        width: 132px;
+        min-width: 132px;
+        max-width: 132px;
+        padding: 8px 6px;
+      }
+      body.portal-sin-sesion #franjaAvisoPortal {
+        font-size: 13px;
       }
     }
     .filtro-panel-izq > div {
@@ -2052,7 +2067,7 @@
     <div class="filtro-fechas-rango">
       <span class="filtro-fecha-etiqueta">Desde</span>
       <input type="date" id="filtroFechaDesde" aria-label="Fecha desde">
-      <span class="filtro-fecha-etiqueta">Hasta</span>
+      <span class="filtro-fecha-etiqueta">a</span>
       <input type="date" id="filtroFechaHasta" aria-label="Fecha hasta">
     </div>
   </div>
