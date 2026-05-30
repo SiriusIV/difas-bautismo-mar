@@ -187,7 +187,7 @@
     }
     .filtros {
       display: grid;
-      grid-template-columns: 282px 170px 150px minmax(180px, 1fr);
+      grid-template-columns: 340px 160px 150px minmax(170px, 1fr) 44px;
       gap: 10px;
       align-items: end;
     }
@@ -195,7 +195,12 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      min-height: 0;
+      min-height: 40px;
+    }
+    #filtroActividad {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .btn-filtros-reset {
       width: 40px;
@@ -791,7 +796,8 @@
         align-items: flex-start;
       }
       .filtro-acciones-rapidas {
-        justify-content: flex-end;
+        justify-content: flex-start;
+        min-height: 0;
       }
       tr.fila-seleccionable-movil {
         grid-template-columns: minmax(0, 1fr);
@@ -873,14 +879,6 @@
     </div>
 
     <div class="bloque">
-      <div class="bloque-head">
-        <h3>Filtros</h3>
-        <div class="filtro-acciones-rapidas">
-          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
-            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
-          </button>
-        </div>
-      </div>
       <div class="filtros">
         <div>
           <label for="filtroActividad">Actividad</label>
@@ -906,6 +904,11 @@
         <div>
           <label for="filtroBuscar">Buscar</label>
           <input type="text" id="filtroBuscar" placeholder="Codigo, actividad u horario">
+        </div>
+        <div class="filtro-acciones-rapidas">
+          <button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros">
+            <img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true">
+          </button>
         </div>
       </div>
     </div>
