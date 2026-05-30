@@ -568,6 +568,7 @@
       border-radius: 18px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       padding: 24px;
+      position: relative;
     }
 
     .modal h3 {
@@ -579,6 +580,43 @@
     .modal p {
       margin: 0 0 14px 0;
       line-height: 1.6;
+    }
+    .modal-cerrar-superior {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid #cfd9e4;
+      background: #fff;
+      color: #5b6b7c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .modal-cerrar-superior:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+    .modal-advertencia {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: #f3b61f;
+      color: #1e2a36;
+      font-weight: 800;
+      font-size: 13px;
+      margin-right: 8px;
+      vertical-align: middle;
     }
 
     .modal .acciones {
@@ -868,11 +906,12 @@
 
   <div id="modalConfirmarSalida" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <h3>Cambios sin guardar</h3>
+      <button type="button" id="btnCerrarModalSalidaSuperior" class="modal-cerrar-superior" aria-label="Cerrar">X</button>
+      <h3><span class="modal-advertencia" aria-hidden="true">!</span>Cambios sin guardar</h3>
       <p>Ha realizado cambios en la lista de asistentes y aún no los ha guardado.</p>
       <p>Si continúa, perderá esos cambios.</p>
       <div class="acciones">
-        <button type="button" id="btnConfirmarSalida" class="btn-modal">Aceptar</button>
+        <button type="button" id="btnConfirmarSalida" class="btn-modal">Continuar</button>
         <button type="button" id="btnCancelarSalida" class="btn-modal secundario">Cancelar</button>
       </div>
     </div>
@@ -1910,6 +1949,7 @@
 
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
       document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);
+      document.getElementById("btnCerrarModalSalidaSuperior").addEventListener("click", cerrarModalSalida);
 
       document.getElementById("modalConfirmarSalida").addEventListener("click", function (e) {
         if (e.target.id === "modalConfirmarSalida") {
