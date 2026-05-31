@@ -1869,10 +1869,17 @@
         };
       }
 
-      if (valor === "VALIDACION_PARCIAL" || valor === "NO_INICIADO" || valor === "NO_COMPLETADO" || valor === "NO_ENVIADO") {
+      if (valor === "VALIDACION_PARCIAL" || valor === "NO_COMPLETADO") {
         return {
           html: `<span class="indicador-expediente circulo azul" title="Cobertura parcial" aria-label="Cobertura parcial"></span>`,
           titulo: "Cobertura parcial"
+        };
+      }
+
+      if (valor === "NO_INICIADO" || valor === "NO_ENVIADO") {
+        return {
+          html: `<span class="indicador-expediente circulo neutro" title="Cobertura nula" aria-label="Cobertura nula"></span>`,
+          titulo: "Cobertura nula"
         };
       }
 

@@ -102,6 +102,10 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
     return calcularEstadoDocumento(doc, entrega);
   });
 
+  if (estados.every((estado) => estado === "NO_ENVIADO")) {
+    return "NO_INICIADO";
+  }
+
   if (estados.some((estado) => estado === "RECHAZADO")) {
     return "RECHAZADA";
   }
@@ -129,9 +133,8 @@ function contarDocumentosValidados(documentosActivos, archivosActivos) {
   let validados = 0;
   for (const doc of documentosActivos || []) {
     const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
-    if (!entrega) continue;
-    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) continue;
-    if (normalizarEstadoDocumento(entrega.estado) === "VALIDADO") {
+    const estadoDocumento = calcularEstadoDocumento(doc, entrega);
+    if (estadoDocumento === "VALIDADO") {
       validados += 1;
     }
   }
