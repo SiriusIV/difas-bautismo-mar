@@ -170,7 +170,10 @@ export async function onRequestGet(context) {
       return {
         nombre_documento: doc.nombre,
         version_documental: versionDoc,
+        expediente_id: Number(expediente?.id || 0),
+        archivo_id: Number(archivo?.id || 0),
         archivo_url: archivo?.archivo_url || "",
+        estado_bruto: estado || "",
         estado: estado ? etiquetarEstado(estado) : "No remitido",
         fecha_subida: archivo?.fecha_subida || ""
       };

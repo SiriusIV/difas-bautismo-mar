@@ -158,7 +158,7 @@
     thead th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     .muted { color: #6e7e90; }
     tbody tr { cursor: pointer; }
-    .modal-docs-lista tbody tr { cursor: default; }
+    .modal-docs-lista tbody tr { cursor: pointer; }
     tbody tr.fila-activa td { background: #eaf3ff; }
     .estado-wrap { display: inline-flex; align-items: center; justify-content: center; width: 100%; }
     .switch-mini {
@@ -288,6 +288,19 @@
       line-height: 1;
       color: #506275;
     }
+    .modal-cerrar-sin-circulo {
+      border: 0;
+      background: transparent;
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      font-size: 22px;
+      font-weight: 400;
+      padding: 0;
+      right: 14px;
+      top: 10px;
+      color: #5a6f84;
+    }
     .modal h4 { margin: 0 36px 10px 0; font-size: 22px; color: #123a63; }
     .modal p { margin: 0 0 10px; color: #435a70; font-size: 14px; line-height: 1.45; }
     .modal .grupo { margin-top: 10px; }
@@ -347,6 +360,40 @@
       color: #35506a;
       z-index: 1;
     }
+    .modal-docs-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 10px;
+      flex-wrap: wrap;
+    }
+    .btn-doc-accion {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border: 1px solid #c5d1dd;
+      border-radius: 999px;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+    }
+    .btn-doc-accion img { width: 16px; height: 16px; display: block; }
+    .btn-doc-accion:disabled { opacity: .45; cursor: not-allowed; }
+    .fila-doc-activa td { background: #eaf3ff; }
+    .estado-doc-btn {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .estado-doc-btn:disabled { cursor: not-allowed; opacity: .75; }
+    .icono-estado-clicable { width: 13px; height: 13px; opacity: .82; }
     .estado-doc {
       display: inline-flex;
       border-radius: 8px;
@@ -550,9 +597,15 @@
 
   <div id="modalDocsUsuario" class="modal-fondo" aria-hidden="true">
     <div class="modal">
-      <button type="button" class="modal-cerrar" id="btnCerrarModalDocsUsuario" aria-label="Cerrar">×</button>
+      <button type="button" class="modal-cerrar modal-cerrar-sin-circulo" id="btnCerrarModalDocsUsuario" aria-label="Cerrar">×</button>
       <h4>Documentación remitida</h4>
       <p id="txtDocsUsuarioContexto"></p>
+      <div class="modal-docs-toolbar">
+        <button type="button" class="btn-doc-accion" id="btnDocAccionVer" title="Ver documento" aria-label="Ver documento" disabled><img src="assets/icono-ver-documento.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion" id="btnDocAccionValidar" title="Validar documento" aria-label="Validar documento" disabled><img src="assets/1486564411-checkmark_81522.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion" id="btnDocAccionRechazar" title="Rechazar documento" aria-label="Rechazar documento" disabled><img src="assets/1486564399-close_81512.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion" id="btnDocAccionEliminar" title="Eliminar documento" aria-label="Eliminar documento" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+      </div>
       <div class="modal-docs-lista">
         <table>
           <thead>
@@ -574,6 +627,8 @@
     let usuariosFiltrados = [];
     let cambioPendienteBloqueo = null;
     let usuarioSeleccionadoId = null;
+    let documentosModalUsuario = [];
+    let documentoModalActivo = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -727,6 +782,72 @@
 
     function cerrarModalDocsUsuario() {
       document.getElementById("modalDocsUsuario").classList.remove("activo");
+      documentosModalUsuario = [];
+      documentoModalActivo = null;
+      actualizarBotonesAccionesDocs(false);
+    }
+
+    function actualizarBotonesAccionesDocs(habilitado) {
+      ["btnDocAccionVer", "btnDocAccionValidar", "btnDocAccionRechazar", "btnDocAccionEliminar"].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !habilitado;
+      });
+    }
+
+    function seleccionarDocumentoModal(indice) {
+      const idx = Number(indice);
+      documentoModalActivo = Number.isInteger(idx) && idx >= 0 ? documentosModalUsuario[idx] || null : null;
+      const tbody = document.getElementById("tbodyDocsUsuario");
+      tbody.querySelectorAll("tr[data-doc-idx]").forEach((tr) => {
+        tr.classList.toggle("fila-doc-activa", Number(tr.dataset.docIdx) === idx);
+      });
+      const habilitado = !!documentoModalActivo && !!documentoModalActivo.archivo_url;
+      actualizarBotonesAccionesDocs(habilitado);
+    }
+
+    async function ejecutarAccionDocumento(accion) {
+      if (!documentoModalActivo) {
+        setMensaje("error", "Selecciona un documento para continuar.");
+        return;
+      }
+      if (!documentoModalActivo.archivo_url) {
+        setMensaje("error", "No existe un documento remitido para esa fila.");
+        return;
+      }
+      if (accion === "ver") {
+        window.open(documentoModalActivo.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const confirmar = window.confirm(
+        accion === "eliminar"
+          ? "¿Eliminar el documento remitido? Esta acción lo dejará como no presentado."
+          : (accion === "validar" ? "¿Validar el documento seleccionado?" : "¿Rechazar el documento seleccionado?")
+      );
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch("/api/admin/usuarios-publicos-documentos-accion", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accion,
+            documentacion_id: Number(documentoModalActivo.expediente_id || 0),
+            archivo_id: Number(documentoModalActivo.archivo_id || 0)
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          setMensaje("error", data?.error || "No se pudo aplicar la acción sobre el documento.");
+          return;
+        }
+        setMensaje("ok", data?.mensaje || "Documento actualizado.");
+        await abrirModalDocsUsuario();
+        await cargarUsuarios();
+      } catch (_) {
+        setMensaje("error", "Error de conexión al aplicar la acción.");
+      }
     }
 
     async function abrirModalDocsUsuario() {
@@ -752,11 +873,14 @@
           document.getElementById("txtDocsUsuarioContexto").textContent = `Usuario: ${nombre} · Marco documental: ${contextoGestor}`;
         }
         const docs = Array.isArray(data.documentos) ? data.documentos : [];
+        documentosModalUsuario = docs.slice();
+        documentoModalActivo = null;
+        actualizarBotonesAccionesDocs(false);
         if (!docs.length) {
           tbody.innerHTML = `<tr><td colspan="4" class="muted">No hay documentos remitidos para el marco documental activo.</td></tr>`;
           return;
         }
-        tbody.innerHTML = docs.map((doc) => {
+        tbody.innerHTML = docs.map((doc, index) => {
           const fecha = formatearFechaUI(doc.fecha_subida || "");
           const estado = String(doc.estado || "").trim() || "No remitido";
           const estadoUpper = estado.toUpperCase();
@@ -772,16 +896,22 @@
           } else if (estadoUpper.includes("REVISION") || estadoUpper.includes("REVISIÓN")) {
             claseEstado += " revision";
           }
+          const estadoBtn = doc.archivo_url
+            ? `<button type="button" class="estado-doc-btn" onclick="seleccionarDocumentoModal(${index})"><span class="${claseEstado}">${escapeHtml(estado)}</span><img class="icono-estado-clicable" src="assets/icono-estado-clicable.svg" alt=""></button>`
+            : `<button type="button" class="estado-doc-btn" onclick="setMensaje('error','No existe un documento remitido para esa fila.')" disabled><span class="${claseEstado}">${escapeHtml(estado)}</span><img class="icono-estado-clicable" src="assets/icono-estado-clicable.svg" alt=""></button>`;
           const botonVer = doc.archivo_url
             ? `<a class="btn-link-doc" href="${escapeHtml(doc.archivo_url)}" target="_blank" rel="noopener noreferrer" title="Ver documento" aria-label="Ver documento"><img src="assets/icono-ver-documento.svg" alt=""></a>`
             : `<span class="muted">-</span>`;
-          return `<tr>
+          return `<tr data-doc-idx="${index}">
             <td>${escapeHtml(doc.nombre_documento || "-")}</td>
-            <td><span class="${claseEstado}">${escapeHtml(estado)}</span></td>
+            <td>${estadoBtn}</td>
             <td>${escapeHtml(fecha || "-")}</td>
             <td>${botonVer}</td>
           </tr>`;
         }).join("");
+        tbody.querySelectorAll("tr[data-doc-idx]").forEach((fila) => {
+          fila.addEventListener("click", () => seleccionarDocumentoModal(fila.dataset.docIdx));
+        });
       } catch (_) {
         tbody.innerHTML = `<tr><td colspan="4" class="muted">Error de conexión al cargar la documentación.</td></tr>`;
       }
@@ -895,6 +1025,10 @@
       renderTabla();
     });
     document.getElementById("btnVerDocsUsuario").addEventListener("click", abrirModalDocsUsuario);
+    document.getElementById("btnDocAccionVer").addEventListener("click", () => ejecutarAccionDocumento("ver"));
+    document.getElementById("btnDocAccionValidar").addEventListener("click", () => ejecutarAccionDocumento("validar"));
+    document.getElementById("btnDocAccionRechazar").addEventListener("click", () => ejecutarAccionDocumento("rechazar"));
+    document.getElementById("btnDocAccionEliminar").addEventListener("click", () => ejecutarAccionDocumento("eliminar"));
     document.getElementById("btnCerrarModalSituacion").addEventListener("click", cerrarModalSituacion);
     document.getElementById("btnCerrarModalDocsUsuario").addEventListener("click", cerrarModalDocsUsuario);
     document.getElementById("btnCerrarModalBloqueo").addEventListener("click", cerrarModalBloqueo);
