@@ -288,3 +288,57 @@ export async function borrarConfiguracionDocumentalActividad(env, actividadId) {
     WHERE actividad_id = ?
   `).bind(id).run();
 }
+
+export async function depurarConfiguracionDocumentalActividadesAdmin(env, adminId, catalogoDocumentos = []) {
+  await asegurarTablasDocumentacionActividad(env);
+
+  const admin = Number(adminId || 0);
+  if (!(admin > 0)) {
+    return {
+      actividades_revisadas: 0,
+      actividades_actualizadas: 0
+    };
+  }
+
+  const permitidos = new Set(
+    normalizarNombresDocumentosActividad((catalogoDocumentos || []).map((doc) => doc?.nombre || doc))
+      .map((nombre) => nombre.toUpperCase())
+  );
+
+  const actividades = await env.DB.prepare(`
+    SELECT
+      c.actividad_id,
+      c.modo
+    FROM actividad_documentacion_config c
+    INNER JOIN actividades a ON a.id = c.actividad_id
+    WHERE a.admin_id = ?
+      AND UPPER(TRIM(COALESCE(c.modo, 'HEREDADA'))) = 'PERSONALIZADA'
+    ORDER BY c.actividad_id ASC
+  `).bind(admin).all();
+
+  let actualizadas = 0;
+  const filas = actividades?.results || [];
+
+  for (const fila of filas) {
+    const actividadId = Number(fila?.actividad_id || 0);
+    if (!(actividadId > 0)) continue;
+
+    const config = await leerConfiguracionDocumentalActividad(env, actividadId);
+    const filtrados = normalizarNombresDocumentosActividad(config.documentos).filter((nombre) =>
+      permitidos.has(String(nombre || "").trim().toUpperCase())
+    );
+
+    const original = normalizarNombresDocumentosActividad(config.documentos);
+    const igualLongitud = original.length === filtrados.length;
+    const igualContenido = igualLongitud && original.every((nombre, indice) => nombre === filtrados[indice]);
+    if (igualContenido) continue;
+
+    await guardarConfiguracionDocumentalActividad(env, actividadId, "PERSONALIZADA", filtrados);
+    actualizadas += 1;
+  }
+
+  return {
+    actividades_revisadas: filas.length,
+    actividades_actualizadas: actualizadas
+  };
+}

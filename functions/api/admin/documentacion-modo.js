@@ -9,6 +9,7 @@ import {
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import { crearNotificacion } from "../_notificaciones.js";
+import { depurarConfiguracionDocumentalActividadesAdmin } from "../_actividad_documentacion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -439,6 +440,11 @@ export async function onRequestPost(context) {
         recalculo.afectadosConRemision,
         documentosSecretaria.length
       );
+      const depuracionActividades = await depurarConfiguracionDocumentalActividadesAdmin(
+        env,
+        adminId,
+        documentosSecretaria
+      );
       const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
         adminId,
         baseUrl,
@@ -453,6 +459,8 @@ export async function onRequestPost(context) {
         secretaria_usuario_id: secretariaUsuarioId,
         documentos_nuevo_marco: documentosSecretaria.length,
         expedientes_actualizados: recalculo.expedientes.length,
+        actividades_documentales_revisadas: depuracionActividades.actividades_revisadas,
+        actividades_documentales_actualizadas: depuracionActividades.actividades_actualizadas,
         usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
         notificaciones,
         impacto_reservas: impactoReservas
@@ -485,6 +493,11 @@ export async function onRequestPost(context) {
       recalculo.afectadosConRemision,
       documentosAutogestion.length
     );
+    const depuracionActividades = await depurarConfiguracionDocumentalActividadesAdmin(
+      env,
+      adminId,
+      documentosAutogestion
+    );
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
       adminId,
       baseUrl,
@@ -501,6 +514,8 @@ export async function onRequestPost(context) {
       secretaria_usuario_id: null,
       documentos_nuevo_marco: documentosAutogestion.length,
       expedientes_actualizados: recalculo.expedientes.length,
+      actividades_documentales_revisadas: depuracionActividades.actividades_revisadas,
+      actividades_documentales_actualizadas: depuracionActividades.actividades_actualizadas,
       usuarios_notificados: notificaciones.filter((item) => item.enviada).length,
       notificaciones,
       impacto_reservas: impactoReservas
