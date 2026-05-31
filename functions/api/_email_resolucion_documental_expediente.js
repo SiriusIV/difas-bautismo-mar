@@ -1,4 +1,4 @@
-import { nombreVisibleAdmin } from "./_email.js";
+﻿import { nombreVisibleAdmin } from "./_email.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -52,7 +52,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   }
 
   if (validacionCompleta) {
-    lineas.push("", "Documentación obligatoria validada al completo:");
+    lineas.push("", "documentación obligatoria validada al completo:");
     validados.forEach((doc) => {
       lineas.push(`- ${limpiarTexto(doc?.nombre)}`);
       if (limpiarTexto(doc?.observaciones_admin)) {
@@ -123,7 +123,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
 
   const bloqueResultado = validacionCompleta
     ? `
-      <p><strong>Documentación obligatoria validada al completo.</strong></p>
+      <p><strong>documentación obligatoria validada al completo.</strong></p>
       ${filasValidados ? `
         <table style="border-collapse:collapse;width:100%;max-width:760px;margin-top:8px;">
           <thead>
@@ -183,3 +183,4 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
     <p>Puedes acceder a la plataforma para consultar el resultado detallado.</p>
   `;
 }
+
