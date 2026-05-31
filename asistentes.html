@@ -610,8 +610,9 @@
       position: absolute;
       width: 76px;
       height: 76px;
-      top: -24px;
-      right: 20px;
+      top: 50%;
+      left: -38px;
+      transform: translateY(-50%);
       border-radius: 16px;
       background: #fff url("logo.png") center/72% no-repeat;
       border: 1px solid #d9e2ec;
@@ -1694,7 +1695,11 @@
       limpiarMensaje();
 
       const validacion = validarVisitantesDeTabla();
-      if (validacion.errores.length) {
+      const filasVaciasSinDatos = validacion.completos.length === 0 &&
+        validacion.errores.length > 0 &&
+        validacion.errores.every((err) => /^Fila \d+: falta /.test(String(err || "")));
+
+      if (validacion.errores.length && !filasVaciasSinDatos) {
         mostrarMensaje("error", validacion.errores.join(" "));
         return;
       }
