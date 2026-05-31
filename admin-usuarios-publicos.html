@@ -383,17 +383,6 @@
     .btn-doc-accion img { width: 16px; height: 16px; display: block; }
     .btn-doc-accion:disabled { opacity: .45; cursor: not-allowed; }
     .fila-doc-activa td { background: #eaf3ff; }
-    .estado-doc-btn {
-      border: 0;
-      background: transparent;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-    .estado-doc-btn:disabled { cursor: not-allowed; opacity: .75; }
-    .icono-estado-clicable { width: 13px; height: 13px; opacity: .82; }
     .estado-doc {
       display: inline-flex;
       border-radius: 8px;
@@ -408,25 +397,6 @@
     .estado-doc.rechazado { background: #d64f4f; color: #ffffff; }
     .estado-doc.pendiente { background: #b7791f; color: #ffffff; }
     .estado-doc.revision { background: #b7791f; color: #ffffff; }
-    .btn-link-doc {
-      border: 1px solid #c5d1dd;
-      border-radius: 999px;
-      background: #fff;
-      color: #123a63;
-      width: 34px;
-      height: 34px;
-      padding: 0;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .btn-link-doc img {
-      width: 16px;
-      height: 16px;
-      display: block;
-    }
 
     @media (max-width: 920px) {
       .bloque-marca {
@@ -602,7 +572,7 @@
       <p id="txtDocsUsuarioContexto"></p>
       <div class="modal-docs-toolbar">
         <button type="button" class="btn-doc-accion" id="btnDocAccionVer" title="Ver documento" aria-label="Ver documento" disabled><img src="assets/icono-ver-documento.svg" alt=""></button>
-        <button type="button" class="btn-doc-accion" id="btnDocAccionValidar" title="Validar documento" aria-label="Validar documento" disabled><img src="assets/1486564411-checkmark_81522.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion" id="btnDocAccionValidar" title="Validar documento" aria-label="Validar documento" disabled><img src="assets/icono-validar-documento.svg" alt=""></button>
         <button type="button" class="btn-doc-accion" id="btnDocAccionRechazar" title="Rechazar documento" aria-label="Rechazar documento" disabled><img src="assets/1486564399-close_81512.svg" alt=""></button>
         <button type="button" class="btn-doc-accion" id="btnDocAccionEliminar" title="Eliminar documento" aria-label="Eliminar documento" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
       </div>
@@ -613,7 +583,6 @@
               <th>Documento</th>
               <th>Estado</th>
               <th>Fecha</th>
-              <th></th>
             </tr>
           </thead>
           <tbody id="tbodyDocsUsuario"></tbody>
@@ -859,13 +828,13 @@
       const tbody = document.getElementById("tbodyDocsUsuario");
       const nombre = usuario.centro || usuario.nombre || usuario.email || "Usuario público";
       document.getElementById("txtDocsUsuarioContexto").textContent = `Usuario: ${nombre}`;
-      tbody.innerHTML = `<tr><td colspan="4" class="muted">Cargando documentos...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">Cargando documentos...</td></tr>`;
       document.getElementById("modalDocsUsuario").classList.add("activo");
       try {
         const res = await fetch(`/api/admin/usuarios-publicos-documentos?usuario_id=${encodeURIComponent(String(usuario.id))}`, { credentials: "include" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHtml(data?.error || "No se pudo cargar la documentación.")}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHtml(data?.error || "No se pudo cargar la documentación.")}</td></tr>`;
           return;
         }
         const contextoGestor = data?.gestor_documental?.nombre_publico || data?.gestor_documental?.nombre || "";
@@ -877,7 +846,7 @@
         documentoModalActivo = null;
         actualizarBotonesAccionesDocs(false);
         if (!docs.length) {
-          tbody.innerHTML = `<tr><td colspan="4" class="muted">No hay documentos remitidos para el marco documental activo.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3" class="muted">No hay documentos remitidos para el marco documental activo.</td></tr>`;
           return;
         }
         tbody.innerHTML = docs.map((doc, index) => {
@@ -896,24 +865,18 @@
           } else if (estadoUpper.includes("REVISION") || estadoUpper.includes("REVISIÓN")) {
             claseEstado += " revision";
           }
-          const estadoBtn = doc.archivo_url
-            ? `<button type="button" class="estado-doc-btn" onclick="seleccionarDocumentoModal(${index})"><span class="${claseEstado}">${escapeHtml(estado)}</span><img class="icono-estado-clicable" src="assets/icono-estado-clicable.svg" alt=""></button>`
-            : `<button type="button" class="estado-doc-btn" onclick="setMensaje('error','No existe un documento remitido para esa fila.')" disabled><span class="${claseEstado}">${escapeHtml(estado)}</span><img class="icono-estado-clicable" src="assets/icono-estado-clicable.svg" alt=""></button>`;
-          const botonVer = doc.archivo_url
-            ? `<a class="btn-link-doc" href="${escapeHtml(doc.archivo_url)}" target="_blank" rel="noopener noreferrer" title="Ver documento" aria-label="Ver documento"><img src="assets/icono-ver-documento.svg" alt=""></a>`
-            : `<span class="muted">-</span>`;
+          const estadoLabel = `<span class="${claseEstado}">${escapeHtml(estado)}</span>`;
           return `<tr data-doc-idx="${index}">
             <td>${escapeHtml(doc.nombre_documento || "-")}</td>
-            <td>${estadoBtn}</td>
+            <td>${estadoLabel}</td>
             <td>${escapeHtml(fecha || "-")}</td>
-            <td>${botonVer}</td>
           </tr>`;
         }).join("");
         tbody.querySelectorAll("tr[data-doc-idx]").forEach((fila) => {
           fila.addEventListener("click", () => seleccionarDocumentoModal(fila.dataset.docIdx));
         });
       } catch (_) {
-        tbody.innerHTML = `<tr><td colspan="4" class="muted">Error de conexión al cargar la documentación.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="muted">Error de conexión al cargar la documentación.</td></tr>`;
       }
     }
 
