@@ -607,15 +607,11 @@
     .modal-con-deco::after {
       content: "";
       position: absolute;
-      width: 76px;
-      height: 76px;
-      top: 50%;
-      left: -38px;
-      transform: translateY(-50%);
-      border-radius: 16px;
-      background: #fff url("logo.png") center/72% no-repeat;
-      border: 1px solid #d9e2ec;
-      box-shadow: 0 8px 20px rgba(18,58,99,0.18);
+      width: 56px;
+      height: 56px;
+      top: -20px;
+      left: -20px;
+      background: url("logo.png") center/contain no-repeat;
       z-index: 1;
       pointer-events: none;
       opacity: 0.98;
@@ -1070,7 +1066,7 @@
     let destinoPendienteNavegacion = null;
     let temporizadorMensaje = null;
     let tipoMensajeActivo = "";
-    let visitantesPendientesGuardado = null;
+    let accionPendienteModalSinAsistentes = null;
 
     const OPCIONES_PERFIL = [
       { value: "ALUMNO", label: "Alumno" },
@@ -1463,7 +1459,7 @@
       actualizarBotonEliminar();
     }
 
-    function eliminarFilaSeleccionada() {
+    function ejecutarEliminacionFilaSeleccionada() {
       if (!solicitudEditable() || !filaSeleccionadaId) return;
 
       const fila = document.querySelector(`#cuerpoAsistentes tr[data-fila-id="${filaSeleccionadaId}"]`);
@@ -1478,6 +1474,19 @@
       marcarCambiosPendientes();
       recalcularResumenEnPantalla();
       actualizarBotonEliminar();
+    }
+
+    function eliminarFilaSeleccionada() {
+      if (!solicitudEditable() || !filaSeleccionadaId) return;
+      const totalFilas = obtenerFilasTabla().length;
+      const esUltimaFila = totalFilas <= 1;
+      if (esUltimaFila && debeMostrarAvisoSinAsistentes([])) {
+        abrirModalAvisoSinAsistentes(() => {
+          ejecutarEliminacionFilaSeleccionada();
+        });
+        return;
+      }
+      ejecutarEliminacionFilaSeleccionada();
     }
 
     function crearFila(asistente = { nombre_completo: "", perfil_asistente: "", nivel_ensenanza: "", categoria_edad: "" }) {
@@ -1749,12 +1758,6 @@
         categoria_edad: v.categoria_edad
       }));
 
-      if (debeMostrarAvisoSinAsistentes(visitantes)) {
-        visitantesPendientesGuardado = visitantes;
-        abrirModalAvisoSinAsistentes();
-        return;
-      }
-
       await guardarVisitantesEnServidor(visitantes);
     }
 
@@ -1768,9 +1771,10 @@
       return true;
     }
 
-    function abrirModalAvisoSinAsistentes() {
+    function abrirModalAvisoSinAsistentes(onContinuar = null) {
       const texto = document.getElementById("textoAvisoSinAsistentes");
       if (!texto) return;
+      accionPendienteModalSinAsistentes = typeof onContinuar === "function" ? onContinuar : null;
       const tiempoAgotado = !reservaActual?.prereserva_vigente;
       texto.textContent = tiempoAgotado
         ? "Si continúas sin incluir ningún asistente, tu solicitud quedará automáticamente anulada."
@@ -1780,14 +1784,16 @@
 
     function cerrarModalAvisoSinAsistentes() {
       establecerVisibilidadModal("modalAvisoSinAsistentes", false);
-      visitantesPendientesGuardado = null;
+      accionPendienteModalSinAsistentes = null;
     }
 
-    async function confirmarGuardadoSinAsistentes() {
-      const visitantes = Array.isArray(visitantesPendientesGuardado) ? visitantesPendientesGuardado : [];
+    async function confirmarAccionSinAsistentes() {
+      const accion = accionPendienteModalSinAsistentes;
       establecerVisibilidadModal("modalAvisoSinAsistentes", false);
-      visitantesPendientesGuardado = null;
-      await guardarVisitantesEnServidor(visitantes);
+      accionPendienteModalSinAsistentes = null;
+      if (typeof accion === "function") {
+        await accion();
+      }
     }
 
     async function guardarVisitantesEnServidor(visitantes) {
@@ -2225,7 +2231,7 @@
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
       document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);
       document.getElementById("btnCerrarModalSalidaSuperior").addEventListener("click", cerrarModalSalida);
-      document.getElementById("btnContinuarSinAsistentes").addEventListener("click", confirmarGuardadoSinAsistentes);
+      document.getElementById("btnContinuarSinAsistentes").addEventListener("click", confirmarAccionSinAsistentes);
       document.getElementById("btnCancelarSinAsistentes").addEventListener("click", cerrarModalAvisoSinAsistentes);
 
       document.getElementById("modalConfirmarSalida").addEventListener("click", function (e) {
