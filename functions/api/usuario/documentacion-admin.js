@@ -845,7 +845,9 @@ export async function onRequestPost(context) {
         to: destinatarioResponsable,
         subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
         text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
-        html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail)
+        html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail),
+        dedupe: true,
+        dedupeSegundos: 900
       });
       notificacionAdmin.destinatario = destinatarioResponsable;
 

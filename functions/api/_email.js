@@ -2,6 +2,80 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function dbPrimaria(env) {
+  if (typeof env?.DB?.withSession === "function") {
+    return env.DB.withSession("first-primary");
+  }
+  return env.DB;
+}
+
+function hashTextoDeterminista(valor) {
+  const texto = String(valor || "");
+  let hash = 2166136261;
+  for (let i = 0; i < texto.length; i += 1) {
+    hash ^= texto.charCodeAt(i);
+    hash +=
+      (hash << 1) +
+      (hash << 4) +
+      (hash << 7) +
+      (hash << 8) +
+      (hash << 24);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+async function asegurarTablaDedupeEmail(env) {
+  if (!env?.DB) return;
+
+  await dbPrimaria(env).prepare(`
+    CREATE TABLE IF NOT EXISTS email_envios_dedupe (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      destinatario TEXT NOT NULL,
+      asunto TEXT NOT NULL,
+      huella TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await dbPrimaria(env).prepare(`
+    CREATE INDEX IF NOT EXISTS idx_email_envios_dedupe_busqueda
+    ON email_envios_dedupe (destinatario, asunto, huella, created_at DESC, id DESC)
+  `).run();
+}
+
+async function existeCorreoRecienteDuplicado(env, {
+  destinatario = "",
+  asunto = "",
+  huella = "",
+  dedupeSegundos = 180
+} = {}) {
+  if (!env?.DB) return false;
+
+  const ventana = Number(dedupeSegundos || 0);
+  if (!(ventana > 0)) return false;
+
+  const row = await dbPrimaria(env).prepare(`
+    SELECT id
+    FROM email_envios_dedupe
+    WHERE destinatario = ?
+      AND asunto = ?
+      AND huella = ?
+      AND datetime(created_at) >= datetime('now', ?)
+    ORDER BY datetime(created_at) DESC, id DESC
+    LIMIT 1
+  `).bind(destinatario, asunto, huella, `-${ventana} seconds`).first();
+
+  return !!row?.id;
+}
+
+async function registrarCorreoParaDedupe(env, { destinatario = "", asunto = "", huella = "" } = {}) {
+  if (!env?.DB) return;
+  await dbPrimaria(env).prepare(`
+    INSERT INTO email_envios_dedupe (destinatario, asunto, huella)
+    VALUES (?, ?, ?)
+  `).bind(destinatario, asunto, huella).run();
+}
+
 function escaparHtml(valor) {
   return String(valor || "")
     .replace(/&/g, "&amp;")
@@ -48,7 +122,14 @@ function envolverHtmlAutomatico(html) {
   return `${construirAvisoCabeceraHtml()}${contenido}`;
 }
 
-export async function enviarEmail(env, { to, subject, text, html }) {
+export async function enviarEmail(env, {
+  to,
+  subject,
+  text,
+  html,
+  dedupe = false,
+  dedupeSegundos = 180
+}) {
   const destinatario = limpiarTexto(to).toLowerCase();
   const asunto = limpiarTexto(subject);
 
@@ -71,12 +152,34 @@ export async function enviarEmail(env, { to, subject, text, html }) {
     };
   }
 
+  const textFinal = envolverTextoAutomatico(text);
+  const htmlFinal = envolverHtmlAutomatico(html);
+
+  if (dedupe && env?.DB) {
+    await asegurarTablaDedupeEmail(env);
+    const huella = hashTextoDeterminista(`${destinatario}|${asunto}|${textFinal}|${htmlFinal}`);
+    const existeDuplicado = await existeCorreoRecienteDuplicado(env, {
+      destinatario,
+      asunto,
+      huella,
+      dedupeSegundos
+    });
+    if (existeDuplicado) {
+      return {
+        ok: true,
+        skipped: true,
+        duplicate: true,
+        provider: "resend"
+      };
+    }
+  }
+
   const payload = {
     from,
     to: [destinatario],
     subject: asunto,
-    text: envolverTextoAutomatico(text),
-    html: envolverHtmlAutomatico(html)
+    text: textFinal,
+    html: htmlFinal
   };
 
   try {
@@ -101,12 +204,17 @@ export async function enviarEmail(env, { to, subject, text, html }) {
       };
     }
 
-    return {
+    const resultado = {
       ok: true,
       skipped: false,
       provider: "resend",
       id: data?.id || ""
     };
+    if (dedupe && env?.DB) {
+      const huella = hashTextoDeterminista(`${destinatario}|${asunto}|${textFinal}|${htmlFinal}`);
+      await registrarCorreoParaDedupe(env, { destinatario, asunto, huella });
+    }
+    return resultado;
   } catch (error) {
     return {
       ok: false,
