@@ -1107,7 +1107,7 @@
     }
 
     function solicitudEditable() {
-      return reservaActual && ["BORRADOR", "PENDIENTE", "CONFIRMADA"].includes(reservaActual.estado);
+      return reservaActual && ["BORRADOR", "PENDIENTE", "CONFIRMADA", "ACEPTADA", "SUSPENDIDA"].includes(String(reservaActual.estado || "").toUpperCase());
     }
 
     function obtenerMaximoPermitidoActual() {
@@ -1576,12 +1576,9 @@
       const lineaFranja = usaFranjas
         ? `<strong>Franja horaria asignada:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
         : "";
-      const lineaLimite = aforoLimitado
-        ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${reservaActual.prereserva_vigente ? textoLimiteAsignacion(reservaActual.prereserva_expira_en, true) : '<span class="estado-badge finalizada">FINALIZADA</span>'}`
-        : "";
       const limiteDestacado = aforoLimitado
         ? `<div class="limite-destacado-wrap ${reservaActual.prereserva_vigente ? "" : "finalizada"}">
-            <span class="limite-destacado-label">Límite asignación</span>
+            <span class="limite-destacado-label">Hora límite de asignación de plazas pre-reservadas</span>
             <span class="limite-destacado-valor">${
               reservaActual.prereserva_vigente
                 ? formatearFechaHoraLocal(reservaActual.prereserva_expira_en)
@@ -1600,7 +1597,6 @@
         <strong>Código de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         ${lineaFranja}
-        ${lineaLimite}
         ${limiteDestacado}
       `;
 
@@ -1725,7 +1721,6 @@
       const estado = String(reservaActual.estado || "").toUpperCase();
       const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "SUSPENDIDA"].includes(estado);
       if (!estadoConControl) return false;
-      if (Number(reservaActual.aforo_limitado || 0) !== 1) return false;
       if (Number(reservaActual.plazas_prereservadas || 0) <= 0) return false;
       return true;
     }
