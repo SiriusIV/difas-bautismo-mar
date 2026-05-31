@@ -284,6 +284,30 @@
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
+    .limite-destacado-wrap {
+      margin-top: 10px;
+      text-align: center;
+    }
+    .limite-destacado-label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #516274;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .limite-destacado-valor {
+      display: inline-block;
+      font-size: 25px;
+      line-height: 1.08;
+      font-weight: 800;
+      color: #123a63;
+      letter-spacing: 0.01em;
+    }
+    .limite-destacado-wrap.finalizada .limite-destacado-valor {
+      color: #b02a37;
+    }
 
     .resumen-grid {
       display: grid;
@@ -542,6 +566,12 @@
       font-size: 12px;
       box-sizing: border-box;
       background: #fff;
+    }
+    select.select-placeholder {
+      color: #7a8794;
+    }
+    select option {
+      color: #22313f;
     }
 
     .fila-seleccionada {
@@ -1122,6 +1152,12 @@
       return inicial + opciones.map((op) => `<option value="${op.value}" ${actual === op.value ? "selected" : ""}>${op.label}</option>`).join("");
     }
 
+    function actualizarEstiloPlaceholderSelect(selectEl) {
+      if (!selectEl) return;
+      const vacio = !String(selectEl.value || "").trim();
+      selectEl.classList.toggle("select-placeholder", vacio);
+    }
+
     function normalizarClaveNombreAsistente(valor) {
       return String(valor || "")
         .normalize("NFD")
@@ -1445,19 +1481,26 @@
       });
 
       tr.querySelector(".perfil-asistente").addEventListener("change", function () {
+        actualizarEstiloPlaceholderSelect(this);
         marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       tr.querySelector(".ensenanza-asistente").addEventListener("change", function () {
+        actualizarEstiloPlaceholderSelect(this);
         marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       tr.querySelector(".categoria-asistente").addEventListener("change", function () {
+        actualizarEstiloPlaceholderSelect(this);
         marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
+
+      actualizarEstiloPlaceholderSelect(tr.querySelector(".perfil-asistente"));
+      actualizarEstiloPlaceholderSelect(tr.querySelector(".ensenanza-asistente"));
+      actualizarEstiloPlaceholderSelect(tr.querySelector(".categoria-asistente"));
 
       tbody.appendChild(tr);
     }
@@ -1536,6 +1579,16 @@
       const lineaLimite = aforoLimitado
         ? `<strong>Hora límite de asignación de plazas pre-reservadas:</strong> ${reservaActual.prereserva_vigente ? textoLimiteAsignacion(reservaActual.prereserva_expira_en, true) : '<span class="estado-badge finalizada">FINALIZADA</span>'}`
         : "";
+      const limiteDestacado = aforoLimitado
+        ? `<div class="limite-destacado-wrap ${reservaActual.prereserva_vigente ? "" : "finalizada"}">
+            <span class="limite-destacado-label">Límite asignación</span>
+            <span class="limite-destacado-valor">${
+              reservaActual.prereserva_vigente
+                ? formatearFechaHoraLocal(reservaActual.prereserva_expira_en)
+                : "FINALIZADA"
+            }</span>
+          </div>`
+        : "";
       const resumenPlazas = aforoLimitado
         ? `<span class="resumen-item-label">Pre-reservadas pendientes:</span> ${reservadasPendientes}<br>
             <span class="resumen-item-label">Asignadas:</span> ${totalAsignadas}<br>
@@ -1548,6 +1601,7 @@
         <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
         ${lineaFranja}
         ${lineaLimite}
+        ${limiteDestacado}
       `;
 
       document.getElementById("bloqueResumen").innerHTML = `
@@ -1669,8 +1723,8 @@
       if (!reservaActual) return false;
       if (Array.isArray(visitantes) && visitantes.length > 0) return false;
       const estado = String(reservaActual.estado || "").toUpperCase();
-      const estadoAceptada = estado === "CONFIRMADA" || estado === "ACEPTADA";
-      if (!estadoAceptada) return false;
+      const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "SUSPENDIDA"].includes(estado);
+      if (!estadoConControl) return false;
       if (Number(reservaActual.aforo_limitado || 0) !== 1) return false;
       if (Number(reservaActual.plazas_prereservadas || 0) <= 0) return false;
       return true;
