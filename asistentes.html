@@ -304,6 +304,18 @@
     .limite-destacado-wrap.finalizada .limite-destacado-valor {
       color: #b02a37;
     }
+    .limite-destacado-nota {
+      margin: 6px auto 0;
+      max-width: 92%;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid #f0d28a;
+      background: #fff6df;
+      color: #7a4c00;
+      font-size: 10px;
+      line-height: 1.25;
+      text-align: center;
+    }
     .limite-destacado-valor.alerta {
       color: #b02a37;
     }
@@ -1631,6 +1643,7 @@
                 ? formatearFechaHoraLocalMinutos(reservaActual.prereserva_expira_en)
                 : "FINALIZADA"
             }</span>
+            ${reservaActual.prereserva_vigente ? "" : '<div class="limite-destacado-nota">Puede continuar añadiendo asistentes mientras queden plazas disponibles.</div>'}
           </div>`
         : "";
       const resumenPlazas = aforoLimitado
@@ -1767,7 +1780,6 @@
       const estado = String(reservaActual.estado || "").toUpperCase();
       const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "SUSPENDIDA"].includes(estado);
       if (!estadoConControl) return false;
-      if (Number(reservaActual.plazas_prereservadas || 0) <= 0) return false;
       return true;
     }
 
