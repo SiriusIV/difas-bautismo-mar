@@ -572,6 +572,24 @@
       padding: 24px;
       position: relative;
     }
+    .modal-con-deco {
+      overflow: visible;
+    }
+    .modal-con-deco::after {
+      content: "";
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      top: -24px;
+      right: 20px;
+      border-radius: 16px;
+      background: #fff url("logo.png") center/72% no-repeat;
+      border: 1px solid #d9e2ec;
+      box-shadow: 0 8px 20px rgba(18,58,99,0.18);
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.98;
+    }
 
     .modal h3 {
       margin-top: 0;
@@ -776,6 +794,9 @@
         max-height: calc(100vh - 20px);
         overflow-y: auto;
         padding: 16px;
+      }
+      .modal-con-deco::after {
+        display: none;
       }
       .modal .acciones {
         flex-direction: column;
@@ -986,7 +1007,7 @@
   </div>
 
   <div id="modalConfirmarSalida" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
+    <div class="modal modal-con-deco">
       <button type="button" id="btnCerrarModalSalidaSuperior" class="modal-cerrar-superior" aria-label="Cerrar">X</button>
       <h3><span class="modal-advertencia" aria-hidden="true">!</span>Cambios sin guardar</h3>
       <p>Ha realizado cambios en la lista de asistentes y aún no los ha guardado.</p>
@@ -998,7 +1019,7 @@
     </div>
   </div>
   <div id="modalAvisoSinAsistentes" class="modal-fondo" aria-hidden="true">
-    <div class="modal">
+    <div class="modal modal-con-deco">
       <h3><span class="modal-advertencia" aria-hidden="true">!</span>Advertencia</h3>
       <p id="textoAvisoSinAsistentes"></p>
       <div class="acciones acciones-izquierda">
