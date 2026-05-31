@@ -85,7 +85,8 @@ function construirDocumentosPendientes(documentosActivos, archivosActivos) {
 async function obtenerExpediente(env, centroUsuarioId, adminId) {
   return await env.DB.prepare(`
     SELECT
-      id
+      id,
+      estado
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
       AND admin_id = ?
@@ -143,15 +144,20 @@ export async function validarDocumentacionReserva(env, {
   const expediente = await obtenerExpediente(env, usuario, admin);
   const archivosActivos = expediente?.id ? await obtenerArchivosActivos(env, expediente.id) : [];
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
+  const estadoExpediente = String(expediente?.estado || "").trim().toUpperCase();
+  const usarEstadoExpediente = !!estadoExpediente && estadoExpediente !== "NO_INICIADO";
+  const estadoFinal = usarEstadoExpediente ? estadoExpediente : estadoDocumental;
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);
+  const okFinal = estadoDocumentalCompleto(estadoDocumental) && estadoDocumentalCompleto(estadoFinal);
 
   return {
-    ok: estadoDocumentalCompleto(estadoDocumental),
+    ok: okFinal,
     requiere_documentacion: true,
-    estado_documental: estadoDocumental,
+    estado_documental: estadoFinal,
     documentos_pendientes: documentosPendientes,
-    error: estadoDocumentalCompleto(estadoDocumental)
+    error: okFinal
       ? ""
       : "Para poder solicitar esta actividad debes remitir la documentación obligatoria vinculada a ella."
   };
 }
+
