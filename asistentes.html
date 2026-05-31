@@ -628,6 +628,9 @@
       flex-wrap: wrap;
       margin-top: 18px;
     }
+    .modal .acciones.acciones-izquierda {
+      justify-content: flex-start;
+    }
 
     .btn-modal {
       background: #0b5ed7;
@@ -994,6 +997,16 @@
       </div>
     </div>
   </div>
+  <div id="modalAvisoSinAsistentes" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3><span class="modal-advertencia" aria-hidden="true">!</span>Advertencia</h3>
+      <p id="textoAvisoSinAsistentes"></p>
+      <div class="acciones acciones-izquierda">
+        <button type="button" id="btnContinuarSinAsistentes" class="btn-modal">Continuar</button>
+        <button type="button" id="btnCancelarSinAsistentes" class="btn-modal secundario">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let tokenEdicion = "";
@@ -1006,6 +1019,7 @@
     let destinoPendienteNavegacion = null;
     let temporizadorMensaje = null;
     let tipoMensajeActivo = "";
+    let visitantesPendientesGuardado = null;
 
     const OPCIONES_PERFIL = [
       { value: "ALUMNO", label: "Alumno" },
@@ -1621,6 +1635,49 @@
         categoria_edad: v.categoria_edad
       }));
 
+      if (debeMostrarAvisoSinAsistentes(visitantes)) {
+        visitantesPendientesGuardado = visitantes;
+        abrirModalAvisoSinAsistentes();
+        return;
+      }
+
+      await guardarVisitantesEnServidor(visitantes);
+    }
+
+    function debeMostrarAvisoSinAsistentes(visitantes = []) {
+      if (!reservaActual) return false;
+      if (Array.isArray(visitantes) && visitantes.length > 0) return false;
+      const estado = String(reservaActual.estado || "").toUpperCase();
+      const estadoAceptada = estado === "CONFIRMADA" || estado === "ACEPTADA";
+      if (!estadoAceptada) return false;
+      if (Number(reservaActual.aforo_limitado || 0) !== 1) return false;
+      if (Number(reservaActual.plazas_prereservadas || 0) <= 0) return false;
+      return true;
+    }
+
+    function abrirModalAvisoSinAsistentes() {
+      const texto = document.getElementById("textoAvisoSinAsistentes");
+      if (!texto) return;
+      const tiempoAgotado = !reservaActual?.prereserva_vigente;
+      texto.textContent = tiempoAgotado
+        ? "Si continúas sin incluir ningún asistente, tu solicitud quedará automáticamente anulada."
+        : "Si al finalizar el tiempo para la asignación de plazas no has incluido ningún asistente, tu solicitud quedará automáticamente anulada.";
+      establecerVisibilidadModal("modalAvisoSinAsistentes", true);
+    }
+
+    function cerrarModalAvisoSinAsistentes() {
+      establecerVisibilidadModal("modalAvisoSinAsistentes", false);
+      visitantesPendientesGuardado = null;
+    }
+
+    async function confirmarGuardadoSinAsistentes() {
+      const visitantes = Array.isArray(visitantesPendientesGuardado) ? visitantesPendientesGuardado : [];
+      establecerVisibilidadModal("modalAvisoSinAsistentes", false);
+      visitantesPendientesGuardado = null;
+      await guardarVisitantesEnServidor(visitantes);
+    }
+
+    async function guardarVisitantesEnServidor(visitantes) {
       try {
         envioEnCurso = true;
         const btnGuardar = document.getElementById("btnGuardarAsistentes");
@@ -2053,6 +2110,8 @@
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
       document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);
       document.getElementById("btnCerrarModalSalidaSuperior").addEventListener("click", cerrarModalSalida);
+      document.getElementById("btnContinuarSinAsistentes").addEventListener("click", confirmarGuardadoSinAsistentes);
+      document.getElementById("btnCancelarSinAsistentes").addEventListener("click", cerrarModalAvisoSinAsistentes);
 
       document.getElementById("modalConfirmarSalida").addEventListener("click", function (e) {
         if (e.target.id === "modalConfirmarSalida") {
