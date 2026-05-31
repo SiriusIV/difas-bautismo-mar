@@ -547,6 +547,45 @@
       margin: 0 0 8px;
       font-size: 13px;
     }
+    .btn-cerrar-modal-plano {
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      width: auto !important;
+      height: auto !important;
+      min-width: 0 !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      font-size: 22px !important;
+      line-height: 1 !important;
+      color: #5a6f84 !important;
+    }
+    .modal-docs-toolbar-sec {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 10px;
+      flex-wrap: wrap;
+    }
+    .btn-doc-accion-sec {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border: 1px solid #c5d1dd;
+      border-radius: 999px;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+    }
+    .btn-doc-accion-sec img { width: 16px; height: 16px; display: block; }
+    .btn-doc-accion-sec:disabled { opacity: .45; cursor: not-allowed; }
+    #btnDocAccionRechazarSec img { transform: scaleX(-1); transform-origin: center; }
+    .tabla-usuarios-secretaria-modal-docs tr { cursor: pointer; }
+    .tabla-usuarios-secretaria-modal-docs tr.fila-seleccionada td { background: #eaf3ff; }
     .modal-docs-usuario-secretaria .tabla-usuarios-secretaria-wrap {
       margin-top: 8px;
     }
@@ -564,8 +603,6 @@
     .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(2) { width: 18%; text-align: center; }
     .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(3),
     .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(3) { width: 22%; text-align: center; }
-    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria th:nth-child(4),
-    .modal-docs-usuario-secretaria .tabla-usuarios-secretaria td:nth-child(4) { width: 16%; text-align: center; }
     .campo-archivo-documento-base {
       display: flex;
       align-items: center;
@@ -1587,9 +1624,15 @@
 
   <div id="modalDocsUsuarioPublicoSecretaria" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-docs-usuario-secretaria">
-      <button type="button" class="btn-cerrar-modal" id="btnCerrarModalDocsUsuarioPublicoSecretaria" aria-label="Cerrar">×</button>
+      <button type="button" class="btn-cerrar-modal btn-cerrar-modal-plano" id="btnCerrarModalDocsUsuarioPublicoSecretaria" aria-label="Cerrar">×</button>
       <h3>Documentación remitida</h3>
       <p id="txtDocsUsuarioPublicoSecretariaContexto" class="modal-detalle-subtitulo"></p>
+      <div class="modal-docs-toolbar-sec">
+        <button type="button" class="btn-doc-accion-sec" id="btnDocAccionVerSec" title="Ver documento" aria-label="Ver documento" disabled><img src="assets/icono-ver-documento.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion-sec" id="btnDocAccionValidarSec" title="Validar documento" aria-label="Validar documento" disabled><img src="assets/icono-validar-documento.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion-sec" id="btnDocAccionRechazarSec" title="Rechazar documento" aria-label="Rechazar documento" disabled><img src="assets/icono-rechazar-documento.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion-sec" id="btnDocAccionEliminarSec" title="Eliminar documento" aria-label="Eliminar documento" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+      </div>
       <div class="tabla-usuarios-secretaria-wrap">
         <table class="tabla-usuarios-secretaria tabla-usuarios-secretaria-modal-docs">
           <thead>
@@ -1597,7 +1640,6 @@
               <th>Documento</th>
               <th>Estado</th>
               <th>Fecha</th>
-              <th></th>
             </tr>
           </thead>
           <tbody id="tbodyDocsUsuarioPublicoSecretaria"></tbody>
@@ -1650,6 +1692,8 @@
     let usuariosPublicosSecretaria = [];
     let usuariosPublicosSecretariaFiltrados = [];
     let usuarioPublicoSecretariaSeleccionId = null;
+    let documentosModalUsuarioSec = [];
+    let documentoModalActivoSec = null;
     let contextoModalObservacionesDocumento = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
@@ -3185,6 +3229,9 @@
 
     function cerrarModalDocsUsuarioPublicoSecretaria() {
       document.getElementById("modalDocsUsuarioPublicoSecretaria").classList.remove("activo");
+      documentosModalUsuarioSec = [];
+      documentoModalActivoSec = null;
+      actualizarBotonesAccionesDocsSec(false);
     }
 
     function claseEstadoDocumentoSecretaria(estadoRaw) {
@@ -3196,36 +3243,118 @@
       return "no-remitido";
     }
 
+    function actualizarBotonesAccionesDocsSec(habilitado, doc = null) {
+      const btnVer = document.getElementById("btnDocAccionVerSec");
+      const btnValidar = document.getElementById("btnDocAccionValidarSec");
+      const btnRechazar = document.getElementById("btnDocAccionRechazarSec");
+      const btnEliminar = document.getElementById("btnDocAccionEliminarSec");
+
+      if (!habilitado || !doc || !doc.archivo_url) {
+        if (btnVer) btnVer.disabled = true;
+        if (btnValidar) btnValidar.disabled = true;
+        if (btnRechazar) btnRechazar.disabled = true;
+        if (btnEliminar) btnEliminar.disabled = true;
+        return;
+      }
+
+      const estado = String(doc.estado_bruto || "").trim().toUpperCase();
+      if (btnVer) btnVer.disabled = false;
+      if (btnEliminar) btnEliminar.disabled = false;
+      if (btnValidar) btnValidar.disabled = estado === "VALIDADO";
+      if (btnRechazar) btnRechazar.disabled = estado === "RECHAZADO";
+    }
+
+    function seleccionarDocumentoModalSec(indice) {
+      const idx = Number(indice);
+      documentoModalActivoSec = Number.isInteger(idx) && idx >= 0 ? documentosModalUsuarioSec[idx] || null : null;
+      const tbody = document.getElementById("tbodyDocsUsuarioPublicoSecretaria");
+      tbody.querySelectorAll("tr[data-doc-sec-idx]").forEach((tr) => {
+        tr.classList.toggle("fila-seleccionada", Number(tr.dataset.docSecIdx) === idx);
+      });
+      actualizarBotonesAccionesDocsSec(!!documentoModalActivoSec, documentoModalActivoSec);
+    }
+
+    async function ejecutarAccionDocumentoSec(accion) {
+      if (!documentoModalActivoSec) {
+        mostrarMensajePerfilTemporal("error", "Selecciona un documento para continuar.");
+        return;
+      }
+      if (!documentoModalActivoSec.archivo_url) {
+        mostrarMensajePerfilTemporal("error", "No existe un documento remitido para esa fila.");
+        return;
+      }
+      if (accion === "ver") {
+        window.open(documentoModalActivoSec.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const confirmar = window.confirm(
+        accion === "eliminar"
+          ? "¿Eliminar el documento remitido? Esta acción lo dejará como no presentado."
+          : (accion === "validar" ? "¿Validar el documento seleccionado?" : "¿Rechazar el documento seleccionado?")
+      );
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch("/api/secretaria/usuarios-publicos-documentos-accion", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accion,
+            documentacion_id: Number(documentoModalActivoSec.expediente_id || 0),
+            archivo_id: Number(documentoModalActivoSec.archivo_id || 0)
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          mostrarMensajePerfilTemporal("error", data?.error || "No se pudo aplicar la acción sobre el documento.");
+          return;
+        }
+        mostrarMensajePerfilTemporal("ok", data?.mensaje || "Documento actualizado.");
+        await abrirModalDocsUsuarioPublicoSecretaria();
+        await cargarUsuariosPublicosSecretaria();
+      } catch (_) {
+        mostrarMensajePerfilTemporal("error", "Error de conexión al aplicar la acción.");
+      }
+    }
+
     async function abrirModalDocsUsuarioPublicoSecretaria() {
       if (!(Number(usuarioPublicoSecretariaSeleccionId) > 0)) return;
       const usuario = usuariosPublicosSecretaria.find((item) => Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId));
       if (!usuario) return;
       const tbody = document.getElementById("tbodyDocsUsuarioPublicoSecretaria");
       document.getElementById("txtDocsUsuarioPublicoSecretariaContexto").textContent = `Usuario: ${usuario.centro || usuario.nombre || ""}`;
-      tbody.innerHTML = `<tr><td colspan="4">Cargando...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3">Cargando...</td></tr>`;
+      documentosModalUsuarioSec = [];
+      documentoModalActivoSec = null;
+      actualizarBotonesAccionesDocsSec(false);
       document.getElementById("modalDocsUsuarioPublicoSecretaria").classList.add("activo");
       try {
         const res = await fetch(`/api/secretaria/usuarios-publicos-documentos?usuario_id=${encodeURIComponent(String(usuario.id))}`, { credentials: "include" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          tbody.innerHTML = `<tr><td colspan="4">${data?.error || "No se pudo cargar la documentación."}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3">${data?.error || "No se pudo cargar la documentación."}</td></tr>`;
           return;
         }
         const docs = Array.isArray(data.documentos) ? data.documentos : [];
+        documentosModalUsuarioSec = docs.slice();
         if (!docs.length) {
-          tbody.innerHTML = `<tr><td colspan="4">No hay documentos para mostrar.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3">No hay documentos para mostrar.</td></tr>`;
           return;
         }
-        tbody.innerHTML = docs.map((doc) => `
-          <tr>
+        tbody.innerHTML = docs.map((doc, index) => `
+          <tr data-doc-sec-idx="${index}">
             <td>${doc.nombre_documento || "-"}</td>
             <td><span class="estado-doc-sec ${claseEstadoDocumentoSecretaria(doc.estado)}">${doc.estado || "-"}</span></td>
             <td>${formatearFechaCorta(doc.fecha_subida || "")}</td>
-            <td>${doc.archivo_url ? `<a class="btn-ver-doc-base-fila" href="${doc.archivo_url}" target="_blank" rel="noopener noreferrer"><img src="assets/icono-ver-documento.svg" alt=""></a>` : "-"}</td>
           </tr>
         `).join("");
+        tbody.querySelectorAll("tr[data-doc-sec-idx]").forEach((fila) => {
+          fila.addEventListener("click", () => seleccionarDocumentoModalSec(fila.dataset.docSecIdx));
+        });
       } catch (_) {
-        tbody.innerHTML = `<tr><td colspan="4">No se pudo cargar la documentación.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3">No se pudo cargar la documentación.</td></tr>`;
       }
     }
 
@@ -4373,6 +4502,10 @@
     });
     document.getElementById("btnVerDocsUsuarioPublicoSecretaria")?.addEventListener("click", abrirModalDocsUsuarioPublicoSecretaria);
     document.getElementById("btnCerrarModalDocsUsuarioPublicoSecretaria")?.addEventListener("click", cerrarModalDocsUsuarioPublicoSecretaria);
+    document.getElementById("btnDocAccionVerSec")?.addEventListener("click", () => ejecutarAccionDocumentoSec("ver"));
+    document.getElementById("btnDocAccionValidarSec")?.addEventListener("click", () => ejecutarAccionDocumentoSec("validar"));
+    document.getElementById("btnDocAccionRechazarSec")?.addEventListener("click", () => ejecutarAccionDocumentoSec("rechazar"));
+    document.getElementById("btnDocAccionEliminarSec")?.addEventListener("click", () => ejecutarAccionDocumentoSec("eliminar"));
     document.getElementById("btnEliminarImagen").addEventListener("click", eliminarImagenActual);
     document.getElementById("inputImagenAdmin").addEventListener("change", (event) => {
       const file = event.target.files && event.target.files[0];

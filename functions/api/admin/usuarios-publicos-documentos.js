@@ -194,6 +194,9 @@ export async function onRequestGet(context) {
         nombre: resolucion.responsable.nombre || "",
         nombre_publico: resolucion.responsable.nombre_publico || ""
       },
+      permisos: {
+        puede_editar_documentacion: Number(responsableId || 0) === Number(adminId || 0)
+      },
       total: documentos.length,
       documentos
     });

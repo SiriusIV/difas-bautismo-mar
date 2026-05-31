@@ -1,6 +1,4 @@
-import { getAdminSession } from "./_auth.js";
-import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
-import { getRolUsuario } from "./_permisos.js";
+import { getSecretariaSession } from "./_documental.js";
 import {
   construirEmailHtmlResolucionExpedienteDocumental,
   construirEmailTextoResolucionExpedienteDocumental
@@ -32,25 +30,14 @@ function normalizarEstadoDocumento(estado) {
 
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) return "NO_ENVIADO";
-  if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
-    return "NO_ACTUALIZADO";
-  }
+  if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) return "NO_ACTUALIZADO";
   return normalizarEstadoDocumento(entrega.estado);
 }
 
 function calcularEstadoGlobal(documentosBaseActivos, archivosActivos) {
-  if (!Array.isArray(documentosBaseActivos) || documentosBaseActivos.length === 0) {
-    return "NO_REQUERIDA";
-  }
-
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
-  const estados = documentosBaseActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
-    return calcularEstadoDocumento(doc, entrega);
-  });
-
+  if (!Array.isArray(documentosBaseActivos) || documentosBaseActivos.length === 0) return "NO_REQUERIDA";
+  const archivosPorNombre = new Map((archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+  const estados = documentosBaseActivos.map((doc) => calcularEstadoDocumento(doc, archivosPorNombre.get(limpiarTexto(doc.nombre)) || null));
   if (estados.some((estado) => estado === "RECHAZADO")) return "RECHAZADA";
   if (estados.some((estado) => estado === "NO_ACTUALIZADO")) return "NO_ACTUALIZADO";
   if (estados.some((estado) => estado === "EN_REVISION")) return "EN_REVISION";
@@ -60,9 +47,7 @@ function calcularEstadoGlobal(documentosBaseActivos, archivosActivos) {
 }
 
 function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos = []) {
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo?.nombre_documento), archivo])
-  );
+  const archivosPorNombre = new Map((archivosActivos || []).map((archivo) => [limpiarTexto(archivo?.nombre_documento), archivo]));
   const validados = [];
   const pendientes = [];
   for (const doc of Array.isArray(documentosBaseActivos) ? documentosBaseActivos : []) {
@@ -88,34 +73,27 @@ function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosAct
 export async function onRequestPost(context) {
   const { request, env } = context;
   try {
-    const session = await getAdminSession(request, env);
-    if (!session) return json({ ok: false, error: "No autorizado." }, 401);
+    const session = await getSecretariaSession(request, env);
+    if (!session || session.rol !== "SECRETARIA") return json({ ok: false, error: "No autorizado." }, 401);
 
     const body = await request.json().catch(() => ({}));
     const accion = limpiarTexto(body?.accion).toLowerCase();
     const documentacionId = parsearIdPositivo(body?.documentacion_id);
     const archivoId = parsearIdPositivo(body?.archivo_id);
-    if (!["eliminar", "validar", "rechazar"].includes(accion)) {
-      return json({ ok: false, error: "Acción no válida." }, 400);
-    }
-    if (!documentacionId || !archivoId) {
-      return json({ ok: false, error: "Faltan identificadores de documento." }, 400);
-    }
+    if (!["eliminar", "validar", "rechazar"].includes(accion)) return json({ ok: false, error: "Acción no válida." }, 400);
+    if (!documentacionId || !archivoId) return json({ ok: false, error: "Faltan identificadores de documento." }, 400);
 
     const expediente = await env.DB.prepare(`
-      SELECT id, admin_id, centro_usuario_id
-      FROM centro_admin_documentacion
-      WHERE id = ?
+      SELECT cad.id, cad.admin_id, cad.centro_usuario_id
+      FROM centro_admin_documentacion cad
+      INNER JOIN usuarios admin ON admin.id = cad.admin_id
+      WHERE cad.id = ?
+        AND admin.rol = 'ADMIN'
+        AND COALESCE(admin.modulo_secretaria, 0) = 0
+        AND admin.secretaria_usuario_id = ?
       LIMIT 1
-    `).bind(documentacionId).first();
-    if (!expediente) return json({ ok: false, error: "Expediente no encontrado." }, 404);
-
-    const adminId = Number(expediente.admin_id || 0);
-    const rolSesion = await getRolUsuario(env, session.usuario_id);
-    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
-    if (!permiso?.permitido) {
-      return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
-    }
+    `).bind(documentacionId, Number(session.usuario_id || 0)).first();
+    if (!expediente) return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
 
     const archivo = await env.DB.prepare(`
       SELECT id, nombre_documento
@@ -132,7 +110,7 @@ export async function onRequestPost(context) {
         UPDATE centro_admin_documentacion_archivos
         SET activo = 0,
             estado = 'NO_ENVIADO',
-            observaciones_admin = 'Eliminado por el administrador',
+            observaciones_admin = 'Eliminado por la secretaría',
             validado_por_admin_id = NULL,
             fecha_validacion = NULL
         WHERE id = ?
@@ -149,12 +127,13 @@ export async function onRequestPost(context) {
       `).bind(estadoDestino, estadoDestino, Number(session.usuario_id || 0), archivoId).run();
     }
 
+    const adminId = Number(expediente.admin_id || 0);
     const docsBaseRows = await env.DB.prepare(`
       SELECT nombre, version_documental
       FROM admin_documentos_comunes
       WHERE admin_id = ?
         AND activo = 1
-    `).bind(Number(permiso?.resolucion?.responsable?.id || adminId)).all();
+    `).bind(Number(session.usuario_id || 0)).all();
     const documentosBaseActivos = (docsBaseRows?.results || []).map((row) => ({
       nombre: limpiarTexto(row.nombre),
       version_documental: Number(row.version_documental || 0)
@@ -168,6 +147,7 @@ export async function onRequestPost(context) {
     `).bind(documentacionId).all();
     const archivosActivos = archivosActivosRows?.results || [];
     const estadoExpediente = calcularEstadoGlobal(documentosBaseActivos, archivosActivos);
+
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
       SET estado = ?,
@@ -202,7 +182,7 @@ export async function onRequestPost(context) {
         cambios: [{
           nombre_documento: limpiarTexto(archivo.nombre_documento || ""),
           estado: cambioTexto,
-          observaciones_admin: accion === "eliminar" ? "Documento eliminado por el administrador." : ""
+          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretaría." : ""
         }],
         resumen_documental: resumenCorreo
       }),
@@ -213,7 +193,7 @@ export async function onRequestPost(context) {
         cambios: [{
           nombre_documento: limpiarTexto(archivo.nombre_documento || ""),
           estado: cambioTexto,
-          observaciones_admin: accion === "eliminar" ? "Documento eliminado por el administrador." : ""
+          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretaría." : ""
         }],
         resumen_documental: resumenCorreo
       }),

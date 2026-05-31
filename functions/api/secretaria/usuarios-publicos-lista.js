@@ -17,6 +17,9 @@ function normalizarEstado(valor) {
 
 function resolverEstadoGlobal(estados = []) {
   const lista = estados.map(normalizarEstado);
+  if (!lista.length) return "No remitido";
+  const sinRemision = lista.every((e) => e === "NO_INICIADO" || e === "NO_ENVIADO");
+  if (sinRemision) return "No remitido";
   if (lista.some((e) => e === "RECHAZADA" || e === "RECHAZADO")) return "Rechazada";
   if (lista.some((e) => e === "NO_ACTUALIZADO")) return "Desactualizado";
   if (lista.some((e) => e === "EN_REVISION" || e === "VALIDACION_PARCIAL" || e === "NO_COMPLETADO" || e === "NO_INICIADO")) return "Pendiente";

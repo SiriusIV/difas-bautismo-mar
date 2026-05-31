@@ -77,6 +77,7 @@ export async function onRequestGet(context) {
 
     const archivosRes = await env.DB.prepare(`
       SELECT
+        a.documentacion_id,
         a.nombre_documento,
         a.archivo_url,
         a.estado,
@@ -101,6 +102,8 @@ export async function onRequestGet(context) {
       const clave = claveNombre(row.nombre_documento);
       if (!clave || archivosMap.has(clave)) continue;
       archivosMap.set(clave, {
+        id: Number(row.id || 0),
+        documentacion_id: Number(row.documentacion_id || 0),
         archivo_url: limpiarTexto(row.archivo_url),
         estado_bruto: limpiarTexto(row.estado).toUpperCase(),
         version_documental: Number(row.version_documental || 0),
@@ -123,7 +126,10 @@ export async function onRequestGet(context) {
       return {
         nombre_documento: doc.nombre,
         version_documental: Number(doc.version_documental || 0),
+        expediente_id: Number(archivo?.documentacion_id || 0),
+        archivo_id: Number(archivo?.id || 0),
         archivo_url: archivo?.archivo_url || "",
+        estado_bruto: estado || "",
         estado: estado ? etiquetarEstado(estado) : "No remitido",
         fecha_subida: archivo?.fecha_subida || ""
       };
@@ -142,6 +148,9 @@ export async function onRequestGet(context) {
         modo: "SECRETARIA_EXTERNA",
         nombre: "",
         nombre_publico: ""
+      },
+      permisos: {
+        puede_editar_documentacion: true
       },
       total: documentos.length,
       documentos
