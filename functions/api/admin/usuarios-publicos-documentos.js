@@ -142,6 +142,7 @@ export async function onRequestGet(context) {
         const clave = claveNombreDocumento(row.nombre_documento);
         if (!clave || archivosMap.has(clave)) continue;
         archivosMap.set(clave, {
+          id: Number(row.id || 0),
           nombre_documento: limpiarTexto(row.nombre_documento),
           archivo_url: limpiarTexto(row.archivo_url),
           estado_bruto: limpiarTexto(row.estado).toUpperCase(),
