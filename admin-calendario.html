@@ -1982,11 +1982,13 @@ function abrirModalEvento(info) {
       const esMovilConPasoIntermedio = esMovilCalendario();
 
       if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
-        if (!p.editable_actividad && !esMovilConPasoIntermedio) {
+        const esAdmin = esAdminCalendario();
+        const esSolicitante = esSolicitanteCalendario();
+        if (esSolicitante && !esMovilConPasoIntermedio) {
           return;
         }
         const actividadId = Number(p.actividad_id || 0);
-        if (actividadId > 0 && !esMovilConPasoIntermedio) {
+        if (actividadId > 0 && !esMovilConPasoIntermedio && esAdmin && p.editable_actividad) {
           window.location.href = `admin-actividades.html?id=${encodeURIComponent(actividadId)}`;
           return;
         }
@@ -2554,9 +2556,15 @@ function abrirModalEvento(info) {
           const tipoEvento = String(p.tipo_evento || "");
           const esActividad = tipoEvento === "ACTIVIDAD_PROGRAMADA";
           const esPlaceholder = !!p.placeholder_lista;
-          const clicable = !esPlaceholder && (!esActividad || !!p.editable_actividad || esMovilCalendario());
-          if (arg?.el && clicable) {
-            arg.el.style.cursor = "pointer";
+          const esSolicitante = esSolicitanteCalendario();
+          const esAdmin = esAdminCalendario();
+          const clicable = !esPlaceholder && (
+            !esActividad ||
+            (esActividad && esAdmin) ||
+            (esActividad && esSolicitante && esMovilCalendario())
+          );
+          if (arg?.el && !esPlaceholder) {
+            arg.el.style.cursor = clicable ? "pointer" : "default";
             arg.el.addEventListener("mouseenter", (ev) => mostrarTooltipCalendario(arg.event, ev));
             arg.el.addEventListener("mousemove", posicionarTooltipCalendario);
             arg.el.addEventListener("mouseleave", ocultarTooltipCalendario);
