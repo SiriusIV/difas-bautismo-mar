@@ -1,12 +1,11 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
+import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import {
-  construirEmailHtmlDocumentacionResuelta,
-  construirEmailTextoDocumentacionResuelta,
-  enviarEmail,
-  nombreVisibleAdmin
-} from "../_email.js";
+  construirEmailHtmlResolucionExpedienteDocumental,
+  construirEmailTextoResolucionExpedienteDocumental
+} from "../_email_resolucion_documental_expediente.js";
 import { crearNotificacion } from "../_notificaciones.js";
 
 function json(data, init = {}) {
@@ -93,6 +92,53 @@ function calcularEstadoGlobal(documentosBaseActivos, archivosActivos) {
   }
 
   return "EN_REVISION";
+}
+
+function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos = []) {
+  const archivosPorNombre = new Map(
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo?.nombre_documento), archivo])
+  );
+
+  const validados = [];
+  const pendientes = [];
+
+  for (const doc of Array.isArray(documentosBaseActivos) ? documentosBaseActivos : []) {
+    const nombre = limpiarTexto(doc?.nombre);
+    if (!nombre) continue;
+    const requerido = Number(doc?.version_documental || 0);
+    const entrega = archivosPorNombre.get(nombre) || null;
+
+    if (!entrega) {
+      pendientes.push({ nombre, motivo: "No remitido" });
+      continue;
+    }
+
+    const versionAportada = Number(entrega?.version_documental || 0);
+    if (versionAportada !== requerido) {
+      pendientes.push({ nombre, motivo: "Desactualizado" });
+      continue;
+    }
+
+    const estado = normalizarEstadoDocumento(entrega?.estado);
+    if (estado === "VALIDADO") {
+      validados.push({
+        nombre,
+        observaciones_admin: limpiarTexto(entrega?.observaciones_admin || "")
+      });
+      continue;
+    }
+    if (estado === "RECHAZADO") {
+      pendientes.push({ nombre, motivo: "Rechazado" });
+      continue;
+    }
+    pendientes.push({ nombre, motivo: "Pendiente de validación" });
+  }
+
+  return {
+    completo: pendientes.length === 0 && validados.length > 0,
+    validados,
+    pendientes
+  };
 }
 
 export async function onRequestPost(context) {
@@ -230,17 +276,20 @@ export async function onRequestPost(context) {
         id,
         nombre_documento,
         version_documental,
-        estado
+        estado,
+        observaciones_admin
       FROM centro_admin_documentacion_archivos
       WHERE documentacion_id = ?
         AND activo = 1
     `).bind(documentacionId).all();
 
+    const archivosResumen = archivosActuales?.results || [];
     const documentosBaseActivos = await obtenerDocumentosBaseActivos(env, adminId);
     const estadoExpediente = calcularEstadoGlobal(
       documentosBaseActivos,
-      archivosActuales?.results || []
+      archivosResumen
     );
+    const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosResumen);
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -264,19 +313,31 @@ export async function onRequestPost(context) {
       subject: estadoExpediente === "VALIDADA"
         ? `[Documentación] Validada por ${nombreVisibleAdmin(admin || {})}`
         : `[Documentación] Rechazada por ${nombreVisibleAdmin(admin || {})}`,
-      text: construirEmailTextoDocumentacionResuelta({
+      text: construirEmailTextoResolucionExpedienteDocumental({
         admin: admin || {},
         centro: centro || {},
-        versionRequerida: expediente.version_requerida || 0,
-        estado: estadoExpediente,
-        observaciones
+        estado_expediente: estadoExpediente,
+        cambios: [{
+          nombre_documento: archivoId
+            ? (archivosResumen.find((item) => Number(item.id || 0) === Number(archivoId || 0))?.nombre_documento || "")
+            : "Revisión documental del expediente",
+          estado: nuevoEstadoDocumento,
+          observaciones_admin: observaciones
+        }],
+        resumen_documental: resumenDocumentalCorreo
       }),
-      html: construirEmailHtmlDocumentacionResuelta({
+      html: construirEmailHtmlResolucionExpedienteDocumental({
         admin: admin || {},
         centro: centro || {},
-        versionRequerida: expediente.version_requerida || 0,
-        estado: estadoExpediente,
-        observaciones
+        estado_expediente: estadoExpediente,
+        cambios: [{
+          nombre_documento: archivoId
+            ? (archivosResumen.find((item) => Number(item.id || 0) === Number(archivoId || 0))?.nombre_documento || "")
+            : "Revisión documental del expediente",
+          estado: nuevoEstadoDocumento,
+          observaciones_admin: observaciones
+        }],
+        resumen_documental: resumenDocumentalCorreo
       })
     });
 
