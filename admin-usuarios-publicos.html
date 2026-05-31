@@ -363,6 +363,7 @@
     .modal-docs-toolbar {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
       gap: 8px;
       margin: 4px 0 10px;
       flex-wrap: wrap;
@@ -573,7 +574,7 @@
       <div class="modal-docs-toolbar">
         <button type="button" class="btn-doc-accion" id="btnDocAccionVer" title="Ver documento" aria-label="Ver documento" disabled><img src="assets/icono-ver-documento.svg" alt=""></button>
         <button type="button" class="btn-doc-accion" id="btnDocAccionValidar" title="Validar documento" aria-label="Validar documento" disabled><img src="assets/icono-validar-documento.svg" alt=""></button>
-        <button type="button" class="btn-doc-accion" id="btnDocAccionRechazar" title="Rechazar documento" aria-label="Rechazar documento" disabled><img src="assets/1486564399-close_81512.svg" alt=""></button>
+        <button type="button" class="btn-doc-accion" id="btnDocAccionRechazar" title="Rechazar documento" aria-label="Rechazar documento" disabled><img src="assets/icono-rechazar-documento.svg" alt=""></button>
         <button type="button" class="btn-doc-accion" id="btnDocAccionEliminar" title="Eliminar documento" aria-label="Eliminar documento" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
       </div>
       <div class="modal-docs-lista">
@@ -756,11 +757,35 @@
       actualizarBotonesAccionesDocs(false);
     }
 
-    function actualizarBotonesAccionesDocs(habilitado) {
-      ["btnDocAccionVer", "btnDocAccionValidar", "btnDocAccionRechazar", "btnDocAccionEliminar"].forEach((id) => {
-        const btn = document.getElementById(id);
-        if (btn) btn.disabled = !habilitado;
-      });
+    function actualizarBotonesAccionesDocs(habilitado, doc = null) {
+      const btnVer = document.getElementById("btnDocAccionVer");
+      const btnValidar = document.getElementById("btnDocAccionValidar");
+      const btnRechazar = document.getElementById("btnDocAccionRechazar");
+      const btnEliminar = document.getElementById("btnDocAccionEliminar");
+
+      if (!habilitado || !doc) {
+        if (btnVer) btnVer.disabled = true;
+        if (btnValidar) btnValidar.disabled = true;
+        if (btnRechazar) btnRechazar.disabled = true;
+        if (btnEliminar) btnEliminar.disabled = true;
+        return;
+      }
+
+      const remitido = !!doc.archivo_url;
+      const estado = String(doc.estado_bruto || "").trim().toUpperCase();
+
+      if (!remitido) {
+        if (btnVer) btnVer.disabled = true;
+        if (btnValidar) btnValidar.disabled = true;
+        if (btnRechazar) btnRechazar.disabled = true;
+        if (btnEliminar) btnEliminar.disabled = true;
+        return;
+      }
+
+      if (btnVer) btnVer.disabled = false;
+      if (btnEliminar) btnEliminar.disabled = false;
+      if (btnValidar) btnValidar.disabled = estado === "VALIDADO";
+      if (btnRechazar) btnRechazar.disabled = estado === "RECHAZADO";
     }
 
     function seleccionarDocumentoModal(indice) {
@@ -770,8 +795,8 @@
       tbody.querySelectorAll("tr[data-doc-idx]").forEach((tr) => {
         tr.classList.toggle("fila-doc-activa", Number(tr.dataset.docIdx) === idx);
       });
-      const habilitado = !!documentoModalActivo && !!documentoModalActivo.archivo_url;
-      actualizarBotonesAccionesDocs(habilitado);
+      const habilitado = !!documentoModalActivo;
+      actualizarBotonesAccionesDocs(habilitado, documentoModalActivo);
     }
 
     async function ejecutarAccionDocumento(accion) {
