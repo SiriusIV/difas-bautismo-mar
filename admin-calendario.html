@@ -861,6 +861,30 @@
       justify-self: end;
       align-items: center;
     }
+    .tooltip-calendario-hover {
+      position: fixed;
+      z-index: 12000;
+      max-width: 320px;
+      background: #ffffff;
+      border: 1px solid #d8e0ea;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(15, 35, 60, 0.2);
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #22313f;
+      pointer-events: none;
+      display: none;
+    }
+    .tooltip-calendario-hover .tt-titulo {
+      font-weight: 700;
+      color: #123a63;
+      margin-bottom: 6px;
+    }
+    .tooltip-calendario-hover .tt-linea strong {
+      color: #4f6275;
+      font-weight: 700;
+    }
 
     .btn-modo-calendario {
       display: inline-flex;
@@ -1531,6 +1555,7 @@
     let vistaCalendarioActual = "reservas";
     let usuarioCalendario = null;
     let fechaObjetivoLista = null;
+    let tooltipCalendarioEl = null;
 
     function esAdminCalendario() {
       const rol = String(usuarioCalendario?.rol || "").toUpperCase();
@@ -1876,11 +1901,75 @@
       });
     }
 
-    function formatearHorarioFranja(inicio, fin) {
+function formatearHorarioFranja(inicio, fin) {
   const horaInicio = String(inicio || "").trim();
   const horaFin = String(fin || "").trim();
   if (!horaInicio) return "-";
   return horaFin ? `${horaInicio} - ${horaFin}` : `Desde las ${horaInicio}`;
+}
+
+function construirResumenHoverEvento(evento) {
+  const p = evento?.extendedProps || {};
+  const tipoEvento = String(p.tipo_evento || "RESERVA");
+  if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
+    const titulo = p.actividad_nombre || evento.title || "Actividad programada";
+    const horario = formatearHorarioFranja(p.hora_inicio, p.hora_fin);
+    return `
+      <div class="tt-titulo">${titulo}</div>
+      <div class="tt-linea"><strong>Fecha:</strong> ${p.fecha || "-"}</div>
+      <div class="tt-linea"><strong>Horario:</strong> ${horario}</div>
+      <div class="tt-linea"><strong>Estado:</strong> ${p.estado_actividad || "DISPONIBLE"}</div>
+      <div class="tt-linea"><strong>Disponibles:</strong> ${Number(p.disponibles || 0)}</div>
+    `;
+  }
+
+  const titulo = p.codigo_reserva || p.actividad_nombre || "Solicitud";
+  const franja = `${p.fecha || "-"} · ${formatearHorarioFranja(p.hora_inicio, p.hora_fin)}`;
+  return `
+    <div class="tt-titulo">${titulo}</div>
+    <div class="tt-linea"><strong>Estado:</strong> ${p.estado || "-"}</div>
+    <div class="tt-linea"><strong>Actividad:</strong> ${p.actividad_nombre || "-"}</div>
+    <div class="tt-linea"><strong>Centro:</strong> ${p.centro || "-"}</div>
+    <div class="tt-linea"><strong>Franja:</strong> ${franja}</div>
+  `;
+}
+
+function obtenerTooltipCalendario() {
+  if (tooltipCalendarioEl) return tooltipCalendarioEl;
+  tooltipCalendarioEl = document.createElement("div");
+  tooltipCalendarioEl.className = "tooltip-calendario-hover";
+  document.body.appendChild(tooltipCalendarioEl);
+  return tooltipCalendarioEl;
+}
+
+function posicionarTooltipCalendario(mouseEvent) {
+  if (!tooltipCalendarioEl || !mouseEvent) return;
+  const margen = 14;
+  const ancho = tooltipCalendarioEl.offsetWidth || 280;
+  const alto = tooltipCalendarioEl.offsetHeight || 120;
+  let x = mouseEvent.clientX + 14;
+  let y = mouseEvent.clientY + 14;
+  if (x + ancho + margen > window.innerWidth) {
+    x = Math.max(margen, mouseEvent.clientX - ancho - 14);
+  }
+  if (y + alto + margen > window.innerHeight) {
+    y = Math.max(margen, window.innerHeight - alto - margen);
+  }
+  tooltipCalendarioEl.style.left = `${x}px`;
+  tooltipCalendarioEl.style.top = `${y}px`;
+}
+
+function mostrarTooltipCalendario(evento, mouseEvent) {
+  if (esMovilCalendario()) return;
+  const tooltip = obtenerTooltipCalendario();
+  tooltip.innerHTML = construirResumenHoverEvento(evento);
+  tooltip.style.display = "block";
+  posicionarTooltipCalendario(mouseEvent);
+}
+
+function ocultarTooltipCalendario() {
+  if (!tooltipCalendarioEl) return;
+  tooltipCalendarioEl.style.display = "none";
 }
 
 function abrirModalEvento(info) {
@@ -2461,6 +2550,17 @@ function abrirModalEvento(info) {
           return [p.editable_actividad ? "evento-actividad-editable" : "evento-actividad-noeditable"];
         },
         eventDidMount: function(arg) {
+          const p = arg.event.extendedProps || {};
+          const tipoEvento = String(p.tipo_evento || "");
+          const esActividad = tipoEvento === "ACTIVIDAD_PROGRAMADA";
+          const esPlaceholder = !!p.placeholder_lista;
+          const clicable = !esPlaceholder && (!esActividad || !!p.editable_actividad || esMovilCalendario());
+          if (arg?.el && clicable) {
+            arg.el.style.cursor = "pointer";
+            arg.el.addEventListener("mouseenter", (ev) => mostrarTooltipCalendario(arg.event, ev));
+            arg.el.addEventListener("mousemove", posicionarTooltipCalendario);
+            arg.el.addEventListener("mouseleave", ocultarTooltipCalendario);
+          }
           if (String(arg?.view?.type || "") === "dayGridMonth") {
             if (arg?.el) {
               arg.el.classList.add("evento-mes-unico");
@@ -2525,6 +2625,7 @@ function abrirModalEvento(info) {
           return { domNodes: [marcador] };
         },
         eventClick: function(info) {
+          ocultarTooltipCalendario();
           if (info.event.extendedProps?.placeholder_lista) {
             return;
           }
