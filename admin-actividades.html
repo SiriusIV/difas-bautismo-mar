@@ -4076,10 +4076,7 @@ function actualizarResumenDocumentacionActividad() {
 }
 
 function obtenerModoDocumentacionActividadSeleccionado() {
-  if (!catalogoDocumentacionActividad.length) return "PERSONALIZADA";
-  const totalCatalogo = catalogoDocumentacionActividad.length;
-  const totalSeleccionados = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).length;
-  return totalSeleccionados > 0 && totalSeleccionados === totalCatalogo ? "HEREDADA" : "PERSONALIZADA";
+  return "PERSONALIZADA";
 }
 
 function obtenerDocumentosDocumentacionActividadParaGuardar() {
