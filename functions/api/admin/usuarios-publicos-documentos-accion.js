@@ -113,7 +113,10 @@ export async function onRequestPost(context) {
     const adminId = Number(expediente.admin_id || 0);
     const rolSesion = await getRolUsuario(env, session.usuario_id);
     const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
-    if (!permiso?.permitido) return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
+    const esAdminPropietario = Number(session?.usuario_id || 0) === Number(adminId || 0);
+    if (!permiso?.permitido && !esAdminPropietario) {
+      return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
+    }
 
     const archivo = await env.DB.prepare(`
       SELECT id, nombre_documento

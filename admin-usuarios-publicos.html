@@ -67,6 +67,21 @@
     .mensaje { display: none; margin-bottom: 10px; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
     .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; }
     .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; }
+    .mensaje-contenido {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mensaje-cerrar {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
 
     .bloque {
       border: 1px solid rgba(211, 220, 230, 0.95);
@@ -637,17 +652,39 @@
       }
     }
 
+    let timeoutMensajeOk = null;
+
+    function cerrarMensajeEstado() {
+      const el = document.getElementById("mensajeEstado");
+      el.className = "mensaje";
+      el.textContent = "";
+      el.style.display = "none";
+      if (timeoutMensajeOk) {
+        clearTimeout(timeoutMensajeOk);
+        timeoutMensajeOk = null;
+      }
+    }
+
     function setMensaje(tipo, texto) {
       const el = document.getElementById("mensajeEstado");
       if (!texto) {
-        el.className = "mensaje";
-        el.textContent = "";
-        el.style.display = "none";
+        cerrarMensajeEstado();
         return;
       }
+      if (timeoutMensajeOk) {
+        clearTimeout(timeoutMensajeOk);
+        timeoutMensajeOk = null;
+      }
       el.className = `mensaje ${tipo === "ok" ? "ok" : "error"}`;
-      el.textContent = texto;
+      el.innerHTML = `<div class="mensaje-contenido"><span>${escapeHtml(texto)}</span><button type="button" class="mensaje-cerrar" id="btnCerrarMensajeEstado" aria-label="Cerrar">×</button></div>`;
       el.style.display = "block";
+      const btnCerrar = document.getElementById("btnCerrarMensajeEstado");
+      if (btnCerrar) btnCerrar.addEventListener("click", cerrarMensajeEstado);
+      if (tipo === "ok") {
+        timeoutMensajeOk = setTimeout(() => {
+          cerrarMensajeEstado();
+        }, 5000);
+      }
     }
 
     function aplicarFiltroUsuarios() {
