@@ -227,6 +227,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      height: 100%;
     }
 
     .bloque-titulo-externo {
@@ -253,6 +254,7 @@
       font-size: 13px;
       min-height: 128px;
       box-shadow: var(--sombra-panel);
+      flex: 1;
     }
 
     .estado-badge {
@@ -1535,6 +1537,7 @@
           </div>
         </div>
       `;
+      igualarAlturaBloquesInferiores();
 
       const btnGuardar = document.getElementById("btnGuardarAsistentes");
       const btnAnadir = document.getElementById("btnAnadirFila");
@@ -1654,6 +1657,20 @@
         document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
         actualizarModoPantalla();
       }
+    }
+
+    function igualarAlturaBloquesInferiores() {
+      const bloqueReserva = document.getElementById("bloqueReserva");
+      const bloqueResumen = document.getElementById("bloqueResumen");
+      if (!bloqueReserva || !bloqueResumen) return;
+      if (window.matchMedia("(max-width: 1000px)").matches) {
+        bloqueReserva.style.minHeight = "";
+        bloqueResumen.style.minHeight = "";
+        return;
+      }
+      const alturaMax = Math.max(bloqueReserva.scrollHeight, bloqueResumen.scrollHeight, 128);
+      bloqueReserva.style.minHeight = `${alturaMax}px`;
+      bloqueResumen.style.minHeight = `${alturaMax}px`;
     }
 
     function normalizarTextoImportacion(valor) {
@@ -2055,6 +2072,7 @@
         e.preventDefault();
         e.returnValue = "";
       });
+      window.addEventListener("resize", igualarAlturaBloquesInferiores);
 
       try {
         await Promise.all([cargarConfigEvento(), cargarSesionCabecera()]);
