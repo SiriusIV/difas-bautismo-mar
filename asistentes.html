@@ -1479,10 +1479,6 @@
 
       filaSeleccionadaId = null;
 
-      if (obtenerFilasTabla().length === 0) {
-        crearFila();
-      }
-
       marcarCambiosPendientes();
       recalcularResumenEnPantalla();
       actualizarBotonEliminar();
@@ -1777,7 +1773,7 @@
     function debeMostrarAvisoSinAsistentes(visitantes = []) {
       if (!reservaActual) return false;
       if (Array.isArray(visitantes) && visitantes.length > 0) return false;
-      const estado = String(reservaActual.estado || "").toUpperCase();
+      const estado = String(reservaActual.estado || "").trim().toUpperCase();
       const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "SUSPENDIDA"].includes(estado);
       if (!estadoConControl) return false;
       return true;
