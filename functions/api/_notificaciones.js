@@ -386,13 +386,109 @@ async function listarNotificacionesCompatible(env, usuarioId, limiteSeguro, wher
   throw ultimoError || new Error("No se pudieron listar las notificaciones.");
 }
 
+async function buscarNotificacionRecienteDuplicada(env, {
+  usuarioId,
+  rolDestino = "",
+  tipo = "",
+  titulo = "",
+  mensaje = "",
+  urlDestino = "",
+  dedupeSegundos = 180
+} = {}) {
+  const id = Number(usuarioId || 0);
+  const ventana = Number(dedupeSegundos || 0);
+  if (!(id > 0) || !(ventana > 0)) return null;
+
+  const rol = limpiarTexto(rolDestino).toUpperCase();
+  const clase = limpiarTexto(tipo).toUpperCase();
+  const tituloLimpio = limpiarTexto(titulo);
+  const mensajeLimpio = limpiarTexto(mensaje);
+  const urlLimpia = limpiarTexto(urlDestino);
+
+  const variantes = [
+    {
+      sql: `
+        SELECT id, created_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND COALESCE(rol_destino, '') = ?
+          AND COALESCE(tipo, '') = ?
+          AND titulo = ?
+          AND COALESCE(mensaje, '') = ?
+          AND COALESCE(url_destino, '') = ?
+          AND datetime(created_at) >= datetime('now', ?)
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT 1
+      `,
+      binds: [id, rol, clase, tituloLimpio, mensajeLimpio, urlLimpia, `-${ventana} seconds`]
+    },
+    {
+      sql: `
+        SELECT id, created_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND COALESCE(tipo, '') = ?
+          AND titulo = ?
+          AND COALESCE(mensaje, '') = ?
+          AND COALESCE(url_destino, '') = ?
+          AND datetime(created_at) >= datetime('now', ?)
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT 1
+      `,
+      binds: [id, clase, tituloLimpio, mensajeLimpio, urlLimpia, `-${ventana} seconds`]
+    },
+    {
+      sql: `
+        SELECT id, created_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND COALESCE(tipo, '') = ?
+          AND titulo = ?
+          AND COALESCE(mensaje, '') = ?
+          AND datetime(created_at) >= datetime('now', ?)
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT 1
+      `,
+      binds: [id, clase, tituloLimpio, mensajeLimpio, `-${ventana} seconds`]
+    },
+    {
+      sql: `
+        SELECT id, created_at
+        FROM notificaciones
+        WHERE usuario_id = ?
+          AND titulo = ?
+          AND COALESCE(mensaje, '') = ?
+          AND datetime(created_at) >= datetime('now', ?)
+        ORDER BY datetime(created_at) DESC, id DESC
+        LIMIT 1
+      `,
+      binds: [id, tituloLimpio, mensajeLimpio, `-${ventana} seconds`]
+    }
+  ];
+
+  for (const variante of variantes) {
+    try {
+      const row = await dbPrimaria(env).prepare(variante.sql).bind(...variante.binds).first();
+      if (row?.id) return row;
+    } catch (error) {
+      if (!hayErrorEsquemaNotificaciones(error)) {
+        throw error;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function crearNotificacion(env, {
   usuarioId,
   rolDestino = "",
   tipo = "",
   titulo,
   mensaje = "",
-  urlDestino = ""
+  urlDestino = "",
+  dedupe = true,
+  dedupeSegundos = 180
 } = {}) {
   const id = Number(usuarioId || 0);
   const tituloLimpio = limpiarTexto(titulo);
@@ -401,6 +497,21 @@ export async function crearNotificacion(env, {
   }
 
   await asegurarTablaNotificaciones(env);
+  if (dedupe) {
+    const existente = await buscarNotificacionRecienteDuplicada(env, {
+      usuarioId: id,
+      rolDestino,
+      tipo,
+      titulo: tituloLimpio,
+      mensaje,
+      urlDestino,
+      dedupeSegundos
+    });
+    if (existente?.id) {
+      return { ok: true, skipped: true, duplicate: true, id: Number(existente.id || 0) };
+    }
+  }
+
   return await insertarNotificacionCompatible(env, {
     usuario_id: id,
     rol_destino: limpiarTexto(rolDestino).toUpperCase() || null,
