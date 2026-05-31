@@ -1303,6 +1303,13 @@
       modal.setAttribute("aria-hidden", activo ? "false" : "true");
     }
 
+    function establecerVisibilidadModal(modalId, activo) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.toggle("activo", !!activo);
+      modal.setAttribute("aria-hidden", activo ? "false" : "true");
+    }
+
     function abrirModalSalida(destino) {
       destinoPendienteNavegacion = destino;
       establecerVisibilidadModalSalida(true);
