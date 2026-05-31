@@ -4083,6 +4083,28 @@ function obtenerDocumentosDocumentacionActividadParaGuardar() {
   return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
 }
 
+function agregarDocumentoSeleccionadoDocumentacionActividad() {
+  const select = document.getElementById("documentacionActividadSelect");
+  const valor = String(select?.value || "").trim();
+  if (!valor) return false;
+
+  const docsActuales = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
+  const existe = docsActuales.some((nombre) => nombre.toUpperCase() === valor.toUpperCase());
+  if (existe) {
+    if (select) select.value = "";
+    return false;
+  }
+
+  modoDocumentacionActividad = "PERSONALIZADA";
+  documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
+    ...docsActuales,
+    valor
+  ]);
+  marcarCambiosPendientesActividad();
+  renderConfiguracionDocumentacionActividad();
+  return true;
+}
+
 function renderSelectDocumentacionActividad() {
   const select = document.getElementById("documentacionActividadSelect");
   const btnAgregar = document.getElementById("btnAgregarDocumentoActividad");
@@ -5248,6 +5270,7 @@ async function borrarFranja(id) {
 }
 
     function construirPayloadActividad(borradorTecnico = 0) {
+      agregarDocumentoSeleccionadoDocumentacionActividad();
       return {
         id: document.getElementById("actividadId").value || null,
         nombre: document.getElementById("nombre").value.trim(),
@@ -5288,6 +5311,7 @@ async function borrarFranja(id) {
     async function guardarActividad(event) {
       if (event) event.preventDefault();
       limpiarMensaje();
+      agregarDocumentoSeleccionadoDocumentacionActividad();
 
       const submitter = event?.submitter || null;
       const activeElementId = document.activeElement?.id || "";
@@ -5511,7 +5535,6 @@ async function borrarFranja(id) {
 
     async function asegurarActividadBorradorParaFranjas() {
       limpiarMensaje();
-
       const payload = construirPayloadActividad(1);
 
       if (!payload.nombre) {
@@ -6013,21 +6036,15 @@ function retrocederPaso() {
           renderTablaRequisitos();
         });
         document.getElementById("documentacionActividadSelect").addEventListener("change", () => {
-          document.getElementById("btnAgregarDocumentoActividad").disabled = !document.getElementById("documentacionActividadSelect").value;
+          const select = document.getElementById("documentacionActividadSelect");
+          const hayValor = !!String(select?.value || "").trim();
+          document.getElementById("btnAgregarDocumentoActividad").disabled = !hayValor;
+          if (hayValor) {
+            agregarDocumentoSeleccionadoDocumentacionActividad();
+          }
         });
         document.getElementById("btnAgregarDocumentoActividad").addEventListener("click", () => {
-          const select = document.getElementById("documentacionActividadSelect");
-          const valor = String(select?.value || "").trim();
-          if (!valor) return;
-
-          modoDocumentacionActividad = "PERSONALIZADA";
-          documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
-            ...documentosDocumentacionActividad,
-            valor
-          ]);
-
-          marcarCambiosPendientesActividad();
-          renderConfiguracionDocumentacionActividad();
+          agregarDocumentoSeleccionadoDocumentacionActividad();
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
         document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);
