@@ -48,8 +48,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     "El estado de tu documentación obligatoria ha sido revisado.",
     "",
     `Organizador: ${nombreVisibleAdmin(admin)}`,
-    `Centro: ${limpiarTexto(centro?.centro)}`,
-    `Estado de la documentación: ${limpiarTexto(estado_expediente)}`
+    `Centro: ${limpiarTexto(centro?.centro)}`
   ];
 
   if (Array.isArray(cambios) && cambios.length) {
@@ -104,11 +103,11 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   } else if (puedeTodas) {
     lineas.push(
       "",
-      "Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.",
+      "Con la documentación actualmente aprobada puedes solicitar todas las actividades activas de este organizador que requieran reserva.",
       "Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar."
     );
   } else if (totalSolicitables > 0) {
-    lineas.push("", "Con la documentación validada actual puedes solicitar las siguientes actividades:");
+    lineas.push("", "Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:");
     actividadesSolicitables.forEach((nombre) => lineas.push(`- ${limpiarTexto(nombre)}`));
     lineas.push("", "Para otras actividades de este organizador, debes completar la documentación pendiente.");
   } else {
@@ -201,9 +200,9 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
   if (totalActivas <= 0) {
     bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente este organizador no tiene actividades activas que requieran reserva disponibles para solicitud.</p>`;
   } else if (puedeTodas) {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación actualmente aprobada puedes solicitar todas las actividades activas de este organizador que requieran reserva.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
   } else if (totalSolicitables > 0) {
-    bloqueActividades = `<p><strong>Con la documentación validada actual puedes solicitar las siguientes actividades:</strong></p><ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
+    bloqueActividades = `<p><strong>Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:</strong></p><ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
   } else {
     bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${escaparHtml(nombreVisibleAdmin(admin))} que requieran reserva.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
   }
@@ -212,7 +211,6 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
     <p>El estado de tu documentación obligatoria ha sido revisado.</p>
     <p><strong>Organizador:</strong> ${escaparHtml(nombreVisibleAdmin(admin))}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
-    <p><strong>Estado de la documentación:</strong> ${escaparHtml(estado_expediente || "")}</p>
     ${filas ? `<p><strong>Detalle de la revisión</strong></p><table style="border-collapse:collapse;width:100%;max-width:760px;"><thead><tr><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Estado</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th></tr></thead><tbody>${filas}</tbody></table>` : ""}
     ${bloqueResultado}
     ${bloqueActividades}
