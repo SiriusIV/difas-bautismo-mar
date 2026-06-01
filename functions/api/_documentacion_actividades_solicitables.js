@@ -19,21 +19,9 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
-function parsearFechaComparable(valor) {
-  const texto = limpiarTexto(valor);
-  if (!texto) return null;
-  const fecha = new Date(texto.replace(" ", "T"));
-  return Number.isNaN(fecha.getTime()) ? null : fecha;
-}
-
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) return "NO_ENVIADO";
   if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) return "NO_ACTUALIZADO";
-
-  const fechaMarco = parsearFechaComparable(doc.fecha_actualizacion);
-  const fechaEntrega = parsearFechaComparable(entrega.fecha_subida);
-  if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) return "NO_ACTUALIZADO";
-
   return normalizarEstadoDocumento(entrega.estado);
 }
 
@@ -68,7 +56,7 @@ export async function construirResumenActividadesSolicitables(env, {
       ORDER BY id DESC
     `).bind(admin).all(),
     env.DB.prepare(`
-      SELECT nombre_documento, version_documental, estado, fecha_subida
+      SELECT nombre_documento, version_documental, estado
       FROM centro_admin_documentacion_archivos
       WHERE documentacion_id = ?
         AND activo = 1
