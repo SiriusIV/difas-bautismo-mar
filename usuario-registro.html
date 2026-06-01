@@ -842,11 +842,11 @@
 
     function validarCifEntidadDetallado(cif) {
       const d = limpiarNifCifEntidad(cif);
-      if (!d) return { ok: false, error: "Debes indicar el NIF/CIF de la entidad." };
-      if (d.length < 9) return { ok: false, error: "El NIF/CIF debe tener 1 letra, 7 dígitos y 1 carácter de control." };
-      if (d.length > 9) return { ok: false, error: "El NIF/CIF no puede tener más de 1 letra, 7 dígitos y 1 carácter de control." };
+      if (!d) return { ok: false, error: "NIF/CIF no válido." };
+      if (d.length < 9) return { ok: false, error: "NIF/CIF no válido." };
+      if (d.length > 9) return { ok: false, error: "NIF/CIF no válido." };
       if (!/^[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[A-Z0-9]$/.test(d)) {
-        return { ok: false, error: "El NIF/CIF debe tener formato válido: prefijo, 7 dígitos y control final." };
+        return { ok: false, error: "NIF/CIF no válido." };
       }
       const prefijo = d[0];
       const controlRecibido = d[8];
@@ -854,14 +854,14 @@
       const prefijosSoloNumero = "ABEH";
       const prefijosSoloLetra = "KPQS";
       if (prefijosSoloNumero.includes(prefijo) && controlRecibido !== controlNumero) {
-        return { ok: false, error: `El dígito de control del NIF/CIF no es correcto. Debe ser ${controlNumero}.` };
+        return { ok: false, error: "NIF/CIF no válido." };
       }
       if (prefijosSoloLetra.includes(prefijo) && controlRecibido !== controlLetra) {
-        return { ok: false, error: `La letra de control del NIF/CIF no es correcta. Debe ser ${controlLetra}.` };
+        return { ok: false, error: "NIF/CIF no válido." };
       }
       if (!prefijosSoloNumero.includes(prefijo) && !prefijosSoloLetra.includes(prefijo)) {
         if (controlRecibido !== controlNumero && controlRecibido !== controlLetra) {
-          return { ok: false, error: `El control del NIF/CIF no es correcto. Debe ser ${controlNumero} o ${controlLetra}.` };
+          return { ok: false, error: "NIF/CIF no válido." };
         }
       }
       return { ok: true };
@@ -873,63 +873,63 @@
 
       if (t === "DNI_NIF") {
         if (!d) {
-          return { ok: false, error: "Debes indicar el documento identificativo." };
+          return { ok: false, error: "Documento DNI/NIF no válido." };
         }
         if (d.length < 9) {
-          return { ok: false, error: "El DNI/NIF debe tener 8 dígitos y 1 letra." };
+          return { ok: false, error: "Documento DNI/NIF no válido." };
         }
         if (d.length > 9) {
-          return { ok: false, error: "El DNI/NIF no puede tener más de 8 dígitos y 1 letra." };
+          return { ok: false, error: "Documento DNI/NIF no válido." };
         }
         if (!/^[0-9]{8}[A-Z]$/.test(d)) {
-          return { ok: false, error: "El DNI/NIF debe tener 8 dígitos seguidos de una letra." };
+          return { ok: false, error: "Documento DNI/NIF no válido." };
         }
         const letraEsperada = letraDni(parseInt(d.slice(0, 8), 10));
         if (letraEsperada !== d.slice(-1)) {
-          return { ok: false, error: `La letra del DNI/NIF no es correcta. Debe ser ${letraEsperada}.` };
+          return { ok: false, error: "Documento DNI/NIF no válido." };
         }
         return { ok: true };
       }
 
       if (t === "NIE") {
         if (!d) {
-          return { ok: false, error: "Debes indicar el documento identificativo." };
+          return { ok: false, error: "Documento NIE no válido." };
         }
         if (d.length < 9) {
-          return { ok: false, error: "El NIE debe tener una letra inicial, 7 dígitos y una letra final." };
+          return { ok: false, error: "Documento NIE no válido." };
         }
         if (d.length > 9) {
-          return { ok: false, error: "El NIE no puede tener más de una letra inicial, 7 dígitos y una letra final." };
+          return { ok: false, error: "Documento NIE no válido." };
         }
         if (!/^[XYZ][0-9]{7}[A-Z]$/.test(d)) {
-          return { ok: false, error: "El NIE debe comenzar por X, Y o Z, seguir con 7 dígitos y terminar en letra." };
+          return { ok: false, error: "Documento NIE no válido." };
         }
         const mapa = { X: "0", Y: "1", Z: "2" };
         const numero = parseInt(mapa[d[0]] + d.slice(1, 8), 10);
         const letraEsperada = letraDni(numero);
         if (letraEsperada !== d.slice(-1)) {
-          return { ok: false, error: `La letra del NIE no es correcta. Debe ser ${letraEsperada}.` };
+          return { ok: false, error: "Documento NIE no válido." };
         }
         return { ok: true };
       }
 
       if (t === "CIF") {
         if (!d) {
-          return { ok: false, error: "Debes indicar el documento identificativo." };
+          return { ok: false, error: "Documento CIF no válido." };
         }
         if (d.length < 9) {
-          return { ok: false, error: "El CIF debe tener 1 letra, 7 dígitos y 1 carácter de control." };
+          return { ok: false, error: "Documento CIF no válido." };
         }
         if (d.length > 9) {
-          return { ok: false, error: "El CIF no puede tener más de 1 letra, 7 dígitos y 1 carácter de control." };
+          return { ok: false, error: "Documento CIF no válido." };
         }
         if (!/^[A-Z][0-9]{7}[A-Z0-9]$/.test(d)) {
-          return { ok: false, error: "El CIF debe comenzar por una letra, seguir con 7 dígitos y terminar en carácter de control." };
+          return { ok: false, error: "Documento CIF no válido." };
         }
         return { ok: true };
       }
 
-      return { ok: false, error: "Debe seleccionar un tipo de documento válido." };
+      return { ok: false, error: "Tipo de documento no válido." };
     }
 
     function validarPoliticaPassword(password) {
@@ -1135,7 +1135,7 @@
           return;
         }
         if (!nif_cif_entidad) {
-          mostrarMensaje("error", "Debe indicar el NIF/CIF de la entidad.");
+          mostrarMensaje("error", "NIF/CIF no válido.");
           return;
         }
 
