@@ -1192,7 +1192,7 @@
     .estado.pendiente { background: #d39e00; }
     .estado.confirmada { background: #198754; }
     .estado.rechazada { background: #dc3545; }
-    .estado.suspendida { background: #b7791f; }
+    .estado.suspendida { background: #f4c430; color: #1e2a36; }
 
     @media (max-width: 1200px) {
       .bloque-marca {
@@ -1493,12 +1493,12 @@
 
         <div id="leyendaSuperiorHost">
           <div class="leyenda" id="bloqueLeyendaReservas">
-            <span class="leyenda-item"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
-            <span class="leyenda-item"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
-            <span class="leyenda-item"><span class="leyenda-color" style="background:#b7791f;"></span>SUSPENDIDA</span>
-            <span class="leyenda-item"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
+            <span class="leyenda-item" id="leyendaReservaPendiente"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
+            <span class="leyenda-item" id="leyendaReservaConfirmada"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
+            <span class="leyenda-item" id="leyendaReservaSuspendida"><span class="leyenda-color" style="background:#f4c430;"></span>SUSPENDIDA</span>
+            <span class="leyenda-item" id="leyendaReservaRechazada"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
             <span class="leyenda-item oculto" id="leyendaActividadDisponible"><span class="leyenda-color" style="background:#0b5ed7;"></span>DISPONIBLE</span>
-            <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#d97706;"></span>ÚLTIMAS PLAZAS</span>
+            <span class="leyenda-item oculto" id="leyendaActividadUltimas"><span class="leyenda-color" style="background:#f4c430;"></span>ÚLTIMAS PLAZAS</span>
             <span class="leyenda-item oculto" id="leyendaActividadCompleta"><span class="leyenda-color" style="background:#dc3545;"></span>COMPLETA</span>
             <span class="leyenda-item oculto" id="leyendaActividadFinalizada"><span class="leyenda-color" style="background:#5f6d7a;"></span>FINALIZADA</span>
           </div>
@@ -1752,6 +1752,10 @@
       if (btnVistaActividadesSec) btnVistaActividadesSec.classList.toggle("activo", esVistaActividades);
       document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
       document.getElementById("bloqueResumenEstados").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaReservaPendiente").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaReservaConfirmada").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaReservaSuspendida").classList.toggle("oculto", esVistaActividades);
+      document.getElementById("leyendaReservaRechazada").classList.toggle("oculto", esVistaActividades);
       document.getElementById("leyendaActividadDisponible").classList.toggle("oculto", !esVistaActividades);
       document.getElementById("leyendaActividadUltimas").classList.toggle("oculto", !esVistaActividades);
       document.getElementById("leyendaActividadCompleta").classList.toggle("oculto", !esVistaActividades);
