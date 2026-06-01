@@ -453,6 +453,25 @@
     .btn-ver-doc-base-fila img { width: 16px; height: 16px; display: block; object-fit: contain; }
     .btn-ver-doc-base-fila:hover:not(:disabled) { background: #f0f6ff; border-color: #9fb2c7; color: #123a63; }
     .btn-ver-doc-base-fila:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-info-doc-mobile {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid #b7c8da;
+      background: #f4f8ff;
+      color: #123a63;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      margin-right: 6px;
+      cursor: pointer;
+      padding: 0;
+      vertical-align: middle;
+    }
+    .admin-doc-titulo-linea { display: flex; align-items: center; min-width: 0; }
     .tabla-pendientes-admin-wrap { width: 100%; overflow-x: auto; max-height: 252px; overflow-y: auto; }
     .tabla-pendientes-admin { width: 100%; border-collapse: collapse; min-width: 720px; }
     .tabla-pendientes-admin th, .tabla-pendientes-admin td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 13px; }
@@ -1108,10 +1127,13 @@
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-nombre,
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-meta {
         min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-meta { display: none; }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin .btn-info-doc-mobile { display: inline-flex; }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Ver"] { display: none; }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Estado"] .toggle-estado-doc-base,
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Ver"] .btn-ver-doc-base-fila {
         justify-self: start;
@@ -1713,6 +1735,12 @@
       <button type="button" class="btn-cerrar-modal" id="btnCerrarInfoDocumentoBaseAdminTop" aria-label="Cerrar">×</button>
       <h3 id="modalInfoDocumentoBaseAdminTitulo">Descripción del documento</h3>
       <p id="modalInfoDocumentoBaseAdminTexto">Selecciona un documento para consultar su descripción.</p>
+      <div class="modal-doc-base-acciones" style="margin-top:12px;">
+        <button type="button" class="btn btn-secundario" id="btnVerDesdeInfoDocumentoBaseAdmin" disabled>
+          <img src="assets/icono-ver-documento.svg" alt="" style="width:15px;height:15px;vertical-align:-2px;margin-right:6px;">
+          Ver documento
+        </button>
+      </div>
     </div>
   </div>
 
@@ -3075,13 +3103,23 @@
       document.getElementById("modalInfoDocumentoBaseAdmin").classList.remove("activo");
       document.getElementById("modalInfoDocumentoBaseAdminTitulo").textContent = "Descripción del documento";
       document.getElementById("modalInfoDocumentoBaseAdminTexto").textContent = "";
+      const btnVer = document.getElementById("btnVerDesdeInfoDocumentoBaseAdmin");
+      if (btnVer) {
+        btnVer.disabled = true;
+        btnVer.dataset.docId = "";
+      }
     }
 
-    function abrirModalInfoDocumentoBaseAdmin() {
-      const doc = obtenerDocumentoBaseAdminSeleccionado();
+    function abrirModalInfoDocumentoBaseAdmin(docParam = null) {
+      const doc = docParam || obtenerDocumentoBaseAdminSeleccionado();
       if (!doc) return;
       document.getElementById("modalInfoDocumentoBaseAdminTitulo").textContent = doc.nombre || "Documento";
       document.getElementById("modalInfoDocumentoBaseAdminTexto").textContent = doc.descripcion || "Este documento no tiene descripción informativa disponible todavía.";
+      const btnVer = document.getElementById("btnVerDesdeInfoDocumentoBaseAdmin");
+      if (btnVer) {
+        btnVer.dataset.docId = String(Number(doc.id || 0));
+        btnVer.disabled = !doc.archivo_url;
+      }
       document.getElementById("modalInfoDocumentoBaseAdmin").classList.add("activo");
     }
 
@@ -3633,7 +3671,10 @@
         tr.dataset.docId = String(Number(doc.id || 0));
         tr.innerHTML = `
           <td data-label="Título">
-            <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
+            <div class="admin-doc-titulo-linea">
+              <button type="button" class="btn-info-doc-mobile" data-info-doc-id="${Number(doc.id || 0)}" aria-label="Información del documento" title="Información del documento">i</button>
+              <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
+            </div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
           </td>
           <td data-label="Versión">${Number(doc.version_documental || 0)}</td>
@@ -4683,6 +4724,14 @@
     });
     document.getElementById("btnCambiarPasswordAdminHeader").addEventListener("click", abrirModalPasswordActual);
     document.getElementById("tablaDocumentacionAdminBody").addEventListener("click", function (event) {
+      const btnInfoMobile = event.target.closest(".btn-info-doc-mobile");
+      if (btnInfoMobile) {
+        event.stopPropagation();
+        const docId = Number.parseInt(btnInfoMobile.dataset.infoDocId || "", 10);
+        const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+        if (doc) abrirModalInfoDocumentoBaseAdmin(doc);
+        return;
+      }
       const btnVerFila = event.target.closest(".btn-ver-doc-base-fila");
       if (btnVerFila) {
         event.stopPropagation();
@@ -4715,6 +4764,13 @@
       await cambiarEstadoDocumentoBaseAdmin(doc, toggle.checked, toggle);
     });
     document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
+    document.getElementById("btnVerDesdeInfoDocumentoBaseAdmin").addEventListener("click", function () {
+      const docId = Number.parseInt(this.dataset.docId || "", 10);
+      if (!Number.isInteger(docId) || docId <= 0) return;
+      const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+      if (!doc || !doc.archivo_url) return;
+      window.open(doc.archivo_url, "_blank", "noopener");
+    });
     document.getElementById("btnNuevoDocumentoBaseAdmin").addEventListener("click", function () {
       if (!documentacionAdminContexto?.editable) return;
       abrirModalDocumentoBaseAdmin(null);
