@@ -223,10 +223,20 @@ export async function onRequestPost(context) {
       documentosBaseActivos?.results || [],
       seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || [])
     );
-    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
-      adminId: Number(expediente.admin_id || 0),
-      documentacionId
-    });
+    let resumenActividadesCorreo = null;
+    try {
+      resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
+        adminId: Number(expediente.admin_id || 0),
+        documentacionId
+      });
+    } catch (errorResumenActividades) {
+      console.error("No se pudo calcular el resumen de actividades solicitables (secretaria).", {
+        expediente_id: Number(documentacionId || 0),
+        admin_id: Number(expediente.admin_id || 0),
+        secretaria_id: Number(session.usuario_id || 0),
+        error: errorResumenActividades?.message || String(errorResumenActividades || "")
+      });
+    }
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -245,26 +255,42 @@ export async function onRequestPost(context) {
       documentacionId
     ).run();
 
-    const notificacionCentro = await enviarEmail(env, {
-      to: expediente.email || "",
-      subject: `[Documentación] Revisión actualizada por ${nombreVisibleAdmin(secretaria || {})}`,
-      text: construirEmailTextoResolucionExpedienteDocumental({
-        admin: secretaria || {},
-        centro: expediente || {},
-        estado_expediente: estadoExpediente,
-        cambios: cambiosAplicados,
-        resumen_documental: resumenDocumentalCorreo,
-        resumen_actividades: resumenActividadesCorreo
-      }),
-      html: construirEmailHtmlResolucionExpedienteDocumental({
-        admin: secretaria || {},
-        centro: expediente || {},
-        estado_expediente: estadoExpediente,
-        cambios: cambiosAplicados,
-        resumen_documental: resumenDocumentalCorreo,
-        resumen_actividades: resumenActividadesCorreo
-      })
-    });
+    let notificacionCentro = { ok: false, skipped: true, error: "" };
+    try {
+      notificacionCentro = await enviarEmail(env, {
+        to: expediente.email || "",
+        subject: `[Documentacion] Revision actualizada por ${nombreVisibleAdmin(secretaria || {})}`,
+        text: construirEmailTextoResolucionExpedienteDocumental({
+          admin: secretaria || {},
+          centro: expediente || {},
+          estado_expediente: estadoExpediente,
+          cambios: cambiosAplicados,
+          resumen_documental: resumenDocumentalCorreo,
+          resumen_actividades: resumenActividadesCorreo
+        }),
+        html: construirEmailHtmlResolucionExpedienteDocumental({
+          admin: secretaria || {},
+          centro: expediente || {},
+          estado_expediente: estadoExpediente,
+          cambios: cambiosAplicados,
+          resumen_documental: resumenDocumentalCorreo,
+          resumen_actividades: resumenActividadesCorreo
+        })
+      });
+    } catch (errorEmail) {
+      notificacionCentro = {
+        ok: false,
+        skipped: true,
+        error: errorEmail?.message || String(errorEmail || "")
+      };
+      console.error("No se pudo enviar correo de revision documental agrupada (secretaria).", {
+        expediente_id: Number(documentacionId || 0),
+        centro_usuario_id: Number(expediente.centro_usuario_id || 0),
+        admin_id: Number(expediente.admin_id || 0),
+        secretaria_id: Number(session.usuario_id || 0),
+        error: notificacionCentro.error
+      });
+    }
 
     const hayRechazos = cambiosAplicados.some((item) => String(item.estado || "").toUpperCase() === "RECHAZADO");
     let notificacionInternaCentro = { ok: false, skipped: true, error: "" };
@@ -294,11 +320,24 @@ export async function onRequestPost(context) {
       });
     }
 
-    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId: Number(expediente.admin_id || 0),
-      baseUrl,
-      motivo: "documentos_actualizados"
-    });
+    let impactoReservas = {
+      ok: false,
+      error: "No se pudo recalcular el impacto documental de reservas."
+    };
+    try {
+      impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+        adminId: Number(expediente.admin_id || 0),
+        baseUrl,
+        motivo: "documentos_actualizados"
+      });
+    } catch (errorImpacto) {
+      console.error("No se pudo recalcular impacto documental de reservas (secretaria).", {
+        expediente_id: Number(documentacionId || 0),
+        admin_id: Number(expediente.admin_id || 0),
+        secretaria_id: Number(session.usuario_id || 0),
+        error: errorImpacto?.message || String(errorImpacto || "")
+      });
+    }
 
     return json({
       ok: true,
