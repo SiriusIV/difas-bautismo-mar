@@ -1860,6 +1860,8 @@
     let pendientesRevisionAdmin = [];
     let pendienteRevisionSeleccionId = null;
     let cambiosPendientesRevisionAdmin = new Map();
+    let intervaloAutoRefreshPendientes = null;
+    let refrescandoPendientesAuto = false;
     let usuariosPublicosSecretaria = [];
     let usuariosPublicosSecretariaFiltrados = [];
     let usuarioPublicoSecretariaSeleccionId = null;
@@ -3856,6 +3858,31 @@
       }
     }
 
+    function puedeAutoRefrescarPendientesRevision() {
+      if (!esAutogestionAdminEditable()) return false;
+      if (documentacionAdminVistaActual !== "pendientes") return false;
+      if (!document.getElementById("panelBloqueDocumentos")?.classList.contains("activo")) return false;
+      if (cambiosPendientesRevisionAdmin.size > 0) return false;
+      if (document.visibilityState !== "visible") return false;
+      return true;
+    }
+
+    function iniciarAutoRefreshPendientesRevision() {
+      if (intervaloAutoRefreshPendientes) {
+        clearInterval(intervaloAutoRefreshPendientes);
+      }
+      intervaloAutoRefreshPendientes = setInterval(async () => {
+        if (!puedeAutoRefrescarPendientesRevision()) return;
+        if (refrescandoPendientesAuto) return;
+        refrescandoPendientesAuto = true;
+        try {
+          await cargarPendientesRevisionAdmin();
+        } finally {
+          refrescandoPendientesAuto = false;
+        }
+      }, 20000);
+    }
+
     function refrescarClaseSelectRevision(select) {
       if (!select) return;
       const estado = String(select.value || "").toUpperCase();
@@ -5107,6 +5134,16 @@
       event.preventDefault();
       event.returnValue = "";
     });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && puedeAutoRefrescarPendientesRevision()) {
+        void cargarPendientesRevisionAdmin();
+      }
+    });
+    window.addEventListener("focus", function () {
+      if (puedeAutoRefrescarPendientesRevision()) {
+        void cargarPendientesRevisionAdmin();
+      }
+    });
 
     [
       "modalCambiosPendientes",
@@ -5134,6 +5171,7 @@
     });
 
     leerAdminPreferenteDesdeUrl();
+    iniciarAutoRefreshPendientesRevision();
     cargarPerfil();
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
