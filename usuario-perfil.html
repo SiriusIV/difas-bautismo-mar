@@ -1052,6 +1052,70 @@
         -webkit-overflow-scrolling: touch;
         max-width: 100%;
       }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin-wrap {
+        overflow: visible;
+        max-height: none;
+        border: 0;
+        background: transparent;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin thead,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin tbody,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin tr,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin th,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin {
+        border-collapse: separate;
+        min-width: 0;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin thead {
+        display: none;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin tr {
+        border: 1px solid #dbe4ee;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 8px 10px;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td {
+        border-bottom: 1px solid #edf2f7;
+        padding: 8px 2px;
+        display: grid;
+        grid-template-columns: 38% minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+        text-align: left !important;
+        font-size: 13px;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:last-child {
+        border-bottom: 0;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td::before {
+        content: attr(data-label);
+        color: #4a6076;
+        font-weight: 700;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-nombre,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-meta {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Estado"] .toggle-estado-doc-base,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Ver"] .btn-ver-doc-base-fila {
+        justify-self: start;
+      }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
       .tabla-revision-expediente { min-width: 0; table-layout: auto; }
       .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2),
@@ -3568,19 +3632,19 @@
         tr.classList.toggle("fila-seleccionada", seleccionado);
         tr.dataset.docId = String(Number(doc.id || 0));
         tr.innerHTML = `
-          <td>
+          <td data-label="Título">
             <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
           </td>
-          <td>${Number(doc.version_documental || 0)}</td>
-          <td>${formatearFechaCorta(doc.fecha_actualizacion || "")}</td>
-          <td>
+          <td data-label="Versión">${Number(doc.version_documental || 0)}</td>
+          <td data-label="Última actualización">${formatearFechaCorta(doc.fecha_actualizacion || "")}</td>
+          <td data-label="Estado">
             <label class="toggle-estado-doc-base" title="${activo ? "Documento activo" : "Documento inactivo"}">
               <input type="checkbox" class="toggle-estado-doc-base-input" data-doc-id="${Number(doc.id || 0)}" ${activo ? "checked" : ""} ${editable ? "" : "disabled"}>
               <span class="toggle-estado-doc-base-control" aria-hidden="true"></span>
             </label>
           </td>
-          <td>
+          <td data-label="Ver">
             <button type="button" class="btn-ver-doc-base-fila" data-doc-id="${Number(doc.id || 0)}" ${doc.archivo_url ? "" : "disabled"} title="${doc.archivo_url ? "Ver documento" : "Sin documento disponible"}" aria-label="Ver documento">
               <img src="assets/icono-ver-documento.svg" alt="">
             </button>
