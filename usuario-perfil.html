@@ -314,6 +314,26 @@
     .btn-cambio-documental-cabecera svg { width: 46px; height: 46px; }
     .tabs-documentacion-admin { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .tabs-documentacion-admin-acciones { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .btn-actualizar-estado-docs {
+      border: 1px solid #9cb6d8;
+      background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+      color: #123a63;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-actualizar-estado-docs svg { width: 14px; height: 14px; display: block; }
+    .btn-actualizar-estado-docs:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      filter: grayscale(0.15);
+    }
     .tab-documentacion-admin-btn { border: 1px solid #c9cfd6; background: #fff; color: #4a5a6a; border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
     .tab-documentacion-admin-btn.activa { background: #eef4ff; color: var(--brand); border-color: #9fb2c7; font-weight: 700; }
     .tab-documentacion-admin-btn.icono-usuarios {
@@ -1273,7 +1293,15 @@
             <img src="assets/icono-usuarios-publicos.svg" alt="">
             Usuarios públicos
           </button>
-          <div class="tabs-documentacion-admin-acciones"></div>
+          <div class="tabs-documentacion-admin-acciones">
+            <button type="button" class="btn-actualizar-estado-docs" id="btnActualizarEstadosDocs" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22l-4-9-9-4 20-7z"></path>
+              </svg>
+              Actualizar estado de la documentación
+            </button>
+          </div>
         </div>
         <div class="documentacion-admin-meta-linea">
           <div class="documentacion-admin-meta-items">
@@ -1306,7 +1334,7 @@
               <thead>
                 <tr>
                   <th>Solicitante</th>
-                  <th>Documento pendiente</th>
+                  <th>Documento</th>
                   <th>Última entrega</th>
                   <th>Estado</th>
                   <th></th>
@@ -1691,6 +1719,7 @@
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
     let pendienteRevisionSeleccionId = null;
+    let cambiosPendientesRevisionAdmin = new Map();
     let usuariosPublicosSecretaria = [];
     let usuariosPublicosSecretariaFiltrados = [];
     let usuarioPublicoSecretariaSeleccionId = null;
@@ -1725,6 +1754,22 @@
 
     function esAutogestionAdminEditable() {
       return (esAdmin() || esSecretaria()) && !!documentacionAdminContexto?.editable;
+    }
+
+    function contarCambiosPendientesRevisionAdmin() {
+      return cambiosPendientesRevisionAdmin.size;
+    }
+
+    function actualizarBotonActualizarEstadosDocs() {
+      const btn = document.getElementById("btnActualizarEstadosDocs");
+      if (!btn) return;
+      const activaBandeja = documentacionAdminVistaActual === "pendientes";
+      const editable = esAutogestionAdminEditable();
+      const total = contarCambiosPendientesRevisionAdmin();
+      btn.disabled = !(activaBandeja && editable && total > 0);
+      btn.title = total > 0
+        ? `Aplicar cambios de estado (${total})`
+        : "No hay cambios de estado pendientes";
     }
 
     function jsonMessage(id, tipo, texto) {
@@ -3116,6 +3161,7 @@
       accionesModo.classList.toggle("ocultas", !esAdmin());
       btnCambioModo.classList.toggle("oculto", !esAdmin());
       btnCambioModo.disabled = !esAdmin();
+      actualizarBotonActualizarEstadosDocs();
     }
 
     function activarVistaDocumentacionAdmin(vista = "base") {
@@ -3367,6 +3413,7 @@
 
       if (!esAutogestionAdminEditable()) {
         pendienteRevisionSeleccionId = null;
+        cambiosPendientesRevisionAdmin = new Map();
         vacio.classList.remove("oculto");
         vacio.textContent = esSecretaria()
           ? "La secretaría no tiene ahora mismo remisiones pendientes de revisión."
@@ -3377,6 +3424,7 @@
 
       if (!pendientesRevisionAdmin.length) {
         pendienteRevisionSeleccionId = null;
+        cambiosPendientesRevisionAdmin = new Map();
         vacio.classList.remove("oculto");
         vacio.textContent = "No hay expedientes pendientes de revisión documental.";
         actualizarAccionesDocumentacionAdmin();
@@ -3397,11 +3445,14 @@
           ? `<div class="pendiente-admin-sublinea">Administrador: ${item.admin_nombre_publico || item.admin_nombre || "Administrador adscrito"}</div>`
           : "";
         const estado = String(item.estado || "EN_REVISION").toUpperCase();
-        const claseEstado = estado === "VALIDADO"
+        const cambioPendiente = cambiosPendientesRevisionAdmin.get(Number(item.archivo_id || 0)) || null;
+        const estadoMostrado = String(cambioPendiente?.estado || estado).toUpperCase();
+        const claseEstadoMostrado = estadoMostrado === "VALIDADO"
           ? "estado-validado"
-          : estado === "RECHAZADO"
+          : estadoMostrado === "RECHAZADO"
             ? "estado-rechazado"
             : "estado-revision";
+        const marcaCambio = cambioPendiente ? `<div class="pendiente-admin-sublinea">Cambio pendiente de envío</div>` : "";
         tr.innerHTML = `
           <td>
             <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
@@ -3410,13 +3461,14 @@
           <td>
             <div>${item.nombre_documento || "Documento pendiente"}</div>
             <div class="pendiente-admin-sublinea">Versión ${Number(item.version_documental || 0)}</div>
+            ${marcaCambio}
           </td>
           <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
           <td>
-            <select class="select-estado-revision ${claseEstado}" data-estado-pendiente="${Number(item.archivo_id || 0)}">
-              <option value="EN_REVISION" ${estado === "EN_REVISION" ? "selected" : ""}>En revisión</option>
-              <option value="VALIDADO" ${estado === "VALIDADO" ? "selected" : ""}>Validado</option>
-              <option value="RECHAZADO" ${estado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
+            <select class="select-estado-revision ${claseEstadoMostrado}" data-estado-pendiente="${Number(item.archivo_id || 0)}">
+              <option value="EN_REVISION" ${estadoMostrado === "EN_REVISION" ? "selected" : ""}>En revisión</option>
+              <option value="VALIDADO" ${estadoMostrado === "VALIDADO" ? "selected" : ""}>Validado</option>
+              <option value="RECHAZADO" ${estadoMostrado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
             </select>
           </td>
           <td>
@@ -3435,6 +3487,7 @@
         body.appendChild(tr);
       });
       actualizarAccionesDocumentacionAdmin();
+      actualizarBotonActualizarEstadosDocs();
     }
 
     function renderizarBloqueDocumentacionAdmin() {
@@ -3601,6 +3654,7 @@
     async function cargarPendientesRevisionAdmin() {
       if (!esAutogestionAdminEditable()) {
         pendientesRevisionAdmin = [];
+        cambiosPendientesRevisionAdmin = new Map();
         renderizarPendientesRevisionAdmin();
         return;
       }
@@ -3622,10 +3676,21 @@
         if (!res.ok || !data?.ok) {
           throw new Error(data?.error || "No se pudo cargar la bandeja de pendientes.");
         }
-        pendientesRevisionAdmin = Array.isArray(data?.expedientes) ? data.expedientes : [];
+        pendientesRevisionAdmin = (Array.isArray(data?.expedientes) ? data.expedientes : []).map((item) => {
+          const estado = String(item?.estado || "EN_REVISION").trim().toUpperCase();
+          return {
+            ...item,
+            estado: estado || "EN_REVISION",
+            estado_original: estado || "EN_REVISION",
+            observaciones_admin: String(item?.observaciones_admin || ""),
+            observaciones_originales: String(item?.observaciones_admin || "")
+          };
+        });
+        cambiosPendientesRevisionAdmin = new Map();
         renderizarPendientesRevisionAdmin();
       } catch (error) {
         pendientesRevisionAdmin = [];
+        cambiosPendientesRevisionAdmin = new Map();
         renderizarPendientesRevisionAdmin();
         const mensaje = String(error?.message || "").trim();
         const esMensajeDePermisoDocumental =
@@ -3659,38 +3724,77 @@
       window.open(expediente.archivo_url, "_blank", "noopener");
     }
 
-    async function guardarCambioPendienteRevision(item, { estado, observaciones }) {
+    function registrarCambioPendienteRevision(item, { estado, observaciones }) {
+      if (!item) return;
+      const archivoId = Number(item?.archivo_id || 0);
+      if (!archivoId) return;
       const estadoNormalizado = String(estado || item?.estado || "EN_REVISION").trim().toUpperCase();
       const observacionesNormalizadas = String(observaciones ?? item?.observaciones_admin ?? "").trim();
+      const estadoOriginal = String(item?.estado_original || item?.estado || "EN_REVISION").trim().toUpperCase();
+      const observacionesOriginales = String(item?.observaciones_originales ?? item?.observaciones_admin ?? "").trim();
+      const hayCambio = estadoNormalizado !== estadoOriginal || observacionesNormalizadas !== observacionesOriginales;
+      if (hayCambio) {
+        cambiosPendientesRevisionAdmin.set(archivoId, {
+          archivo_id: archivoId,
+          documentacion_id: Number(item?.id || 0),
+          estado: estadoNormalizado,
+          observaciones_admin: observacionesNormalizadas
+        });
+      } else {
+        cambiosPendientesRevisionAdmin.delete(archivoId);
+      }
+      actualizarBotonActualizarEstadosDocs();
+    }
+
+    async function aplicarCambiosPendientesRevision() {
+      const cambios = Array.from(cambiosPendientesRevisionAdmin.values());
+      if (!cambios.length) {
+        mostrarMensajePerfilTemporal("error", "No hay cambios pendientes de estado para actualizar.");
+        return;
+      }
       const endpoint = esSecretaria()
         ? "/api/secretaria/documentacion-resolver-agrupado"
         : "/api/admin/documentacion-resolver-agrupado";
-      const payload = {
-        documentacion_id: Number(item?.id || 0),
-        cambios: [{
-          archivo_id: Number(item?.archivo_id || 0),
-          estado: estadoNormalizado,
-          observaciones_admin: observacionesNormalizadas
-        }]
-      };
-      if (!esSecretaria()) {
-        payload.admin_id = Number(documentacionAdminContexto?.admin_id || 0);
+      const adminId = Number(documentacionAdminContexto?.admin_id || 0);
+      const grupos = new Map();
+      for (const cambio of cambios) {
+        const docId = Number(cambio.documentacion_id || 0);
+        if (!docId) continue;
+        if (!grupos.has(docId)) grupos.set(docId, []);
+        grupos.get(docId).push({
+          archivo_id: Number(cambio.archivo_id || 0),
+          estado: String(cambio.estado || "EN_REVISION").toUpperCase(),
+          observaciones_admin: String(cambio.observaciones_admin || "")
+        });
+      }
+      const gruposLista = Array.from(grupos.entries());
+      if (!gruposLista.length) {
+        mostrarMensajePerfilTemporal("error", "No hay cambios válidos para actualizar.");
+        return;
       }
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "No se pudo guardar la revisión documental.");
+      const btn = document.getElementById("btnActualizarEstadosDocs");
+      if (btn) btn.disabled = true;
+      try {
+        for (const [documentacionId, cambiosDoc] of gruposLista) {
+          const payload = { documentacion_id: documentacionId, cambios: cambiosDoc };
+          if (!esSecretaria()) payload.admin_id = adminId;
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            throw new Error(data?.error || "No se pudo actualizar la revisión documental.");
+          }
+        }
+        mostrarMensajePerfilTemporal("ok", "Estados documentales actualizados.");
+        await cargarPendientesRevisionAdmin();
+      } finally {
+        actualizarBotonActualizarEstadosDocs();
       }
-
-      item.estado = estadoNormalizado;
-      item.observaciones_admin = observacionesNormalizadas;
-      return data;
     }
 
     async function abrirObservacionesPendienteParaRechazo(item, select) {
@@ -3703,11 +3807,10 @@
         editable: true,
         requireNonEmpty: true,
         onGuardar: async (texto) => {
-          await guardarCambioPendienteRevision(item, {
+          registrarCambioPendienteRevision(item, {
             estado: "RECHAZADO",
             observaciones: texto
           });
-          mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
           renderizarPendientesRevisionAdmin();
         }
       });
@@ -4622,28 +4725,31 @@
       if (!Number.isInteger(archivoId) || archivoId <= 0) return;
       const item = (pendientesRevisionAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
       if (!item) return;
-      const estadoAnterior = String(item.estado || "EN_REVISION").trim().toUpperCase();
-      if (String(select.value || "").trim().toUpperCase() === "RECHAZADO") {
+      const cambioGuardado = cambiosPendientesRevisionAdmin.get(archivoId);
+      const estadoAnterior = String(cambioGuardado?.estado || item.estado || "EN_REVISION").trim().toUpperCase();
+      const observacionesAnteriores = String(cambioGuardado?.observaciones_admin ?? item.observaciones_admin ?? "");
+      const nuevoEstado = String(select.value || "").trim().toUpperCase();
+      if (nuevoEstado === "RECHAZADO") {
         select.value = estadoAnterior;
         refrescarClaseSelectRevision(select);
-        await abrirObservacionesPendienteParaRechazo(item, select);
+        await abrirObservacionesPendienteParaRechazo(
+          { ...item, observaciones_admin: observacionesAnteriores },
+          select
+        );
         return;
       }
+      registrarCambioPendienteRevision(item, {
+        estado: nuevoEstado,
+        observaciones: observacionesAnteriores
+      });
       refrescarClaseSelectRevision(select);
-      select.disabled = true;
+      renderizarPendientesRevisionAdmin();
+    });
+    document.getElementById("btnActualizarEstadosDocs").addEventListener("click", async function () {
       try {
-        await guardarCambioPendienteRevision(item, {
-          estado: select.value,
-          observaciones: item.observaciones_admin || ""
-        });
-        mostrarMensajePerfilTemporal("ok", "Estado documental actualizado.");
-        renderizarPendientesRevisionAdmin();
+        await aplicarCambiosPendientesRevision();
       } catch (error) {
-        select.value = item.estado || "EN_REVISION";
-        refrescarClaseSelectRevision(select);
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudo actualizar el estado documental.");
-      } finally {
-        select.disabled = false;
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron actualizar los estados documentales.");
       }
     });
     document.getElementById("selectCambioModoDocumentalAdmin").addEventListener("change", actualizarEstadoModalCambioModoDocumentalAdmin);
