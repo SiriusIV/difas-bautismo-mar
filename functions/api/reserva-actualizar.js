@@ -618,7 +618,7 @@ export async function onRequestPost(context) {
       ? null
       : parseInt(franjaRaw, 10);
     const plazasSolicitadas = parseInt(
-      data.plazas_reservadas ? data.plazas_solicitadas,
+      data.plazas_solicitadas ?? data.plazas_reservadas,
       10
     );
 
@@ -1220,7 +1220,6 @@ export async function onRequestPost(context) {
     );
   }
 }
-
 
 
 
