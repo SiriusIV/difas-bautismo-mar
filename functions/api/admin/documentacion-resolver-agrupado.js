@@ -8,6 +8,7 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -286,6 +287,10 @@ export async function onRequestPost(context) {
       ultimosArchivos
     );
     const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, ultimosArchivos);
+    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
+      adminId,
+      documentacionId
+    });
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -319,14 +324,16 @@ export async function onRequestPost(context) {
         centro: expediente || {},
         estado_expediente: estadoExpediente,
         cambios: cambiosAplicados,
-        resumen_documental: resumenDocumentalCorreo
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       }),
       html: construirEmailHtmlResolucionExpedienteDocumental({
         admin: admin || {},
         centro: expediente || {},
         estado_expediente: estadoExpediente,
         cambios: cambiosAplicados,
-        resumen_documental: resumenDocumentalCorreo
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       })
     });
 

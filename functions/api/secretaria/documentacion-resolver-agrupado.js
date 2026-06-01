@@ -5,6 +5,7 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
 import { getSecretariaSession, obtenerExpedienteGestionadoPorSecretaria } from "./_documental.js";
 
 function json(data, init = {}) {
@@ -76,6 +77,39 @@ function calcularEstadoGlobal(documentosBaseActivos, archivosActivos) {
   if (estados.some((estado) => estado === "NO_ENVIADO")) return "NO_COMPLETADO";
   if (estados.every((estado) => estado === "VALIDADO")) return "VALIDADA";
   return "EN_REVISION";
+}
+
+function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos = []) {
+  const archivosPorNombre = new Map(
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo?.nombre_documento), archivo])
+  );
+  const validados = [];
+  const pendientes = [];
+
+  for (const doc of Array.isArray(documentosBaseActivos) ? documentosBaseActivos : []) {
+    const nombre = limpiarTexto(doc?.nombre);
+    if (!nombre) continue;
+    const entrega = archivosPorNombre.get(nombre) || null;
+
+    if (!entrega) {
+      pendientes.push({ nombre, motivo: "No remitido" });
+      continue;
+    }
+    if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+      pendientes.push({ nombre, motivo: "Desactualizado" });
+      continue;
+    }
+    const estado = normalizarEstadoDocumento(entrega.estado);
+    if (estado === "VALIDADO") {
+      validados.push({ nombre, observaciones_admin: limpiarTexto(entrega?.observaciones_admin || "") });
+    } else if (estado === "RECHAZADO") {
+      pendientes.push({ nombre, motivo: "Rechazado" });
+    } else {
+      pendientes.push({ nombre, motivo: "Pendiente de validación" });
+    }
+  }
+
+  return { completo: pendientes.length === 0 && validados.length > 0, validados, pendientes };
 }
 
 export async function onRequestPost(context) {
@@ -185,6 +219,14 @@ export async function onRequestPost(context) {
       documentosBaseActivos?.results || [],
       seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || [])
     );
+    const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(
+      documentosBaseActivos?.results || [],
+      seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || [])
+    );
+    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
+      adminId: Number(expediente.admin_id || 0),
+      documentacionId
+    });
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -210,13 +252,17 @@ export async function onRequestPost(context) {
         admin: secretaria || {},
         centro: expediente || {},
         estado_expediente: estadoExpediente,
-        cambios: cambiosAplicados
+        cambios: cambiosAplicados,
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       }),
       html: construirEmailHtmlResolucionExpedienteDocumental({
         admin: secretaria || {},
         centro: expediente || {},
         estado_expediente: estadoExpediente,
-        cambios: cambiosAplicados
+        cambios: cambiosAplicados,
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       })
     });
 

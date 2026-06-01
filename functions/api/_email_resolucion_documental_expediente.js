@@ -30,12 +30,18 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   centro,
   estado_expediente,
   cambios = [],
-  resumen_documental = null
+  resumen_documental = null,
+  resumen_actividades = null
 }) {
   const resumen = resumen_documental || {};
   const validados = Array.isArray(resumen.validados) ? resumen.validados : [];
   const pendientes = Array.isArray(resumen.pendientes) ? resumen.pendientes : [];
   const validacionCompleta = !!resumen.completo;
+  const resumenActividades = resumen_actividades || {};
+  const totalActivas = Number(resumenActividades.total_activas || 0);
+  const totalSolicitables = Number(resumenActividades.solicitables_total || 0);
+  const puedeTodas = !!resumenActividades.puede_todas;
+  const actividadesSolicitables = Array.isArray(resumenActividades.solicitables) ? resumenActividades.solicitables : [];
 
   const lineas = [
     "El estado de tu documentación obligatoria ha sido revisado.",
@@ -66,8 +72,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     lineas.push(
       "",
       "IMPORTANTE:",
-      "Ya tienes toda la documentación obligatoria validada para este organizador.",
-      "Debes reiniciar la solicitud de la actividad en la que desees participar."
+      "Ya tienes toda la documentación obligatoria validada para este organizador."
     );
   } else {
     const cambiosValidados = (Array.isArray(cambios) ? cambios : []).filter(
@@ -91,11 +96,33 @@ export function construirEmailTextoResolucionExpedienteDocumental({
         lineas.push(`- ${limpiarTexto(doc?.nombre)} (${limpiarTexto(doc?.motivo)})`);
       });
     }
+    if (pendientes.length) {
+      lineas.push(
+        "",
+        "IMPORTANTE:",
+        "Aún no tienes toda la documentación obligatoria completada para este organizador.",
+        "Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
+      );
+    }
+  }
+
+  if (totalActivas <= 0) {
+    lineas.push("", "Actualmente este organizador no tiene actividades activas disponibles para solicitud.");
+  } else if (puedeTodas) {
     lineas.push(
       "",
-      "IMPORTANTE:",
-      "Aún no tienes toda la documentación obligatoria completada para este organizador.",
-      "Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
+      "Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.",
+      "Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar."
+    );
+  } else if (totalSolicitables > 0) {
+    lineas.push("", "Con la documentación validada actual puedes solicitar las siguientes actividades:");
+    actividadesSolicitables.forEach((nombre) => lineas.push(`- ${limpiarTexto(nombre)}`));
+    lineas.push("", "Para otras actividades de este organizador, debes completar la documentación pendiente.");
+  } else {
+    lineas.push(
+      "",
+      "Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.",
+      "Debes completar y validar los documentos pendientes para habilitar solicitudes."
     );
   }
 
@@ -108,12 +135,18 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
   centro,
   estado_expediente,
   cambios = [],
-  resumen_documental = null
+  resumen_documental = null,
+  resumen_actividades = null
 }) {
   const resumen = resumen_documental || {};
   const validados = Array.isArray(resumen.validados) ? resumen.validados : [];
   const pendientes = Array.isArray(resumen.pendientes) ? resumen.pendientes : [];
   const validacionCompleta = !!resumen.completo;
+  const resumenActividades = resumen_actividades || {};
+  const totalActivas = Number(resumenActividades.total_activas || 0);
+  const totalSolicitables = Number(resumenActividades.solicitables_total || 0);
+  const puedeTodas = !!resumenActividades.puede_todas;
+  const actividadesSolicitables = Array.isArray(resumenActividades.solicitables) ? resumenActividades.solicitables : [];
 
   const filas = (Array.isArray(cambios) ? cambios : []).map((cambio) => `
     <tr>
@@ -149,7 +182,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
         </table>
       ` : ""}
       <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria validada para este organizador. Debes reiniciar la solicitud de la actividad en la que desees participar.
+        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria validada para este organizador.
       </p>
     `
     : `
@@ -175,10 +208,43 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
         ? `<p><strong>Documentos pendientes para completar la validación:</strong></p><ul>${listaPendientes}</ul>`
         : ""
       }
-      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
+      ${pendientes.length ? `
+        <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
+          <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
+        </p>
+      ` : ""}
+    `;
+
+  let bloqueActividades = "";
+  if (totalActivas <= 0) {
+    bloqueActividades = `
+      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">
+        Actualmente este organizador no tiene actividades activas disponibles para solicitud.
       </p>
     `;
+  } else if (puedeTodas) {
+    bloqueActividades = `
+      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;">
+        <strong>Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.</strong><br>
+        Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.
+      </p>
+    `;
+  } else if (totalSolicitables > 0) {
+    bloqueActividades = `
+      <p><strong>Con la documentación validada actual puedes solicitar las siguientes actividades:</strong></p>
+      <ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul>
+      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
+        Para otras actividades de este organizador, debes completar la documentación pendiente.
+      </p>
+    `;
+  } else {
+    bloqueActividades = `
+      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
+        <strong>Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.</strong><br>
+        Debes completar y validar los documentos pendientes para habilitar solicitudes.
+      </p>
+    `;
+  }
 
   return `
     <p>El estado de tu documentación obligatoria ha sido revisado.</p>
@@ -199,6 +265,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
       </table>
     ` : ""}
     ${bloqueResultado}
+    ${bloqueActividades}
     <p>Puedes acceder a la plataforma para consultar el resultado detallado.</p>
   `;
 }

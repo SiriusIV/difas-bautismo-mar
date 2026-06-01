@@ -7,6 +7,7 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { crearNotificacion } from "../_notificaciones.js";
+import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -296,6 +297,10 @@ export async function onRequestPost(context) {
       archivosResumen
     );
     const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosResumen);
+    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
+      adminId,
+      documentacionId
+    });
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -330,7 +335,8 @@ export async function onRequestPost(context) {
           estado: nuevoEstadoDocumento,
           observaciones_admin: observaciones
         }],
-        resumen_documental: resumenDocumentalCorreo
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       }),
       html: construirEmailHtmlResolucionExpedienteDocumental({
         admin: admin || {},
@@ -343,7 +349,8 @@ export async function onRequestPost(context) {
           estado: nuevoEstadoDocumento,
           observaciones_admin: observaciones
         }],
-        resumen_documental: resumenDocumentalCorreo
+        resumen_documental: resumenDocumentalCorreo,
+        resumen_actividades: resumenActividadesCorreo
       })
     });
 
