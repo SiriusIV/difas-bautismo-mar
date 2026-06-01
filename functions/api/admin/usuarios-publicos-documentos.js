@@ -35,11 +35,11 @@ function parsearFechaComparable(valor) {
 
 function etiquetarEstado(estado) {
   const valor = limpiarTexto(estado).toUpperCase();
-  if (!valor) return "No remitido";
-  if (valor === "VALIDADO") return "Validado";
+  if (!valor) return "No presentado";
+  if (valor === "VALIDADO" || valor === "VALIDADA") return "Aprobado";
   if (valor === "RECHAZADO") return "Rechazado";
   if (valor === "NO_ACTUALIZADO") return "Desactualizado";
-  if (valor === "EN_REVISION" || valor === "EN REVISIÓN") return "En revisión";
+  if (valor === "EN_REVISION" || valor === "EN REVISIÃ“N") return "En revisiÃ³n";
   return valor;
 }
 
@@ -55,7 +55,7 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
     const usuarioId = parsearIdPositivo(url.searchParams.get("usuario_id"));
     if (!usuarioId) {
-      return json({ ok: false, error: "Debes indicar un usuario válido." }, { status: 400 });
+      return json({ ok: false, error: "Debes indicar un usuario vÃ¡lido." }, { status: 400 });
     }
 
     const usuario = await env.DB.prepare(`
@@ -66,7 +66,7 @@ export async function onRequestGet(context) {
     `).bind(usuarioId).first();
 
     if (!usuario || limpiarTexto(usuario.rol).toUpperCase() !== "SOLICITANTE") {
-      return json({ ok: false, error: "Usuario público no válido." }, { status: 404 });
+      return json({ ok: false, error: "Usuario pÃºblico no vÃ¡lido." }, { status: 404 });
     }
 
     const adminId = Number(session.usuario_id || 0);
@@ -175,7 +175,7 @@ export async function onRequestGet(context) {
         archivo_id: Number(archivo?.id || 0),
         archivo_url: archivo?.archivo_url || "",
         estado_bruto: estado || "",
-        estado: estado ? etiquetarEstado(estado) : "No remitido",
+        estado: estado ? etiquetarEstado(estado) : "No presentado",
         fecha_subida: archivo?.fecha_subida || ""
       };
     });
@@ -204,7 +204,7 @@ export async function onRequestGet(context) {
     return json(
       {
         ok: false,
-        error: "No se pudo cargar la documentación del usuario.",
+        error: "No se pudo cargar la documentaciÃ³n del usuario.",
         detalle: error?.message || String(error || "")
       },
       { status: 500 }

@@ -1,4 +1,4 @@
-﻿import { nombreVisibleAdmin } from "./_email.js";
+import { nombreVisibleAdmin } from "./_email.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -9,7 +9,7 @@ function escaparHtml(valor) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -18,10 +18,11 @@ function etiquetaEstado(estado) {
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  if (e === "VALIDADA" || e === "APROBADA") return "Validado";
-  if (e === "VALIDADO") return "Validado";
-  if (e === "RECHAZADO") return "Rechazado";
+  if (e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA") return "Aprobado";
+  if (e === "RECHAZADO" || e === "RECHAZADA") return "Rechazado";
   if (e === "EN_REVISION") return "En revisión";
+  if (e === "NO_ACTUALIZADO") return "Desactualizado";
+  if (e === "NO_ENVIADO" || e === "NO_INICIADO") return "No presentado";
   return e || "Sin estado";
 }
 
@@ -48,7 +49,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     "",
     `Organizador: ${nombreVisibleAdmin(admin)}`,
     `Centro: ${limpiarTexto(centro?.centro)}`,
-    `Estado del expediente: ${limpiarTexto(estado_expediente)}`
+    `Estado de la documentación: ${limpiarTexto(estado_expediente)}`
   ];
 
   if (Array.isArray(cambios) && cambios.length) {
@@ -62,7 +63,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   }
 
   if (validacionCompleta) {
-    lineas.push("", "Documentación obligatoria validada al completo:");
+    lineas.push("", "Documentación obligatoria aprobada al completo:");
     validados.forEach((doc) => {
       lineas.push(`- ${limpiarTexto(doc?.nombre)}`);
       if (limpiarTexto(doc?.observaciones_admin)) {
@@ -72,36 +73,28 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     lineas.push(
       "",
       "IMPORTANTE:",
-      "Ya tienes toda la documentación obligatoria validada para este organizador."
+      "Ya tienes toda la documentación obligatoria aprobada para este organizador."
     );
   } else {
-    const cambiosValidados = (Array.isArray(cambios) ? cambios : []).filter(
-      (item) => {
-        const e = limpiarTexto(item?.estado)
-          .toUpperCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-        return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
-      }
-    );
-    if (cambiosValidados.length) {
-      lineas.push("", "Se ha validado la documentación siguiente:");
-      cambiosValidados.forEach((doc) => {
-        lineas.push(`- ${limpiarTexto(doc?.nombre_documento)}`);
-      });
+    const cambiosAprobados = (Array.isArray(cambios) ? cambios : []).filter((item) => {
+      const e = limpiarTexto(item?.estado)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
+    });
+    if (cambiosAprobados.length) {
+      lineas.push("", "Se ha aprobado la documentación siguiente:");
+      cambiosAprobados.forEach((doc) => lineas.push(`- ${limpiarTexto(doc?.nombre_documento)}`));
     }
     if (pendientes.length) {
       lineas.push("", "Documentos pendientes para completar la validación:");
-      pendientes.forEach((doc) => {
-        lineas.push(`- ${limpiarTexto(doc?.nombre)} (${limpiarTexto(doc?.motivo)})`);
-      });
-    }
-    if (pendientes.length) {
+      pendientes.forEach((doc) => lineas.push(`- ${limpiarTexto(doc?.nombre)} (${limpiarTexto(doc?.motivo)})`));
       lineas.push(
         "",
         "IMPORTANTE:",
         "Aún no tienes toda la documentación obligatoria completada para este organizador.",
-        "Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
+        "Mientras no estén remitidos y aprobados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
       );
     }
   }
@@ -169,104 +162,60 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
 
   const bloqueResultado = validacionCompleta
     ? `
-      <p><strong>Documentación obligatoria validada al completo.</strong></p>
+      <p><strong>Documentación obligatoria aprobada al completo.</strong></p>
       ${filasValidados ? `
         <table style="border-collapse:collapse;width:100%;max-width:760px;margin-top:8px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento validado</th>
-              <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th>
-            </tr>
-          </thead>
-          <tbody>${filasValidados}</tbody>
+          <thead><tr>
+            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento aprobado</th>
+            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th>
+          </tr></thead><tbody>${filasValidados}</tbody>
         </table>
       ` : ""}
       <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria validada para este organizador.
+        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria aprobada para este organizador.
       </p>
     `
     : `
-      ${(Array.isArray(cambios) ? cambios : []).some((item) => limpiarTexto(item?.estado).toUpperCase() === "VALIDADO")
-        ? `
-          <p><strong>Se ha validado la documentación siguiente:</strong></p>
-          <ul>
-            ${(Array.isArray(cambios) ? cambios : [])
+      ${(Array.isArray(cambios) ? cambios : []).some((item) => {
+          const e = limpiarTexto(item?.estado).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
+        })
+        ? `<p><strong>Se ha aprobado la documentación siguiente:</strong></p>
+           <ul>${(Array.isArray(cambios) ? cambios : [])
               .filter((item) => {
-                const e = limpiarTexto(item?.estado)
-                  .toUpperCase()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "");
+                const e = limpiarTexto(item?.estado).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
               })
-              .map((doc) => `<li>${escaparHtml(doc?.nombre_documento || "")}</li>`)
-              .join("")}
-          </ul>
-        `
+              .map((doc) => `<li>${escaparHtml(doc?.nombre_documento || "")}</li>`).join("")}</ul>`
         : ""
       }
-      ${listaPendientes
-        ? `<p><strong>Documentos pendientes para completar la validación:</strong></p><ul>${listaPendientes}</ul>`
-        : ""
-      }
+      ${listaPendientes ? `<p><strong>Documentos pendientes para completar la validación:</strong></p><ul>${listaPendientes}</ul>` : ""}
       ${pendientes.length ? `
         <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-          <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
+          <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y aprobados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
         </p>
       ` : ""}
     `;
 
   let bloqueActividades = "";
   if (totalActivas <= 0) {
-    bloqueActividades = `
-      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">
-        Actualmente este organizador no tiene actividades activas disponibles para solicitud.
-      </p>
-    `;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente este organizador no tiene actividades activas disponibles para solicitud.</p>`;
   } else if (puedeTodas) {
-    bloqueActividades = `
-      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;">
-        <strong>Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.</strong><br>
-        Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.
-      </p>
-    `;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
   } else if (totalSolicitables > 0) {
-    bloqueActividades = `
-      <p><strong>Con la documentación validada actual puedes solicitar las siguientes actividades:</strong></p>
-      <ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul>
-      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        Para otras actividades de este organizador, debes completar la documentación pendiente.
-      </p>
-    `;
+    bloqueActividades = `<p><strong>Con la documentación validada actual puedes solicitar las siguientes actividades:</strong></p><ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
   } else {
-    bloqueActividades = `
-      <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.</strong><br>
-        Debes completar y validar los documentos pendientes para habilitar solicitudes.
-      </p>
-    `;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
   }
 
   return `
     <p>El estado de tu documentación obligatoria ha sido revisado.</p>
     <p><strong>Organizador:</strong> ${escaparHtml(nombreVisibleAdmin(admin))}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
-    <p><strong>Estado del expediente:</strong> ${escaparHtml(estado_expediente || "")}</p>
-    ${filas ? `
-      <p><strong>Detalle de la revisión</strong></p>
-      <table style="border-collapse:collapse;width:100%;max-width:760px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento</th>
-            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Estado</th>
-            <th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>${filas}</tbody>
-      </table>
-    ` : ""}
+    <p><strong>Estado de la documentación:</strong> ${escaparHtml(estado_expediente || "")}</p>
+    ${filas ? `<p><strong>Detalle de la revisión</strong></p><table style="border-collapse:collapse;width:100%;max-width:760px;"><thead><tr><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Estado</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th></tr></thead><tbody>${filas}</tbody></table>` : ""}
     ${bloqueResultado}
     ${bloqueActividades}
     <p>Puedes acceder a la plataforma para consultar el resultado detallado.</p>
   `;
 }
-

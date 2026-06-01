@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -573,10 +573,6 @@
             <span class="aviso-icono" aria-hidden="true">!</span>
             La desactivación de solicitudes impide al usuario la participación en las actividades ofertadas por la organización.
           </p>
-          <button type="button" class="btn-docs" id="btnVerDocsUsuario" title="Ver documentación remitida" aria-label="Ver documentación remitida" disabled>
-            <img src="assets/icono-ver-documento.svg" alt="">
-            <span class="btn-docs-texto">Ver documentación del usuario</span>
-          </button>
         </div>
       </div>
 
@@ -589,6 +585,7 @@
               <th>Email</th>
               <th>Teléfono</th>
               <th class="th-solicitudes">Solicitudes</th>
+              <th>Documentación</th>
               <th class="th-situacion">Situación</th>
             </tr>
           </thead>
@@ -753,7 +750,7 @@
       if (!lista.length) {
         usuarioSeleccionadoId = null;
         actualizarAccionesUsuarioUI();
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
       }
       if (!lista.some((item) => Number(item.id) === Number(usuarioSeleccionadoId))) {
@@ -782,6 +779,12 @@
               </label>
             </span>
           </td>
+          <td data-label="Documentación">
+            <button type="button" class="btn-docs" title="Ver documentos" aria-label="Ver documentos" onclick="abrirModalDocsUsuario(${Number(item.id)})">
+              <img src="assets/icono-ver-documento.svg" alt="">
+              <span class="btn-docs-texto">Ver documentos</span>
+            </button>
+          </td>
           <td class="td-situacion" data-label="Situación">
             <button type="button" class="situacion-btn" onclick="abrirModalSituacion(${Number(item.id)})">
               <span class="situacion-label ${bloqueado ? "situacion-bloqueada" : "situacion-activa"}">${escapeHtml(etiquetaSituacion)}</span>
@@ -803,10 +806,7 @@
       renderTabla();
     }
 
-    function actualizarAccionesUsuarioUI() {
-      const btn = document.getElementById("btnVerDocsUsuario");
-      if (btn) btn.disabled = !(Number(usuarioSeleccionadoId) > 0);
-    }
+    function actualizarAccionesUsuarioUI() {}
 
     function formatearFechaUI(valor) {
       const texto = String(valor || "").trim();
@@ -939,8 +939,9 @@
       }
     }
 
-    async function abrirModalDocsUsuario() {
-      const usuario = usuarios.find((item) => Number(item.id) === Number(usuarioSeleccionadoId));
+    async function abrirModalDocsUsuario(usuarioIdParam = null) {
+      const usuarioObjetivoId = Number(usuarioIdParam || usuarioSeleccionadoId || 0);
+      const usuario = usuarios.find((item) => Number(item.id) === usuarioObjetivoId);
       if (!usuario) {
         setMensaje("error", "Selecciona un usuario para consultar su documentación.");
         return;
@@ -979,7 +980,7 @@
           let claseEstado = "estado-doc";
           if (!doc.archivo_url) {
             claseEstado += " vacio";
-          } else if (estadoUpper.includes("VALID")) {
+          } else if (estadoUpper.includes("VALID") || estadoUpper.includes("APROB")) {
             claseEstado += " validado";
           } else if (estadoUpper.includes("RECHAZ")) {
             claseEstado += " rechazado";
@@ -1110,7 +1111,6 @@
       aplicarFiltroUsuarios();
       renderTabla();
     });
-    document.getElementById("btnVerDocsUsuario").addEventListener("click", abrirModalDocsUsuario);
     document.getElementById("btnDocAccionVer").addEventListener("click", () => ejecutarAccionDocumento("ver"));
     document.getElementById("btnDocAccionValidar").addEventListener("click", () => ejecutarAccionDocumento("validar"));
     document.getElementById("btnDocAccionRechazar").addEventListener("click", () => ejecutarAccionDocumento("rechazar"));
