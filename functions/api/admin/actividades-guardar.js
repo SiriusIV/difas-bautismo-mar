@@ -672,7 +672,7 @@ export async function onRequestPut(context) {
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
-    const activaActual = Number(actual.activa ? actual.visible_portal ? 1) === 1 ? 1 : 0;
+    const activaActual = Number(actual?.activa || 0) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
 
     const errorValidacion = validarActividad(body);
@@ -1045,6 +1045,5 @@ export async function onRequestDelete(context) {
     );
   }
 }
-
 
 
