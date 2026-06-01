@@ -258,7 +258,11 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) 132px;
       gap: 10px;
-      align-items: end;
+      align-items: start;
+    }
+    .fila-centro-cif-nota {
+      grid-column: 1 / -1;
+      margin-top: -2px;
     }
 
     .campo-documento-inline {
@@ -566,12 +570,12 @@
                   <input type="text" id="centro" name="centro" autocomplete="organization" required>
                   <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
                 </div>
-                <div class="nota" id="notaCentro">Este dato identifica la cuenta y no podrá cambiarse después.</div>
               </div>
               <div id="campoNifCifEntidad">
                 <label for="nif_cif_entidad">NIF/CIF<span class="campo-obligatorio">*</span></label>
                 <input type="text" id="nif_cif_entidad" name="nif_cif_entidad" maxlength="9" placeholder="A12345674" autocomplete="off" required>
               </div>
+              <div class="nota fila-centro-cif-nota" id="notaCentro">Este dato identifica la cuenta y no podrá cambiarse después.</div>
             </div>
 
             <div class="campo-completo">
