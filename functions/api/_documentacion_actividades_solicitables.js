@@ -53,6 +53,12 @@ export async function construirResumenActividadesSolicitables(env, {
       FROM actividades
       WHERE admin_id = ?
         AND activo = 1
+        AND COALESCE(requiere_reserva, 0) = 1
+        AND COALESCE(visible_portal, 0) = 1
+        AND (
+          fecha_fin IS NULL
+          OR date(fecha_fin) >= date('now')
+        )
       ORDER BY id DESC
     `).bind(admin).all(),
     env.DB.prepare(`

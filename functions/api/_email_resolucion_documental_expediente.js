@@ -100,7 +100,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   }
 
   if (totalActivas <= 0) {
-    lineas.push("", "Actualmente este organizador no tiene actividades activas disponibles para solicitud.");
+    lineas.push("", "Actualmente este organizador no tiene actividades activas que requieran reserva disponibles para solicitud.");
   } else if (puedeTodas) {
     lineas.push(
       "",
@@ -114,7 +114,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   } else {
     lineas.push(
       "",
-      "Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.",
+      `Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${nombreVisibleAdmin(admin)} que requieran reserva.`,
       "Debes completar y validar los documentos pendientes para habilitar solicitudes."
     );
   }
@@ -199,13 +199,13 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
 
   let bloqueActividades = "";
   if (totalActivas <= 0) {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente este organizador no tiene actividades activas disponibles para solicitud.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente este organizador no tiene actividades activas que requieran reserva disponibles para solicitud.</p>`;
   } else if (puedeTodas) {
     bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación validada actual puedes solicitar todas las actividades activas de este organizador.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
   } else if (totalSolicitables > 0) {
     bloqueActividades = `<p><strong>Con la documentación validada actual puedes solicitar las siguientes actividades:</strong></p><ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
   } else {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación validada actual todavía no puedes solicitar ninguna actividad de este organizador.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${escaparHtml(nombreVisibleAdmin(admin))} que requieran reserva.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
   }
 
   return `
