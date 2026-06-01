@@ -707,6 +707,20 @@
     .modal-doc-base-info h3 { margin-top: 18px; padding-right: 34px; }
     .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; text-align: justify; }
     .modal-doc-base-info .modal-doc-base-acciones { justify-content: center; }
+    #btnVerDesdeInfoDocumentoBaseAdmin {
+      background: #e8f1ff;
+      border-color: #b7c8da;
+      color: #1f2f42;
+    }
+    #btnVerDesdeInfoDocumentoBaseAdmin:hover:not(:disabled) {
+      background: #dbe9ff;
+      border-color: #8ea8c6;
+      color: #10253c;
+    }
+    #btnVerDesdeInfoDocumentoBaseAdmin:disabled {
+      opacity: 0.55;
+      color: #6b7c8f;
+    }
     #btnCerrarInfoDocumentoBaseAdminTop {
       position: absolute;
       top: 8px;
@@ -1130,8 +1144,8 @@
         grid-template-columns: 38% 24px minmax(0, 1fr);
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .btn-info-doc-mobile {
-        grid-column: 2;
-        justify-self: start;
+        grid-column: 1;
+        justify-self: end;
         margin-right: 0;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .admin-doc-titulo-linea {
