@@ -6,7 +6,7 @@ import {
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
-import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
+import { construirResumenActividadesSolicitablesSecretaria } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -140,7 +140,7 @@ export async function onRequestPost(context) {
       FROM admin_documentos_comunes
       WHERE admin_id = ?
         AND activo = 1
-    `).bind(Number(session.usuario_id || 0)).all();
+    `).bind(adminId).all();
     const documentosBaseActivos = (docsBaseRows?.results || []).map((row) => ({
       nombre: limpiarTexto(row.nombre),
       version_documental: Number(row.version_documental || 0)
@@ -180,9 +180,9 @@ export async function onRequestPost(context) {
     const resumenCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos);
     let resumenActividadesCorreo = null;
     try {
-      resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
-        adminId,
-        documentacionId
+      resumenActividadesCorreo = await construirResumenActividadesSolicitablesSecretaria(env, {
+        secretariaId: Number(session.usuario_id || 0),
+        centroUsuarioId: Number(expediente.centro_usuario_id || 0)
       });
     } catch (errorResumenActividades) {
       console.error("No se pudo calcular el resumen de actividades solicitables (secretaría).", {
@@ -279,7 +279,6 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "No se pudo actualizar el documento.", detalle: error?.message || String(error) }, 500);
   }
 }
-
 
 
 

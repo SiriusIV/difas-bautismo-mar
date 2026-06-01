@@ -43,6 +43,15 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   const totalSolicitables = Number(resumenActividades.solicitables_total || 0);
   const puedeTodas = !!resumenActividades.puede_todas;
   const actividadesSolicitables = Array.isArray(resumenActividades.solicitables) ? resumenActividades.solicitables : [];
+  const actividadesFormateadas = actividadesSolicitables.map((item) => {
+    if (typeof item === "string") {
+      return { actividad: limpiarTexto(item), organizador: "" };
+    }
+    return {
+      actividad: limpiarTexto(item?.actividad || item?.nombre || ""),
+      organizador: limpiarTexto(item?.organizador || item?.admin_nombre || "")
+    };
+  }).filter((item) => item.actividad);
 
   const lineas = [
     "El estado de tu documentación obligatoria ha sido revisado.",
@@ -108,7 +117,9 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     );
   } else if (totalSolicitables > 0) {
     lineas.push("", "Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:");
-    actividadesSolicitables.forEach((nombre) => lineas.push(`- ${limpiarTexto(nombre)}`));
+    actividadesFormateadas.forEach((item) => {
+      lineas.push(`- ${item.actividad}${item.organizador ? ` (Organizador: ${item.organizador})` : ""}`);
+    });
     lineas.push("", "Para otras actividades de este organizador, debes completar la documentación pendiente.");
   } else {
     lineas.push(
@@ -139,6 +150,15 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
   const totalSolicitables = Number(resumenActividades.solicitables_total || 0);
   const puedeTodas = !!resumenActividades.puede_todas;
   const actividadesSolicitables = Array.isArray(resumenActividades.solicitables) ? resumenActividades.solicitables : [];
+  const actividadesFormateadas = actividadesSolicitables.map((item) => {
+    if (typeof item === "string") {
+      return { actividad: limpiarTexto(item), organizador: "" };
+    }
+    return {
+      actividad: limpiarTexto(item?.actividad || item?.nombre || ""),
+      organizador: limpiarTexto(item?.organizador || item?.admin_nombre || "")
+    };
+  }).filter((item) => item.actividad);
 
   const filas = (Array.isArray(cambios) ? cambios : []).map((cambio) => `
     <tr>
@@ -202,7 +222,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
   } else if (puedeTodas) {
     bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación actualmente aprobada puedes solicitar todas las actividades activas de este organizador que requieran reserva.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
   } else if (totalSolicitables > 0) {
-    bloqueActividades = `<p><strong>Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:</strong></p><ul>${actividadesSolicitables.map((nombre) => `<li>${escaparHtml(nombre)}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
+    bloqueActividades = `<p><strong>Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:</strong></p><ul>${actividadesFormateadas.map((item) => `<li>${escaparHtml(item.actividad)}${item.organizador ? ` <span style="color:#4b5f73;">(Organizador: ${escaparHtml(item.organizador)})</span>` : ""}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
   } else {
     bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${escaparHtml(nombreVisibleAdmin(admin))} que requieran reserva.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
   }

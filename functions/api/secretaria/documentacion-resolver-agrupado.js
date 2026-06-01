@@ -5,7 +5,9 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
-import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
+import {
+  construirResumenActividadesSolicitablesSecretaria
+} from "../_documentacion_actividades_solicitables.js";
 import { getSecretariaSession, obtenerExpedienteGestionadoPorSecretaria } from "./_documental.js";
 
 function json(data, init = {}) {
@@ -225,9 +227,9 @@ export async function onRequestPost(context) {
     );
     let resumenActividadesCorreo = null;
     try {
-      resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
-        adminId: Number(expediente.admin_id || 0),
-        documentacionId
+      resumenActividadesCorreo = await construirResumenActividadesSolicitablesSecretaria(env, {
+        secretariaId: Number(session.usuario_id || 0),
+        centroUsuarioId: Number(expediente.centro_usuario_id || 0)
       });
     } catch (errorResumenActividades) {
       console.error("No se pudo calcular el resumen de actividades solicitables (secretaria).", {
