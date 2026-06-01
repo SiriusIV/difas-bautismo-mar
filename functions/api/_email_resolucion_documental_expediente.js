@@ -14,7 +14,11 @@ function escaparHtml(valor) {
 }
 
 function etiquetaEstado(estado) {
-  const e = limpiarTexto(estado).toUpperCase();
+  const e = limpiarTexto(estado)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (e === "VALIDADA" || e === "APROBADA") return "Validado";
   if (e === "VALIDADO") return "Validado";
   if (e === "RECHAZADO") return "Rechazado";
   if (e === "EN_REVISION") return "En revisión";
@@ -67,7 +71,13 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     );
   } else {
     const cambiosValidados = (Array.isArray(cambios) ? cambios : []).filter(
-      (item) => limpiarTexto(item?.estado).toUpperCase() === "VALIDADO"
+      (item) => {
+        const e = limpiarTexto(item?.estado)
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
+      }
     );
     if (cambiosValidados.length) {
       lineas.push("", "Se ha validado la documentación siguiente:");
@@ -148,7 +158,13 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
           <p><strong>Se ha validado la documentación siguiente:</strong></p>
           <ul>
             ${(Array.isArray(cambios) ? cambios : [])
-              .filter((item) => limpiarTexto(item?.estado).toUpperCase() === "VALIDADO")
+              .filter((item) => {
+                const e = limpiarTexto(item?.estado)
+                  .toUpperCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "");
+                return e === "VALIDADO" || e === "VALIDADA" || e === "APROBADA";
+              })
               .map((doc) => `<li>${escaparHtml(doc?.nombre_documento || "")}</li>`)
               .join("")}
           </ul>

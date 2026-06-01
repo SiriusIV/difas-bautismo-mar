@@ -25,7 +25,13 @@ function parsearIdPositivo(valor) {
 }
 
 function normalizarEstadoDocumento(estado) {
-  const valor = String(estado || "").trim().toUpperCase();
+  const valor = String(estado || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (valor === "VALIDADA" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "EN REVISION") return "EN_REVISION";
   return valor || "EN_REVISION";
 }
 
