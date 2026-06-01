@@ -704,7 +704,9 @@
     }
     .modal-doc-base .mensaje { margin-top: 10px; }
     .modal-doc-base-info { position: relative; }
-    .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; }
+    .modal-doc-base-info h3 { margin-top: 18px; padding-right: 34px; }
+    .modal-doc-base-info p { margin-top: 10px; white-space: pre-wrap; text-align: justify; }
+    .modal-doc-base-info .modal-doc-base-acciones { justify-content: center; }
     #btnCerrarInfoDocumentoBaseAdminTop {
       position: absolute;
       top: 8px;
@@ -1123,6 +1125,20 @@
         content: attr(data-label);
         color: #4a6076;
         font-weight: 700;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] {
+        grid-template-columns: 38% 24px minmax(0, 1fr);
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .btn-info-doc-mobile {
+        grid-column: 2;
+        justify-self: start;
+        margin-right: 0;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .admin-doc-titulo-linea {
+        grid-column: 3;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .admin-doc-meta {
+        grid-column: 3;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-nombre,
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-meta {
@@ -3671,10 +3687,8 @@
         tr.dataset.docId = String(Number(doc.id || 0));
         tr.innerHTML = `
           <td data-label="Título">
-            <div class="admin-doc-titulo-linea">
-              <button type="button" class="btn-info-doc-mobile" data-info-doc-id="${Number(doc.id || 0)}" aria-label="Información del documento" title="Información del documento">i</button>
-              <div class="admin-doc-nombre">${doc.nombre || "Documento"}</div>
-            </div>
+            <button type="button" class="btn-info-doc-mobile" data-info-doc-id="${Number(doc.id || 0)}" aria-label="Información del documento" title="Información del documento">i</button>
+            <div class="admin-doc-titulo-linea"><div class="admin-doc-nombre">${doc.nombre || "Documento"}</div></div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
           </td>
           <td data-label="Versión">${Number(doc.version_documental || 0)}</td>
