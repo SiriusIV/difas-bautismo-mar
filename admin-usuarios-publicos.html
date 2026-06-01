@@ -167,6 +167,13 @@
       color: #1e2a36;
       font-size: 14px;
     }
+    .valor-truncado {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .tabla-wrap { overflow-x: auto; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; }
     table { width: 100%; min-width: 920px; border-collapse: collapse; }
     th, td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 14px; }
@@ -438,11 +445,29 @@
         grid-column: 2;
         justify-self: end;
       }
-      .tabla-toolbar { align-items: stretch; }
-      .tabla-toolbar-izq, .tabla-toolbar-der { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
-      .btn-docs { align-self: flex-start; }
+      .tabla-toolbar {
+        align-items: stretch;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .tabla-toolbar-izq {
+        order: 1;
+        flex: 1 1 100%;
+        min-width: 0;
+        justify-content: flex-start;
+      }
+      .tabla-toolbar-der {
+        order: 2;
+        flex: 1 1 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .btn-docs { align-self: flex-end; margin-left: 0; }
       .campo-busqueda { max-width: none; }
-      .aviso-ambito { text-align: left; max-width: none; white-space: normal; }
+      .aviso-ambito { text-align: left; max-width: none; white-space: normal; width: 100%; }
 
       .tabla-wrap { border: 0; background: transparent; overflow: visible; }
       table { min-width: 0; width: 100%; }
@@ -482,6 +507,7 @@
       .switch-mini input:checked + .slider-mini:before { transform: translateX(28px); }
       .situacion-btn { width: 100%; max-width: 100%; justify-content: flex-start; }
       .situacion-label { min-width: 0; width: 100%; max-width: 100%; font-size: 11px; padding: 5px 8px; justify-content: flex-start; }
+      td > .valor-truncado { width: 100%; }
     }
   </style>
 </head>
@@ -724,10 +750,10 @@
           : `Activada desde ${textoFecha}`;
         const activa = Number(item.id) === Number(usuarioSeleccionadoId);
         return `<tr class="${activa ? "fila-activa" : ""}" data-usuario-id="${Number(item.id)}">
-          <td data-label="Centro">${escapeHtml(nombreCentro)}</td>
-          <td data-label="Responsable">${escapeHtml(item.nombre || "-")}</td>
-          <td data-label="Email">${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : "-"}</td>
-          <td data-label="Teléfono">${escapeHtml(item.telefono_contacto || "-")}</td>
+          <td data-label="Centro"><span class="valor-truncado" title="${escapeHtml(nombreCentro)}">${escapeHtml(nombreCentro)}</span></td>
+          <td data-label="Responsable"><span class="valor-truncado" title="${escapeHtml(item.nombre || "-")}">${escapeHtml(item.nombre || "-")}</span></td>
+          <td data-label="Email">${item.email ? `<a class="valor-truncado" href="mailto:${escapeHtml(item.email)}" title="${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : `<span class="valor-truncado">-</span>`}</td>
+          <td data-label="Teléfono"><span class="valor-truncado" title="${escapeHtml(item.telefono_contacto || "-")}">${escapeHtml(item.telefono_contacto || "-")}</span></td>
           <td class="td-solicitudes" data-label="Solicitudes">
             <span class="estado-wrap">
               <label class="switch-mini" title="${bloqueado ? "Bloqueado" : "Permitido"}">
