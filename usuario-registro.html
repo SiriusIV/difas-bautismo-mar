@@ -29,7 +29,12 @@
       margin: 0;
       min-height: 100vh;
       font-family: Arial, sans-serif;
-      background: linear-gradient(180deg, #f6f8fb 0%, #eef3f8 100%);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
+        linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
+        url("assets/fondo_cabecera.png") top center / 100% auto no-repeat,
+        #f4f6f8;
+      background-blend-mode: normal, screen, normal;
       color: var(--text);
       display: flex;
       align-items: center;
@@ -256,7 +261,7 @@
     .fila-centro-cif {
       grid-column: 1 / -1;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 132px;
+      grid-template-columns: minmax(0, 1fr) 118px;
       gap: 10px;
       align-items: start;
     }
@@ -442,6 +447,72 @@
       color: var(--primary);
       border-color: #9fb2c7;
     }
+    .btn-capsula {
+      min-height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid #bfc9d4;
+      background: #fff;
+      color: #4a5a6a;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-capsula svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+    .btn-capsula:hover {
+      background: #f7f9fb;
+      color: var(--primary);
+      border-color: #9fb2c7;
+    }
+    .acciones-formulario {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-enviar-registro {
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid #9cb6d8;
+      background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+      color: #123a63;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .btn-enviar-registro svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .btn-enviar-registro:hover {
+      background: linear-gradient(180deg, #ffffff 0%, #e2edff 100%);
+      border-color: #7fa3cb;
+      color: #0f3153;
+    }
 
     .btn-principal {
       background: var(--primary);
@@ -479,6 +550,9 @@
       }
 
       .campo-telefono-localidad {
+        grid-template-columns: 1fr;
+      }
+      .fila-centro-cif {
         grid-template-columns: 1fr;
       }
 
@@ -521,19 +595,13 @@
         <div class="registro-main-cabecera">
           <h2>Registro</h2>
           <div class="registro-acciones-main">
-            <button type="button" class="btn btn-icono" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
+            <button type="button" class="btn btn-capsula" id="btnVolver" aria-label="Volver al portal" title="Volver al portal">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3 10.5L12 3l9 7.5"></path>
                 <path d="M5 9.5V21h14V9.5"></path>
                 <path d="M9 21v-6h6v6"></path>
               </svg>
-            </button>
-            <button type="submit" form="formRegistro" class="btn btn-icono" id="btnEnviarRegistro" aria-label="Crear cuenta" title="Crear cuenta">
-              <svg id="iconoRegistroAccion" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
+              <span>Volver al portal</span>
             </button>
           </div>
         </div>
@@ -643,6 +711,15 @@
 
             <div class="campo-completo" id="bloqueNotaPassword">
               <div class="nota">La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, una minúscula, un número y un carácter especial.</div>
+            </div>
+            <div class="campo-completo acciones-formulario">
+              <button type="submit" class="btn-enviar-registro" id="btnEnviarRegistro" aria-label="Enviar solicitud de registro" title="Enviar solicitud de registro">
+                <svg id="iconoRegistroAccion" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22 2L11 13"></path>
+                  <path d="M22 2L15 22l-4-9-9-4 20-7z"></path>
+                </svg>
+                <span>Enviar solicitud de registro</span>
+              </button>
             </div>
           </div>
 
@@ -1023,16 +1100,12 @@
       }
 
       if (btnAccion) {
-        btnAccion.setAttribute("aria-label", armada ? "Enviar solicitud" : "Crear cuenta");
-        btnAccion.setAttribute("title", armada ? "Enviar solicitud" : "Crear cuenta");
+        btnAccion.setAttribute("aria-label", "Enviar solicitud de registro");
+        btnAccion.setAttribute("title", "Enviar solicitud de registro");
       }
 
       if (iconoAccion) {
-        if (armada) {
-          iconoAccion.innerHTML = '<path d="M22 2L11 13"></path><path d="M22 2L15 22l-4-9-9-4 20-7z"></path>';
-        } else {
-          iconoAccion.innerHTML = '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline>';
-        }
+        iconoAccion.innerHTML = '<path d="M22 2L11 13"></path><path d="M22 2L15 22l-4-9-9-4 20-7z"></path>';
       }
 
       if (bloquePassword) bloquePassword.style.display = armada ? "none" : "";
