@@ -152,8 +152,10 @@
       cursor: pointer;
       padding: 0;
       margin-left: 4px;
+      gap: 6px;
     }
     .btn-docs img { width: 17px; height: 17px; display: block; }
+    .btn-docs-texto { display: none; }
     .btn-docs:disabled { opacity: .55; cursor: not-allowed; }
     .campo-busqueda { width: 100%; max-width: 340px; }
     .campo-busqueda label { display: block; font-size: 13px; color: #35506a; margin-bottom: 4px; font-weight: 600; padding-left: 8px; }
@@ -465,7 +467,23 @@
         align-items: stretch;
         gap: 8px;
       }
-      .btn-docs { align-self: flex-end; margin-left: 0; }
+      .btn-docs {
+        align-self: flex-start;
+        margin-left: 0;
+        width: auto;
+        min-width: 0;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 999px;
+      }
+      .btn-docs-texto {
+        display: inline;
+        font-size: 12px;
+        font-weight: 700;
+        color: #123a63;
+        line-height: 1;
+        white-space: nowrap;
+      }
       .campo-busqueda { max-width: none; }
       .aviso-ambito { text-align: left; max-width: none; white-space: normal; width: 100%; }
 
@@ -556,6 +574,7 @@
           </p>
           <button type="button" class="btn-docs" id="btnVerDocsUsuario" title="Ver documentación remitida" aria-label="Ver documentación remitida" disabled>
             <img src="assets/icono-ver-documento.svg" alt="">
+            <span class="btn-docs-texto">Ver documentación del usuario</span>
           </button>
         </div>
       </div>
@@ -970,9 +989,9 @@
           }
           const estadoLabel = `<span class="${claseEstado}">${escapeHtml(estado)}</span>`;
           return `<tr data-doc-idx="${index}">
-            <td>${escapeHtml(doc.nombre_documento || "-")}</td>
-            <td>${estadoLabel}</td>
-            <td>${escapeHtml(fecha || "-")}</td>
+            <td data-label="Documento">${escapeHtml(doc.nombre_documento || "-")}</td>
+            <td data-label="Estado">${estadoLabel}</td>
+            <td data-label="Fecha">${escapeHtml(fecha || "-")}</td>
           </tr>`;
         }).join("");
         tbody.querySelectorAll("tr[data-doc-idx]").forEach((fila) => {
