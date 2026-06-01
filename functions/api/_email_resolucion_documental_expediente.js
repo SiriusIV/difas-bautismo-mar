@@ -52,7 +52,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   }
 
   if (validacionCompleta) {
-    lineas.push("", "documentación obligatoria validada al completo:");
+    lineas.push("", "Documentación obligatoria validada al completo:");
     validados.forEach((doc) => {
       lineas.push(`- ${limpiarTexto(doc?.nombre)}`);
       if (limpiarTexto(doc?.observaciones_admin)) {
@@ -61,7 +61,8 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     });
     lineas.push(
       "",
-      "IMPORTANTE: Ya puedes solicitar actividades.",
+      "IMPORTANTE:",
+      "Ya tienes toda la documentación obligatoria validada para este organizador.",
       "Debes reiniciar la solicitud de la actividad en la que desees participar."
     );
   } else {
@@ -82,7 +83,9 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     }
     lineas.push(
       "",
-      "Mientras no estén remitidos y validados todos los documentos obligatorios, no se admitirá el envío de solicitudes de actividad."
+      "IMPORTANTE:",
+      "Aún no tienes toda la documentación obligatoria completada para este organizador.",
+      "Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
     );
   }
 
@@ -123,7 +126,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
 
   const bloqueResultado = validacionCompleta
     ? `
-      <p><strong>documentación obligatoria validada al completo.</strong></p>
+      <p><strong>Documentación obligatoria validada al completo.</strong></p>
       ${filasValidados ? `
         <table style="border-collapse:collapse;width:100%;max-width:760px;margin-top:8px;">
           <thead>
@@ -136,7 +139,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
         </table>
       ` : ""}
       <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Importante:</strong> Ya puedes solicitar actividades. Debes reiniciar la solicitud de la actividad en la que desees participar.
+        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria validada para este organizador. Debes reiniciar la solicitud de la actividad en la que desees participar.
       </p>
     `
     : `
@@ -157,7 +160,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
         : ""
       }
       <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Atención:</strong> Mientras no estén remitidos y validados todos los documentos obligatorios, no se admitirá el envío de solicitudes de actividad.
+        <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y validados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
       </p>
     `;
 
