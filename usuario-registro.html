@@ -108,6 +108,7 @@
       font-size: 13px;
       line-height: 1.55;
       color: rgba(255, 255, 255, 0.86);
+      text-align: justify;
     }
 
     .registro-aside-cuerpo {
@@ -251,6 +252,13 @@
 
     .campo-completo {
       grid-column: 1 / -1;
+    }
+    .fila-centro-cif {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 180px;
+      gap: 10px;
+      align-items: end;
     }
 
     .campo-documento-inline {
@@ -500,7 +508,7 @@
         <div class="registro-aside-cuerpo">
           <h1 id="registroAsideTitulo">Alta de usuario público</h1>
           <p id="registroAsideDescripcion">
-            El registro de usuarios públicos está reservado para colectivos o entidades públicas o privadas, no para usuarios particulares. Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.
+            El registro de usuarios públicos está reservado para colectivos o entidades públicas o privadas, no para usuarios particulares.<br><br>Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.
           </p>
         </div>
       </aside>
@@ -537,7 +545,7 @@
             <div class="campo-completo">
               <label for="tipo_cuenta">Tipo de cuenta<span class="campo-obligatorio">*</span></label>
               <select id="tipo_cuenta" name="tipo_cuenta" required>
-                <option value="PUBLICO">Usuario público</option>
+                <option value="PUBLICO">Usuario público (entidades y organismos públicos / privados)</option>
                 <option value="ARMADA">Usuario Armada</option>
               </select>
             </div>
@@ -551,13 +559,19 @@
               <div class="nota" id="notaNombreInterno">Este nombre identifica internamente la cuenta administrativa.</div>
             </div>
 
-            <div class="campo-completo">
-              <label for="centro" id="labelCentro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
-              <div class="input-con-ayuda">
-                <input type="text" id="centro" name="centro" autocomplete="organization" required>
-                <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
+            <div class="fila-centro-cif">
+              <div>
+                <label for="centro" id="labelCentro">Nombre del centro / entidad<span class="campo-obligatorio">*</span></label>
+                <div class="input-con-ayuda">
+                  <input type="text" id="centro" name="centro" autocomplete="organization" required>
+                  <button type="button" class="btn-ayuda-campo" id="btnAyudaCentro" aria-label="Información sobre centro o entidad" title="Información">i</button>
+                </div>
+                <div class="nota" id="notaCentro">Este dato identifica la cuenta y no podrá cambiarse después.</div>
               </div>
-              <div class="nota" id="notaCentro">Este dato identifica la cuenta y no podrá cambiarse después.</div>
+              <div id="campoNifCifEntidad">
+                <label for="nif_cif_entidad">NIF/CIF<span class="campo-obligatorio">*</span></label>
+                <input type="text" id="nif_cif_entidad" name="nif_cif_entidad" maxlength="9" placeholder="A12345674" autocomplete="off" required>
+              </div>
             </div>
 
             <div class="campo-completo">
@@ -745,6 +759,18 @@
       return texto.slice(0, 16);
     }
 
+    function limpiarNifCifEntidad(valor) {
+      return String(valor || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 9);
+    }
+
+    function aplicarFormatoNifCifEntidad() {
+      const input = document.getElementById("nif_cif_entidad");
+      if (!input) return;
+      input.value = limpiarNifCifEntidad(input.value);
+      input.placeholder = "A12345674";
+      input.maxLength = 9;
+    }
+
     function aplicarFormatoDocumento() {
       const tipo = document.getElementById("tipo_documento").value.trim().toUpperCase();
       const input = document.getElementById("documento_identificacion");
@@ -792,6 +818,49 @@
     function letraDni(numero) {
       const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
       return letras[numero % 23];
+    }
+
+    function calcularControlCif(cifLimpio) {
+      const digitos = cifLimpio.slice(1, 8).split("").map((n) => Number(n));
+      const sumaPares = digitos.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0);
+      const sumaImpares = digitos
+        .filter((_, i) => i % 2 === 0)
+        .map((n) => {
+          const d = n * 2;
+          return Math.floor(d / 10) + (d % 10);
+        })
+        .reduce((a, b) => a + b, 0);
+      const total = sumaPares + sumaImpares;
+      const controlNumero = (10 - (total % 10)) % 10;
+      const controlLetra = "JABCDEFGHI"[controlNumero];
+      return { controlNumero: String(controlNumero), controlLetra };
+    }
+
+    function validarCifEntidadDetallado(cif) {
+      const d = limpiarNifCifEntidad(cif);
+      if (!d) return { ok: false, error: "Debes indicar el NIF/CIF de la entidad." };
+      if (d.length < 9) return { ok: false, error: "El NIF/CIF debe tener 1 letra, 7 dígitos y 1 carácter de control." };
+      if (d.length > 9) return { ok: false, error: "El NIF/CIF no puede tener más de 1 letra, 7 dígitos y 1 carácter de control." };
+      if (!/^[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[A-Z0-9]$/.test(d)) {
+        return { ok: false, error: "El NIF/CIF debe tener formato válido: prefijo, 7 dígitos y control final." };
+      }
+      const prefijo = d[0];
+      const controlRecibido = d[8];
+      const { controlNumero, controlLetra } = calcularControlCif(d);
+      const prefijosSoloNumero = "ABEH";
+      const prefijosSoloLetra = "KPQS";
+      if (prefijosSoloNumero.includes(prefijo) && controlRecibido !== controlNumero) {
+        return { ok: false, error: `El dígito de control del NIF/CIF no es correcto. Debe ser ${controlNumero}.` };
+      }
+      if (prefijosSoloLetra.includes(prefijo) && controlRecibido !== controlLetra) {
+        return { ok: false, error: `La letra de control del NIF/CIF no es correcta. Debe ser ${controlLetra}.` };
+      }
+      if (!prefijosSoloNumero.includes(prefijo) && !prefijosSoloLetra.includes(prefijo)) {
+        if (controlRecibido !== controlNumero && controlRecibido !== controlLetra) {
+          return { ok: false, error: `El control del NIF/CIF no es correcto. Debe ser ${controlNumero} o ${controlLetra}.` };
+        }
+      }
+      return { ok: true };
     }
 
     function validarDocumentoDetallado(tipo, documento) {
@@ -884,12 +953,14 @@
       const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
       const bloqueCargoPuesto = document.getElementById("bloqueCargoPuesto");
       const campoDocumento = document.getElementById("campoDocumento");
+      const campoNifCifEntidad = document.getElementById("campoNifCifEntidad");
       const campoLocalidad = document.getElementById("campoLocalidad");
       const campoTelefonoRpv = document.getElementById("campoTelefonoRpv");
       const inputCargoPuesto = document.getElementById("cargo_puesto");
       const inputNombreInterno = document.getElementById("nombre_interno");
       const inputTipoDocumento = document.getElementById("tipo_documento");
       const inputDocumento = document.getElementById("documento_identificacion");
+      const inputNifCifEntidad = document.getElementById("nif_cif_entidad");
       const inputLocalidad = document.getElementById("localidad");
       const inputTelefonoRpv = document.getElementById("telefono_rpv");
       const labelNombreInterno = document.getElementById("labelNombreInterno");
@@ -942,9 +1013,9 @@
       }
 
       if (asideDescripcion) {
-        asideDescripcion.textContent = armada
+        asideDescripcion.innerHTML = armada
           ? "Solicita el alta de una cuenta administrativa. El acceso quedará pendiente de revisión y aprobación por el superadministrador."
-          : "El registro de usuarios públicos está reservado para colectivos o entidades públicas o privadas, no para usuarios particulares. Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.";
+          : "El registro de usuarios públicos está reservado para colectivos o entidades públicas o privadas, no para usuarios particulares.<br><br>Crea una cuenta con los datos básicos de la entidad solicitante para gestionar reservas y solicitudes.";
       }
 
       if (btnAccion) {
@@ -965,6 +1036,7 @@
       if (bloqueNotaPassword) bloqueNotaPassword.style.display = armada ? "none" : "";
       if (bloqueCargoPuesto) bloqueCargoPuesto.style.display = armada ? "" : "none";
       if (campoDocumento) campoDocumento.style.display = armada ? "none" : "";
+      if (campoNifCifEntidad) campoNifCifEntidad.style.display = armada ? "none" : "";
       if (campoLocalidad) campoLocalidad.style.display = armada ? "none" : "";
       if (campoTelefonoRpv) campoTelefonoRpv.style.display = armada ? "" : "none";
       if (campoNombreInterno) campoNombreInterno.style.display = armada ? "" : "none";
@@ -976,6 +1048,7 @@
       inputNombreInterno.required = armada;
       inputTipoDocumento.required = !armada;
       inputDocumento.required = !armada;
+      inputNifCifEntidad.required = !armada;
       inputTelefonoRpv.required = armada;
 
       if (!armada) {
@@ -987,6 +1060,7 @@
         inputPasswordConfirmacion.value = "";
         inputTipoDocumento.value = "";
         inputDocumento.value = "";
+        inputNifCifEntidad.value = "";
         inputLocalidad.value = "";
       } else {
         inputCargoPuesto.value = "";
@@ -1006,6 +1080,7 @@
       const cargo_puesto = document.getElementById("cargo_puesto").value.trim();
       const tipo_documento = document.getElementById("tipo_documento").value.trim().toUpperCase();
       const documento_identificacion = document.getElementById("documento_identificacion").value.trim().toUpperCase();
+      const nif_cif_entidad = document.getElementById("nif_cif_entidad").value.trim().toUpperCase();
       const email = document.getElementById("email").value.trim();
       const telefono_contacto = document.getElementById("telefono_contacto").value.trim();
       const localidad = document.getElementById("localidad").value.trim();
@@ -1055,10 +1130,19 @@
           mostrarMensaje("error", "Debe completar los campos obligatorios.");
           return;
         }
+        if (!nif_cif_entidad) {
+          mostrarMensaje("error", "Debe indicar el NIF/CIF de la entidad.");
+          return;
+        }
 
         const validacionDocumento = validarDocumentoDetallado(tipo_documento, documento_identificacion);
         if (!validacionDocumento.ok) {
           mostrarMensaje("error", validacionDocumento.error || "El documento no coincide con el tipo seleccionado.");
+          return;
+        }
+        const validacionNifCifEntidad = validarCifEntidadDetallado(nif_cif_entidad);
+        if (!validacionNifCifEntidad.ok) {
+          mostrarMensaje("error", validacionNifCifEntidad.error || "El NIF/CIF no es válido.");
           return;
         }
 
@@ -1093,6 +1177,7 @@
             cargo_puesto,
             tipo_documento,
             documento_identificacion,
+            nif_cif_entidad,
             email,
             telefono_contacto,
             localidad,
@@ -1138,6 +1223,7 @@
     document.getElementById("tipo_cuenta").addEventListener("change", actualizarFormularioSegunTipoCuenta);
     document.getElementById("tipo_documento").addEventListener("change", aplicarFormatoDocumento);
     document.getElementById("documento_identificacion").addEventListener("input", aplicarFormatoDocumento);
+    document.getElementById("nif_cif_entidad").addEventListener("input", aplicarFormatoNifCifEntidad);
     document.getElementById("telefono_rpv").addEventListener("input", aplicarFormatoTelefonoRpv);
     document.getElementById("btnTogglePasswordRegistro").addEventListener("click", function () {
       alternarVisibilidadPassword("password", "btnTogglePasswordRegistro");
@@ -1195,6 +1281,7 @@
 
     actualizarFormularioSegunTipoCuenta();
     aplicarFormatoDocumento();
+    aplicarFormatoNifCifEntidad();
     actualizarBotonPasswordVisible("password", "btnTogglePasswordRegistro");
     actualizarBotonPasswordVisible("password_confirmacion", "btnTogglePasswordConfirmacionRegistro");
   </script>
