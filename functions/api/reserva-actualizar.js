@@ -1,4 +1,4 @@
-﻿import { crearNotificacion } from "./_notificaciones.js";
+import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
@@ -123,7 +123,7 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
   codigoReserva
 } = {}) {
   const idAdmin = Number(adminId || 0);
-  if (!(idAdmin > 0)) return { ok: false, skipped: true, error: "Administrador no vÃ¡lido." };
+  if (!(idAdmin > 0)) return { ok: false, skipped: true, error: "Administrador no válido." };
 
   return await crearNotificacion(env, {
     usuarioId: idAdmin,
@@ -618,12 +618,12 @@ export async function onRequestPost(context) {
       ? null
       : parseInt(franjaRaw, 10);
     const plazasSolicitadas = parseInt(
-      data.plazas_reservadas ?? data.plazas_solicitadas,
+      data.plazas_reservadas ? data.plazas_solicitadas,
       10
     );
 
     if (!tokenEdicion) {
-      return json({ ok: false, error: "Falta el token de ediciÃ³n." }, { status: 400 });
+      return json({ ok: false, error: "Falta el token de edición." }, { status: 400 });
     }
 
     if (!centro || !contacto || !telefono || !email) {
@@ -631,11 +631,11 @@ export async function onRequestPost(context) {
     }
 
     if (!esEmailValido(email)) {
-      return json({ ok: false, error: "El correo electrÃ³nico no tiene un formato vÃ¡lido." }, { status: 400 });
+      return json({ ok: false, error: "El correo electrónico no tiene un formato válido." }, { status: 400 });
     }
 
     if (!Number.isInteger(plazasSolicitadas) || plazasSolicitadas <= 0) {
-      return json({ ok: false, error: "Debe indicar un nÃºmero vÃ¡lido de plazas reservadas." }, { status: 400 });
+      return json({ ok: false, error: "Debe indicar un número válido de plazas reservadas." }, { status: 400 });
     }
 
     const reservaActual = await obtenerReservaPorToken(env, tokenEdicion);
@@ -663,7 +663,7 @@ export async function onRequestPost(context) {
     const enviaSolicitud = enviarBorrador || reenviarRechazada;
 
     if (Number(actividad.activa || 0) !== 1 && !guardarBorrador) {
-      return json({ ok: false, error: "La actividad asociada estÃ¡ desactivada y no admite el envÃ­o de la solicitud." }, { status: 400 });
+      return json({ ok: false, error: "La actividad asociada está desactivada y no admite el envío de la solicitud." }, { status: 400 });
     }
 
     if (enviaSolicitud && Number(user.id || 0) > 0) {
@@ -681,7 +681,7 @@ export async function onRequestPost(context) {
     }
 
     if (usaFranjas && (!Number.isInteger(franjaIdNueva) || franjaIdNueva <= 0)) {
-      return json({ ok: false, error: "La franja horaria indicada no es vÃ¡lida." }, { status: 400 });
+      return json({ ok: false, error: "La franja horaria indicada no es válida." }, { status: 400 });
     }
 
     if (!usaFranjas && franjaIdNueva !== null) {
@@ -799,7 +799,7 @@ export async function onRequestPost(context) {
         return json(
           {
             ok: false,
-            error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operaciÃ³n: ${disponiblesEditables}. Solicitadas: ${totalSolicitado}.`
+            error: `No hay plazas suficientes en la franja seleccionada. Disponibles para esta operación: ${disponiblesEditables}. Solicitadas: ${totalSolicitado}.`
           },
           { status: 400 }
         );
@@ -877,7 +877,7 @@ export async function onRequestPost(context) {
       const minutosConsolidacion = calcularMinutosConsolidacion(plazasSolicitadas);
       const prereservaExpiraEn = await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
       if (!prereservaExpiraEn) {
-        return json({ ok: false, error: "No se pudo calcular la expiraciÃ³n de la prereserva." }, { status: 500 });
+        return json({ ok: false, error: "No se pudo calcular la expiración de la prereserva." }, { status: 500 });
       }
 
       const updateResult = await env.DB.prepare(`
@@ -1220,5 +1220,7 @@ export async function onRequestPost(context) {
     );
   }
 }
+
+
 
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -1227,7 +1227,7 @@
           return;
         }
 
-        let textoConfirmacion = "Â¿Seguro que deseas eliminar esta actividad?";
+        let textoConfirmacion = "¿Seguro que deseas eliminar esta actividad?";
 
         if (dataPrevio?.requiere_confirmacion) {
           textoConfirmacion = dataPrevio.mensaje || textoConfirmacion;
@@ -1296,7 +1296,7 @@
           requiereObservaciones = !!dataPrevio.requiere_observaciones;
         }
 
-        const confirmar = confirm(`${textoConfirmacion}\n\nÂ¿Deseas continuar?`);
+        const confirmar = confirm(`${textoConfirmacion}\n\n¿Deseas continuar?`);
         if (!confirmar) return;
 
         if (resPrevio.ok && dataPrevio?.ok && !dataPrevio?.requiere_confirmacion) {
@@ -1380,6 +1380,8 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
+
 
 
 

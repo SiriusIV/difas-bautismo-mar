@@ -39,7 +39,7 @@ function etiquetarEstado(estado) {
   if (valor === "VALIDADO" || valor === "VALIDADA") return "Aprobado";
   if (valor === "RECHAZADO") return "Rechazado";
   if (valor === "NO_ACTUALIZADO") return "Desactualizado";
-  if (valor === "EN_REVISION" || valor === "EN REVISIÃ“N") return "En revisiÃ³n";
+  if (valor === "EN_REVISION" || valor === "EN REVISIÓN") return "En revisión";
   return valor;
 }
 
@@ -55,7 +55,7 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
     const usuarioId = parsearIdPositivo(url.searchParams.get("usuario_id"));
     if (!usuarioId) {
-      return json({ ok: false, error: "Debes indicar un usuario vÃ¡lido." }, { status: 400 });
+      return json({ ok: false, error: "Debes indicar un usuario válido." }, { status: 400 });
     }
 
     const usuario = await env.DB.prepare(`
@@ -66,7 +66,7 @@ export async function onRequestGet(context) {
     `).bind(usuarioId).first();
 
     if (!usuario || limpiarTexto(usuario.rol).toUpperCase() !== "SOLICITANTE") {
-      return json({ ok: false, error: "Usuario pÃºblico no vÃ¡lido." }, { status: 404 });
+      return json({ ok: false, error: "Usuario público no válido." }, { status: 404 });
     }
 
     const adminId = Number(session.usuario_id || 0);
@@ -204,7 +204,7 @@ export async function onRequestGet(context) {
     return json(
       {
         ok: false,
-        error: "No se pudo cargar la documentaciÃ³n del usuario.",
+        error: "No se pudo cargar la documentación del usuario.",
         detalle: error?.message || String(error || "")
       },
       { status: 500 }

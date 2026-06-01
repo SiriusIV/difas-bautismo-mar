@@ -1,4 +1,4 @@
-﻿import { getSecretariaSession } from "./_documental.js";
+import { getSecretariaSession } from "./_documental.js";
 import {
   construirEmailHtmlResolucionExpedienteDocumental,
   construirEmailTextoResolucionExpedienteDocumental
@@ -71,7 +71,7 @@ function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosAct
     } else if (estado === "RECHAZADO") {
       pendientes.push({ nombre, motivo: "Rechazado" });
     } else {
-      pendientes.push({ nombre, motivo: "Pendiente de validaciÃ³n" });
+      pendientes.push({ nombre, motivo: "Pendiente de validacin" });
     }
   }
   return { completo: pendientes.length === 0 && validados.length > 0, validados, pendientes };
@@ -87,7 +87,7 @@ export async function onRequestPost(context) {
     const accion = limpiarTexto(body?.accion).toLowerCase();
     const documentacionId = parsearIdPositivo(body?.documentacion_id);
     const archivoId = parsearIdPositivo(body?.archivo_id);
-    if (!["eliminar", "validar", "rechazar"].includes(accion)) return json({ ok: false, error: "AcciÃ³n no vÃ¡lida." }, 400);
+    if (!["eliminar", "validar", "rechazar"].includes(accion)) return json({ ok: false, error: "Accin no válida." }, 400);
     if (!documentacionId || !archivoId) return json({ ok: false, error: "Faltan identificadores de documento." }, 400);
 
     const expediente = await env.DB.prepare(`
@@ -100,7 +100,7 @@ export async function onRequestPost(context) {
         AND admin.secretaria_usuario_id = ?
       LIMIT 1
     `).bind(documentacionId, Number(session.usuario_id || 0)).first();
-    if (!expediente) return json({ ok: false, error: "Sin permisos para gestionar esta documentaciÃ³n." }, 403);
+    if (!expediente) return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
 
     const archivo = await env.DB.prepare(`
       SELECT id, nombre_documento
@@ -117,7 +117,7 @@ export async function onRequestPost(context) {
         UPDATE centro_admin_documentacion_archivos
         SET activo = 0,
             estado = 'NO_ENVIADO',
-            observaciones_admin = 'Eliminado por la secretarÃ­a',
+            observaciones_admin = 'Eliminado por la secretaría',
             validado_por_admin_id = NULL,
             fecha_validacion = NULL
         WHERE id = ?
@@ -185,7 +185,7 @@ export async function onRequestPost(context) {
         documentacionId
       });
     } catch (errorResumenActividades) {
-      console.error("No se pudo calcular el resumen de actividades solicitables (secretarÃ­a).", {
+      console.error("No se pudo calcular el resumen de actividades solicitables (secretaría).", {
         admin_id: adminId,
         documentacion_id: documentacionId,
         error: errorResumenActividades?.message || String(errorResumenActividades || "")
@@ -195,7 +195,7 @@ export async function onRequestPost(context) {
     try {
       await enviarEmail(env, {
       to: centro?.email || "",
-      subject: `[DocumentaciÃ³n] RevisiÃ³n actualizada por ${nombreVisibleAdmin(admin || {})}`,
+      subject: `[Documentación] Revisión actualizada por ${nombreVisibleAdmin(admin || {})}`,
       text: construirEmailTextoResolucionExpedienteDocumental({
         admin: admin || {},
         centro: centro || {},
@@ -203,7 +203,7 @@ export async function onRequestPost(context) {
         cambios: [{
           nombre_documento: limpiarTexto(archivo.nombre_documento || ""),
           estado: cambioTexto,
-          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretarÃ­a." : ""
+          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretaría." : ""
         }],
         resumen_documental: resumenCorreo,
         resumen_actividades: resumenActividadesCorreo
@@ -215,7 +215,7 @@ export async function onRequestPost(context) {
         cambios: [{
           nombre_documento: limpiarTexto(archivo.nombre_documento || ""),
           estado: cambioTexto,
-          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretarÃ­a." : ""
+          observaciones_admin: accion === "eliminar" ? "Documento eliminado por la secretaría." : ""
         }],
         resumen_documental: resumenCorreo,
         resumen_actividades: resumenActividadesCorreo
@@ -224,7 +224,7 @@ export async function onRequestPost(context) {
       dedupeSegundos: 300
       });
     } catch (errorEmail) {
-      console.error("No se pudo enviar correo de actualizaciÃ³n documental (secretarÃ­a).", {
+      console.error("No se pudo enviar correo de actualización documental (secretaría).", {
         admin_id: adminId,
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
         documentacion_id: documentacionId,
@@ -237,12 +237,12 @@ export async function onRequestPost(context) {
         usuarioId: Number(expediente.centro_usuario_id || 0),
         rolDestino: "SOLICITANTE",
         tipo: "DOCUMENTACION",
-        titulo: "Documentación actualizada",
-        mensaje: "Se ha actualizado el estado de tu documentación obligatoria. Revisa tu perfil.",
+        titulo: "Documentacin actualizada",
+        mensaje: "Se ha actualizado el estado de tu documentacin obligatoria. Revisa tu perfil.",
         urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId))}&tab=documentos`
       });
     } catch (errorNotificacion) {
-      console.error("No se pudo crear notificación interna de actualización documental (secretaría).", {
+      console.error("No se pudo crear notificacin interna de actualizacin documental (secretara).", {
         admin_id: adminId,
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
         documentacion_id: documentacionId,
@@ -262,7 +262,7 @@ export async function onRequestPost(context) {
         motivo: "documentos_actualizados"
       });
     } catch (errorImpacto) {
-      console.error("No se pudo recalcular impacto documental de reservas (secretaría).", {
+      console.error("No se pudo recalcular impacto documental de reservas (secretara).", {
         admin_id: adminId,
         documentacion_id: documentacionId,
         error: errorImpacto?.message || String(errorImpacto || "")
@@ -279,5 +279,7 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "No se pudo actualizar el documento.", detalle: error?.message || String(error) }, 500);
   }
 }
+
+
 
 

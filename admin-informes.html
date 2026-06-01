@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -394,7 +394,7 @@
             <h3 id="tituloModalAdvertenciaInforme">Advertencia</h3>
           </div>
           <button type="button" class="btn-icono" id="btnCerrarModalAdvertenciaInforme" aria-label="Cerrar">
-            <span aria-hidden="true">Ã—</span>
+            <span aria-hidden="true">?</span>
           </button>
         </div>
         <div class="modal-cuerpo" id="textoModalAdvertenciaInforme"></div>
@@ -525,7 +525,7 @@
       el.className = "mensaje " + tipo;
       el.style.display = "block";
       if (tipo === "error") {
-        el.innerHTML = `<div class="mensaje-contenido"><div class="mensaje-texto">${escapeHtml(texto)}</div><button type="button" class="mensaje-cerrar" id="btnCerrarMensajeInforme" aria-label="Cerrar">Ã—</button></div>`;
+        el.innerHTML = `<div class="mensaje-contenido"><div class="mensaje-texto">${escapeHtml(texto)}</div><button type="button" class="mensaje-cerrar" id="btnCerrarMensajeInforme" aria-label="Cerrar">?</button></div>`;
         document.getElementById("btnCerrarMensajeInforme").addEventListener("click", limpiarMensaje, { once: true });
       } else {
         el.textContent = texto;
@@ -819,7 +819,7 @@
         frases.push(`La actividad con mayor asistencia es ${topActividad.actividad_nombre}, con ${Number(topActividad.total_asistentes || 0)} asistentes.`);
       }
       if (media > 0) {
-        frases.push(`La media aproximada se sitÃºa en ${media.toFixed(1)} asistentes por actividad computada.`);
+        frases.push(`La media aproximada se sit?a en ${media.toFixed(1)} asistentes por actividad computada.`);
       }
       if (programa) {
         frases.push(`El analisis esta filtrado al programa ${programa}.`);
@@ -947,7 +947,7 @@
         </div>
 
         <div style="display:flex; align-items:center; justify-content:center; font-size:10.5px; color:#617385; padding-top:4px;">
-          PÃ¡gina 1
+          P?gina 1
         </div>
       `;
     }
@@ -1069,19 +1069,19 @@
       const frases = [];
       frases.push(`El periodo analizado presenta ${totalActividades} actividades computadas y ${totalAsistentes} asistentes confirmados, distribuidos en ${totalRealizaciones || totalActividades} realizaciones registradas.`);
       if (topActividad && Number(topActividad.total_asistentes || 0) > 0) {
-        frases.push(`La actividad con mayor capacidad de atracciÃ³n ha sido ${topActividad.actividad_nombre}, que concentra ${Number(topActividad.total_asistentes || 0)} asistentes y marca la referencia principal del intervalo.`);
+        frases.push(`La actividad con mayor capacidad de atracci?n ha sido ${topActividad.actividad_nombre}, que concentra ${Number(topActividad.total_asistentes || 0)} asistentes y marca la referencia principal del intervalo.`);
       }
       if (media > 0) {
-        frases.push(`La media de participaciÃ³n se sitÃºa en ${media.toFixed(1)} asistentes por actividad, lo que apunta a una respuesta ${media >= 10 ? "sÃ³lida" : media >= 5 ? "estable" : "todavÃ­a contenida"} del pÃºblico en el tramo revisado.`);
+        frases.push(`La media de participaci?n se sit?a en ${media.toFixed(1)} asistentes por actividad, lo que apunta a una respuesta ${media >= 10 ? "s?lida" : media >= 5 ? "estable" : "todav?a contenida"} del p?blico en el tramo revisado.`);
       }
       if (maxSerie && ultimoAnioConDato) {
         const nombreEntidad = entidad?.programa || entidad?.actividad_nombre || "La comparativa anual";
-        frases.push(`${nombreEntidad} muestra su mejor registro reciente en ${Number(maxSerie.anio || 0)}, mientras que la referencia operativa mÃ¡s inmediata queda fijada en ${Number(ultimoAnioConDato.anio || 0)} con ${Number(ultimoAnioConDato.total_asistentes || 0)} asistentes.`);
+        frases.push(`${nombreEntidad} muestra su mejor registro reciente en ${Number(maxSerie.anio || 0)}, mientras que la referencia operativa m?s inmediata queda fijada en ${Number(ultimoAnioConDato.anio || 0)} con ${Number(ultimoAnioConDato.total_asistentes || 0)} asistentes.`);
       }
       if (futuras.length) {
-        frases.push(`El balance aÃºn no puede considerarse completamente cerrado, ya que permanecen ${futuras.length} actividades pendientes de ejecuciÃ³n. Si mantienen una asistencia similar a la ya observada, el volumen final del periodo deberÃ­a crecer con una inercia favorable.`);
+        frases.push(`El balance a?n no puede considerarse completamente cerrado, ya que permanecen ${futuras.length} actividades pendientes de ejecuci?n. Si mantienen una asistencia similar a la ya observada, el volumen final del periodo deber?a crecer con una inercia favorable.`);
       } else if (realizadas.length) {
-        frases.push(`Todas las actividades incluidas en el intervalo ya han sido ejecutadas, por lo que el informe ofrece una fotografÃ­a consolidada y Ãºtil para valorar rendimiento, continuidad y planificaciÃ³n futura.`);
+        frases.push(`Todas las actividades incluidas en el intervalo ya han sido ejecutadas, por lo que el informe ofrece una fotograf?a consolidada y ?til para valorar rendimiento, continuidad y planificaci?n futura.`);
       }
       return frases;
     }
@@ -1279,7 +1279,7 @@
       y -= 15;
       const analisis = construirNarrativaInforme(informeActual);
       for (const frase of analisis) {
-        const lineas = partirTextoLineas(`â€¢ ${frase}`, 104);
+        const lineas = partirTextoLineas(`? ${frase}`, 104);
         for (const linea of lineas) {
           page.drawText(linea, {
             x: margen + 2,
@@ -1416,7 +1416,7 @@
         return;
       }
       if (!window.PDFLib || !window.html2canvas) {
-        mostrarMensaje("error", "No se han podido cargar las librerÃ­as necesarias para generar el PDF.");
+        mostrarMensaje("error", "No se han podido cargar las librer?as necesarias para generar el PDF.");
         return;
       }
 
@@ -1509,7 +1509,7 @@
               ${graficaBarrasPdfHtml}
             </div>
             <div style="border:1px solid #e3ebf6; border-radius:12px; background:#ffffff; padding:10px 10px 8px; min-height:196px; display:flex; flex-direction:column;">
-              <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">GrÃ¡fico circular</div>
+              <div style="font-size:10.5px; font-weight:700; color:#36506b; margin-bottom:8px;">Gr?fico circular</div>
               ${graficaPastelPdfHtml}
             </div>
           </div>
@@ -1530,7 +1530,7 @@
             <div style="margin-top:7px; font-size:11px; color:#617385; line-height:1.35;">
               <div><strong>Intervalo:</strong> ${escapeHtml(`${fechaInicio} - ${fechaFin}`)}</div>
               <div><strong>Programa:</strong> ${escapeHtml(programa)} | <strong>Actividad:</strong> ${escapeHtml(actividad)}</div>
-              <div><strong>Comparativa:</strong> ${escapeHtml(tipoComparativa)} | <strong>GrÃ¡fico:</strong> ${escapeHtml(tipoGrafico)} | <strong>SelecciÃ³n:</strong> ${escapeHtml(entidad)}</div>
+              <div><strong>Comparativa:</strong> ${escapeHtml(tipoComparativa)} | <strong>Gr?fico:</strong> ${escapeHtml(tipoGrafico)} | <strong>Selecci?n:</strong> ${escapeHtml(entidad)}</div>
             </div>
           </div>
         </div>
@@ -1547,21 +1547,21 @@
         </div>
 
         <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
-          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:6px;">EvaluaciÃ³n del periodo</div>
+          <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:6px;">Evaluaci?n del periodo</div>
           <ul style="margin:0; padding-left:18px; font-size:11px;">${narrativaHtml}</ul>
         </div>
 
         <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">
           <div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual</div>
           <div style="height:190px; display:flex; align-items:center; justify-content:center;">
-            ${chartUrl ? `<img src="${chartUrl}" alt="GrÃ¡fico" style="display:block; max-width:100%; max-height:190px; margin:0 auto; object-fit:contain;" />` : `<div style="display:flex; align-items:center; justify-content:center; height:190px; color:#617385; font-size:12px;">No se ha podido capturar la grÃ¡fica seleccionada.</div>`}
+            ${chartUrl ? `<img src="${chartUrl}" alt="Gr?fico" style="display:block; max-width:100%; max-height:190px; margin:0 auto; object-fit:contain;" />` : `<div style="display:flex; align-items:center; justify-content:center; height:190px; color:#617385; font-size:12px;">No se ha podido capturar la gr?fica seleccionada.</div>`}
           </div>
         </div>
 
         <div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#ffffff; overflow:hidden;">
           <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:7px;">
             <div style="font-size:14px; font-weight:800; color:#123a63;">Detalle por actividad</div>
-            <div style="font-size:10px; color:#123a63;">(Las actividades en rojo estÃ¡n pendientes de ejecuciÃ³n)</div>
+            <div style="font-size:10px; color:#123a63;">(Las actividades en rojo est?n pendientes de ejecuci?n)</div>
           </div>
           <table style="width:100%; min-width:0; max-width:100%; border-collapse:collapse; table-layout:fixed;">
             <thead>
@@ -1570,7 +1570,7 @@
                 <th style="box-sizing:border-box; width:10%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Realizaciones</th>
                 <th style="box-sizing:border-box; width:10%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Asistentes</th>
                 <th style="box-sizing:border-box; width:23%; padding:5px 2px; font-size:9px; color:#123a63; text-align:center;">Primera fecha</th>
-                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">Ãšltima fecha</th>
+                <th style="box-sizing:border-box; padding:5px 2px; font-size:9px; color:#123a63; text-align:center; width:18%;">?ltima fecha</th>
               </tr>
             </thead>
             <tbody>${detalleFilasHtml}</tbody>
@@ -1579,12 +1579,12 @@
       `;
 
       stageHtml = stageHtml
-        .replace(/GrÃƒÂ¡fico/g, "GrÃ¡fico")
-        .replace(/SelecciÃƒÂ³n/g, "SelecciÃ³n")
-        .replace(/automÃƒÂ¡tica/g, "automÃ¡tica")
-        .replace(/grÃƒÂ¡fica/g, "grÃ¡fica")
-        .replace(/estÃƒÂ¡n pendientes de ejecuciÃƒÂ³n/g, "estÃ¡n pendientes de ejecuciÃ³n")
-        .replace(/ÃƒÅ¡ltima fecha/g, "Ãšltima fecha")
+        .replace(/Gr?fico/g, "Gr?fico")
+        .replace(/Selecci?n/g, "Selecci?n")
+        .replace(/autom?tica/g, "autom?tica")
+        .replace(/gr?fica/g, "gr?fica")
+        .replace(/est?n pendientes de ejecuci?n/g, "est?n pendientes de ejecuci?n")
+        .replace(/?ltima fecha/g, "?ltima fecha")
         .replace(
           /<div style="border:1px solid #d9e5f7; border-radius:16px; padding:12px 14px; background:#fbfcfe;">\s*<div style="font-size:14px; font-weight:800; color:#123a63; margin-bottom:8px;">Comparativa visual<\/div>\s*<div style="height:190px; display:flex; align-items:center; justify-content:center;">[\s\S]*?<\/div>\s*<\/div>/,
           bloqueGraficaDualPdfHtml
@@ -1596,11 +1596,11 @@
 
         ${bloqueConclusionesPdfHtml}`
         )
-        .replace(/GrÃƒÂ¡fico/g, "GrÃ¡fico")
-        .replace(/SelecciÃƒÂ³n/g, "SelecciÃ³n")
-        .replace(/EvaluaciÃƒÂ³n/g, "EvaluaciÃ³n")
-        .replace(/estÃƒÂ¡n pendientes de ejecuciÃƒÂ³n/g, "estÃ¡n pendientes de ejecuciÃ³n")
-        .replace(/ÃƒÅ¡ltima fecha/g, "Ãšltima fecha")
+        .replace(/Gr?fico/g, "Gr?fico")
+        .replace(/Selecci?n/g, "Selecci?n")
+        .replace(/Evaluaci?n/g, "Evaluaci?n")
+        .replace(/est?n pendientes de ejecuci?n/g, "est?n pendientes de ejecuci?n")
+        .replace(/?ltima fecha/g, "?ltima fecha")
         .replace('display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;', 'display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center;')
         .replace('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:left;', 'padding:4px 3px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:left; word-break:break-word;')
         .replaceAll('padding:5px 7px; border-bottom:1px solid #d9e5f7; font-size:10.5px; text-align:center;', 'padding:4px 2px; border-bottom:1px solid #d9e5f7; font-size:9.5px; text-align:center;')
@@ -1608,8 +1608,8 @@
         .replace('width:10%;">Realizaciones</th>', 'width:10%;">Realizaciones</th>')
         .replace('width:10%;">Asistentes</th>', 'width:10%;">Asistentes</th>')
         .replace('width:23%;">Primera fecha</th>', 'width:23%;">Primera fecha</th>')
-        .replace('width:18%;">ÃƒÅ¡ltima fecha</th>', 'width:23%;">Ãšltima fecha</th>')
-        .replace('width:16%;">Ãšltima fecha</th>', 'width:21%;">Ãšltima fecha</th>')
+        .replace('width:18%;">?ltima fecha</th>', 'width:23%;">?ltima fecha</th>')
+        .replace('width:16%;">?ltima fecha</th>', 'width:21%;">?ltima fecha</th>')
         .replaceAll('padding:6px 7px; font-size:10px; color:#123a63;', 'padding:5px 3px; font-size:9.5px; color:#123a63;');
 
       stage.innerHTML = stageHtml;
@@ -1677,7 +1677,7 @@
       }
 
       paginas.forEach((item, index) => {
-        item.pie.textContent = `PÃ¡gina ${index + 1}`;
+        item.pie.textContent = `P?gina ${index + 1}`;
       });
       await esperarImagenesCargadas(paginasHost);
 
@@ -1784,6 +1784,7 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
 
 
 

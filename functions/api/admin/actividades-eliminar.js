@@ -1,4 +1,4 @@
-﻿import { getAdminSession } from "./_auth.js";
+import { getAdminSession } from "./_auth.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { crearAvisoUsuario } from "../_avisos_usuario.js";
 import { enviarEmail } from "../_email.js";
@@ -157,12 +157,12 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     mensaje,
     "",
     `Actividad: ${actividad}`,
-    codigo ? `CÃ³digo de solicitud: ${codigo}` : "",
+    codigo ? `Código de solicitud: ${codigo}` : "",
     `Organiza: ${organizador}`,
-    motivo ? `Motivo de la anulaciÃ³n: ${motivo}` : "",
+    motivo ? `Motivo de la anulación: ${motivo}` : "",
     "",
     esBorrador
-      ? "Ya no es necesario realizar ninguna otra acción sobre este borrador."
+      ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
       : "Puedes consultar el estado actualizado desde tu panel de usuario."
   ].filter(Boolean).join("\n");
 
@@ -170,11 +170,11 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     <p>${escaparHtml(saludo)}</p>
     <p>${escaparHtml(mensaje)}</p>
     <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
-    ${codigo ? `<p><strong>CÃ³digo de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
     <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
-    ${motivo ? `<p><strong>Motivo de la anulaciÃ³n:</strong> ${escaparHtml(motivo)}</p>` : ""}
+    ${motivo ? `<p><strong>Motivo de la anulación:</strong> ${escaparHtml(motivo)}</p>` : ""}
     <p>${escaparHtml(esBorrador
-      ? "Ya no es necesario realizar ninguna otra acción sobre este borrador."
+      ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
       : "Puedes consultar el estado actualizado desde tu panel de usuario.")}</p>
   `;
 
@@ -256,7 +256,7 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
     return {
       ok: false,
       skipped: false,
-      error: `${resultado?.error || "No se pudo crear la notificación."} Fallback: ${fallbackError?.message || String(fallbackError || "")}`
+      error: `${resultado?.error || "No se pudo crear la notificacin."} Fallback: ${fallbackError?.message || String(fallbackError || "")}`
     };
   }
 
@@ -278,7 +278,7 @@ async function crearAvisoOperativoBorradorEliminado(env, reserva, observacionesA
   return await crearAvisoUsuario(env, {
     usuarioId,
     tipo: "RESERVA",
-    titulo: "Borrador eliminado por anulación de actividad",
+    titulo: "Borrador eliminado por anulacin de actividad",
     mensaje,
     urlDestino: "/usuario-panel.html"
   });
@@ -339,7 +339,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
           resultado.borradores_eliminados += 1;
           resultado.actualizadas += 1;
         } else {
-          resultado.incidencias.push(`Borrador ${reserva.id}: no se pudo eliminar tras la notificación.`);
+          resultado.incidencias.push(`Borrador ${reserva.id}: no se pudo eliminar tras la notificacin.`);
         }
       } else {
         const update = await db.prepare(`
@@ -375,10 +375,10 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
         if (notificacion?.ok) {
           resultado.notificaciones_creadas += 1;
         } else if (!notificacion?.skipped) {
-          resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
+          resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
         }
       } catch (errorNotificacion) {
-        resultado.incidencias.push(`NotificaciÃ³n reserva ${reserva.id}: ${errorNotificacion?.message || String(errorNotificacion || "")}`);
+        resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${errorNotificacion?.message || String(errorNotificacion || "")}`);
       }
 
       try {
@@ -434,7 +434,7 @@ async function borrarActividadFisicamente(env, actividadId) {
       WHERE actividad_id = ?
     `).bind(actividadId).run();
   } catch (_) {
-    // La tabla puede no existir todavÃ­a en entornos sin requisitos particulares.
+    // La tabla puede no existir todavía en entornos sin requisitos particulares.
   }
 
   return await env.DB.prepare(`
@@ -459,7 +459,7 @@ export async function onRequestPost(context) {
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
 
     if (!id) {
-      return json({ ok: false, error: "ID de actividad no vÃ¡lido." }, 400);
+      return json({ ok: false, error: "ID de actividad no válido." }, 400);
     }
 
     const actividad = await obtenerActividad(env, id);
@@ -481,14 +481,14 @@ export async function onRequestPost(context) {
         requiere_confirmacion: true,
         requiere_observaciones: true,
         resumen: situacion,
-        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continÃºas, los borradores se eliminarÃ¡n y el resto de solicitudes pasarÃ¡n automÃ¡ticamente a rechazada. Se notificarÃ¡ individualmente a cada solicitante afectado.`
+        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continúas, los borradores se eliminarán y el resto de solicitudes pasarán automáticamente a rechazada. Se notificará individualmente a cada solicitante afectado.`
       }, 200);
     }
 
     if (hayReservasAfectables && !observacionesAdmin) {
       return json({
         ok: false,
-        error: "Debes indicar el motivo de la anulaciÃ³n para rechazar automÃ¡ticamente las solicitudes afectadas."
+        error: "Debes indicar el motivo de la anulación para rechazar automáticamente las solicitudes afectadas."
       }, 400);
     }
 
@@ -531,5 +531,7 @@ export async function onRequestPost(context) {
     );
   }
 }
+
+
 
 

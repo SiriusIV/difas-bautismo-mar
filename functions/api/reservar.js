@@ -207,7 +207,7 @@ function construirTextoContextualSolicitudAdmin(contexto = {}) {
     lineas.push(`La solicitud se ha registrado para la franja ${programacion}.`);
   }
   if (aforoLimitado && aforoMaximo > 0) {
-    lineas.push(`El aforo de esta actividad está limitado a ${aforoMaximo} plazas.`);
+    lineas.push(`El aforo de esta actividad est limitado a ${aforoMaximo} plazas.`);
     lineas.push("Si fuese necesario ampliar asistentes más adelante, podrán seguir asignándose sobre esta misma solicitud mientras continúe existiendo disponibilidad.");
   } else if (!aforoLimitado) {
     lineas.push("La actividad no tiene aforo limitado.");
@@ -263,22 +263,22 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
   const asunto = `${actividad} · Nueva solicitud de actividad`;
   const mensaje = "Se ha registrado una nueva solicitud de actividad.";
   const bloqueDatosTexto = [
-    codigo ? `Código de solicitud: ${codigo}` : "",
+    codigo ? `Cdigo de solicitud: ${codigo}` : "",
     `Centro solicitante: ${centro}`,
     contacto ? `Contacto: ${contacto}` : "",
     correoContacto ? `Correo de contacto: ${correoContacto}` : "",
     plazas > 0 ? `Plazas solicitadas: ${plazas}` : "",
-    programacion ? `Programación: ${programacion}` : ""
+    programacion ? `Programacin: ${programacion}` : ""
   ].filter(Boolean);
 
   const bloqueDatosCompletosTexto = [
     ...bloqueDatosTexto,
-    ubicacion ? `UbicaciÃ³n: ${ubicacion}` : "",
+    ubicacion ? `Ubicación: ${ubicacion}` : "",
     urlMaps ? `Google Maps: ${urlMaps}` : ""
   ].filter(Boolean);
   const filasResumenExtraHtml = [
-    ubicacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">UbicaciÃ³n</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : "",
-    urlMaps ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Google Maps</td><td style="padding:6px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicaciÃ³n</a></td></tr>` : ""
+    ubicacion ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Ubicación</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(ubicacion)}</td></tr>` : "",
+    urlMaps ? `<tr><td style="padding:6px 12px 6px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:1%;">Google Maps</td><td style="padding:6px 0;color:#22313f;"><a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación</a></td></tr>` : ""
   ].filter(Boolean).join("");
 
   const texto = [
@@ -292,10 +292,10 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
     observaciones ? "OBSERVACIONES DEL SOLICITANTE" : "",
     observaciones ? observaciones : "",
     observaciones ? "" : "",
-    urlMaps ? "LOCALIZACIÓN" : "",
+    urlMaps ? "LOCALIZACIN" : "",
     urlMaps ? `- Google Maps: ${urlMaps}` : "",
     urlMaps ? "" : "",
-    "INFORMACIÓN ADICIONAL",
+    "INFORMACIN ADICIONAL",
     ...lineasContextuales.map((linea) => `- ${linea}`)
   ].filter(Boolean).join("\n");
 
@@ -315,12 +315,12 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
         <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:10px;">Resumen de la solicitud</div>
         <table style="width:100%;border-collapse:collapse;font-size:14px;">
           <tbody>
-            ${codigo ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Código de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
+            ${codigo ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Cdigo de solicitud</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(codigo)}</td></tr>` : ""}
             <tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Centro solicitante</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(centro)}</td></tr>
             ${contacto ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(contacto)}</td></tr>` : ""}
             ${correoContacto ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Correo de contacto</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(correoContacto)}</td></tr>` : ""}
             ${plazas > 0 ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Plazas solicitadas</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(plazas)}</td></tr>` : ""}
-            ${programacion ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Programación</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
+            ${programacion ? `<tr><td style="padding:6px 0;color:#5a6a7a;font-weight:700;">Programacin</td><td style="padding:6px 0;color:#22313f;">${escaparHtml(programacion)}</td></tr>` : ""}
           </tbody>
         </table>
       </div>
@@ -333,7 +333,7 @@ function construirCorreoNuevaSolicitudAdmin(contexto = {}) {
       ${urlMaps ? `
         <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Localización</div>
-          <a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir ubicación en Google Maps</a>
+          <a href="${escaparHtml(urlMaps)}" style="color:#0b5ed7;text-decoration:none;font-weight:700;">Abrir Ubicacin en Google Maps</a>
         </div>
       ` : ""}
       <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;background:#f8fafc;">
@@ -606,7 +606,7 @@ if (Number(actividad.requiere_reserva || 0) !== 1) {
 }
 if (Number(actividad.activa || 0) !== 1) {
   return json(
-    { ok: false, error: "Esta actividad estÃ¡ desactivada y no admite nuevas solicitudes." },
+    { ok: false, error: "Esta actividad está desactivada y no admite nuevas solicitudes." },
     { status: 400 }
   );
 }
@@ -620,7 +620,7 @@ if (Number(actividad.activa || 0) !== 1) {
         return json(
           {
             ok: false,
-            error: "Tu cuenta está bloqueada para solicitar actividades de este organizador."
+            error: "Tu cuenta est bloqueada para solicitar actividades de este organizador."
           },
           { status: 403 }
         );
@@ -718,7 +718,7 @@ if (Number(actividad.activa || 0) !== 1) {
         return json(
           {
             ok: false,
-            error: validacionDocumental.error || "La documentación obligatoria de la actividad no está completa.",
+            error: validacionDocumental.error || "La documentación obligatoria de la actividad no est completa.",
             estado_documental: validacionDocumental.estado_documental || "",
             documentos_pendientes: validacionDocumental.documentos_pendientes || [],
             actividad_id: actividadId,
@@ -925,3 +925,4 @@ if (Number(actividad.activa || 0) !== 1) {
     );
   }
 }
+
