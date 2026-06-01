@@ -32,7 +32,7 @@ function colorEstado(estado) {
   const e = String(estado || "").toUpperCase();
   if (e === "PENDIENTE") return "#d39e00";
   if (e === "CONFIRMADA") return "#198754";
-  if (e === "SUSPENDIDA") return "#b7791f";
+  if (e === "SUSPENDIDA") return "#f4c430";
   if (e === "RECHAZADA") return "#dc3545";
   return "#0b5ed7";
 }
@@ -49,7 +49,7 @@ function colorActividadProgramada(row, disponibles) {
   if (esFranjaFinalizada(row.fecha, row.hora_fin)) return "#5f6d7a";
   if (capacidad > 0 && Number(disponibles) <= 0) return "#dc3545";
   if (capacidad > 0 && Number(disponibles) > 0 && Number(disponibles) <= Math.ceil(capacidad / 4)) {
-    return "#d97706";
+    return "#f4c430";
   }
   return "#0b5ed7";
 }
