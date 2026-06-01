@@ -1030,12 +1030,19 @@
       .cabecera-inner { flex-direction: column; text-align: center; gap: 10px; }
       .fila { grid-template-columns: 1fr; }
       #filaAdminCuentaNombre,
-      #filaAdminNombrePublicoEmail,
       #filaAdminUrlWeb,
       #filaSolicitanteCuentaCentro,
       #filaSolicitanteEmailTelefono,
       #filaSolicitanteResponsableDocumento {
         grid-template-columns: 1fr !important;
+      }
+      #filaAdminNombrePublicoEmail {
+        grid-template-columns: 1fr 1fr !important;
+        align-items: end;
+      }
+      #filaAdminNombrePublicoEmail > div:nth-child(3),
+      #filaAdminNombrePublicoEmail > div:nth-child(4) {
+        grid-column: 1 / -1;
       }
       .preview-imagen { min-height: 208px; }
       .bloque { padding: 12px; }
@@ -1141,11 +1148,17 @@
         font-weight: 700;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] {
-        grid-template-columns: 38% 24px minmax(0, 1fr);
+        grid-template-columns: max-content 24px minmax(0, 1fr);
         align-items: start;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"]::before {
+        grid-column: 1;
+        grid-row: 1;
+        align-self: start;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .btn-info-doc-mobile {
         grid-column: 2;
+        grid-row: 1;
         justify-self: start;
         align-self: start;
         margin-top: 0;
@@ -1153,9 +1166,11 @@
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .admin-doc-titulo-linea {
         grid-column: 3;
+        grid-row: 1;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Título"] .admin-doc-meta {
         grid-column: 3;
+        grid-row: 2;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-nombre,
       #panelDocumentacionAdminBase .tabla-documentacion-admin .admin-doc-meta {
