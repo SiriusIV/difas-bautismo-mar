@@ -1870,22 +1870,18 @@
       }
 
       .franja-sesion-inner.modo-admin {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
         grid-template-areas:
-          "perfil texto logout"
-          "nav nav nav";
+          "perfil texto noti logout"
+          "nav nav nav nav";
       }
 
       .franja-sesion-inner.modo-admin #textoSesion {
         text-align: center;
         justify-self: stretch;
         align-self: center;
-        max-width: calc(100vw - 150px);
+        max-width: calc(100vw - 190px);
         margin: 0 auto;
-      }
-
-      .franja-sesion-inner.modo-admin #btnNotificacionesSesion {
-        display: none !important;
       }
 
       .franja-sesion-inner.modo-admin #barraAdmin {
