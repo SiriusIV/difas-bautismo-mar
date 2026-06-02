@@ -4212,7 +4212,9 @@ function cerrarModalRequisitosActividad() {
 }
 
 function puedeEditarRequisitosActividadSeleccionada() {
-  if (!esAdmin() || !actividadSeleccionada) return false;
+  if (!actividadSeleccionada) return false;
+  if (esSecretaria()) return true;
+  if (!esAdmin()) return false;
   const adminSesionId = Number(usuarioAutenticado?.id || usuarioAutenticado?.usuario_id || 0);
   const adminActividadId = Number(actividadSeleccionada?.admin_id || 0);
   return adminSesionId > 0 && adminActividadId > 0 && adminSesionId === adminActividadId;
@@ -4313,7 +4315,9 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
       const admiteReservas = Number(a.requiere_reserva || 0) === 1;
       btnRequisitos.style.display = tieneRequisitos ? "inline-block" : "none";
       
-      btnEditar.style.display = esAdmin() ? "inline-flex" : "none";
+      btnEditar.style.display = (esAdmin() || esSecretaria()) ? "inline-flex" : "none";
+      btnEditar.title = esSecretaria() ? "Editar requisitos y documentación" : "Editar actividad";
+      btnEditar.setAttribute("aria-label", btnEditar.title);
       btnReservas.style.display = esAdmin() ? "inline-flex" : "none";
       btnReservas.disabled = !admiteReservas;
       btnReservas.title = admiteReservas ? "Ver reservas" : "Esta actividad no admite reservas";
@@ -4593,6 +4597,10 @@ function continuarSolicitudActividad() {
 
     function editarActividadActual() {
       if (!actividadSeleccionada) return;
+      if (esSecretaria()) {
+        location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}&paso=3`;
+        return;
+      }
       location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}`;
     }
 

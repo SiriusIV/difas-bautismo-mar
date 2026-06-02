@@ -1,4 +1,9 @@
 import { getUserSession } from "../usuario/_auth.js";
+import {
+  construirResumenDocumentacionActividad,
+  obtenerCatalogoDocumentosActivosAdmin,
+  obtenerConfiguracionDocumentalPorActividades
+} from "../_actividad_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -25,6 +30,33 @@ async function desactivarActividadesFinalizadasPorPeriodo(env) {
         OR COALESCE(visible_portal, 0) <> 0
       )
   `).run();
+}
+
+async function obtenerRequisitosPorActividades(env, actividadIds) {
+  const ids = Array.from(
+    new Set((actividadIds || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))
+  );
+  if (!ids.length) return new Map();
+
+  try {
+    const placeholders = ids.map(() => "?").join(", ");
+    const result = await env.DB.prepare(`
+      SELECT actividad_id, texto
+      FROM actividad_requisitos
+      WHERE actividad_id IN (${placeholders})
+      ORDER BY actividad_id ASC, orden ASC, id ASC
+    `).bind(...ids).all();
+
+    const mapa = new Map();
+    for (const row of result?.results || []) {
+      const actividadId = Number(row.actividad_id || 0);
+      if (!mapa.has(actividadId)) mapa.set(actividadId, []);
+      mapa.get(actividadId).push(String(row.texto || "").trim());
+    }
+    return mapa;
+  } catch (_) {
+    return new Map();
+  }
 }
 
 export async function onRequestGet(context) {
@@ -126,6 +158,8 @@ export async function onRequestGet(context) {
         a.descripcion_corta,
         a.lugar,
         a.imagen_url,
+        a.imagen_id,
+        a.activa,
         a.visible_portal,
         a.orden_portal,
         a.organizador_publico,
@@ -136,6 +170,7 @@ export async function onRequestGet(context) {
         a.usa_franjas,
         a.requiere_reserva,
         a.aforo_limitado,
+        COALESCE(a.aforo_maximo, 0) AS aforo_maximo,
         a.admin_id,
         a.provincia,
         a.es_recurrente,
@@ -185,16 +220,47 @@ export async function onRequestGet(context) {
       ORDER BY a.orden_portal ASC, a.id ASC
     `).bind(session.id).all();
 
+    const actividadesRaw = result.results || [];
+    const actividadIds = actividadesRaw.map((a) => Number(a.id || 0)).filter((id) => id > 0);
+    const requisitosPorActividad = await obtenerRequisitosPorActividades(env, actividadIds);
+    const configuracionDocumentalPorActividad = await obtenerConfiguracionDocumentalPorActividades(env, actividadIds);
+    const catalogoDocumentacionPorAdmin = new Map();
+    const adminIds = Array.from(
+      new Set(actividadesRaw.map((a) => Number(a.admin_id || 0)).filter((id) => id > 0))
+    );
+
+    for (const adminId of adminIds) {
+      catalogoDocumentacionPorAdmin.set(
+        adminId,
+        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+      );
+    }
+
+    const catalogoDocumentacionSecretaria = await obtenerCatalogoDocumentosActivosAdmin(env, Number(session.id || 0));
+
     return json({
       ok: true,
       admins_asociados: Number(adminsResult?.total || 0),
-      actividades: (result.results || []).map((a) => ({
+      catalogo_documentacion_admin: catalogoDocumentacionSecretaria,
+      actividades: actividadesRaw.map((a) => {
+        const actividadId = Number(a.id || 0);
+        const adminId = Number(a.admin_id || 0);
+        const catalogoActividad = catalogoDocumentacionPorAdmin.get(adminId) || [];
+        const configuracionActividad = configuracionDocumentalPorActividad.get(actividadId) || null;
+        return {
+        documentacion_actividad: construirResumenDocumentacionActividad(
+          catalogoActividad,
+          configuracionActividad
+        ),
+        documentos_admin_activos: catalogoActividad,
         ...a,
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
         plazas_disponibles: Number(a.plazas_disponibles || 0),
+        requisitos_particulares: requisitosPorActividad.get(actividadId) || [],
         completa_calculada: Number(a.completa_calculada || 0)
-      }))
+      };
+      })
     });
   } catch (error) {
     return json(

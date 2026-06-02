@@ -2760,6 +2760,7 @@
     let catalogoDocumentacionActividad = [];
     let modoDocumentacionActividad = "HEREDADA";
     let documentosDocumentacionActividad = [];
+    let modoSecretariaDocumental = false;
 
     let imagenOriginalId = "";
     let imagenOriginalUrl = "";
@@ -3485,6 +3486,39 @@ function desbloquearPantallaPorErrorActividad() {
   document.body.classList.remove("pantalla-bloqueada");
 }
 
+function aplicarModoSecretariaDocumentalUI() {
+  document.body.classList.toggle("modo-secretaria-documental", modoSecretariaDocumental);
+
+  const tituloFormulario = document.getElementById("tituloFormulario");
+  if (tituloFormulario && modoSecretariaDocumental) {
+    tituloFormulario.textContent = "Editar requisitos y documentación";
+  }
+
+  [
+    "btnEliminarActividad",
+    "btnIrCalendarioAdminActividad",
+    "btnIrPlantillasActividad"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle("oculto", modoSecretariaDocumental);
+    if ("disabled" in el) el.disabled = modoSecretariaDocumental;
+  });
+
+  document.querySelector(".contexto-acciones-grupo.estado-actividad")?.classList.toggle("oculto", modoSecretariaDocumental);
+  document.querySelector(".bloque-inferior")?.classList.toggle("oculto", modoSecretariaDocumental);
+
+  const pasos = Array.from(document.querySelectorAll(".step-pane"));
+  pasos.forEach((pane) => {
+    const esPasoDocumental = Number(pane.dataset.step) === 3;
+    pane.classList.toggle("oculto", modoSecretariaDocumental && !esPasoDocumental);
+  });
+
+  if (modoSecretariaDocumental) {
+    mostrarPaso(3);
+  }
+}
+
 function mostrarMensaje(tipo, texto, opciones = {}) {
   if (TRAZA_ACTIVIDAD_ACTIVA) {
     registrarTrazaActividad("mostrarMensaje", {
@@ -3679,14 +3713,16 @@ function establecerVisibilidadModalActividad(id, activo) {
       }
 
       const rol = String(data.user.rol || "").toUpperCase();
-      if (rol !== "ADMIN" && rol !== "SUPERADMIN") {
+      if (rol !== "ADMIN" && rol !== "SUPERADMIN" && rol !== "SECRETARIA") {
         redirigirLogin();
         return false;
       }
 
       usuarioSesion = data.user;
+      modoSecretariaDocumental = rol === "SECRETARIA";
       document.getElementById("subtituloCabecera").textContent = usuarioSesion.nombre || usuarioSesion.email || "Administrador";
       aplicarLogoAdminArfer(document.querySelector(".logo-cabecera"), usuarioSesion);
+      aplicarModoSecretariaDocumentalUI();
       return true;
     }
 
@@ -3701,7 +3737,8 @@ function establecerVisibilidadModalActividad(id, activo) {
     }
 
     async function cargarActividades() {
-      const res = await fetch("/api/admin/mis-actividades", {
+      const endpoint = modoSecretariaDocumental ? "/api/secretaria/actividades" : "/api/admin/mis-actividades";
+      const res = await fetch(endpoint, {
         credentials: "same-origin"
       });
 
@@ -3756,6 +3793,11 @@ function establecerVisibilidadModalActividad(id, activo) {
     function actualizarBotonEliminar() {
       const btn = document.getElementById("btnEliminarActividad");
       if (!btn) return;
+      if (modoSecretariaDocumental) {
+        btn.classList.add("oculto");
+        btn.disabled = true;
+        return;
+      }
       const hayId = !!document.getElementById("actividadId").value;
       btn.disabled = !hayId;
       btn.title = hayId ? "Eliminar actividad" : "Guarda o abre una actividad existente para poder eliminarla";
@@ -4243,7 +4285,9 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     setValor("zoom_mapa", actividad.zoom_mapa ?? 15);
 
     actividadEsBorradorTecnico = Number(actividad.borrador_tecnico || 0) === 1;
-    document.getElementById("tituloFormulario").textContent = "Editar actividad";
+    document.getElementById("tituloFormulario").textContent = modoSecretariaDocumental
+      ? "Editar requisitos y documentación"
+      : "Editar actividad";
 
     registrarImagenOriginalDesdeFormulario();
     cargarRequisitosActividad(actividad);
@@ -4251,6 +4295,7 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     sincronizarTogglesPanelConfiguracion();
     actualizarBotonEliminar();
     actualizarVisibilidadFormulario();
+    aplicarModoSecretariaDocumentalUI();
     actualizarPreview();
     renderMapaPreviewActividad();
     actualizarEstadoFranjasUI();
@@ -4262,6 +4307,9 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     async function cargarActividadSiEsEdicion() {
       actividadEditandoId = getActividadIdURL();
       if (!actividadEditandoId) {
+        if (modoSecretariaDocumental) {
+          throw new Error("La secretaría solo puede editar requisitos y documentación de una actividad existente.");
+        }
         await cargarActividades();
         registrarImagenOriginalDesdeFormulario();
         cargarRequisitosActividad(null);
@@ -4279,6 +4327,10 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
       }
 
             rellenarFormulario(actividad);
+      if (modoSecretariaDocumental) {
+        limpiarCambiosPendientesActividad();
+        return;
+      }
       await cargarFranjas();
 
       const lat = document.getElementById("latitud").value.trim();
@@ -4298,6 +4350,7 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     }
 
     function getPasoFlowActividad() {
+  if (modoSecretariaDocumental) return [3];
   return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2, 3] : [0, 2, 3];
 }
 
@@ -5852,6 +5905,11 @@ function mostrarPaso(index) {
     btnSiguiente.style.display = "";
     btnSiguiente.disabled = !puedeAvanzar;
     btnSiguiente.classList.toggle("oculto", !puedeAvanzar);
+  }
+
+  if (modoSecretariaDocumental) {
+    btnAnterior.style.display = "none";
+    btnSiguiente.style.display = "none";
   }
 
   document.getElementById("btnGuardarActividad").classList.remove("oculto");

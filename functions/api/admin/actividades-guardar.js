@@ -1,4 +1,5 @@
 import { getAdminSession } from "./_auth.js";
+import { getUserSession } from "../usuario/_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import {
   asegurarColumnaObservacionesAdmin,
@@ -18,6 +19,7 @@ import {
   normalizarNombresDocumentosActividad,
   obtenerCatalogoDocumentosActivosAdmin
 } from "../_actividad_documentacion.js";
+import { secretariaEsResponsableDeAdmin } from "../secretaria/_documental.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -374,6 +376,32 @@ async function obtenerActividad(env, id) {
   `).bind(id).first();
 }
 
+async function getSesionEdicionActividad(request, env) {
+  const adminSession = await getAdminSession(request, env);
+  if (adminSession) return adminSession;
+
+  const userSession = await getUserSession(request, env.SECRET_KEY);
+  const rol = limpiarTexto(userSession?.rol).toUpperCase();
+  if (rol !== "SECRETARIA") return null;
+
+  const usuario = await env.DB.prepare(`
+    SELECT id, rol, activo
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(Number(userSession.id || 0)).first();
+
+  if (!usuario || Number(usuario.activo || 0) !== 1 || limpiarTexto(usuario.rol).toUpperCase() !== "SECRETARIA") {
+    return null;
+  }
+
+  return {
+    username: userSession.email || "",
+    usuario_id: Number(usuario.id || 0),
+    rol: "SECRETARIA"
+  };
+}
+
 async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
@@ -498,9 +526,11 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
-    const errorValidacion = validarActividad(body);
-    if (errorValidacion) {
-      return json({ ok: false, error: errorValidacion }, 400);
+    if (rol !== "SECRETARIA") {
+      const errorValidacion = validarActividad(body);
+      if (errorValidacion) {
+        return json({ ok: false, error: errorValidacion }, 400);
+      }
     }
 
     const rol = await obtenerRol(env, session.usuario_id);
@@ -631,7 +661,7 @@ export async function onRequestPut(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
-    const session = await getAdminSession(request, env);
+    const session = await getSesionEdicionActividad(request, env);
     if (!session) {
       return json({ ok: false, error: "No autorizado." }, 401);
     }
@@ -648,9 +678,15 @@ export async function onRequestPut(context) {
       return json({ ok: false, error: "La actividad no existe." }, 404);
     }
 
-    const rol = await obtenerRol(env, session.usuario_id);
+    const rol = limpiarTexto(session.rol).toUpperCase() || await obtenerRol(env, session.usuario_id);
     if (rol !== "SUPERADMIN" && Number(actual.admin_id || 0) !== Number(session.usuario_id)) {
-      return json({ ok: false, error: "No autorizado para editar esta actividad." }, 403);
+      if (rol !== "SECRETARIA") {
+        return json({ ok: false, error: "No autorizado para editar esta actividad." }, 403);
+      }
+      const responsable = await secretariaEsResponsableDeAdmin(env, session.usuario_id, actual.admin_id);
+      if (!responsable) {
+        return json({ ok: false, error: "No autorizado para editar la documentación de esta actividad." }, 403);
+      }
     }
 
     let admin_id = parsearIdPositivo(body.admin_id);
@@ -693,6 +729,71 @@ export async function onRequestPut(context) {
       documentacionActividadNueva
     );
     const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
+
+    if (rol === "SECRETARIA") {
+      if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0 && !confirmadoCambioRequisitos) {
+        return json({
+          ok: false,
+          requiere_confirmacion_requisitos: true,
+          total_afectadas: reservasAfectadasRequisitos.length,
+          mensaje: reservasAfectadasRequisitos.length === 1
+            ? "Existe 1 solicitud vinculada a esta actividad. Si continúas, se notificará al solicitante y, si estaba pendiente o aceptada, pasará a suspendida."
+            : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continúas, se notificará a los solicitantes y las que estuvieran pendientes o aceptadas pasarán a suspendida.`
+        }, 409);
+      }
+
+      await guardarRequisitosActividad(env, id, p.requisitos_particulares);
+      await guardarConfiguracionDocumentalActividad(
+        env,
+        id,
+        p.documentacion_actividad.modo,
+        p.documentacion_actividad.documentos
+      );
+
+      let resumenImpactoDocumental = null;
+      try {
+        resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
+          adminId: Number(actual.admin_id || 0),
+          baseUrl: new URL(request.url).origin,
+          motivo: documentacionActividadHaCambiado
+            ? "documentos_actualizados"
+            : "actividad_guardada_revalidacion_documental",
+          avisarCambioMarcoSinCambios: false
+        });
+      } catch (errorImpactoDocumental) {
+        console.error("No se pudo recalcular el impacto documental tras guardar la actividad desde secretaría.", {
+          actividad_id: Number(id || 0),
+          admin_id: Number(actual.admin_id || 0),
+          secretaria_id: Number(session.usuario_id || 0),
+          error: errorImpactoDocumental?.message || String(errorImpactoDocumental || "")
+        });
+        resumenImpactoDocumental = {
+          ok: false,
+          error: "No se pudo recalcular el impacto documental automáticamente."
+        };
+      }
+
+      let resumenCambioRequisitos = null;
+      if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0) {
+        resumenCambioRequisitos = await notificarCambioRequisitosActividad(
+          env,
+          reservasAfectadasRequisitos,
+          p.titulo_publico || p.nombre,
+          {
+            actorUsuarioId: session.usuario_id,
+            actorRol: rol
+          }
+        );
+      }
+
+      return json({
+        ok: true,
+        resumen_cambio_requisitos: resumenCambioRequisitos,
+        resumen_impacto_documental: resumenImpactoDocumental,
+        mensaje: "Requisitos y documentación preceptiva actualizados correctamente."
+      });
+    }
+
     const resumenFranjas = await obtenerResumenFranjasActividad(env, id);
 
     // ===============================
@@ -1045,5 +1146,3 @@ export async function onRequestDelete(context) {
     );
   }
 }
-
-

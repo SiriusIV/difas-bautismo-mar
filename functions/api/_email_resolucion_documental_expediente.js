@@ -81,7 +81,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     actividades.forEach((item) => {
       lineas.push(`- ${item.actividad}${item.organizador ? ` (Organizador: ${item.organizador})` : ""}`);
     });
-    lineas.push("", "Debe iniciar la solicitud de la actividad en la que desea participar.");
+    lineas.push("", "IMPORTANTE: Debe volver a realizar la solicitud de la actividad en la que se va a participar.");
   } else {
     lineas.push(
       "Con la documentacion actualmente presentada aun no tienes acceso a solicitar ninguna actividad de las que requieren reserva."
@@ -142,7 +142,10 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
             `).join("")}
           </tbody>
         </table>
-        <p style="margin:12px 0 0;">Debe iniciar la solicitud de la actividad en la que desea participar.</p>
+        <div style="margin:12px 0 0;padding:10px 12px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:8px;border-radius:999px;background:#f5b400;color:#1f1f1f;font-weight:700;">!</span>
+          <strong>Debe volver a realizar la solicitud de la actividad en la que se va a participar.</strong>
+        </div>
       </div>
     `
     : `
