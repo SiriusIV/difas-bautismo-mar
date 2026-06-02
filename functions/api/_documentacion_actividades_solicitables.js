@@ -323,6 +323,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
       FROM actividades a
       INNER JOIN usuarios admin ON admin.id = a.admin_id
       WHERE a.activo = 1
+        AND COALESCE(a.visible_portal, 0) = 1
         AND admin.rol = 'ADMIN'
         AND (
           a.fecha_fin IS NULL
@@ -349,8 +350,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     usa_franjas: Number(row.usa_franjas || 0),
     aforo_limitado: Number(row.aforo_limitado || 0)
   }))
-    .filter((row) => row.id > 0 && row.admin_id > 0 && esActividadConReserva(row))
-    .filter((row) => expedientePorAdmin.has(row.admin_id));
+    .filter((row) => row.id > 0 && row.admin_id > 0 && esActividadConReserva(row));
 
   if (!actividades.length) {
     return {
