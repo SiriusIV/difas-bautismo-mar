@@ -7,7 +7,7 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { crearNotificacion } from "../_notificaciones.js";
-import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
+import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -297,9 +297,8 @@ export async function onRequestPost(context) {
       archivosResumen
     );
     const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosResumen);
-    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
-      adminId,
-      documentacionId
+    const resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
+      centroUsuarioId: Number(expediente.centro_usuario_id || 0)
     });
 
     await env.DB.prepare(`

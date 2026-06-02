@@ -6,7 +6,7 @@ import {
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import {
-  construirResumenActividadesSolicitablesSecretaria
+  construirResumenActividadesSolicitablesGlobalCentro
 } from "../_documentacion_actividades_solicitables.js";
 import { getSecretariaSession, obtenerExpedienteGestionadoPorSecretaria } from "./_documental.js";
 
@@ -227,8 +227,7 @@ export async function onRequestPost(context) {
     );
     let resumenActividadesCorreo = null;
     try {
-      resumenActividadesCorreo = await construirResumenActividadesSolicitablesSecretaria(env, {
-        secretariaId: Number(session.usuario_id || 0),
+      resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
         centroUsuarioId: Number(expediente.centro_usuario_id || 0)
       });
     } catch (errorResumenActividades) {

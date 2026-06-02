@@ -6,7 +6,7 @@ import {
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
-import { construirResumenActividadesSolicitablesSecretaria } from "../_documentacion_actividades_solicitables.js";
+import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -180,8 +180,7 @@ export async function onRequestPost(context) {
     const resumenCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos);
     let resumenActividadesCorreo = null;
     try {
-      resumenActividadesCorreo = await construirResumenActividadesSolicitablesSecretaria(env, {
-        secretariaId: Number(session.usuario_id || 0),
+      resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
         centroUsuarioId: Number(expediente.centro_usuario_id || 0)
       });
     } catch (errorResumenActividades) {
@@ -279,6 +278,5 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "No se pudo actualizar el documento.", detalle: error?.message || String(error) }, 500);
   }
 }
-
 
 

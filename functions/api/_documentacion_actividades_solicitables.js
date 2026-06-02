@@ -282,3 +282,141 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
     bloqueadas
   };
 }
+
+export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
+  centroUsuarioId
+} = {}) {
+  const centroUsuario = Number(centroUsuarioId || 0);
+  if (!(centroUsuario > 0)) {
+    return {
+      total_activas: 0,
+      solicitables_total: 0,
+      bloqueadas_total: 0,
+      puede_todas: false,
+      solicitables: [],
+      bloqueadas: []
+    };
+  }
+
+  const [expedientesRows, actividadesRows] = await Promise.all([
+    env.DB.prepare(`
+      SELECT
+        cad.id,
+        cad.admin_id,
+        admin.nombre AS admin_nombre,
+        admin.nombre_publico AS admin_nombre_publico
+      FROM centro_admin_documentacion cad
+      INNER JOIN usuarios admin ON admin.id = cad.admin_id
+      WHERE cad.centro_usuario_id = ?
+        AND admin.rol = 'ADMIN'
+    `).bind(centroUsuario).all(),
+    env.DB.prepare(`
+      SELECT
+        a.id,
+        a.admin_id,
+        COALESCE(NULLIF(TRIM(a.titulo_publico), ''), NULLIF(TRIM(a.nombre), ''), 'Actividad') AS nombre,
+        COALESCE(a.requiere_reserva, 0) AS requiere_reserva,
+        COALESCE(a.usa_franjas, 0) AS usa_franjas,
+        COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
+        admin.nombre AS admin_nombre,
+        admin.nombre_publico AS admin_nombre_publico
+      FROM actividades a
+      INNER JOIN usuarios admin ON admin.id = a.admin_id
+      WHERE a.activo = 1
+        AND admin.rol = 'ADMIN'
+        AND (
+          a.fecha_fin IS NULL
+          OR date(a.fecha_fin) >= date('now')
+        )
+      ORDER BY a.id DESC
+    `).all()
+  ]);
+
+  const expedientes = (expedientesRows?.results || []).map((row) => ({
+    id: Number(row.id || 0),
+    admin_id: Number(row.admin_id || 0),
+    admin_nombre: mapNombreAdmin(row)
+  })).filter((row) => row.id > 0 && row.admin_id > 0);
+
+  const expedientePorAdmin = new Map(expedientes.map((exp) => [exp.admin_id, exp]));
+
+  const actividades = (actividadesRows?.results || []).map((row) => ({
+    id: Number(row.id || 0),
+    admin_id: Number(row.admin_id || 0),
+    nombre: limpiarTexto(row.nombre || "Actividad"),
+    admin_nombre: mapNombreAdmin(row),
+    requiere_reserva: Number(row.requiere_reserva || 0),
+    usa_franjas: Number(row.usa_franjas || 0),
+    aforo_limitado: Number(row.aforo_limitado || 0)
+  }))
+    .filter((row) => row.id > 0 && row.admin_id > 0 && esActividadConReserva(row))
+    .filter((row) => expedientePorAdmin.has(row.admin_id));
+
+  if (!actividades.length) {
+    return {
+      total_activas: 0,
+      solicitables_total: 0,
+      bloqueadas_total: 0,
+      puede_todas: false,
+      solicitables: [],
+      bloqueadas: []
+    };
+  }
+
+  const adminIds = [...new Set(actividades.map((item) => item.admin_id))];
+  const catalogosPorAdmin = new Map(
+    await Promise.all(adminIds.map(async (id) => [id, await obtenerCatalogoDocumentosActivosAdmin(env, id)]))
+  );
+
+  const actividadesPorAdmin = new Map();
+  for (const actividad of actividades) {
+    if (!actividadesPorAdmin.has(actividad.admin_id)) actividadesPorAdmin.set(actividad.admin_id, []);
+    actividadesPorAdmin.get(actividad.admin_id).push(actividad.id);
+  }
+
+  const configuracionesPorActividad = new Map();
+  for (const [, actividadIds] of actividadesPorAdmin.entries()) {
+    const configMap = await obtenerConfiguracionDocumentalPorActividades(env, actividadIds);
+    for (const [actividadId, cfg] of configMap.entries()) configuracionesPorActividad.set(actividadId, cfg);
+  }
+
+  const archivosPorExpediente = new Map();
+  for (const exp of expedientes) {
+    const rows = await env.DB.prepare(`
+      SELECT nombre_documento, version_documental, estado
+      FROM centro_admin_documentacion_archivos
+      WHERE documentacion_id = ?
+        AND activo = 1
+    `).bind(exp.id).all();
+    const map = new Map((rows?.results || []).map((item) => [limpiarTexto(item.nombre_documento).toUpperCase(), item]));
+    archivosPorExpediente.set(exp.id, map);
+  }
+
+  const solicitables = [];
+  const bloqueadas = [];
+  for (const actividad of actividades) {
+    const expediente = expedientePorAdmin.get(actividad.admin_id) || null;
+    const catalogo = catalogosPorAdmin.get(actividad.admin_id) || [];
+    const config = configuracionesPorActividad.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
+    const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
+    const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
+
+    const cumple = docsExigibles.every((doc) => {
+      const entrega = archivosMap.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+      return documentoCumple(doc, entrega);
+    });
+
+    const item = { actividad: actividad.nombre, organizador: actividad.admin_nombre };
+    if (cumple) solicitables.push(item);
+    else bloqueadas.push(item);
+  }
+
+  return {
+    total_activas: actividades.length,
+    solicitables_total: solicitables.length,
+    bloqueadas_total: bloqueadas.length,
+    puede_todas: actividades.length > 0 && solicitables.length === actividades.length,
+    solicitables,
+    bloqueadas
+  };
+}

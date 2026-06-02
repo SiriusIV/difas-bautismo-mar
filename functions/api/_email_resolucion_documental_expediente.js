@@ -56,7 +56,6 @@ export function construirEmailTextoResolucionExpedienteDocumental({
   const lineas = [
     "El estado de tu documentación obligatoria ha sido revisado.",
     "",
-    `Organizador: ${nombreVisibleAdmin(admin)}`,
     `Centro: ${limpiarTexto(centro?.centro)}`
   ];
 
@@ -81,7 +80,7 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     lineas.push(
       "",
       "IMPORTANTE:",
-      "Ya tienes toda la documentación obligatoria aprobada para este organizador."
+      "Ya tienes documentación obligatoria aprobada."
     );
   } else {
     const cambiosAprobados = (Array.isArray(cambios) ? cambios : []).filter((item) => {
@@ -101,18 +100,18 @@ export function construirEmailTextoResolucionExpedienteDocumental({
       lineas.push(
         "",
         "IMPORTANTE:",
-        "Aún no tienes toda la documentación obligatoria completada para este organizador.",
+        "Aún no tienes toda la documentación obligatoria completada.",
         "Mientras no estén remitidos y aprobados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad."
       );
     }
   }
 
   if (totalActivas <= 0) {
-    lineas.push("", "Actualmente este organizador no tiene actividades activas que requieran reserva disponibles para solicitud.");
+    lineas.push("", "Actualmente no hay actividades activas que requieran reserva disponibles para solicitud con la documentación presentada.");
   } else if (puedeTodas) {
     lineas.push(
       "",
-      "Con la documentación actualmente aprobada puedes solicitar todas las actividades activas de este organizador que requieran reserva.",
+      "Con la documentación actualmente aprobada puedes solicitar todas las actividades activas que requieran reserva indicadas en este correo.",
       "Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar."
     );
   } else if (totalSolicitables > 0) {
@@ -120,11 +119,11 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     actividadesFormateadas.forEach((item) => {
       lineas.push(`- ${item.actividad}${item.organizador ? ` (Organizador: ${item.organizador})` : ""}`);
     });
-    lineas.push("", "Para otras actividades de este organizador, debes completar la documentación pendiente.");
+    lineas.push("", "Para otras actividades, debes completar la documentación pendiente.");
   } else {
     lineas.push(
       "",
-      `Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${nombreVisibleAdmin(admin)} que requieran reserva.`,
+      "Con la documentación actualmente presentada no tienes aún acceso a solicitar actividades que requieran reserva.",
       "Debes completar y validar los documentos pendientes para habilitar solicitudes."
     );
   }
@@ -191,7 +190,7 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
         </table>
       ` : ""}
       <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-        <strong>Importante:</strong> Ya tienes toda la documentación obligatoria aprobada para este organizador.
+        <strong>Importante:</strong> Ya tienes documentación obligatoria aprobada.
       </p>
     `
     : `
@@ -211,25 +210,24 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
       ${listaPendientes ? `<p><strong>Documentos pendientes para completar la validación:</strong></p><ul>${listaPendientes}</ul>` : ""}
       ${pendientes.length ? `
         <p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">
-          <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada para este organizador. Mientras no estén remitidos y aprobados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
+          <strong>Atención:</strong> Aún no tienes toda la documentación obligatoria completada. Mientras no estén remitidos y aprobados todos los documentos pendientes indicados, no se admitirá el envío de solicitudes de actividad.
         </p>
       ` : ""}
     `;
 
   let bloqueActividades = "";
   if (totalActivas <= 0) {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente este organizador no tiene actividades activas que requieran reserva disponibles para solicitud.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #d8e0e8;background:#f8fbff;color:#29445f;">Actualmente no hay actividades activas que requieran reserva disponibles para solicitud con la documentación presentada.</p>`;
   } else if (puedeTodas) {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación actualmente aprobada puedes solicitar todas las actividades activas de este organizador que requieran reserva.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #b9e0c0;background:#eaf7ea;color:#1f5f2e;"><strong>Con la documentación actualmente aprobada puedes solicitar todas las actividades activas que requieran reserva indicadas en este correo.</strong><br>Debes iniciar o reiniciar la solicitud de la actividad en la que desees participar.</p>`;
   } else if (totalSolicitables > 0) {
-    bloqueActividades = `<p><strong>Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:</strong></p><ul>${actividadesFormateadas.map((item) => `<li>${escaparHtml(item.actividad)}${item.organizador ? ` <span style="color:#4b5f73;">(Organizador: ${escaparHtml(item.organizador)})</span>` : ""}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades de este organizador, debes completar la documentación pendiente.</p>`;
+    bloqueActividades = `<p><strong>Con la documentación actualmente aprobada puedes solicitar las siguientes actividades que requieren reserva:</strong></p><ul>${actividadesFormateadas.map((item) => `<li>${escaparHtml(item.actividad)}${item.organizador ? ` <span style="color:#4b5f73;">(Organizador: ${escaparHtml(item.organizador)})</span>` : ""}</li>`).join("")}</ul><p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;">Para otras actividades, debes completar la documentación pendiente.</p>`;
   } else {
-    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación actualmente presentada no tienes aún acceso a solicitar las actividades disponibles organizadas por ${escaparHtml(nombreVisibleAdmin(admin))} que requieran reserva.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
+    bloqueActividades = `<p style="margin:14px 0;padding:12px 14px;border-radius:8px;border:1px solid #f0d28a;background:#fff6df;color:#7a4c00;"><strong>Con la documentación actualmente presentada no tienes aún acceso a solicitar actividades que requieran reserva.</strong><br>Debes completar y validar los documentos pendientes para habilitar solicitudes.</p>`;
   }
 
   return `
     <p>El estado de tu documentación obligatoria ha sido revisado.</p>
-    <p><strong>Organizador:</strong> ${escaparHtml(nombreVisibleAdmin(admin))}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
     ${filas ? `<p><strong>Detalle de la revisión</strong></p><table style="border-collapse:collapse;width:100%;max-width:760px;"><thead><tr><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Documento</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Estado</th><th style="text-align:left;padding:8px 10px;border:1px solid #d8e0e8;background:#f7fafc;">Observaciones</th></tr></thead><tbody>${filas}</tbody></table>` : ""}
     ${bloqueResultado}

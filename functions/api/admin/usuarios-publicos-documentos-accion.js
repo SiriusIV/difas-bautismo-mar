@@ -8,7 +8,7 @@ import {
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
-import { construirResumenActividadesSolicitables } from "../_documentacion_actividades_solicitables.js";
+import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -198,9 +198,8 @@ export async function onRequestPost(context) {
     `).bind(Number(expediente.centro_usuario_id || 0)).first();
 
     const resumenCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos);
-    const resumenActividadesCorreo = await construirResumenActividadesSolicitables(env, {
-      adminId,
-      documentacionId
+    const resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
+      centroUsuarioId: Number(expediente.centro_usuario_id || 0)
     });
     const cambioTexto = accion === "eliminar" ? "NO_ENVIADO" : (accion === "validar" ? "VALIDADO" : "RECHAZADO");
     await enviarEmail(env, {
