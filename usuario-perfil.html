@@ -435,6 +435,8 @@
     .tabla-documentacion-admin th:nth-child(3), .tabla-documentacion-admin td:nth-child(3),
     .tabla-documentacion-admin th:nth-child(4), .tabla-documentacion-admin td:nth-child(4),
     .tabla-documentacion-admin th:nth-child(5), .tabla-documentacion-admin td:nth-child(5) { text-align: center; }
+    .tabla-documentacion-admin .col-version-documento { text-align: center; }
+    .tabla-documentacion-admin .valor-version-documento { display: inline-block; justify-self: center; text-align: center; }
     .fila-doc-base { cursor: pointer; }
     .fila-doc-base:hover td { background: #f8fbff; }
     .btn-ver-doc-base-fila {
@@ -3725,7 +3727,7 @@
             <div class="admin-doc-titulo-linea"><div class="admin-doc-nombre">${doc.nombre || "Documento"}</div></div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
           </td>
-          <td data-label="Versión">${Number(doc.version_documental || 0)}</td>
+          <td data-label="Versión" class="col-version-documento"><span class="valor-version-documento">${Number(doc.version_documental || 0)}</span></td>
           <td data-label="Última actualización">${formatearFechaCorta(doc.fecha_actualizacion || "")}</td>
           <td data-label="Estado">
             <label class="toggle-estado-doc-base" title="${activo ? "Documento activo" : "Documento inactivo"}">
