@@ -8,13 +8,21 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function normalizarClaveDocumento(valor) {
+  return limpiarTexto(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
 function normalizarEstadoDocumento(estado) {
   const valor = String(estado || "")
     .trim()
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  if (valor === "VALIDADA" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "VALIDADA" || valor === "APROBADA" || valor === "APROBADO") return "VALIDADO";
   if (valor === "EN REVISION") return "EN_REVISION";
   return valor || "EN_REVISION";
 }
@@ -69,7 +77,7 @@ export async function construirResumenActividadesSolicitables(env, {
         COALESCE(aforo_limitado, 0) AS aforo_limitado
       FROM actividades
       WHERE admin_id = ?
-        AND activo = 1
+        AND activa = 1
         AND (
           fecha_fin IS NULL
           OR date(fecha_fin) >= date('now')
@@ -113,7 +121,7 @@ export async function construirResumenActividadesSolicitables(env, {
 
   const archivos = archivosRows?.results || [];
   const archivosPorNombre = new Map(
-    archivos.map((item) => [limpiarTexto(item.nombre_documento).toUpperCase(), item])
+    archivos.map((item) => [normalizarClaveDocumento(item.nombre_documento), item])
   );
 
   const solicitables = [];
@@ -122,7 +130,7 @@ export async function construirResumenActividadesSolicitables(env, {
     const config = configuraciones.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
     const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+      const entrega = archivosPorNombre.get(normalizarClaveDocumento(doc.nombre)) || null;
       return documentoCumple(doc, entrega);
     });
     if (cumple) solicitables.push(actividad.nombre);
@@ -182,7 +190,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
         admin.nombre_publico AS admin_nombre_publico
       FROM actividades a
       INNER JOIN usuarios admin ON admin.id = a.admin_id
-      WHERE a.activo = 1
+      WHERE a.activa = 1
         AND admin.rol = 'ADMIN'
         AND admin.secretaria_usuario_id = ?
         AND COALESCE(admin.modulo_secretaria, 0) = 0
@@ -247,7 +255,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
       WHERE documentacion_id = ?
         AND activo = 1
     `).bind(exp.id).all();
-    const map = new Map((rows?.results || []).map((item) => [limpiarTexto(item.nombre_documento).toUpperCase(), item]));
+    const map = new Map((rows?.results || []).map((item) => [normalizarClaveDocumento(item.nombre_documento), item]));
     archivosPorExpediente.set(exp.id, map);
   }
 
@@ -261,7 +269,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
     const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
 
     const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosMap.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+      const entrega = archivosMap.get(normalizarClaveDocumento(doc.nombre)) || null;
       return documentoCumple(doc, entrega);
     });
 
@@ -322,7 +330,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
         admin.nombre_publico AS admin_nombre_publico
       FROM actividades a
       INNER JOIN usuarios admin ON admin.id = a.admin_id
-      WHERE a.activo = 1
+      WHERE a.activa = 1
         AND COALESCE(a.visible_portal, 0) = 1
         AND admin.rol = 'ADMIN'
         AND (
@@ -388,7 +396,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
       WHERE documentacion_id = ?
         AND activo = 1
     `).bind(exp.id).all();
-    const map = new Map((rows?.results || []).map((item) => [limpiarTexto(item.nombre_documento).toUpperCase(), item]));
+    const map = new Map((rows?.results || []).map((item) => [normalizarClaveDocumento(item.nombre_documento), item]));
     archivosPorExpediente.set(exp.id, map);
   }
 
@@ -402,7 +410,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
 
     const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosMap.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+      const entrega = archivosMap.get(normalizarClaveDocumento(doc.nombre)) || null;
       return documentoCumple(doc, entrega);
     });
 
