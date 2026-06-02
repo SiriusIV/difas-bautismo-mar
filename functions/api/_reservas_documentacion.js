@@ -44,11 +44,11 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
   }
 
   const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento).toUpperCase(), archivo])
   );
 
   const estados = documentosActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
     return calcularEstadoDocumento(doc, entrega);
   });
 
@@ -66,12 +66,12 @@ function estadoDocumentalCompleto(estado) {
 
 function construirDocumentosPendientes(documentosActivos, archivosActivos) {
   const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
+    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento).toUpperCase(), archivo])
   );
 
   return (documentosActivos || [])
     .map((doc) => {
-      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
       const estado = calcularEstadoDocumento(doc, entrega);
       return {
         id: Number(doc.id || 0),
@@ -102,7 +102,8 @@ async function obtenerArchivosActivos(env, documentacionId) {
       id,
       nombre_documento,
       version_documental,
-      estado
+      estado,
+      fecha_subida
     FROM centro_admin_documentacion_archivos
     WHERE documentacion_id = ?
       AND activo = 1
@@ -144,16 +145,14 @@ export async function validarDocumentacionReserva(env, {
   const expediente = await obtenerExpediente(env, usuario, admin);
   const archivosActivos = expediente?.id ? await obtenerArchivosActivos(env, expediente.id) : [];
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
-  const estadoExpediente = String(expediente?.estado || "").trim().toUpperCase();
-  const usarEstadoExpediente = !!estadoExpediente && estadoExpediente !== "NO_INICIADO";
-  const estadoFinal = usarEstadoExpediente ? estadoExpediente : estadoDocumental;
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);
-  const okFinal = estadoDocumentalCompleto(estadoDocumental) && estadoDocumentalCompleto(estadoFinal);
+  const okFinal = estadoDocumentalCompleto(estadoDocumental);
 
   return {
     ok: okFinal,
     requiere_documentacion: true,
-    estado_documental: estadoFinal,
+    estado_documental: estadoDocumental,
+    estado_expediente: String(expediente?.estado || "").trim().toUpperCase(),
     documentos_pendientes: documentosPendientes,
     error: okFinal
       ? ""
