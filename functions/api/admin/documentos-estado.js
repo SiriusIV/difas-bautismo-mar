@@ -92,8 +92,7 @@ export async function onRequestPost(context) {
     await env.DB.prepare(`
       UPDATE admin_documentos_comunes
       SET
-        activo = ?,
-        fecha_actualizacion = CURRENT_TIMESTAMP
+        activo = ?
       WHERE id = ?
     `).bind(activar ? 1 : 0, documentoId).run();
 
