@@ -30,6 +30,24 @@ function construirLineaReservas(reservas = []) {
     .join(", ");
 }
 
+function resolverTextoEstadoReactivado(reservas = [], estadoDestinoEntrada = "CONFIRMADA") {
+  const estados = (Array.isArray(reservas) ? reservas : [])
+    .map((reserva) => limpiarTexto(reserva?.estado_reactivado).toUpperCase())
+    .filter((estado) => ["PENDIENTE", "CONFIRMADA"].includes(estado));
+
+  if (estados.length) {
+    const unicos = Array.from(new Set(estados));
+    if (unicos.length > 1) return { estado: "su estado anterior", etiqueta: "Reservas reactivadas" };
+    return unicos[0] === "PENDIENTE"
+      ? { estado: "pendiente", etiqueta: "Reservas reactivadas como pendientes" }
+      : { estado: "confirmada", etiqueta: "Reservas reactivadas" };
+  }
+
+  return limpiarTexto(estadoDestinoEntrada).toUpperCase() === "PENDIENTE"
+    ? { estado: "pendiente", etiqueta: "Reservas reactivadas como pendientes" }
+    : { estado: "confirmada", etiqueta: "Reservas reactivadas" };
+}
+
 export function construirEmailTextoReservaCondicionadaDocumentacion({
   admin,
   centro,
@@ -122,17 +140,19 @@ export function construirEmailTextoReservaReactivadaDocumentacion({
   centro,
   motivo_texto,
   reservas = [],
+  estado_destino = "CONFIRMADA",
   enlace_perfil = ""
 }) {
   const organizador = nombreVisibleAdmin(admin);
+  const estadoReactivado = resolverTextoEstadoReactivado(reservas, estado_destino);
   return [
-    "Tu solicitud vuelve a estar confirmada tras la actualizacion documental aplicada por el organizador.",
+    `Tu solicitud vuelve a estar ${estadoReactivado.estado} tras la actualizacion documental aplicada por el organizador.`,
     "",
     `${motivo_texto || "Ha cambiado el conjunto de documentos obligatorios vigente."}`,
     "",
     `Organizador: ${organizador}`,
     `Centro: ${limpiarTexto(centro?.centro)}`,
-    `Reservas reactivadas: ${construirLineaReservas(reservas) || "Sin codigo disponible"}`,
+    `${estadoReactivado.etiqueta}: ${construirLineaReservas(reservas) || "Sin codigo disponible"}`,
     "",
     enlace_perfil
       ? `Puedes revisar el estado actualizado desde aqui: ${enlace_perfil}`
@@ -145,15 +165,17 @@ export function construirEmailHtmlReservaReactivadaDocumentacion({
   centro,
   motivo_texto,
   reservas = [],
+  estado_destino = "CONFIRMADA",
   enlace_perfil = ""
 }) {
   const organizador = escaparHtml(nombreVisibleAdmin(admin));
+  const estadoReactivado = resolverTextoEstadoReactivado(reservas, estado_destino);
   return `
-    <p>Tu solicitud vuelve a estar confirmada tras la actualizacion documental aplicada por el organizador.</p>
+    <p>Tu solicitud vuelve a estar ${escaparHtml(estadoReactivado.estado)} tras la actualizacion documental aplicada por el organizador.</p>
     <p>${escaparHtml(motivo_texto || "Ha cambiado el conjunto de documentos obligatorios vigente.")}</p>
     <p><strong>Organizador:</strong> ${organizador}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
-    <p><strong>Reservas reactivadas:</strong> ${escaparHtml(construirLineaReservas(reservas) || "Sin codigo disponible")}</p>
+    <p><strong>${escaparHtml(estadoReactivado.etiqueta)}:</strong> ${escaparHtml(construirLineaReservas(reservas) || "Sin codigo disponible")}</p>
     ${enlace_perfil ? `
       <p>
         <a href="${escaparHtml(enlace_perfil)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#198754;color:#ffffff;text-decoration:none;font-weight:bold;">

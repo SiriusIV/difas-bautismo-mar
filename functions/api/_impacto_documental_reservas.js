@@ -10,6 +10,7 @@ import {
 } from "./_email_reservas_documentacion.js";
 import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
 import { crearNotificacion } from "./_notificaciones.js";
+import { registrarEventoReserva } from "./_reservas_historial.js";
 import {
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
@@ -47,6 +48,13 @@ function parsearFecha(valor) {
   return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
+function parsearFechaComparable(valor) {
+  const texto = limpiarTexto(valor);
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 function normalizarEstadoDocumento(estado) {
   const valor = limpiarTexto(estado).toUpperCase();
   return valor || "EN_REVISION";
@@ -55,6 +63,11 @@ function normalizarEstadoDocumento(estado) {
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) return "NO_ENVIADO";
   if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
+    return "NO_ACTUALIZADO";
+  }
+  const fechaMarco = parsearFechaComparable(doc.fecha_actualizacion);
+  const fechaEntrega = parsearFechaComparable(entrega.fecha_subida);
+  if (fechaMarco && fechaEntrega && fechaEntrega < fechaMarco) {
     return "NO_ACTUALIZADO";
   }
   return normalizarEstadoDocumento(entrega.estado);
@@ -339,6 +352,40 @@ async function notificarReservaReactivada(env, payload) {
   });
 }
 
+async function obtenerEstadoPrevioSuspensionDocumental(env, reservaId) {
+  const id = Number(reservaId || 0);
+  if (!(id > 0)) return "CONFIRMADA";
+
+  try {
+    const row = await env.DB.prepare(`
+      SELECT estado_origen
+      FROM reservas_historial_estados
+      WHERE reserva_id = ?
+        AND accion = 'SUSPENSION_DOCUMENTAL'
+        AND estado_destino = 'SUSPENDIDA'
+      ORDER BY fecha_evento DESC, id DESC
+      LIMIT 1
+    `).bind(id).first();
+
+    const estado = limpiarTexto(row?.estado_origen).toUpperCase();
+    if (["PENDIENTE", "CONFIRMADA"].includes(estado)) return estado;
+
+    const rowPrevio = await env.DB.prepare(`
+      SELECT estado_destino
+      FROM reservas_historial_estados
+      WHERE reserva_id = ?
+        AND estado_destino IN ('PENDIENTE', 'CONFIRMADA')
+      ORDER BY fecha_evento DESC, id DESC
+      LIMIT 1
+    `).bind(id).first();
+
+    const estadoPrevio = limpiarTexto(rowPrevio?.estado_destino).toUpperCase();
+    return ["PENDIENTE", "CONFIRMADA"].includes(estadoPrevio) ? estadoPrevio : "CONFIRMADA";
+  } catch (_) {
+    return "CONFIRMADA";
+  }
+}
+
 async function crearNotificacionReservaCondicionada(env, payload) {
   return await crearNotificacion(env, {
     usuarioId: Number(payload?.centro?.usuario_id || 0),
@@ -547,12 +594,30 @@ export async function recalcularImpactoDocumentalReservas(env, {
 
       if (estadoDocumentalCompleto(estadoDocumentalReserva)) {
         if (estadoReserva === "SUSPENDIDA") {
-          await actualizarEstadoReserva(env, Number(reserva.id || 0), "CONFIRMADA");
-          reservasReactivadas.push(reserva);
+          const estadoDestino = await obtenerEstadoPrevioSuspensionDocumental(env, Number(reserva.id || 0));
+          await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
+          await registrarEventoReserva(env, {
+            reservaId: Number(reserva.id || 0),
+            accion: "REACTIVACION_DOCUMENTAL",
+            estadoOrigen: "SUSPENDIDA",
+            estadoDestino,
+            observaciones: "La documentación exigible de la actividad vuelve a estar completa."
+          });
+          reservasReactivadas.push({
+            ...reserva,
+            estado_reactivado: estadoDestino
+          });
           resumen.reservas_reactivadas += 1;
         }
       } else if (estadoReserva !== "SUSPENDIDA") {
         await actualizarEstadoReserva(env, Number(reserva.id || 0), "SUSPENDIDA");
+        await registrarEventoReserva(env, {
+          reservaId: Number(reserva.id || 0),
+          accion: "SUSPENSION_DOCUMENTAL",
+          estadoOrigen: estadoReserva,
+          estadoDestino: "SUSPENDIDA",
+          observaciones: "La actividad exige documentación pendiente, rechazada o desactualizada."
+        });
         reservasSuspendidas.push(reserva);
         resumen.reservas_suspendidas += 1;
       }
@@ -569,7 +634,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
 
     if (reservasSuspendidas.length) {
         const contactoCorreo = resolverContactoReservaParaCorreo(reservasSuspendidas);
-        const payloadNotificacion = {
+      const payloadNotificacion = {
           admin,
           responsable: resolucion.responsable,
           centro: {
@@ -609,6 +674,9 @@ export async function recalcularImpactoDocumentalReservas(env, {
           },
           motivo_texto: motivoImpactoDocumentalTexto(motivo),
           reservas: reservasReactivadas,
+          estado_destino: reservasReactivadas.some((reserva) => limpiarTexto(reserva.estado_reactivado).toUpperCase() === "PENDIENTE")
+            ? "PENDIENTE"
+            : "CONFIRMADA",
           enlace_perfil: enlacePerfil
       };
       const resultado = await notificarReservaReactivada(env, payloadNotificacion);
@@ -659,16 +727,17 @@ export async function recalcularImpactoDocumentalReservas(env, {
     resumen.detalle.push({
       centro_usuario_id: Number(solicitante.id || 0),
       email: solicitante.email || "",
-      reservas_afectadas: reservas.map((reserva) => ({
-        id: Number(reserva.id || 0),
-        codigo_reserva: reserva.codigo_reserva || "",
-        estado_anterior: reserva.estado || "",
-        estado_nuevo: reservasSuspendidas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
-          ? "SUSPENDIDA"
-          : reservasReactivadas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
-            ? "CONFIRMADA"
-            : (reserva.estado || "")
-      })),
+      reservas_afectadas: reservas.map((reserva) => {
+        const reactivada = reservasReactivadas.find((item) => Number(item.id || 0) === Number(reserva.id || 0));
+        return {
+          id: Number(reserva.id || 0),
+          codigo_reserva: reserva.codigo_reserva || "",
+          estado_anterior: reserva.estado || "",
+          estado_nuevo: reservasSuspendidas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
+            ? "SUSPENDIDA"
+            : (reactivada?.estado_reactivado || reserva.estado || "")
+        };
+      }),
       estado_documental: estadoGlobal,
       pendientes: pendientesSinCambios,
       accion: reservasSuspendidas.length
