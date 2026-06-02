@@ -1,4 +1,5 @@
 import { getUserSession } from "./_auth.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -45,7 +46,8 @@ async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId) {
       a.id,
       a.documentacion_id,
       a.nombre_documento,
-      a.archivo_url
+      a.archivo_url,
+      d.admin_id
     FROM centro_admin_documentacion_archivos a
     INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
     INNER JOIN admin_documentos_comunes c
@@ -64,7 +66,8 @@ async function obtenerArchivoPorId(env, centroUsuarioId, archivoId) {
       a.id,
       a.documentacion_id,
       a.nombre_documento,
-      a.archivo_url
+      a.archivo_url,
+      d.admin_id
     FROM centro_admin_documentacion_archivos a
     INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
     WHERE a.id = ?
@@ -122,12 +125,41 @@ export async function onRequestPost(context) {
       WHERE id = ?
     `).bind(archivo.id).run();
 
+    let impactoReservas = {
+      ok: true,
+      skipped: true,
+      motivo: "Documento eliminado sin administrador asociado."
+    };
+    const adminId = Number(archivo.admin_id || 0);
+    if (adminId > 0) {
+      try {
+        impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+          adminId,
+          baseUrl: new URL(request.url).origin,
+          motivo: "documentacion_solicitante_eliminada"
+        });
+      } catch (errorImpacto) {
+        impactoReservas = {
+          ok: false,
+          error: errorImpacto?.message || String(errorImpacto || "")
+        };
+        console.error("No se pudo recalcular impacto documental de reservas tras eliminar documento del solicitante.", {
+          admin_id: adminId,
+          centro_usuario_id: Number(usuario.id || 0),
+          documentacion_id: Number(archivo.documentacion_id || 0),
+          archivo_id: Number(archivo.id || 0),
+          error: impactoReservas.error
+        });
+      }
+    }
+
     return json({
       ok: true,
       mensaje: "Documento remitido eliminado correctamente.",
       documento_id: documentoId || null,
       archivo_id: archivo.id,
-      archivo_eliminado: Boolean(key)
+      archivo_eliminado: Boolean(key),
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

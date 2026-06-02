@@ -11,6 +11,7 @@ import {
   leerConfiguracionDocumentalActividad,
   resolverDocumentosExigiblesActividad
 } from "../_actividad_documentacion.js";
+import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -884,6 +885,32 @@ export async function onRequestPost(context) {
       }
     }
 
+    let impactoReservas = {
+      ok: true,
+      skipped: true,
+      motivo: "Sin cambios documentales reales del solicitante."
+    };
+    if (cambiosRealesIds.size > 0) {
+      try {
+        impactoReservas = await recalcularImpactoDocumentalReservas(env, {
+          adminId,
+          baseUrl: new URL(request.url).origin,
+          motivo: "documentacion_solicitante_actualizada"
+        });
+      } catch (errorImpacto) {
+        impactoReservas = {
+          ok: false,
+          error: errorImpacto?.message || String(errorImpacto || "")
+        };
+        console.error("No se pudo recalcular impacto documental de reservas tras cambios del solicitante.", {
+          admin_id: Number(adminId || 0),
+          centro_usuario_id: Number(usuario.id || 0),
+          documentacion_id: Number(expediente?.id || 0),
+          error: impactoReservas.error
+        });
+      }
+    }
+
     return json({
       ok: true,
       mensaje: cambiosRealesIds.size > 0
@@ -908,7 +935,8 @@ export async function onRequestPost(context) {
       notificacion_interna_responsable: {
         creada: !!notificacionInternaResponsable.ok,
         error: notificacionInternaResponsable.ok ? "" : (notificacionInternaResponsable.error || "")
-      }
+      },
+      impacto_reservas: impactoReservas
     });
   } catch (error) {
     return json(

@@ -116,6 +116,12 @@ function motivoImpactoDocumentalTexto(motivo) {
   if (clave === "documentos_actualizados") {
     return "Se ha actualizado el conjunto de documentos obligatorios vigente.";
   }
+  if (clave === "documentacion_solicitante_actualizada") {
+    return "El solicitante ha actualizado documentación obligatoria ya remitida.";
+  }
+  if (clave === "documentacion_solicitante_eliminada") {
+    return "El solicitante ha eliminado documentación obligatoria ya remitida.";
+  }
   return "Se ha producido un cambio en la documentacion obligatoria vigente.";
 }
 
