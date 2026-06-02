@@ -8,7 +8,12 @@ import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEven
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json; charset=utf-8" },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    },
     ...init
   });
 }
@@ -193,9 +198,9 @@ async function obtenerReservas(env, filtros) {
       r.plazas_prereservadas,
       r.prereserva_expira_en,
 
-      f.fecha,
-      f.hora_inicio,
-      f.hora_fin,
+      COALESCE(f.fecha, a.fecha_inicio, '') AS fecha,
+      COALESCE(f.hora_inicio, '') AS hora_inicio,
+      COALESCE(f.hora_fin, '') AS hora_fin,
       f.capacidad,
 
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,

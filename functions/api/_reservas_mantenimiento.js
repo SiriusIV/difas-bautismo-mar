@@ -751,7 +751,7 @@ async function obtenerReservasResidualesLegacy(env) {
     WHERE r.actividad_id IS NULL
        OR a.id IS NULL
        OR (
-         COALESCE(a.usa_franjas, 1) = 1
+         COALESCE(a.usa_franjas, 0) = 1
          AND (
            r.franja_id IS NULL
            OR f.id IS NULL
