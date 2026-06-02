@@ -38,11 +38,7 @@ function documentoCumple(doc, entrega) {
 }
 
 function esActividadConReserva(row = {}) {
-  return (
-    Number(row.requiere_reserva || 0) === 1 ||
-    Number(row.usa_franjas || 0) === 1 ||
-    Number(row.aforo_limitado || 0) === 1
-  );
+  return Number(row.requiere_reserva || 0) === 1;
 }
 
 function mapNombreAdmin(row = {}) {
@@ -129,6 +125,10 @@ export async function construirResumenActividadesSolicitables(env, {
   for (const actividad of actividades) {
     const config = configuraciones.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
+    if (!docsExigibles.length) {
+      bloqueadas.push(actividad.nombre);
+      continue;
+    }
     const cumple = docsExigibles.every((doc) => {
       const entrega = archivosPorNombre.get(normalizarClaveDocumento(doc.nombre)) || null;
       return documentoCumple(doc, entrega);
@@ -266,6 +266,13 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
     const catalogo = catalogosPorAdmin.get(actividad.admin_id) || [];
     const config = configuracionesPorActividad.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
+    if (!docsExigibles.length) {
+      bloqueadas.push({
+        actividad: actividad.nombre,
+        organizador: actividad.admin_nombre
+      });
+      continue;
+    }
     const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
 
     const cumple = docsExigibles.every((doc) => {
@@ -407,6 +414,13 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     const catalogo = catalogosPorAdmin.get(actividad.admin_id) || [];
     const config = configuracionesPorActividad.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
+    if (!docsExigibles.length) {
+      bloqueadas.push({
+        actividad: actividad.nombre,
+        organizador: actividad.admin_nombre
+      });
+      continue;
+    }
     const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
 
     const cumple = docsExigibles.every((doc) => {
