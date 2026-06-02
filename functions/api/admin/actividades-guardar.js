@@ -11,6 +11,7 @@ import { enviarEmail } from "../_email.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { notificarNuevosSolicitantesHabilitadosPorDocumentacionActividad } from "../_avisos_actividad_documentacion.js";
 import {
   borrarConfiguracionDocumentalActividad,
   guardarConfiguracionDocumentalActividad,
@@ -750,11 +751,36 @@ export async function onRequestPut(context) {
         p.documentacion_actividad.documentos
       );
 
+      const baseUrlSecretaria = new URL(request.url).origin;
+      let resumenHabilitadosDocumentacion = null;
+      if (documentacionActividadHaCambiado) {
+        try {
+          resumenHabilitadosDocumentacion = await notificarNuevosSolicitantesHabilitadosPorDocumentacionActividad(env, {
+            actividadId: id,
+            adminId: Number(actual.admin_id || 0),
+            configuracionAnterior: documentacionActividadActual,
+            configuracionNueva: documentacionActividadNueva,
+            baseUrl: baseUrlSecretaria
+          });
+        } catch (errorAvisoDocumental) {
+          console.error("No se pudo notificar a solicitantes habilitados tras cambiar documentacion de actividad desde secretaria.", {
+            actividad_id: Number(id || 0),
+            admin_id: Number(actual.admin_id || 0),
+            secretaria_id: Number(session.usuario_id || 0),
+            error: errorAvisoDocumental?.message || String(errorAvisoDocumental || "")
+          });
+          resumenHabilitadosDocumentacion = {
+            ok: false,
+            error: "No se pudo notificar automaticamente a los solicitantes habilitados por el cambio documental."
+          };
+        }
+      }
+
       let resumenImpactoDocumental = null;
       try {
         resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
           adminId: Number(actual.admin_id || 0),
-          baseUrl: new URL(request.url).origin,
+          baseUrl: baseUrlSecretaria,
           motivo: documentacionActividadHaCambiado
             ? "documentos_actualizados"
             : "actividad_guardada_revalidacion_documental",
@@ -790,6 +816,7 @@ export async function onRequestPut(context) {
         ok: true,
         resumen_cambio_requisitos: resumenCambioRequisitos,
         resumen_impacto_documental: resumenImpactoDocumental,
+        resumen_habilitados_documentacion: resumenHabilitadosDocumentacion,
         mensaje: "Requisitos y documentación preceptiva actualizados correctamente."
       });
     }
@@ -1021,15 +1048,39 @@ export async function onRequestPut(context) {
       p.documentacion_actividad.documentos
     );
 
+    let baseUrl = "";
+    try {
+      baseUrl = new URL(request.url).origin;
+    } catch {
+      baseUrl = "";
+    }
+
+    let resumenHabilitadosDocumentacion = null;
+    if (documentacionActividadHaCambiado) {
+      try {
+        resumenHabilitadosDocumentacion = await notificarNuevosSolicitantesHabilitadosPorDocumentacionActividad(env, {
+          actividadId: id,
+          adminId: Number(p.admin_id || 0),
+          configuracionAnterior: documentacionActividadActual,
+          configuracionNueva: documentacionActividadNueva,
+          baseUrl
+        });
+      } catch (errorAvisoDocumental) {
+        console.error("No se pudo notificar a solicitantes habilitados tras cambiar documentacion de actividad.", {
+          actividad_id: Number(id || 0),
+          admin_id: Number(p.admin_id || 0),
+          error: errorAvisoDocumental?.message || String(errorAvisoDocumental || "")
+        });
+        resumenHabilitadosDocumentacion = {
+          ok: false,
+          error: "No se pudo notificar automaticamente a los solicitantes habilitados por el cambio documental."
+        };
+      }
+    }
+
     let resumenImpactoDocumental = null;
     const debeRecalcularImpactoDocumental = true;
     if (debeRecalcularImpactoDocumental) {
-      let baseUrl = "";
-      try {
-        baseUrl = new URL(request.url).origin;
-      } catch {
-        baseUrl = "";
-      }
       try {
         resumenImpactoDocumental = await recalcularImpactoDocumentalReservas(env, {
           adminId: p.admin_id,
@@ -1070,6 +1121,7 @@ export async function onRequestPut(context) {
       resumen_anulacion: resumenAnulacion,
       resumen_cambio_requisitos: resumenCambioRequisitos,
       resumen_impacto_documental: resumenImpactoDocumental,
+      resumen_habilitados_documentacion: resumenHabilitadosDocumentacion,
       mensaje: p.borrador_tecnico ? "Borrador técnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
