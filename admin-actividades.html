@@ -411,6 +411,34 @@
       margin-left: 0;
     }
 
+    @media (min-width: 701px) {
+      body.paso-requisitos-documentacion .contexto-head-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: flex-start;
+        column-gap: 14px;
+      }
+
+      body.paso-requisitos-documentacion .contexto-cabecera-superior {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+      }
+
+      body.paso-requisitos-documentacion .contexto-acciones-secundarias {
+        grid-column: 2;
+        grid-row: 1;
+        width: auto;
+        align-self: flex-start;
+        justify-content: flex-end;
+      }
+
+      body.paso-requisitos-documentacion .contexto-acciones-grupo.acciones-edicion,
+      body.paso-requisitos-documentacion .contexto-acciones-grupo.portal-acceso {
+        flex-wrap: nowrap;
+      }
+    }
+
     .nav-btn {
       display: inline-block;
       padding: 8px 14px;
@@ -5892,6 +5920,7 @@ function mostrarPaso(index) {
   panes.forEach((pane) => {
     pane.classList.toggle("activo", Number(pane.dataset.step) === pasoActual);
   });
+  document.body.classList.toggle("paso-requisitos-documentacion", pasoActual === 3);
 
   const indiceActual = flow.indexOf(pasoActual);
   const btnAnterior = document.getElementById("btnAnterior");
