@@ -1281,6 +1281,110 @@
       #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(4) .toggle-estado-doc-base {
         justify-self: start;
       }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin-wrap,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria-wrap {
+        overflow: visible;
+        max-height: none;
+        border: 0;
+        background: transparent;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin thead,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tbody,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tr,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin th,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin td,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria thead,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tbody,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tr,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria th,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria {
+        border-collapse: separate;
+        min-width: 0;
+        max-width: 100%;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin thead,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria thead {
+        display: none;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tbody,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tr,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tr {
+        border: 1px solid #dbe4ee;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 8px 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tr.fila-seleccionada,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tr.fila-seleccionada {
+        background: #f5f9ff;
+        border-color: #b7c8da;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin tr.fila-seleccionada td,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria tr.fila-seleccionada td {
+        background: transparent;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin td,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria td {
+        border-bottom: 1px solid #edf2f7;
+        padding: 8px 2px;
+        display: grid;
+        grid-template-columns: 38% minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+        text-align: left !important;
+        font-size: 13px;
+        min-width: 0;
+        box-sizing: border-box;
+        width: 100% !important;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin td:last-child,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria td:last-child {
+        border-bottom: 0;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin td::before,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria td::before {
+        content: attr(data-label);
+        color: #4a6076;
+        font-weight: 700;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin select {
+        width: 100%;
+        min-width: 0;
+      }
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin .btn-ver-doc-base-fila,
+      #panelDocumentacionAdminPendientes .tabla-pendientes-admin .btn-observacion-pendiente,
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria .btn-icono {
+        justify-self: start;
+      }
+      #panelDocumentacionAdminUsuarios .tabla-usuarios-secretaria a {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #panelDocumentacionAdminUsuarios .usuarios-secretaria-toolbar input {
+        max-width: none;
+      }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
       .tabla-revision-expediente { min-width: 0; table-layout: auto; }
       .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2),
@@ -3472,11 +3576,11 @@
       body.innerHTML = lista.map((item) => {
         const activa = Number(item.id) === Number(usuarioPublicoSecretariaSeleccionId);
         return `<tr class="${activa ? "fila-seleccionada" : ""}" data-usuario-sec-id="${Number(item.id)}">
-          <td>${item.centro || "-"}</td>
-          <td>${item.nombre || "-"}</td>
-          <td>${item.email ? `<a href="mailto:${item.email}">${item.email}</a>` : "-"}</td>
-          <td>${item.telefono_contacto || "-"}</td>
-          <td>
+          <td data-label="Centro">${item.centro || "-"}</td>
+          <td data-label="Responsable">${item.nombre || "-"}</td>
+          <td data-label="Email">${item.email ? `<a href="mailto:${item.email}">${item.email}</a>` : "-"}</td>
+          <td data-label="Teléfono">${item.telefono_contacto || "-"}</td>
+          <td data-label="Documentos">
             <button type="button" class="btn-icono" data-ver-docs-usuario-sec="${Number(item.id)}" title="Ver documentos" aria-label="Ver documentos">
               <img src="assets/icono-ver-documento.svg" alt="">
             </button>
@@ -3701,29 +3805,29 @@
             : "estado-revision";
         const marcaCambio = cambioPendiente ? `<div class="pendiente-admin-sublinea">Cambio pendiente de envío</div>` : "";
         tr.innerHTML = `
-          <td>
+          <td data-label="Solicitante">
             <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
             ${sublineaSolicitante}
           </td>
-          <td>
+          <td data-label="Documento">
             <div>${item.nombre_documento || "Documento pendiente"}</div>
             <div class="pendiente-admin-sublinea">Versión ${Number(item.version_documental || 0)}</div>
             ${marcaCambio}
           </td>
-          <td>${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
-          <td>
+          <td data-label="Última entrega">${formatearFechaCorta(item.fecha_ultima_entrega || "")}</td>
+          <td data-label="Estado">
             <select class="select-estado-revision ${claseEstadoMostrado}" data-estado-pendiente="${Number(item.archivo_id || 0)}">
               <option value="EN_REVISION" ${estadoMostrado === "EN_REVISION" ? "selected" : ""}>En revisión</option>
               <option value="VALIDADO" ${estadoMostrado === "VALIDADO" ? "selected" : ""}>Aprobado</option>
               <option value="RECHAZADO" ${estadoMostrado === "RECHAZADO" ? "selected" : ""}>Rechazado</option>
             </select>
           </td>
-          <td>
+          <td data-label="Ver documento">
             <button type="button" class="btn-ver-doc-base-fila" data-ver-documento-pendiente="${Number(item.archivo_id || 0)}" title="${item.archivo_url ? "Ver documento remitido" : "Sin documento remitido"}" aria-label="Ver documento remitido" ${item.archivo_url ? "" : "disabled"}>
               <img src="assets/icono-ver-documento.svg" alt="">
             </button>
           </td>
-          <td>
+          <td data-label="Observaciones">
             ${item.observaciones_admin ? `
               <button type="button" class="btn-observacion-pendiente" data-ver-observacion-pendiente="${Number(item.archivo_id || 0)}" title="Ver observaciones" aria-label="Ver observaciones">
                 <img src="assets/icono-advertencia-documental.svg" alt="">
