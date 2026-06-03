@@ -1057,8 +1057,14 @@
         min-width: 0;
         max-width: 100%;
       }
+      .bloque-documentacion-admin {
+        overflow: hidden;
+      }
       .documentacion-admin-barra {
-        overflow-x: auto;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: visible;
+        padding: 12px 10px;
       }
       .campo-linea,
       .campo-linea-valor-fijo,
@@ -1075,6 +1081,56 @@
       .acciones-superiores .btn-icono,
       .acciones-superiores .btn-guardar-icono {
         flex: 0 0 auto;
+      }
+      .documentacion-admin-toolbar {
+        width: 100%;
+        justify-content: center;
+        margin-top: 8px;
+      }
+      .documentacion-admin-barra-info,
+      .documentacion-admin-barra-acciones,
+      .documentacion-admin-ayuda,
+      .documentacion-admin-resumen {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .documentacion-admin-barra-info,
+      .documentacion-admin-barra-acciones {
+        justify-content: center;
+        margin-left: 0;
+        flex: 1 1 100%;
+      }
+      .documentacion-admin-ayuda {
+        overflow-wrap: anywhere;
+      }
+      .tabs-documentacion-admin {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .tabs-documentacion-admin-acciones {
+        width: 100%;
+        margin-left: 0;
+        justify-content: center;
+      }
+      .tab-documentacion-admin-btn {
+        flex: 1 1 118px;
+        max-width: 180px;
+        min-height: 42px;
+        white-space: normal;
+        text-align: center;
+        justify-content: center;
+      }
+      .btn-actualizar-estado-docs {
+        width: 100%;
+        max-width: 360px;
+        justify-content: center;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.25;
       }
       .campo-documento-inline {
         width: 100%;
@@ -1115,6 +1171,7 @@
       #panelDocumentacionAdminBase .tabla-documentacion-admin {
         border-collapse: separate;
         min-width: 0;
+        max-width: 100%;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin thead {
         display: none;
@@ -1123,6 +1180,8 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        width: 100%;
+        max-width: 100%;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin tr {
         border: 1px solid #dbe4ee;
@@ -1130,6 +1189,9 @@
         background: #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         padding: 8px 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td {
         border-bottom: 1px solid #edf2f7;
@@ -1140,6 +1202,8 @@
         gap: 6px;
         text-align: left !important;
         font-size: 13px;
+        min-width: 0;
+        box-sizing: border-box;
       }
       #panelDocumentacionAdminBase .tabla-documentacion-admin td:last-child {
         border-bottom: 0;
