@@ -176,6 +176,30 @@
       border-color: #0b5ed7;
     }
 
+    .nav-btn.nav-btn-con-icono {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #fff;
+      color: #1e2a36;
+      border-color: #bfc9d4;
+    }
+
+    .nav-btn.nav-btn-con-icono:hover {
+      background: #f7f9fb;
+      color: #0b5ed7;
+      border-color: #9fb2c7;
+    }
+
+    .nav-btn.nav-btn-con-icono img {
+      width: 18px;
+      height: 18px;
+      display: block;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
     .nav-btn-icon {
       width: 36px;
       height: 36px;
@@ -1998,7 +2022,10 @@
         </div>
         <div id="barraSecretaria" class="barra-secretaria franja-sesion-nav"></div>
         <div id="barraAdmin" class="barra-admin franja-sesion-nav">
-          <button id="btnNavAdminActividades" class="nav-btn activo" onclick="irPanelActividades()">Panel de actividades</button>
+          <button id="btnNavAdminActividades" class="nav-btn nav-btn-con-icono activo" onclick="irPanelActividades()">
+            <img src="assets/icono-actividades.svg" alt="">
+            <span>Panel de actividades</span>
+          </button>
           <button id="btnNavAdminReservas" class="nav-btn" onclick="irPanelReservas()">Panel de reservas</button>
           <button id="btnNavAdminUsuariosPublicos" class="nav-btn-icon" type="button" onclick="irUsuariosPublicosAdmin()" title="Usuarios públicos" aria-label="Usuarios públicos">
             <img src="assets/icono-usuarios-publicos.svg" alt="">
