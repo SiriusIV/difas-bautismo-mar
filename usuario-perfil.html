@@ -1252,6 +1252,35 @@
       #panelDocumentacionAdminBase .tabla-documentacion-admin td[data-label="Ver"] .btn-ver-doc-base-fila {
         justify-self: start;
       }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:first-child {
+        grid-template-columns: 1fr;
+        padding-top: 10px;
+        padding-bottom: 12px;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:first-child::before,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:first-child .btn-info-doc-mobile {
+        display: none !important;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:first-child .admin-doc-titulo-linea {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:first-child .admin-doc-nombre {
+        color: #123a63;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(2),
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(3),
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(4) {
+        text-align: left !important;
+      }
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(2) .valor-version-documento,
+      #panelDocumentacionAdminBase .tabla-documentacion-admin td:nth-child(4) .toggle-estado-doc-base {
+        justify-self: start;
+      }
       .modal-revision-expediente { width: calc(100vw - 24px); min-width: 0; padding: 20px 16px; }
       .tabla-revision-expediente { min-width: 0; table-layout: auto; }
       .tabla-revision-expediente th:nth-child(2), .tabla-revision-expediente td:nth-child(2),
@@ -3788,7 +3817,7 @@
         tr.innerHTML = `
           <td data-label="Título">
             <button type="button" class="btn-info-doc-mobile" data-info-doc-id="${Number(doc.id || 0)}" aria-label="Información del documento" title="Información del documento">i</button>
-            <div class="admin-doc-titulo-linea"><div class="admin-doc-nombre">${doc.nombre || "Documento"}</div></div>
+            <div class="admin-doc-titulo-linea titulo-doc-info-mobile" data-info-doc-id="${Number(doc.id || 0)}" role="button" tabindex="-1" aria-label="Información del documento ${doc.nombre || "Documento"}"><div class="admin-doc-nombre">${doc.nombre || "Documento"}</div></div>
             <div class="admin-doc-meta">${doc.descripcion || ""}</div>
           </td>
           <td data-label="Versión" class="col-version-documento"><span class="valor-version-documento">${Number(doc.version_documental || 0)}</span></td>
@@ -4870,6 +4899,14 @@
         if (doc) abrirModalInfoDocumentoBaseAdmin(doc);
         return;
       }
+      const tituloInfoMobile = event.target.closest(".titulo-doc-info-mobile");
+      if (tituloInfoMobile && window.matchMedia("(max-width: 720px)").matches) {
+        event.stopPropagation();
+        const docId = Number.parseInt(tituloInfoMobile.dataset.infoDocId || "", 10);
+        const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+        if (doc) abrirModalInfoDocumentoBaseAdmin(doc);
+        return;
+      }
       const btnVerFila = event.target.closest(".btn-ver-doc-base-fila");
       if (btnVerFila) {
         event.stopPropagation();
@@ -4900,6 +4937,16 @@
         return;
       }
       await cambiarEstadoDocumentoBaseAdmin(doc, toggle.checked, toggle);
+    });
+    document.getElementById("tablaDocumentacionAdminBody").addEventListener("keydown", function (event) {
+      const tituloInfoMobile = event.target.closest(".titulo-doc-info-mobile");
+      if (!tituloInfoMobile || !window.matchMedia("(max-width: 720px)").matches) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      event.stopPropagation();
+      const docId = Number.parseInt(tituloInfoMobile.dataset.infoDocId || "", 10);
+      const doc = (documentacionAdminContexto?.documentos || []).find((item) => Number(item.id || 0) === docId);
+      if (doc) abrirModalInfoDocumentoBaseAdmin(doc);
     });
     document.getElementById("btnInfoDocumentoBaseAdmin").addEventListener("click", abrirModalInfoDocumentoBaseAdmin);
     document.getElementById("btnVerDesdeInfoDocumentoBaseAdmin").addEventListener("click", function () {
