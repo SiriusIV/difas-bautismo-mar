@@ -139,23 +139,25 @@
       font-size: 13px;
     }
     .estado-modal-botones {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
       gap: 10px;
-      align-items: stretch;
+      align-items: center;
+      justify-content: flex-end;
+      justify-self: end;
+      min-width: 0;
     }
     .btn-accion-estado-icono {
       width: 72px;
       height: 72px;
       border-radius: 12px;
-      border: 1px solid #9fb2c7;
-      background: #fff;
+      border: 0;
+      background: transparent;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(17, 74, 134, 0.12);
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      box-shadow: none;
+      transition: transform 0.15s ease, opacity 0.15s ease;
       padding: 0;
     }
     .btn-accion-estado-icono img {
@@ -167,11 +169,10 @@
     .btn-accion-estado-icono:hover,
     .btn-accion-estado-icono:focus-visible {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(17, 74, 134, 0.18);
-      border-color: #7fa3cb;
+      opacity: 0.86;
     }
-    .btn-accion-estado-icono.confirmar { background: #eefaf0; border-color: #b9e0c0; }
-    .btn-accion-estado-icono.rechazar { background: #fff1f1; border-color: #f5c2c2; }
+    .btn-accion-estado-icono.confirmar,
+    .btn-accion-estado-icono.rechazar { background: transparent; }
     .mensaje-modal-admin { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; display: none; }
     .mensaje-modal-admin.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .modal.modal-historial-compacto { max-width: 680px; padding: 20px; }
@@ -368,8 +369,8 @@
     gap: 12px;
   }
   .estado-modal-botones {
-    justify-content: start;
-    grid-template-columns: repeat(2, minmax(0, 72px));
+    justify-content: flex-end;
+    justify-self: end;
   }
 }
   </style>
@@ -806,8 +807,6 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
-
 
 
 
