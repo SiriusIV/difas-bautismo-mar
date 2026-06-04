@@ -1945,6 +1945,12 @@ function formatearHorarioFranja(inicio, fin) {
   return horaFin ? `${horaInicio} - ${horaFin}` : `Desde las ${horaInicio}`;
 }
 
+function textoDisponibilidadCalendario(props = {}) {
+  return Number(props.aforo_limitado || 0) === 1
+    ? String(Number(props.disponibles || 0))
+    : "Aforo no limitado";
+}
+
 function construirResumenHoverEvento(evento) {
   const p = evento?.extendedProps || {};
   const tipoEvento = String(p.tipo_evento || "RESERVA");
@@ -1956,7 +1962,7 @@ function construirResumenHoverEvento(evento) {
       <div class="tt-linea"><strong>Fecha:</strong> ${p.fecha || "-"}</div>
       <div class="tt-linea"><strong>Horario:</strong> ${horario}</div>
       <div class="tt-linea"><strong>Estado:</strong> ${p.estado_actividad || "DISPONIBLE"}</div>
-      <div class="tt-linea"><strong>Disponibles:</strong> ${Number(p.disponibles || 0)}</div>
+      <div class="tt-linea"><strong>Disponibles:</strong> ${textoDisponibilidadCalendario(p)}</div>
     `;
   }
 
@@ -2038,7 +2044,7 @@ function abrirModalEvento(info) {
             <strong>Horario:</strong> ${formatearHorarioFranja(p.hora_inicio, p.hora_fin)}<br>
             <strong>Estado:</strong> ${p.estado_actividad || "DISPONIBLE"}<br>
             <strong>Capacidad:</strong> ${p.capacidad || 0}<br>
-            <strong>Plazas disponibles:</strong> ${p.disponibles || 0}
+            <strong>Plazas disponibles:</strong> ${textoDisponibilidadCalendario(p)}
           </div>
         `;
         bloqueEstado.classList.add("oculto");
@@ -2050,7 +2056,7 @@ function abrirModalEvento(info) {
 
       const plazasReservadasPendientes = Number(p.plazas_reservadas || 0);
       const plazasAsignadas = Number(p.plazas_asignadas || 0);
-      const plazasLibresFranja = Number(p.disponibles || 0);
+      const plazasLibresFranja = textoDisponibilidadCalendario(p);
       const observaciones = p.observaciones && String(p.observaciones).trim()
         ? p.observaciones
         : "Sin observaciones";

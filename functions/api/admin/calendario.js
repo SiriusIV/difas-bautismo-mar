@@ -45,10 +45,11 @@ function esFranjaFinalizada(fecha, horaFin) {
 }
 
 function colorActividadProgramada(row, disponibles) {
+  const aforoLimitado = Number(row.aforo_limitado || 0) === 1;
   const capacidad = Number(row.capacidad || 0);
   if (esFranjaFinalizada(row.fecha, row.hora_fin)) return "#5f6d7a";
-  if (capacidad > 0 && Number(disponibles) <= 0) return "#dc3545";
-  if (capacidad > 0 && Number(disponibles) > 0 && Number(disponibles) <= Math.ceil(capacidad / 4)) {
+  if (aforoLimitado && capacidad > 0 && Number(disponibles) <= 0) return "#dc3545";
+  if (aforoLimitado && capacidad > 0 && Number(disponibles) > 0 && Number(disponibles) <= Math.ceil(capacidad / 4)) {
     return "#f4c430";
   }
   return "#0b5ed7";
@@ -148,6 +149,7 @@ async function obtenerReservasCalendario(env, filtros, session) {
       f.hora_fin,
       f.capacidad,
       f.actividad_id,
+      COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       a.admin_id,
       COALESCE((
@@ -199,6 +201,7 @@ async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
       f.hora_inicio,
       f.hora_fin,
       f.capacidad,
+      COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
       a.admin_id,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       COALESCE(a.organizador_publico, '') AS organizador_publico,
@@ -285,15 +288,16 @@ export async function onRequestGet(context) {
 
       eventos = rows.map((row) => {
         const capacidad = Number(row.capacidad || 0);
+        const aforoLimitado = Number(row.aforo_limitado || 0) === 1;
         const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.id)) || 0);
-        const disponibles = Math.max(capacidad - bloqueoFranja, 0);
+        const disponibles = aforoLimitado ? Math.max(capacidad - bloqueoFranja, 0) : null;
         const color = colorActividadProgramada(row, disponibles);
         const editableActividad = session.rol === "SUPERADMIN" || Number(row.admin_id || 0) === Number(session.usuario_id || 0);
         const estadoActividad = esFranjaFinalizada(row.fecha, row.hora_fin)
           ? "FINALIZADA"
-          : (capacidad > 0 && disponibles <= 0)
+          : (aforoLimitado && capacidad > 0 && disponibles <= 0)
             ? "COMPLETA"
-            : (capacidad > 0 && disponibles > 0 && disponibles <= Math.ceil(capacidad / 4))
+            : (aforoLimitado && capacidad > 0 && disponibles > 0 && disponibles <= Math.ceil(capacidad / 4))
               ? "ÚLTIMAS PLAZAS"
               : "DISPONIBLE";
 
@@ -315,6 +319,7 @@ export async function onRequestGet(context) {
             fecha: row.fecha,
             hora_inicio: row.hora_inicio,
             hora_fin: row.hora_fin,
+            aforo_limitado: aforoLimitado ? 1 : 0,
             capacidad,
             disponibles,
             estado_actividad: estadoActividad,
@@ -329,8 +334,9 @@ export async function onRequestGet(context) {
 
       eventos = rows.map((row) => {
         const capacidad = Number(row.capacidad || 0);
+        const aforoLimitado = Number(row.aforo_limitado || 0) === 1;
         const bloqueoFranja = Number(bloqueoPorFranja.get(Number(row.franja_id)) || 0);
-        const disponibles = Math.max(capacidad - bloqueoFranja, 0);
+        const disponibles = aforoLimitado ? Math.max(capacidad - bloqueoFranja, 0) : null;
         const plazasAsignadas = calcularPlazasAsignadas(row);
         const plazasReservadas = calcularPlazasReservadasPendientes(row);
 
@@ -361,6 +367,7 @@ export async function onRequestGet(context) {
             fecha: row.fecha,
             hora_inicio: row.hora_inicio,
             hora_fin: row.hora_fin,
+            aforo_limitado: aforoLimitado ? 1 : 0,
             capacidad,
             prereserva_expira_en: row.prereserva_expira_en,
             plazas_prereservadas_historicas: Number(row.plazas_prereservadas || 0),
