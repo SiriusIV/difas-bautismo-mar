@@ -1,4 +1,4 @@
-import { getAdminSession } from "./_auth.js";
+﻿import { getAdminSession } from "./_auth.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { crearAvisoUsuario } from "../_avisos_usuario.js";
 import { enviarEmail } from "../_email.js";
@@ -71,7 +71,16 @@ export async function obtenerSituacionReservasActividad(env, actividadId) {
       r.id,
       r.estado
     FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
     WHERE r.actividad_id = ?
+      AND (
+        (f.id IS NOT NULL AND f.fecha IS NOT NULL AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now'))
+        OR (f.id IS NULL AND a.fecha_inicio IS NOT NULL AND date(a.fecha_inicio) >= date('now'))
+        OR (f.id IS NULL AND a.fecha_inicio IS NULL)
+      )
   `).bind(actividadId).all();
 
   const rows = result?.results || [];
@@ -94,9 +103,7 @@ export async function obtenerSituacionReservasActividad(env, actividadId) {
     if (estado === "SUSPENDIDA") resumen.suspendidas += 1;
     if (estado === "CANCELADA") resumen.canceladas += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
-    if (["BORRADOR", "PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
-      resumen.totalAfectables += 1;
-    }
+    resumen.totalAfectables += 1;
   }
 
   return resumen;
@@ -116,10 +123,16 @@ async function obtenerReservasAfectablesActividad(env, actividadId) {
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
     LEFT JOIN usuarios us
       ON us.id = r.usuario_id
     WHERE r.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND (
+        (f.id IS NOT NULL AND f.fecha IS NOT NULL AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now'))
+        OR (f.id IS NULL AND a.fecha_inicio IS NOT NULL AND date(a.fecha_inicio) >= date('now'))
+        OR (f.id IS NULL AND a.fecha_inicio IS NULL)
+      )
     ORDER BY r.id ASC
   `).bind(actividadId).all();
 
@@ -146,10 +159,10 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
   const saludo = contacto ? `Hola ${contacto},` : "Hola,";
   const asunto = esBorrador
     ? "[Reservas] Actividad anulada y borrador eliminado"
-    : "[Reservas] Actividad anulada y solicitud rechazada";
+    : "[Reservas] Actividad anulada y solicitud eliminada";
   const mensaje = esBorrador
     ? `Tu borrador para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminado porque la actividad ha sido anulada por ${organizador}.`
-    : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada porque la actividad ha sido anulada por ${organizador}.`;
+    : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminada porque la actividad ha sido cancelada por ${organizador}.`;
 
   const texto = [
     saludo,
@@ -163,7 +176,7 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     "",
     esBorrador
       ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
-      : "Puedes consultar el estado actualizado desde tu panel de usuario."
+      : "Todas las solicitudes relacionadas con esta actividad han sido eliminadas por cancelación de la actividad."
   ].filter(Boolean).join("\n");
 
   const html = `
@@ -175,7 +188,7 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     ${motivo ? `<p><strong>Motivo de la anulación:</strong> ${escaparHtml(motivo)}</p>` : ""}
     <p>${escaparHtml(esBorrador
       ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
-      : "Puedes consultar el estado actualizado desde tu panel de usuario.")}</p>
+      : "Todas las solicitudes relacionadas con esta actividad han sido eliminadas por cancelación de la actividad.")}</p>
   `;
 
   return { asunto, texto, html };
@@ -194,7 +207,7 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
   const esBorrador = estado === "BORRADOR";
   const mensajeBase = esBorrador
     ? `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador y tu borrador ha sido eliminado.`
-    : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido anulada por el organizador y tu solicitud ha pasado a rechazada.`;
+    : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido cancelada por el organizador y tu solicitud ha sido eliminada.`;
   const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
 
   const payload = {
@@ -308,6 +321,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
     total: reservas.length,
     actualizadas: 0,
     borradores_eliminados: 0,
+    reservas_eliminadas: 0,
     notificaciones_creadas: 0,
     correos_enviados: 0,
     incidencias: []
@@ -322,65 +336,28 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       const estadoOrigen = limpiarTexto(reserva?.estado).toUpperCase();
       const esBorrador = estadoOrigen === "BORRADOR";
 
-      if (esBorrador) {
-        await borrarHistorialReservas(env, [reserva.id]);
-        await db.prepare(`
-          DELETE FROM visitantes
-          WHERE reserva_id = ?
-        `).bind(reserva.id).run();
+      await borrarHistorialReservas(env, [reserva.id]);
+      await db.prepare(`
+        DELETE FROM visitantes
+        WHERE reserva_id = ?
+      `).bind(reserva.id).run();
 
-        const borrado = await db.prepare(`
-          DELETE FROM reservas
-          WHERE id = ?
-            AND UPPER(TRIM(COALESCE(estado, ''))) = 'BORRADOR'
-        `).bind(reserva.id).run();
+      const borrado = await db.prepare(`
+        DELETE FROM reservas
+        WHERE id = ?
+      `).bind(reserva.id).run();
 
-        if ((borrado?.meta?.changes || 0) > 0) {
+      if ((borrado?.meta?.changes || 0) > 0) {
+        resultado.actualizadas += 1;
+        if (esBorrador) {
           resultado.borradores_eliminados += 1;
-          resultado.actualizadas += 1;
         } else {
-          resultado.incidencias.push(`Borrador ${reserva.id}: no se pudo eliminar tras la notificacin.`);
+          resultado.reservas_eliminadas += 1;
         }
       } else {
-        const update = await db.prepare(`
-          UPDATE reservas
-          SET estado = 'RECHAZADA',
-              observaciones_admin = ?,
-              fecha_modificacion = datetime('now')
-          WHERE id = ?
-            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
-        `).bind(observacionesAdmin, reserva.id).run();
-
-        if ((update?.meta?.changes || 0) > 0) {
-          resultado.actualizadas += 1;
-          await registrarEventoReserva(env, {
-            reservaId: reserva.id,
-            accion: "ANULACION_ACTIVIDAD",
-            estadoOrigen: reserva.estado,
-            estadoDestino: "RECHAZADA",
-            observaciones: observacionesAdmin,
-            actorUsuarioId: actor.actorUsuarioId,
-            actorRol: actor.actorRol,
-            actorNombre: actor.actorNombre
-          });
-        } else {
-          resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo actualizar a rechazada.`);
-        }
+        resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo eliminar tras la anulación de la actividad.`);
+        continue;
       }
-
-      try {
-        const notificacion = esBorrador
-          ? await crearAvisoOperativoBorradorEliminado(env, reserva, observacionesAdmin)
-          : await crearNotificacionActividadAnulada(env, reserva, observacionesAdmin);
-        if (notificacion?.ok) {
-          resultado.notificaciones_creadas += 1;
-        } else if (!notificacion?.skipped) {
-          resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
-        }
-      } catch (errorNotificacion) {
-        resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${errorNotificacion?.message || String(errorNotificacion || "")}`);
-      }
-
       try {
         const correo = await enviarCorreoActividadAnulada(env, reserva, observacionesAdmin);
         if (correo?.ok) {
@@ -401,6 +378,33 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
 
 async function borrarActividadFisicamente(env, actividadId) {
   await asegurarTablaHistorialReservas(env);
+  const reservasProtegidas = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE r.actividad_id = ?
+      AND (
+        (f.id IS NOT NULL AND f.fecha IS NOT NULL AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) <= datetime('now'))
+        OR (f.id IS NULL AND a.fecha_inicio IS NOT NULL AND date(a.fecha_inicio) < date('now'))
+      )
+  `).bind(actividadId).first();
+
+  if (Number(reservasProtegidas?.total || 0) > 0) {
+    const result = await env.DB.prepare(`
+      UPDATE actividades
+      SET activa = 0,
+          visible_portal = 0
+      WHERE id = ?
+    `).bind(actividadId).run();
+    return {
+      ...result,
+      preservada_por_historico: true
+    };
+  }
+
   const reservasActividad = await env.DB.prepare(`
     SELECT id
     FROM reservas
@@ -481,14 +485,14 @@ export async function onRequestPost(context) {
         requiere_confirmacion: true,
         requiere_observaciones: true,
         resumen: situacion,
-        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) afectada(s) en estado borrador, pendiente, aceptada o suspendida. Si continúas, los borradores se eliminarán y el resto de solicitudes pasarán automáticamente a rechazada. Se notificará individualmente a cada solicitante afectado.`
+        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) futura(s) afectada(s). Si continúas, todas las solicitudes futuras vinculadas a esta actividad se eliminarán automáticamente del sistema. Se enviará un correo individual a cada solicitante afectado.`
       }, 200);
     }
 
     if (hayReservasAfectables && !observacionesAdmin) {
       return json({
         ok: false,
-        error: "Debes indicar el motivo de la anulación para rechazar automáticamente las solicitudes afectadas."
+        error: "Debes indicar el motivo de la anulación para eliminar automáticamente las solicitudes futuras afectadas."
       }, 400);
     }
 
@@ -506,8 +510,11 @@ export async function onRequestPost(context) {
       return json({
         ok: true,
         actividad_anulada: true,
-        actividad_eliminada: true,
-        mensaje: "Actividad eliminada correctamente. Las solicitudes afectadas han sido anuladas y se han emitido las notificaciones correspondientes.",
+        actividad_eliminada: !result?.preservada_por_historico,
+        actividad_preservada_historico: !!result?.preservada_por_historico,
+        mensaje: result?.preservada_por_historico
+          ? "Actividad desactivada y ocultada para preservar el histórico. Las solicitudes futuras afectadas han sido eliminadas y se han enviado los correos correspondientes."
+          : "Actividad eliminada correctamente. Las solicitudes futuras afectadas han sido eliminadas y se han enviado los correos correspondientes.",
         resumen_reservas: rechazoMasivo
       });
     }
@@ -520,8 +527,10 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       actividad_anulada: false,
-      mensaje: situacion.totalReservas > 0
-        ? "Actividad eliminada correctamente."
+      actividad_eliminada: !result?.preservada_por_historico,
+      actividad_preservada_historico: !!result?.preservada_por_historico,
+      mensaje: result?.preservada_por_historico
+        ? "Actividad desactivada y ocultada para preservar el histórico."
         : "Actividad eliminada correctamente."
     });
   } catch (error) {
@@ -531,7 +540,3 @@ export async function onRequestPost(context) {
     );
   }
 }
-
-
-
-
