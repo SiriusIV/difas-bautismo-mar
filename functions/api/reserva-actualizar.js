@@ -5,6 +5,7 @@ import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./
 import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
+import { asegurarColumnaRechazoEliminaEn } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -595,6 +596,7 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await asegurarColumnaRechazoEliminaEn(env);
     const baseUrl = new URL(request.url).origin;
     const user = await getUserSession(request, env.SECRET_KEY);
     if (!user?.id) {
@@ -840,6 +842,7 @@ export async function onRequestPost(context) {
           prereserva_expira_en = NULL,
           observaciones = ?,
           observaciones_admin = NULL,
+          rechazo_elimina_en = NULL,
           estado = 'BORRADOR',
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -893,6 +896,7 @@ export async function onRequestPost(context) {
           prereserva_expira_en = ?,
           observaciones = ?,
           observaciones_admin = NULL,
+          rechazo_elimina_en = NULL,
           estado = 'PENDIENTE',
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
@@ -1016,6 +1020,7 @@ export async function onRequestPost(context) {
           prereserva_expira_en = ?,
           observaciones = ?,
           observaciones_admin = NULL,
+          rechazo_elimina_en = NULL,
           estado = 'PENDIENTE',
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
@@ -1220,6 +1225,4 @@ export async function onRequestPost(context) {
     );
   }
 }
-
-
 

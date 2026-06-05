@@ -5,6 +5,7 @@ import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
+import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb } from "../_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -439,6 +440,8 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       COALESCE(f.fecha, '') AS fecha,
       COALESCE(f.hora_inicio, '') AS hora_inicio,
       COALESCE(f.hora_fin, '') AS hora_fin,
+      COALESCE(a.fecha_inicio, '') AS fecha_inicio,
+      COALESCE(r.rechazo_elimina_en, '') AS rechazo_elimina_en,
       COALESCE(a.lugar, '') AS lugar,
       COALESCE(a.direccion_postal, '') AS direccion_postal,
       COALESCE(a.latitud, '') AS latitud,
@@ -535,6 +538,7 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
   }
 
   if (estado === "RECHAZADA") {
+    const fechaEliminacionTexto = formatearFechaAvisoRechazo(contexto?.rechazo_elimina_en || "");
     return {
       asunto: `${actividad} · Solicitud rechazada`,
       etiqueta: "Solicitud rechazada",
@@ -547,8 +551,11 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada por ${organizador}.`,
       siguientesPasos: [
         "Revisa las observaciones administrativas incluidas en este correo.",
-        "Accede a tu panel para decidir si conviene corregir la solicitud, rehacerla o dejarla sin continuidad.",
-        "Si necesitas más contexto, consulta el detalle completo desde tu área de usuario."
+        "Subsana lo solicitado en las observaciones y reenvía la solicitud desde tu panel de usuario.",
+        fechaEliminacionTexto
+          ? `Si no se subsana y reenvía antes del plazo indicado, la solicitud quedará definitivamente eliminada del sistema el ${fechaEliminacionTexto}.`
+          : "Si no se subsana y reenvía dentro del plazo disponible, la solicitud quedará definitivamente eliminada del sistema.",
+        "La actividad no se anula; únicamente se liberan las plazas de esta solicitud para otros solicitantes."
       ]
     };
   }
@@ -699,6 +706,12 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
           <div style="font-size:14px;color:#5a4630;white-space:pre-wrap;">${escaparHtmlCorreo(observacionesAdmin)}</div>
         </div>
       ` : ""}
+      ${String(nuevoEstado || "").toUpperCase() === "RECHAZADA" && contexto?.rechazo_elimina_en ? `
+        <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Plazo de subsanación</div>
+          <div style="font-size:14px;color:#5a4630;">Si no subsanas lo solicitado en las observaciones y reenvías la solicitud, esta solicitud quedará definitivamente eliminada del sistema el <strong>${escaparHtmlCorreo(formatearFechaAvisoRechazo(contexto.rechazo_elimina_en))}</strong>.</div>
+        </div>
+      ` : ""}
       ${observacionesSolicitud ? `
         <div style="border:1px solid #dde4ea;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#ffffff;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#516274;margin-bottom:8px;">Observaciones registradas en la solicitud</div>
@@ -789,7 +802,7 @@ async function crearNotificacionSolicitanteReservaRechazada(env, contexto = {}) 
     rolDestino: "SOLICITANTE",
     tipo: "RESERVA",
     titulo: "Solicitud rechazada",
-    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Revisa su estado para corregirla o decidir qué hacer a continuación.`,
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Subsana lo indicado en las observaciones y reenvíala${contexto?.rechazo_elimina_en ? ` antes del ${formatearFechaAvisoRechazo(contexto.rechazo_elimina_en)}` : ""} para evitar su eliminación definitiva.`,
     urlDestino: "/usuario-panel.html"
   });
 }
@@ -813,6 +826,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarColumnaRechazoEliminaEn(env);
     await asegurarTablaHistorialReservas(env);
     await ejecutarMantenimientoReservas(env);
     const session = await obtenerSesionLecturaReservas(request, env);
@@ -927,6 +941,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarColumnaRechazoEliminaEn(env);
     await asegurarTablaHistorialReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
@@ -1002,6 +1017,9 @@ export async function onRequestGet(context) {
 
     const limpiarObservacionesRechazo =
       estadoActual === "RECHAZADA" && (nuevoEstado === "CONFIRMADA" || nuevoEstado === "PENDIENTE");
+    const rechazoEliminaEn = nuevoEstado === "RECHAZADA"
+      ? formatearFechaDb(calcularFechaEliminacionRechazo(contextoReserva))
+      : "";
 
     const result = await env.DB.prepare(`
       UPDATE reservas
@@ -1011,6 +1029,11 @@ export async function onRequestGet(context) {
             WHEN ? <> '' THEN ?
             ELSE observaciones_admin
           END,
+          rechazo_elimina_en = CASE
+            WHEN ? = 'RECHAZADA' THEN NULLIF(?, '')
+            WHEN ? = 1 THEN NULL
+            ELSE rechazo_elimina_en
+          END,
           fecha_modificacion = datetime('now')
       WHERE id = ?
     `).bind(
@@ -1018,6 +1041,9 @@ export async function onRequestGet(context) {
       limpiarObservacionesRechazo ? 1 : 0,
       observacionesAdmin,
       observacionesAdmin,
+      nuevoEstado,
+      rechazoEliminaEn,
+      limpiarObservacionesRechazo ? 1 : 0,
       id
     ).run();
 
@@ -1047,6 +1073,7 @@ export async function onRequestGet(context) {
         observaciones_admin: limpiarObservacionesRechazo
           ? ""
           : (observacionesAdmin || contextoReserva?.observaciones_admin || ""),
+        rechazo_elimina_en: rechazoEliminaEn || contextoReserva?.rechazo_elimina_en || "",
         base_url: baseUrl
       };
     try {

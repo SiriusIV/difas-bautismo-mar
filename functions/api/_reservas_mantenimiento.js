@@ -1,6 +1,7 @@
 ﻿import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
+import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb } from "./_reservas_rechazo_plazo.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -379,9 +380,13 @@ async function rechazarReservasSuspendidasVencidas(env) {
     const update = await db.prepare(`
       UPDATE reservas
       SET estado = 'RECHAZADA',
+          rechazo_elimina_en = ?,
           fecha_modificacion = datetime('now')
       WHERE id = ?
-    `).bind(id).run();
+    `).bind(
+      formatearFechaDb(calcularFechaEliminacionRechazo(reserva)) || null,
+      id
+    ).run();
 
     if (Number(update?.meta?.changes || 0) > 0) {
       await registrarEventoReserva(env, {
@@ -397,6 +402,36 @@ async function rechazarReservasSuspendidasVencidas(env) {
     }
   }
   return reservas.length;
+}
+
+async function borrarReservasRechazadasVencidas(env) {
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
+    SELECT r.id
+    FROM reservas r
+    WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'RECHAZADA'
+      AND r.rechazo_elimina_en IS NOT NULL
+      AND datetime(r.rechazo_elimina_en) <= datetime('now')
+  `).all();
+
+  const ids = (rows?.results || []).map((row) => Number(row.id || 0)).filter(Boolean);
+  if (!ids.length) return 0;
+
+  await borrarHistorialReservas(env, ids);
+
+  const sentenciasVisitantes = ids.map((id) => db.prepare(`
+    DELETE FROM visitantes
+    WHERE reserva_id = ?
+  `).bind(id));
+  await db.batch(sentenciasVisitantes);
+
+  const sentenciasReservas = ids.map((id) => db.prepare(`
+    DELETE FROM reservas
+    WHERE id = ?
+  `).bind(id));
+  await db.batch(sentenciasReservas);
+
+  return ids.length;
 }
 
 async function obtenerReservasPrereservaExpirada(env) {
@@ -790,7 +825,9 @@ async function borrarReservasResidualesLegacy(env, reservas) {
 export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorico(env);
   await asegurarTablaHistorialReservas(env);
+  await asegurarColumnaRechazoEliminaEn(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
+  const rechazadasEliminadasPorPlazo = await borrarReservasRechazadasVencidas(env);
   const prereservasExpiradas = await normalizarPrereservasExpiradas(env);
   const residualesLegacy = await obtenerReservasResidualesLegacy(env);
   const residualesEliminadas = await borrarReservasResidualesLegacy(env, residualesLegacy);
@@ -802,6 +839,7 @@ export async function ejecutarMantenimientoReservas(env) {
   return {
     ok: true,
     rechazadas_automaticamente: rechazadasAutomaticamente,
+    rechazadas_eliminadas_por_plazo: rechazadasEliminadasPorPlazo,
     prereservas_consolidadas_con_asignados: prereservasExpiradas.consolidadas_con_asignados,
     prereservas_eliminadas_sin_asignados: prereservasExpiradas.eliminadas_sin_asignados,
     residuos_legacy_eliminados: residualesEliminadas,
