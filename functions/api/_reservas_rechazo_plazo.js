@@ -105,3 +105,62 @@ export function formatearFechaAvisoRechazo(valor) {
     timeStyle: "short"
   }).format(date);
 }
+
+export async function obtenerReservasRechazadasConPlazoCentro(env, centroUsuarioId) {
+  const usuarioId = Number(centroUsuarioId || 0);
+  if (!(usuarioId > 0)) return [];
+
+  await asegurarColumnaRechazoEliminaEn(env);
+
+  const rows = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.codigo_reserva,
+      r.rechazo_elimina_en,
+      COALESCE(r.observaciones_admin, '') AS observaciones_admin,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(a.fecha_inicio, '') AS fecha_inicio,
+      COALESCE(f.fecha, '') AS fecha,
+      COALESCE(f.hora_inicio, '') AS hora_inicio
+    FROM reservas r
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE r.usuario_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) = 'RECHAZADA'
+    ORDER BY COALESCE(r.rechazo_elimina_en, '9999-12-31 23:59:59') ASC, r.id ASC
+  `).bind(usuarioId).all();
+
+  const reservas = rows?.results || [];
+  const resultado = [];
+
+  for (const reserva of reservas) {
+    const id = Number(reserva.id || 0);
+    if (!(id > 0)) continue;
+
+    let rechazoEliminaEn = limpiarTexto(reserva.rechazo_elimina_en || "");
+    if (!rechazoEliminaEn) {
+      rechazoEliminaEn = formatearFechaDb(calcularFechaEliminacionRechazo(reserva));
+      if (rechazoEliminaEn) {
+        await env.DB.prepare(`
+          UPDATE reservas
+          SET rechazo_elimina_en = ?
+          WHERE id = ?
+            AND (rechazo_elimina_en IS NULL OR TRIM(rechazo_elimina_en) = '')
+        `).bind(rechazoEliminaEn, id).run();
+      }
+    }
+
+    resultado.push({
+      id,
+      codigo_reserva: limpiarTexto(reserva.codigo_reserva || ""),
+      actividad: limpiarTexto(reserva.actividad_nombre || "Actividad"),
+      observaciones: limpiarTexto(reserva.observaciones_admin || ""),
+      rechazo_elimina_en: rechazoEliminaEn,
+      rechazo_elimina_en_texto: formatearFechaAvisoRechazo(rechazoEliminaEn)
+    });
+  }
+
+  return resultado;
+}
