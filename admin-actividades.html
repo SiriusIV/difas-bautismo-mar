@@ -2256,7 +2256,7 @@
       }
 
       .documentacion-actividad-controles {
-        display: block;
+        display: none;
       }
 
       .documentacion-actividad-select select {
@@ -2264,7 +2264,7 @@
       }
 
       .btn-selector-documentacion-movil {
-        display: block;
+        display: none;
       }
 
       .control-row {
@@ -4307,6 +4307,11 @@ function obtenerDocumentosDisponiblesDocumentacionActividad() {
 function actualizarResumenDocumentacionActividad() {
   const resumen = document.getElementById("documentacionActividadResumen");
   if (!resumen) return;
+
+  if (esVistaMovilDocumentacionActividad()) {
+    resumen.textContent = "Añade la documentación preceptiva que sea necesaria para la realización de esta actividad.";
+    return;
+  }
 
   if (!catalogoDocumentacionActividad.length) {
     resumen.textContent = "Esta actividad no exige documentación preceptiva en este momento.";
@@ -6403,9 +6408,9 @@ function retrocederPaso() {
         document.getElementById("btnAceptarDocumentacionActividadMovil")?.addEventListener("click", aceptarSelectorDocumentacionActividadMovil);
         const mqDocumentacionActividadMovil = window.matchMedia("(max-width: 700px)");
         if (typeof mqDocumentacionActividadMovil.addEventListener === "function") {
-          mqDocumentacionActividadMovil.addEventListener("change", () => renderSelectDocumentacionActividad());
+          mqDocumentacionActividadMovil.addEventListener("change", () => renderConfiguracionDocumentacionActividad());
         } else if (typeof mqDocumentacionActividadMovil.addListener === "function") {
-          mqDocumentacionActividadMovil.addListener(() => renderSelectDocumentacionActividad());
+          mqDocumentacionActividadMovil.addListener(() => renderConfiguracionDocumentacionActividad());
         }
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
         document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);
