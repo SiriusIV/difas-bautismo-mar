@@ -767,9 +767,30 @@
 
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-time,
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
-      padding-left: 34px;
       font-size: 11px;
       line-height: 1.25;
+    }
+
+    .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title {
+      padding-left: 4px;
+    }
+
+    .evento-lista-contenido {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      max-width: 100%;
+      vertical-align: middle;
+    }
+
+    .evento-lista-titulo {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+      color: #123a63;
     }
 
     .fc .fc-list-event:not(.evento-dia-vacio) .fc-list-event-title a,
@@ -2383,6 +2404,20 @@ function abrirModalEvento(info) {
       return titulo.split("·")[0].trim() || titulo;
     }
 
+    function obtenerTituloListaEventoCalendario(event) {
+      const p = event?.extendedProps || {};
+      const tipoEvento = String(p.tipo_evento || "");
+      if (tipoEvento === "ACTIVIDAD_PROGRAMADA") {
+        return String(p.actividad_nombre || event?.title || "Actividad").trim();
+      }
+      const partes = [
+        String(p.codigo_reserva || "").trim(),
+        String(p.actividad_nombre || "").trim(),
+        String(p.centro || "").trim()
+      ].filter(Boolean);
+      return partes.join(" · ") || String(event?.title || "Solicitud").trim() || "Solicitud";
+    }
+
     function obtenerColorEventoCalendario(event) {
       return String(event?.backgroundColor || event?.borderColor || "#0b5ed7");
     }
@@ -2643,6 +2678,15 @@ function abrirModalEvento(info) {
             marcadorMes.style.backgroundColor = "#1d63d8";
             marcadorMes.setAttribute("aria-label", "Dia con actividad o solicitud");
             return { domNodes: [marcadorMes] };
+          }
+          if (tipoVista === "listContinuo") {
+            const wrap = document.createElement("span");
+            wrap.className = "evento-lista-contenido";
+            const label = document.createElement("span");
+            label.className = "evento-lista-titulo";
+            label.textContent = obtenerTituloListaEventoCalendario(arg.event);
+            wrap.appendChild(label);
+            return { domNodes: [wrap] };
           }
           const esActividad = String(arg.event.extendedProps?.tipo_evento || "") === "ACTIVIDAD_PROGRAMADA";
           if (!esMovilCalendario() || !esActividad) {
