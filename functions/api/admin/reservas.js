@@ -480,12 +480,19 @@ function escaparHtmlCorreo(valor) {
 }
 
 function construirDescripcionProgramacionCorreoSolicitante(contexto = {}) {
-  const fecha = limpiarTexto(contexto?.fecha || "");
+  const fecha = formatearFechaCortaCorreo(contexto?.fecha || "");
   const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
   const horaFin = limpiarTexto(contexto?.hora_fin || "");
   if (fecha && horaInicio && horaFin) return `${fecha} · ${horaInicio} - ${horaFin}`;
   if (fecha) return fecha;
   return "";
+}
+
+function formatearFechaCortaCorreo(valor) {
+  const texto = limpiarTexto(valor || "");
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+  if (!match) return texto;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
 

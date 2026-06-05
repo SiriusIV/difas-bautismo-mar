@@ -21,12 +21,19 @@ function estadoIncluidoEnHistorico(estado) {
 }
 
 function formatearProgramacionReserva(row = {}) {
-  const fecha = limpiarTexto(row?.fecha || row?.fecha_inicio || "");
+  const fecha = formatearFechaCorta(row?.fecha || row?.fecha_inicio || "");
   const horaInicio = limpiarTexto(row?.hora_inicio || "");
   const horaFin = limpiarTexto(row?.hora_fin || "");
   if (fecha && horaInicio && horaFin) return `${fecha} · ${horaInicio} - ${horaFin}`;
   if (fecha) return fecha;
   return "Sin programación horaria";
+}
+
+function formatearFechaCorta(valor) {
+  const texto = limpiarTexto(valor || "");
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+  if (!match) return texto;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
 function construirCorreoAdminEliminacionPorCaducidad(contexto = {}) {

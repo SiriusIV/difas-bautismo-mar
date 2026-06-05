@@ -1191,7 +1191,7 @@
       const mi = String(fecha.getMinutes()).padStart(2, "0");
       const ss = String(fecha.getSeconds()).padStart(2, "0");
 
-      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+      return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
     }
 
     function formatearFechaHoraLocalMinutos(valor) {
@@ -1206,7 +1206,14 @@
       const hh = String(fecha.getHours()).padStart(2, "0");
       const mi = String(fecha.getMinutes()).padStart(2, "0");
 
-      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+      return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+    }
+
+    function formatearFechaCorta(valor) {
+      const texto = String(valor || "").trim();
+      const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+      if (!match) return texto;
+      return `${match[3]}/${match[2]}/${match[1]}`;
     }
     
     function formatearFechaHora(valor) {
@@ -1639,7 +1646,7 @@
       const claseEstado = claseEstadoBadge(reservaActual.estado);
 
       const lineaFranja = usaFranjas
-        ? `<strong>Franja horaria asignada:</strong> ${reservaActual.fecha} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
+        ? `<strong>Franja horaria asignada:</strong> ${formatearFechaCorta(reservaActual.fecha)} - ${reservaActual.hora_inicio} a ${reservaActual.hora_fin}<br>`
         : "";
       const limiteDestacado = aforoLimitado
         ? `<div id="limiteDestacadoWrap" class="limite-destacado-wrap ${reservaActual.prereserva_vigente ? "" : "finalizada"}">

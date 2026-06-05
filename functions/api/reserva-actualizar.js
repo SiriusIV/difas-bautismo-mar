@@ -137,7 +137,7 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
 }
 
 function construirDescripcionProgramacion(contexto = {}) {
-  const fecha = limpiarTexto(contexto?.fecha || "");
+  const fecha = formatearFechaCorta(contexto?.fecha || "");
   const horaInicio = limpiarTexto(contexto?.hora_inicio || "");
   const horaFin = limpiarTexto(contexto?.hora_fin || "");
   if (fecha && horaInicio && horaFin) {
@@ -145,6 +145,13 @@ function construirDescripcionProgramacion(contexto = {}) {
   }
   if (fecha) return fecha;
   return "";
+}
+
+function formatearFechaCorta(valor) {
+  const texto = limpiarTexto(valor || "");
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+  if (!match) return texto;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
 function construirUrlGoogleMaps(contexto = {}) {
