@@ -6,6 +6,7 @@ import { enviarEmail } from "./_email.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
+import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -520,6 +521,13 @@ function franjaTieneCapacidadLimitada(actividad, franja) {
   return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
 }
 
+function franjaYaComenzo(franja, ahora = new Date()) {
+  const inicio = obtenerInicioReserva(franja);
+  if (!inicio) return false;
+  if (Number.isNaN(inicio.getTime())) return false;
+  return inicio.getTime() <= ahora.getTime();
+}
+
 async function existeSolicitudActivaMismoCentroActividadSinFranja(env, actividadId, centroComparacion, contactoComparacion) {
   const sql = `
     SELECT
@@ -676,6 +684,13 @@ if (Number(actividad.activa || 0) !== 1) {
       if (Number(franja.actividad_id || 0) !== actividadId) {
         return json(
           { ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." },
+          { status: 400 }
+        );
+      }
+
+      if (!guardarComoBorrador && franjaYaComenzo(franja)) {
+        return json(
+          { ok: false, error: "La franja seleccionada ya ha comenzado y no admite nuevas solicitudes." },
           { status: 400 }
         );
       }
@@ -925,4 +940,3 @@ if (Number(actividad.activa || 0) !== 1) {
     );
   }
 }
-

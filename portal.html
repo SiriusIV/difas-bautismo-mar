@@ -2688,12 +2688,12 @@ async function cargarFranjasActividad(actividad) {
         const disponibles = f.disponibles == null ? null : Number(f.disponibles);
         const capacidad = f.capacidad == null ? null : Number(f.capacidad);
 
-        let fechaHoraFin = null;
-        if (f.fecha && f.hora_fin) {
-          fechaHoraFin = new Date(`${f.fecha}T${f.hora_fin}`);
+        let fechaHoraInicio = null;
+        if (f.fecha && f.hora_inicio) {
+          fechaHoraInicio = new Date(`${f.fecha}T${f.hora_inicio}`);
         }
 
-        const finalizada = !!fechaHoraFin && fechaHoraFin.getTime() < ahora.getTime();
+        const finalizada = !!fechaHoraInicio && fechaHoraInicio.getTime() <= ahora.getTime();
         const completa = Number(actividad.usa_franjas || 0) === 1 && disponibles !== null && disponibles <= 0;
 
         return {

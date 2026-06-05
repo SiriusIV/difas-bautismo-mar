@@ -5,7 +5,7 @@ import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./
 import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
-import { asegurarColumnaRechazoEliminaEn } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoEliminaEn, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -516,6 +516,13 @@ function franjaTieneCapacidadLimitada(actividad, franja) {
   return Number(actividad?.aforo_limitado || 0) === 1 && franja?.capacidad != null;
 }
 
+function franjaYaComenzo(franja, ahora = new Date()) {
+  const inicio = obtenerInicioReserva(franja);
+  if (!inicio) return false;
+  if (Number.isNaN(inicio.getTime())) return false;
+  return inicio.getTime() <= ahora.getTime();
+}
+
 async function existeSolicitudActivaMismoCentroFranjaExcluyendo(env, franjaId, centroComparacion, contactoComparacion, reservaIdExcluir) {
   const sql = `
     SELECT
@@ -710,6 +717,10 @@ export async function onRequestPost(context) {
 
       if (Number(franjaNueva.actividad_id || 0) !== Number(reservaActual.actividad_id || 0)) {
         return json({ ok: false, error: "La franja seleccionada no pertenece a la actividad indicada." }, { status: 400 });
+      }
+
+      if (enviaSolicitud && franjaYaComenzo(franjaNueva)) {
+        return json({ ok: false, error: "La franja seleccionada ya ha comenzado y no admite el envío de la solicitud." }, { status: 400 });
       }
 
       if (franjaTieneCapacidadLimitada(actividad, franjaNueva)) {
@@ -1225,4 +1236,3 @@ export async function onRequestPost(context) {
     );
   }
 }
-

@@ -4,6 +4,7 @@ import { checkAdminActividad } from "./_permisos.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
+import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -54,10 +55,10 @@ function dbPrimaria(env) {
 }
 
 function haFinalizadoFranja(row, ahora = new Date()) {
-  if (!row?.fecha || !row?.hora_fin) return false;
-  const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
-  if (Number.isNaN(fechaHoraFin.getTime())) return false;
-  return fechaHoraFin.getTime() < ahora.getTime();
+  const fechaHoraInicio = obtenerInicioReserva(row);
+  if (!fechaHoraInicio) return false;
+  if (Number.isNaN(fechaHoraInicio.getTime())) return false;
+  return fechaHoraInicio.getTime() <= ahora.getTime();
 }
 
 function escaparHtml(valor) {

@@ -1,4 +1,5 @@
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
+import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
 import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, init = {}) {
@@ -37,17 +38,17 @@ function colorEstado(estado) {
   return "#0b5ed7";
 }
 
-function esFranjaFinalizada(fecha, horaFin) {
-  if (!fecha || !horaFin) return false;
-  const d = new Date(`${fecha}T${horaFin}`);
+function esFranjaFinalizada(fecha, horaInicio) {
+  const d = obtenerInicioReserva({ fecha, hora_inicio: horaInicio });
+  if (!d) return false;
   if (Number.isNaN(d.getTime())) return false;
-  return d.getTime() < Date.now();
+  return d.getTime() <= Date.now();
 }
 
 function colorActividadProgramada(row, disponibles) {
   const aforoLimitado = Number(row.aforo_limitado || 0) === 1;
   const capacidad = Number(row.capacidad || 0);
-  if (esFranjaFinalizada(row.fecha, row.hora_fin)) return "#5f6d7a";
+  if (esFranjaFinalizada(row.fecha, row.hora_inicio)) return "#5f6d7a";
   if (aforoLimitado && capacidad > 0 && Number(disponibles) <= 0) return "#dc3545";
   if (aforoLimitado && capacidad > 0 && Number(disponibles) > 0 && Number(disponibles) <= Math.ceil(capacidad / 4)) {
     return "#f4c430";
@@ -180,7 +181,7 @@ async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
   const binds = [];
 
   if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
-    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(COALESCE(NULLIF(TRIM(f.hora_fin), ''), f.hora_inicio)) >= time('now')))");
+    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(f.hora_inicio) > time('now')))");
   }
 
   if (filtros.start) {
@@ -293,7 +294,7 @@ export async function onRequestGet(context) {
         const disponibles = aforoLimitado ? Math.max(capacidad - bloqueoFranja, 0) : null;
         const color = colorActividadProgramada(row, disponibles);
         const editableActividad = session.rol === "SUPERADMIN" || Number(row.admin_id || 0) === Number(session.usuario_id || 0);
-        const estadoActividad = esFranjaFinalizada(row.fecha, row.hora_fin)
+        const estadoActividad = esFranjaFinalizada(row.fecha, row.hora_inicio)
           ? "FINALIZADA"
           : (aforoLimitado && capacidad > 0 && disponibles <= 0)
             ? "COMPLETA"

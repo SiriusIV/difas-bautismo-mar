@@ -525,6 +525,8 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       colorEtiqueta: "#1f6f43",
       colorTitulo: "#184f34",
       colorTexto: "#2e5f45",
+      colorEstadoFondo: "#198754",
+      colorEstadoTexto: "#ffffff",
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido aceptada por ${organizador}.`,
       siguientesPasos: [
         "La actividad queda reservada y lista para su seguimiento desde tu panel.",
@@ -542,12 +544,14 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
     return {
       asunto: `${actividad} · Solicitud rechazada`,
       etiqueta: "Solicitud rechazada",
-      mensaje: "La solicitud no puede continuar en su estado actual.",
+      mensaje: "",
       colorFondo: "#fff4f1",
       colorBorde: "#f3c9bf",
-      colorEtiqueta: "#a24a2a",
+      colorEtiqueta: "#ffffff",
       colorTitulo: "#7c2f16",
       colorTexto: "#7a4737",
+      colorEstadoFondo: "#dc3545",
+      colorEstadoTexto: "#ffffff",
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada por ${organizador}.`,
       siguientesPasos: [
         "Revisa las observaciones administrativas incluidas en este correo.",
@@ -570,6 +574,8 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       colorEtiqueta: "#8a5b00",
       colorTitulo: "#724200",
       colorTexto: "#6b5630",
+      colorEstadoFondo: "#f0b429",
+      colorEstadoTexto: "#2b2b2b",
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha quedado suspendida por ${organizador}.`,
       siguientesPasos: [
         "Consulta los requisitos u observaciones pendientes asociados a la actividad.",
@@ -589,6 +595,8 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
       colorEtiqueta: "#1d4f91",
       colorTitulo: "#123a63",
       colorTexto: "#355679",
+      colorEstadoFondo: "#0b5ed7",
+      colorEstadoTexto: "#ffffff",
       cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} vuelve a estar en proceso tras la revisión del organizador.`,
       siguientesPasos: [
         "Revisa las observaciones administrativas para saber qué debe ajustarse.",
@@ -607,6 +615,8 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
     colorEtiqueta: "#1d4f91",
     colorTitulo: "#123a63",
     colorTexto: "#355679",
+    colorEstadoFondo: "#0b5ed7",
+    colorEstadoTexto: "#ffffff",
     cierre: `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido actualizada.`,
     siguientesPasos: [
       "Consulta el detalle actualizado desde tu panel de usuario."
@@ -631,9 +641,12 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
   const urlMaps = construirUrlGoogleMapsCorreoSolicitante(contexto);
   const urlPanel = construirUrlPanelSolicitanteCorreo(contexto);
   const configuracion = obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto, nuevoEstado);
+  const etiquetaEstadoActual = limpiarTexto(configuracion.etiqueta || "Solicitud actualizada").toUpperCase();
+  const estadoBadgeHtml = `<span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${configuracion.colorEstadoFondo};color:${configuracion.colorEstadoTexto};font-size:14px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;line-height:1;">${escaparHtmlCorreo(etiquetaEstadoActual)}</span>`;
 
   const resumenTexto = [
     codigo ? `Código de solicitud: ${codigo}` : "",
+    `Estado actual: ${etiquetaEstadoActual}`,
     centro ? `Centro: ${centro}` : "",
     `Organiza: ${organizador}`,
     programacion ? `Fecha y hora: ${programacion}` : "",
@@ -668,9 +681,9 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
     <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
       <div style="background:${configuracion.colorFondo};border:1px solid ${configuracion.colorBorde};border-radius:12px;padding:14px 16px;margin-bottom:14px;">
         <div style="min-width:0;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${configuracion.colorEtiqueta};margin-bottom:6px;">${escaparHtmlCorreo(configuracion.etiqueta)}</div>
-          <div style="font-size:22px;font-weight:700;color:${configuracion.colorTitulo};line-height:1.2;margin-bottom:6px;">${escaparHtmlCorreo(actividad)}</div>
-          <div style="font-size:15px;font-weight:600;color:${configuracion.colorTexto};">${escaparHtmlCorreo(configuracion.mensaje)}</div>
+          <div style="font-size:22px;font-weight:700;color:${configuracion.colorTitulo};line-height:1.2;margin-bottom:10px;">${escaparHtmlCorreo(actividad)}</div>
+          <div style="margin-bottom:${configuracion.mensaje ? "8px" : "0"};">${estadoBadgeHtml}</div>
+          ${configuracion.mensaje ? `<div style="font-size:15px;font-weight:600;color:${configuracion.colorTexto};">${escaparHtmlCorreo(configuracion.mensaje)}</div>` : ""}
           ${urlPanel ? `<div style="margin-top:10px;"><a href="${escaparHtmlCorreo(urlPanel)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Abrir panel de usuario</a></div>` : ""}
         </div>
       </div>
@@ -679,6 +692,7 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
         <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
           <tbody>
             ${codigo ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Código</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(codigo)}</td></tr>` : ""}
+            <tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Estado actual</td><td style="padding:4px 0;color:#22313f;">${estadoBadgeHtml}</td></tr>
             ${centro ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Centro</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(centro)}</td></tr>` : ""}
             <tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Organiza</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(organizador)}</td></tr>
             ${programacion ? `<tr><td style="padding:4px 8px 4px 0;color:#5a6a7a;font-weight:700;white-space:nowrap;width:128px;">Fecha y hora</td><td style="padding:4px 0;color:#22313f;">${escaparHtmlCorreo(programacion)}</td></tr>` : ""}

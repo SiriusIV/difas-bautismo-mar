@@ -1,4 +1,5 @@
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
+import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -8,10 +9,10 @@ function json(data, init = {}) {
 }
 
 function haFinalizadoFranja(row, ahora = new Date()) {
-  if (!row?.fecha || !row?.hora_fin) return false;
-  const fechaHoraFin = new Date(`${row.fecha}T${row.hora_fin}`);
-  if (Number.isNaN(fechaHoraFin.getTime())) return false;
-  return fechaHoraFin.getTime() < ahora.getTime();
+  const fechaHoraInicio = obtenerInicioReserva(row);
+  if (!fechaHoraInicio) return false;
+  if (Number.isNaN(fechaHoraInicio.getTime())) return false;
+  return fechaHoraInicio.getTime() <= ahora.getTime();
 }
 
 async function obtenerFranjasConDisponibilidad(env, actividad_id) {
