@@ -1,9 +1,9 @@
-import { requireAdminSession, getAdminSession } from "./_auth.js";
+﻿import { requireAdminSession, getAdminSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { checkAdminActividad } from "./_permisos.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
-import { registrarEventoReserva } from "../_reservas_historial.js";
+import { borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
@@ -228,6 +228,186 @@ async function aplicarCambiosYNotificarFranja(env, reservas = [], franjaAnterior
         const correo = await enviarEmail(env, {
           to: destinatario,
           subject: "[Reservas] Cambio en la franja horaria de tu solicitud",
+          text,
+          html
+        });
+
+        if (correo?.ok) {
+          resumen.correos_enviados += 1;
+        } else if (!correo?.skipped) {
+          resumen.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+        }
+      }
+    } catch (error) {
+      resumen.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);
+    }
+  }
+
+  return resumen;
+}
+
+async function obtenerReservasFuturasFranja(env, franjaId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.contacto,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
+      r.estado,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.es_recurrente,
+      f.patron_recurrencia
+    FROM reservas r
+    JOIN franjas f
+      ON f.id = r.franja_id
+    LEFT JOIN actividades a
+      ON a.id = r.actividad_id
+    LEFT JOIN usuarios us
+      ON us.id = r.usuario_id
+    WHERE r.franja_id = ?
+      AND (
+        f.fecha IS NULL
+        OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
+      )
+    ORDER BY r.id ASC
+  `).bind(franjaId).all();
+
+  return result?.results || [];
+}
+
+async function contarReservasHistoricasFranja(env, franjaId) {
+  const row = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas r
+    JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE r.franja_id = ?
+      AND f.fecha IS NOT NULL
+      AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) <= datetime('now')
+  `).bind(franjaId).first();
+
+  return Number(row?.total || 0);
+}
+
+async function obtenerFranjasDisponiblesAlternativas(env, actividadId, franjaExcluidaId) {
+  const actividad = await obtenerActividad(env, actividadId);
+  const aforoLimitado = Number(actividad?.aforo_limitado || 0) === 1;
+  const franjas = await obtenerResumenFranjas(env, actividadId);
+
+  return franjas
+    .filter((franja) => Number(franja.id || 0) !== Number(franjaExcluidaId || 0))
+    .filter((franja) => !haFinalizadoFranja(franja))
+    .filter((franja) => !aforoLimitado || Number(franja.disponibles || 0) > 0)
+    .map((franja) => ({
+      descripcion: descripcionFranja(franja),
+      disponibles: aforoLimitado ? Number(franja.disponibles || 0) : null
+    }));
+}
+
+function construirTextoFranjasAlternativas(franjas = []) {
+  if (!franjas.length) {
+    return "Actualmente no constan otras franjas horarias con plazas disponibles para esta actividad.";
+  }
+
+  return [
+    "Franjas horarias disponibles para volver a solicitar esta actividad:",
+    ...franjas.map((franja) => {
+      const plazas = franja.disponibles === null ? "aforo no limitado" : `${franja.disponibles} plaza(s) disponible(s)`;
+      return `- ${franja.descripcion} (${plazas})`;
+    })
+  ].join("\n");
+}
+
+function construirHtmlFranjasAlternativas(franjas = []) {
+  if (!franjas.length) {
+    return "<p>Actualmente no constan otras franjas horarias con plazas disponibles para esta actividad.</p>";
+  }
+
+  return `
+    <p><strong>Franjas horarias disponibles para volver a solicitar esta actividad:</strong></p>
+    <ul>
+      ${franjas.map((franja) => {
+        const plazas = franja.disponibles === null ? "aforo no limitado" : `${franja.disponibles} plaza(s) disponible(s)`;
+        return `<li>${escaparHtml(franja.descripcion)} (${escaparHtml(plazas)})</li>`;
+      }).join("")}
+    </ul>
+  `;
+}
+
+async function eliminarReservasPorEliminacionFranja(env, reservas = [], franjaEliminada = {}, franjasAlternativas = []) {
+  const resumen = {
+    total: reservas.length,
+    reservas_eliminadas: 0,
+    correos_enviados: 0,
+    incidencias: []
+  };
+
+  for (const reserva of reservas) {
+    try {
+      const destinatario = normalizarTexto(reserva.email || "");
+      const actividad = normalizarTexto(reserva.actividad_nombre || "la actividad");
+      const codigo = normalizarTexto(reserva.codigo_reserva || "");
+      const contacto = normalizarTexto(reserva.contacto || "");
+      const organizador = normalizarTexto(reserva.organizador_nombre || "el organizador");
+      const franja = descripcionFranja(franjaEliminada);
+      const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+      const mensaje = `La franja horaria ${franja} asociada a tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido cancelada por el organizador. La actividad continúa activa, pero tu solicitud para esa franja ha sido eliminada del sistema.`;
+      const alternativasTexto = construirTextoFranjasAlternativas(franjasAlternativas);
+      const alternativasHtml = construirHtmlFranjasAlternativas(franjasAlternativas);
+
+      await borrarHistorialReservas(env, [reserva.id]);
+      await env.DB.prepare(`
+        DELETE FROM visitantes
+        WHERE reserva_id = ?
+      `).bind(reserva.id).run();
+
+      const borrado = await env.DB.prepare(`
+        DELETE FROM reservas
+        WHERE id = ?
+      `).bind(reserva.id).run();
+
+      if ((borrado?.meta?.changes || 0) > 0) {
+        resumen.reservas_eliminadas += 1;
+      } else {
+        resumen.incidencias.push(`Reserva ${reserva.id}: no se pudo eliminar tras cancelar la franja.`);
+        continue;
+      }
+
+      if (destinatario) {
+        const text = [
+          saludo,
+          "",
+          mensaje,
+          "",
+          `Actividad: ${actividad}`,
+          codigo ? `Código de solicitud: ${codigo}` : "",
+          `Franja cancelada: ${franja}`,
+          `Organiza: ${organizador}`,
+          "",
+          alternativasTexto,
+          "",
+          "Puedes realizar una nueva solicitud de esta actividad seleccionando una de las franjas horarias que sigan disponibles."
+        ].filter(Boolean).join("\n");
+
+        const html = `
+          <p>${escaparHtml(saludo)}</p>
+          <p>${escaparHtml(mensaje)}</p>
+          <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+          ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+          <p><strong>Franja cancelada:</strong> ${escaparHtml(franja)}</p>
+          <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
+          ${alternativasHtml}
+          <p>Puedes realizar una nueva solicitud de esta actividad seleccionando una de las franjas horarias que sigan disponibles.</p>
+        `;
+
+        const correo = await enviarEmail(env, {
+          to: destinatario,
+          subject: "[Reservas] Franja horaria cancelada y solicitud eliminada",
           text,
           html
         });
@@ -889,47 +1069,45 @@ export async function onRequestDelete(context) {
     await checkAdminActividad(env, session.usuario_id, existente.actividad_id);
 
     const actividad = await obtenerActividad(env, existente.actividad_id);
-    const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
+    const confirmarEliminacion = data.confirmar === true || data.confirmar === 1 || data.confirmar === "1";
+    const reservasHistoricas = await contarReservasHistoricasFranja(env, id);
 
-if (Number(actividad.borrador_tecnico) !== 1) {
+    if (reservasHistoricas > 0) {
+      return json({
+        ok: false,
+        bloquear: true,
+        error: "No se puede eliminar la franja porque tiene solicitudes históricas asociadas. El histórico debe conservarse."
+      }, { status: 400 });
+    }
 
-  // 1. Confirmadas FUTURAS → BLOQUEO DURO
-  const confirmadasFuturas = await env.DB.prepare(`
-    SELECT COUNT(*) AS total
-    FROM reservas r
-    JOIN franjas f ON f.id = r.franja_id
-    WHERE r.franja_id = ?
-      AND r.estado = 'CONFIRMADA'
-      AND (
-        f.fecha IS NULL OR
-        datetime(f.fecha || ' ' || f.hora_inicio) >= datetime('now')
-      )
-  `).bind(id).first();
+    const reservasAfectadas = Number(actividad?.borrador_tecnico || 0) === 1
+      ? []
+      : await obtenerReservasFuturasFranja(env, id);
 
-  if (Number(confirmadasFuturas?.total || 0) > 0) {
-    return json({
-      ok: false,
-      bloquear: true,
-      error: "No se puede eliminar la franja porque tiene reservas confirmadas futuras."
-    }, { status: 400 });
-  }
+    if (reservasAfectadas.length > 0 && !confirmarEliminacion) {
+      return json({
+        ok: false,
+        requiere_confirmacion: true,
+        total_afectadas: reservasAfectadas.length,
+        mensaje: reservasAfectadas.length === 1
+          ? "Existe 1 solicitud futura asociada a esta franja. Si continúas, la solicitud se eliminará automáticamente y se enviará un correo al solicitante."
+          : `Existen ${reservasAfectadas.length} solicitudes futuras asociadas a esta franja. Si continúas, esas solicitudes se eliminarán automáticamente y se enviará un correo a cada solicitante.`
+      }, { status: 409 });
+    }
 
-  // 2. Pendientes → PERMITIR CON AVISO
-  const pendientes = await env.DB.prepare(`
-    SELECT COUNT(*) AS total
-    FROM reservas
-    WHERE franja_id = ?
-      AND estado = 'PENDIENTE'
-  `).bind(id).first();
+    const franjasAlternativas = reservasAfectadas.length > 0
+      ? await obtenerFranjasDisponiblesAlternativas(env, existente.actividad_id, id)
+      : [];
 
-  if (Number(pendientes?.total || 0) > 0 && !data.confirmar) {
-    return json({
-      ok: false,
-      requiere_confirmacion: true,
-      mensaje: "Existen solicitudes pendientes. Si continúas, serán rechazadas."
-    }, { status: 409 });
-  }
-}
+    let resumenAfectacion = null;
+    if (reservasAfectadas.length > 0) {
+      resumenAfectacion = await eliminarReservasPorEliminacionFranja(
+        env,
+        reservasAfectadas,
+        existente,
+        franjasAlternativas
+      );
+    }
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
       WHERE id = ?
@@ -949,6 +1127,7 @@ if (Number(actividad.borrador_tecnico) !== 1) {
     return json({
       ok: true,
       mensaje: "Franja eliminada correctamente.",
+      resumen_afectacion: resumenAfectacion,
       franjas
     });
   } catch (error) {
