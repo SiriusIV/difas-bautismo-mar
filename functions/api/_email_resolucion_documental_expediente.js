@@ -53,25 +53,12 @@ function normalizarCambios(cambios = []) {
     .filter((cambio) => cambio.documento);
 }
 
-function normalizarReservasRechazadas(reservas = []) {
-  return (Array.isArray(reservas) ? reservas : [])
-    .map((reserva) => ({
-      codigo: limpiarTexto(reserva?.codigo_reserva || reserva?.codigo || ""),
-      actividad: limpiarTexto(reserva?.actividad || reserva?.actividad_nombre || ""),
-      observaciones: limpiarTexto(reserva?.observaciones || reserva?.observaciones_admin || ""),
-      fecha: limpiarTexto(reserva?.rechazo_elimina_en_texto || reserva?.fecha_eliminacion_texto || "")
-    }))
-    .filter((reserva) => reserva.actividad || reserva.codigo || reserva.fecha);
-}
-
 export function construirEmailTextoResolucionExpedienteDocumental({
   cambios = [],
-  resumen_actividades = null,
-  reservas_rechazadas = []
+  resumen_actividades = null
 }) {
   const filasRevision = normalizarCambios(cambios);
   const actividades = normalizarActividades(resumen_actividades || {});
-  const reservasRechazadas = normalizarReservasRechazadas(reservas_rechazadas);
 
   const lineas = [
     "La documentacion obligatoria que has remitido ha sido revisada.",
@@ -101,33 +88,16 @@ export function construirEmailTextoResolucionExpedienteDocumental({
     );
   }
 
-  if (reservasRechazadas.length) {
-    lineas.push("", "SOLICITUDES RECHAZADAS PENDIENTES DE SUBSANACION");
-    reservasRechazadas.forEach((reserva) => {
-      lineas.push(`- ${reserva.actividad || "Actividad"}${reserva.codigo ? ` (${reserva.codigo})` : ""}`);
-      if (reserva.observaciones) {
-        lineas.push(`  Observaciones: ${reserva.observaciones}`);
-      }
-      lineas.push(
-        reserva.fecha
-          ? `  Si no subsanas lo solicitado en las observaciones y reenvias la solicitud, quedara definitivamente eliminada del sistema el ${reserva.fecha}.`
-          : "  Si no subsanas lo solicitado en las observaciones y reenvias la solicitud, quedara definitivamente eliminada del sistema."
-      );
-    });
-  }
-
   lineas.push("", "Puedes acceder a la plataforma para consultar el resultado detallado.");
   return lineas.join("\n");
 }
 
 export function construirEmailHtmlResolucionExpedienteDocumental({
   cambios = [],
-  resumen_actividades = null,
-  reservas_rechazadas = []
+  resumen_actividades = null
 }) {
   const filasRevision = normalizarCambios(cambios);
   const actividades = normalizarActividades(resumen_actividades || {});
-  const reservasRechazadas = normalizarReservasRechazadas(reservas_rechazadas);
 
   const tablaRevision = filasRevision.length
     ? `
@@ -184,33 +154,11 @@ export function construirEmailHtmlResolucionExpedienteDocumental({
       </div>
     `;
 
-  const bloqueReservasRechazadas = reservasRechazadas.length
-    ? `
-      <div style="margin:14px 0;padding:14px 16px;border-radius:8px;border:1px solid #f0b4aa;background:#fff1ef;color:#7a2f25;">
-        <p style="margin:0 0 10px;"><strong>Solicitudes rechazadas pendientes de subsanación</strong></p>
-        ${reservasRechazadas.map((reserva) => `
-          <div style="margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#ffffff;border:1px solid #f3c9bf;">
-            <p style="margin:0 0 6px;"><strong>${escaparHtml(reserva.actividad || "Actividad")}${reserva.codigo ? ` (${escaparHtml(reserva.codigo)})` : ""}</strong></p>
-            ${reserva.observaciones ? `<p style="margin:0 0 6px;"><strong>Observaciones:</strong> ${escaparHtml(reserva.observaciones)}</p>` : ""}
-            <p style="margin:0;">
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:8px;border-radius:999px;background:#f5b400;color:#1f1f1f;font-weight:700;">!</span>
-              ${reserva.fecha
-                ? `Si no subsanas lo solicitado en las observaciones y reenvías la solicitud, quedará definitivamente eliminada del sistema el <strong>${escaparHtml(reserva.fecha)}</strong>.`
-                : "Si no subsanas lo solicitado en las observaciones y reenvías la solicitud, quedará definitivamente eliminada del sistema."
-              }
-            </p>
-          </div>
-        `).join("")}
-      </div>
-    `
-    : "";
-
   return `
     <p>La documentacion obligatoria que has remitido ha sido revisada.</p>
     <p><strong>Detalle de la revision</strong></p>
     ${tablaRevision}
     ${bloqueActividades}
-    ${bloqueReservasRechazadas}
     <p>Puedes acceder a la plataforma para consultar el resultado detallado.</p>
   `;
 }

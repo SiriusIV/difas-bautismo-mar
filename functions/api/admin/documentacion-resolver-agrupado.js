@@ -9,7 +9,6 @@ import {
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
-import { obtenerReservasRechazadasConPlazoCentro } from "../_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -291,10 +290,6 @@ export async function onRequestPost(context) {
     const resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
       centroUsuarioId: Number(expediente.centro_usuario_id || 0)
     });
-    const reservasRechazadasCorreo = await obtenerReservasRechazadasConPlazoCentro(
-      env,
-      Number(expediente.centro_usuario_id || 0)
-    );
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -329,8 +324,7 @@ export async function onRequestPost(context) {
         estado_expediente: estadoExpediente,
         cambios: cambiosAplicados,
         resumen_documental: resumenDocumentalCorreo,
-        resumen_actividades: resumenActividadesCorreo,
-        reservas_rechazadas: reservasRechazadasCorreo
+        resumen_actividades: resumenActividadesCorreo
       }),
       html: construirEmailHtmlResolucionExpedienteDocumental({
         admin: admin || {},
@@ -338,8 +332,7 @@ export async function onRequestPost(context) {
         estado_expediente: estadoExpediente,
         cambios: cambiosAplicados,
         resumen_documental: resumenDocumentalCorreo,
-        resumen_actividades: resumenActividadesCorreo,
-        reservas_rechazadas: reservasRechazadasCorreo
+        resumen_actividades: resumenActividadesCorreo
       })
     });
 

@@ -8,7 +8,6 @@ import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_rese
 import {
   construirResumenActividadesSolicitablesGlobalCentro
 } from "../_documentacion_actividades_solicitables.js";
-import { obtenerReservasRechazadasConPlazoCentro } from "../_reservas_rechazo_plazo.js";
 import { getSecretariaSession, obtenerExpedienteGestionadoPorSecretaria } from "./_documental.js";
 
 function json(data, init = {}) {
@@ -239,10 +238,6 @@ export async function onRequestPost(context) {
         error: errorResumenActividades?.message || String(errorResumenActividades || "")
       });
     }
-    const reservasRechazadasCorreo = await obtenerReservasRechazadasConPlazoCentro(
-      env,
-      Number(expediente.centro_usuario_id || 0)
-    );
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -272,8 +267,7 @@ export async function onRequestPost(context) {
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
           resumen_documental: resumenDocumentalCorreo,
-          resumen_actividades: resumenActividadesCorreo,
-          reservas_rechazadas: reservasRechazadasCorreo
+          resumen_actividades: resumenActividadesCorreo
         }),
         html: construirEmailHtmlResolucionExpedienteDocumental({
           admin: secretaria || {},
@@ -281,8 +275,7 @@ export async function onRequestPost(context) {
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
           resumen_documental: resumenDocumentalCorreo,
-          resumen_actividades: resumenActividadesCorreo,
-          reservas_rechazadas: reservasRechazadasCorreo
+          resumen_actividades: resumenActividadesCorreo
         })
       });
     } catch (errorEmail) {
