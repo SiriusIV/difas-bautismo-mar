@@ -7,6 +7,7 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades
 } from "../_actividad_documentacion.js";
+import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -286,6 +287,14 @@ export async function onRequestGet(context) {
         await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
       );
     }
+    const puedeEditarDocumentacionPorAdmin = new Map();
+    for (const adminId of adminIds) {
+      const resolucion = await resolverResponsableDocumental(env, adminId);
+      puedeEditarDocumentacionPorAdmin.set(
+        adminId,
+        Number(resolucion?.responsable?.id || 0) === Number(session.usuario_id || 0)
+      );
+    }
     const catalogoDocumentacionAdminSesion = await obtenerCatalogoDocumentosActivosAdmin(env, session.usuario_id);
     const actividades = (result.results || []).map((a) => ({
         ...(function () {
@@ -298,7 +307,8 @@ export async function onRequestGet(context) {
               catalogoActividad,
               configuracionActividad
             ),
-            documentos_admin_activos: catalogoActividad
+            documentos_admin_activos: catalogoActividad,
+            puede_editar_documentacion_actividad: !!puedeEditarDocumentacionPorAdmin.get(adminId)
           };
         })(),
         ...a,

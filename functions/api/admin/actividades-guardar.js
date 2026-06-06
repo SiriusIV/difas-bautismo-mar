@@ -20,6 +20,7 @@ import {
   normalizarNombresDocumentosActividad,
   obtenerCatalogoDocumentosActivosAdmin
 } from "../_actividad_documentacion.js";
+import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import { secretariaEsResponsableDeAdmin } from "../secretaria/_documental.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
@@ -142,6 +143,13 @@ function configuracionDocumentalActividadIgual(a = {}, b = {}) {
   }
 
   return true;
+}
+
+async function usuarioEsResponsableDocumentalActividad(env, sessionUserId, adminId) {
+  const resolucion = await resolverResponsableDocumental(env, adminId);
+  const responsableId = Number(resolucion?.responsable?.id || 0);
+  const usuarioId = Number(sessionUserId || 0);
+  return responsableId > 0 && usuarioId > 0 && responsableId === usuarioId;
 }
 
 function escaparHtml(valor) {
@@ -535,14 +543,13 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
+    const rol = await obtenerRol(env, session.usuario_id);
     if (rol !== "SECRETARIA") {
       const errorValidacion = validarActividad(body);
       if (errorValidacion) {
         return json({ ok: false, error: errorValidacion }, 400);
       }
     }
-
-    const rol = await obtenerRol(env, session.usuario_id);
 
     let admin_id = parsearIdPositivo(body.admin_id);
     if (rol === "SUPERADMIN") {
@@ -561,6 +568,13 @@ export async function onRequestPost(context) {
     p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
       nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
     );
+    const puedeEditarDocumentacionActividad = await usuarioEsResponsableDocumentalActividad(env, session.usuario_id, p.admin_id);
+    if (!puedeEditarDocumentacionActividad) {
+      p.documentacion_actividad = {
+        modo: "PERSONALIZADA",
+        documentos: []
+      };
+    }
     if (Number(p.activa || 0) === 0) {
       p.visible_portal = 0;
     }
@@ -728,15 +742,28 @@ export async function onRequestPut(context) {
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
     const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
+    const puedeEditarDocumentacionActividad = await usuarioEsResponsableDocumentalActividad(env, session.usuario_id, actual.admin_id);
     const documentacionActividadActual = await leerConfiguracionDocumentalActividad(env, id);
-    const documentacionActividadNueva = {
+    let documentacionActividadNueva = {
       modo: p.documentacion_actividad.modo,
       documentos: p.documentacion_actividad.documentos
     };
-    const documentacionActividadHaCambiado = !configuracionDocumentalActividadIgual(
+    let documentacionActividadHaCambiado = !configuracionDocumentalActividadIgual(
       documentacionActividadActual,
       documentacionActividadNueva
     );
+
+    if (!puedeEditarDocumentacionActividad && documentacionActividadHaCambiado) {
+      p.documentacion_actividad = {
+        modo: documentacionActividadActual.modo,
+        documentos: documentacionActividadActual.documentos
+      };
+      documentacionActividadNueva = {
+        modo: p.documentacion_actividad.modo,
+        documentos: p.documentacion_actividad.documentos
+      };
+      documentacionActividadHaCambiado = false;
+    }
     const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
 
     if (rol === "SECRETARIA") {

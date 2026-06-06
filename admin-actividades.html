@@ -3049,6 +3049,7 @@
     let catalogoDocumentacionActividad = [];
     let modoDocumentacionActividad = "HEREDADA";
     let documentosDocumentacionActividad = [];
+    let puedeEditarDocumentacionActividad = true;
     let modoSecretariaDocumental = false;
 
     let imagenOriginalId = "";
@@ -4413,7 +4414,14 @@ function actualizarResumenDocumentacionActividad() {
   if (!resumen) return;
 
   if (esVistaMovilDocumentacionActividad()) {
-    resumen.textContent = "Añade la documentación preceptiva que sea necesaria para la realización de esta actividad.";
+    resumen.textContent = puedeEditarDocumentacionActividad
+      ? "Añade la documentación preceptiva que sea necesaria para la realización de esta actividad."
+      : "Puedes consultar la documentación preceptiva de esta actividad, pero su modificación corresponde al responsable documental.";
+    return;
+  }
+
+  if (!puedeEditarDocumentacionActividad) {
+    resumen.textContent = "Documentación preceptiva en modo consulta. Solo el responsable documental puede modificar los documentos exigibles de esta actividad.";
     return;
   }
 
@@ -4442,6 +4450,7 @@ function obtenerDocumentosDocumentacionActividadParaGuardar() {
 }
 
 function agregarDocumentoSeleccionadoDocumentacionActividad() {
+  if (!puedeEditarDocumentacionActividad) return false;
   const select = document.getElementById("documentacionActividadSelect");
   const valor = String(select?.value || "").trim();
   if (!valor) return false;
@@ -4464,6 +4473,7 @@ function agregarDocumentoSeleccionadoDocumentacionActividad() {
 }
 
 function agregarDocumentosSeleccionadosDocumentacionActividad(nombres = []) {
+  if (!puedeEditarDocumentacionActividad) return false;
   const nuevos = normalizarDocumentosDocumentacionActividad(nombres);
   if (!nuevos.length) return false;
 
@@ -4485,6 +4495,11 @@ function agregarDocumentosSeleccionadosDocumentacionActividad(nombres = []) {
 function actualizarBotonDocumentacionActividadMovil(opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad()) {
   const btnMovil = document.getElementById("btnAbrirDocumentacionActividadMovil");
   if (!btnMovil) return;
+  if (!puedeEditarDocumentacionActividad) {
+    btnMovil.disabled = true;
+    btnMovil.textContent = "Documentación en modo consulta";
+    return;
+  }
   btnMovil.disabled = !opcionesDisponibles.length;
   btnMovil.textContent = opcionesDisponibles.length
     ? "Seleccionar documentos exigibles"
@@ -4497,6 +4512,14 @@ function renderSelectDocumentacionActividad() {
   if (!select || !btnAgregar) return;
 
   const opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad();
+
+  if (!puedeEditarDocumentacionActividad) {
+    select.innerHTML = `<option value="">Solo consulta</option>`;
+    select.disabled = true;
+    btnAgregar.disabled = true;
+    actualizarBotonDocumentacionActividadMovil([]);
+    return;
+  }
 
   const opciones = [
     `<option value="">Selecciona un documento...</option>`,
@@ -4522,6 +4545,7 @@ function renderSelectDocumentacionActividad() {
 }
 
 function abrirSelectorDocumentacionActividadMovil() {
+  if (!puedeEditarDocumentacionActividad) return;
   const modal = document.getElementById("modalDocumentacionActividadMovil");
   const lista = document.getElementById("listaDocumentacionActividadMovil");
   const vacia = document.getElementById("modalDocumentacionActividadMovilVacia");
@@ -4591,22 +4615,26 @@ function renderConfiguracionDocumentacionActividad() {
     btnEliminar.setAttribute("aria-label", "Eliminar documento");
     btnEliminar.setAttribute("title", "Eliminar documento");
     btnEliminar.textContent = "×";
-    btnEliminar.addEventListener("click", () => {
-      if (modoDocumentacionActividad === "HEREDADA") {
-        documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
-          catalogoDocumentacionActividad
-            .map((item) => item.nombre)
-            .filter((itemNombre) => String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase())
-        );
-        modoDocumentacionActividad = "PERSONALIZADA";
-      } else {
-        documentosDocumentacionActividad = documentosDocumentacionActividad.filter((itemNombre) =>
-          String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase()
-        );
-      }
-      marcarCambiosPendientesActividad();
-      renderConfiguracionDocumentacionActividad();
-    });
+    btnEliminar.disabled = !puedeEditarDocumentacionActividad;
+    btnEliminar.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
+    if (puedeEditarDocumentacionActividad) {
+      btnEliminar.addEventListener("click", () => {
+        if (modoDocumentacionActividad === "HEREDADA") {
+          documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
+            catalogoDocumentacionActividad
+              .map((item) => item.nombre)
+              .filter((itemNombre) => String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase())
+          );
+          modoDocumentacionActividad = "PERSONALIZADA";
+        } else {
+          documentosDocumentacionActividad = documentosDocumentacionActividad.filter((itemNombre) =>
+            String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase()
+          );
+        }
+        marcarCambiosPendientesActividad();
+        renderConfiguracionDocumentacionActividad();
+      });
+    }
     tdAcciones.appendChild(btnEliminar);
 
     const tdNombre = document.createElement("td");
@@ -4622,6 +4650,9 @@ function renderConfiguracionDocumentacionActividad() {
 
 function cargarConfiguracionDocumentacionActividad(actividad) {
   const resumen = actividad?.documentacion_actividad || null;
+  puedeEditarDocumentacionActividad = actividad
+    ? actividad?.puede_editar_documentacion_actividad !== false
+    : true;
   catalogoDocumentacionActividad = normalizarCatalogoDocumentacionActividad(
     actividad?.documentos_admin_activos || catalogoDocumentacionAdminSesion
   );
