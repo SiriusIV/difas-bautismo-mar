@@ -176,8 +176,38 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .th-clicable {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+    }
+    .th-clicable img {
+      width: 15px;
+      height: 15px;
+      opacity: .72;
+      display: block;
+    }
+    .btn-centro-usuario {
+      border: 0;
+      background: transparent;
+      color: #0b3a66;
+      font: inherit;
+      font-weight: 700;
+      padding: 0;
+      max-width: 100%;
+      cursor: pointer;
+      text-align: left;
+      text-decoration: none;
+    }
+    .btn-centro-usuario:hover,
+    .btn-centro-usuario:focus-visible {
+      color: #0b5ed7;
+      text-decoration: underline;
+      outline: none;
+    }
     .tabla-wrap { overflow-x: auto; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; }
-    table { width: 100%; min-width: 920px; border-collapse: collapse; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; }
     th, td { padding: 10px 12px; border-bottom: 1px solid #e6edf4; text-align: left; font-size: 14px; }
     thead th { background: #f5f8fb; color: #35506a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     .muted { color: #6e7e90; }
@@ -361,6 +391,66 @@
       color: #fff;
       font-weight: 700;
     }
+    .modal-ficha-usuario {
+      max-width: 760px;
+    }
+    .ficha-usuario-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+      margin-top: 12px;
+    }
+    .ficha-usuario-campo {
+      border: 1px solid #d7e2ee;
+      border-radius: 10px;
+      background: #f8fbfe;
+      padding: 9px 10px;
+      min-width: 0;
+    }
+    .ficha-usuario-campo.ancho {
+      grid-column: 1 / -1;
+    }
+    .ficha-usuario-campo .etiqueta {
+      display: block;
+      margin-bottom: 4px;
+      color: #35506a;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+    .ficha-usuario-campo .valor {
+      display: block;
+      color: #1e2a36;
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .ficha-usuario-campo a.valor {
+      color: #0b5ed7;
+    }
+    .modal-ficha-acciones {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .modal-ficha-acciones .btn-docs {
+      width: auto;
+      min-width: 0;
+      height: 36px;
+      padding: 0 12px;
+    }
+    .modal-ficha-acciones .btn-docs-texto {
+      display: inline;
+      font-size: 12px;
+      font-weight: 700;
+      color: #123a63;
+      line-height: 1;
+      white-space: nowrap;
+    }
     .modal-docs-lista {
       margin-top: 10px;
       border: 1px solid #d7e2ee;
@@ -527,6 +617,13 @@
       .situacion-btn { width: 100%; max-width: 100%; justify-content: flex-start; }
       .situacion-label { min-width: 0; width: 100%; max-width: 100%; font-size: 11px; padding: 5px 8px; justify-content: flex-start; }
       td > .valor-truncado { width: 100%; }
+      .btn-centro-usuario { width: 100%; }
+      .ficha-usuario-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal-ficha-acciones {
+        justify-content: center;
+      }
     }
   </style>
 </head>
@@ -580,13 +677,10 @@
         <table>
           <thead>
             <tr>
-              <th>Centro</th>
-              <th>Responsable</th>
+              <th><span class="th-clicable">Centro <img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true"></span></th>
               <th>Email</th>
               <th>Teléfono</th>
               <th class="th-solicitudes">Solicitudes</th>
-              <th>Documentación</th>
-              <th class="th-situacion">Situación</th>
             </tr>
           </thead>
           <tbody id="tbodyUsuarios"></tbody>
@@ -625,6 +719,21 @@
     </div>
   </div>
 
+  <div id="modalFichaUsuario" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-ficha-usuario">
+      <button type="button" class="modal-cerrar modal-cerrar-sin-circulo" id="btnCerrarModalFichaUsuario" aria-label="Cerrar">×</button>
+      <h4>Ficha de usuario</h4>
+      <p id="txtFichaUsuarioContexto"></p>
+      <div class="ficha-usuario-grid" id="fichaUsuarioGrid"></div>
+      <div class="modal-ficha-acciones">
+        <button type="button" class="btn-docs" id="btnFichaVerDocumentos" title="Ver documentación del usuario" aria-label="Ver documentación del usuario">
+          <img src="assets/icono-ver-documento.svg" alt="">
+          <span class="btn-docs-texto">Ver documentación del usuario</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalDocsUsuario" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <button type="button" class="modal-cerrar modal-cerrar-sin-circulo" id="btnCerrarModalDocsUsuario" aria-label="Cerrar">×</button>
@@ -659,6 +768,7 @@
     let documentosModalUsuario = [];
     let documentoModalActivo = null;
     let puedeEditarDocsModal = true;
+    let usuarioFichaActivoId = null;
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -750,7 +860,7 @@
       if (!lista.length) {
         usuarioSeleccionadoId = null;
         actualizarAccionesUsuarioUI();
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">No hay usuarios públicos activos disponibles.</td></tr>`;
         return;
       }
       if (!lista.some((item) => Number(item.id) === Number(usuarioSeleccionadoId))) {
@@ -760,15 +870,9 @@
         const bloqueado = Number(item.bloqueado_para_admin || 0) === 1;
         const nombreCentro = item.centro || item.nombre || "(Sin nombre)";
         const checked = bloqueado ? "" : "checked";
-        const fechaEstado = String(item?.bloqueo_actualizado_en || item?.fecha_alta || "").trim();
-        const textoFecha = fechaEstado ? formatearFechaUI(fechaEstado) : "-";
-        const etiquetaSituacion = bloqueado
-          ? `Bloqueada desde ${textoFecha}`
-          : `Activada desde ${textoFecha}`;
         const activa = Number(item.id) === Number(usuarioSeleccionadoId);
         return `<tr class="${activa ? "fila-activa" : ""}" data-usuario-id="${Number(item.id)}">
-          <td data-label="Centro"><span class="valor-truncado" title="${escapeHtml(nombreCentro)}">${escapeHtml(nombreCentro)}</span></td>
-          <td data-label="Responsable"><span class="valor-truncado" title="${escapeHtml(item.nombre || "-")}">${escapeHtml(item.nombre || "-")}</span></td>
+          <td data-label="Centro"><button type="button" class="btn-centro-usuario valor-truncado" title="${escapeHtml(nombreCentro)}" onclick="event.stopPropagation(); abrirModalFichaUsuario(${Number(item.id)})">${escapeHtml(nombreCentro)}</button></td>
           <td data-label="Email">${item.email ? `<a class="valor-truncado" href="mailto:${escapeHtml(item.email)}" title="${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : `<span class="valor-truncado">-</span>`}</td>
           <td data-label="Teléfono"><span class="valor-truncado" title="${escapeHtml(item.telefono_contacto || "-")}">${escapeHtml(item.telefono_contacto || "-")}</span></td>
           <td class="td-solicitudes" data-label="Solicitudes">
@@ -778,17 +882,6 @@
                 <span class="slider-mini"></span>
               </label>
             </span>
-          </td>
-          <td data-label="Documentación">
-            <button type="button" class="btn-docs" title="Ver documentos" aria-label="Ver documentos" onclick="abrirModalDocsUsuario(${Number(item.id)})">
-              <img src="assets/icono-ver-documento.svg" alt="">
-              <span class="btn-docs-texto">Ver documentos</span>
-            </button>
-          </td>
-          <td class="td-situacion" data-label="Situación">
-            <button type="button" class="situacion-btn" onclick="abrirModalSituacion(${Number(item.id)})">
-              <span class="situacion-label ${bloqueado ? "situacion-bloqueada" : "situacion-activa"}">${escapeHtml(etiquetaSituacion)}</span>
-            </button>
           </td>
         </tr>`;
       }).join("");
@@ -818,6 +911,59 @@
       const mm = String(fecha.getMonth() + 1).padStart(2, "0");
       const dd = String(fecha.getDate()).padStart(2, "0");
       return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function valorUsuario(valor) {
+      const texto = String(valor || "").trim();
+      return texto || "-";
+    }
+
+    function campoFichaUsuario(etiqueta, valor, opciones = {}) {
+      const clase = opciones.ancho ? " ficha-usuario-campo ancho" : " ficha-usuario-campo";
+      const texto = valorUsuario(valor);
+      const contenido = opciones.email && texto !== "-"
+        ? `<a class="valor" href="mailto:${escapeHtml(texto)}">${escapeHtml(texto)}</a>`
+        : `<span class="valor">${escapeHtml(texto)}</span>`;
+      return `<div class="${clase.trim()}"><span class="etiqueta">${escapeHtml(etiqueta)}</span>${contenido}</div>`;
+    }
+
+    function abrirModalFichaUsuario(usuarioId) {
+      const usuario = usuarios.find((item) => Number(item.id) === Number(usuarioId));
+      if (!usuario) return;
+      usuarioFichaActivoId = Number(usuario.id) || null;
+      usuarioSeleccionadoId = usuarioFichaActivoId;
+      const bloqueado = Number(usuario.bloqueado_para_admin || 0) === 1;
+      const fechaEstado = String(usuario?.bloqueo_actualizado_en || usuario?.fecha_alta || "").trim();
+      const textoFecha = fechaEstado ? formatearFechaUI(fechaEstado) : "-";
+      const nombreCentro = usuario.centro || usuario.nombre || "Usuario público";
+      const estadoSolicitudes = bloqueado
+        ? `Bloqueadas desde ${textoFecha}`
+        : `Activas desde ${textoFecha}`;
+      const documento = [
+        valorUsuario(usuario.tipo_documento),
+        valorUsuario(usuario.documento_identificacion)
+      ].filter((valor) => valor !== "-").join(" · ") || "-";
+
+      document.getElementById("txtFichaUsuarioContexto").textContent = nombreCentro;
+      document.getElementById("fichaUsuarioGrid").innerHTML = [
+        campoFichaUsuario("Cuenta", "Usuario público"),
+        campoFichaUsuario("Correo electrónico del centro", usuario.email, { email: true }),
+        campoFichaUsuario("Nombre del centro / entidad", nombreCentro, { ancho: true }),
+        campoFichaUsuario("Localidad", usuario.localidad),
+        campoFichaUsuario("Teléfono del centro", usuario.telefono_contacto),
+        campoFichaUsuario("Responsable legal / entidad titular", usuario.responsable_legal || usuario.nombre, { ancho: true }),
+        campoFichaUsuario("Documento", documento),
+        campoFichaUsuario("Solicitudes", estadoSolicitudes),
+        campoFichaUsuario("Observaciones de bloqueo", bloqueado ? usuario.motivo_bloqueo : "-", { ancho: true }),
+        campoFichaUsuario("Fecha de alta", formatearFechaUI(usuario.fecha_alta || ""))
+      ].join("");
+      document.getElementById("modalFichaUsuario").classList.add("activo");
+      renderTabla();
+    }
+
+    function cerrarModalFichaUsuario() {
+      document.getElementById("modalFichaUsuario").classList.remove("activo");
+      usuarioFichaActivoId = null;
     }
 
     function abrirModalSituacion(usuarioId) {
@@ -946,6 +1092,7 @@
         setMensaje("error", "Selecciona un usuario para consultar su documentación.");
         return;
       }
+      usuarioSeleccionadoId = Number(usuario.id) || null;
       const tbody = document.getElementById("tbodyDocsUsuario");
       const nombre = usuario.centro || usuario.nombre || usuario.email || "Usuario público";
       document.getElementById("txtDocsUsuarioContexto").textContent = `Usuario: ${nombre}`;
@@ -1116,6 +1263,8 @@
     document.getElementById("btnDocAccionRechazar").addEventListener("click", () => ejecutarAccionDocumento("rechazar"));
     document.getElementById("btnDocAccionEliminar").addEventListener("click", () => ejecutarAccionDocumento("eliminar"));
     document.getElementById("btnCerrarModalSituacion").addEventListener("click", cerrarModalSituacion);
+    document.getElementById("btnCerrarModalFichaUsuario").addEventListener("click", cerrarModalFichaUsuario);
+    document.getElementById("btnFichaVerDocumentos").addEventListener("click", () => abrirModalDocsUsuario(usuarioFichaActivoId));
     document.getElementById("btnCerrarModalDocsUsuario").addEventListener("click", cerrarModalDocsUsuario);
     document.getElementById("btnCerrarModalBloqueo").addEventListener("click", cerrarModalBloqueo);
     document.getElementById("btnCancelarBloqueo").addEventListener("click", cerrarModalBloqueo);
