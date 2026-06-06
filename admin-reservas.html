@@ -36,6 +36,7 @@
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
+    .barra-navegacion-acciones-movil { display: contents; }
     .barra-navegacion-izq { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: flex-start; pointer-events: auto; z-index: 1; }
     .barra-navegacion-centro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; text-align: center; width: min(calc(100% - 280px), 560px); pointer-events: none; }
     .panel-titulo { white-space: nowrap; font-size: 20px; font-weight: 700; color: #163c67; line-height: 1.2; letter-spacing: 0.01em; }
@@ -57,7 +58,7 @@
     .bloque h3 { margin: 0 0 12px; font-size: 15px; color: #123a63; }
     .bloque-cabecera-filtros { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .bloque-cabecera-filtros h3 { margin: 0; }
-    .filtros { display: grid; grid-template-columns: minmax(360px, 1fr) 150px 150px 170px auto; gap: 10px; align-items: end; }
+    .filtros { display: grid; grid-template-columns: minmax(360px, 1fr) 150px 150px 170px; gap: 10px; align-items: end; }
     label { display: block; font-weight: bold; margin-bottom: 6px; color: #123a63; font-size: 13px; }
     input[type="text"], input[type="date"], select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c9cfd6; border-radius: 8px; font-size: 13px; background: #fff; color: #1e2a36; }
     select { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -95,6 +96,8 @@
     .estado-badge.pendiente { background: #d39e00; } .estado-badge.confirmada { background: #198754; } .estado-badge.suspendida { background: #f4c430; color: #1e2a36; } .estado-badge.rechazada { background: #dc3545; }
     .estado-trigger-admin { border: none; background: transparent; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
     .estado-trigger-admin:hover .estado-badge, .estado-trigger-admin:focus-visible .estado-badge { box-shadow: 0 0 0 2px rgba(11,94,215,0.16); transform: translateY(-1px); }
+    .estado-clicable-wrap { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .estado-clicable-icono { display: none; width: 17px; height: 17px; flex: 0 0 17px; opacity: .78; }
     .fila-seleccionada { background: #f2f7ff; }
     .muted { color: #6b7280; }
     .mensaje { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; display: none; font-size: 13px; }
@@ -232,18 +235,58 @@
     background-blend-mode: normal, screen, normal;
   }
   .bloque-marca { flex-direction: column; text-align: center; gap: 10px; }
-  .barra-navegacion { justify-content: center; padding-top: 16px; padding-bottom: 12px; }
-  .barra-navegacion-izq, .barra-navegacion-centro { position: static; transform: none; width: 100%; order: -1; pointer-events: auto; }
-  .barra-navegacion-centro { order: 0; }
-  .barra-navegacion-izq { justify-content: center; }
-  .barra-navegacion-der { width: 100%; justify-content: center; }
+  .barra-navegacion {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    align-items: center;
+    gap: 14px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+  .barra-navegacion-izq,
+  .barra-navegacion-centro,
+  .barra-navegacion-der {
+    position: static;
+    transform: none;
+    width: 100%;
+    pointer-events: auto;
+  }
+  .barra-navegacion-centro {
+    order: 1;
+    justify-content: center;
+  }
+  .barra-navegacion-izq,
+  .barra-navegacion-der {
+    width: auto;
+  }
+  .barra-navegacion-izq { order: 2; justify-content: flex-start; }
+  .barra-navegacion-der { order: 3; justify-content: flex-end; }
+  .barra-navegacion-acciones-movil {
+    order: 2;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .barra-navegacion-acciones-movil .nav-admin {
+    justify-content: flex-end;
+    margin-left: 0;
+  }
   .panel-titulo { font-size: 18px; }
   .titulos-cabecera h2 { text-align: center; }
   .logo-cabecera { width: 82px; }
   .logo-cabecera.logo-admin-personal { width: 82px; }
   .contenedor { padding: 0 10px 18px; }
   .filtros { grid-template-columns: 1fr; gap: 8px; }
-  .bloque-cabecera-filtros { align-items: flex-start; }
+  .bloque-cabecera-filtros { align-items: center; }
+  .bloque-cabecera-filtros .filtro-acciones-rapidas {
+    min-height: 0;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .filtros > .filtro-acciones-rapidas { display: none; }
   .resumen-linea { grid-template-columns: 1fr; gap: 10px; }
   .resumen { justify-content: center; gap: 10px 14px; }
   .resumen-centro select { max-width: 100%; }
@@ -348,8 +391,12 @@
     align-items: center;
   }
   .tabla-wrap td.estado-col .estado-trigger-admin,
-  .tabla-wrap td.estado-col > .estado-badge {
+  .tabla-wrap td.estado-col > .estado-badge,
+  .tabla-wrap td.estado-col .estado-clicable-wrap {
     justify-self: start;
+  }
+  .tabla-wrap td.estado-col .estado-clicable-icono {
+    display: inline-block;
   }
   .tabla-wrap td.horario-col .horario-principal {
     line-height: 1.45;
@@ -391,22 +438,24 @@
   <div class="app-scroll">
     <div class="contenedor">
       <div class="barra-navegacion">
-        <div class="barra-navegacion-izq">
-          <a class="nav-btn-pildora" id="navActividadesAdmin" href="mis-actividades.html" title="Volver al panel de actividades" aria-label="Volver al panel de actividades">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M15 18l-6-6 6-6"></path>
-              <path d="M21 12H9"></path>
-            </svg>
-            <span>Panel de actividades</span>
-          </a>
-        </div>
         <div class="barra-navegacion-centro">
           <span class="panel-titulo" id="subactividadActual">Panel de reservas</span>
         </div>
-        <div class="barra-navegacion-der">
-          <div class="nav-admin">
-            <a class="btn-icono" id="navCalendario" href="admin-calendario.html" title="Calendario" aria-label="Calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></a>
-            <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
+        <div class="barra-navegacion-acciones-movil">
+          <div class="barra-navegacion-izq">
+            <a class="nav-btn-pildora" id="navActividadesAdmin" href="mis-actividades.html" title="Volver al panel de actividades" aria-label="Volver al panel de actividades">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"></path>
+                <path d="M21 12H9"></path>
+              </svg>
+              <span>Panel de actividades</span>
+            </a>
+          </div>
+          <div class="barra-navegacion-der">
+            <div class="nav-admin">
+              <a class="btn-icono" id="navCalendario" href="admin-calendario.html" title="Calendario" aria-label="Calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></a>
+              <a class="btn-icono" href="portal.html" title="Portal" aria-label="Portal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path><path d="M9 21v-6h6v6"></path></svg></a>
+            </div>
           </div>
         </div>
       </div>
@@ -414,13 +463,13 @@
       <div class="bloque">
         <div class="bloque-cabecera-filtros">
           <h3>Filtros</h3>
+          <div class="filtro-acciones-rapidas"><button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros"><img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true"></button></div>
         </div>
         <div class="filtros">
           <div><label for="filtroActividad">Actividad</label><select id="filtroActividad"><option value="">Todas</option></select></div>
           <div><label for="filtroFechaInicio">Fecha inicio</label><input type="date" id="filtroFechaInicio"></div>
           <div><label for="filtroFechaFin">Fecha fin</label><input type="date" id="filtroFechaFin"></div>
           <div><label for="filtroBuscar">Solicitante</label><select id="filtroBuscar"><option value="">Todos</option></select></div>
-          <div class="filtro-acciones-rapidas"><button type="button" class="btn-filtros-reset" id="btnLimpiarFiltros" title="Quitar filtros" aria-label="Quitar filtros"><img src="assets/remove_filter_icon_216117.svg" alt="" aria-hidden="true"></button></div>
         </div>
       </div>
       <div class="bloque">
@@ -782,7 +831,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     function abrirModalEstado(id, accionPreferida = "") { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva) return; if (!puedeGestionarEstadoReserva(reserva)) { if (solicitanteSuspendido(reserva)) { mostrarMensaje("aviso", "No se puede readmitir ni confirmar esta solicitud mientras la cuenta del solicitante siga suspendida."); } return; } reservaModalEstado = reserva; accionPreferidaModal = String(accionPreferida || "").toLowerCase(); document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); const accionesDisponibles = []; if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); else if (accionPreferidaModal === "rechazar" && puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); else { if (puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); if (puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); } const observacionesIniciales = (String(reserva.estado || "").toUpperCase() === "RECHAZADA" && accionesDisponibles.includes("confirmar")) ? "" : (reserva.observaciones_admin || ""); const estadoTexto = textoEstadoVisible(reserva.estado); const estadoClase = claseEstado(reserva.estado); document.getElementById("modalObservacionesTitulo").textContent = `${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesSubtitulo").textContent = ""; document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin"; const botonesTop = []; if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`); if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`); document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div><div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aquí las observaciones administrativas asociadas a esta decisión.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`; document.getElementById("modalObservacionesAcciones").innerHTML = ""; document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); }); asegurarBotonCerrarModalSuperior(); limpiarMensajeModalEstado(); establecerVisibilidadModalObservaciones(true); }
     async function guardarCambioEstadoDesdeModal(accion) { if (!reservaModalEstado) return; const accionFinal = String(accion || accionPreferidaModal || "").toLowerCase(); if (!accionFinal) return; const observacionesAdmin = (document.getElementById("txtObservacionesAdminEstado")?.value || "").trim(); if (requiereObservacionesCambio(reservaModalEstado, accionFinal) && !observacionesAdmin) { mostrarMensajeModalEstado("Debes indicar observaciones administrativas para este cambio de estado."); return; } limpiarMensajeModalEstado(); limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaModalEstado.id, accion: accionFinal, observaciones_admin: observacionesAdmin }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); cerrarModalObservaciones(); const correoSolicitante = data?.correo_solicitante || null; if (correoSolicitante && correoSolicitante.enviado !== true) { const detalleCorreo = String(correoSolicitante.error || "").trim(); mostrarMensaje("aviso", `${data.mensaje || "Estado actualizado correctamente."} Aviso: no se pudo enviar el correo automático al solicitante${detalleCorreo ? ` (${detalleCorreo})` : ""}.`); } else { mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); } reservaSeleccionada = null; await cargarPanel(); } catch (error) { mostrarMensajeModalEstado(error.message || "No se pudo cambiar el estado."); } }
-    function pintarReservas(reservas) { reservasActuales = reservas.slice(); const tbody = document.getElementById("tbodyReservas"); if (reservaSeleccionada) { const sigue = reservasActuales.find((r) => Number(r.id) === Number(reservaSeleccionada.id)); reservaSeleccionada = sigue || null; } if (!reservas.length) { tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`; actualizarBotonesAccion(); return; } tbody.innerHTML = reservas.map((r) => { const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim()); const estadoInteractivo = puedeGestionarEstadoReserva(r); const estadoHtml = estadoInteractivo ? `<button type="button" class="estado-trigger-admin" onclick="event.stopPropagation(); abrirModalEstado(${r.id})" title="Gestionar estado y observaciones"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></button>` : `<span class="estado-badge ${claseEstado(r.estado)}" title="${solicitanteSuspendido(r) ? "Solicitud bloqueada por suspensión del solicitante" : textoEstadoVisible(r.estado)}">${textoEstadoVisible(r.estado)}</span>`; const horario = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`; return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}" onclick="manejarSeleccionReservaFila(event, ${r.id})"><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="event.stopPropagation(); abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="solicitante-col" data-label="Solicitante">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="estado-col" data-label="Estado">${estadoHtml}</td><td class="fecha-col" data-label="Fecha"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div></td><td class="horario-col" data-label="Horario"><div class="horario-principal">${horario}</div></td><td class="res-col" data-label="Plazas reservadas">${r.plazas_reservadas}</td><td class="asig-col" data-label="Plazas asignadas">${r.plazas_asignadas}</td></tr>`; }).join(""); actualizarBotonesAccion(); }
+    function pintarReservas(reservas) { reservasActuales = reservas.slice(); const tbody = document.getElementById("tbodyReservas"); if (reservaSeleccionada) { const sigue = reservasActuales.find((r) => Number(r.id) === Number(reservaSeleccionada.id)); reservaSeleccionada = sigue || null; } if (!reservas.length) { tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`; actualizarBotonesAccion(); return; } tbody.innerHTML = reservas.map((r) => { const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim()); const estadoInteractivo = puedeGestionarEstadoReserva(r); const estadoHtml = estadoInteractivo ? `<span class="estado-clicable-wrap"><img class="estado-clicable-icono" src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true"><button type="button" class="estado-trigger-admin" onclick="event.stopPropagation(); abrirModalEstado(${r.id})" title="Gestionar estado y observaciones"><span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span></button></span>` : `<span class="estado-badge ${claseEstado(r.estado)}" title="${solicitanteSuspendido(r) ? "Solicitud bloqueada por suspensi?n del solicitante" : textoEstadoVisible(r.estado)}">${textoEstadoVisible(r.estado)}</span>`; const horario = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`; return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}" onclick="manejarSeleccionReservaFila(event, ${r.id})"><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="event.stopPropagation(); abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="solicitante-col" data-label="Solicitante">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="estado-col" data-label="Estado">${estadoHtml}</td><td class="fecha-col" data-label="Fecha"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div></td><td class="horario-col" data-label="Horario"><div class="horario-principal">${horario}</div></td><td class="res-col" data-label="Plazas reservadas">${r.plazas_reservadas}</td><td class="asig-col" data-label="Plazas asignadas">${r.plazas_asignadas}</td></tr>`; }).join(""); actualizarBotonesAccion(); }
     async function cambiarEstadoSeleccion(estado) { if (!reservaSeleccionada) return; abrirModalEstado(reservaSeleccionada.id, estado === "CONFIRMADA" ? "confirmar" : "rechazar"); }
     document.getElementById("filtroEstadoCabecera").addEventListener("change", function () { recargarPanelDesdeFiltros(); });
     ["filtroActividad","filtroFechaInicio","filtroFechaFin","filtroBuscar"].forEach((id) => { const el = document.getElementById(id); if (!el) return; el.addEventListener("change", function () { recargarPanelDesdeFiltros({ actualizarTitulo: id === "filtroActividad" }); }); });
@@ -807,7 +856,4 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
-
-
 
