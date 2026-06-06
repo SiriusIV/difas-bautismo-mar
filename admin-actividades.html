@@ -1032,6 +1032,15 @@
   vertical-align: middle;
 }
 
+.tabla-franjas-admin .col-horario-franja {
+  width: 150px;
+  min-width: 140px;
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
 .switch-mini-franja {
   width: 34px;
   height: 20px;
@@ -5413,7 +5422,7 @@ function renderListaFranjas() {
         <td class="col-franja-activa">${toggleHtml}</td>
         <td>${programacionHtml}</td>
         <td class="col-estado-franja"><span class="franja-badge-estado ${estadoClase}">${estadoTexto}</span></td>
-        <td>${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}</td>
+        <td class="col-horario-franja">${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}</td>
         <td class="col-num">${capacidad}</td>
         <td class="col-num">${ocupadas}</td>
         <td class="col-num">${disponibles}</td>
@@ -5429,7 +5438,7 @@ function renderListaFranjas() {
           <th class="col-franja-activa"></th>
           <th>Fecha / Periodicidad</th>
           <th class="col-estado-franja">Estado</th>
-          <th>Horario</th>
+          <th class="col-horario-franja">Horario</th>
           <th class="col-num">Capacidad</th>
           <th class="col-num">Ocupadas</th>
           <th class="col-num">Disponibles</th>
@@ -5528,36 +5537,6 @@ async function aplicarCambioEstadoFranja(id, activa, input, confirmado = false) 
 async function cambiarEstadoFranja(id, activa, input) {
   if (pantallaBloqueadaPorErrorActividad) {
     if (input) input.checked = !activa;
-    return;
-  }
-
-  if (!activa) {
-    if (input) input.checked = true;
-    mostrarMensaje(
-      "aviso",
-      "Vas a desactivar esta franja horaria. Si existen solicitudes futuras asociadas, se eliminarán automáticamente y se avisará por correo a los solicitantes. ¿Deseas continuar?",
-      {
-        confirmable: true,
-        onAccept: async () => {
-          if (input) input.checked = false;
-          try {
-            await aplicarCambioEstadoFranja(id, false, input, true);
-          } catch (error) {
-            if (input) {
-              input.checked = true;
-              input.disabled = false;
-            }
-            mostrarMensaje("error", error?.message || "No se pudo actualizar el estado de la franja.");
-          }
-        },
-        onCancel: () => {
-          if (input) {
-            input.checked = true;
-            input.disabled = false;
-          }
-        }
-      }
-    );
     return;
   }
 
