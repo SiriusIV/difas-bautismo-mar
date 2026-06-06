@@ -27,6 +27,22 @@ function resolverTipoActividadVisible(row = {}) {
   return tipo || "TEMPORAL";
 }
 
+function esErrorColumnaDuplicada(error) {
+  const texto = String(error?.message || error || "").toLowerCase();
+  return texto.includes("duplicate column name") || texto.includes("duplicate column");
+}
+
+async function asegurarColumnaFranjaActiva(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE franjas
+      ADD COLUMN activa INTEGER NOT NULL DEFAULT 1
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) throw error;
+  }
+}
+
 async function desactivarActividadesFinalizadasPorPeriodo(env) {
   await env.DB.prepare(`
     UPDATE actividades
@@ -75,6 +91,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await asegurarColumnaFranjaActiva(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
     let result = null;
     try {
@@ -110,6 +127,7 @@ export async function onRequestGet(context) {
           FROM franjas f
           LEFT JOIN reservas r
             ON r.franja_id = f.id
+          WHERE COALESCE(f.activa, 1) = 1
           GROUP BY
             f.id,
             f.actividad_id,
@@ -135,6 +153,7 @@ export async function onRequestGet(context) {
               END
             ) AS ultima_franja_fin
           FROM franjas
+          WHERE COALESCE(activa, 1) = 1
           GROUP BY actividad_id
         )
         SELECT
@@ -332,6 +351,7 @@ export async function onRequestGet(context) {
         FROM franjas f
         LEFT JOIN reservas r
           ON r.franja_id = f.id
+        WHERE COALESCE(f.activa, 1) = 1
         GROUP BY
           f.id,
           f.actividad_id,
@@ -357,6 +377,7 @@ export async function onRequestGet(context) {
             END
           ) AS ultima_franja_fin
         FROM franjas
+        WHERE COALESCE(activa, 1) = 1
         GROUP BY actividad_id
       )
       SELECT

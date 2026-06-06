@@ -15,6 +15,22 @@ function haFinalizadoFranja(row, ahora = new Date()) {
   return fechaHoraInicio.getTime() <= ahora.getTime();
 }
 
+function esErrorColumnaDuplicada(error) {
+  const texto = String(error?.message || error || "").toLowerCase();
+  return texto.includes("duplicate column name") || texto.includes("duplicate column");
+}
+
+async function asegurarColumnaFranjaActiva(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE franjas
+      ADD COLUMN activa INTEGER NOT NULL DEFAULT 1
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) throw error;
+  }
+}
+
 async function obtenerFranjasConDisponibilidad(env, actividad_id) {
   const sql = `
     SELECT
@@ -55,6 +71,7 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
       ON r.franja_id = f.id
 
     WHERE f.actividad_id = ?
+      AND COALESCE(f.activa, 1) = 1
 
     GROUP BY
       f.id,
@@ -97,6 +114,7 @@ export async function onRequestGet(context) {
   const { env, request } = context;
 
   try {
+    await asegurarColumnaFranjaActiva(env);
     await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const actividad_id = Number(url.searchParams.get("actividad_id"));

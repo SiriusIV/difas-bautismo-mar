@@ -1020,6 +1020,69 @@
   vertical-align: middle;
 }
 
+.tabla-franjas-admin .col-franja-activa {
+  width: 44px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tabla-franjas-admin .col-estado-franja {
+  width: 110px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.switch-mini-franja {
+  width: 34px;
+  height: 20px;
+  display: inline-flex;
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.switch-mini-franja input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-mini-franja {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #c8d2de;
+  border: 1px solid #b6c1cd;
+  transition: all 0.18s ease;
+}
+
+.slider-mini-franja::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 35, 55, 0.28);
+  transition: transform 0.18s ease;
+}
+
+.switch-mini-franja input:checked + .slider-mini-franja {
+  background: #22b36b;
+  border-color: #22b36b;
+}
+
+.switch-mini-franja input:checked + .slider-mini-franja::before {
+  transform: translateX(14px);
+}
+
+.switch-mini-franja input:disabled + .slider-mini-franja {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .btn-icono-franja {
   width: 36px;
   height: 36px;
@@ -1161,6 +1224,38 @@
       letter-spacing: 0.02em;
       text-transform: uppercase;
       white-space: nowrap;
+    }
+
+    .franja-badge-estado {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 82px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .franja-badge-estado.activa {
+      border: 1px solid #9fd8b7;
+      background: #eaf8f0;
+      color: #11743d;
+    }
+
+    .franja-badge-estado.inactiva {
+      border: 1px solid #d0d8e0;
+      background: #f1f4f7;
+      color: #5d6b78;
+    }
+
+    .franja-badge-estado.finalizada {
+      border: 1px solid #e7c7bf;
+      background: #fff4f1;
+      color: #8b3d26;
     }
 
     .acciones-fila {
@@ -5294,20 +5389,30 @@ function renderListaFranjas() {
     const ocupadas = f.ocupadas == null ? "—" : String(f.ocupadas);
     const disponibles = f.disponibles == null ? "—" : String(f.disponibles);
     const seleccionada = Number(f.id) === Number(franjaSeleccionadaId);
-    const fechaHoraFin = f?.fecha && f?.hora_fin && Number(f?.es_recurrente || 0) !== 1
-      ? new Date(`${f.fecha}T${f.hora_fin}`)
+    const activa = Number(f.activa ?? 1) === 1;
+    const fechaHoraInicio = f?.fecha && f?.hora_inicio && Number(f?.es_recurrente || 0) !== 1
+      ? new Date(`${f.fecha}T${f.hora_inicio}`)
       : null;
-    const finalizada = !!fechaHoraFin && !Number.isNaN(fechaHoraFin.getTime()) && fechaHoraFin.getTime() < Date.now();
+    const finalizada = !!fechaHoraInicio && !Number.isNaN(fechaHoraInicio.getTime()) && fechaHoraInicio.getTime() <= Date.now();
+    const estadoTexto = finalizada ? "Finalizada" : (activa ? "Activa" : "Inactiva");
+    const estadoClase = finalizada ? "finalizada" : (activa ? "activa" : "inactiva");
     const programacionHtml = `
       <span class="franja-programacion-admin">
         <span>${bloqueProgramacion}</span>
-        ${finalizada ? '<span class="franja-badge-finalizada">Finalizada</span>' : ''}
       </span>
+    `;
+    const toggleHtml = `
+      <label class="switch-mini-franja" title="${activa ? "Desactivar franja" : "Activar franja"}" onclick="event.stopPropagation();">
+        <input type="checkbox" ${activa ? "checked" : ""} onchange="cambiarEstadoFranja(${Number(f.id)}, this.checked, this)">
+        <span class="slider-mini-franja"></span>
+      </label>
     `;
 
     return `
       <tr class="${seleccionada ? "seleccionada" : ""}" data-franja-id="${f.id}">
+        <td class="col-franja-activa">${toggleHtml}</td>
         <td>${programacionHtml}</td>
+        <td class="col-estado-franja"><span class="franja-badge-estado ${estadoClase}">${estadoTexto}</span></td>
         <td>${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}</td>
         <td class="col-num">${capacidad}</td>
         <td class="col-num">${ocupadas}</td>
@@ -5321,7 +5426,9 @@ function renderListaFranjas() {
     <table class="tabla-franjas-admin">
       <thead>
         <tr>
+          <th class="col-franja-activa"></th>
           <th>Fecha / Periodicidad</th>
+          <th class="col-estado-franja">Estado</th>
           <th>Horario</th>
           <th class="col-num">Capacidad</th>
           <th class="col-num">Ocupadas</th>
@@ -5335,12 +5442,134 @@ function renderListaFranjas() {
 
   wrap.querySelectorAll("tbody tr[data-franja-id]").forEach((fila) => {
     fila.addEventListener("click", (event) => {
-      if (event.target.closest("input, button, a")) return;
+      if (event.target.closest("input, button, a, label")) return;
       seleccionarFranja(fila.dataset.franjaId);
     });
   });
 
   actualizarAccionesFranjaUI();
+}
+
+async function enviarCambioEstadoFranja(id, activa, confirmado = false) {
+  const respuesta = await fetch("/api/admin/franjas", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      id,
+      accion: "estado",
+      activa: activa ? 1 : 0,
+      confirmar_estado: confirmado
+    })
+  });
+
+  const data = await respuesta.json().catch(() => null);
+  return { respuesta, data };
+}
+
+async function aplicarCambioEstadoFranja(id, activa, input, confirmado = false) {
+  if (input) input.disabled = true;
+  const { respuesta, data } = await enviarCambioEstadoFranja(id, activa, confirmado);
+
+  if (data?.requiere_confirmacion && !confirmado) {
+    if (input) {
+      input.checked = !activa;
+      input.disabled = false;
+    }
+
+    mostrarMensaje(
+      "aviso",
+      data.mensaje || "Esta acción puede afectar a solicitudes existentes. ¿Deseas continuar?",
+      {
+        confirmable: true,
+        onAccept: async () => {
+          try {
+            await aplicarCambioEstadoFranja(id, activa, input, true);
+          } catch (error) {
+            if (input) {
+              input.checked = !activa;
+              input.disabled = false;
+            }
+            mostrarMensaje("error", error?.message || "No se pudo actualizar el estado de la franja.");
+          }
+        },
+        onCancel: () => {
+          if (input) {
+            input.checked = !activa;
+            input.disabled = false;
+          }
+        }
+      }
+    );
+    return;
+  }
+
+  if (!respuesta.ok || !data?.ok) {
+    if (input) {
+      input.checked = !activa;
+      input.disabled = false;
+    }
+    mostrarMensaje("error", data?.error || "No se pudo actualizar el estado de la franja.");
+    return;
+  }
+
+  if (Array.isArray(data.franjas)) {
+    franjasCache = data.franjas;
+    renderListaFranjas();
+    renderPreviewFranjas();
+    actualizarEstadoFranjasUI();
+  } else {
+    await cargarFranjas();
+  }
+
+  mostrarMensaje("ok", data.mensaje || "Estado de franja actualizado correctamente.");
+}
+
+async function cambiarEstadoFranja(id, activa, input) {
+  if (pantallaBloqueadaPorErrorActividad) {
+    if (input) input.checked = !activa;
+    return;
+  }
+
+  if (!activa) {
+    if (input) input.checked = true;
+    mostrarMensaje(
+      "aviso",
+      "Vas a desactivar esta franja horaria. Si existen solicitudes futuras asociadas, se eliminarán automáticamente y se avisará por correo a los solicitantes. ¿Deseas continuar?",
+      {
+        confirmable: true,
+        onAccept: async () => {
+          if (input) input.checked = false;
+          try {
+            await aplicarCambioEstadoFranja(id, false, input, true);
+          } catch (error) {
+            if (input) {
+              input.checked = true;
+              input.disabled = false;
+            }
+            mostrarMensaje("error", error?.message || "No se pudo actualizar el estado de la franja.");
+          }
+        },
+        onCancel: () => {
+          if (input) {
+            input.checked = true;
+            input.disabled = false;
+          }
+        }
+      }
+    );
+    return;
+  }
+
+  try {
+    await aplicarCambioEstadoFranja(id, activa, input, false);
+  } catch (error) {
+    if (input) {
+      input.checked = !activa;
+      input.disabled = false;
+    }
+    mostrarMensaje("error", error?.message || "No se pudo actualizar el estado de la franja.");
+  }
 }
 
     function formatearHorarioFranja(inicio, fin) {
