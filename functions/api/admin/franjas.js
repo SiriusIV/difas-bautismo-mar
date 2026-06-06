@@ -1212,8 +1212,10 @@ export async function onRequestPut(context) {
     }
 
     const hayCambioReal = franjaHaCambiado(existente, siguienteFranja);
-    const reservasAfectadas = hayCambioReal ? await obtenerReservasAfectadasFranja(env, id) : [];
-    if (hayCambioReal && reservasAfectadas.length > 0 && !confirmarAfectacion) {
+    const franjaEstabaActiva = Number(existente.activa ?? 1) === 1;
+    const debeNotificarCambios = hayCambioReal && franjaEstabaActiva;
+    const reservasAfectadas = debeNotificarCambios ? await obtenerReservasAfectadasFranja(env, id) : [];
+    if (debeNotificarCambios && reservasAfectadas.length > 0 && !confirmarAfectacion) {
       return json({
         ok: false,
         requiere_confirmacion_afectacion: true,
@@ -1254,7 +1256,7 @@ export async function onRequestPut(context) {
     }
 
     let resumenAfectacion = null;
-    if (hayCambioReal && reservasAfectadas.length > 0) {
+    if (debeNotificarCambios && reservasAfectadas.length > 0) {
       resumenAfectacion = await aplicarCambiosYNotificarFranja(
         env,
         reservasAfectadas,
