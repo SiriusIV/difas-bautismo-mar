@@ -143,6 +143,20 @@ export async function onRequestGet(context) {
           ORDER BY h.fecha_evento DESC, h.id DESC
           LIMIT 1
         ), '') AS ultima_accion_historial,
+        COALESCE((
+          SELECT h.estado_origen
+          FROM reservas_historial_estados h
+          WHERE h.reserva_id = r.id
+          ORDER BY h.fecha_evento DESC, h.id DESC
+          LIMIT 1
+        ), '') AS ultimo_estado_origen_historial,
+        COALESCE((
+          SELECT h.observaciones
+          FROM reservas_historial_estados h
+          WHERE h.reserva_id = r.id
+          ORDER BY h.fecha_evento DESC, h.id DESC
+          LIMIT 1
+        ), '') AS ultima_observacion_historial,
         COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad
       FROM reservas r
       LEFT JOIN franjas f ON r.franja_id = f.id
@@ -185,7 +199,9 @@ export async function onRequestGet(context) {
       plazas_asignadas: calcularPlazasAsignadas(row),
       ultimo_actor_usuario_id: Number(row.ultimo_actor_usuario_id || 0),
       ultimo_actor_rol: String(row.ultimo_actor_rol || "").trim().toUpperCase(),
-      ultima_accion_historial: String(row.ultima_accion_historial || "").trim().toUpperCase()
+      ultima_accion_historial: String(row.ultima_accion_historial || "").trim().toUpperCase(),
+      ultimo_estado_origen_historial: String(row.ultimo_estado_origen_historial || "").trim().toUpperCase(),
+      ultima_observacion_historial: row.ultima_observacion_historial || ""
     }));
 
     return json({ ok: true, data });

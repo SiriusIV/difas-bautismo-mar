@@ -1484,6 +1484,27 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
     }
+
+    function esSuspensionPorCambioFranja(reserva) {
+      return normalizarEstadoReserva(reserva?.estado) === "SUSPENDIDA"
+        && String(reserva?.ultima_accion_historial || "").trim().toUpperCase() === "CAMBIO_FRANJA";
+    }
+
+    function detalleCambioFranja(reserva) {
+      const observacion = String(reserva?.ultima_observacion_historial || "").trim();
+      const match = observacion.match(/Programaci[oó]n modificada:\s*(.+?)\s*->\s*(.+)$/i);
+      if (match) {
+        return {
+          anterior: match[1].trim(),
+          actual: match[2].trim()
+        };
+      }
+      return {
+        anterior: "",
+        actual: `${reserva?.fecha || ""} ${reserva?.hora_inicio || ""}${reserva?.hora_fin ? ` - ${reserva.hora_fin}` : ""}`.trim()
+      };
+    }
+
     function descripcionEstadoReserva(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
@@ -1500,6 +1521,9 @@
         return "Su solicitud está en proceso de revisión. Si lo desea, puede actualizar/revisar la documentación obligatoria para la realización de la actividad o acceder al panel de asistentes.";
       }
       if (estado === "SUSPENDIDA") {
+        if (esSuspensionPorCambioFranja(reserva)) {
+          return "La solicitud está suspendida porque la franja horaria asociada ha cambiado. Revisa la nueva programación y decide si deseas mantener la solicitud o anularla.";
+        }
         return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
       }
       if (estado === "RECHAZADA") {
@@ -1528,6 +1552,18 @@
         return acciones;
       }
       if (estado === "SUSPENDIDA") {
+        if (esSuspensionPorCambioFranja(reserva)) {
+          acciones.push({
+            label: "Confirmar solicitud",
+            principal: true,
+            onClick: () => confirmarCambioFranjaReserva(reserva)
+          });
+          acciones.push({
+            label: "Anular solicitud",
+            onClick: () => anularSolicitud(reserva)
+          });
+          return acciones;
+        }
         if (Number(reserva?.admin_id || 0) > 0) {
           acciones.push({
             label: "Ir a documentación",
@@ -1577,6 +1613,14 @@
       const descripcion = descripcionEstadoReserva(reserva);
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
+      const cambioFranja = esSuspensionPorCambioFranja(reserva) ? detalleCambioFranja(reserva) : null;
+      const detalleCambioFranjaHtml = cambioFranja
+        ? `<div class="estado-modal-observaciones">
+                <strong>Cambio en la franja horaria</strong>
+                ${cambioFranja.anterior ? `<div class="estado-modal-observaciones-texto"><strong>Franja anterior:</strong> ${escapeHtml(cambioFranja.anterior)}</div>` : ""}
+                ${cambioFranja.actual ? `<div class="estado-modal-observaciones-texto"><strong>Franja actual:</strong> ${escapeHtml(cambioFranja.actual)}</div>` : ""}
+              </div>`
+        : "";
       const esRechazada = normalizarEstadoReserva(reserva.estado) === "RECHAZADA";
       const fechaEliminacionRechazo = esRechazada ? formatearFechaHoraAviso(reserva.rechazo_elimina_en || "") : "";
       const estadoModalHtml = esRechazada && fechaEliminacionRechazo
@@ -1592,6 +1636,7 @@
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">${escapeHtml(descripcion)}</p>
         </div>
+        ${detalleCambioFranjaHtml}
         ${
           observaciones
             ? `<div class="estado-modal-observaciones">
@@ -1825,6 +1870,37 @@
         actualizarBotones();
       }
     }
+async function confirmarCambioFranjaReserva(reserva) {
+      if (!reserva) return;
+
+      limpiarMensaje();
+      try {
+        const res = await fetch("/api/reserva-confirmar-cambio-franja", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            reserva_id: Number(reserva.id || 0)
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo confirmar el cambio de franja.");
+        }
+        mostrarMensaje("ok", data.mensaje || "Solicitud confirmada correctamente.");
+        reservaSeleccionada = null;
+        await cargarPanel();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo confirmar el cambio de franja.");
+      }
+    }
+
+async function anularSolicitud(reserva) {
+      if (!reserva) return;
+      reservaSeleccionada = reserva;
+      await anularSolicitudSeleccionada();
+    }
+
 async function anularSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
@@ -1916,4 +1992,3 @@ async function anularSolicitudSeleccionada() {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
