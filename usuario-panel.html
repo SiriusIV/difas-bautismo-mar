@@ -515,11 +515,27 @@
     }
     .modal-estado-inline {
       display: none;
-      justify-content: center;
+      justify-content: flex-start;
       margin: 2px 0 10px;
     }
     .modal-estado-inline.activo {
       display: flex;
+    }
+    .modal-estado-rechazo-linea {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .modal-rechazo-eliminacion {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: right;
+      color: #8a1f2d;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
     }
     .modal-estado-superior {
       display: none;
@@ -1079,6 +1095,22 @@
       return e || "-";
     }
 
+    function formatearFechaHoraAviso(valor) {
+      const texto = String(valor || "").trim();
+      if (!texto) return "";
+      const normalizado = texto.includes("T") ? texto : texto.replace(" ", "T");
+      const fecha = new Date(`${normalizado}Z`);
+      if (Number.isNaN(fecha.getTime())) return texto;
+      return new Intl.DateTimeFormat("es-ES", {
+        timeZone: "Europe/Madrid",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(fecha);
+    }
+
     function construirUrlDocumentacion(adminId, actividadId) {
       const admin = Number(adminId || 0);
       if (!(admin > 0)) return "";
@@ -1545,12 +1577,17 @@
       const descripcion = descripcionEstadoReserva(reserva);
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
+      const esRechazada = normalizarEstadoReserva(reserva.estado) === "RECHAZADA";
+      const fechaEliminacionRechazo = esRechazada ? formatearFechaHoraAviso(reserva.rechazo_elimina_en || "") : "";
+      const estadoModalHtml = esRechazada && fechaEliminacionRechazo
+        ? `<div class="modal-estado-rechazo-linea"><span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span><span class="modal-rechazo-eliminacion">Esta solicitud será eliminada automáticamente del sistema el ${escapeHtml(fechaEliminacionRechazo)}.</span></div>`
+        : `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`;
 
       configurarModalObservacionesPanel({
         titulo: "Estado de la solicitud",
         subtitulo: reserva.actividad || "Reserva",
         claseContenido: "modal-contenido",
-        estadoHtml: `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`,
+        estadoHtml: estadoModalHtml,
         contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">${escapeHtml(descripcion)}</p>
@@ -1879,7 +1916,4 @@ async function anularSolicitudSeleccionada() {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
-
-
 

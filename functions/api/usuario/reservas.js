@@ -1,6 +1,7 @@
 import { getUserSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { asegurarTablaHistorialReservas } from "../_reservas_historial.js";
+import { asegurarColumnaRechazoEliminaEn } from "../_reservas_rechazo_plazo.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -77,6 +78,7 @@ export async function onRequestGet(context) {
   try {
     await ejecutarMantenimientoReservas(env);
     await asegurarColumnaObservacionesAdmin(env);
+    await asegurarColumnaRechazoEliminaEn(env);
     await asegurarTablaHistorialReservas(env);
     const user = await getUserSession(request, env.SECRET_KEY);
 
@@ -105,6 +107,7 @@ export async function onRequestGet(context) {
         COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
         r.plazas_prereservadas,
         r.prereserva_expira_en,
+        COALESCE(r.rechazo_elimina_en, '') AS rechazo_elimina_en,
         CASE
           WHEN r.prereserva_expira_en IS NOT NULL
                AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -176,6 +179,7 @@ export async function onRequestGet(context) {
       hora_fin: row.hora_fin || "",
       plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
       prereserva_expira_en: row.prereserva_expira_en || "",
+      rechazo_elimina_en: row.rechazo_elimina_en || "",
       prereserva_vigente: esPrereservaVigente(row),
       plazas_pendientes: calcularPlazasReservadasPendientes(row),
       plazas_asignadas: calcularPlazasAsignadas(row),
