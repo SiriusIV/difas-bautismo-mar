@@ -40,18 +40,31 @@ async function obtenerRequisitosPorActividades(env, actividadIds) {
 
   try {
     const placeholders = ids.map(() => "?").join(", ");
-    const result = await env.DB.prepare(`
-      SELECT actividad_id, texto
-      FROM actividad_requisitos
-      WHERE actividad_id IN (${placeholders})
-      ORDER BY actividad_id ASC, orden ASC, id ASC
-    `).bind(...ids).all();
+    let result;
+    try {
+      result = await env.DB.prepare(`
+        SELECT actividad_id, texto, COALESCE(activo, 1) AS activo
+        FROM actividad_requisitos
+        WHERE actividad_id IN (${placeholders})
+        ORDER BY actividad_id ASC, orden ASC, id ASC
+      `).bind(...ids).all();
+    } catch (error) {
+      result = await env.DB.prepare(`
+        SELECT actividad_id, texto
+        FROM actividad_requisitos
+        WHERE actividad_id IN (${placeholders})
+        ORDER BY actividad_id ASC, orden ASC, id ASC
+      `).bind(...ids).all();
+    }
 
     const mapa = new Map();
     for (const row of result?.results || []) {
       const actividadId = Number(row.actividad_id || 0);
       if (!mapa.has(actividadId)) mapa.set(actividadId, []);
-      mapa.get(actividadId).push(String(row.texto || "").trim());
+      mapa.get(actividadId).push({
+        texto: String(row.texto || "").trim(),
+        activo: Number(row.activo ?? 1) === 0 ? 0 : 1
+      });
     }
     return mapa;
   } catch (_) {

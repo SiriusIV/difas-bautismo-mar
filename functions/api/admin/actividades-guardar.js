@@ -73,10 +73,13 @@ function normalizarRequisitosEntrada(valor) {
   const lista = Array.isArray(valor) ? valor : [];
   return lista
     .map((item) => {
-      if (typeof item === "string") return item.trim();
-      return String(item?.texto || "").trim();
+      const texto = typeof item === "string" ? item.trim() : String(item?.texto || "").trim();
+      return {
+        texto,
+        activo: parsearFlag(typeof item === "string" ? 1 : item?.activo, 1)
+      };
     })
-    .filter(Boolean);
+    .filter((item) => item.texto);
 }
 
 function normalizarDocumentacionActividadEntrada(body = {}) {
@@ -92,9 +95,21 @@ async function asegurarTablaRequisitos(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       actividad_id INTEGER NOT NULL,
       texto TEXT NOT NULL,
+      activo INTEGER NOT NULL DEFAULT 1,
       orden INTEGER NOT NULL DEFAULT 0
     )
   `).run();
+
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE actividad_requisitos
+      ADD COLUMN activo INTEGER NOT NULL DEFAULT 1
+    `).run();
+  } catch (error) {
+    if (!String(error?.message || error || "").toLowerCase().includes("duplicate column")) {
+      throw error;
+    }
+  }
 }
 
 async function guardarRequisitosActividad(env, actividadId, requisitos) {
@@ -110,17 +125,22 @@ async function guardarRequisitosActividad(env, actividadId, requisitos) {
       INSERT INTO actividad_requisitos (
         actividad_id,
         texto,
+        activo,
         orden
       )
-      VALUES (?, ?, ?)
-    `).bind(actividadId, requisitos[i], i + 1).run();
+      VALUES (?, ?, ?, ?)
+    `).bind(actividadId, requisitos[i].texto, requisitos[i].activo ? 1 : 0, i + 1).run();
   }
 }
 
 function requisitosSonIguales(listaA = [], listaB = []) {
   if (listaA.length !== listaB.length) return false;
   for (let i = 0; i < listaA.length; i += 1) {
-    if (String(listaA[i] || "").trim() !== String(listaB[i] || "").trim()) {
+    const textoA = String(listaA[i]?.texto ?? listaA[i] ?? "").trim();
+    const textoB = String(listaB[i]?.texto ?? listaB[i] ?? "").trim();
+    const activoA = parsearFlag(listaA[i]?.activo, 1);
+    const activoB = parsearFlag(listaB[i]?.activo, 1);
+    if (textoA !== textoB || activoA !== activoB) {
       return false;
     }
   }
@@ -164,15 +184,18 @@ function escaparHtml(valor) {
 async function obtenerRequisitosActividad(env, actividadId) {
   await asegurarTablaRequisitos(env);
   const result = await env.DB.prepare(`
-    SELECT texto
+    SELECT texto, COALESCE(activo, 1) AS activo
     FROM actividad_requisitos
     WHERE actividad_id = ?
     ORDER BY orden ASC, id ASC
   `).bind(actividadId).all();
 
   return (result?.results || [])
-    .map((row) => limpiarTexto(row.texto))
-    .filter(Boolean);
+    .map((row) => ({
+      texto: limpiarTexto(row.texto),
+      activo: parsearFlag(row.activo, 1)
+    }))
+    .filter((item) => item.texto);
 }
 
 async function obtenerReservasAfectadasActividad(env, actividadId) {
@@ -740,7 +763,7 @@ export async function onRequestPut(context) {
     }
 
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
-    const requisitosNuevos = p.requisitos_particulares.map((item) => limpiarTexto(item)).filter(Boolean);
+    const requisitosNuevos = p.requisitos_particulares;
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
     const puedeEditarDocumentacionActividad = await usuarioEsResponsableDocumentalActividad(env, session.usuario_id, actual.admin_id);
     const documentacionActividadActual = await leerConfiguracionDocumentalActividad(env, id);

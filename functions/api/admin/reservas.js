@@ -47,9 +47,21 @@ async function asegurarTablaRequisitos(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       actividad_id INTEGER NOT NULL,
       texto TEXT NOT NULL,
+      activo INTEGER NOT NULL DEFAULT 1,
       orden INTEGER NOT NULL DEFAULT 0
     )
   `).run();
+
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE actividad_requisitos
+      ADD COLUMN activo INTEGER NOT NULL DEFAULT 1
+    `).run();
+  } catch (error) {
+    if (!String(error?.message || error || "").toLowerCase().includes("duplicate column")) {
+      throw error;
+    }
+  }
 }
 
 async function obtenerRequisitosActividad(env, actividadId) {
@@ -60,6 +72,7 @@ async function obtenerRequisitosActividad(env, actividadId) {
     SELECT texto
     FROM actividad_requisitos
     WHERE actividad_id = ?
+      AND COALESCE(activo, 1) = 1
     ORDER BY orden ASC, id ASC
   `).bind(id).all();
 

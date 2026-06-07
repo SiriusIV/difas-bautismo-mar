@@ -1629,14 +1629,20 @@
       border-bottom: none;
     }
 
-    .tabla-requisitos .col-acciones {
-      width: 64px;
+    .tabla-requisitos tr.requisito-inactivo .input-requisito {
+      color: #7c8895;
+      opacity: 0.72;
+    }
+
+    .tabla-requisitos .col-activo {
+      width: 54px;
       text-align: left;
       white-space: nowrap;
     }
 
+    .tabla-requisitos .col-acciones,
     .tabla-requisitos .celda-acciones {
-      width: 64px;
+      width: 36px;
       text-align: left;
       vertical-align: middle;
       padding-left: 8px;
@@ -1650,7 +1656,6 @@
       vertical-align: middle;
     }
 
-    .btn-requisito-editar,
     .btn-requisito-eliminar {
       width: 22px;
       height: 22px;
@@ -1664,18 +1669,6 @@
       padding: 0;
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
       vertical-align: middle;
-    }
-
-    .btn-requisito-editar {
-      border: 1px solid #c9dcff;
-      background: #eef4ff;
-      color: #1d4f91;
-    }
-
-    .btn-requisito-editar:hover {
-      background: #ddeafe;
-      border-color: #9ebfe9;
-      transform: translateY(-1px);
     }
 
     .btn-requisito-eliminar {
@@ -1708,20 +1701,60 @@
       display: block;
       text-align: left;
       margin: 0;
+      border-bottom: 1px solid transparent;
     }
 
-    .input-requisito[readonly] {
-      cursor: default;
-    }
-
-    .input-requisito.editando {
+    .input-requisito:focus {
       border-bottom: 1px solid #9ebfe9;
       cursor: text;
     }
 
     .input-requisito:focus {
-      outline: none;
       box-shadow: none;
+    }
+
+    .switch-requisito-activo {
+      position: relative;
+      display: inline-flex;
+      width: 40px;
+      height: 22px;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
+    .switch-requisito-activo input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .slider-requisito-activo {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #cbd5df;
+      transition: background 0.18s ease;
+    }
+
+    .slider-requisito-activo::before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 2px;
+      top: 2px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.18s ease;
+    }
+
+    .switch-requisito-activo input:checked + .slider-requisito-activo {
+      background: #25b46b;
+    }
+
+    .switch-requisito-activo input:checked + .slider-requisito-activo::before {
+      transform: translateX(18px);
     }
 
     .tabla-requisitos-vacia {
@@ -4275,9 +4308,11 @@ async function manejarCambioCriticoCampo(id) {
 }
 
 function crearRequisitoLocal(texto = "") {
+  const valor = typeof texto === "string" ? { texto, activo: 1 } : texto || {};
   return {
     id: `req-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-    texto: String(texto || "").trim()
+    texto: String(valor.texto || "").trim(),
+    activo: valor.activo === false || valor.activo === 0 || valor.activo === "0" ? 0 : 1
   };
 }
 
@@ -4285,17 +4320,23 @@ function normalizarListaRequisitos(lista) {
   return Array.isArray(lista)
     ? lista
         .map((item) => {
-          if (typeof item === "string") return item.trim();
-          return String(item?.texto || "").trim();
+          const texto = typeof item === "string" ? item.trim() : String(item?.texto || "").trim();
+          return {
+            texto,
+            activo: item?.activo === false || item?.activo === 0 || item?.activo === "0" ? 0 : 1
+          };
         })
-        .filter(Boolean)
+        .filter((item) => item.texto)
     : [];
 }
 
 function obtenerRequisitosParticularesFormulario() {
   return requisitosParticulares
-    .map((item) => String(item?.texto || "").trim())
-    .filter(Boolean);
+    .map((item) => ({
+      texto: String(item?.texto || "").trim(),
+      activo: item?.activo === false || item?.activo === 0 || item?.activo === "0" ? 0 : 1
+    }))
+    .filter((item) => item.texto);
 }
 
 function actualizarTituloRequisitos() {
@@ -4339,27 +4380,32 @@ function renderTablaRequisitos() {
   vacia.classList.add("oculto");
 
   requisitosParticulares.forEach((requisito, index) => {
-    const estaEditando = requisitoEditandoId === requisito.id;
     const tr = document.createElement("tr");
+    if (requisito.activo === 0) tr.classList.add("requisito-inactivo");
+
+    const tdActivo = document.createElement("td");
+    tdActivo.className = "col-activo";
+    const switchActivo = document.createElement("label");
+    switchActivo.className = "switch-requisito-activo";
+    switchActivo.setAttribute("title", requisito.activo ? "Desactivar requisito" : "Activar requisito");
+    const inputActivo = document.createElement("input");
+    inputActivo.type = "checkbox";
+    inputActivo.checked = requisito.activo !== 0;
+    inputActivo.setAttribute("aria-label", requisito.activo ? "Requisito activo" : "Requisito inactivo");
+    inputActivo.addEventListener("change", () => {
+      requisitosParticulares[index].activo = inputActivo.checked ? 1 : 0;
+      marcarCambiosPendientesActividad();
+      renderTablaRequisitos();
+    });
+    const sliderActivo = document.createElement("span");
+    sliderActivo.className = "slider-requisito-activo";
+    switchActivo.append(inputActivo, sliderActivo);
+    tdActivo.appendChild(switchActivo);
 
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
     const accionesWrap = document.createElement("div");
     accionesWrap.className = "celda-acciones-wrap";
-
-    const btnEditar = document.createElement("button");
-    btnEditar.type = "button";
-    btnEditar.className = "btn-requisito-editar";
-    btnEditar.setAttribute("aria-label", estaEditando ? "Confirmar edición del requisito" : "Editar requisito");
-    btnEditar.setAttribute("title", estaEditando ? "Confirmar edición" : "Editar requisito");
-    btnEditar.textContent = estaEditando ? "✓" : "✎";
-    btnEditar.addEventListener("click", () => {
-      if (estaEditando) {
-        finalizarEdicionRequisito();
-      } else {
-        activarEdicionRequisito(requisito.id);
-      }
-    });
 
     const btnEliminar = document.createElement("button");
     btnEliminar.type = "button";
@@ -4375,49 +4421,42 @@ function renderTablaRequisitos() {
       marcarCambiosPendientesActividad();
       renderTablaRequisitos();
     });
-    accionesWrap.append(btnEditar, btnEliminar);
+    accionesWrap.append(btnEliminar);
     tdAcciones.appendChild(accionesWrap);
 
     const tdTexto = document.createElement("td");
     const input = document.createElement("input");
     input.type = "text";
     input.className = "input-requisito";
-    if (estaEditando) input.classList.add("editando");
     input.placeholder = "Escribe aquí un requisito particular de esta actividad.";
     input.value = requisito.texto || "";
     input.dataset.requisitoId = requisito.id;
-    input.readOnly = !estaEditando;
     input.addEventListener("input", () => {
       requisitosParticulares[index].texto = input.value;
       marcarCambiosPendientesActividad();
     });
-    input.addEventListener("blur", () => {
-      if (requisitoEditandoId === requisito.id) {
-        finalizarEdicionRequisito();
-      }
-    });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        finalizarEdicionRequisito();
+        input.blur();
       }
       if (event.key === "Escape") {
         event.preventDefault();
         input.value = requisito.texto || "";
-        finalizarEdicionRequisito();
+        input.blur();
       }
     });
     tdTexto.appendChild(input);
 
-    tr.append(tdAcciones, tdTexto);
+    tr.append(tdActivo, tdTexto, tdAcciones);
     tbody.appendChild(tr);
   });
 }
 
 function cargarRequisitosActividad(actividad) {
   requisitoEditandoId = null;
-  requisitosParticulares = normalizarListaRequisitos(actividad?.requisitos_particulares).map((texto) =>
-    crearRequisitoLocal(texto)
+  requisitosParticulares = normalizarListaRequisitos(actividad?.requisitos_particulares).map((requisito) =>
+    crearRequisitoLocal(requisito)
   );
   renderTablaRequisitos();
   actualizarTituloRequisitos();
