@@ -4286,7 +4286,6 @@ function abrirModalRequisitosActividad() {
     ? `<ol style="margin:0; padding-left: 20px;">${documentos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}</ol>`
     : `<p class="modal-info-vacio">Esta actividad no requiere presentar documentación previa.</p>`;
   activarTabInfoActividad(requisitos.length ? "requisitos" : "documentacion");
-  document.getElementById("btnEditarRequisitosActividad").style.display = puedeEditarRequisitosActividadSeleccionada() ? "inline-block" : "none";
   document.getElementById("modalRequisitosActividad").classList.add("activo");
   document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "false");
 }
@@ -4327,6 +4326,25 @@ function activarTabInfoActividad(tab) {
   });
   document.getElementById("panelInfoRequisitosActividad")?.classList.toggle("activo", tabNormalizada === "requisitos");
   document.getElementById("panelInfoDocumentacionActividad")?.classList.toggle("activo", tabNormalizada === "documentacion");
+  actualizarAccionModalInfoActividad(tabNormalizada);
+}
+
+function actualizarAccionModalInfoActividad(tabActiva = "requisitos") {
+  const btn = document.getElementById("btnEditarRequisitosActividad");
+  if (!btn) return;
+
+  if (tabActiva === "documentacion") {
+    const visible = puedeEditarDocumentacionActividadSeleccionada();
+    btn.textContent = "Editar documentación requerida";
+    btn.dataset.accionInfoActividad = "documentacion";
+    btn.style.display = visible ? "inline-block" : "none";
+    return;
+  }
+
+  const visible = puedeEditarRequisitosActividadSeleccionada();
+  btn.textContent = "Editar requisitos";
+  btn.dataset.accionInfoActividad = "requisitos";
+  btn.style.display = visible ? "inline-block" : "none";
 }
 
 function cerrarModalRequisitosActividad() {
@@ -4341,6 +4359,11 @@ function puedeEditarRequisitosActividadSeleccionada() {
   const adminSesionId = Number(usuarioAutenticado?.id || usuarioAutenticado?.usuario_id || 0);
   const adminActividadId = Number(actividadSeleccionada?.admin_id || 0);
   return adminSesionId > 0 && adminActividadId > 0 && adminSesionId === adminActividadId;
+}
+
+function puedeEditarDocumentacionActividadSeleccionada() {
+  if (!actividadSeleccionada) return false;
+  return actividadSeleccionada?.puede_editar_documentacion_actividad === true;
 }
 
     function renderDetalle() {
@@ -4732,6 +4755,11 @@ function continuarSolicitudActividad() {
       location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}&paso=3`;
     }
 
+    function editarDocumentacionActividadActual() {
+      if (!actividadSeleccionada) return;
+      location.href = `admin-actividades.html?id=${encodeURIComponent(actividadSeleccionada.id)}&paso=3`;
+    }
+
     function verReservasActividadActual() {
       if (!actividadSeleccionada) return;
       if (Number(actividadSeleccionada.requiere_reserva || 0) !== 1) return;
@@ -4904,6 +4932,10 @@ function continuarSolicitudActividad() {
     });
     document.getElementById("btnEditarRequisitosActividad").addEventListener("click", function () {
       cerrarModalRequisitosActividad();
+      if (this.dataset.accionInfoActividad === "documentacion") {
+        editarDocumentacionActividadActual();
+        return;
+      }
       editarRequisitosActividadActual();
     });
     document.getElementById("btnCerrarModalRequisitosActividad").addEventListener("click", cerrarModalRequisitosActividad);
