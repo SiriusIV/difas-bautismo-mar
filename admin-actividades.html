@@ -2427,7 +2427,46 @@
       }
 
       .fila-franja-inline {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(96px, 0.42fr);
+        grid-template-areas:
+          "fecha capacidad"
+          "patron patron"
+          "inicio fin"
+          "guardar guardar";
+        gap: 10px 8px;
+        align-items: end;
+      }
+
+      #fr_bloque_fecha {
+        grid-area: fecha;
+      }
+
+      #fr_bloque_patron {
+        grid-area: patron;
+      }
+
+      .fila-franja-inline > .campo-franja-inline:nth-of-type(3) {
+        grid-area: inicio;
+      }
+
+      .fila-franja-inline > .campo-franja-inline:nth-of-type(4) {
+        grid-area: fin;
+      }
+
+      #fr_bloque_capacidad {
+        grid-area: capacidad;
+      }
+
+      .fila-franja-inline:has(#fr_bloque_capacidad.oculto) #fr_bloque_fecha {
+        grid-column: 1 / -1;
+      }
+
+      .campo-franja-inline label {
+        font-size: 12px;
+      }
+
+      .campo-franja-inline input {
+        height: 36px;
       }
 
       .campo-franja-acciones {
@@ -2498,7 +2537,7 @@
         display: grid;
         gap: 0;
         width: 100%;
-        padding: 12px 14px 12px 56px;
+        padding: 12px 14px;
         border: 1px solid #dbe5ee;
         border-radius: 14px;
         background: rgba(255,255,255,0.94);
@@ -2511,12 +2550,6 @@
         border-color: #0b5ed7;
         background: #f8fbff;
         box-shadow: 0 0 0 2px rgba(11, 94, 215, 0.16), 0 8px 20px rgba(15, 45, 75, 0.1);
-      }
-
-      .franja-admin-card-activacion {
-        position: absolute;
-        top: 14px;
-        left: 12px;
       }
 
       .franja-admin-card-row {
@@ -2552,6 +2585,11 @@
 
       .franja-admin-card-value .franja-badge-estado {
         min-width: 0;
+      }
+
+      .franja-admin-card-row-activacion .franja-admin-card-value {
+        display: flex;
+        justify-content: flex-end;
       }
 
       .tabla-franjas-preview {
@@ -5559,7 +5597,10 @@ function renderListaFranjas() {
     if (esMovil) {
       return `
         <article class="franja-admin-card ${seleccionada ? "seleccionada" : ""}" data-franja-id="${f.id}" tabindex="0" role="button" aria-pressed="${seleccionada ? "true" : "false"}">
-          <div class="franja-admin-card-activacion">${toggleHtml}</div>
+          <div class="franja-admin-card-row franja-admin-card-row-activacion">
+            <span class="franja-admin-card-label">Activación</span>
+            <span class="franja-admin-card-value">${toggleHtml}</span>
+          </div>
           <div class="franja-admin-card-row">
             <span class="franja-admin-card-label">Fecha</span>
             <span class="franja-admin-card-value">${programacionHtml}</span>
