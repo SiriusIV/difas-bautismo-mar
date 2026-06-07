@@ -409,7 +409,15 @@ async function notificarReservaEliminadaDocumentacionCritica(env, payload) {
 
 async function obtenerEstadoPrevioSuspensionDocumental(env, reservaId) {
   const id = Number(reservaId || 0);
-  if (!(id > 0)) return "CONFIRMADA";
+  if (!(id > 0)) return "PENDIENTE";
+
+  const resolverEstadoDocumentalReactivado = (estadoEntrada) => {
+    const estado = limpiarTexto(estadoEntrada).toUpperCase();
+    if (estado === "CONFIRMADA") return "CONFIRMADA";
+    if (estado === "PENDIENTE") return "PENDIENTE";
+    if (estado === "RECHAZADA") return "PENDIENTE";
+    return "";
+  };
 
   try {
     const row = await env.DB.prepare(`
@@ -423,21 +431,22 @@ async function obtenerEstadoPrevioSuspensionDocumental(env, reservaId) {
     `).bind(id).first();
 
     const estado = limpiarTexto(row?.estado_origen).toUpperCase();
-    if (["PENDIENTE", "CONFIRMADA"].includes(estado)) return estado;
+    const estadoReactivado = resolverEstadoDocumentalReactivado(estado);
+    if (estadoReactivado) return estadoReactivado;
 
     const rowPrevio = await env.DB.prepare(`
       SELECT estado_destino
       FROM reservas_historial_estados
       WHERE reserva_id = ?
-        AND estado_destino IN ('PENDIENTE', 'CONFIRMADA')
+        AND estado_destino IN ('PENDIENTE', 'CONFIRMADA', 'RECHAZADA')
       ORDER BY fecha_evento DESC, id DESC
       LIMIT 1
     `).bind(id).first();
 
     const estadoPrevio = limpiarTexto(rowPrevio?.estado_destino).toUpperCase();
-    return ["PENDIENTE", "CONFIRMADA"].includes(estadoPrevio) ? estadoPrevio : "CONFIRMADA";
+    return resolverEstadoDocumentalReactivado(estadoPrevio) || "PENDIENTE";
   } catch (_) {
-    return "CONFIRMADA";
+    return "PENDIENTE";
   }
 }
 
