@@ -18,7 +18,8 @@ import {
   leerConfiguracionDocumentalActividad,
   normalizarModoDocumentacionActividad,
   normalizarNombresDocumentosActividad,
-  obtenerCatalogoDocumentosActivosAdmin
+  obtenerCatalogoDocumentosActivosAdmin,
+  resolverDocumentosExigiblesActividad
 } from "../_actividad_documentacion.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import { secretariaEsResponsableDeAdmin } from "../secretaria/_documental.js";
@@ -220,6 +221,92 @@ async function obtenerReservasAfectadasActividad(env, actividadId) {
   `).bind(actividadId).all();
 
   return result?.results || [];
+}
+
+function parsearFechaImpacto(valor) {
+  const texto = limpiarTexto(valor);
+  if (!texto) return null;
+  const fecha = new Date(texto.replace(" ", "T"));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+function reservaEnPlazoCriticoDocumental(reserva = {}) {
+  const inicio = parsearFechaImpacto(reserva?.inicio_reserva);
+  if (!inicio) return false;
+  const limite = new Date(inicio.getTime() - 24 * 60 * 60 * 1000);
+  return limite.getTime() <= Date.now();
+}
+
+function calcularEstadoDocumentoActividad(doc, entrega) {
+  if (!entrega) return "NO_ENVIADO";
+  if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) return "NO_ACTUALIZADO";
+  return limpiarTexto(entrega.estado).toUpperCase() || "EN_REVISION";
+}
+
+function documentacionCompletaActividad(documentosExigibles = [], archivos = []) {
+  if (!Array.isArray(documentosExigibles) || documentosExigibles.length === 0) return true;
+  const archivosPorNombre = new Map((archivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo]));
+  return documentosExigibles.every((doc) => calcularEstadoDocumentoActividad(doc, archivosPorNombre.get(limpiarTexto(doc.nombre))) === "VALIDADO");
+}
+
+async function obtenerArchivosActivosCentroAdmin(env, centroUsuarioId, adminId) {
+  const row = await env.DB.prepare(`
+    SELECT id
+    FROM centro_admin_documentacion
+    WHERE centro_usuario_id = ?
+      AND admin_id = ?
+    LIMIT 1
+  `).bind(centroUsuarioId, adminId).first();
+  const documentacionId = Number(row?.id || 0);
+  if (!(documentacionId > 0)) return [];
+
+  const result = await env.DB.prepare(`
+    SELECT nombre_documento, version_documental, estado, fecha_subida
+    FROM centro_admin_documentacion_archivos
+    WHERE documentacion_id = ?
+      AND activo = 1
+  `).bind(documentacionId).all();
+  return result?.results || [];
+}
+
+async function obtenerReservasCriticasPorCambioDocumentalActividad(env, actividadId, adminId, documentosBase, configuracionNueva) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(
+        CASE
+          WHEN f.fecha IS NOT NULL AND f.hora_inicio IS NOT NULL
+            THEN f.fecha || ' ' || f.hora_inicio
+          ELSE NULL
+        END,
+        CASE
+          WHEN a.fecha_inicio IS NOT NULL
+            THEN a.fecha_inicio || ' 00:00:00'
+          ELSE NULL
+        END
+      ) AS inicio_reserva
+    FROM reservas r
+    INNER JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN franjas f ON f.id = r.franja_id
+    WHERE r.actividad_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+  `).bind(actividadId).all();
+
+  const reservas = (result?.results || []).filter(reservaEnPlazoCriticoDocumental);
+  if (!reservas.length) return [];
+
+  const documentosExigibles = resolverDocumentosExigiblesActividad(documentosBase, configuracionNueva);
+  const salida = [];
+  for (const reserva of reservas) {
+    const archivos = await obtenerArchivosActivosCentroAdmin(env, Number(reserva.usuario_id || 0), adminId);
+    if (!documentacionCompletaActividad(documentosExigibles, archivos)) {
+      salida.push(reserva);
+    }
+  }
+  return salida;
 }
 
 async function notificarCambioRequisitosActividad(env, reservas = [], actividadNombre = "", actor = {}) {
@@ -754,6 +841,7 @@ export async function onRequestPut(context) {
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
+    const confirmadoEliminacionDocumentalCritica = body.confirmado_eliminacion_documental_critica === true || body.confirmado_eliminacion_documental_critica === 1 || body.confirmado_eliminacion_documental_critica === "1";
     const activaActual = Number(actual?.activa || 0) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
 
@@ -788,6 +876,26 @@ export async function onRequestPut(context) {
       documentacionActividadHaCambiado = false;
     }
     const reservasAfectadasRequisitos = requisitosHanCambiado ? await obtenerReservasAfectadasActividad(env, id) : [];
+    const reservasCriticasCambioDocumental = documentacionActividadHaCambiado
+      ? await obtenerReservasCriticasPorCambioDocumentalActividad(
+          env,
+          id,
+          Number(actual.admin_id || 0),
+          catalogoDocumentalActivo,
+          documentacionActividadNueva
+        )
+      : [];
+
+    if (documentacionActividadHaCambiado && reservasCriticasCambioDocumental.length > 0 && !confirmadoEliminacionDocumentalCritica) {
+      return json({
+        ok: false,
+        requiere_confirmacion_eliminacion_documental_critica: true,
+        total_afectadas: reservasCriticasCambioDocumental.length,
+        mensaje: reservasCriticasCambioDocumental.length === 1
+          ? "Existe 1 solicitud dentro del plazo crítico previo al inicio que quedaría sin documentación obligatoria con este cambio. No se recomienda continuar porque se eliminará definitivamente."
+          : `Existen ${reservasCriticasCambioDocumental.length} solicitudes dentro del plazo crítico previo al inicio que quedarían sin documentación obligatoria con este cambio. No se recomienda continuar porque se eliminarán definitivamente.`
+      }, 409);
+    }
 
     if (rol === "SECRETARIA") {
       if (requisitosHanCambiado && reservasAfectadasRequisitos.length > 0 && !confirmadoCambioRequisitos) {

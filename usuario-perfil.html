@@ -1811,6 +1811,17 @@
     </div>
   </div>
 
+  <div id="modalEliminacionDocumentalCritica" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <h3>Eliminación de solicitud por documentación</h3>
+      <p id="textoModalEliminacionDocumentalCritica">La modificación documental dejará sin documentación obligatoria una solicitud dentro del plazo crítico previo al inicio. Si continúas, la solicitud será eliminada del sistema.</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnCancelarEliminacionDocumentalCritica">Cancelar</button>
+        <button type="button" class="btn btn-peligro" id="btnContinuarEliminacionDocumentalCritica">Continuar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalPasswordActual" class="modal-fondo" aria-hidden="true">
       <div class="modal">
         <h3>Validar contraseña actual</h3>
@@ -2069,6 +2080,7 @@
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let organizadorPendienteId = null;
+    let confirmarEliminacionDocumentalCriticaPendiente = false;
     let adminIdPreferentePerfil = null;
     let actividadIdPreferentePerfil = null;
     let forzarCambioPasswordObligatorio = false;
@@ -2670,7 +2682,22 @@
       }
     }
 
-    async function guardarCambiosDetalleDocumentacion() {
+    function abrirModalEliminacionDocumentalCritica(mensaje) {
+      const modal = document.getElementById("modalEliminacionDocumentalCritica");
+      const texto = document.getElementById("textoModalEliminacionDocumentalCritica");
+      if (texto) texto.textContent = mensaje || "La modificación documental dejará sin documentación obligatoria una solicitud dentro del plazo crítico previo al inicio. Si continúas, la solicitud será eliminada del sistema.";
+      modal?.classList.add("activo");
+      modal?.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalEliminacionDocumentalCritica() {
+      confirmarEliminacionDocumentalCriticaPendiente = false;
+      const modal = document.getElementById("modalEliminacionDocumentalCritica");
+      modal?.classList.remove("activo");
+      modal?.setAttribute("aria-hidden", "true");
+    }
+
+    async function guardarCambiosDetalleDocumentacion(confirmarEliminacionDocumentalCritica = false) {
       if (!Number.isInteger(detalleDocumentacionActual) || detalleDocumentacionActual <= 0) return false;
       if (!tieneCambiosPendientesDetalle()) return true;
 
@@ -2722,12 +2749,18 @@
           credentials: "include",
           body: JSON.stringify({
             admin_id: detalleDocumentacionActual,
-            operaciones
+            operaciones,
+            confirmar_eliminacion_documental_critica: confirmarEliminacionDocumentalCritica === true
           })
         });
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data?.ok) {
+          if (res.status === 409 && data?.requiere_confirmacion_eliminacion_documental_critica) {
+            confirmarEliminacionDocumentalCriticaPendiente = true;
+            abrirModalEliminacionDocumentalCritica(data?.mensaje || "");
+            return false;
+          }
           throw new Error(data?.error || "No se pudieron guardar los cambios documentales.");
         }
 
@@ -5291,6 +5324,18 @@
       this.disabled = true;
       try {
         await guardarCambiosDetalleDocumentacion();
+      } finally {
+        this.disabled = false;
+        actualizarAccionesDetalleDocumentacion();
+      }
+    });
+    document.getElementById("btnCancelarEliminacionDocumentalCritica")?.addEventListener("click", cerrarModalEliminacionDocumentalCritica);
+    document.getElementById("btnContinuarEliminacionDocumentalCritica")?.addEventListener("click", async function () {
+      if (!confirmarEliminacionDocumentalCriticaPendiente) return;
+      this.disabled = true;
+      try {
+        const ok = await guardarCambiosDetalleDocumentacion(true);
+        if (ok) cerrarModalEliminacionDocumentalCritica();
       } finally {
         this.disabled = false;
         actualizarAccionesDetalleDocumentacion();

@@ -6238,6 +6238,43 @@ async function borrarFranja(id) {
         return false;
       }
 
+      if (data?.requiere_confirmacion_eliminacion_documental_critica) {
+        mostrarMensaje(
+          "aviso",
+          data?.mensaje || "Este cambio documental eliminará solicitudes dentro del plazo crítico previo al inicio.",
+          {
+            confirmable: true,
+            onAccept: async () => {
+              const payloadConfirmado = { ...payload, confirmado_eliminacion_documental_critica: true, confirmado_cambio_requisitos: true };
+              const resFinal = await fetch("/api/admin/actividades-guardar", {
+                method: esEdicion ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify(payloadConfirmado)
+              });
+
+              const dataFinal = await resFinal.json().catch(() => null);
+              if (!resFinal.ok || !dataFinal?.ok) {
+                mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la actividad.");
+                return;
+              }
+
+              await cargarActividades();
+              const avisoBorrado = await procesarImagenesPendientesPostGuardado();
+              actividadEsBorradorTecnico = false;
+              limpiarCambiosPendientesActividad();
+              mostrarMensaje(
+                "ok",
+                avisoBorrado
+                  ? `${dataFinal.mensaje || "Actividad guardada correctamente."} ${avisoBorrado}`
+                  : (dataFinal.mensaje || "Actividad guardada correctamente.")
+              );
+            }
+          }
+        );
+        return false;
+      }
+
       if (res.ok && data.ok) {
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;

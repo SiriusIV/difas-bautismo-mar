@@ -135,6 +135,47 @@ export function construirEmailHtmlReservaCondicionadaDocumentacion({
   `;
 }
 
+export function construirEmailTextoReservaEliminadaDocumentacionCritica({
+  admin,
+  centro,
+  motivo_texto,
+  reservas = []
+}) {
+  const organizador = nombreVisibleAdmin(admin);
+  return [
+    "Tu solicitud ha sido eliminada del sistema por no conservar la documentacion obligatoria requerida dentro del plazo minimo previo al inicio de la actividad.",
+    "",
+    `${motivo_texto || "Se ha producido un cambio documental que deja la solicitud sin la documentacion obligatoria exigida."}`,
+    "",
+    `Organizador: ${organizador}`,
+    `Centro: ${limpiarTexto(centro?.centro)}`,
+    `Solicitudes eliminadas: ${construirLineaReservas(reservas) || "Sin codigo disponible"}`,
+    "",
+    "Al encontrarse la actividad dentro del plazo critico previo al inicio, ya no es posible suspender la solicitud para regularizarla."
+  ].join("\n");
+}
+
+export function construirEmailHtmlReservaEliminadaDocumentacionCritica({
+  admin,
+  centro,
+  motivo_texto,
+  reservas = []
+}) {
+  const organizador = escaparHtml(nombreVisibleAdmin(admin));
+  const reservasTexto = escaparHtml(construirLineaReservas(reservas) || "Sin codigo disponible");
+
+  return `
+    <p>Tu solicitud ha sido eliminada del sistema por no conservar la documentacion obligatoria requerida dentro del plazo minimo previo al inicio de la actividad.</p>
+    <p>${escaparHtml(motivo_texto || "Se ha producido un cambio documental que deja la solicitud sin la documentacion obligatoria exigida.")}</p>
+    <p><strong>Organizador:</strong> ${organizador}</p>
+    <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
+    <p><strong>Solicitudes eliminadas:</strong> ${reservasTexto}</p>
+    <div style="margin:14px 0;padding:12px 14px;border-radius:10px;border:1px solid #f0c36d;background:#fff6df;color:#704600;">
+      Al encontrarse la actividad dentro del plazo critico previo al inicio, ya no es posible suspender la solicitud para regularizarla.
+    </div>
+  `;
+}
+
 export function construirEmailTextoReservaReactivadaDocumentacion({
   admin,
   centro,

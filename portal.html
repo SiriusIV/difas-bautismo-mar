@@ -4223,7 +4223,10 @@ function renderMapaActividad(a) {
 function abrirModalRequisitosActividad() {
   const actividad = actividadSeleccionada;
   const requisitos = Array.isArray(actividad?.requisitos_particulares)
-    ? actividad.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean)
+    ? actividad.requisitos_particulares
+        .filter((item) => !(item && typeof item === "object") || item.activo !== 0)
+        .map((item) => String(typeof item === "object" ? item.texto : item || "").trim())
+        .filter(Boolean)
     : [];
   if (!actividad || !requisitos.length) return;
 
@@ -4343,7 +4346,10 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
       btnSolicitar.textContent = "Solicitar actividad";
-      const tieneRequisitos = Array.isArray(a.requisitos_particulares) && a.requisitos_particulares.some((item) => String(item || "").trim() !== "");
+      const tieneRequisitos = Array.isArray(a.requisitos_particulares) && a.requisitos_particulares.some((item) => {
+        if (item && typeof item === "object" && item.activo === 0) return false;
+        return String(item && typeof item === "object" ? item.texto : item || "").trim() !== "";
+      });
       const admiteReservas = Number(a.requiere_reserva || 0) === 1;
       btnRequisitos.style.display = tieneRequisitos ? "inline-block" : "none";
       

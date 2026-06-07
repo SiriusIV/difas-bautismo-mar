@@ -4,8 +4,10 @@ import {
 } from "./_email.js";
 import {
   construirEmailHtmlReservaCondicionadaDocumentacion,
+  construirEmailHtmlReservaEliminadaDocumentacionCritica,
   construirEmailHtmlReservaReactivadaDocumentacion,
   construirEmailTextoReservaCondicionadaDocumentacion,
+  construirEmailTextoReservaEliminadaDocumentacionCritica,
   construirEmailTextoReservaReactivadaDocumentacion
 } from "./_email_reservas_documentacion.js";
 import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
@@ -284,9 +286,23 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
       r.contacto,
       r.email,
       r.fecha_solicitud,
-      r.fecha_modificacion
+      r.fecha_modificacion,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(
+        CASE
+          WHEN f.fecha IS NOT NULL AND f.hora_inicio IS NOT NULL
+            THEN f.fecha || ' ' || f.hora_inicio
+          ELSE NULL
+        END,
+        CASE
+          WHEN a.fecha_inicio IS NOT NULL
+            THEN a.fecha_inicio || ' 00:00:00'
+          ELSE NULL
+        END
+      ) AS inicio_reserva
     FROM reservas r
     INNER JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
       AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
@@ -294,6 +310,13 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
   `).bind(adminId, usuarioId).all();
 
   return rows?.results || [];
+}
+
+function reservaEnPlazoCriticoDocumental(reserva = {}) {
+  const inicio = parsearFecha(reserva?.inicio_reserva);
+  if (!inicio) return false;
+  const limite = new Date(inicio.getTime() - 24 * 60 * 60 * 1000);
+  return limite.getTime() <= Date.now();
 }
 
 function construirPendientes(documentosActivos, archivosActivos) {
@@ -340,6 +363,23 @@ async function actualizarEstadoReserva(env, reservaId, nuevoEstado) {
   `).bind(nuevoEstado, reservaId).run();
 }
 
+async function eliminarReservaPorDocumentacionCritica(env, reservaId) {
+  const id = Number(reservaId || 0);
+  if (!(id > 0)) return false;
+
+  await env.DB.prepare(`
+    DELETE FROM visitantes
+    WHERE reserva_id = ?
+  `).bind(id).run();
+
+  const result = await env.DB.prepare(`
+    DELETE FROM reservas
+    WHERE id = ?
+  `).bind(id).run();
+
+  return Number(result?.meta?.changes || 0) > 0;
+}
+
 async function notificarReservaCondicionada(env, payload) {
   return await enviarEmail(env, {
     to: payload?.centro?.email || "",
@@ -355,6 +395,15 @@ async function notificarReservaReactivada(env, payload) {
     subject: `[Reservas] Solicitud reactivada en ${nombreVisibleAdmin(payload?.admin)}`,
     text: construirEmailTextoReservaReactivadaDocumentacion(payload),
     html: construirEmailHtmlReservaReactivadaDocumentacion(payload)
+  });
+}
+
+async function notificarReservaEliminadaDocumentacionCritica(env, payload) {
+  return await enviarEmail(env, {
+    to: payload?.centro?.email || "",
+    subject: `[Reservas] Solicitud eliminada por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
+    text: construirEmailTextoReservaEliminadaDocumentacionCritica(payload),
+    html: construirEmailHtmlReservaEliminadaDocumentacionCritica(payload)
   });
 }
 
@@ -523,6 +572,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
     admin_id: adminIdNumerico,
     motivo,
     total_solicitantes_revisados: 0,
+    reservas_eliminadas_plazo_critico: 0,
     reservas_suspendidas: 0,
     reservas_reactivadas: 0,
     notificaciones_condicionadas: 0,
@@ -586,6 +636,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
     );
     const reservasSuspendidas = [];
     const reservasReactivadas = [];
+    const reservasEliminadas = [];
     const pendientesPorReserva = new Map();
 
     for (const reserva of reservas) {
@@ -614,6 +665,19 @@ export async function recalcularImpactoDocumentalReservas(env, {
             estado_reactivado: estadoDestino
           });
           resumen.reservas_reactivadas += 1;
+        }
+      } else if (reservaEnPlazoCriticoDocumental(reserva)) {
+        const eliminada = await eliminarReservaPorDocumentacionCritica(env, Number(reserva.id || 0));
+        if (eliminada) {
+          await registrarEventoReserva(env, {
+            reservaId: Number(reserva.id || 0),
+            accion: "ELIMINACION_DOCUMENTAL_CRITICA",
+            estadoOrigen: estadoReserva,
+            estadoDestino: "ELIMINADA",
+            observaciones: "La solicitud no conserva la documentación obligatoria requerida dentro de las 24 horas previas al inicio."
+          });
+          reservasEliminadas.push(reserva);
+          resumen.reservas_eliminadas_plazo_critico += 1;
         }
       } else if (estadoReserva !== "SUSPENDIDA") {
         await actualizarEstadoReserva(env, Number(reserva.id || 0), "SUSPENDIDA");
@@ -660,6 +724,44 @@ export async function recalcularImpactoDocumentalReservas(env, {
         await crearNotificacionReservaCondicionada(env, payloadNotificacion);
       } catch (errorNotificacionInterna) {
         console.error("No se pudo crear la notificación interna de suspensión documental.", {
+          admin_id: Number(adminIdNumerico || 0),
+          centro_usuario_id: Number(solicitante.id || 0),
+          error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
+        });
+      }
+    }
+
+    if (reservasEliminadas.length) {
+      const contactoCorreo = resolverContactoReservaParaCorreo(reservasEliminadas);
+      const payloadNotificacion = {
+        admin,
+        responsable: resolucion.responsable,
+        centro: {
+          usuario_id: Number(solicitante.id || 0),
+          centro: solicitante.centro || "",
+          contacto: contactoCorreo.contacto,
+          email: contactoCorreo.email
+        },
+        motivo_texto: motivoImpactoDocumentalTexto(motivo),
+        reservas: reservasEliminadas,
+        documentos_pendientes: unificarPendientesReservas(
+          reservasEliminadas.map((reserva) => pendientesPorReserva.get(Number(reserva.id || 0)) || [])
+        ),
+        enlace_perfil: enlacePerfil
+      };
+      const resultado = await notificarReservaEliminadaDocumentacionCritica(env, payloadNotificacion);
+      if (resultado.ok) resumen.notificaciones_condicionadas += 1;
+      try {
+        await crearNotificacion(env, {
+          usuarioId: Number(solicitante.id || 0),
+          rolDestino: "SOLICITANTE",
+          tipo: "DOCUMENTACION",
+          titulo: "Solicitud eliminada por documentación",
+          mensaje: `Una o varias solicitudes de ${nombreVisibleAdmin(admin)} han sido eliminadas por no conservar la documentación obligatoria dentro del plazo mínimo previo al inicio.`,
+          urlDestino: enlacePerfil
+        });
+      } catch (errorNotificacionInterna) {
+        console.error("No se pudo crear la notificación interna de eliminación documental crítica.", {
           admin_id: Number(adminIdNumerico || 0),
           centro_usuario_id: Number(solicitante.id || 0),
           error: errorNotificacionInterna?.message || String(errorNotificacionInterna || "")
@@ -741,16 +843,20 @@ export async function recalcularImpactoDocumentalReservas(env, {
           estado_anterior: reserva.estado || "",
           estado_nuevo: reservasSuspendidas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
             ? "SUSPENDIDA"
-            : (reactivada?.estado_reactivado || reserva.estado || "")
+            : reservasEliminadas.some((item) => Number(item.id || 0) === Number(reserva.id || 0))
+              ? "ELIMINADA"
+              : (reactivada?.estado_reactivado || reserva.estado || "")
         };
       }),
       estado_documental: estadoGlobal,
       pendientes: pendientesSinCambios,
       accion: reservasSuspendidas.length
         ? "SUSPENDIDA"
-        : reservasReactivadas.length
-          ? "REACTIVADA"
-          : "SIN_CAMBIOS"
+        : reservasEliminadas.length
+          ? "ELIMINADA"
+          : reservasReactivadas.length
+            ? "REACTIVADA"
+            : "SIN_CAMBIOS"
     });
   }
 

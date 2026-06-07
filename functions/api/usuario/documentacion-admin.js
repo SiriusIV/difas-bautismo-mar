@@ -452,6 +452,88 @@ function construirEntregasDesdeOperaciones(documentos, archivosExistentes, opera
   return entregas;
 }
 
+function construirArchivosSimuladosDesdeEntregas(documentos, entregas, archivosExistentes = []) {
+  const entregasPorId = new Map((entregas || []).map((item) => [Number(item.documento_id || 0), item]));
+  const existentesPorNombre = indexarArchivosActivosPorDocumento(archivosExistentes || []).porNombre;
+  const ahora = new Date().toISOString().replace("T", " ").slice(0, 19);
+
+  return (documentos || [])
+    .map((doc) => {
+      const entrega = entregasPorId.get(Number(doc.id || 0));
+      if (!entrega?.archivo_url) return null;
+      const existente = existentesPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      if (existente && limpiarTexto(existente.archivo_url) === limpiarTexto(entrega.archivo_url)) {
+        return existente;
+      }
+      return {
+        nombre_documento: doc.nombre,
+        archivo_url: entrega.archivo_url,
+        version_documental: Number(doc.version_documental || 0),
+        estado: "EN_REVISION",
+        fecha_subida: ahora
+      };
+    })
+    .filter(Boolean);
+}
+
+function documentacionCompletaParaReserva(documentosActividad, archivosSimulados) {
+  return calcularEstadoEfectivo(documentosActividad, archivosSimulados) === "VALIDADA";
+}
+
+function estaEnPlazoCriticoDocumental(reserva = {}) {
+  const fecha = parsearFechaComparable(reserva?.inicio_reserva);
+  if (!fecha) return false;
+  const limite = new Date(fecha.getTime() - 24 * 60 * 60 * 1000);
+  return limite.getTime() <= Date.now();
+}
+
+async function obtenerReservasCriticasAfectadasPorEntregas(env, adminId, usuarioId, documentosBase, archivosSimulados) {
+  const rows = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.codigo_reserva,
+      r.actividad_id,
+      r.estado,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(
+        CASE
+          WHEN f.fecha IS NOT NULL AND f.hora_inicio IS NOT NULL
+            THEN f.fecha || ' ' || f.hora_inicio
+          ELSE NULL
+        END,
+        CASE
+          WHEN a.fecha_inicio IS NOT NULL
+            THEN a.fecha_inicio || ' 00:00:00'
+          ELSE NULL
+        END
+      ) AS inicio_reserva
+    FROM reservas r
+    INNER JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN franjas f ON f.id = r.franja_id
+    WHERE a.admin_id = ?
+      AND r.usuario_id = ?
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+  `).bind(adminId, usuarioId).all();
+
+  const reservas = rows?.results || [];
+  if (!reservas.length) return [];
+
+  const actividadIds = Array.from(new Set(reservas.map((reserva) => Number(reserva.actividad_id || 0)).filter(Boolean)));
+  const configuraciones = new Map();
+  for (const actividadId of actividadIds) {
+    configuraciones.set(actividadId, await leerConfiguracionDocumentalActividad(env, actividadId));
+  }
+
+  return reservas.filter((reserva) => {
+    if (!estaEnPlazoCriticoDocumental(reserva)) return false;
+    const documentosActividad = resolverDocumentosExigiblesActividad(
+      documentosBase,
+      configuraciones.get(Number(reserva.actividad_id || 0)) || null
+    );
+    return !documentacionCompletaParaReserva(documentosActividad, archivosSimulados);
+  });
+}
+
 function resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIds = []) {
   const archivosPorNombre = new Map(
     (archivosFinales || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
@@ -725,6 +807,34 @@ export async function onRequestPost(context) {
           });
           cambiosRealesIds.add(Number(doc.id));
         }
+      }
+    }
+
+    if (cambiosRealesIds.size > 0 && body?.confirmar_eliminacion_documental_critica !== true) {
+      const archivosSimulados = construirArchivosSimuladosDesdeEntregas(documentos, entregas, archivosExistentes);
+      const reservasCriticas = await obtenerReservasCriticasAfectadasPorEntregas(
+        env,
+        adminId,
+        Number(usuario.id || 0),
+        documentos,
+        archivosSimulados
+      );
+
+      if (reservasCriticas.length > 0) {
+        return json({
+          ok: false,
+          requiere_confirmacion_eliminacion_documental_critica: true,
+          total_reservas_afectadas: reservasCriticas.length,
+          reservas_afectadas: reservasCriticas.map((reserva) => ({
+            id: Number(reserva.id || 0),
+            codigo_reserva: reserva.codigo_reserva || "",
+            actividad_nombre: reserva.actividad_nombre || "Actividad",
+            inicio_reserva: reserva.inicio_reserva || ""
+          })),
+          mensaje: reservasCriticas.length === 1
+            ? "La modificación documental dejará sin documentación obligatoria una solicitud dentro del plazo crítico previo al inicio. Si continúas, esa solicitud será eliminada del sistema."
+            : `La modificación documental dejará sin documentación obligatoria ${reservasCriticas.length} solicitudes dentro del plazo crítico previo al inicio. Si continúas, esas solicitudes serán eliminadas del sistema.`
+        }, 409);
       }
     }
 
