@@ -1262,6 +1262,53 @@
       text-align: center;
     }
 
+    .modal-info-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 4px;
+      margin: 0 0 14px;
+      border: 1px solid #d8e4ef;
+      border-radius: 999px;
+      background: #f6f9fc;
+    }
+
+    .modal-info-tab {
+      flex: 1 1 0;
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: transparent;
+      color: #123a63;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .modal-info-tab.activa {
+      background: #0b5ed7;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(11, 94, 215, 0.22);
+    }
+
+    .modal-info-panel {
+      display: none;
+      color: #243648;
+      line-height: 1.6;
+    }
+
+    .modal-info-panel.activo {
+      display: block;
+    }
+
+    .modal-info-vacio {
+      margin: 0;
+      padding: 12px 14px;
+      border: 1px dashed #c6d6e5;
+      border-radius: 10px;
+      background: #f8fbff;
+      color: #4a5a6a;
+    }
+
     .campo {
       margin-bottom: 10px;
     }
@@ -2304,7 +2351,12 @@
     <div class="modal-login" style="max-width: 680px;">
       <h3>Más información de la actividad</h3>
       <p id="subtituloModalRequisitosActividad" style="margin: 0 0 14px; color: #4a5a6a; line-height: 1.55;"></p>
-      <div id="contenidoModalRequisitosActividad" style="color: #243648; line-height: 1.6;"></div>
+      <div class="modal-info-tabs" role="tablist" aria-label="Más información de la actividad">
+        <button type="button" class="modal-info-tab activa" id="tabInfoRequisitosActividad" data-tab-info-actividad="requisitos" role="tab" aria-selected="true">Requisitos</button>
+        <button type="button" class="modal-info-tab" id="tabInfoDocumentacionActividad" data-tab-info-actividad="documentacion" role="tab" aria-selected="false">Documentación requerida</button>
+      </div>
+      <div id="panelInfoRequisitosActividad" class="modal-info-panel activo" role="tabpanel" aria-labelledby="tabInfoRequisitosActividad"></div>
+      <div id="panelInfoDocumentacionActividad" class="modal-info-panel" role="tabpanel" aria-labelledby="tabInfoDocumentacionActividad"></div>
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:18px;">
         <button class="btn" id="btnEditarRequisitosActividad" type="button" style="display:none;">Editar requisitos</button>
         <button class="btn btn-admin" id="btnCerrarModalRequisitosActividad">Cerrar</button>
@@ -4222,23 +4274,59 @@ function renderMapaActividad(a) {
 
 function abrirModalRequisitosActividad() {
   const actividad = actividadSeleccionada;
-  const requisitos = Array.isArray(actividad?.requisitos_particulares)
+  const requisitos = obtenerRequisitosActivosActividad(actividad);
+  const documentos = obtenerDocumentosExigiblesActividad(actividad);
+  if (!actividad || (!requisitos.length && !documentos.length)) return;
+
+  document.getElementById("subtituloModalRequisitosActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
+  document.getElementById("panelInfoRequisitosActividad").innerHTML = requisitos.length
+    ? `<ol style="margin:0; padding-left: 20px;">${requisitos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}</ol>`
+    : `<p class="modal-info-vacio">Esta actividad no tiene requisitos particulares activos.</p>`;
+  document.getElementById("panelInfoDocumentacionActividad").innerHTML = documentos.length
+    ? `<ol style="margin:0; padding-left: 20px;">${documentos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}</ol>`
+    : `<p class="modal-info-vacio">Esta actividad no requiere presentar documentación previa.</p>`;
+  activarTabInfoActividad(requisitos.length ? "requisitos" : "documentacion");
+  document.getElementById("btnEditarRequisitosActividad").style.display = puedeEditarRequisitosActividadSeleccionada() ? "inline-block" : "none";
+  document.getElementById("modalRequisitosActividad").classList.add("activo");
+  document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "false");
+}
+
+function obtenerRequisitosActivosActividad(actividad) {
+  return Array.isArray(actividad?.requisitos_particulares)
     ? actividad.requisitos_particulares
         .filter((item) => !(item && typeof item === "object") || item.activo !== 0)
         .map((item) => String(typeof item === "object" ? item.texto : item || "").trim())
         .filter(Boolean)
     : [];
-  if (!actividad || !requisitos.length) return;
+}
 
-  document.getElementById("subtituloModalRequisitosActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
-  document.getElementById("contenidoModalRequisitosActividad").innerHTML = `
-    <ol style="margin:0; padding-left: 20px;">
-      ${requisitos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}
-    </ol>
-  `;
-  document.getElementById("btnEditarRequisitosActividad").style.display = puedeEditarRequisitosActividadSeleccionada() ? "inline-block" : "none";
-  document.getElementById("modalRequisitosActividad").classList.add("activo");
-  document.getElementById("modalRequisitosActividad").setAttribute("aria-hidden", "false");
+function obtenerDocumentosExigiblesActividad(actividad) {
+  const resumen = actividad?.documentacion_actividad || {};
+  const candidatos = Array.isArray(resumen.documentos_exigibles)
+    ? resumen.documentos_exigibles
+    : Array.isArray(resumen.documentos_exigidos)
+      ? resumen.documentos_exigidos
+    : Array.isArray(resumen.documentos)
+      ? resumen.documentos
+      : [];
+  return candidatos
+    .map((item) => String(item?.nombre || item?.titulo || item || "").trim())
+    .filter(Boolean);
+}
+
+function actividadTieneMasInformacion(actividad) {
+  return obtenerRequisitosActivosActividad(actividad).length > 0 || obtenerDocumentosExigiblesActividad(actividad).length > 0;
+}
+
+function activarTabInfoActividad(tab) {
+  const tabNormalizada = tab === "documentacion" ? "documentacion" : "requisitos";
+  document.querySelectorAll("[data-tab-info-actividad]").forEach((btn) => {
+    const activa = btn.dataset.tabInfoActividad === tabNormalizada;
+    btn.classList.toggle("activa", activa);
+    btn.setAttribute("aria-selected", activa ? "true" : "false");
+  });
+  document.getElementById("panelInfoRequisitosActividad")?.classList.toggle("activo", tabNormalizada === "requisitos");
+  document.getElementById("panelInfoDocumentacionActividad")?.classList.toggle("activo", tabNormalizada === "documentacion");
 }
 
 function cerrarModalRequisitosActividad() {
@@ -4346,12 +4434,9 @@ if (Number(a.usa_franjas || 0) === 1 && Number(a.completa_calculada || 0) === 1)
       const btnReservas = document.getElementById("btnVerReservasActividad");
 
       btnSolicitar.textContent = "Solicitar actividad";
-      const tieneRequisitos = Array.isArray(a.requisitos_particulares) && a.requisitos_particulares.some((item) => {
-        if (item && typeof item === "object" && item.activo === 0) return false;
-        return String(item && typeof item === "object" ? item.texto : item || "").trim() !== "";
-      });
+      const tieneMasInformacion = actividadTieneMasInformacion(a);
       const admiteReservas = Number(a.requiere_reserva || 0) === 1;
-      btnRequisitos.style.display = tieneRequisitos ? "inline-block" : "none";
+      btnRequisitos.style.display = tieneMasInformacion ? "inline-block" : "none";
       
       btnEditar.style.display = (esAdmin() || esSecretaria()) ? "inline-flex" : "none";
       btnEditar.title = esSecretaria() ? "Editar requisitos y documentación" : "Editar actividad";
@@ -4814,6 +4899,9 @@ function continuarSolicitudActividad() {
       await cerrarModalNotificacionesPortal();
     });
     document.getElementById("btnVerRequisitosActividad").addEventListener("click", abrirModalRequisitosActividad);
+    document.querySelectorAll("[data-tab-info-actividad]").forEach((btn) => {
+      btn.addEventListener("click", () => activarTabInfoActividad(btn.dataset.tabInfoActividad));
+    });
     document.getElementById("btnEditarRequisitosActividad").addEventListener("click", function () {
       cerrarModalRequisitosActividad();
       editarRequisitosActividadActual();
