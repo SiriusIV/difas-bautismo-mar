@@ -1213,6 +1213,10 @@
       border-bottom: none;
     }
 
+    .franjas-mobile-list {
+      display: none;
+    }
+
     .franja-programacion-admin {
       display: inline-flex;
       align-items: center;
@@ -2442,14 +2446,79 @@
       }
 
       .tabla-wrap-franjas {
-        overflow-x: auto;
-        width: 100%;
-        max-width: 100%;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: visible;
       }
 
       .tabla-franjas-admin {
-        min-width: 620px;
+        display: none;
+      }
+
+      .franjas-mobile-list {
+        display: grid;
+        gap: 10px;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .franja-admin-card {
+        position: relative;
+        display: grid;
+        gap: 0;
+        width: 100%;
+        padding: 12px 14px 12px 56px;
+        border: 1px solid #dbe5ee;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.94);
+        box-shadow: 0 2px 10px rgba(15, 45, 75, 0.05);
+        cursor: pointer;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      }
+
+      .franja-admin-card.seleccionada {
+        border-color: #0b5ed7;
+        background: #f8fbff;
+        box-shadow: 0 0 0 2px rgba(11, 94, 215, 0.16), 0 8px 20px rgba(15, 45, 75, 0.1);
+      }
+
+      .franja-admin-card-activacion {
+        position: absolute;
+        top: 14px;
+        left: 12px;
+      }
+
+      .franja-admin-card-row {
+        display: grid;
+        grid-template-columns: minmax(96px, 0.45fr) minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-height: 34px;
+        padding: 7px 0;
+        border-bottom: 1px solid #e7edf3;
+      }
+
+      .franja-admin-card-row:last-child {
+        border-bottom: none;
+      }
+
+      .franja-admin-card-label {
+        color: var(--brand);
+        font-weight: 800;
+        line-height: 1.15;
+      }
+
+      .franja-admin-card-value {
+        min-width: 0;
+        color: #2d3843;
+        line-height: 1.25;
+        text-align: left;
+      }
+
+      .franja-admin-card-value .franja-programacion-admin {
+        display: inline;
+      }
+
+      .franja-admin-card-value .franja-badge-estado {
+        min-width: 0;
       }
 
       .tabla-franjas-preview {
@@ -5448,6 +5517,38 @@ function renderListaFranjas() {
       </label>
     `;
 
+    if (esMovil) {
+      return `
+        <article class="franja-admin-card ${seleccionada ? "seleccionada" : ""}" data-franja-id="${f.id}" tabindex="0" role="button" aria-pressed="${seleccionada ? "true" : "false"}">
+          <div class="franja-admin-card-activacion">${toggleHtml}</div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Fecha</span>
+            <span class="franja-admin-card-value">${programacionHtml}</span>
+          </div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Estado</span>
+            <span class="franja-admin-card-value"><span class="franja-badge-estado ${estadoClase}">${estadoTexto}</span></span>
+          </div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Horario</span>
+            <span class="franja-admin-card-value">${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}</span>
+          </div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Capacidad</span>
+            <span class="franja-admin-card-value">${capacidad}</span>
+          </div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Ocupadas</span>
+            <span class="franja-admin-card-value">${ocupadas}</span>
+          </div>
+          <div class="franja-admin-card-row">
+            <span class="franja-admin-card-label">Disponibles</span>
+            <span class="franja-admin-card-value">${disponibles}</span>
+          </div>
+        </article>
+      `;
+    }
+
     return `
       <tr class="${seleccionada ? "seleccionada" : ""}" data-franja-id="${f.id}">
         <td class="col-franja-activa">${toggleHtml}</td>
@@ -5461,28 +5562,37 @@ function renderListaFranjas() {
     `;
   }).join("");
 
-  wrap.innerHTML = `
-    <div class="tabla-wrap-franjas">
-    <table class="tabla-franjas-admin">
-      <thead>
-        <tr>
-          <th class="col-franja-activa"></th>
-          <th>Fecha / Periodicidad</th>
-          <th class="col-estado-franja">Estado</th>
-          <th class="col-horario-franja">Horario</th>
-          <th class="col-num">Capacidad</th>
-          <th class="col-num">Ocupadas</th>
-          <th class="col-num">Disponibles</th>
-        </tr>
-      </thead>
-      <tbody>${filas}</tbody>
-    </table>
-    </div>
-  `;
+  if (esMovil) {
+    wrap.innerHTML = `<div class="franjas-mobile-list">${filas}</div>`;
+  } else {
+    wrap.innerHTML = `
+      <div class="tabla-wrap-franjas">
+      <table class="tabla-franjas-admin">
+        <thead>
+          <tr>
+            <th class="col-franja-activa"></th>
+            <th>Fecha / Periodicidad</th>
+            <th class="col-estado-franja">Estado</th>
+            <th class="col-horario-franja">Horario</th>
+            <th class="col-num">Capacidad</th>
+            <th class="col-num">Ocupadas</th>
+            <th class="col-num">Disponibles</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+      </div>
+    `;
+  }
 
-  wrap.querySelectorAll("tbody tr[data-franja-id]").forEach((fila) => {
+  wrap.querySelectorAll("[data-franja-id]").forEach((fila) => {
     fila.addEventListener("click", (event) => {
       if (event.target.closest("input, button, a, label")) return;
+      seleccionarFranja(fila.dataset.franjaId);
+    });
+    fila.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
       seleccionarFranja(fila.dataset.franjaId);
     });
   });
