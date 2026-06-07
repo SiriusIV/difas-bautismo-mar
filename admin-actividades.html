@@ -1813,6 +1813,39 @@
       cursor: pointer;
     }
 
+    .btn-documentacion-ver-base {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #c9d6e4;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--brand);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .btn-documentacion-ver-base:hover:not(:disabled) {
+      border-color: #8fb2d8;
+      box-shadow: 0 4px 10px rgba(17, 63, 103, .16);
+      transform: translateY(-1px);
+    }
+
+    .btn-documentacion-ver-base:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-documentacion-ver-base svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+    }
+
     .documentacion-actividad-acciones {
       display: flex;
       gap: 10px;
@@ -4505,8 +4538,12 @@ function normalizarCatalogoDocumentacionActividad(lista) {
   return (Array.isArray(lista) ? lista : [])
     .map((item) => ({
       id: Number(item?.id || 0),
+      admin_id: Number(item?.admin_id || 0),
       nombre: String(item?.nombre || "").trim(),
       descripcion: String(item?.descripcion || "").trim(),
+      archivo_url: String(item?.archivo_url || "").trim(),
+      version_documental: Number(item?.version_documental || 0),
+      fecha_actualizacion: String(item?.fecha_actualizacion || "").trim(),
       orden: Number(item?.orden || 0)
     }))
     .filter((item) => {
@@ -4595,6 +4632,21 @@ function obtenerDocumentosDocumentacionActividadParaGuardar() {
   return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
 }
 
+function obtenerDocumentoCatalogoDocumentacionActividad(nombre) {
+  const clave = String(nombre || "").trim().toUpperCase();
+  if (!clave) return null;
+  return catalogoDocumentacionActividad.find((doc) =>
+    String(doc.nombre || "").trim().toUpperCase() === clave
+  ) || null;
+}
+
+function abrirDocumentoBaseDocumentacionActividad(nombre) {
+  const documento = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
+  const url = String(documento?.archivo_url || "").trim();
+  if (!url) return;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 function agregarDocumentoSeleccionadoDocumentacionActividad() {
   if (!puedeEditarDocumentacionActividad) return false;
   const select = document.getElementById("documentacionActividadSelect");
@@ -4655,12 +4707,15 @@ function actualizarBotonDocumentacionActividadMovil(opcionesDisponibles = obtene
 function renderSelectDocumentacionActividad() {
   const select = document.getElementById("documentacionActividadSelect");
   const btnAgregar = document.getElementById("btnAgregarDocumentoActividad");
+  const controles = document.querySelector(".documentacion-actividad-controles");
   if (!select || !btnAgregar) return;
 
   const opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad();
+  if (controles) controles.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
+  btnAgregar.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
 
   if (!puedeEditarDocumentacionActividad) {
-    select.innerHTML = `<option value="">Solo consulta</option>`;
+    select.innerHTML = "";
     select.disabled = true;
     btnAgregar.disabled = true;
     actualizarBotonDocumentacionActividadMovil([]);
@@ -4755,14 +4810,38 @@ function renderConfiguracionDocumentacionActividad() {
 
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
+
+    if (!puedeEditarDocumentacionActividad) {
+      const documentoBase = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
+      const btnVer = document.createElement("button");
+      btnVer.type = "button";
+      btnVer.className = "btn-documentacion-ver-base";
+      btnVer.setAttribute("aria-label", `Ver impreso base ${nombre}`);
+      btnVer.setAttribute("title", documentoBase?.archivo_url ? "Ver impreso base" : "Impreso base no disponible");
+      btnVer.disabled = !documentoBase?.archivo_url;
+      btnVer.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6"></path>
+          <circle cx="11" cy="15" r="2.5"></circle>
+          <path d="M13 17l2.2 2.2"></path>
+        </svg>
+      `;
+      btnVer.addEventListener("click", () => abrirDocumentoBaseDocumentacionActividad(nombre));
+      tdAcciones.appendChild(btnVer);
+    }
+
     const btnEliminar = document.createElement("button");
-    btnEliminar.type = "button";
-    btnEliminar.className = "btn-requisito-eliminar";
-    btnEliminar.setAttribute("aria-label", "Eliminar documento");
-    btnEliminar.setAttribute("title", "Eliminar documento");
-    btnEliminar.textContent = "×";
-    btnEliminar.disabled = !puedeEditarDocumentacionActividad;
-    btnEliminar.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
+    if (puedeEditarDocumentacionActividad) {
+      btnEliminar.type = "button";
+      btnEliminar.className = "btn-requisito-eliminar";
+      btnEliminar.setAttribute("aria-label", "Eliminar documento");
+      btnEliminar.setAttribute("title", "Eliminar documento");
+      btnEliminar.textContent = "×";
+      btnEliminar.disabled = false;
+      tdAcciones.appendChild(btnEliminar);
+    }
+
     if (puedeEditarDocumentacionActividad) {
       btnEliminar.addEventListener("click", () => {
         if (modoDocumentacionActividad === "HEREDADA") {
@@ -4781,7 +4860,6 @@ function renderConfiguracionDocumentacionActividad() {
         renderConfiguracionDocumentacionActividad();
       });
     }
-    tdAcciones.appendChild(btnEliminar);
 
     const tdNombre = document.createElement("td");
     tdNombre.textContent = nombre;
