@@ -1811,6 +1811,18 @@
     </div>
   </div>
 
+  <div id="modalRevisionDocumentalPendiente" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="btn-cerrar-modal" id="btnCerrarRevisionDocumentalPendienteTop" aria-label="Cerrar aviso" style="position:absolute; top:16px; right:18px;">×</button>
+      <h3>Estados documentales sin actualizar</h3>
+      <p>Has cambiado el estado de uno o varios documentos, pero todavía no has pulsado el botón de actualizar estado de la documentación. Si sales ahora, esos cambios no se harán firmes y no se generarán las notificaciones ni los correos automáticos correspondientes.</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn btn-suave" id="btnRevisionDocumentalSalirSinActualizar">Salir sin actualizar</button>
+        <button type="button" class="btn" id="btnRevisionDocumentalActualizar">Actualizar estado documental</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalEliminacionDocumentalCritica" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <h3>Eliminación de solicitud por documentación</h3>
@@ -2067,6 +2079,7 @@
     let pendientesRevisionAdmin = [];
     let pendienteRevisionSeleccionId = null;
     let cambiosPendientesRevisionAdmin = new Map();
+    let salidaPendienteRevisionDocumental = null;
     let intervaloAutoRefreshPendientes = null;
     let refrescandoPendientesAuto = false;
     let usuariosPublicosSecretaria = [];
@@ -2120,6 +2133,65 @@
       btn.title = total > 0
         ? `Aplicar cambios de estado (${total})`
         : "No hay cambios de estado pendientes";
+    }
+
+    function hayCambiosRevisionDocumentalSinActualizar() {
+      return contarCambiosPendientesRevisionAdmin() > 0;
+    }
+
+    function abrirModalRevisionDocumentalPendiente(destino = "portal") {
+      salidaPendienteRevisionDocumental = destino || "portal";
+      const modal = document.getElementById("modalRevisionDocumentalPendiente");
+      modal?.classList.add("activo");
+      modal?.setAttribute("aria-hidden", "false");
+    }
+
+    function cerrarModalRevisionDocumentalPendiente() {
+      salidaPendienteRevisionDocumental = null;
+      const modal = document.getElementById("modalRevisionDocumentalPendiente");
+      modal?.classList.remove("activo");
+      modal?.setAttribute("aria-hidden", "true");
+    }
+
+    function continuarNavegacionTrasRevisionDocumental(destino) {
+      const objetivo = destino || salidaPendienteRevisionDocumental || "portal";
+      salidaPendienteRevisionDocumental = null;
+
+      if (objetivo === "portal") {
+        if (tieneCambiosPendientesDetalle()) {
+          abrirModalCambiosPendientesDocumentos("portal");
+          return;
+        }
+        if (hayCambiosSinGuardar()) {
+          document.getElementById("modalCambiosPendientes").classList.add("activo");
+          return;
+        }
+        location.href = "portal.html";
+        return;
+      }
+
+      activarVistaDocumentacionAdmin(objetivo);
+    }
+
+    function salirRevisionDocumentalSinActualizar() {
+      cambiosPendientesRevisionAdmin = new Map();
+      renderizarPendientesRevisionAdmin();
+      actualizarBotonActualizarEstadosDocs();
+      const destino = salidaPendienteRevisionDocumental || "portal";
+      cerrarModalRevisionDocumentalPendiente();
+      continuarNavegacionTrasRevisionDocumental(destino);
+    }
+
+    async function actualizarRevisionDocumentalYContinuar() {
+      const destino = salidaPendienteRevisionDocumental || "portal";
+      try {
+        await aplicarCambiosPendientesRevision();
+        if (hayCambiosRevisionDocumentalSinActualizar()) return;
+        cerrarModalRevisionDocumentalPendiente();
+        continuarNavegacionTrasRevisionDocumental(destino);
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron actualizar los estados documentales.");
+      }
     }
 
     function jsonMessage(id, tipo, texto) {
@@ -2430,7 +2502,7 @@
     }
 
     function hayCambiosPendientesEnPagina() {
-      return hayCambiosSinGuardar() || tieneCambiosPendientesDetalle();
+      return hayCambiosSinGuardar() || tieneCambiosPendientesDetalle() || contarCambiosPendientesRevisionAdmin() > 0;
     }
 
     function abrirModalObservacionesDocumento(doc, opciones = {}) {
@@ -4809,6 +4881,10 @@
         mostrarMensajePasswordTemporal("error", "Debes cambiar la contraseña temporal antes de continuar.");
         return;
       }
+      if (hayCambiosRevisionDocumentalSinActualizar()) {
+        abrirModalRevisionDocumentalPendiente("portal");
+        return;
+      }
       if (tieneCambiosPendientesDetalle()) {
         abrirModalCambiosPendientesDocumentos("portal");
         return;
@@ -5003,12 +5079,24 @@
     document.getElementById("btnPortal").addEventListener("click", irPortal);
     document.getElementById("btnModalSalirSinGuardar").addEventListener("click", salirSinGuardar);
     document.getElementById("btnModalGuardarYSalir").addEventListener("click", guardarYSalir);
+    document.getElementById("btnCerrarRevisionDocumentalPendienteTop").addEventListener("click", cerrarModalRevisionDocumentalPendiente);
+    document.getElementById("btnRevisionDocumentalSalirSinActualizar").addEventListener("click", salirRevisionDocumentalSinActualizar);
+    document.getElementById("btnRevisionDocumentalActualizar").addEventListener("click", actualizarRevisionDocumentalYContinuar);
     document.getElementById("btnCambiarImagen").addEventListener("click", () => {
       document.getElementById("inputImagenAdmin").click();
     });
     document.querySelectorAll("[data-tab-admin-doc]").forEach((btn) => {
       btn.addEventListener("click", function () {
-        activarVistaDocumentacionAdmin(this.dataset.tabAdminDoc || "base");
+        const destino = this.dataset.tabAdminDoc || "base";
+        if (
+          documentacionAdminVistaActual === "pendientes" &&
+          destino !== "pendientes" &&
+          hayCambiosRevisionDocumentalSinActualizar()
+        ) {
+          abrirModalRevisionDocumentalPendiente(destino);
+          return;
+        }
+        activarVistaDocumentacionAdmin(destino);
       });
     });
     document.getElementById("inputBuscarUsuariosPublicosSecretaria")?.addEventListener("input", () => {
@@ -5414,6 +5502,7 @@
       "modalDocumentoBaseAdmin",
       "modalInfoDocumentoBaseAdmin",
       "modalCambiosPendientesDocumentos",
+      "modalRevisionDocumentalPendiente",
       "modalEstadosDocumento",
       "modalObservacionesDocumento"
     ].forEach((id) => {
@@ -5426,6 +5515,7 @@
         if (id === "modalDocumentoBaseAdmin") cerrarModalDocumentoBaseAdmin();
         if (id === "modalInfoDocumentoBaseAdmin") cerrarModalInfoDocumentoBaseAdmin();
         if (id === "modalCambiosPendientesDocumentos") cerrarModalCambiosPendientesDocumentos();
+        if (id === "modalRevisionDocumentalPendiente") cerrarModalRevisionDocumentalPendiente();
         if (id === "modalEstadosDocumento") document.getElementById("modalEstadosDocumento").classList.remove("activo");
         if (id === "modalObservacionesDocumento") cerrarModalObservacionesDocumento();
       });
