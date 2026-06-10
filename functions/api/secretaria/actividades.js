@@ -4,6 +4,7 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades
 } from "../_actividad_documentacion.js";
+import { materializarPatronesGlobales } from "../_franjas_recurrencia.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -76,6 +77,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await materializarPatronesGlobales(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
     const session = await getUserSession(request, env.SECRET_KEY);
     if (!session?.id) {

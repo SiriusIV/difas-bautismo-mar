@@ -2947,8 +2947,76 @@
     </div>
 
     <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-      <label>Patrón</label>
-      <input type="text" id="fr_patron_recurrencia" placeholder="Ej: Primer sábado de cada mes">
+      <label>Repetición</label>
+      <select id="fr_recurrencia_tipo">
+        <option value="MENSUAL_DIA_SEMANA">Mensual por día de semana</option>
+        <option value="MENSUAL_DIA_MES">Mensual por día del mes</option>
+        <option value="SEMANAL">Semanal</option>
+        <option value="DIARIA">Diaria</option>
+        <option value="ANUAL">Anual</option>
+      </select>
+    </div>
+
+    <div id="fr_bloque_recurrencia_inicio" class="campo-franja-inline campo-franja-patron">
+      <label>Desde</label>
+      <input type="date" id="fr_recurrencia_inicio">
+    </div>
+
+    <div id="fr_bloque_recurrencia_fin" class="campo-franja-inline campo-franja-patron">
+      <label>Hasta (opcional)</label>
+      <input type="date" id="fr_recurrencia_fin">
+    </div>
+
+    <div id="fr_bloque_recurrencia_ordinal" class="campo-franja-inline campo-franja-patron">
+      <label>Ordinal</label>
+      <select id="fr_recurrencia_ordinal">
+        <option value="1">Primer</option>
+        <option value="2">Segundo</option>
+        <option value="3">Tercer</option>
+        <option value="4">Cuarto</option>
+        <option value="-1">Último</option>
+      </select>
+    </div>
+
+    <div id="fr_bloque_recurrencia_weekday" class="campo-franja-inline campo-franja-patron">
+      <label>Día semana</label>
+      <select id="fr_recurrencia_weekday">
+        <option value="1">Lunes</option>
+        <option value="2">Martes</option>
+        <option value="3">Miércoles</option>
+        <option value="4">Jueves</option>
+        <option value="5">Viernes</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+
+    <div id="fr_bloque_recurrencia_monthday" class="campo-franja-inline campo-franja-patron">
+      <label>Día mes</label>
+      <input type="number" id="fr_recurrencia_monthday" min="1" max="31" step="1" value="1">
+    </div>
+
+    <div id="fr_bloque_recurrencia_month" class="campo-franja-inline campo-franja-patron">
+      <label>Mes</label>
+      <select id="fr_recurrencia_month">
+        <option value="1">Enero</option>
+        <option value="2">Febrero</option>
+        <option value="3">Marzo</option>
+        <option value="4">Abril</option>
+        <option value="5">Mayo</option>
+        <option value="6">Junio</option>
+        <option value="7">Julio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+    </div>
+
+    <div id="fr_bloque_patron_texto" class="campo-franja-inline campo-franja-patron">
+      <label>Patrón generado</label>
+      <input type="text" id="fr_patron_recurrencia" readonly placeholder="Se generará automáticamente">
     </div>
 
     <div class="campo-franja-inline">
@@ -5593,17 +5661,67 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
       const esRecurrente = document.getElementById("es_recurrente").value === "1";
       const accionesFranjasBotones = document.getElementById("accionesFranjasBotones");
+      const tipoRecurrencia = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
 
       document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_recurrencia_fin")?.classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_recurrencia_ordinal")?.classList.toggle("oculto", !esRecurrente || tipoRecurrencia !== "MENSUAL_DIA_SEMANA");
+      document.getElementById("fr_bloque_recurrencia_weekday")?.classList.toggle("oculto", !esRecurrente || !["SEMANAL", "MENSUAL_DIA_SEMANA"].includes(tipoRecurrencia));
+      document.getElementById("fr_bloque_recurrencia_monthday")?.classList.toggle("oculto", !esRecurrente || !["MENSUAL_DIA_MES", "ANUAL"].includes(tipoRecurrencia));
+      document.getElementById("fr_bloque_recurrencia_month")?.classList.toggle("oculto", !esRecurrente || tipoRecurrencia !== "ANUAL");
+      document.getElementById("fr_bloque_patron_texto")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
+      actualizarTextoPatronRecurrencia();
     }
+
+function nombreDiaRecurrencia(valor) {
+  return ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][Number(valor)] || "";
+}
+
+function nombreMesRecurrencia(valor) {
+  return ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][Number(valor)] || "";
+}
+
+function nombreOrdinalRecurrencia(valor) {
+  if (Number(valor) === -1) return "último";
+  return ["", "primer", "segundo", "tercer", "cuarto"][Number(valor)] || "";
+}
+
+function actualizarTextoPatronRecurrencia() {
+  const input = document.getElementById("fr_patron_recurrencia");
+  if (!input) return;
+
+  const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
+  const weekday = document.getElementById("fr_recurrencia_weekday")?.value || "6";
+  const ordinal = document.getElementById("fr_recurrencia_ordinal")?.value || "1";
+  const monthday = document.getElementById("fr_recurrencia_monthday")?.value || "1";
+  const month = document.getElementById("fr_recurrencia_month")?.value || "1";
+
+  let texto = "";
+  if (tipo === "DIARIA") texto = "Cada día";
+  else if (tipo === "SEMANAL") texto = `Cada ${nombreDiaRecurrencia(weekday)}`;
+  else if (tipo === "MENSUAL_DIA_SEMANA") texto = `${nombreOrdinalRecurrencia(ordinal)} ${nombreDiaRecurrencia(weekday)} de cada mes`;
+  else if (tipo === "MENSUAL_DIA_MES") texto = `Día ${monthday} de cada mes`;
+  else if (tipo === "ANUAL") texto = `Cada año, el día ${monthday} de ${nombreMesRecurrencia(month)}`;
+
+  input.value = texto;
+  sincronizarPatronRecurrenciaOculto();
+}
 
 function limpiarFormularioFranja() {
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
+  document.getElementById("fr_recurrencia_inicio").value = "";
+  document.getElementById("fr_recurrencia_fin").value = "";
+  document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_SEMANA";
+  document.getElementById("fr_recurrencia_ordinal").value = "1";
+  document.getElementById("fr_recurrencia_weekday").value = "6";
+  document.getElementById("fr_recurrencia_monthday").value = "1";
+  document.getElementById("fr_recurrencia_month").value = "1";
   document.getElementById("fr_patron_recurrencia").value = "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
@@ -5918,6 +6036,13 @@ function editarFranja(id) {
   document.getElementById("franjaId").value = f.id;
   document.getElementById("es_recurrente").value = String(Number(f.es_recurrente || 0));
   document.getElementById("fr_fecha").value = f.fecha || "";
+  document.getElementById("fr_recurrencia_tipo").value = f.recurrencia_tipo || "MENSUAL_DIA_SEMANA";
+  document.getElementById("fr_recurrencia_inicio").value = f.recurrencia_inicio || f.fecha || "";
+  document.getElementById("fr_recurrencia_fin").value = f.recurrencia_fin || "";
+  document.getElementById("fr_recurrencia_ordinal").value = String(f.recurrencia_ordinal || "1");
+  document.getElementById("fr_recurrencia_weekday").value = String(f.recurrencia_weekday ?? "6");
+  document.getElementById("fr_recurrencia_monthday").value = String(f.recurrencia_monthday || "1");
+  document.getElementById("fr_recurrencia_month").value = String(f.recurrencia_month || "1");
   document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
@@ -5975,6 +6100,13 @@ function editarFranja(id) {
         es_recurrente: document.getElementById("es_recurrente").value,
         fecha: document.getElementById("fr_fecha").value,
         patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
+        recurrencia_tipo: document.getElementById("fr_recurrencia_tipo")?.value || "",
+        recurrencia_inicio: document.getElementById("fr_recurrencia_inicio")?.value || "",
+        recurrencia_fin: document.getElementById("fr_recurrencia_fin")?.value || "",
+        recurrencia_ordinal: document.getElementById("fr_recurrencia_ordinal")?.value || "",
+        recurrencia_weekday: document.getElementById("fr_recurrencia_weekday")?.value || "",
+        recurrencia_monthday: document.getElementById("fr_recurrencia_monthday")?.value || "",
+        recurrencia_month: document.getElementById("fr_recurrencia_month")?.value || "",
         hora_inicio: document.getElementById("fr_hora_inicio").value,
         hora_fin: document.getElementById("fr_hora_fin").value,
         capacidad: document.getElementById("fr_capacidad").value
@@ -7069,6 +7201,27 @@ function retrocederPaso() {
           marcarCambiosPendientesActividad();
         });
       }
+
+      [
+        "fr_recurrencia_tipo",
+        "fr_recurrencia_inicio",
+        "fr_recurrencia_fin",
+        "fr_recurrencia_ordinal",
+        "fr_recurrencia_weekday",
+        "fr_recurrencia_monthday",
+        "fr_recurrencia_month"
+      ].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("change", () => {
+          actualizarEstadoFranjasUI();
+          marcarCambiosPendientesActividad();
+        });
+        el.addEventListener("input", () => {
+          actualizarTextoPatronRecurrencia();
+          marcarCambiosPendientesActividad();
+        });
+      });
 
       if (btnEliminarImagenPreview) {
         btnEliminarImagenPreview.addEventListener("click", async () => {

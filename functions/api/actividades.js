@@ -4,6 +4,7 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades
 } from "./_actividad_documentacion.js";
+import { materializarPatronesGlobales } from "./_franjas_recurrencia.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -103,6 +104,7 @@ export async function onRequestGet(context) {
   try {
     await asegurarColumnaAforoMaximo(env);
     await asegurarColumnaFranjaActiva(env);
+    await materializarPatronesGlobales(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
     let result = null;
     try {

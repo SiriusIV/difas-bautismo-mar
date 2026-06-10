@@ -1,5 +1,6 @@
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { materializarPatronesActividad } from "./_franjas_recurrencia.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -72,6 +73,7 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
 
     WHERE f.actividad_id = ?
       AND COALESCE(f.activa, 1) = 1
+      AND COALESCE(f.es_recurrente, 0) = 0
 
     GROUP BY
       f.id,
@@ -141,6 +143,7 @@ export async function onRequestGet(context) {
       });
     }
 
+    await materializarPatronesActividad(env, actividad_id);
     let franjas = await obtenerFranjasConDisponibilidad(env, actividad_id);
 
     if (String(actividad.tipo || "").toUpperCase() === "PERMANENTE") {

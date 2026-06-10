@@ -60,13 +60,25 @@ function dbPrimaria(env) {
 }
 
 async function asegurarEstructuraEstadoFranjas(env) {
-  try {
-    await env.DB.prepare(`
-      ALTER TABLE franjas
-      ADD COLUMN activa INTEGER NOT NULL DEFAULT 1
-    `).run();
-  } catch (error) {
-    if (!esErrorColumnaDuplicada(error)) throw error;
+  const columnas = [
+    ["activa", "INTEGER NOT NULL DEFAULT 1"],
+    ["recurrencia_origen_id", "INTEGER"],
+    ["recurrencia_tipo", "TEXT"],
+    ["recurrencia_intervalo", "INTEGER NOT NULL DEFAULT 1"],
+    ["recurrencia_weekday", "INTEGER"],
+    ["recurrencia_ordinal", "INTEGER"],
+    ["recurrencia_monthday", "INTEGER"],
+    ["recurrencia_month", "INTEGER"],
+    ["recurrencia_inicio", "TEXT"],
+    ["recurrencia_fin", "TEXT"]
+  ];
+
+  for (const [nombre, definicion] of columnas) {
+    try {
+      await env.DB.prepare(`ALTER TABLE franjas ADD COLUMN ${nombre} ${definicion}`).run();
+    } catch (error) {
+      if (!esErrorColumnaDuplicada(error)) throw error;
+    }
   }
 
   await env.DB.prepare(`
@@ -85,6 +97,166 @@ async function asegurarEstructuraEstadoFranjas(env) {
       reactivado_at TEXT
     )
   `).run();
+}
+
+function parsearEnteroNullable(valor) {
+  if (valor === null || valor === undefined || String(valor).trim() === "") return null;
+  const n = parseInt(valor, 10);
+  return Number.isInteger(n) ? n : null;
+}
+
+function fechaIsoLocal(fecha) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function crearFechaLocal(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) return null;
+  const [y, m, d] = String(iso).split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  if (fecha.getFullYear() !== y || fecha.getMonth() !== m - 1 || fecha.getDate() !== d) return null;
+  return fecha;
+}
+
+function sumarDias(fecha, dias) {
+  const siguiente = new Date(fecha);
+  siguiente.setDate(siguiente.getDate() + dias);
+  return siguiente;
+}
+
+function sumarMeses(fecha, meses) {
+  const siguiente = new Date(fecha);
+  siguiente.setMonth(siguiente.getMonth() + meses);
+  return siguiente;
+}
+
+function inicioMes(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+}
+
+function finMes(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+}
+
+function finVentanaRecurrencia(tresMesesDesde = new Date()) {
+  const base = inicioMes(tresMesesDesde);
+  return finMes(sumarMeses(base, 2));
+}
+
+function normalizarReglaRecurrencia(data = {}) {
+  return {
+    tipo: normalizarTexto(data.recurrencia_tipo).toUpperCase(),
+    intervalo: Math.max(parsearEnteroNullable(data.recurrencia_intervalo) || 1, 1),
+    weekday: parsearEnteroNullable(data.recurrencia_weekday),
+    ordinal: parsearEnteroNullable(data.recurrencia_ordinal),
+    monthday: parsearEnteroNullable(data.recurrencia_monthday),
+    month: parsearEnteroNullable(data.recurrencia_month),
+    inicio: normalizarFecha(data.recurrencia_inicio || data.fecha),
+    fin: normalizarFecha(data.recurrencia_fin)
+  };
+}
+
+function nombreDiaSemana(weekday) {
+  return ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][Number(weekday)] || "";
+}
+
+function nombreMes(month) {
+  return ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][Number(month)] || "";
+}
+
+function nombreOrdinal(ordinal) {
+  if (Number(ordinal) === -1) return "último";
+  return ["", "primer", "segundo", "tercer", "cuarto"][Number(ordinal)] || "";
+}
+
+function describirReglaRecurrencia(regla = {}) {
+  if (regla.tipo === "DIARIA") return regla.intervalo === 1 ? "Cada día" : `Cada ${regla.intervalo} días`;
+  if (regla.tipo === "SEMANAL") {
+    const dia = nombreDiaSemana(regla.weekday);
+    return regla.intervalo === 1 ? `Cada ${dia}` : `Cada ${regla.intervalo} semanas (${dia})`;
+  }
+  if (regla.tipo === "MENSUAL_DIA_SEMANA") {
+    return `${nombreOrdinal(regla.ordinal)} ${nombreDiaSemana(regla.weekday)} de cada mes`;
+  }
+  if (regla.tipo === "MENSUAL_DIA_MES") {
+    return `Día ${regla.monthday} de cada mes`;
+  }
+  if (regla.tipo === "ANUAL") {
+    return `Cada año, el día ${regla.monthday} de ${nombreMes(regla.month)}`;
+  }
+  return "";
+}
+
+function validarReglaRecurrencia(regla = {}) {
+  const tipos = new Set(["DIARIA", "SEMANAL", "MENSUAL_DIA_SEMANA", "MENSUAL_DIA_MES", "ANUAL"]);
+  if (!tipos.has(regla.tipo)) return "Debe seleccionar un tipo de repetición válido.";
+  if (!crearFechaLocal(regla.inicio)) return "Debe indicar una fecha de inicio válida para el patrón.";
+  if (regla.fin && !crearFechaLocal(regla.fin)) return "La fecha de fin del patrón no es válida.";
+  if (regla.fin && regla.fin < regla.inicio) return "La fecha de fin del patrón no puede ser anterior a la fecha de inicio.";
+  if ((regla.tipo === "SEMANAL" || regla.tipo === "MENSUAL_DIA_SEMANA") && (regla.weekday === null || regla.weekday < 0 || regla.weekday > 6)) {
+    return "Debe seleccionar un día de la semana válido.";
+  }
+  if (regla.tipo === "MENSUAL_DIA_SEMANA" && ![1, 2, 3, 4, -1].includes(Number(regla.ordinal))) {
+    return "Debe seleccionar un ordinal mensual válido.";
+  }
+  if ((regla.tipo === "MENSUAL_DIA_MES" || regla.tipo === "ANUAL") && (regla.monthday === null || regla.monthday < 1 || regla.monthday > 31)) {
+    return "Debe seleccionar un día del mes válido.";
+  }
+  if (regla.tipo === "ANUAL" && (regla.month === null || regla.month < 1 || regla.month > 12)) {
+    return "Debe seleccionar un mes válido.";
+  }
+  return null;
+}
+
+function nthWeekdayOfMonth(year, monthIndex, weekday, ordinal) {
+  if (Number(ordinal) === -1) {
+    const fecha = new Date(year, monthIndex + 1, 0);
+    while (fecha.getDay() !== Number(weekday)) fecha.setDate(fecha.getDate() - 1);
+    return fecha;
+  }
+  const fecha = new Date(year, monthIndex, 1);
+  while (fecha.getDay() !== Number(weekday)) fecha.setDate(fecha.getDate() + 1);
+  fecha.setDate(fecha.getDate() + (Number(ordinal) - 1) * 7);
+  return fecha.getMonth() === monthIndex ? fecha : null;
+}
+
+function generarFechasRecurrencia(regla = {}, hasta = finVentanaRecurrencia()) {
+  const inicio = crearFechaLocal(regla.inicio);
+  if (!inicio) return [];
+  const finRegla = regla.fin ? crearFechaLocal(regla.fin) : null;
+  const limite = finRegla && finRegla < hasta ? finRegla : hasta;
+  const fechas = [];
+
+  if (regla.tipo === "DIARIA") {
+    for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, regla.intervalo || 1)) {
+      fechas.push(fechaIsoLocal(actual));
+    }
+  } else if (regla.tipo === "SEMANAL") {
+    let actual = new Date(inicio);
+    while (actual.getDay() !== Number(regla.weekday)) actual = sumarDias(actual, 1);
+    for (; actual <= limite; actual = sumarDias(actual, 7 * (regla.intervalo || 1))) {
+      fechas.push(fechaIsoLocal(actual));
+    }
+  } else if (regla.tipo === "MENSUAL_DIA_SEMANA") {
+    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
+      const fecha = nthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), regla.weekday, regla.ordinal);
+      if (fecha && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+    }
+  } else if (regla.tipo === "MENSUAL_DIA_MES") {
+    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
+      const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), Number(regla.monthday));
+      if (fecha.getMonth() === cursor.getMonth() && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+    }
+  } else if (regla.tipo === "ANUAL") {
+    for (let year = inicio.getFullYear(); year <= limite.getFullYear(); year += regla.intervalo || 1) {
+      const fecha = new Date(year, Number(regla.month) - 1, Number(regla.monthday));
+      if (fecha.getMonth() === Number(regla.month) - 1 && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+    }
+  }
+
+  return [...new Set(fechas)].sort();
 }
 
 function haFinalizadoFranja(row, ahora = new Date()) {
@@ -651,6 +823,7 @@ function validarDatosFranja({
   capacidad,
   es_recurrente,
   patron_recurrencia,
+  regla_recurrencia,
   aforo_limitado
 }) {
   if (!hora_inicio) {
@@ -670,9 +843,9 @@ function validarDatosFranja({
   }
 
   if (Number(es_recurrente) === 1) {
-    if (!patron_recurrencia) {
-      return "Debe indicar un patrón de recurrencia.";
-    }
+    const errorRegla = validarReglaRecurrencia(regla_recurrencia || {});
+    if (errorRegla) return errorRegla;
+    if (!patron_recurrencia) return "Debe indicar un patrón de recurrencia.";
   } else {
     if (!fecha) {
       return "La fecha es obligatoria.";
@@ -690,6 +863,120 @@ function validarDatosFranja({
   }
 
   return null;
+}
+
+async function insertarFranjaMaterializada(env, patron, fecha) {
+  const existente = await env.DB.prepare(`
+    SELECT id
+    FROM franjas
+    WHERE actividad_id = ?
+      AND recurrencia_origen_id = ?
+      AND fecha = ?
+      AND hora_inicio = ?
+      AND COALESCE(hora_fin, '') = COALESCE(?, '')
+    LIMIT 1
+  `)
+    .bind(patron.actividad_id, patron.id, fecha, patron.hora_inicio, patron.hora_fin)
+    .first();
+
+  if (existente) return false;
+
+  await env.DB.prepare(`
+    INSERT INTO franjas (
+      fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad,
+      actividad_id,
+      activa,
+      es_recurrente,
+      patron_recurrencia,
+      recurrencia_origen_id,
+      recurrencia_tipo,
+      recurrencia_intervalo,
+      recurrencia_weekday,
+      recurrencia_ordinal,
+      recurrencia_monthday,
+      recurrencia_month,
+      recurrencia_inicio,
+      recurrencia_fin
+    )
+    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+    .bind(
+      fecha,
+      patron.hora_inicio,
+      patron.hora_fin,
+      patron.capacidad,
+      patron.actividad_id,
+      patron.patron_recurrencia,
+      patron.id,
+      patron.recurrencia_tipo,
+      Number(patron.recurrencia_intervalo || 1),
+      patron.recurrencia_weekday,
+      patron.recurrencia_ordinal,
+      patron.recurrencia_monthday,
+      patron.recurrencia_month,
+      patron.recurrencia_inicio,
+      patron.recurrencia_fin
+    )
+    .run();
+
+  return true;
+}
+
+async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecurrencia()) {
+  if (!patron || Number(patron.es_recurrente || 0) !== 1) return 0;
+  const regla = {
+    tipo: normalizarTexto(patron.recurrencia_tipo).toUpperCase(),
+    intervalo: Number(patron.recurrencia_intervalo || 1),
+    weekday: patron.recurrencia_weekday === null || patron.recurrencia_weekday === undefined ? null : Number(patron.recurrencia_weekday),
+    ordinal: patron.recurrencia_ordinal === null || patron.recurrencia_ordinal === undefined ? null : Number(patron.recurrencia_ordinal),
+    monthday: patron.recurrencia_monthday === null || patron.recurrencia_monthday === undefined ? null : Number(patron.recurrencia_monthday),
+    month: patron.recurrencia_month === null || patron.recurrencia_month === undefined ? null : Number(patron.recurrencia_month),
+    inicio: normalizarFecha(patron.recurrencia_inicio),
+    fin: normalizarFecha(patron.recurrencia_fin)
+  };
+
+  if (validarReglaRecurrencia(regla)) return 0;
+
+  let creadas = 0;
+  for (const fecha of generarFechasRecurrencia(regla, hasta)) {
+    const insertada = await insertarFranjaMaterializada(env, patron, fecha);
+    if (insertada) creadas += 1;
+  }
+  return creadas;
+}
+
+async function materializarPatronesActividad(env, actividadId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      id,
+      actividad_id,
+      hora_inicio,
+      hora_fin,
+      capacidad,
+      es_recurrente,
+      patron_recurrencia,
+      recurrencia_tipo,
+      recurrencia_intervalo,
+      recurrencia_weekday,
+      recurrencia_ordinal,
+      recurrencia_monthday,
+      recurrencia_month,
+      recurrencia_inicio,
+      recurrencia_fin
+    FROM franjas
+    WHERE actividad_id = ?
+      AND COALESCE(es_recurrente, 0) = 1
+      AND recurrencia_tipo IS NOT NULL
+  `).bind(actividadId).all();
+
+  let creadas = 0;
+  for (const patron of result?.results || []) {
+    creadas += await materializarPatronRecurrencia(env, patron);
+  }
+  return creadas;
 }
 
 async function obtenerActividad(env, actividad_id) {
@@ -786,6 +1073,8 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
 }
 
 async function obtenerResumenFranjas(env, actividad_id) {
+  await materializarPatronesActividad(env, actividad_id);
+
   const actividad = await obtenerActividad(env, actividad_id);
   const aforoLimitado = Number(actividad?.aforo_limitado || 0);
 
@@ -800,6 +1089,10 @@ async function obtenerResumenFranjas(env, actividad_id) {
       COALESCE(f.activa, 1) AS activa,
       f.es_recurrente,
       f.patron_recurrencia,
+      f.recurrencia_origen_id,
+      f.recurrencia_tipo,
+      f.recurrencia_inicio,
+      f.recurrencia_fin,
       COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
@@ -828,6 +1121,7 @@ async function obtenerResumenFranjas(env, actividad_id) {
     LEFT JOIN reservas r
       ON f.id = r.franja_id
     WHERE f.actividad_id = ?
+      AND COALESCE(f.es_recurrente, 0) = 0
     GROUP BY
       f.id,
       f.fecha,
@@ -837,7 +1131,11 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.actividad_id,
       f.activa,
       f.es_recurrente,
-      f.patron_recurrencia
+      f.patron_recurrencia,
+      f.recurrencia_origen_id,
+      f.recurrencia_tipo,
+      f.recurrencia_inicio,
+      f.recurrencia_fin
     ORDER BY
       CASE WHEN f.es_recurrente = 1 THEN 1 ELSE 0 END,
       f.fecha,
@@ -857,6 +1155,7 @@ async function obtenerResumenFranjas(env, actividad_id) {
       ...row,
       activa: Number(row.activa ?? 1) === 1 ? 1 : 0,
       es_recurrente: Number(row.es_recurrente || 0),
+      generada_por_recurrencia: row.recurrencia_origen_id ? 1 : 0,
       capacidad,
       ocupadas,
       disponibles: aforoLimitado && capacidad !== null ? Math.max(capacidad - ocupadas, 0) : null,
@@ -878,7 +1177,16 @@ async function obtenerFranjaPorId(env, id) {
       capacidad,
       activa,
       es_recurrente,
-      patron_recurrencia
+      patron_recurrencia,
+      recurrencia_origen_id,
+      recurrencia_tipo,
+      recurrencia_intervalo,
+      recurrencia_weekday,
+      recurrencia_ordinal,
+      recurrencia_monthday,
+      recurrencia_month,
+      recurrencia_inicio,
+      recurrencia_fin
     FROM franjas
     WHERE id = ?
     LIMIT 1
@@ -942,7 +1250,10 @@ export async function onRequestPost(context) {
     const hora_fin = normalizarHoraFinOpcional(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
     const es_recurrente = parsearFlag(data.es_recurrente, 0);
-    const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
+    const regla_recurrencia = normalizarReglaRecurrencia(data);
+    const patron_recurrencia = es_recurrente === 1
+      ? (normalizarTexto(data.patron_recurrencia) || describirReglaRecurrencia(regla_recurrencia))
+      : normalizarTexto(data.patron_recurrencia);
 
     if (!actividad_id) {
       return json({ ok: false, error: "actividad_id es obligatorio." }, { status: 400 });
@@ -966,6 +1277,7 @@ export async function onRequestPost(context) {
       capacidad,
       es_recurrente,
       patron_recurrencia,
+      regla_recurrencia,
       aforo_limitado
     });
 
@@ -987,12 +1299,29 @@ export async function onRequestPost(context) {
         FROM franjas
         WHERE actividad_id = ?
           AND es_recurrente = 1
-          AND patron_recurrencia = ?
+          AND recurrencia_tipo = ?
+          AND recurrencia_inicio = ?
+          AND COALESCE(recurrencia_fin, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_weekday, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_ordinal, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_monthday, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_month, -99) = COALESCE(?, -99)
           AND hora_inicio = ?
           AND COALESCE(hora_fin, '') = COALESCE(?, '')
         LIMIT 1
       `)
-        .bind(actividad_id, patron_recurrencia, hora_inicio, hora_fin)
+        .bind(
+          actividad_id,
+          regla_recurrencia.tipo,
+          regla_recurrencia.inicio,
+          regla_recurrencia.fin,
+          regla_recurrencia.weekday,
+          regla_recurrencia.ordinal,
+          regla_recurrencia.monthday,
+          regla_recurrencia.month,
+          hora_inicio,
+          hora_fin
+        )
         .first();
     } else {
       duplicada = await env.DB.prepare(`
@@ -1027,9 +1356,17 @@ export async function onRequestPost(context) {
         capacidad,
         actividad_id,
         es_recurrente,
-        patron_recurrencia
+        patron_recurrencia,
+        recurrencia_tipo,
+        recurrencia_intervalo,
+        recurrencia_weekday,
+        recurrencia_ordinal,
+        recurrencia_monthday,
+        recurrencia_month,
+        recurrencia_inicio,
+        recurrencia_fin
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
       .bind(
         es_recurrente === 1 ? null : fecha,
@@ -1038,7 +1375,15 @@ export async function onRequestPost(context) {
         aforo_limitado === 1 ? capacidad : null,
         actividad_id,
         es_recurrente,
-        es_recurrente === 1 ? patron_recurrencia : null
+        es_recurrente === 1 ? patron_recurrencia : null,
+        es_recurrente === 1 ? regla_recurrencia.tipo : null,
+        es_recurrente === 1 ? regla_recurrencia.intervalo : 1,
+        es_recurrente === 1 ? regla_recurrencia.weekday : null,
+        es_recurrente === 1 ? regla_recurrencia.ordinal : null,
+        es_recurrente === 1 ? regla_recurrencia.monthday : null,
+        es_recurrente === 1 ? regla_recurrencia.month : null,
+        es_recurrente === 1 ? regla_recurrencia.inicio : null,
+        es_recurrente === 1 ? regla_recurrencia.fin : null
       )
       .run();
 
@@ -1047,6 +1392,22 @@ export async function onRequestPost(context) {
         { ok: false, error: "No se pudo crear la franja." },
         { status: 500 }
       );
+    }
+
+    if (es_recurrente === 1) {
+      const patronCreado = await env.DB.prepare(`
+        SELECT *
+        FROM franjas
+        WHERE actividad_id = ?
+          AND es_recurrente = 1
+          AND recurrencia_tipo = ?
+          AND recurrencia_inicio = ?
+          AND hora_inicio = ?
+          AND COALESCE(hora_fin, '') = COALESCE(?, '')
+        ORDER BY id DESC
+        LIMIT 1
+      `).bind(actividad_id, regla_recurrencia.tipo, regla_recurrencia.inicio, hora_inicio, hora_fin).first();
+      await materializarPatronRecurrencia(env, patronCreado);
     }
 
     const franjas = await obtenerResumenFranjas(env, actividad_id);

@@ -2,6 +2,7 @@ import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
+import { materializarPatronesGlobales } from "../_franjas_recurrencia.js";
 import {
   construirResumenDocumentacionActividad,
   obtenerCatalogoDocumentosActivosAdmin,
@@ -99,6 +100,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await materializarPatronesGlobales(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
     await ejecutarMantenimientoReservas(env);
     const session = await getAdminSession(request, env);

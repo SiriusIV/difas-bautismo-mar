@@ -1,5 +1,6 @@
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
+import { materializarPatronesGlobales } from "../_franjas_recurrencia.js";
 import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, init = {}) {
@@ -172,6 +173,7 @@ async function obtenerReservasCalendario(env, filtros, session) {
 }
 
 async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
+  await materializarPatronesGlobales(env);
   const where = [
     "f.fecha IS NOT NULL",
     "f.hora_inicio IS NOT NULL",
