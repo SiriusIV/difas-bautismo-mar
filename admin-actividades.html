@@ -3853,6 +3853,14 @@
       oculto.value = visible.value || "";
     }
 
+    function obtenerPatronRecurrenciaDesdeFranjasGuardadas() {
+      const patrones = (Array.isArray(franjasCache) ? franjasCache : [])
+        .filter((franja) => Number(franja?.es_recurrente || 0) === 1)
+        .map((franja) => String(franja?.patron_recurrencia || "").trim())
+        .filter(Boolean);
+      return Array.from(new Set(patrones)).join("; ");
+    }
+
     function registrarImagenOriginalDesdeFormulario() {
       imagenOriginalId = getImagenIdActualFormulario();
       imagenOriginalUrl = getImagenUrlActualFormulario();
@@ -6117,6 +6125,17 @@ async function borrarFranja(id) {
 
     function construirPayloadActividad(borradorTecnico = 0) {
       agregarDocumentoSeleccionadoDocumentacionActividad();
+      const usaFranjas = document.getElementById("usa_franjas").value;
+      const patronFranjasGuardadas = obtenerPatronRecurrenciaDesdeFranjasGuardadas();
+      const patronFranjaEnEdicion = document.getElementById("fr_patron_recurrencia").value.trim();
+      const esRecurrenteFranja = document.getElementById("es_recurrente").value === "1";
+      const patronActividad = usaFranjas === "1"
+        ? (patronFranjasGuardadas || (esRecurrenteFranja ? patronFranjaEnEdicion : ""))
+        : document.getElementById("patron_recurrencia").value.trim();
+      const esRecurrenteActividad = usaFranjas === "1"
+        ? (patronActividad ? "1" : "0")
+        : document.getElementById("es_recurrente").value;
+
       return {
         id: document.getElementById("actividadId").value || null,
         nombre: document.getElementById("nombre").value.trim(),
@@ -6134,13 +6153,13 @@ async function borrarFranja(id) {
         imagen_id: getImagenIdActualFormulario(),
         visible_portal: document.getElementById("visible_portal").value,
         orden_portal: document.getElementById("orden_portal").value,
-        usa_franjas: document.getElementById("usa_franjas").value,
+        usa_franjas: usaFranjas,
         requiere_reserva: document.getElementById("requiere_reserva").value,
         aforo_limitado: document.getElementById("aforo_limitado").value,
         aforo_maximo: document.getElementById("aforo_maximo").value,
         provincia: document.getElementById("provincia").value.trim(),
-          es_recurrente: document.getElementById("es_recurrente").value,
-          patron_recurrencia: document.getElementById("patron_recurrencia").value.trim(),
+          es_recurrente: esRecurrenteActividad,
+          patron_recurrencia: patronActividad,
           usa_enlace_externo: document.getElementById("usa_enlace_externo").value,
           enlace_externo_url: document.getElementById("enlace_externo_url").value.trim(),
           direccion_postal: document.getElementById("direccion_postal").value.trim(),
@@ -6232,11 +6251,6 @@ async function borrarFranja(id) {
 
         if (!actividadQuedaDesactivada && payload.usa_enlace_externo === "1" && !payload.enlace_externo_url) {
           mostrarMensaje("error", "Debe indicar la URL del enlace externo.");
-          return false;
-        }
-
-        if (!actividadQuedaDesactivada && payload.usa_franjas === "1" && payload.es_recurrente === "1" && !payload.patron_recurrencia) {
-          mostrarMensaje("error", "Debe indicar el patrón de recurrencia.");
           return false;
         }
 
