@@ -6234,7 +6234,14 @@ async function borrarFranja(id) {
       franjaSeleccionadaId = null;
     }
 
-    await cargarFranjas();
+    if (Array.isArray(data.franjas)) {
+      franjasCache = data.franjas;
+      renderListaFranjas();
+      renderPreviewFranjas();
+      actualizarEstadoFranjasUI();
+    } else {
+      await cargarFranjas();
+    }
     limpiarFormularioFranja();
     mostrarMensaje("ok", data.mensaje || "Franja eliminada correctamente.");
   }

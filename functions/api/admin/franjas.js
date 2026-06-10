@@ -1072,6 +1072,21 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
   return Number(row?.ocupadas || 0);
 }
 
+async function contarFranjasMaterializadasDelMismoPatron(env, recurrenciaOrigenId, excluirId = null) {
+  if (!recurrenciaOrigenId) return 0;
+
+  const result = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM franjas
+    WHERE recurrencia_origen_id = ?
+      AND (? IS NULL OR id <> ?)
+  `)
+    .bind(recurrenciaOrigenId, excluirId, excluirId)
+    .first();
+
+  return Number(result?.total || 0);
+}
+
 async function obtenerResumenFranjas(env, actividad_id) {
   await materializarPatronesActividad(env, actividad_id);
 
@@ -1729,6 +1744,24 @@ export async function onRequestDelete(context) {
         { ok: false, error: "No se pudo eliminar la franja." },
         { status: 500 }
       );
+    }
+
+    if (existente.recurrencia_origen_id) {
+      const restantesMismoPatron = await contarFranjasMaterializadasDelMismoPatron(
+        env,
+        existente.recurrencia_origen_id,
+        id
+      );
+
+      if (restantesMismoPatron === 0) {
+        await env.DB.prepare(`
+          DELETE FROM franjas
+          WHERE id = ?
+            AND COALESCE(es_recurrente, 0) = 1
+        `)
+          .bind(existente.recurrencia_origen_id)
+          .run();
+      }
     }
 
     const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
