@@ -163,7 +163,7 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
       recurrencia_origen_id, recurrencia_tipo, recurrencia_intervalo, recurrencia_weekday, recurrencia_weekdays, recurrencia_ordinal,
       recurrencia_monthday, recurrencia_month, recurrencia_inicio, recurrencia_fin, recurrencia_fin_tipo, recurrencia_repeticiones
     )
-    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     fecha,
     patron.hora_inicio,
