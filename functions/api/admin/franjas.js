@@ -66,11 +66,14 @@ async function asegurarEstructuraEstadoFranjas(env) {
     ["recurrencia_tipo", "TEXT"],
     ["recurrencia_intervalo", "INTEGER NOT NULL DEFAULT 1"],
     ["recurrencia_weekday", "INTEGER"],
+    ["recurrencia_weekdays", "TEXT"],
     ["recurrencia_ordinal", "INTEGER"],
     ["recurrencia_monthday", "INTEGER"],
     ["recurrencia_month", "INTEGER"],
     ["recurrencia_inicio", "TEXT"],
-    ["recurrencia_fin", "TEXT"]
+    ["recurrencia_fin", "TEXT"],
+    ["recurrencia_fin_tipo", "TEXT"],
+    ["recurrencia_repeticiones", "INTEGER"]
   ];
 
   for (const [nombre, definicion] of columnas) {
@@ -103,6 +106,20 @@ function parsearEnteroNullable(valor) {
   if (valor === null || valor === undefined || String(valor).trim() === "") return null;
   const n = parseInt(valor, 10);
   return Number.isInteger(n) ? n : null;
+}
+
+function normalizarListaWeekdays(valor) {
+  const valores = Array.isArray(valor)
+    ? valor
+    : String(valor || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+  return [...new Set(valores
+    .map((item) => parseInt(item, 10))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))]
+    .sort((a, b) => a - b);
 }
 
 function fechaIsoLocal(fecha) {
@@ -146,15 +163,21 @@ function finVentanaRecurrencia(tresMesesDesde = new Date()) {
 }
 
 function normalizarReglaRecurrencia(data = {}) {
+  const tipo = normalizarTexto(data.recurrencia_tipo).toUpperCase();
+  const weekdays = normalizarListaWeekdays(data.recurrencia_weekdays || data.recurrencia_weekday);
+  const weekday = weekdays.length ? weekdays[0] : parsearEnteroNullable(data.recurrencia_weekday);
   return {
-    tipo: normalizarTexto(data.recurrencia_tipo).toUpperCase(),
+    tipo,
     intervalo: Math.max(parsearEnteroNullable(data.recurrencia_intervalo) || 1, 1),
-    weekday: parsearEnteroNullable(data.recurrencia_weekday),
+    weekday,
+    weekdays,
     ordinal: parsearEnteroNullable(data.recurrencia_ordinal),
     monthday: parsearEnteroNullable(data.recurrencia_monthday),
     month: parsearEnteroNullable(data.recurrencia_month),
     inicio: normalizarFecha(data.recurrencia_inicio || data.fecha),
-    fin: normalizarFecha(data.recurrencia_fin)
+    fin: normalizarFecha(data.recurrencia_fin),
+    fin_tipo: normalizarTexto(data.recurrencia_fin_tipo || (data.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase(),
+    repeticiones: parsearEnteroNullable(data.recurrencia_repeticiones)
   };
 }
 
@@ -174,8 +197,12 @@ function nombreOrdinal(ordinal) {
 function describirReglaRecurrencia(regla = {}) {
   if (regla.tipo === "DIARIA") return regla.intervalo === 1 ? "Cada día" : `Cada ${regla.intervalo} días`;
   if (regla.tipo === "SEMANAL") {
-    const dia = nombreDiaSemana(regla.weekday);
-    return regla.intervalo === 1 ? `Cada ${dia}` : `Cada ${regla.intervalo} semanas (${dia})`;
+    const dias = (regla.weekdays?.length ? regla.weekdays : [regla.weekday])
+      .filter((dia) => dia !== null && dia !== undefined)
+      .map(nombreDiaSemana)
+      .filter(Boolean);
+    const textoDias = dias.length ? dias.join(", ") : nombreDiaSemana(regla.weekday);
+    return regla.intervalo === 1 ? `Cada semana (${textoDias})` : `Cada ${regla.intervalo} semanas (${textoDias})`;
   }
   if (regla.tipo === "MENSUAL_DIA_SEMANA") {
     return `${nombreOrdinal(regla.ordinal)} ${nombreDiaSemana(regla.weekday)} de cada mes`;
@@ -193,9 +220,14 @@ function validarReglaRecurrencia(regla = {}) {
   const tipos = new Set(["DIARIA", "SEMANAL", "MENSUAL_DIA_SEMANA", "MENSUAL_DIA_MES", "ANUAL"]);
   if (!tipos.has(regla.tipo)) return "Debe seleccionar un tipo de repetición válido.";
   if (!crearFechaLocal(regla.inicio)) return "Debe indicar una fecha de inicio válida para el patrón.";
-  if (regla.fin && !crearFechaLocal(regla.fin)) return "La fecha de fin del patrón no es válida.";
-  if (regla.fin && regla.fin < regla.inicio) return "La fecha de fin del patrón no puede ser anterior a la fecha de inicio.";
-  if ((regla.tipo === "SEMANAL" || regla.tipo === "MENSUAL_DIA_SEMANA") && (regla.weekday === null || regla.weekday < 0 || regla.weekday > 6)) {
+  if (!["NUNCA", "FECHA", "REPETICIONES"].includes(regla.fin_tipo || "NUNCA")) return "Debe seleccionar un modo de finalización válido.";
+  if (regla.fin_tipo === "FECHA" && !crearFechaLocal(regla.fin)) return "La fecha de fin del patrón no es válida.";
+  if (regla.fin_tipo === "FECHA" && regla.fin < regla.inicio) return "La fecha de fin del patrón no puede ser anterior a la fecha de inicio.";
+  if (regla.fin_tipo === "REPETICIONES" && !(Number(regla.repeticiones) > 0)) return "Debe indicar un número de repeticiones mayor que 0.";
+  if (regla.tipo === "SEMANAL" && (!Array.isArray(regla.weekdays) || regla.weekdays.length === 0)) {
+    return "Debe seleccionar al menos un día de la semana.";
+  }
+  if (regla.tipo === "MENSUAL_DIA_SEMANA" && (regla.weekday === null || regla.weekday < 0 || regla.weekday > 6)) {
     return "Debe seleccionar un día de la semana válido.";
   }
   if (regla.tipo === "MENSUAL_DIA_SEMANA" && ![1, 2, 3, 4, -1].includes(Number(regla.ordinal))) {
@@ -225,34 +257,44 @@ function nthWeekdayOfMonth(year, monthIndex, weekday, ordinal) {
 function generarFechasRecurrencia(regla = {}, hasta = finVentanaRecurrencia()) {
   const inicio = crearFechaLocal(regla.inicio);
   if (!inicio) return [];
-  const finRegla = regla.fin ? crearFechaLocal(regla.fin) : null;
+  const finRegla = regla.fin_tipo === "FECHA" && regla.fin ? crearFechaLocal(regla.fin) : null;
   const limite = finRegla && finRegla < hasta ? finRegla : hasta;
   const fechas = [];
+  const maxRepeticiones = regla.fin_tipo === "REPETICIONES" ? Number(regla.repeticiones || 0) : null;
+  const agregarFecha = (fecha) => {
+    if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
+    if (fecha < inicio || fecha > limite) return true;
+    fechas.push(fechaIsoLocal(fecha));
+    return !(maxRepeticiones && fechas.length >= maxRepeticiones);
+  };
 
   if (regla.tipo === "DIARIA") {
     for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, regla.intervalo || 1)) {
-      fechas.push(fechaIsoLocal(actual));
+      if (!agregarFecha(actual)) break;
     }
   } else if (regla.tipo === "SEMANAL") {
-    let actual = new Date(inicio);
-    while (actual.getDay() !== Number(regla.weekday)) actual = sumarDias(actual, 1);
-    for (; actual <= limite; actual = sumarDias(actual, 7 * (regla.intervalo || 1))) {
-      fechas.push(fechaIsoLocal(actual));
+    const weekdays = (regla.weekdays?.length ? regla.weekdays : [regla.weekday]).map(Number).sort((a, b) => a - b);
+    for (let semanaBase = new Date(inicio); semanaBase <= limite; semanaBase = sumarDias(semanaBase, 7 * (regla.intervalo || 1))) {
+      const inicioSemana = sumarDias(semanaBase, -semanaBase.getDay());
+      for (const weekday of weekdays) {
+        const fecha = sumarDias(inicioSemana, weekday);
+        if (!agregarFecha(fecha)) return [...new Set(fechas)].sort();
+      }
     }
   } else if (regla.tipo === "MENSUAL_DIA_SEMANA") {
     for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
       const fecha = nthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), regla.weekday, regla.ordinal);
-      if (fecha && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha && !agregarFecha(fecha)) break;
     }
   } else if (regla.tipo === "MENSUAL_DIA_MES") {
     for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
       const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), Number(regla.monthday));
-      if (fecha.getMonth() === cursor.getMonth() && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha.getMonth() === cursor.getMonth() && !agregarFecha(fecha)) break;
     }
   } else if (regla.tipo === "ANUAL") {
     for (let year = inicio.getFullYear(); year <= limite.getFullYear(); year += regla.intervalo || 1) {
       const fecha = new Date(year, Number(regla.month) - 1, Number(regla.monthday));
-      if (fecha.getMonth() === Number(regla.month) - 1 && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha.getMonth() === Number(regla.month) - 1 && !agregarFecha(fecha)) break;
     }
   }
 
@@ -895,13 +937,16 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
       recurrencia_tipo,
       recurrencia_intervalo,
       recurrencia_weekday,
+      recurrencia_weekdays,
       recurrencia_ordinal,
       recurrencia_monthday,
       recurrencia_month,
       recurrencia_inicio,
-      recurrencia_fin
+      recurrencia_fin,
+      recurrencia_fin_tipo,
+      recurrencia_repeticiones
     )
-    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
     .bind(
       fecha,
@@ -914,11 +959,14 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
       patron.recurrencia_tipo,
       Number(patron.recurrencia_intervalo || 1),
       patron.recurrencia_weekday,
+      patron.recurrencia_weekdays,
       patron.recurrencia_ordinal,
       patron.recurrencia_monthday,
       patron.recurrencia_month,
       patron.recurrencia_inicio,
-      patron.recurrencia_fin
+      patron.recurrencia_fin,
+      patron.recurrencia_fin_tipo,
+      patron.recurrencia_repeticiones
     )
     .run();
 
@@ -931,11 +979,14 @@ async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecu
     tipo: normalizarTexto(patron.recurrencia_tipo).toUpperCase(),
     intervalo: Number(patron.recurrencia_intervalo || 1),
     weekday: patron.recurrencia_weekday === null || patron.recurrencia_weekday === undefined ? null : Number(patron.recurrencia_weekday),
+    weekdays: normalizarListaWeekdays(patron.recurrencia_weekdays || patron.recurrencia_weekday),
     ordinal: patron.recurrencia_ordinal === null || patron.recurrencia_ordinal === undefined ? null : Number(patron.recurrencia_ordinal),
     monthday: patron.recurrencia_monthday === null || patron.recurrencia_monthday === undefined ? null : Number(patron.recurrencia_monthday),
     month: patron.recurrencia_month === null || patron.recurrencia_month === undefined ? null : Number(patron.recurrencia_month),
     inicio: normalizarFecha(patron.recurrencia_inicio),
-    fin: normalizarFecha(patron.recurrencia_fin)
+    fin: normalizarFecha(patron.recurrencia_fin),
+    fin_tipo: normalizarTexto(patron.recurrencia_fin_tipo || (patron.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase(),
+    repeticiones: parsearEnteroNullable(patron.recurrencia_repeticiones)
   };
 
   if (validarReglaRecurrencia(regla)) return 0;
@@ -961,11 +1012,14 @@ async function materializarPatronesActividad(env, actividadId) {
       recurrencia_tipo,
       recurrencia_intervalo,
       recurrencia_weekday,
+      recurrencia_weekdays,
       recurrencia_ordinal,
       recurrencia_monthday,
       recurrencia_month,
       recurrencia_inicio,
-      recurrencia_fin
+      recurrencia_fin,
+      recurrencia_fin_tipo,
+      recurrencia_repeticiones
     FROM franjas
     WHERE actividad_id = ?
       AND COALESCE(es_recurrente, 0) = 1
@@ -1106,8 +1160,16 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.patron_recurrencia,
       f.recurrencia_origen_id,
       f.recurrencia_tipo,
+      f.recurrencia_intervalo,
+      f.recurrencia_weekday,
+      f.recurrencia_weekdays,
+      f.recurrencia_ordinal,
+      f.recurrencia_monthday,
+      f.recurrencia_month,
       f.recurrencia_inicio,
       f.recurrencia_fin,
+      f.recurrencia_fin_tipo,
+      f.recurrencia_repeticiones,
       COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
@@ -1149,8 +1211,16 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.patron_recurrencia,
       f.recurrencia_origen_id,
       f.recurrencia_tipo,
+      f.recurrencia_intervalo,
+      f.recurrencia_weekday,
+      f.recurrencia_weekdays,
+      f.recurrencia_ordinal,
+      f.recurrencia_monthday,
+      f.recurrencia_month,
       f.recurrencia_inicio,
-      f.recurrencia_fin
+      f.recurrencia_fin,
+      f.recurrencia_fin_tipo,
+      f.recurrencia_repeticiones
     ORDER BY
       CASE WHEN f.es_recurrente = 1 THEN 1 ELSE 0 END,
       f.fecha,
@@ -1197,11 +1267,14 @@ async function obtenerFranjaPorId(env, id) {
       recurrencia_tipo,
       recurrencia_intervalo,
       recurrencia_weekday,
+      recurrencia_weekdays,
       recurrencia_ordinal,
       recurrencia_monthday,
       recurrencia_month,
       recurrencia_inicio,
-      recurrencia_fin
+      recurrencia_fin,
+      recurrencia_fin_tipo,
+      recurrencia_repeticiones
     FROM franjas
     WHERE id = ?
     LIMIT 1
@@ -1317,7 +1390,10 @@ export async function onRequestPost(context) {
           AND recurrencia_tipo = ?
           AND recurrencia_inicio = ?
           AND COALESCE(recurrencia_fin, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_fin_tipo, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_repeticiones, -99) = COALESCE(?, -99)
           AND COALESCE(recurrencia_weekday, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_weekdays, '') = COALESCE(?, '')
           AND COALESCE(recurrencia_ordinal, -99) = COALESCE(?, -99)
           AND COALESCE(recurrencia_monthday, -99) = COALESCE(?, -99)
           AND COALESCE(recurrencia_month, -99) = COALESCE(?, -99)
@@ -1329,8 +1405,11 @@ export async function onRequestPost(context) {
           actividad_id,
           regla_recurrencia.tipo,
           regla_recurrencia.inicio,
-          regla_recurrencia.fin,
+          regla_recurrencia.fin_tipo === "FECHA" ? regla_recurrencia.fin : null,
+          regla_recurrencia.fin_tipo,
+          regla_recurrencia.repeticiones,
           regla_recurrencia.weekday,
+          regla_recurrencia.weekdays.join(","),
           regla_recurrencia.ordinal,
           regla_recurrencia.monthday,
           regla_recurrencia.month,
@@ -1375,13 +1454,16 @@ export async function onRequestPost(context) {
         recurrencia_tipo,
         recurrencia_intervalo,
         recurrencia_weekday,
+        recurrencia_weekdays,
         recurrencia_ordinal,
         recurrencia_monthday,
         recurrencia_month,
         recurrencia_inicio,
-        recurrencia_fin
+        recurrencia_fin,
+        recurrencia_fin_tipo,
+        recurrencia_repeticiones
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
       .bind(
         es_recurrente === 1 ? null : fecha,
@@ -1394,11 +1476,14 @@ export async function onRequestPost(context) {
         es_recurrente === 1 ? regla_recurrencia.tipo : null,
         es_recurrente === 1 ? regla_recurrencia.intervalo : 1,
         es_recurrente === 1 ? regla_recurrencia.weekday : null,
+        es_recurrente === 1 ? regla_recurrencia.weekdays.join(",") : null,
         es_recurrente === 1 ? regla_recurrencia.ordinal : null,
         es_recurrente === 1 ? regla_recurrencia.monthday : null,
         es_recurrente === 1 ? regla_recurrencia.month : null,
         es_recurrente === 1 ? regla_recurrencia.inicio : null,
-        es_recurrente === 1 ? regla_recurrencia.fin : null
+        es_recurrente === 1 && regla_recurrencia.fin_tipo === "FECHA" ? regla_recurrencia.fin : null,
+        es_recurrente === 1 ? regla_recurrencia.fin_tipo : null,
+        es_recurrente === 1 ? regla_recurrencia.repeticiones : null
       )
       .run();
 
@@ -1496,7 +1581,10 @@ export async function onRequestPut(context) {
     const hora_fin = normalizarHoraFinOpcional(data.hora_fin);
     const capacidad = parsearCapacidad(data.capacidad);
     const es_recurrente = parsearFlag(data.es_recurrente, 0);
-    const patron_recurrencia = normalizarTexto(data.patron_recurrencia);
+    const regla_recurrencia = normalizarReglaRecurrencia(data);
+    const patron_recurrencia = es_recurrente === 1
+      ? (normalizarTexto(data.patron_recurrencia) || describirReglaRecurrencia(regla_recurrencia))
+      : normalizarTexto(data.patron_recurrencia);
     const confirmarAfectacion = data.confirmar_afectacion === true || data.confirmar_afectacion === 1 || data.confirmar_afectacion === "1";
 
     const actividadBase = await obtenerActividad(env, existente.actividad_id);
@@ -1508,7 +1596,10 @@ export async function onRequestPut(context) {
       hora_fin,
       capacidad: aforo_limitado === 1 ? capacidad : null,
       es_recurrente,
-      patron_recurrencia: es_recurrente === 1 ? patron_recurrencia : null
+      patron_recurrencia: es_recurrente === 1 ? patron_recurrencia : null,
+      recurrencia_tipo: es_recurrente === 1 ? regla_recurrencia.tipo : null,
+      recurrencia_weekdays: es_recurrente === 1 ? regla_recurrencia.weekdays.join(",") : null,
+      recurrencia_fin_tipo: es_recurrente === 1 ? regla_recurrencia.fin_tipo : null
     };
 
     const errorValidacion = validarDatosFranja({
@@ -1518,6 +1609,7 @@ export async function onRequestPut(context) {
       capacidad,
       es_recurrente,
       patron_recurrencia,
+      regla_recurrencia,
       aforo_limitado
     });
 
@@ -1539,13 +1631,37 @@ export async function onRequestPut(context) {
         FROM franjas
         WHERE actividad_id = ?
           AND es_recurrente = 1
-          AND patron_recurrencia = ?
+          AND recurrencia_tipo = ?
+          AND recurrencia_inicio = ?
+          AND COALESCE(recurrencia_fin, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_fin_tipo, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_repeticiones, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_weekday, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_weekdays, '') = COALESCE(?, '')
+          AND COALESCE(recurrencia_ordinal, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_monthday, -99) = COALESCE(?, -99)
+          AND COALESCE(recurrencia_month, -99) = COALESCE(?, -99)
           AND hora_inicio = ?
           AND COALESCE(hora_fin, '') = COALESCE(?, '')
           AND id <> ?
         LIMIT 1
       `)
-        .bind(existente.actividad_id, patron_recurrencia, hora_inicio, hora_fin, id)
+        .bind(
+          existente.actividad_id,
+          regla_recurrencia.tipo,
+          regla_recurrencia.inicio,
+          regla_recurrencia.fin_tipo === "FECHA" ? regla_recurrencia.fin : null,
+          regla_recurrencia.fin_tipo,
+          regla_recurrencia.repeticiones,
+          regla_recurrencia.weekday,
+          regla_recurrencia.weekdays.join(","),
+          regla_recurrencia.ordinal,
+          regla_recurrencia.monthday,
+          regla_recurrencia.month,
+          hora_inicio,
+          hora_fin,
+          id
+        )
         .first();
     } else {
       duplicada = await env.DB.prepare(`
@@ -1610,7 +1726,18 @@ export async function onRequestPut(context) {
         hora_fin = ?,
         capacidad = ?,
         es_recurrente = ?,
-        patron_recurrencia = ?
+        patron_recurrencia = ?,
+        recurrencia_tipo = ?,
+        recurrencia_intervalo = ?,
+        recurrencia_weekday = ?,
+        recurrencia_weekdays = ?,
+        recurrencia_ordinal = ?,
+        recurrencia_monthday = ?,
+        recurrencia_month = ?,
+        recurrencia_inicio = ?,
+        recurrencia_fin = ?,
+        recurrencia_fin_tipo = ?,
+        recurrencia_repeticiones = ?
       WHERE id = ?
     `)
       .bind(
@@ -1620,6 +1747,17 @@ export async function onRequestPut(context) {
         aforo_limitado === 1 ? capacidad : null,
         es_recurrente,
         es_recurrente === 1 ? patron_recurrencia : null,
+        es_recurrente === 1 ? regla_recurrencia.tipo : null,
+        es_recurrente === 1 ? regla_recurrencia.intervalo : 1,
+        es_recurrente === 1 ? regla_recurrencia.weekday : null,
+        es_recurrente === 1 ? regla_recurrencia.weekdays.join(",") : null,
+        es_recurrente === 1 ? regla_recurrencia.ordinal : null,
+        es_recurrente === 1 ? regla_recurrencia.monthday : null,
+        es_recurrente === 1 ? regla_recurrencia.month : null,
+        es_recurrente === 1 ? regla_recurrencia.inicio : null,
+        es_recurrente === 1 && regla_recurrencia.fin_tipo === "FECHA" ? regla_recurrencia.fin : null,
+        es_recurrente === 1 ? regla_recurrencia.fin_tipo : null,
+        es_recurrente === 1 ? regla_recurrencia.repeticiones : null,
         id
       )
       .run();

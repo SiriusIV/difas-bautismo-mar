@@ -14,11 +14,14 @@ export async function asegurarEstructuraRecurrenciaFranjas(env) {
     ["recurrencia_tipo", "TEXT"],
     ["recurrencia_intervalo", "INTEGER NOT NULL DEFAULT 1"],
     ["recurrencia_weekday", "INTEGER"],
+    ["recurrencia_weekdays", "TEXT"],
     ["recurrencia_ordinal", "INTEGER"],
     ["recurrencia_monthday", "INTEGER"],
     ["recurrencia_month", "INTEGER"],
     ["recurrencia_inicio", "TEXT"],
-    ["recurrencia_fin", "TEXT"]
+    ["recurrencia_fin", "TEXT"],
+    ["recurrencia_fin_tipo", "TEXT"],
+    ["recurrencia_repeticiones", "INTEGER"]
   ];
 
   for (const [nombre, definicion] of columnas) {
@@ -42,6 +45,16 @@ function crearFechaLocal(iso) {
   const [y, m, d] = String(iso).split("-").map(Number);
   const fecha = new Date(y, m - 1, d);
   return fecha.getFullYear() === y && fecha.getMonth() === m - 1 && fecha.getDate() === d ? fecha : null;
+}
+
+function normalizarListaWeekdays(valor) {
+  const valores = Array.isArray(valor)
+    ? valor
+    : String(valor || "").split(",").map((item) => item.trim()).filter(Boolean);
+  return [...new Set(valores
+    .map((item) => parseInt(item, 10))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))]
+    .sort((a, b) => a - b);
 }
 
 function sumarDias(fecha, dias) {
@@ -83,32 +96,47 @@ function nthWeekdayOfMonth(year, monthIndex, weekday, ordinal) {
 function generarFechasRecurrencia(patron = {}, hasta = finVentanaRecurrencia()) {
   const inicio = crearFechaLocal(patron.recurrencia_inicio);
   if (!inicio) return [];
-  const finRegla = patron.recurrencia_fin ? crearFechaLocal(patron.recurrencia_fin) : null;
+  const finTipo = normalizarTexto(patron.recurrencia_fin_tipo || (patron.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase();
+  const finRegla = finTipo === "FECHA" && patron.recurrencia_fin ? crearFechaLocal(patron.recurrencia_fin) : null;
   const limite = finRegla && finRegla < hasta ? finRegla : hasta;
   const tipo = normalizarTexto(patron.recurrencia_tipo).toUpperCase();
   const intervalo = Math.max(Number(patron.recurrencia_intervalo || 1), 1);
+  const maxRepeticiones = finTipo === "REPETICIONES" ? Number(patron.recurrencia_repeticiones || 0) : null;
   const fechas = [];
+  const agregarFecha = (fecha) => {
+    if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
+    if (fecha < inicio || fecha > limite) return true;
+    fechas.push(fechaIsoLocal(fecha));
+    return !(maxRepeticiones && fechas.length >= maxRepeticiones);
+  };
 
   if (tipo === "DIARIA") {
-    for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, intervalo)) fechas.push(fechaIsoLocal(actual));
+    for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, intervalo)) {
+      if (!agregarFecha(actual)) break;
+    }
   } else if (tipo === "SEMANAL") {
-    let actual = new Date(inicio);
-    while (actual.getDay() !== Number(patron.recurrencia_weekday)) actual = sumarDias(actual, 1);
-    for (; actual <= limite; actual = sumarDias(actual, 7 * intervalo)) fechas.push(fechaIsoLocal(actual));
+    const weekdays = normalizarListaWeekdays(patron.recurrencia_weekdays || patron.recurrencia_weekday);
+    for (let semanaBase = new Date(inicio); semanaBase <= limite; semanaBase = sumarDias(semanaBase, 7 * intervalo)) {
+      const inicioSemana = sumarDias(semanaBase, -semanaBase.getDay());
+      for (const weekday of weekdays) {
+        const fecha = sumarDias(inicioSemana, weekday);
+        if (!agregarFecha(fecha)) return [...new Set(fechas)].sort();
+      }
+    }
   } else if (tipo === "MENSUAL_DIA_SEMANA") {
     for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, intervalo)) {
       const fecha = nthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), patron.recurrencia_weekday, patron.recurrencia_ordinal);
-      if (fecha && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha && !agregarFecha(fecha)) break;
     }
   } else if (tipo === "MENSUAL_DIA_MES") {
     for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, intervalo)) {
       const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), Number(patron.recurrencia_monthday));
-      if (fecha.getMonth() === cursor.getMonth() && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha.getMonth() === cursor.getMonth() && !agregarFecha(fecha)) break;
     }
   } else if (tipo === "ANUAL") {
     for (let year = inicio.getFullYear(); year <= limite.getFullYear(); year += intervalo) {
       const fecha = new Date(year, Number(patron.recurrencia_month) - 1, Number(patron.recurrencia_monthday));
-      if (fecha.getMonth() === Number(patron.recurrencia_month) - 1 && fecha >= inicio && fecha <= limite) fechas.push(fechaIsoLocal(fecha));
+      if (fecha.getMonth() === Number(patron.recurrencia_month) - 1 && !agregarFecha(fecha)) break;
     }
   }
 
@@ -132,10 +160,10 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   await env.DB.prepare(`
     INSERT INTO franjas (
       fecha, hora_inicio, hora_fin, capacidad, actividad_id, activa, es_recurrente, patron_recurrencia,
-      recurrencia_origen_id, recurrencia_tipo, recurrencia_intervalo, recurrencia_weekday, recurrencia_ordinal,
-      recurrencia_monthday, recurrencia_month, recurrencia_inicio, recurrencia_fin
+      recurrencia_origen_id, recurrencia_tipo, recurrencia_intervalo, recurrencia_weekday, recurrencia_weekdays, recurrencia_ordinal,
+      recurrencia_monthday, recurrencia_month, recurrencia_inicio, recurrencia_fin, recurrencia_fin_tipo, recurrencia_repeticiones
     )
-    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     fecha,
     patron.hora_inicio,
@@ -147,11 +175,14 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
     patron.recurrencia_tipo,
     Number(patron.recurrencia_intervalo || 1),
     patron.recurrencia_weekday,
+    patron.recurrencia_weekdays,
     patron.recurrencia_ordinal,
     patron.recurrencia_monthday,
     patron.recurrencia_month,
     patron.recurrencia_inicio,
-    patron.recurrencia_fin
+    patron.recurrencia_fin,
+    patron.recurrencia_fin_tipo,
+    patron.recurrencia_repeticiones
   ).run();
 
   return true;

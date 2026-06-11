@@ -2210,6 +2210,97 @@
       width: min(560px, calc(100vw - 40px));
     }
 
+    .modal-periodicidad .modal-panel {
+      width: min(620px, calc(100vw - 34px));
+      max-height: calc(100vh - 42px);
+      overflow: auto;
+    }
+
+    .periodicidad-bloque {
+      display: grid;
+      gap: 10px;
+      padding: 14px 0;
+      border-top: 1px solid #e7edf5;
+    }
+
+    .periodicidad-bloque:first-of-type {
+      border-top: none;
+      padding-top: 4px;
+    }
+
+    .periodicidad-bloque > label:first-child {
+      color: #4b5b70;
+      font-weight: 700;
+    }
+
+    .periodicidad-linea {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .periodicidad-linea input,
+    .periodicidad-linea select,
+    .periodicidad-radio input[type="date"],
+    .periodicidad-radio input[type="number"] {
+      border: 1px solid #b7c7dc;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #173b62;
+      background: #fff;
+    }
+
+    .periodicidad-linea input {
+      width: 92px;
+      text-align: center;
+    }
+
+    .periodicidad-dias {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .periodicidad-dias label {
+      width: 42px;
+      height: 42px;
+      border: 1px solid #aebbd0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #24364a;
+      cursor: pointer;
+    }
+
+    .periodicidad-dias input {
+      display: none;
+    }
+
+    .periodicidad-dias label:has(input:checked) {
+      background: #0b5ed7;
+      border-color: #0b5ed7;
+      color: #fff;
+    }
+
+    .periodicidad-termina {
+      gap: 12px;
+    }
+
+    .periodicidad-radio {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: #24364a;
+    }
+
+    .periodicidad-radio input[type="radio"] {
+      width: 20px;
+      height: 20px;
+    }
+
     @media (max-width: 1100px) {
       .config-grid {
         grid-template-columns: 1fr;
@@ -2946,71 +3037,20 @@
       <input type="date" id="fr_fecha">
     </div>
 
-    <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-      <label>Repetición</label>
-      <select id="fr_recurrencia_tipo">
-        <option value="MENSUAL_DIA_SEMANA">Mensual por día de semana</option>
-        <option value="MENSUAL_DIA_MES">Mensual por día del mes</option>
-        <option value="SEMANAL">Semanal</option>
-        <option value="DIARIA">Diaria</option>
-        <option value="ANUAL">Anual</option>
-      </select>
-    </div>
-
     <div id="fr_bloque_recurrencia_inicio" class="campo-franja-inline campo-franja-patron">
-      <label>Desde</label>
+      <label>Fecha de inicio</label>
       <input type="date" id="fr_recurrencia_inicio">
     </div>
 
-    <div id="fr_bloque_recurrencia_fin" class="campo-franja-inline campo-franja-patron">
-      <label>Hasta (opcional)</label>
-      <input type="date" id="fr_recurrencia_fin">
-    </div>
-
-    <div id="fr_bloque_recurrencia_ordinal" class="campo-franja-inline campo-franja-patron">
-      <label>Ordinal</label>
-      <select id="fr_recurrencia_ordinal">
-        <option value="1">Primer</option>
-        <option value="2">Segundo</option>
-        <option value="3">Tercer</option>
-        <option value="4">Cuarto</option>
-        <option value="-1">Último</option>
-      </select>
-    </div>
-
-    <div id="fr_bloque_recurrencia_weekday" class="campo-franja-inline campo-franja-patron">
-      <label>Día semana</label>
-      <select id="fr_recurrencia_weekday">
-        <option value="1">Lunes</option>
-        <option value="2">Martes</option>
-        <option value="3">Miércoles</option>
-        <option value="4">Jueves</option>
-        <option value="5">Viernes</option>
-        <option value="6">Sábado</option>
-        <option value="0">Domingo</option>
-      </select>
-    </div>
-
-    <div id="fr_bloque_recurrencia_monthday" class="campo-franja-inline campo-franja-patron">
-      <label>Día mes</label>
-      <input type="number" id="fr_recurrencia_monthday" min="1" max="31" step="1" value="1">
-    </div>
-
-    <div id="fr_bloque_recurrencia_month" class="campo-franja-inline campo-franja-patron">
-      <label>Mes</label>
-      <select id="fr_recurrencia_month">
-        <option value="1">Enero</option>
-        <option value="2">Febrero</option>
-        <option value="3">Marzo</option>
-        <option value="4">Abril</option>
-        <option value="5">Mayo</option>
-        <option value="6">Junio</option>
-        <option value="7">Julio</option>
-        <option value="8">Agosto</option>
-        <option value="9">Septiembre</option>
-        <option value="10">Octubre</option>
-        <option value="11">Noviembre</option>
-        <option value="12">Diciembre</option>
+    <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
+      <label>Se repite</label>
+      <select id="fr_repeticion_selector">
+        <option value="NO">No se repite</option>
+        <option value="DIARIA">Todos los días</option>
+        <option value="SEMANAL">Todas las semanas</option>
+        <option value="MENSUAL">Todos los meses</option>
+        <option value="ANUAL">Todos los años</option>
+        <option value="PERSONALIZADA">Personalizar...</option>
       </select>
     </div>
 
@@ -3018,6 +3058,17 @@
       <label>Patrón generado</label>
       <input type="text" id="fr_patron_recurrencia" readonly placeholder="Se generará automáticamente">
     </div>
+
+    <input type="hidden" id="fr_recurrencia_tipo" value="MENSUAL_DIA_MES">
+    <input type="hidden" id="fr_recurrencia_intervalo" value="1">
+    <input type="hidden" id="fr_recurrencia_weekday" value="">
+    <input type="hidden" id="fr_recurrencia_weekdays" value="">
+    <input type="hidden" id="fr_recurrencia_ordinal" value="">
+    <input type="hidden" id="fr_recurrencia_monthday" value="">
+    <input type="hidden" id="fr_recurrencia_month" value="">
+    <input type="hidden" id="fr_recurrencia_fin" value="">
+    <input type="hidden" id="fr_recurrencia_fin_tipo" value="NUNCA">
+    <input type="hidden" id="fr_recurrencia_repeticiones" value="">
 
     <div class="campo-franja-inline">
       <label>Inicio</label>
@@ -3185,6 +3236,64 @@
             <div class="modal-acciones">
               <button type="button" class="btn btn-secundario" id="btnCancelarModalAvisoDesactivacionActividad">Cancelar</button>
               <button type="button" class="btn btn-peligro" id="btnAceptarModalAvisoDesactivacionActividad">Aceptar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-confirmacion-salida modal-periodicidad" id="modalPeriodicidadFranja" aria-hidden="true">
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalPeriodicidadFranja">
+            <button type="button" class="modal-cerrar" id="btnCerrarModalPeriodicidadFranja" aria-label="Cerrar periodicidad">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h4 id="tituloModalPeriodicidadFranja">Periodicidad personalizada</h4>
+
+            <div class="periodicidad-bloque">
+              <label>Se repite cada</label>
+              <div class="periodicidad-linea">
+                <input type="number" id="recPersonalizadaIntervalo" min="1" step="1" value="1">
+                <select id="recPersonalizadaUnidad">
+                  <option value="DIARIA">día</option>
+                  <option value="SEMANAL" selected>semana</option>
+                  <option value="MENSUAL_DIA_MES">mes</option>
+                  <option value="ANUAL">año</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="periodicidad-bloque" id="recPersonalizadaDiasWrap">
+              <label>Se repite el</label>
+              <div class="periodicidad-dias" id="recPersonalizadaDias">
+                <label><input type="checkbox" value="1">L</label>
+                <label><input type="checkbox" value="2">M</label>
+                <label><input type="checkbox" value="3">X</label>
+                <label><input type="checkbox" value="4">J</label>
+                <label><input type="checkbox" value="5">V</label>
+                <label><input type="checkbox" value="6">S</label>
+                <label><input type="checkbox" value="0">D</label>
+              </div>
+            </div>
+
+            <div class="periodicidad-bloque periodicidad-termina">
+              <label>Termina</label>
+              <label class="periodicidad-radio"><input type="radio" name="recFinTipo" value="NUNCA" checked> Nunca</label>
+              <label class="periodicidad-radio">
+                <input type="radio" name="recFinTipo" value="FECHA"> El
+                <input type="date" id="recPersonalizadaFinFecha">
+              </label>
+              <label class="periodicidad-radio">
+                <input type="radio" name="recFinTipo" value="REPETICIONES"> Después de
+                <input type="number" id="recPersonalizadaRepeticiones" min="1" step="1" value="1">
+                repeticiones
+              </label>
+            </div>
+
+            <div class="modal-acciones">
+              <button type="button" class="btn btn-secundario" id="btnCancelarModalPeriodicidadFranja">Cancelar</button>
+              <button type="button" class="btn" id="btnAceptarModalPeriodicidadFranja">Hecho</button>
             </div>
           </div>
         </div>
@@ -5661,17 +5770,11 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
       const esRecurrente = document.getElementById("es_recurrente").value === "1";
       const accionesFranjasBotones = document.getElementById("accionesFranjasBotones");
-      const tipoRecurrencia = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
 
       document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
-      document.getElementById("fr_bloque_recurrencia_fin")?.classList.toggle("oculto", !esRecurrente);
-      document.getElementById("fr_bloque_recurrencia_ordinal")?.classList.toggle("oculto", !esRecurrente || tipoRecurrencia !== "MENSUAL_DIA_SEMANA");
-      document.getElementById("fr_bloque_recurrencia_weekday")?.classList.toggle("oculto", !esRecurrente || !["SEMANAL", "MENSUAL_DIA_SEMANA"].includes(tipoRecurrencia));
-      document.getElementById("fr_bloque_recurrencia_monthday")?.classList.toggle("oculto", !esRecurrente || !["MENSUAL_DIA_MES", "ANUAL"].includes(tipoRecurrencia));
-      document.getElementById("fr_bloque_recurrencia_month")?.classList.toggle("oculto", !esRecurrente || tipoRecurrencia !== "ANUAL");
       document.getElementById("fr_bloque_patron_texto")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
@@ -5696,17 +5799,28 @@ function actualizarTextoPatronRecurrencia() {
   if (!input) return;
 
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
-  const weekday = document.getElementById("fr_recurrencia_weekday")?.value || "6";
+  const weekdaysTexto = document.getElementById("fr_recurrencia_weekdays")?.value || document.getElementById("fr_recurrencia_weekday")?.value || "";
+  const weekdays = weekdaysTexto.split(",").map((item) => item.trim()).filter(Boolean);
+  const weekday = weekdays[0] || document.getElementById("fr_recurrencia_weekday")?.value || "6";
   const ordinal = document.getElementById("fr_recurrencia_ordinal")?.value || "1";
   const monthday = document.getElementById("fr_recurrencia_monthday")?.value || "1";
   const month = document.getElementById("fr_recurrencia_month")?.value || "1";
+  const intervalo = Number(document.getElementById("fr_recurrencia_intervalo")?.value || 1);
+  const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
+  const finFecha = document.getElementById("fr_recurrencia_fin")?.value || "";
+  const repeticiones = document.getElementById("fr_recurrencia_repeticiones")?.value || "";
 
   let texto = "";
-  if (tipo === "DIARIA") texto = "Cada día";
-  else if (tipo === "SEMANAL") texto = `Cada ${nombreDiaRecurrencia(weekday)}`;
-  else if (tipo === "MENSUAL_DIA_SEMANA") texto = `${nombreOrdinalRecurrencia(ordinal)} ${nombreDiaRecurrencia(weekday)} de cada mes`;
-  else if (tipo === "MENSUAL_DIA_MES") texto = `Día ${monthday} de cada mes`;
-  else if (tipo === "ANUAL") texto = `Cada año, el día ${monthday} de ${nombreMesRecurrencia(month)}`;
+  if (tipo === "DIARIA") texto = intervalo === 1 ? "Todos los días" : `Cada ${intervalo} días`;
+  else if (tipo === "SEMANAL") {
+    const dias = (weekdays.length ? weekdays : [weekday]).map(nombreDiaRecurrencia).filter(Boolean).join(", ");
+    texto = intervalo === 1 ? `Todas las semanas (${dias})` : `Cada ${intervalo} semanas (${dias})`;
+  } else if (tipo === "MENSUAL_DIA_SEMANA") texto = `${nombreOrdinalRecurrencia(ordinal)} ${nombreDiaRecurrencia(weekday)} de cada mes`;
+  else if (tipo === "MENSUAL_DIA_MES") texto = intervalo === 1 ? `Todos los meses, día ${monthday}` : `Cada ${intervalo} meses, día ${monthday}`;
+  else if (tipo === "ANUAL") texto = intervalo === 1 ? `Todos los años, ${monthday} de ${nombreMesRecurrencia(month)}` : `Cada ${intervalo} años, ${monthday} de ${nombreMesRecurrencia(month)}`;
+
+  if (texto && finTipo === "FECHA" && finFecha) texto += `, hasta ${finFecha.split("-").reverse().join("/")}`;
+  if (texto && finTipo === "REPETICIONES" && repeticiones) texto += `, ${repeticiones} repeticiones`;
 
   input.value = texto;
   sincronizarPatronRecurrenciaOculto();
@@ -5717,11 +5831,16 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_fecha").value = "";
   document.getElementById("fr_recurrencia_inicio").value = "";
   document.getElementById("fr_recurrencia_fin").value = "";
-  document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_SEMANA";
-  document.getElementById("fr_recurrencia_ordinal").value = "1";
-  document.getElementById("fr_recurrencia_weekday").value = "6";
+  document.getElementById("fr_repeticion_selector").value = "MENSUAL";
+  document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
+  document.getElementById("fr_recurrencia_intervalo").value = "1";
+  document.getElementById("fr_recurrencia_ordinal").value = "";
+  document.getElementById("fr_recurrencia_weekday").value = "";
+  document.getElementById("fr_recurrencia_weekdays").value = "";
   document.getElementById("fr_recurrencia_monthday").value = "1";
   document.getElementById("fr_recurrencia_month").value = "1";
+  document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
+  document.getElementById("fr_recurrencia_repeticiones").value = "";
   document.getElementById("fr_patron_recurrencia").value = "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
@@ -5744,6 +5863,134 @@ function seleccionarFranja(id) {
   }
   renderListaFranjas();
   actualizarAccionesFranjaUI();
+}
+
+function fechaInicioRecurrenciaSeleccionada() {
+  return document.getElementById("fr_recurrencia_inicio")?.value || document.getElementById("fr_fecha")?.value || "";
+}
+
+function fechaLocalDesdeIsoActividad(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+function weekdayDesdeFechaInicioRecurrencia() {
+  const fecha = fechaLocalDesdeIsoActividad(fechaInicioRecurrenciaSeleccionada());
+  return fecha ? String(fecha.getDay()) : "1";
+}
+
+function aplicarReglaRecurrenciaSimple(tipoSelector) {
+  const fechaInicio = fechaInicioRecurrenciaSeleccionada();
+  const fecha = fechaLocalDesdeIsoActividad(fechaInicio);
+  const monthday = fecha ? String(fecha.getDate()) : "1";
+  const month = fecha ? String(fecha.getMonth() + 1) : "1";
+  const weekday = fecha ? String(fecha.getDay()) : "1";
+
+  document.getElementById("fr_recurrencia_intervalo").value = "1";
+  document.getElementById("fr_recurrencia_fin").value = "";
+  document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
+  document.getElementById("fr_recurrencia_repeticiones").value = "";
+  document.getElementById("fr_recurrencia_weekday").value = "";
+  document.getElementById("fr_recurrencia_weekdays").value = "";
+  document.getElementById("fr_recurrencia_ordinal").value = "";
+  document.getElementById("fr_recurrencia_monthday").value = monthday;
+  document.getElementById("fr_recurrencia_month").value = month;
+
+  if (tipoSelector === "DIARIA") {
+    document.getElementById("fr_recurrencia_tipo").value = "DIARIA";
+  } else if (tipoSelector === "SEMANAL") {
+    document.getElementById("fr_recurrencia_tipo").value = "SEMANAL";
+    document.getElementById("fr_recurrencia_weekday").value = weekday;
+    document.getElementById("fr_recurrencia_weekdays").value = weekday;
+  } else if (tipoSelector === "MENSUAL") {
+    document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
+  } else if (tipoSelector === "ANUAL") {
+    document.getElementById("fr_recurrencia_tipo").value = "ANUAL";
+  }
+
+  actualizarTextoPatronRecurrencia();
+}
+
+function manejarCambioSelectorRepeticion() {
+  const selector = document.getElementById("fr_repeticion_selector");
+  if (!selector) return;
+  if (selector.value === "NO") {
+    document.getElementById("es_recurrente").value = "0";
+    actualizarEstadoFranjasUI();
+    return;
+  }
+  if (selector.value === "PERSONALIZADA") {
+    abrirModalPeriodicidadFranja();
+    return;
+  }
+  aplicarReglaRecurrenciaSimple(selector.value);
+}
+
+function actualizarModalPeriodicidadVisibilidad() {
+  const unidad = document.getElementById("recPersonalizadaUnidad")?.value || "SEMANAL";
+  document.getElementById("recPersonalizadaDiasWrap")?.classList.toggle("oculto", unidad !== "SEMANAL");
+}
+
+function abrirModalPeriodicidadFranja() {
+  const intervalo = document.getElementById("fr_recurrencia_intervalo")?.value || "1";
+  const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "SEMANAL";
+  const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
+  const weekdays = (document.getElementById("fr_recurrencia_weekdays")?.value || weekdayDesdeFechaInicioRecurrencia()).split(",").filter(Boolean);
+
+  document.getElementById("recPersonalizadaIntervalo").value = intervalo;
+  document.getElementById("recPersonalizadaUnidad").value = ["DIARIA", "SEMANAL", "ANUAL"].includes(tipo) ? tipo : "MENSUAL_DIA_MES";
+  document.querySelectorAll("#recPersonalizadaDias input[type='checkbox']").forEach((input) => {
+    input.checked = weekdays.includes(input.value);
+  });
+  document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
+    input.checked = input.value === finTipo;
+  });
+  document.getElementById("recPersonalizadaFinFecha").value = document.getElementById("fr_recurrencia_fin")?.value || "";
+  document.getElementById("recPersonalizadaRepeticiones").value = document.getElementById("fr_recurrencia_repeticiones")?.value || "1";
+  actualizarModalPeriodicidadVisibilidad();
+  establecerVisibilidadModalActividad("modalPeriodicidadFranja", true);
+}
+
+function cerrarModalPeriodicidadFranja() {
+  establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
+  const selector = document.getElementById("fr_repeticion_selector");
+  if (selector && selector.value === "PERSONALIZADA" && !document.getElementById("fr_patron_recurrencia").value.trim()) {
+    selector.value = "SEMANAL";
+    aplicarReglaRecurrenciaSimple("SEMANAL");
+  }
+}
+
+function aceptarModalPeriodicidadFranja() {
+  const unidad = document.getElementById("recPersonalizadaUnidad")?.value || "SEMANAL";
+  const intervalo = Math.max(parseInt(document.getElementById("recPersonalizadaIntervalo")?.value || "1", 10) || 1, 1);
+  const fecha = fechaLocalDesdeIsoActividad(fechaInicioRecurrenciaSeleccionada());
+  const monthday = fecha ? String(fecha.getDate()) : "1";
+  const month = fecha ? String(fecha.getMonth() + 1) : "1";
+  const weekdays = [...document.querySelectorAll("#recPersonalizadaDias input[type='checkbox']:checked")].map((input) => input.value);
+  const finTipo = document.querySelector("input[name='recFinTipo']:checked")?.value || "NUNCA";
+
+  if (unidad === "SEMANAL" && weekdays.length === 0) {
+    mostrarMensaje("error", "Debes seleccionar al menos un día de la semana para la periodicidad semanal.");
+    return;
+  }
+
+  document.getElementById("fr_recurrencia_tipo").value = unidad;
+  document.getElementById("fr_recurrencia_intervalo").value = String(intervalo);
+  document.getElementById("fr_recurrencia_weekday").value = unidad === "SEMANAL" ? weekdays[0] : "";
+  document.getElementById("fr_recurrencia_weekdays").value = unidad === "SEMANAL" ? weekdays.join(",") : "";
+  document.getElementById("fr_recurrencia_ordinal").value = "";
+  document.getElementById("fr_recurrencia_monthday").value = monthday;
+  document.getElementById("fr_recurrencia_month").value = month;
+  document.getElementById("fr_recurrencia_fin_tipo").value = finTipo;
+  document.getElementById("fr_recurrencia_fin").value = finTipo === "FECHA" ? (document.getElementById("recPersonalizadaFinFecha")?.value || "") : "";
+  document.getElementById("fr_recurrencia_repeticiones").value = finTipo === "REPETICIONES" ? (document.getElementById("recPersonalizadaRepeticiones")?.value || "1") : "";
+  document.getElementById("fr_repeticion_selector").value = "PERSONALIZADA";
+
+  actualizarTextoPatronRecurrencia();
+  marcarCambiosPendientesActividad();
+  establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
 }
 
 async function borrarFranjaSeleccionada() {
@@ -6036,13 +6283,28 @@ function editarFranja(id) {
   document.getElementById("franjaId").value = f.id;
   document.getElementById("es_recurrente").value = String(Number(f.es_recurrente || 0));
   document.getElementById("fr_fecha").value = f.fecha || "";
-  document.getElementById("fr_recurrencia_tipo").value = f.recurrencia_tipo || "MENSUAL_DIA_SEMANA";
+  document.getElementById("fr_recurrencia_tipo").value = f.recurrencia_tipo || "MENSUAL_DIA_MES";
+  document.getElementById("fr_recurrencia_intervalo").value = String(f.recurrencia_intervalo || "1");
   document.getElementById("fr_recurrencia_inicio").value = f.recurrencia_inicio || f.fecha || "";
   document.getElementById("fr_recurrencia_fin").value = f.recurrencia_fin || "";
-  document.getElementById("fr_recurrencia_ordinal").value = String(f.recurrencia_ordinal || "1");
-  document.getElementById("fr_recurrencia_weekday").value = String(f.recurrencia_weekday ?? "6");
+  document.getElementById("fr_recurrencia_fin_tipo").value = f.recurrencia_fin_tipo || (f.recurrencia_fin ? "FECHA" : "NUNCA");
+  document.getElementById("fr_recurrencia_repeticiones").value = f.recurrencia_repeticiones || "";
+  document.getElementById("fr_recurrencia_ordinal").value = String(f.recurrencia_ordinal || "");
+  document.getElementById("fr_recurrencia_weekday").value = String(f.recurrencia_weekday ?? "");
+  document.getElementById("fr_recurrencia_weekdays").value = f.recurrencia_weekdays || (f.recurrencia_weekday ?? "");
   document.getElementById("fr_recurrencia_monthday").value = String(f.recurrencia_monthday || "1");
   document.getElementById("fr_recurrencia_month").value = String(f.recurrencia_month || "1");
+  const selectorRepeticion = document.getElementById("fr_repeticion_selector");
+  if (selectorRepeticion) {
+    const tipo = f.recurrencia_tipo || "";
+    const personalizado = Number(f.recurrencia_intervalo || 1) !== 1 || f.recurrencia_fin_tipo || f.recurrencia_repeticiones || (f.recurrencia_weekdays && String(f.recurrencia_weekdays).includes(","));
+    if (Number(f.es_recurrente || 0) !== 1) selectorRepeticion.value = "NO";
+    else if (personalizado) selectorRepeticion.value = "PERSONALIZADA";
+    else if (tipo === "DIARIA") selectorRepeticion.value = "DIARIA";
+    else if (tipo === "SEMANAL") selectorRepeticion.value = "SEMANAL";
+    else if (tipo === "ANUAL") selectorRepeticion.value = "ANUAL";
+    else selectorRepeticion.value = "MENSUAL";
+  }
   document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
@@ -6101,12 +6363,16 @@ function editarFranja(id) {
         fecha: document.getElementById("fr_fecha").value,
         patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
         recurrencia_tipo: document.getElementById("fr_recurrencia_tipo")?.value || "",
+        recurrencia_intervalo: document.getElementById("fr_recurrencia_intervalo")?.value || "1",
         recurrencia_inicio: document.getElementById("fr_recurrencia_inicio")?.value || "",
         recurrencia_fin: document.getElementById("fr_recurrencia_fin")?.value || "",
         recurrencia_ordinal: document.getElementById("fr_recurrencia_ordinal")?.value || "",
         recurrencia_weekday: document.getElementById("fr_recurrencia_weekday")?.value || "",
+        recurrencia_weekdays: document.getElementById("fr_recurrencia_weekdays")?.value || "",
         recurrencia_monthday: document.getElementById("fr_recurrencia_monthday")?.value || "",
         recurrencia_month: document.getElementById("fr_recurrencia_month")?.value || "",
+        recurrencia_fin_tipo: document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA",
+        recurrencia_repeticiones: document.getElementById("fr_recurrencia_repeticiones")?.value || "",
         hora_inicio: document.getElementById("fr_hora_inicio").value,
         hora_fin: document.getElementById("fr_hora_fin").value,
         capacidad: document.getElementById("fr_capacidad").value
@@ -7115,6 +7381,17 @@ function retrocederPaso() {
         actualizarAccesoPlantillasActividad();
         document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
         document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
+        document.getElementById("fr_repeticion_selector")?.addEventListener("change", () => {
+          manejarCambioSelectorRepeticion();
+          marcarCambiosPendientesActividad();
+        });
+        document.getElementById("fr_recurrencia_inicio")?.addEventListener("change", () => {
+          const selector = document.getElementById("fr_repeticion_selector")?.value || "MENSUAL";
+          if (selector !== "PERSONALIZADA" && selector !== "NO") {
+            aplicarReglaRecurrenciaSimple(selector);
+          }
+          marcarCambiosPendientesActividad();
+        });
       document.getElementById("btnCerrarModalSalida").addEventListener("click", cerrarModalSalidaSinGuardar);
       document.getElementById("btnCerrarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
       document.getElementById("btnCancelarModalAnulacionActividad").addEventListener("click", cerrarModalAnulacionActividad);
@@ -7122,6 +7399,10 @@ function retrocederPaso() {
       document.getElementById("btnCerrarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
       document.getElementById("btnCancelarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
       document.getElementById("btnAceptarModalAvisoDesactivacionActividad").addEventListener("click", confirmarAvisoDesactivacionActividad);
+      document.getElementById("btnCerrarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
+      document.getElementById("btnCancelarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
+      document.getElementById("btnAceptarModalPeriodicidadFranja")?.addEventListener("click", aceptarModalPeriodicidadFranja);
+      document.getElementById("recPersonalizadaUnidad")?.addEventListener("change", actualizarModalPeriodicidadVisibilidad);
       document.getElementById("toggleActividadActiva")?.addEventListener("change", () => {
         manejarCambioActividadActiva(true);
       });
@@ -7162,6 +7443,12 @@ function retrocederPaso() {
       document.getElementById("modalAvisoDesactivacionActividad").addEventListener("click", (event) => {
         if (event.target.id === "modalAvisoDesactivacionActividad") {
           cancelarAvisoDesactivacionActividad();
+        }
+      });
+
+      document.getElementById("modalPeriodicidadFranja")?.addEventListener("click", (event) => {
+        if (event.target.id === "modalPeriodicidadFranja") {
+          cerrarModalPeriodicidadFranja();
         }
       });
 
@@ -7211,12 +7498,16 @@ function retrocederPaso() {
 
       [
         "fr_recurrencia_tipo",
+        "fr_recurrencia_intervalo",
         "fr_recurrencia_inicio",
         "fr_recurrencia_fin",
         "fr_recurrencia_ordinal",
         "fr_recurrencia_weekday",
+        "fr_recurrencia_weekdays",
         "fr_recurrencia_monthday",
-        "fr_recurrencia_month"
+        "fr_recurrencia_month",
+        "fr_recurrencia_fin_tipo",
+        "fr_recurrencia_repeticiones"
       ].forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
