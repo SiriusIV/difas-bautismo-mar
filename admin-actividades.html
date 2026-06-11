@@ -1155,7 +1155,7 @@
 
 .fila-franja-inline {
   display: grid;
-  grid-template-columns: minmax(150px, 0.7fr) minmax(190px, 1fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(110px, 0.5fr);
+  grid-template-columns: minmax(280px, 1fr) 140px 140px 110px;
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
@@ -2044,7 +2044,7 @@
 
     .fila-franja-inline {
       display: grid;
-      grid-template-columns: minmax(150px, 0.7fr) minmax(190px, 1fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(110px, 0.5fr);
+      grid-template-columns: minmax(280px, 1fr) 140px 140px 110px 52px;
       gap: 10px;
       align-items: end;
       margin-bottom: 10px;
@@ -2077,8 +2077,7 @@
       min-height: 16px;
     }
 
-    .campo-franja-inline input,
-    .campo-franja-inline select {
+    .campo-franja-inline input {
       width: 100%;
       height: 38px;
     }
@@ -2556,13 +2555,13 @@
         grid-template-areas:
           "fecha capacidad"
           "patron patron"
-          "inicio fin";
+          "inicio fin"
+          "guardar guardar";
         gap: 10px 8px;
         align-items: end;
       }
 
-      #fr_bloque_fecha,
-      #fr_bloque_recurrencia_inicio {
+      #fr_bloque_fecha {
         grid-area: fecha;
       }
 
@@ -2570,11 +2569,11 @@
         grid-area: patron;
       }
 
-      #fr_bloque_inicio {
+      .fila-franja-inline > .campo-franja-inline:nth-of-type(3) {
         grid-area: inicio;
       }
 
-      #fr_bloque_fin {
+      .fila-franja-inline > .campo-franja-inline:nth-of-type(4) {
         grid-area: fin;
       }
 
@@ -2590,8 +2589,7 @@
         font-size: 12px;
       }
 
-      .campo-franja-inline input,
-      .campo-franja-inline select {
+      .campo-franja-inline input {
         height: 36px;
       }
 
@@ -3022,14 +3020,9 @@
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       </button>
-      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-      </button>
       </div>
+
+      <div class="acciones-franja-guardar-slot" id="accionesFranjaGuardarSlot"></div>
 
     </div>
   </div>
@@ -3050,7 +3043,7 @@
     </div>
 
     <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-      <label>Periodicidad</label>
+      <label>Se repite</label>
       <select id="fr_repeticion_selector">
         <option value="NO">No se repite</option>
         <option value="DIARIA">Todos los días</option>
@@ -3059,6 +3052,11 @@
         <option value="ANUAL">Todos los años</option>
         <option value="PERSONALIZADA">Personalizar...</option>
       </select>
+    </div>
+
+    <div id="fr_bloque_patron_texto" class="campo-franja-inline campo-franja-patron">
+      <label>Patrón generado</label>
+      <input type="text" id="fr_patron_recurrencia" readonly placeholder="Se generará automáticamente">
     </div>
 
     <input type="hidden" id="fr_recurrencia_tipo" value="MENSUAL_DIA_MES">
@@ -3072,12 +3070,12 @@
     <input type="hidden" id="fr_recurrencia_fin_tipo" value="NUNCA">
     <input type="hidden" id="fr_recurrencia_repeticiones" value="">
 
-    <div id="fr_bloque_inicio" class="campo-franja-inline">
+    <div class="campo-franja-inline">
       <label>Inicio</label>
       <input type="time" id="fr_hora_inicio">
     </div>
 
-    <div id="fr_bloque_fin" class="campo-franja-inline">
+    <div class="campo-franja-inline">
       <label>Fin (opcional)</label>
       <input type="time" id="fr_hora_fin">
     </div>
@@ -3085,6 +3083,16 @@
     <div id="fr_bloque_capacidad" class="campo-franja-inline">
       <label>Capacidad</label>
       <input type="number" id="fr_capacidad" min="1" step="1">
+    </div>
+
+    <div class="campo-franja-accion" id="campoFranjaGuardarWrap">
+      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -3937,10 +3945,16 @@
     function reubicarBotonGuardarFranjaSegunViewport() {
       const btnGuardar = document.getElementById("btnGuardarFranja");
       const grupoBotones = document.getElementById("accionesFranjasBotones");
-      if (!btnGuardar || !grupoBotones) return;
+      const slotFormulario = document.getElementById("campoFranjaGuardarWrap");
+      if (!btnGuardar || !grupoBotones || !slotFormulario) return;
 
-      if (btnGuardar.parentElement !== grupoBotones) {
-        grupoBotones.appendChild(btnGuardar);
+      const esMovil = window.matchMedia("(max-width: 700px)").matches;
+      if (esMovil) {
+        if (btnGuardar.parentElement !== grupoBotones) {
+          grupoBotones.appendChild(btnGuardar);
+        }
+      } else if (btnGuardar.parentElement !== slotFormulario) {
+        slotFormulario.appendChild(btnGuardar);
       }
     }
 
@@ -4011,9 +4025,9 @@
 
     function sincronizarPatronRecurrenciaOculto() {
       const oculto = document.getElementById("patron_recurrencia");
-      if (!oculto) return;
-      if (document.getElementById("usa_franjas")?.value !== "1") return;
-      oculto.value = document.getElementById("es_recurrente")?.value === "1" ? obtenerTextoPatronRecurrencia() : "";
+      const visible = document.getElementById("fr_patron_recurrencia");
+      if (!oculto || !visible) return;
+      oculto.value = visible.value || "";
     }
 
     function obtenerPatronRecurrenciaDesdeFranjasGuardadas() {
@@ -5092,6 +5106,7 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
+    setValor("fr_patron_recurrencia", actividad.patron_recurrencia || "");
     setValor("usa_enlace_externo", normalizarFlagSelect(actividad.usa_enlace_externo, 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
@@ -5760,6 +5775,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_patron_texto")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
       actualizarTextoPatronRecurrencia();
@@ -5778,7 +5794,10 @@ function nombreOrdinalRecurrencia(valor) {
   return ["", "primer", "segundo", "tercer", "cuarto"][Number(valor)] || "";
 }
 
-function obtenerTextoPatronRecurrencia() {
+function actualizarTextoPatronRecurrencia() {
+  const input = document.getElementById("fr_patron_recurrencia");
+  if (!input) return;
+
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
   const weekdaysTexto = document.getElementById("fr_recurrencia_weekdays")?.value || document.getElementById("fr_recurrencia_weekday")?.value || "";
   const weekdays = weekdaysTexto.split(",").map((item) => item.trim()).filter(Boolean);
@@ -5803,10 +5822,7 @@ function obtenerTextoPatronRecurrencia() {
   if (texto && finTipo === "FECHA" && finFecha) texto += `, hasta ${finFecha.split("-").reverse().join("/")}`;
   if (texto && finTipo === "REPETICIONES" && repeticiones) texto += `, ${repeticiones} repeticiones`;
 
-  return texto;
-}
-
-function actualizarTextoPatronRecurrencia() {
+  input.value = texto;
   sincronizarPatronRecurrenciaOculto();
 }
 
@@ -5825,6 +5841,7 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_month").value = "1";
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
+  document.getElementById("fr_patron_recurrencia").value = "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
@@ -5939,7 +5956,7 @@ function abrirModalPeriodicidadFranja() {
 function cerrarModalPeriodicidadFranja() {
   establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
   const selector = document.getElementById("fr_repeticion_selector");
-  if (selector && selector.value === "PERSONALIZADA" && !obtenerTextoPatronRecurrencia()) {
+  if (selector && selector.value === "PERSONALIZADA" && !document.getElementById("fr_patron_recurrencia").value.trim()) {
     selector.value = "SEMANAL";
     aplicarReglaRecurrenciaSimple("SEMANAL");
   }
@@ -6288,6 +6305,7 @@ function editarFranja(id) {
     else if (tipo === "ANUAL") selectorRepeticion.value = "ANUAL";
     else selectorRepeticion.value = "MENSUAL";
   }
+  document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
@@ -6343,7 +6361,7 @@ function editarFranja(id) {
         actividad_fecha_fin: document.getElementById("fecha_fin").value,
         es_recurrente: document.getElementById("es_recurrente").value,
         fecha: document.getElementById("fr_fecha").value,
-        patron_recurrencia: obtenerTextoPatronRecurrencia(),
+        patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
         recurrencia_tipo: document.getElementById("fr_recurrencia_tipo")?.value || "",
         recurrencia_intervalo: document.getElementById("fr_recurrencia_intervalo")?.value || "1",
         recurrencia_inicio: document.getElementById("fr_recurrencia_inicio")?.value || "",
@@ -6514,7 +6532,7 @@ async function borrarFranja(id) {
       agregarDocumentoSeleccionadoDocumentacionActividad();
       const usaFranjas = document.getElementById("usa_franjas").value;
       const patronFranjasGuardadas = obtenerPatronRecurrenciaDesdeFranjasGuardadas();
-      const patronFranjaEnEdicion = obtenerTextoPatronRecurrencia();
+      const patronFranjaEnEdicion = document.getElementById("fr_patron_recurrencia").value.trim();
       const esRecurrenteFranja = document.getElementById("es_recurrente").value === "1";
       const patronActividad = usaFranjas === "1"
         ? (patronFranjasGuardadas || (esRecurrenteFranja ? patronFranjaEnEdicion : ""))
@@ -7462,6 +7480,19 @@ function retrocederPaso() {
           const file = e.target.files && e.target.files[0];
           await manejarSeleccionImagenActividad(file);
           inputImagenActividad.value = "";
+        });
+      }
+
+      const inputPatronFranja = document.getElementById("fr_patron_recurrencia");
+      if (inputPatronFranja) {
+        inputPatronFranja.addEventListener("input", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
+        });
+
+        inputPatronFranja.addEventListener("change", () => {
+          sincronizarPatronRecurrenciaOculto();
+          marcarCambiosPendientesActividad();
         });
       }
 
