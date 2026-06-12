@@ -1155,7 +1155,7 @@
 
 .fila-franja-inline {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 140px 140px 110px;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 140px 140px 110px;
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
@@ -2044,7 +2044,7 @@
 
     .fila-franja-inline {
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) 140px 140px 110px 52px;
+      grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 140px 140px 110px;
       gap: 10px;
       align-items: end;
       margin-bottom: 10px;
@@ -2077,9 +2077,21 @@
       min-height: 16px;
     }
 
-    .campo-franja-inline input {
+    .campo-franja-inline input,
+    .campo-franja-inline select {
       width: 100%;
       height: 38px;
+    }
+
+    .campo-franja-frecuencia .frecuencia-controles {
+      display: grid;
+      grid-template-columns: 72px minmax(120px, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .campo-franja-frecuencia input[type="number"] {
+      text-align: center;
     }
 
     .campo-franja-acciones {
@@ -2555,13 +2567,13 @@
         grid-template-areas:
           "fecha capacidad"
           "patron patron"
-          "inicio fin"
-          "guardar guardar";
+          "inicio fin";
         gap: 10px 8px;
         align-items: end;
       }
 
-      #fr_bloque_fecha {
+      #fr_bloque_fecha,
+      #fr_bloque_recurrencia_inicio {
         grid-area: fecha;
       }
 
@@ -2569,11 +2581,11 @@
         grid-area: patron;
       }
 
-      .fila-franja-inline > .campo-franja-inline:nth-of-type(3) {
+      #fr_bloque_inicio {
         grid-area: inicio;
       }
 
-      .fila-franja-inline > .campo-franja-inline:nth-of-type(4) {
+      #fr_bloque_fin {
         grid-area: fin;
       }
 
@@ -2589,7 +2601,8 @@
         font-size: 12px;
       }
 
-      .campo-franja-inline input {
+      .campo-franja-inline input,
+      .campo-franja-inline select {
         height: 36px;
       }
 
@@ -3011,6 +3024,13 @@
 
     <div class="acciones-franja-toolbar" id="accionesFranjasToolbar">
       <div class="acciones-franja-botones" id="accionesFranjasBotones">
+      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </button>
       <button type="button" class="btn-icono-franja peligro" id="btnBorrarFranjaSeleccionada" title="Borrar franja" aria-label="Borrar franja" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
@@ -3021,8 +3041,6 @@
         </svg>
       </button>
       </div>
-
-      <div class="acciones-franja-guardar-slot" id="accionesFranjaGuardarSlot"></div>
 
     </div>
   </div>
@@ -3042,25 +3060,20 @@
       <input type="date" id="fr_recurrencia_inicio">
     </div>
 
-    <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron">
-      <label>Se repite</label>
-      <select id="fr_repeticion_selector">
-        <option value="NO">No se repite</option>
-        <option value="DIARIA">Todos los días</option>
-        <option value="SEMANAL">Todas las semanas</option>
-        <option value="MENSUAL">Todos los meses</option>
-        <option value="ANUAL">Todos los años</option>
-        <option value="PERSONALIZADA">Personalizar...</option>
-      </select>
-    </div>
-
-    <div id="fr_bloque_patron_texto" class="campo-franja-inline campo-franja-patron">
-      <label>Patrón generado</label>
-      <input type="text" id="fr_patron_recurrencia" readonly placeholder="Se generará automáticamente">
+    <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron campo-franja-frecuencia">
+      <label>Frecuencia</label>
+      <div class="frecuencia-controles">
+        <input type="number" id="fr_recurrencia_intervalo" min="1" step="1" value="1" inputmode="numeric" aria-label="Cantidad de frecuencia">
+        <select id="fr_repeticion_selector" aria-label="Unidad de frecuencia">
+          <option value="DIARIA">día</option>
+          <option value="SEMANAL">semana</option>
+          <option value="MENSUAL">mes</option>
+          <option value="ANUAL">año</option>
+        </select>
+      </div>
     </div>
 
     <input type="hidden" id="fr_recurrencia_tipo" value="MENSUAL_DIA_MES">
-    <input type="hidden" id="fr_recurrencia_intervalo" value="1">
     <input type="hidden" id="fr_recurrencia_weekday" value="">
     <input type="hidden" id="fr_recurrencia_weekdays" value="">
     <input type="hidden" id="fr_recurrencia_ordinal" value="">
@@ -3070,12 +3083,12 @@
     <input type="hidden" id="fr_recurrencia_fin_tipo" value="NUNCA">
     <input type="hidden" id="fr_recurrencia_repeticiones" value="">
 
-    <div class="campo-franja-inline">
+    <div id="fr_bloque_inicio" class="campo-franja-inline">
       <label>Inicio</label>
       <input type="time" id="fr_hora_inicio">
     </div>
 
-    <div class="campo-franja-inline">
+    <div id="fr_bloque_fin" class="campo-franja-inline">
       <label>Fin (opcional)</label>
       <input type="time" id="fr_hora_fin">
     </div>
@@ -3083,16 +3096,6 @@
     <div id="fr_bloque_capacidad" class="campo-franja-inline">
       <label>Capacidad</label>
       <input type="number" id="fr_capacidad" min="1" step="1">
-    </div>
-
-    <div class="campo-franja-accion" id="campoFranjaGuardarWrap">
-      <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-      </button>
     </div>
   </div>
 
@@ -3945,16 +3948,10 @@
     function reubicarBotonGuardarFranjaSegunViewport() {
       const btnGuardar = document.getElementById("btnGuardarFranja");
       const grupoBotones = document.getElementById("accionesFranjasBotones");
-      const slotFormulario = document.getElementById("campoFranjaGuardarWrap");
-      if (!btnGuardar || !grupoBotones || !slotFormulario) return;
+      if (!btnGuardar || !grupoBotones) return;
 
-      const esMovil = window.matchMedia("(max-width: 700px)").matches;
-      if (esMovil) {
-        if (btnGuardar.parentElement !== grupoBotones) {
-          grupoBotones.appendChild(btnGuardar);
-        }
-      } else if (btnGuardar.parentElement !== slotFormulario) {
-        slotFormulario.appendChild(btnGuardar);
+      if (btnGuardar.parentElement !== grupoBotones) {
+        grupoBotones.insertBefore(btnGuardar, grupoBotones.firstChild);
       }
     }
 
@@ -4025,9 +4022,8 @@
 
     function sincronizarPatronRecurrenciaOculto() {
       const oculto = document.getElementById("patron_recurrencia");
-      const visible = document.getElementById("fr_patron_recurrencia");
-      if (!oculto || !visible) return;
-      oculto.value = visible.value || "";
+      if (!oculto || document.getElementById("usa_franjas")?.value !== "1") return;
+      oculto.value = document.getElementById("es_recurrente")?.value === "1" ? obtenerTextoPatronRecurrencia() : "";
     }
 
     function obtenerPatronRecurrenciaDesdeFranjasGuardadas() {
@@ -5106,7 +5102,6 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     setValor("provincia", actividad.provincia || "");
     setValor("es_recurrente", String(actividad.es_recurrente ?? 0));
     setValor("patron_recurrencia", actividad.patron_recurrencia || "");
-    setValor("fr_patron_recurrencia", actividad.patron_recurrencia || "");
     setValor("usa_enlace_externo", normalizarFlagSelect(actividad.usa_enlace_externo, 0));
     setValor("enlace_externo_url", actividad.enlace_externo_url || "");
     setValor("direccion_postal", actividad.direccion_postal || "");
@@ -5775,7 +5770,6 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
-      document.getElementById("fr_bloque_patron_texto")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
       actualizarTextoPatronRecurrencia();
@@ -5794,10 +5788,7 @@ function nombreOrdinalRecurrencia(valor) {
   return ["", "primer", "segundo", "tercer", "cuarto"][Number(valor)] || "";
 }
 
-function actualizarTextoPatronRecurrencia() {
-  const input = document.getElementById("fr_patron_recurrencia");
-  if (!input) return;
-
+function obtenerTextoPatronRecurrencia() {
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
   const weekdaysTexto = document.getElementById("fr_recurrencia_weekdays")?.value || document.getElementById("fr_recurrencia_weekday")?.value || "";
   const weekdays = weekdaysTexto.split(",").map((item) => item.trim()).filter(Boolean);
@@ -5822,7 +5813,19 @@ function actualizarTextoPatronRecurrencia() {
   if (texto && finTipo === "FECHA" && finFecha) texto += `, hasta ${finFecha.split("-").reverse().join("/")}`;
   if (texto && finTipo === "REPETICIONES" && repeticiones) texto += `, ${repeticiones} repeticiones`;
 
-  input.value = texto;
+  return texto;
+}
+
+function normalizarIntervaloFrecuenciaFranja() {
+  const input = document.getElementById("fr_recurrencia_intervalo");
+  if (!input) return 1;
+  const valor = Math.max(parseInt(input.value || "1", 10) || 1, 1);
+  input.value = String(valor);
+  return valor;
+}
+
+function actualizarTextoPatronRecurrencia() {
+  normalizarIntervaloFrecuenciaFranja();
   sincronizarPatronRecurrenciaOculto();
 }
 
@@ -5841,7 +5844,6 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_month").value = "1";
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
-  document.getElementById("fr_patron_recurrencia").value = "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
@@ -5887,8 +5889,9 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
   const monthday = fecha ? String(fecha.getDate()) : "1";
   const month = fecha ? String(fecha.getMonth() + 1) : "1";
   const weekday = fecha ? String(fecha.getDay()) : "1";
+  const intervalo = normalizarIntervaloFrecuenciaFranja();
 
-  document.getElementById("fr_recurrencia_intervalo").value = "1";
+  document.getElementById("fr_recurrencia_intervalo").value = String(intervalo);
   document.getElementById("fr_recurrencia_fin").value = "";
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
@@ -5916,15 +5919,6 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
 function manejarCambioSelectorRepeticion() {
   const selector = document.getElementById("fr_repeticion_selector");
   if (!selector) return;
-  if (selector.value === "NO") {
-    document.getElementById("es_recurrente").value = "0";
-    actualizarEstadoFranjasUI();
-    return;
-  }
-  if (selector.value === "PERSONALIZADA") {
-    abrirModalPeriodicidadFranja();
-    return;
-  }
   aplicarReglaRecurrenciaSimple(selector.value);
 }
 
@@ -5956,7 +5950,7 @@ function abrirModalPeriodicidadFranja() {
 function cerrarModalPeriodicidadFranja() {
   establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
   const selector = document.getElementById("fr_repeticion_selector");
-  if (selector && selector.value === "PERSONALIZADA" && !document.getElementById("fr_patron_recurrencia").value.trim()) {
+  if (selector && !["DIARIA", "SEMANAL", "MENSUAL", "ANUAL"].includes(selector.value)) {
     selector.value = "SEMANAL";
     aplicarReglaRecurrenciaSimple("SEMANAL");
   }
@@ -5986,7 +5980,13 @@ function aceptarModalPeriodicidadFranja() {
   document.getElementById("fr_recurrencia_fin_tipo").value = finTipo;
   document.getElementById("fr_recurrencia_fin").value = finTipo === "FECHA" ? (document.getElementById("recPersonalizadaFinFecha")?.value || "") : "";
   document.getElementById("fr_recurrencia_repeticiones").value = finTipo === "REPETICIONES" ? (document.getElementById("recPersonalizadaRepeticiones")?.value || "1") : "";
-  document.getElementById("fr_repeticion_selector").value = "PERSONALIZADA";
+  const selectorRepeticion = document.getElementById("fr_repeticion_selector");
+  if (selectorRepeticion) {
+    if (unidad === "DIARIA") selectorRepeticion.value = "DIARIA";
+    else if (unidad === "SEMANAL") selectorRepeticion.value = "SEMANAL";
+    else if (unidad === "ANUAL") selectorRepeticion.value = "ANUAL";
+    else selectorRepeticion.value = "MENSUAL";
+  }
 
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
@@ -6297,15 +6297,11 @@ function editarFranja(id) {
   const selectorRepeticion = document.getElementById("fr_repeticion_selector");
   if (selectorRepeticion) {
     const tipo = f.recurrencia_tipo || "";
-    const personalizado = Number(f.recurrencia_intervalo || 1) !== 1 || f.recurrencia_fin_tipo || f.recurrencia_repeticiones || (f.recurrencia_weekdays && String(f.recurrencia_weekdays).includes(","));
-    if (Number(f.es_recurrente || 0) !== 1) selectorRepeticion.value = "NO";
-    else if (personalizado) selectorRepeticion.value = "PERSONALIZADA";
-    else if (tipo === "DIARIA") selectorRepeticion.value = "DIARIA";
+    if (tipo === "DIARIA") selectorRepeticion.value = "DIARIA";
     else if (tipo === "SEMANAL") selectorRepeticion.value = "SEMANAL";
     else if (tipo === "ANUAL") selectorRepeticion.value = "ANUAL";
     else selectorRepeticion.value = "MENSUAL";
   }
-  document.getElementById("fr_patron_recurrencia").value = f.patron_recurrencia || "";
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
@@ -6361,7 +6357,7 @@ function editarFranja(id) {
         actividad_fecha_fin: document.getElementById("fecha_fin").value,
         es_recurrente: document.getElementById("es_recurrente").value,
         fecha: document.getElementById("fr_fecha").value,
-        patron_recurrencia: document.getElementById("fr_patron_recurrencia").value.trim(),
+        patron_recurrencia: obtenerTextoPatronRecurrencia(),
         recurrencia_tipo: document.getElementById("fr_recurrencia_tipo")?.value || "",
         recurrencia_intervalo: document.getElementById("fr_recurrencia_intervalo")?.value || "1",
         recurrencia_inicio: document.getElementById("fr_recurrencia_inicio")?.value || "",
@@ -6532,7 +6528,7 @@ async function borrarFranja(id) {
       agregarDocumentoSeleccionadoDocumentacionActividad();
       const usaFranjas = document.getElementById("usa_franjas").value;
       const patronFranjasGuardadas = obtenerPatronRecurrenciaDesdeFranjasGuardadas();
-      const patronFranjaEnEdicion = document.getElementById("fr_patron_recurrencia").value.trim();
+      const patronFranjaEnEdicion = obtenerTextoPatronRecurrencia();
       const esRecurrenteFranja = document.getElementById("es_recurrente").value === "1";
       const patronActividad = usaFranjas === "1"
         ? (patronFranjasGuardadas || (esRecurrenteFranja ? patronFranjaEnEdicion : ""))
@@ -7387,9 +7383,7 @@ function retrocederPaso() {
         });
         document.getElementById("fr_recurrencia_inicio")?.addEventListener("change", () => {
           const selector = document.getElementById("fr_repeticion_selector")?.value || "MENSUAL";
-          if (selector !== "PERSONALIZADA" && selector !== "NO") {
-            aplicarReglaRecurrenciaSimple(selector);
-          }
+          aplicarReglaRecurrenciaSimple(selector);
           marcarCambiosPendientesActividad();
         });
       document.getElementById("btnCerrarModalSalida").addEventListener("click", cerrarModalSalidaSinGuardar);
@@ -7480,19 +7474,6 @@ function retrocederPaso() {
           const file = e.target.files && e.target.files[0];
           await manejarSeleccionImagenActividad(file);
           inputImagenActividad.value = "";
-        });
-      }
-
-      const inputPatronFranja = document.getElementById("fr_patron_recurrencia");
-      if (inputPatronFranja) {
-        inputPatronFranja.addEventListener("input", () => {
-          sincronizarPatronRecurrenciaOculto();
-          marcarCambiosPendientesActividad();
-        });
-
-        inputPatronFranja.addEventListener("change", () => {
-          sincronizarPatronRecurrenciaOculto();
-          marcarCambiosPendientesActividad();
         });
       }
 
