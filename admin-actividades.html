@@ -6067,6 +6067,20 @@ function getWeekdaysFormularioFranja() {
   );
 }
 
+function etiquetasWeekdaysActividad(weekdays = getWeekdaysFormularioFranja()) {
+  const mapa = new Map(DIAS_SEMANA_RECURRENCIA.map((dia) => [dia.valor, dia.etiqueta]));
+  const ordenVisual = ["1", "2", "3", "4", "5", "6", "0"];
+  const setWeekdays = new Set(weekdays.map(String));
+  return ordenVisual.filter((valor) => setWeekdays.has(valor)).map((valor) => mapa.get(valor)).filter(Boolean);
+}
+
+function actualizarEtiquetaOpcionSemanal() {
+  const option = document.querySelector("#fr_repeticion_selector option[value='SEMANAL']");
+  if (!option) return;
+  const etiquetas = etiquetasWeekdaysActividad();
+  option.textContent = etiquetas.length ? `semana (${etiquetas.join(", ")})` : "semana";
+}
+
 function obtenerTextoPatronRecurrencia() {
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
   const weekdaysTexto = document.getElementById("fr_recurrencia_weekdays")?.value || document.getElementById("fr_recurrencia_weekday")?.value || "";
@@ -6105,6 +6119,7 @@ function normalizarIntervaloFrecuenciaFranja() {
 
 function actualizarTextoPatronRecurrencia() {
   normalizarIntervaloFrecuenciaFranja();
+  actualizarEtiquetaOpcionSemanal();
   sincronizarPatronRecurrenciaOculto();
 }
 
@@ -6124,6 +6139,7 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
   actualizarToggleTerminaFranja();
+  actualizarEtiquetaOpcionSemanal();
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
@@ -6656,6 +6672,7 @@ function editarFranja(id) {
     else if (tipo === "ANUAL") selectorRepeticion.value = "ANUAL";
     else selectorRepeticion.value = "MENSUAL";
   }
+  actualizarEtiquetaOpcionSemanal();
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
