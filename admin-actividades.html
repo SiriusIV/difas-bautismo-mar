@@ -2330,9 +2330,10 @@
     }
 
     .modal-periodicidad .modal-panel {
-      width: min(620px, calc(100vw - 34px));
+      width: min(430px, calc(100vw - 34px));
       max-height: calc(100vh - 42px);
       overflow: auto;
+      padding: 16px 16px 14px;
     }
 
     .periodicidad-bloque {
@@ -2404,7 +2405,8 @@
     }
 
     .periodicidad-termina {
-      gap: 12px;
+      gap: 8px;
+      padding: 8px 0 6px;
     }
 
     .periodicidad-radio {
@@ -2413,6 +2415,7 @@
       gap: 10px;
       flex-wrap: wrap;
       color: #24364a;
+      font-weight: 500;
     }
 
     .periodicidad-radio input[type="radio"] {
@@ -2424,7 +2427,7 @@
       flex-wrap: nowrap;
       justify-content: flex-start;
       width: 100%;
-      min-height: 46px;
+      min-height: 38px;
     }
 
     .periodicidad-termina .periodicidad-radio input[type="date"] {
@@ -2452,7 +2455,7 @@
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin: 2px 0;
+      margin: 0;
     }
 
     .periodicidad-separador::before,
@@ -3472,7 +3475,6 @@
             </div>
 
             <div class="modal-acciones">
-              <button type="button" class="btn btn-secundario" id="btnCancelarModalPeriodicidadFranja">Cancelar</button>
               <button type="button" class="btn" id="btnAceptarModalPeriodicidadFranja">Hecho</button>
             </div>
           </div>
@@ -7587,7 +7589,6 @@ function retrocederPaso() {
       document.getElementById("btnCancelarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
       document.getElementById("btnAceptarModalAvisoDesactivacionActividad").addEventListener("click", confirmarAvisoDesactivacionActividad);
       document.getElementById("btnCerrarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
-      document.getElementById("btnCancelarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
       document.getElementById("btnAceptarModalPeriodicidadFranja")?.addEventListener("click", aceptarModalPeriodicidadFranja);
       document.getElementById("toggleFranjaTermina")?.addEventListener("change", manejarCambioToggleTerminaFranja);
       document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
