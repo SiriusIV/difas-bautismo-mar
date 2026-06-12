@@ -1155,7 +1155,7 @@
 
 .fila-franja-inline {
   display: grid;
-  grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 140px 140px 110px;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 130px 130px 96px 110px;
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
@@ -2044,7 +2044,7 @@
 
     .fila-franja-inline {
       display: grid;
-      grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 140px 140px 110px;
+      grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 130px 130px 96px 110px;
       gap: 10px;
       align-items: end;
       margin-bottom: 10px;
@@ -2092,6 +2092,15 @@
 
     .campo-franja-frecuencia input[type="number"] {
       text-align: center;
+    }
+
+    .campo-franja-termina {
+      align-items: center;
+      text-align: center;
+    }
+
+    .campo-franja-termina .toggle-switch {
+      margin: 0 auto;
     }
 
     .campo-franja-acciones {
@@ -2567,7 +2576,8 @@
         grid-template-areas:
           "fecha capacidad"
           "patron patron"
-          "inicio fin";
+          "inicio fin"
+          "termina termina";
         gap: 10px 8px;
         align-items: end;
       }
@@ -2587,6 +2597,10 @@
 
       #fr_bloque_fin {
         grid-area: fin;
+      }
+
+      #fr_bloque_termina {
+        grid-area: termina;
       }
 
       #fr_bloque_capacidad {
@@ -3093,6 +3107,14 @@
       <input type="time" id="fr_hora_fin">
     </div>
 
+    <div id="fr_bloque_termina" class="campo-franja-inline campo-franja-patron campo-franja-termina">
+      <label for="toggleFranjaTermina">Termina</label>
+      <label class="toggle-switch" for="toggleFranjaTermina" title="Configurar finalización del patrón">
+        <input type="checkbox" id="toggleFranjaTermina" aria-label="Configurar finalización del patrón">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
     <div id="fr_bloque_capacidad" class="campo-franja-inline">
       <label>Capacidad</label>
       <input type="number" id="fr_capacidad" min="1" step="1">
@@ -3252,39 +3274,11 @@
               </svg>
             </button>
 
-            <h4 id="tituloModalPeriodicidadFranja">Periodicidad personalizada</h4>
-
-            <div class="periodicidad-bloque">
-              <label>Se repite cada</label>
-              <div class="periodicidad-linea">
-                <input type="number" id="recPersonalizadaIntervalo" min="1" step="1" value="1">
-                <select id="recPersonalizadaUnidad">
-                  <option value="DIARIA">día</option>
-                  <option value="SEMANAL" selected>semana</option>
-                  <option value="MENSUAL_DIA_MES">mes</option>
-                  <option value="ANUAL">año</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="periodicidad-bloque" id="recPersonalizadaDiasWrap">
-              <label>Se repite el</label>
-              <div class="periodicidad-dias" id="recPersonalizadaDias">
-                <label><input type="checkbox" value="1">L</label>
-                <label><input type="checkbox" value="2">M</label>
-                <label><input type="checkbox" value="3">X</label>
-                <label><input type="checkbox" value="4">J</label>
-                <label><input type="checkbox" value="5">V</label>
-                <label><input type="checkbox" value="6">S</label>
-                <label><input type="checkbox" value="0">D</label>
-              </div>
-            </div>
+            <h4 id="tituloModalPeriodicidadFranja">Finalización del patrón</h4>
 
             <div class="periodicidad-bloque periodicidad-termina">
-              <label>Termina</label>
-              <label class="periodicidad-radio"><input type="radio" name="recFinTipo" value="NUNCA" checked> Nunca</label>
               <label class="periodicidad-radio">
-                <input type="radio" name="recFinTipo" value="FECHA"> El
+                <input type="radio" name="recFinTipo" value="FECHA" checked> Fecha de finalización
                 <input type="date" id="recPersonalizadaFinFecha">
               </label>
               <label class="periodicidad-radio">
@@ -5770,8 +5764,10 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
+      actualizarToggleTerminaFranja();
       actualizarTextoPatronRecurrencia();
     }
 
@@ -5844,6 +5840,7 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_month").value = "1";
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
+  actualizarToggleTerminaFranja();
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
@@ -5892,9 +5889,6 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
   const intervalo = normalizarIntervaloFrecuenciaFranja();
 
   document.getElementById("fr_recurrencia_intervalo").value = String(intervalo);
-  document.getElementById("fr_recurrencia_fin").value = "";
-  document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
-  document.getElementById("fr_recurrencia_repeticiones").value = "";
   document.getElementById("fr_recurrencia_weekday").value = "";
   document.getElementById("fr_recurrencia_weekdays").value = "";
   document.getElementById("fr_recurrencia_ordinal").value = "";
@@ -5922,75 +5916,88 @@ function manejarCambioSelectorRepeticion() {
   aplicarReglaRecurrenciaSimple(selector.value);
 }
 
-function actualizarModalPeriodicidadVisibilidad() {
-  const unidad = document.getElementById("recPersonalizadaUnidad")?.value || "SEMANAL";
-  document.getElementById("recPersonalizadaDiasWrap")?.classList.toggle("oculto", unidad !== "SEMANAL");
-}
-
 function abrirModalPeriodicidadFranja() {
-  const intervalo = document.getElementById("fr_recurrencia_intervalo")?.value || "1";
-  const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "SEMANAL";
   const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
-  const weekdays = (document.getElementById("fr_recurrencia_weekdays")?.value || weekdayDesdeFechaInicioRecurrencia()).split(",").filter(Boolean);
+  const modal = document.getElementById("modalPeriodicidadFranja");
+  if (modal) {
+    modal.dataset.prevFinTipo = finTipo;
+    modal.dataset.prevFinFecha = document.getElementById("fr_recurrencia_fin")?.value || "";
+    modal.dataset.prevRepeticiones = document.getElementById("fr_recurrencia_repeticiones")?.value || "";
+  }
 
-  document.getElementById("recPersonalizadaIntervalo").value = intervalo;
-  document.getElementById("recPersonalizadaUnidad").value = ["DIARIA", "SEMANAL", "ANUAL"].includes(tipo) ? tipo : "MENSUAL_DIA_MES";
-  document.querySelectorAll("#recPersonalizadaDias input[type='checkbox']").forEach((input) => {
-    input.checked = weekdays.includes(input.value);
-  });
+  const tipoActivo = finTipo === "REPETICIONES" ? "REPETICIONES" : "FECHA";
   document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
-    input.checked = input.value === finTipo;
+    input.checked = input.value === tipoActivo;
   });
   document.getElementById("recPersonalizadaFinFecha").value = document.getElementById("fr_recurrencia_fin")?.value || "";
   document.getElementById("recPersonalizadaRepeticiones").value = document.getElementById("fr_recurrencia_repeticiones")?.value || "1";
-  actualizarModalPeriodicidadVisibilidad();
+  actualizarCamposModalFinalizacionFranja();
   establecerVisibilidadModalActividad("modalPeriodicidadFranja", true);
 }
 
 function cerrarModalPeriodicidadFranja() {
-  establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
-  const selector = document.getElementById("fr_repeticion_selector");
-  if (selector && !["DIARIA", "SEMANAL", "MENSUAL", "ANUAL"].includes(selector.value)) {
-    selector.value = "SEMANAL";
-    aplicarReglaRecurrenciaSimple("SEMANAL");
+  const modal = document.getElementById("modalPeriodicidadFranja");
+  if (modal) {
+    document.getElementById("fr_recurrencia_fin_tipo").value = modal.dataset.prevFinTipo || "NUNCA";
+    document.getElementById("fr_recurrencia_fin").value = modal.dataset.prevFinFecha || "";
+    document.getElementById("fr_recurrencia_repeticiones").value = modal.dataset.prevRepeticiones || "";
   }
+  actualizarToggleTerminaFranja();
+  actualizarTextoPatronRecurrencia();
+  establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
 }
 
 function aceptarModalPeriodicidadFranja() {
-  const unidad = document.getElementById("recPersonalizadaUnidad")?.value || "SEMANAL";
-  const intervalo = Math.max(parseInt(document.getElementById("recPersonalizadaIntervalo")?.value || "1", 10) || 1, 1);
-  const fecha = fechaLocalDesdeIsoActividad(fechaInicioRecurrenciaSeleccionada());
-  const monthday = fecha ? String(fecha.getDate()) : "1";
-  const month = fecha ? String(fecha.getMonth() + 1) : "1";
-  const weekdays = [...document.querySelectorAll("#recPersonalizadaDias input[type='checkbox']:checked")].map((input) => input.value);
-  const finTipo = document.querySelector("input[name='recFinTipo']:checked")?.value || "NUNCA";
+  const finTipo = document.querySelector("input[name='recFinTipo']:checked")?.value || "FECHA";
+  const finFecha = document.getElementById("recPersonalizadaFinFecha")?.value || "";
+  const repeticiones = Math.max(parseInt(document.getElementById("recPersonalizadaRepeticiones")?.value || "1", 10) || 1, 1);
 
-  if (unidad === "SEMANAL" && weekdays.length === 0) {
-    mostrarMensaje("error", "Debes seleccionar al menos un día de la semana para la periodicidad semanal.");
+  if (finTipo === "FECHA" && !finFecha) {
+    mostrarMensaje("error", "Debes seleccionar la fecha de finalización del patrón.");
     return;
   }
 
-  document.getElementById("fr_recurrencia_tipo").value = unidad;
-  document.getElementById("fr_recurrencia_intervalo").value = String(intervalo);
-  document.getElementById("fr_recurrencia_weekday").value = unidad === "SEMANAL" ? weekdays[0] : "";
-  document.getElementById("fr_recurrencia_weekdays").value = unidad === "SEMANAL" ? weekdays.join(",") : "";
-  document.getElementById("fr_recurrencia_ordinal").value = "";
-  document.getElementById("fr_recurrencia_monthday").value = monthday;
-  document.getElementById("fr_recurrencia_month").value = month;
   document.getElementById("fr_recurrencia_fin_tipo").value = finTipo;
-  document.getElementById("fr_recurrencia_fin").value = finTipo === "FECHA" ? (document.getElementById("recPersonalizadaFinFecha")?.value || "") : "";
-  document.getElementById("fr_recurrencia_repeticiones").value = finTipo === "REPETICIONES" ? (document.getElementById("recPersonalizadaRepeticiones")?.value || "1") : "";
-  const selectorRepeticion = document.getElementById("fr_repeticion_selector");
-  if (selectorRepeticion) {
-    if (unidad === "DIARIA") selectorRepeticion.value = "DIARIA";
-    else if (unidad === "SEMANAL") selectorRepeticion.value = "SEMANAL";
-    else if (unidad === "ANUAL") selectorRepeticion.value = "ANUAL";
-    else selectorRepeticion.value = "MENSUAL";
-  }
+  document.getElementById("fr_recurrencia_fin").value = finTipo === "FECHA" ? finFecha : "";
+  document.getElementById("fr_recurrencia_repeticiones").value = finTipo === "REPETICIONES" ? String(repeticiones) : "";
 
+  actualizarToggleTerminaFranja();
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
   establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
+}
+
+function actualizarCamposModalFinalizacionFranja() {
+  const finTipo = document.querySelector("input[name='recFinTipo']:checked")?.value || "FECHA";
+  const inputFecha = document.getElementById("recPersonalizadaFinFecha");
+  const inputRepeticiones = document.getElementById("recPersonalizadaRepeticiones");
+  if (inputFecha) inputFecha.disabled = finTipo !== "FECHA";
+  if (inputRepeticiones) inputRepeticiones.disabled = finTipo !== "REPETICIONES";
+}
+
+function establecerFinalizacionNuncaFranja() {
+  document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
+  document.getElementById("fr_recurrencia_fin").value = "";
+  document.getElementById("fr_recurrencia_repeticiones").value = "";
+}
+
+function actualizarToggleTerminaFranja() {
+  const toggle = document.getElementById("toggleFranjaTermina");
+  if (!toggle) return;
+  toggle.checked = (document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA") !== "NUNCA";
+}
+
+function manejarCambioToggleTerminaFranja() {
+  const toggle = document.getElementById("toggleFranjaTermina");
+  if (!toggle) return;
+  if (toggle.checked) {
+    abrirModalPeriodicidadFranja();
+    return;
+  }
+
+  establecerFinalizacionNuncaFranja();
+  actualizarTextoPatronRecurrencia();
+  marcarCambiosPendientesActividad();
 }
 
 async function borrarFranjaSeleccionada() {
@@ -6289,6 +6296,7 @@ function editarFranja(id) {
   document.getElementById("fr_recurrencia_fin").value = f.recurrencia_fin || "";
   document.getElementById("fr_recurrencia_fin_tipo").value = f.recurrencia_fin_tipo || (f.recurrencia_fin ? "FECHA" : "NUNCA");
   document.getElementById("fr_recurrencia_repeticiones").value = f.recurrencia_repeticiones || "";
+  actualizarToggleTerminaFranja();
   document.getElementById("fr_recurrencia_ordinal").value = String(f.recurrencia_ordinal || "");
   document.getElementById("fr_recurrencia_weekday").value = String(f.recurrencia_weekday ?? "");
   document.getElementById("fr_recurrencia_weekdays").value = f.recurrencia_weekdays || (f.recurrencia_weekday ?? "");
@@ -7396,7 +7404,10 @@ function retrocederPaso() {
       document.getElementById("btnCerrarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
       document.getElementById("btnCancelarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
       document.getElementById("btnAceptarModalPeriodicidadFranja")?.addEventListener("click", aceptarModalPeriodicidadFranja);
-      document.getElementById("recPersonalizadaUnidad")?.addEventListener("change", actualizarModalPeriodicidadVisibilidad);
+      document.getElementById("toggleFranjaTermina")?.addEventListener("change", manejarCambioToggleTerminaFranja);
+      document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
+        input.addEventListener("change", actualizarCamposModalFinalizacionFranja);
+      });
       document.getElementById("toggleActividadActiva")?.addEventListener("change", () => {
         manejarCambioActividadActiva(true);
       });
