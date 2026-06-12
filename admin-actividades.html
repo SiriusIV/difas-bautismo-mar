@@ -2141,20 +2141,51 @@
     }
 
     .campo-franja-termina .toggle-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 46px;
       width: 46px;
       height: 24px;
       margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: #aeb8c4;
+      overflow: hidden;
     }
 
-    .campo-franja-termina .toggle-slider {
+    .campo-franja-termina .toggle-switch input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .campo-franja-termina .toggle-switch:has(input:checked) {
+      background: #28b463;
+    }
+
+    .campo-franja-termina .toggle-switch .toggle-slider {
+      display: block;
+      flex: 0 0 100%;
       width: 46px;
       height: 24px;
-      background: #aeb8c4;
+      box-sizing: border-box;
+      border-radius: 999px;
+      background: transparent;
       border: 1px solid #8f9baa;
       box-shadow: inset 0 0 0 1px rgba(15, 35, 55, 0.08);
+      position: relative;
     }
 
-    .campo-franja-termina .toggle-slider::after {
+    .campo-franja-termina .toggle-switch .toggle-slider::after {
       width: 18px;
       height: 18px;
       top: 2px;
@@ -2162,7 +2193,7 @@
     }
 
     .campo-franja-termina .toggle-switch input:checked + .toggle-slider {
-      background: #28b463;
+      background: transparent;
       border-color: #28b463;
     }
 
