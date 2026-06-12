@@ -2422,6 +2422,7 @@
 
     .periodicidad-termina .periodicidad-radio {
       flex-wrap: nowrap;
+      justify-content: flex-start;
       width: 100%;
       min-height: 46px;
     }
@@ -2430,15 +2431,36 @@
       width: 178px;
       max-width: 178px;
       flex: 0 0 178px;
-      margin-left: auto;
+      margin-left: 12px;
     }
 
     .periodicidad-termina .periodicidad-radio input[type="number"] {
-      width: 92px;
-      max-width: 92px;
-      flex: 0 0 92px;
+      width: 112px;
+      max-width: 112px;
+      flex: 0 0 112px;
       text-align: center;
-      margin-left: auto;
+      margin-left: 12px;
+      padding-inline: 14px 18px;
+    }
+
+    .periodicidad-separador {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #7a8795;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 2px 0;
+    }
+
+    .periodicidad-separador::before,
+    .periodicidad-separador::after {
+      content: "";
+      height: 1px;
+      flex: 1 1 auto;
+      background: #d8e0ea;
     }
 
     @media (max-width: 1100px) {
@@ -3441,6 +3463,7 @@
                 <input type="radio" name="recFinTipo" value="FECHA" checked> Fecha de finalización
                 <input type="date" id="recPersonalizadaFinFecha">
               </label>
+              <div class="periodicidad-separador" aria-hidden="true">OR</div>
               <label class="periodicidad-radio">
                 <input type="radio" name="recFinTipo" value="REPETICIONES"> Después de
                 <input type="number" id="recPersonalizadaRepeticiones" min="1" step="1" value="1">
