@@ -2469,6 +2469,49 @@
       content: none;
     }
 
+    .modal-dias-semana .modal-panel {
+      width: min(390px, calc(100vw - 34px));
+      padding: 16px 16px 14px;
+    }
+
+    .modal-dias-semana .modal-intro {
+      margin: 0 28px 12px 0;
+      color: #516173;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .selector-dias-semana {
+      display: flex;
+      justify-content: center;
+      gap: 9px;
+      padding: 8px 0 4px;
+    }
+
+    .selector-dia-semana {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #d6dee8;
+      border-radius: 999px;
+      background: #edf1f6;
+      color: #4f6175;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+
+    .selector-dia-semana:hover {
+      transform: translateY(-1px);
+      border-color: #9fb7d3;
+    }
+
+    .selector-dia-semana.activo {
+      background: #0b5ed7;
+      border-color: #0b5ed7;
+      color: #fff;
+    }
+
     @media (max-width: 1100px) {
       .config-grid {
         grid-template-columns: 1fr;
@@ -3481,6 +3524,26 @@
 
             <div class="modal-acciones">
               <button type="button" class="btn" id="btnAceptarModalPeriodicidadFranja">Hecho</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-confirmacion-salida modal-dias-semana" id="modalDiasSemanaFranja" aria-hidden="true">
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalDiasSemanaFranja">
+            <button type="button" class="modal-cerrar" id="btnCerrarModalDiasSemanaFranja" aria-label="Cerrar selección de días">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h4 id="tituloModalDiasSemanaFranja">Días de repetición semanal</h4>
+            <p class="modal-intro">Selecciona los días de la semana en los que se generará esta franja.</p>
+
+            <div class="selector-dias-semana" id="selectorDiasSemanaFranja" aria-label="Días de repetición semanal"></div>
+
+            <div class="modal-acciones">
+              <button type="button" class="btn" id="btnAceptarModalDiasSemanaFranja">Hecho</button>
             </div>
           </div>
         </div>
@@ -5976,6 +6039,34 @@ function nombreOrdinalRecurrencia(valor) {
   return ["", "primer", "segundo", "tercer", "cuarto"][Number(valor)] || "";
 }
 
+const DIAS_SEMANA_RECURRENCIA = [
+  { valor: "1", etiqueta: "L" },
+  { valor: "2", etiqueta: "M" },
+  { valor: "3", etiqueta: "X" },
+  { valor: "4", etiqueta: "J" },
+  { valor: "5", etiqueta: "V" },
+  { valor: "6", etiqueta: "S" },
+  { valor: "0", etiqueta: "D" }
+];
+
+function normalizarWeekdaysActividad(valor) {
+  const valores = Array.isArray(valor)
+    ? valor
+    : String(valor || "").split(",").map((item) => item.trim()).filter(Boolean);
+  return [...new Set(valores
+    .map((item) => parseInt(item, 10))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))]
+    .sort((a, b) => a - b)
+    .map(String);
+}
+
+function getWeekdaysFormularioFranja() {
+  return normalizarWeekdaysActividad(
+    document.getElementById("fr_recurrencia_weekdays")?.value
+    || document.getElementById("fr_recurrencia_weekday")?.value
+  );
+}
+
 function obtenerTextoPatronRecurrencia() {
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "MENSUAL_DIA_SEMANA";
   const weekdaysTexto = document.getElementById("fr_recurrencia_weekdays")?.value || document.getElementById("fr_recurrencia_weekday")?.value || "";
@@ -6078,6 +6169,7 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
   const monthday = fecha ? String(fecha.getDate()) : "1";
   const month = fecha ? String(fecha.getMonth() + 1) : "1";
   const weekday = fecha ? String(fecha.getDay()) : "1";
+  const weekdaysPrevios = getWeekdaysFormularioFranja();
   const intervalo = normalizarIntervaloFrecuenciaFranja();
 
   document.getElementById("fr_recurrencia_intervalo").value = String(intervalo);
@@ -6091,8 +6183,9 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
     document.getElementById("fr_recurrencia_tipo").value = "DIARIA";
   } else if (tipoSelector === "SEMANAL") {
     document.getElementById("fr_recurrencia_tipo").value = "SEMANAL";
-    document.getElementById("fr_recurrencia_weekday").value = weekday;
-    document.getElementById("fr_recurrencia_weekdays").value = weekday;
+    const weekdays = weekdaysPrevios.length ? weekdaysPrevios : [weekday];
+    document.getElementById("fr_recurrencia_weekday").value = weekdays[0] || weekday;
+    document.getElementById("fr_recurrencia_weekdays").value = weekdays.join(",");
   } else if (tipoSelector === "MENSUAL") {
     document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
   } else if (tipoSelector === "ANUAL") {
@@ -6106,6 +6199,67 @@ function manejarCambioSelectorRepeticion() {
   const selector = document.getElementById("fr_repeticion_selector");
   if (!selector) return;
   aplicarReglaRecurrenciaSimple(selector.value);
+  if (selector.value === "SEMANAL") {
+    abrirModalDiasSemanaFranja();
+  }
+}
+
+function renderDiasSemanaFranjaModal(seleccionados = getWeekdaysFormularioFranja()) {
+  const contenedor = document.getElementById("selectorDiasSemanaFranja");
+  if (!contenedor) return;
+  const setSeleccionados = new Set(seleccionados.map(String));
+  contenedor.innerHTML = DIAS_SEMANA_RECURRENCIA.map(({ valor, etiqueta }) => `
+    <button type="button" class="selector-dia-semana ${setSeleccionados.has(valor) ? "activo" : ""}" data-weekday="${valor}" aria-pressed="${setSeleccionados.has(valor) ? "true" : "false"}">${etiqueta}</button>
+  `).join("");
+}
+
+function abrirModalDiasSemanaFranja() {
+  const modal = document.getElementById("modalDiasSemanaFranja");
+  if (!modal) return;
+  let seleccionados = getWeekdaysFormularioFranja();
+  if (!seleccionados.length) {
+    seleccionados = [weekdayDesdeFechaInicioRecurrencia()];
+    document.getElementById("fr_recurrencia_weekday").value = seleccionados[0];
+    document.getElementById("fr_recurrencia_weekdays").value = seleccionados.join(",");
+  }
+  modal.dataset.prevWeekdays = seleccionados.join(",");
+  renderDiasSemanaFranjaModal(seleccionados);
+  establecerVisibilidadModalActividad("modalDiasSemanaFranja", true);
+}
+
+function cerrarModalDiasSemanaFranja() {
+  const modal = document.getElementById("modalDiasSemanaFranja");
+  const previos = normalizarWeekdaysActividad(modal?.dataset.prevWeekdays || "");
+  if (previos.length) {
+    document.getElementById("fr_recurrencia_weekday").value = previos[0];
+    document.getElementById("fr_recurrencia_weekdays").value = previos.join(",");
+  }
+  actualizarTextoPatronRecurrencia();
+  establecerVisibilidadModalActividad("modalDiasSemanaFranja", false);
+}
+
+function toggleDiaSemanaFranjaModal(event) {
+  const boton = event.target.closest(".selector-dia-semana");
+  if (!boton) return;
+  boton.classList.toggle("activo");
+  boton.setAttribute("aria-pressed", boton.classList.contains("activo") ? "true" : "false");
+}
+
+function aceptarModalDiasSemanaFranja() {
+  const seleccionados = Array.from(document.querySelectorAll("#selectorDiasSemanaFranja .selector-dia-semana.activo"))
+    .map((boton) => boton.dataset.weekday)
+    .filter((valor) => valor !== undefined);
+  const weekdays = normalizarWeekdaysActividad(seleccionados);
+  if (!weekdays.length) {
+    mostrarMensaje("error", "Selecciona al menos un día de la semana.");
+    return;
+  }
+  document.getElementById("fr_recurrencia_tipo").value = "SEMANAL";
+  document.getElementById("fr_recurrencia_weekday").value = weekdays[0];
+  document.getElementById("fr_recurrencia_weekdays").value = weekdays.join(",");
+  actualizarTextoPatronRecurrencia();
+  marcarCambiosPendientesActividad();
+  establecerVisibilidadModalActividad("modalDiasSemanaFranja", false);
 }
 
 function abrirModalPeriodicidadFranja() {
@@ -7595,6 +7749,9 @@ function retrocederPaso() {
       document.getElementById("btnAceptarModalAvisoDesactivacionActividad").addEventListener("click", confirmarAvisoDesactivacionActividad);
       document.getElementById("btnCerrarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
       document.getElementById("btnAceptarModalPeriodicidadFranja")?.addEventListener("click", aceptarModalPeriodicidadFranja);
+      document.getElementById("btnCerrarModalDiasSemanaFranja")?.addEventListener("click", cerrarModalDiasSemanaFranja);
+      document.getElementById("btnAceptarModalDiasSemanaFranja")?.addEventListener("click", aceptarModalDiasSemanaFranja);
+      document.getElementById("selectorDiasSemanaFranja")?.addEventListener("click", toggleDiaSemanaFranjaModal);
       document.getElementById("toggleFranjaTermina")?.addEventListener("change", manejarCambioToggleTerminaFranja);
       document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
         input.addEventListener("change", actualizarCamposModalFinalizacionFranja);
@@ -7645,6 +7802,12 @@ function retrocederPaso() {
       document.getElementById("modalPeriodicidadFranja")?.addEventListener("click", (event) => {
         if (event.target.id === "modalPeriodicidadFranja") {
           cerrarModalPeriodicidadFranja();
+        }
+      });
+
+      document.getElementById("modalDiasSemanaFranja")?.addEventListener("click", (event) => {
+        if (event.target.id === "modalDiasSemanaFranja") {
+          cerrarModalDiasSemanaFranja();
         }
       });
 
