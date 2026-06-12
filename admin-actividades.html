@@ -916,10 +916,30 @@
       background: #ffffff;
     }
 
+    .programacion-step-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 10px;
+    }
+
+    .programacion-step-head-texto {
+      min-width: 0;
+    }
+
+    .programacion-selector-frecuencia {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+      padding-top: 2px;
+    }
+
     .subbloque-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 8px;
@@ -2095,12 +2115,38 @@
     }
 
     .campo-franja-termina {
-      align-items: center;
-      text-align: center;
+      align-items: flex-start;
+      text-align: left;
     }
 
     .campo-franja-termina .toggle-switch {
-      margin: 0 auto;
+      width: 46px;
+      height: 24px;
+      margin: 0;
+    }
+
+    .campo-franja-termina .toggle-slider {
+      width: 46px;
+      height: 24px;
+      background: #eef3f7;
+      border: 1px solid #aebdca;
+      box-shadow: inset 0 0 0 1px rgba(15, 35, 55, 0.04);
+    }
+
+    .campo-franja-termina .toggle-slider::after {
+      width: 18px;
+      height: 18px;
+      top: 2px;
+      left: 2px;
+    }
+
+    .campo-franja-termina .toggle-switch input:checked + .toggle-slider {
+      background: #28b463;
+      border-color: #28b463;
+    }
+
+    .campo-franja-termina .toggle-switch input:checked + .toggle-slider::after {
+      transform: translateX(22px);
     }
 
     .campo-franja-acciones {
@@ -2322,6 +2368,27 @@
       height: 20px;
     }
 
+    .periodicidad-termina .periodicidad-radio {
+      flex-wrap: nowrap;
+      width: 100%;
+      min-height: 46px;
+    }
+
+    .periodicidad-termina .periodicidad-radio input[type="date"] {
+      width: 178px;
+      max-width: 178px;
+      flex: 0 0 178px;
+      margin-left: auto;
+    }
+
+    .periodicidad-termina .periodicidad-radio input[type="number"] {
+      width: 92px;
+      max-width: 92px;
+      flex: 0 0 92px;
+      text-align: center;
+      margin-left: auto;
+    }
+
     @media (max-width: 1100px) {
       .config-grid {
         grid-template-columns: 1fr;
@@ -2389,6 +2456,42 @@
       .bloque-superior,
       .bloque-inferior {
         padding: 12px;
+      }
+
+      .programacion-step-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .programacion-selector-frecuencia {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .programacion-selector-frecuencia .acciones-franja-config,
+      .programacion-selector-frecuencia .acciones-franja-combo,
+      .programacion-selector-frecuencia .acciones-franja-select {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+
+      .periodicidad-termina .periodicidad-radio {
+        align-items: center;
+        gap: 8px;
+      }
+
+      .periodicidad-termina .periodicidad-radio input[type="date"] {
+        width: 150px;
+        max-width: 150px;
+        flex-basis: 150px;
+      }
+
+      .periodicidad-termina .periodicidad-radio input[type="number"] {
+        width: 76px;
+        max-width: 76px;
+        flex-basis: 76px;
       }
 
       .cabecera-inner {
@@ -2953,8 +3056,13 @@
           </section>
 
           <section class="step-pane" data-step="1">
-            <h3 class="step-title">Programación</h3>
-            <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
+            <div class="programacion-step-head">
+              <div class="programacion-step-head-texto">
+                <h3 class="step-title">Programación</h3>
+                <p class="step-help">Configura el tipo de actividad, su disponibilidad y la gestión de franjas.</p>
+              </div>
+              <div id="programacionSelectorFrecuenciaTop" class="programacion-selector-frecuencia"></div>
+            </div>
 
             <div class="fila-compacta fila-compacta-programacion">
               <div>
@@ -3909,6 +4017,7 @@
       const selectFrecuencia = document.getElementById("es_recurrente");
       const bloqueProgramacion = selectFrecuencia?.closest('.subbloque');
       const toolbar = document.getElementById("accionesFranjasToolbar");
+      const selectorSuperior = document.getElementById("programacionSelectorFrecuenciaTop");
       const selectorFrecuencia = document.getElementById("bloqueSelectorFrecuencia");
       if (!stepProgramacion || !bloqueProgramacion || !bloqueFranjas || !toolbar || !selectorFrecuencia || !selectFrecuencia) return;
 
@@ -3920,7 +4029,8 @@
       if (cabeceraRedundanteTexto) cabeceraRedundanteTexto.classList.add("oculto");
       if (filaCompacta) filaCompacta.classList.add("oculto");
 
-      if (!toolbar.querySelector(".acciones-franja-config")) {
+      const contenedorSelector = selectorSuperior || toolbar;
+      if (!contenedorSelector.querySelector(".acciones-franja-config")) {
         const configWrap = document.createElement("div");
         configWrap.className = "acciones-franja-config";
 
@@ -3935,7 +4045,7 @@
 
         combo.append(selectorWrap);
         configWrap.append(combo);
-        toolbar.appendChild(configWrap);
+        contenedorSelector.appendChild(configWrap);
       }
     }
 
