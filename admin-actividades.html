@@ -2107,6 +2107,35 @@
       text-align: center;
     }
 
+    .frecuencia-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .frecuencia-select-wrap select {
+      color: transparent;
+      cursor: pointer;
+    }
+
+    .frecuencia-select-wrap select option {
+      color: #1f2937;
+    }
+
+    .frecuencia-select-visible {
+      position: absolute;
+      left: 10px;
+      right: 34px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #1f2937;
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .campo-franja-termina {
       align-self: end;
       flex-direction: row;
@@ -3359,12 +3388,15 @@
 
     <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron campo-franja-frecuencia">
       <label for="fr_repeticion_selector">Frecuencia</label>
-      <select id="fr_repeticion_selector" aria-label="Frecuencia de repetición">
-        <option value="DIARIA">diario</option>
-        <option value="SEMANAL">semanal</option>
-        <option value="MENSUAL">mensual</option>
-        <option value="ANUAL">anual</option>
-      </select>
+      <div class="frecuencia-select-wrap">
+        <select id="fr_repeticion_selector" aria-label="Frecuencia de repetición">
+          <option value="DIARIA">diario</option>
+          <option value="SEMANAL">semanal</option>
+          <option value="MENSUAL">mensual</option>
+          <option value="ANUAL">anual</option>
+        </select>
+        <span id="fr_repeticion_resumen" class="frecuencia-select-visible">mensual</span>
+      </div>
     </div>
 
     <input type="hidden" id="fr_recurrencia_tipo" value="MENSUAL_DIA_MES">
@@ -6162,33 +6194,60 @@ function etiquetasWeekdaysActividad(weekdays = getWeekdaysFormularioFranja()) {
 
 function actualizarEtiquetaOpcionSemanal() {
   const option = document.querySelector("#fr_repeticion_selector option[value='SEMANAL']");
-  if (!option) return;
-  const etiquetas = etiquetasWeekdaysActividad();
-  option.textContent = etiquetas.length ? `semanal (${etiquetas.join(", ")})` : "semanal";
+  if (option) option.textContent = "semanal";
 }
 
 function textoOpcionMensualDiaMes(monthday = document.getElementById("fr_recurrencia_monthday")?.value || "1") {
-  return `Cada mes el día ${Number(monthday) || 1}`;
+  return `mensual el día ${Number(monthday) || 1}`;
 }
 
 function textoOpcionMensualDiaSemana(
   ordinal = document.getElementById("fr_recurrencia_ordinal")?.value || "1",
   weekday = document.getElementById("fr_recurrencia_weekday")?.value || weekdayDesdeFechaInicioRecurrencia()
 ) {
-  return `Cada mes el ${nombreOrdinalRecurrencia(ordinal)} ${nombreDiaRecurrencia(weekday)}`.trim();
+  return `mensual el ${nombreOrdinalRecurrencia(ordinal)} ${nombreDiaRecurrencia(weekday)}`.trim();
 }
 
 function actualizarEtiquetaOpcionMensual() {
   const option = document.querySelector("#fr_repeticion_selector option[value='MENSUAL']");
-  if (!option) return;
+  if (option) option.textContent = "mensual";
+}
+
+function valorFrecuenciaDesdeTipoRecurrencia() {
   const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "";
-  if (tipo === "MENSUAL_DIA_SEMANA") {
-    option.textContent = textoOpcionMensualDiaSemana();
-  } else if (tipo === "MENSUAL_DIA_MES") {
-    option.textContent = textoOpcionMensualDiaMes();
-  } else {
-    option.textContent = "mensual";
+  if (tipo === "DIARIA") return "DIARIA";
+  if (tipo === "SEMANAL") return "SEMANAL";
+  if (tipo === "ANUAL") return "ANUAL";
+  if (tipo === "MENSUAL_DIA_SEMANA" || tipo === "MENSUAL_DIA_MES") return "MENSUAL";
+  return document.getElementById("fr_repeticion_selector")?.value || "MENSUAL";
+}
+
+function textoFrecuenciaVisible() {
+  const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "";
+  if (tipo === "DIARIA") return "diario";
+  if (tipo === "ANUAL") return "anual";
+  if (tipo === "SEMANAL") {
+    const etiquetas = etiquetasWeekdaysActividad();
+    return etiquetas.length ? `semanal (${etiquetas.join(", ")})` : "semanal";
   }
+  if (tipo === "MENSUAL_DIA_SEMANA") return textoOpcionMensualDiaSemana();
+  if (tipo === "MENSUAL_DIA_MES") return textoOpcionMensualDiaMes();
+  const valor = document.getElementById("fr_repeticion_selector")?.value || "MENSUAL";
+  return ({ DIARIA: "diario", SEMANAL: "semanal", MENSUAL: "mensual", ANUAL: "anual" })[valor] || "mensual";
+}
+
+function actualizarResumenFrecuenciaVisible() {
+  actualizarEtiquetaOpcionSemanal();
+  actualizarEtiquetaOpcionMensual();
+  const resumen = document.getElementById("fr_repeticion_resumen");
+  if (resumen) resumen.textContent = textoFrecuenciaVisible();
+}
+
+function sincronizarSelectFrecuenciaParaReapertura() {
+  const selector = document.getElementById("fr_repeticion_selector");
+  if (!selector) return;
+  const valor = valorFrecuenciaDesdeTipoRecurrencia();
+  selector.value = (valor === "SEMANAL" || valor === "MENSUAL") ? "" : valor;
 }
 
 function obtenerTextoPatronRecurrencia() {
@@ -6229,8 +6288,7 @@ function normalizarIntervaloFrecuenciaFranja() {
 
 function actualizarTextoPatronRecurrencia() {
   normalizarIntervaloFrecuenciaFranja();
-  actualizarEtiquetaOpcionSemanal();
-  actualizarEtiquetaOpcionMensual();
+  actualizarResumenFrecuenciaVisible();
   sincronizarPatronRecurrenciaOculto();
 }
 
@@ -6250,8 +6308,8 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
   actualizarToggleTerminaFranja();
-  actualizarEtiquetaOpcionSemanal();
-  actualizarEtiquetaOpcionMensual();
+  actualizarResumenFrecuenciaVisible();
+  sincronizarSelectFrecuenciaParaReapertura();
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = "";
   document.getElementById("fr_hora_fin").value = "";
@@ -6329,6 +6387,7 @@ function aplicarReglaRecurrenciaSimple(tipoSelector) {
 function manejarCambioSelectorRepeticion() {
   const selector = document.getElementById("fr_repeticion_selector");
   if (!selector) return;
+  if (!selector.value) return;
   aplicarReglaRecurrenciaSimple(selector.value);
   if (selector.value === "SEMANAL") {
     abrirModalDiasSemanaFranja();
@@ -6377,6 +6436,7 @@ function cerrarModalMensualFranja() {
     document.getElementById("fr_recurrencia_ordinal").value = modal.dataset.prevOrdinal || "";
   }
   actualizarTextoPatronRecurrencia();
+  sincronizarSelectFrecuenciaParaReapertura();
   establecerVisibilidadModalActividad("modalMensualFranja", false);
 }
 
@@ -6399,6 +6459,7 @@ function aceptarModalMensualFranja() {
   }
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
+  sincronizarSelectFrecuenciaParaReapertura();
   establecerVisibilidadModalActividad("modalMensualFranja", false);
 }
 
@@ -6433,6 +6494,7 @@ function cerrarModalDiasSemanaFranja() {
     document.getElementById("fr_recurrencia_weekdays").value = previos.join(",");
   }
   actualizarTextoPatronRecurrencia();
+  sincronizarSelectFrecuenciaParaReapertura();
   establecerVisibilidadModalActividad("modalDiasSemanaFranja", false);
 }
 
@@ -6457,6 +6519,7 @@ function aceptarModalDiasSemanaFranja() {
   document.getElementById("fr_recurrencia_weekdays").value = weekdays.join(",");
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
+  sincronizarSelectFrecuenciaParaReapertura();
   establecerVisibilidadModalActividad("modalDiasSemanaFranja", false);
 }
 
@@ -6854,8 +6917,8 @@ function editarFranja(id) {
     else if (tipo === "ANUAL") selectorRepeticion.value = "ANUAL";
     else selectorRepeticion.value = "MENSUAL";
   }
-  actualizarEtiquetaOpcionSemanal();
-  actualizarEtiquetaOpcionMensual();
+  actualizarResumenFrecuenciaVisible();
+  sincronizarSelectFrecuenciaParaReapertura();
   sincronizarPatronRecurrenciaOculto();
   document.getElementById("fr_hora_inicio").value = f.hora_inicio || "";
   document.getElementById("fr_hora_fin").value = f.hora_fin || "";
@@ -7936,8 +7999,9 @@ function retrocederPaso() {
           marcarCambiosPendientesActividad();
         });
         document.getElementById("fr_recurrencia_inicio")?.addEventListener("change", () => {
-          const selector = document.getElementById("fr_repeticion_selector")?.value || "MENSUAL";
+          const selector = document.getElementById("fr_repeticion_selector")?.value || valorFrecuenciaDesdeTipoRecurrencia();
           aplicarReglaRecurrenciaSimple(selector);
+          sincronizarSelectFrecuenciaParaReapertura();
           marcarCambiosPendientesActividad();
         });
       document.getElementById("btnCerrarModalSalida").addEventListener("click", cerrarModalSalidaSinGuardar);
