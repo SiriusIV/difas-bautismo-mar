@@ -6131,6 +6131,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_periodo")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
+      if (usaFranjas && esRecurrente) asegurarFechaInicioRecurrenciaPorDefecto();
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
       actualizarToggleTerminaFranja();
@@ -6295,7 +6296,7 @@ function actualizarTextoPatronRecurrencia() {
 function limpiarFormularioFranja() {
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
-  document.getElementById("fr_recurrencia_inicio").value = "";
+  document.getElementById("fr_recurrencia_inicio").value = fechaHoyIsoLocalActividad();
   document.getElementById("fr_recurrencia_fin").value = "";
   document.getElementById("fr_repeticion_selector").value = "MENSUAL";
   document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
@@ -6335,6 +6336,19 @@ function seleccionarFranja(id) {
 
 function fechaInicioRecurrenciaSeleccionada() {
   return document.getElementById("fr_recurrencia_inicio")?.value || document.getElementById("fr_fecha")?.value || "";
+}
+
+function fechaHoyIsoLocalActividad() {
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth() + 1).padStart(2, "0");
+  const d = String(hoy.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function asegurarFechaInicioRecurrenciaPorDefecto() {
+  const input = document.getElementById("fr_recurrencia_inicio");
+  if (input && !input.value) input.value = fechaHoyIsoLocalActividad();
 }
 
 function fechaLocalDesdeIsoActividad(iso) {
