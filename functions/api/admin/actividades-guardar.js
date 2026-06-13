@@ -465,6 +465,10 @@ function validarActividad(data) {
     const fecha_inicio = limpiarTexto(data.fecha_inicio);
     const fecha_fin = limpiarTexto(data.fecha_fin);
 
+    if (!fecha_inicio) {
+      return "Las actividades permanentes deben tener fecha de inicio.";
+    }
+
     if ((fecha_inicio && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_inicio)) || (fecha_fin && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_fin))) {
       return "Las fechas deben tener formato YYYY-MM-DD.";
     }
@@ -603,6 +607,10 @@ function construirPayload(body, admin_id) {
   const esTemporal = tipo === "TEMPORAL";
   const esPermanente = tipo === "PERMANENTE";
   const esPendiente = tipo === "PENDIENTE";
+  const fechaInicioEntrada = limpiarTexto(body.fecha_inicio) || null;
+  const fechaFinEntrada = limpiarTexto(body.fecha_fin) || null;
+  const tipoLogico = esPermanente && fechaFinEntrada ? "TEMPORAL" : tipo;
+  const tipoPersistencia = esPendiente ? "PERMANENTE" : tipoLogico;
   const visiblePortal = parsearFlag(body.visible_portal, 1);
   const activa = parsearFlag(body.activa, 1);
   const usaFranjas = esPendiente ? 0 : parsearFlag(body.usa_franjas, 1);
@@ -614,10 +622,10 @@ function construirPayload(body, admin_id) {
 
   return {
     nombre: limpiarTexto(body.nombre),
-    tipo,
-    tipo_persistencia: esPendiente ? "PERMANENTE" : tipo,
-    fecha_inicio: (esTemporal || esPermanente) ? (limpiarTexto(body.fecha_inicio) || null) : null,
-    fecha_fin: (esTemporal || esPermanente) ? (limpiarTexto(body.fecha_fin) || null) : null,
+    tipo: tipoLogico,
+    tipo_persistencia: tipoPersistencia,
+    fecha_inicio: (esTemporal || esPermanente) ? fechaInicioEntrada : null,
+    fecha_fin: (esTemporal || esPermanente) ? fechaFinEntrada : null,
     activa,
 
     titulo_publico: normalizarNullable(body.titulo_publico),

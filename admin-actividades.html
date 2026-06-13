@@ -5585,6 +5585,12 @@ function actualizarVisibilidadFormulario() {
   if (tipo === "PENDIENTE") {
     if (fechaInicioInput && fechaInicioInput.value) fechaInicioInput.value = "";
     if (fechaFinInput && fechaFinInput.value) fechaFinInput.value = "";
+  } else if (tipo === "PERMANENTE") {
+    if (fechaInicioInput && !fechaInicioInput.value) fechaInicioInput.value = fechaHoyIsoLocalActividad();
+    if (fechaFinInput?.value) {
+      convertirPermanenteATemporalPorFinalizacion(false);
+      return actualizarVisibilidadFormulario();
+    }
   }
 
   bloqueFechas?.classList.toggle("desactivado", tipo === "PENDIENTE");
@@ -6358,6 +6364,30 @@ function fechaInicioPatronFrecuenciaPorDefecto() {
   return fechaInicioActividadGeneral() || fechaHoyIsoLocalActividad();
 }
 
+function convertirPermanenteATemporalPorFinalizacion(marcarCambio = true) {
+  const tipoInput = document.getElementById("tipo");
+  const fechaInicioInput = document.getElementById("fecha_inicio");
+  const fechaFinInput = document.getElementById("fecha_fin");
+  if (!tipoInput || tipoInput.value !== "PERMANENTE" || !fechaFinInput?.value) return false;
+  if (fechaInicioInput && !fechaInicioInput.value) fechaInicioInput.value = fechaHoyIsoLocalActividad();
+  tipoInput.value = "TEMPORAL";
+  sincronizarTogglesPanelConfiguracion();
+  if (marcarCambio) marcarCambiosPendientesActividad();
+  return true;
+}
+
+function convertirTemporalAPermanenteSinFinalizacion(marcarCambio = true) {
+  const tipoInput = document.getElementById("tipo");
+  const fechaInicioInput = document.getElementById("fecha_inicio");
+  const fechaFinInput = document.getElementById("fecha_fin");
+  if (!tipoInput || tipoInput.value !== "TEMPORAL" || fechaFinInput?.value) return false;
+  if (fechaInicioInput && !fechaInicioInput.value) fechaInicioInput.value = fechaHoyIsoLocalActividad();
+  tipoInput.value = "PERMANENTE";
+  sincronizarTogglesPanelConfiguracion();
+  if (marcarCambio) marcarCambiosPendientesActividad();
+  return true;
+}
+
 function fechaHoyIsoLocalActividad() {
   const hoy = new Date();
   const y = hoy.getFullYear();
@@ -6397,6 +6427,7 @@ function sincronizarInicioPatronConActividad() {
 function sincronizarFinPatronConActividad() {
   const fechaFinGeneral = fechaFinActividadGeneral();
   if (fechaFinGeneral) {
+    convertirPermanenteATemporalPorFinalizacion(false);
     document.getElementById("fr_recurrencia_fin_tipo").value = "FECHA";
     document.getElementById("fr_recurrencia_fin").value = fechaFinGeneral;
     document.getElementById("fr_recurrencia_repeticiones").value = "";
@@ -6797,9 +6828,11 @@ function manejarCambioToggleTerminaFranja() {
         confirmable: true,
         onAccept: () => {
           document.getElementById("fecha_fin").value = "";
+          convertirTemporalAPermanenteSinFinalizacion(true);
           establecerFinalizacionNuncaFranja();
           actualizarToggleTerminaFranja();
           actualizarTextoPatronRecurrencia();
+          actualizarVisibilidadFormulario();
           actualizarPreview();
           marcarCambiosPendientesActividad();
         },
@@ -6823,6 +6856,8 @@ function resolverSincronizacionFinActividadDesdePatron() {
 
   if (!fechaFinGeneral) {
     document.getElementById("fecha_fin").value = finPatron;
+    convertirPermanenteATemporalPorFinalizacion(true);
+    actualizarVisibilidadFormulario();
     actualizarPreview();
     return;
   }
@@ -6836,6 +6871,8 @@ function resolverSincronizacionFinActividadDesdePatron() {
       confirmable: true,
       onAccept: () => {
         document.getElementById("fecha_fin").value = finPatron;
+        convertirPermanenteATemporalPorFinalizacion(true);
+        actualizarVisibilidadFormulario();
         actualizarPreview();
         marcarCambiosPendientesActividad();
       },
@@ -7469,6 +7506,7 @@ async function borrarFranja(id) {
 
       permitirSubmitExplicitoActividadHasta = 0;
 
+      convertirPermanenteATemporalPorFinalizacion(false);
       const payload = construirPayloadActividad(0);
       const actividadQuedaDesactivada = payload.activa !== "1";
 
@@ -7499,6 +7537,11 @@ async function borrarFranja(id) {
 
         if (!actividadQuedaDesactivada && payload.tipo === "TEMPORAL" && (!payload.fecha_inicio || !payload.fecha_fin)) {
           mostrarMensaje("error", "Las actividades temporales deben tener fecha de inicio y fin.");
+          return false;
+        }
+
+        if (!actividadQuedaDesactivada && payload.tipo === "PERMANENTE" && !payload.fecha_inicio) {
+          mostrarMensaje("error", "Las actividades permanentes deben tener fecha de inicio.");
           return false;
         }
 
@@ -8436,6 +8479,9 @@ function retrocederPaso() {
             actividadId: document.getElementById("actividadId")?.value || "",
             tipo: document.getElementById("tipo")?.value || ""
           });
+          if (id === "fecha_fin") {
+            convertirPermanenteATemporalPorFinalizacion(true);
+          }
           if (document.getElementById("usa_franjas")?.value === "1" && document.getElementById("es_recurrente")?.value === "1") {
             if (id === "fecha_inicio") {
               sincronizarInicioPatronConActividad();
