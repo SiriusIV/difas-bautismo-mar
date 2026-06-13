@@ -6294,9 +6294,11 @@ function actualizarTextoPatronRecurrencia() {
 }
 
 function limpiarFormularioFranja() {
+  const fechaInicioDefault = fechaHoyIsoLocalActividad();
+  const fechaDefault = fechaLocalDesdeIsoActividad(fechaInicioDefault);
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
-  document.getElementById("fr_recurrencia_inicio").value = fechaHoyIsoLocalActividad();
+  document.getElementById("fr_recurrencia_inicio").value = fechaInicioDefault;
   document.getElementById("fr_recurrencia_fin").value = "";
   document.getElementById("fr_repeticion_selector").value = "MENSUAL";
   document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
@@ -6304,8 +6306,8 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_ordinal").value = "";
   document.getElementById("fr_recurrencia_weekday").value = "";
   document.getElementById("fr_recurrencia_weekdays").value = "";
-  document.getElementById("fr_recurrencia_monthday").value = "1";
-  document.getElementById("fr_recurrencia_month").value = "1";
+  document.getElementById("fr_recurrencia_monthday").value = fechaDefault ? String(fechaDefault.getDate()) : "1";
+  document.getElementById("fr_recurrencia_month").value = fechaDefault ? String(fechaDefault.getMonth() + 1) : "1";
   document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
   actualizarToggleTerminaFranja();
@@ -6348,7 +6350,17 @@ function fechaHoyIsoLocalActividad() {
 
 function asegurarFechaInicioRecurrenciaPorDefecto() {
   const input = document.getElementById("fr_recurrencia_inicio");
-  if (input && !input.value) input.value = fechaHoyIsoLocalActividad();
+  if (!input || input.value) return;
+  input.value = fechaHoyIsoLocalActividad();
+  const fecha = fechaLocalDesdeIsoActividad(input.value);
+  if (!fecha) return;
+  document.getElementById("fr_recurrencia_monthday").value = String(fecha.getDate());
+  document.getElementById("fr_recurrencia_month").value = String(fecha.getMonth() + 1);
+  if (document.getElementById("fr_recurrencia_tipo")?.value === "MENSUAL_DIA_SEMANA") {
+    document.getElementById("fr_recurrencia_weekday").value = String(fecha.getDay());
+    document.getElementById("fr_recurrencia_ordinal").value = String(ordinalMensualDesdeFecha(fecha));
+  }
+  actualizarTextoPatronRecurrencia();
 }
 
 function fechaLocalDesdeIsoActividad(iso) {
