@@ -5582,14 +5582,14 @@ function actualizarVisibilidadFormulario() {
   }
   sincronizarTogglesPanelConfiguracion();
 
-  if (tipo !== "TEMPORAL") {
+  if (tipo === "PENDIENTE") {
     if (fechaInicioInput && fechaInicioInput.value) fechaInicioInput.value = "";
     if (fechaFinInput && fechaFinInput.value) fechaFinInput.value = "";
   }
 
-  bloqueFechas?.classList.toggle("desactivado", tipo !== "TEMPORAL");
-  if (fechaInicioInput) fechaInicioInput.disabled = tipo !== "TEMPORAL";
-  if (fechaFinInput) fechaFinInput.disabled = tipo !== "TEMPORAL";
+  bloqueFechas?.classList.toggle("desactivado", tipo === "PENDIENTE");
+  if (fechaInicioInput) fechaInicioInput.disabled = tipo === "PENDIENTE";
+  if (fechaFinInput) fechaFinInput.disabled = tipo === "PENDIENTE";
   if (fechaFinInput) {
     fechaFinInput.min = fechaInicioInput?.value || "";
   }
@@ -6131,7 +6131,12 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_periodo")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
-      if (usaFranjas && esRecurrente) asegurarFechaInicioRecurrenciaPorDefecto();
+      if (usaFranjas && esRecurrente) {
+        asegurarFechaInicioRecurrenciaPorDefecto();
+        if (fechaFinActividadGeneral() && (document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA") === "NUNCA") {
+          sincronizarFinPatronConActividad();
+        }
+      }
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
       actualizarToggleTerminaFranja();
@@ -6294,12 +6299,13 @@ function actualizarTextoPatronRecurrencia() {
 }
 
 function limpiarFormularioFranja() {
-  const fechaInicioDefault = fechaHoyIsoLocalActividad();
+  const fechaInicioDefault = fechaInicioPatronFrecuenciaPorDefecto();
   const fechaDefault = fechaLocalDesdeIsoActividad(fechaInicioDefault);
+  const fechaFinGeneral = fechaFinActividadGeneral();
   document.getElementById("franjaId").value = "";
   document.getElementById("fr_fecha").value = "";
   document.getElementById("fr_recurrencia_inicio").value = fechaInicioDefault;
-  document.getElementById("fr_recurrencia_fin").value = "";
+  document.getElementById("fr_recurrencia_fin").value = fechaFinGeneral;
   document.getElementById("fr_repeticion_selector").value = "MENSUAL";
   document.getElementById("fr_recurrencia_tipo").value = "MENSUAL_DIA_MES";
   document.getElementById("fr_recurrencia_intervalo").value = "1";
@@ -6308,7 +6314,7 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_recurrencia_weekdays").value = "";
   document.getElementById("fr_recurrencia_monthday").value = fechaDefault ? String(fechaDefault.getDate()) : "1";
   document.getElementById("fr_recurrencia_month").value = fechaDefault ? String(fechaDefault.getMonth() + 1) : "1";
-  document.getElementById("fr_recurrencia_fin_tipo").value = "NUNCA";
+  document.getElementById("fr_recurrencia_fin_tipo").value = fechaFinGeneral ? "FECHA" : "NUNCA";
   document.getElementById("fr_recurrencia_repeticiones").value = "";
   actualizarToggleTerminaFranja();
   actualizarResumenFrecuenciaVisible();
@@ -6340,6 +6346,18 @@ function fechaInicioRecurrenciaSeleccionada() {
   return document.getElementById("fr_recurrencia_inicio")?.value || document.getElementById("fr_fecha")?.value || "";
 }
 
+function fechaInicioActividadGeneral() {
+  return document.getElementById("fecha_inicio")?.value || "";
+}
+
+function fechaFinActividadGeneral() {
+  return document.getElementById("fecha_fin")?.value || "";
+}
+
+function fechaInicioPatronFrecuenciaPorDefecto() {
+  return fechaInicioActividadGeneral() || fechaHoyIsoLocalActividad();
+}
+
 function fechaHoyIsoLocalActividad() {
   const hoy = new Date();
   const y = hoy.getFullYear();
@@ -6351,7 +6369,7 @@ function fechaHoyIsoLocalActividad() {
 function asegurarFechaInicioRecurrenciaPorDefecto() {
   const input = document.getElementById("fr_recurrencia_inicio");
   if (!input || input.value) return;
-  input.value = fechaHoyIsoLocalActividad();
+  input.value = fechaInicioPatronFrecuenciaPorDefecto();
   const fecha = fechaLocalDesdeIsoActividad(input.value);
   if (!fecha) return;
   document.getElementById("fr_recurrencia_monthday").value = String(fecha.getDate());
@@ -6360,6 +6378,32 @@ function asegurarFechaInicioRecurrenciaPorDefecto() {
     document.getElementById("fr_recurrencia_weekday").value = String(fecha.getDay());
     document.getElementById("fr_recurrencia_ordinal").value = String(ordinalMensualDesdeFecha(fecha));
   }
+  actualizarTextoPatronRecurrencia();
+}
+
+function sincronizarInicioPatronConActividad() {
+  const input = document.getElementById("fr_recurrencia_inicio");
+  if (!input) return;
+  const fechaInicioGeneral = fechaInicioActividadGeneral();
+  if (!fechaInicioGeneral) {
+    if (!input.value) asegurarFechaInicioRecurrenciaPorDefecto();
+    return;
+  }
+  input.value = fechaInicioGeneral;
+  aplicarReglaRecurrenciaSimple(valorFrecuenciaDesdeTipoRecurrencia());
+  sincronizarSelectFrecuenciaParaReapertura();
+}
+
+function sincronizarFinPatronConActividad() {
+  const fechaFinGeneral = fechaFinActividadGeneral();
+  if (fechaFinGeneral) {
+    document.getElementById("fr_recurrencia_fin_tipo").value = "FECHA";
+    document.getElementById("fr_recurrencia_fin").value = fechaFinGeneral;
+    document.getElementById("fr_recurrencia_repeticiones").value = "";
+  } else {
+    establecerFinalizacionNuncaFranja();
+  }
+  actualizarToggleTerminaFranja();
   actualizarTextoPatronRecurrencia();
 }
 
@@ -6373,6 +6417,116 @@ function fechaLocalDesdeIsoActividad(iso) {
 function weekdayDesdeFechaInicioRecurrencia() {
   const fecha = fechaLocalDesdeIsoActividad(fechaInicioRecurrenciaSeleccionada());
   return fecha ? String(fecha.getDay()) : "1";
+}
+
+function isoDesdeFechaLocalActividad(fecha) {
+  if (!(fecha instanceof Date) || Number.isNaN(fecha.getTime())) return "";
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function nthWeekdayOfMonthActividad(year, monthIndex, weekday, ordinal) {
+  const wd = Number(weekday);
+  const ord = Number(ordinal);
+  if (ord === -1) {
+    const fecha = new Date(year, monthIndex + 1, 0);
+    while (fecha.getDay() !== wd) fecha.setDate(fecha.getDate() - 1);
+    return fecha;
+  }
+  const fecha = new Date(year, monthIndex, 1);
+  while (fecha.getDay() !== wd) fecha.setDate(fecha.getDate() + 1);
+  fecha.setDate(fecha.getDate() + ((Math.max(ord, 1) - 1) * 7));
+  return fecha.getMonth() === monthIndex ? fecha : null;
+}
+
+function calcularFechaFinPatronPorRepeticiones() {
+  const repeticiones = Math.max(parseInt(document.getElementById("fr_recurrencia_repeticiones")?.value || "0", 10) || 0, 0);
+  if (repeticiones <= 0) return "";
+
+  const inicio = fechaLocalDesdeIsoActividad(fechaInicioRecurrenciaSeleccionada());
+  if (!inicio) return "";
+
+  const tipo = document.getElementById("fr_recurrencia_tipo")?.value || "";
+  const intervalo = Math.max(parseInt(document.getElementById("fr_recurrencia_intervalo")?.value || "1", 10) || 1, 1);
+  const monthday = Number(document.getElementById("fr_recurrencia_monthday")?.value || inicio.getDate());
+  const month = Number(document.getElementById("fr_recurrencia_month")?.value || (inicio.getMonth() + 1));
+  const weekday = Number(document.getElementById("fr_recurrencia_weekday")?.value || inicio.getDay());
+  const ordinal = Number(document.getElementById("fr_recurrencia_ordinal")?.value || ordinalMensualDesdeFecha(inicio));
+  const weekdays = normalizarWeekdaysActividad(document.getElementById("fr_recurrencia_weekdays")?.value || weekday);
+  let contador = 0;
+  let ultima = null;
+
+  const agregar = (fecha) => {
+    if (!(fecha instanceof Date) || Number.isNaN(fecha.getTime())) return false;
+    if (fecha < inicio) return false;
+    contador += 1;
+    ultima = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+    return contador >= repeticiones;
+  };
+
+  if (tipo === "DIARIA") {
+    const fecha = new Date(inicio);
+    while (contador < repeticiones && contador < 10000) {
+      if (agregar(fecha)) break;
+      fecha.setDate(fecha.getDate() + intervalo);
+    }
+  } else if (tipo === "SEMANAL") {
+    const fecha = new Date(inicio);
+    const setWeekdays = new Set((weekdays.length ? weekdays : [String(inicio.getDay())]).map(Number));
+    let guardia = 0;
+    while (contador < repeticiones && guardia < 10000) {
+      const semanas = Math.floor((fecha - inicio) / (7 * 24 * 60 * 60 * 1000));
+      if (semanas % intervalo === 0 && setWeekdays.has(fecha.getDay()) && agregar(fecha)) break;
+      fecha.setDate(fecha.getDate() + 1);
+      guardia += 1;
+    }
+  } else if (tipo === "MENSUAL_DIA_SEMANA") {
+    const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+    let guardia = 0;
+    while (contador < repeticiones && guardia < 1200) {
+      const meses = (cursor.getFullYear() - inicio.getFullYear()) * 12 + (cursor.getMonth() - inicio.getMonth());
+      if (meses % intervalo === 0) {
+        const fecha = nthWeekdayOfMonthActividad(cursor.getFullYear(), cursor.getMonth(), weekday, ordinal);
+        if (fecha && agregar(fecha)) break;
+      }
+      cursor.setMonth(cursor.getMonth() + 1);
+      guardia += 1;
+    }
+  } else if (tipo === "MENSUAL_DIA_MES") {
+    const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+    let guardia = 0;
+    while (contador < repeticiones && guardia < 1200) {
+      const meses = (cursor.getFullYear() - inicio.getFullYear()) * 12 + (cursor.getMonth() - inicio.getMonth());
+      if (meses % intervalo === 0) {
+        const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), monthday);
+        if (fecha.getMonth() === cursor.getMonth() && agregar(fecha)) break;
+      }
+      cursor.setMonth(cursor.getMonth() + 1);
+      guardia += 1;
+    }
+  } else if (tipo === "ANUAL") {
+    let year = inicio.getFullYear();
+    let guardia = 0;
+    while (contador < repeticiones && guardia < 1000) {
+      if ((year - inicio.getFullYear()) % intervalo === 0) {
+        const fecha = new Date(year, month - 1, monthday);
+        if (fecha.getMonth() === month - 1 && agregar(fecha)) break;
+      }
+      year += 1;
+      guardia += 1;
+    }
+  }
+
+  return isoDesdeFechaLocalActividad(ultima);
+}
+
+function fechaFinalActualPatronFrecuencia() {
+  const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
+  if (finTipo === "FECHA") return document.getElementById("fr_recurrencia_fin")?.value || "";
+  if (finTipo === "REPETICIONES") return calcularFechaFinPatronPorRepeticiones();
+  return "";
 }
 
 function aplicarReglaRecurrenciaSimple(tipoSelector) {
@@ -6551,14 +6705,20 @@ function aceptarModalDiasSemanaFranja() {
 
 function abrirModalPeriodicidadFranja() {
   const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
+  const fechaFinGeneral = fechaFinActividadGeneral();
+  if (finTipo === "NUNCA" && fechaFinGeneral) {
+    document.getElementById("fr_recurrencia_fin_tipo").value = "FECHA";
+    document.getElementById("fr_recurrencia_fin").value = fechaFinGeneral;
+    document.getElementById("fr_recurrencia_repeticiones").value = "";
+  }
   const modal = document.getElementById("modalPeriodicidadFranja");
   if (modal) {
-    modal.dataset.prevFinTipo = finTipo;
+    modal.dataset.prevFinTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
     modal.dataset.prevFinFecha = document.getElementById("fr_recurrencia_fin")?.value || "";
     modal.dataset.prevRepeticiones = document.getElementById("fr_recurrencia_repeticiones")?.value || "";
   }
 
-  const tipoActivo = finTipo === "REPETICIONES" ? "REPETICIONES" : "FECHA";
+  const tipoActivo = (document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA") === "REPETICIONES" ? "REPETICIONES" : "FECHA";
   document.querySelectorAll("input[name='recFinTipo']").forEach((input) => {
     input.checked = input.value === tipoActivo;
   });
@@ -6598,6 +6758,7 @@ function aceptarModalPeriodicidadFranja() {
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
   establecerVisibilidadModalActividad("modalPeriodicidadFranja", false);
+  resolverSincronizacionFinActividadDesdePatron();
 }
 
 function actualizarCamposModalFinalizacionFranja() {
@@ -6628,9 +6789,62 @@ function manejarCambioToggleTerminaFranja() {
     return;
   }
 
+  if (fechaFinActividadGeneral()) {
+    mostrarMensaje(
+      "aviso",
+      "Al desactivar la finalización del patrón se eliminará también la fecha de finalización general de la actividad. ¿Deseas continuar?",
+      {
+        confirmable: true,
+        onAccept: () => {
+          document.getElementById("fecha_fin").value = "";
+          establecerFinalizacionNuncaFranja();
+          actualizarToggleTerminaFranja();
+          actualizarTextoPatronRecurrencia();
+          actualizarPreview();
+          marcarCambiosPendientesActividad();
+        },
+        onCancel: () => {
+          sincronizarFinPatronConActividad();
+        }
+      }
+    );
+    return;
+  }
+
   establecerFinalizacionNuncaFranja();
   actualizarTextoPatronRecurrencia();
   marcarCambiosPendientesActividad();
+}
+
+function resolverSincronizacionFinActividadDesdePatron() {
+  const finPatron = fechaFinalActualPatronFrecuencia();
+  if (!finPatron) return;
+  const fechaFinGeneral = fechaFinActividadGeneral();
+
+  if (!fechaFinGeneral) {
+    document.getElementById("fecha_fin").value = finPatron;
+    actualizarPreview();
+    return;
+  }
+
+  if (fechaFinGeneral === finPatron) return;
+
+  mostrarMensaje(
+    "aviso",
+    "La fecha de finalización programada para esta actividad no coincide con la fecha de fin del patrón de frecuencia. ¿Quieres adaptar la fecha de finalización de la actividad a la establecida por el patrón?",
+    {
+      confirmable: true,
+      onAccept: () => {
+        document.getElementById("fecha_fin").value = finPatron;
+        actualizarPreview();
+        marcarCambiosPendientesActividad();
+      },
+      onCancel: () => {
+        sincronizarFinPatronConActividad();
+        marcarCambiosPendientesActividad();
+      }
+    }
+  );
 }
 
 async function borrarFranjaSeleccionada() {
@@ -7289,6 +7503,11 @@ async function borrarFranja(id) {
         }
 
         if (!actividadQuedaDesactivada && payload.tipo === "TEMPORAL" && payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
+          mostrarMensaje("error", "La fecha de finalización no puede ser anterior a la fecha de inicio.");
+          return false;
+        }
+
+        if (!actividadQuedaDesactivada && payload.tipo === "PERMANENTE" && payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) {
           mostrarMensaje("error", "La fecha de finalización no puede ser anterior a la fecha de inicio.");
           return false;
         }
@@ -8217,6 +8436,13 @@ function retrocederPaso() {
             actividadId: document.getElementById("actividadId")?.value || "",
             tipo: document.getElementById("tipo")?.value || ""
           });
+          if (document.getElementById("usa_franjas")?.value === "1" && document.getElementById("es_recurrente")?.value === "1") {
+            if (id === "fecha_inicio") {
+              sincronizarInicioPatronConActividad();
+            } else if (id === "fecha_fin") {
+              sincronizarFinPatronConActividad();
+            }
+          }
         });
         inputFecha.addEventListener("keydown", (event) => {
           if (event.key === "Enter") {

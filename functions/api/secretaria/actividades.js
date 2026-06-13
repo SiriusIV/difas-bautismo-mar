@@ -223,7 +223,13 @@ export async function onRequestGet(context) {
       WHERE a.activa = 1
         AND a.visible_portal = 1
         AND (
-          a.tipo = 'PERMANENTE'
+          (
+            a.tipo = 'PERMANENTE'
+            AND (
+              a.fecha_fin IS NULL
+              OR date(a.fecha_fin) >= date('now')
+            )
+          )
           OR (
             a.tipo = 'TEMPORAL'
             AND (

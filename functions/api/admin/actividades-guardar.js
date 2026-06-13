@@ -461,6 +461,17 @@ function validarActividad(data) {
     if (fecha_inicio > fecha_fin) {
       return "La fecha de inicio no puede ser posterior a la fecha de fin.";
     }
+  } else if (tipo === "PERMANENTE") {
+    const fecha_inicio = limpiarTexto(data.fecha_inicio);
+    const fecha_fin = limpiarTexto(data.fecha_fin);
+
+    if ((fecha_inicio && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_inicio)) || (fecha_fin && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_fin))) {
+      return "Las fechas deben tener formato YYYY-MM-DD.";
+    }
+
+    if (fecha_inicio && fecha_fin && fecha_inicio > fecha_fin) {
+      return "La fecha de inicio no puede ser posterior a la fecha de fin.";
+    }
   }
 
   const usaFranjas = parsearFlag(data.usa_franjas, 1);
@@ -590,6 +601,7 @@ async function obtenerResumenFranjasActividad(env, actividadId) {
 function construirPayload(body, admin_id) {
   const tipo = limpiarTexto(body.tipo).toUpperCase();
   const esTemporal = tipo === "TEMPORAL";
+  const esPermanente = tipo === "PERMANENTE";
   const esPendiente = tipo === "PENDIENTE";
   const visiblePortal = parsearFlag(body.visible_portal, 1);
   const activa = parsearFlag(body.activa, 1);
@@ -604,8 +616,8 @@ function construirPayload(body, admin_id) {
     nombre: limpiarTexto(body.nombre),
     tipo,
     tipo_persistencia: esPendiente ? "PERMANENTE" : tipo,
-    fecha_inicio: esTemporal ? limpiarTexto(body.fecha_inicio) : null,
-    fecha_fin: esTemporal ? limpiarTexto(body.fecha_fin) : null,
+    fecha_inicio: (esTemporal || esPermanente) ? (limpiarTexto(body.fecha_inicio) || null) : null,
+    fecha_fin: (esTemporal || esPermanente) ? (limpiarTexto(body.fecha_fin) || null) : null,
     activa,
 
     titulo_publico: normalizarNullable(body.titulo_publico),
@@ -1001,9 +1013,9 @@ export async function onRequestPut(context) {
 
     const listaFranjas = franjas.results || [];
 
-    if (activaNueva === 1 && p.tipo === "TEMPORAL" && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0) {
+    if (activaNueva === 1 && (p.tipo === "TEMPORAL" || p.tipo === "PERMANENTE") && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0 && (p.fecha_inicio || p.fecha_fin)) {
       const fueraRango = listaFranjas.some(f =>
-        f.fecha && (f.fecha < p.fecha_inicio || f.fecha > p.fecha_fin)
+        f.fecha && ((p.fecha_inicio && f.fecha < p.fecha_inicio) || (p.fecha_fin && f.fecha > p.fecha_fin))
       );
 
       if (fueraRango) {
