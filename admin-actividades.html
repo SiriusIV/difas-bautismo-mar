@@ -2064,7 +2064,7 @@
 
     .fila-franja-inline {
       display: grid;
-      grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.1fr) 130px 130px 126px 110px;
+      grid-template-columns: minmax(150px, 0.75fr) 74px minmax(150px, 0.9fr) 130px 130px 126px 110px;
       gap: 10px;
       align-items: end;
       margin-bottom: 10px;
@@ -2103,14 +2103,7 @@
       height: 38px;
     }
 
-    .campo-franja-frecuencia .frecuencia-controles {
-      display: grid;
-      grid-template-columns: 72px minmax(120px, 1fr);
-      gap: 8px;
-      align-items: center;
-    }
-
-    .campo-franja-frecuencia input[type="number"] {
+    .campo-franja-periodo input[type="number"] {
       text-align: center;
     }
 
@@ -2851,7 +2844,7 @@
         grid-template-columns: minmax(0, 1fr) minmax(96px, 0.42fr);
         grid-template-areas:
           "fecha capacidad"
-          "patron patron"
+          "periodo patron"
           "inicio fin"
           "termina termina";
         gap: 10px 8px;
@@ -2865,6 +2858,10 @@
 
       #fr_bloque_patron {
         grid-area: patron;
+      }
+
+      #fr_bloque_periodo {
+        grid-area: periodo;
       }
 
       #fr_bloque_inicio {
@@ -3355,17 +3352,19 @@
       <input type="date" id="fr_recurrencia_inicio">
     </div>
 
+    <div id="fr_bloque_periodo" class="campo-franja-inline campo-franja-patron campo-franja-periodo">
+      <label for="fr_recurrencia_intervalo">Periodo</label>
+      <input type="number" id="fr_recurrencia_intervalo" min="1" step="1" value="1" inputmode="numeric" aria-label="Periodo de repetición">
+    </div>
+
     <div id="fr_bloque_patron" class="campo-franja-inline campo-franja-patron campo-franja-frecuencia">
-      <label>Frecuencia</label>
-      <div class="frecuencia-controles">
-        <input type="number" id="fr_recurrencia_intervalo" min="1" step="1" value="1" inputmode="numeric" aria-label="Cantidad de frecuencia">
-        <select id="fr_repeticion_selector" aria-label="Unidad de frecuencia">
-          <option value="DIARIA">día</option>
-          <option value="SEMANAL">semana</option>
-          <option value="MENSUAL">mes</option>
-          <option value="ANUAL">año</option>
-        </select>
-      </div>
+      <label for="fr_repeticion_selector">Frecuencia</label>
+      <select id="fr_repeticion_selector" aria-label="Frecuencia de repetición">
+        <option value="DIARIA">diario</option>
+        <option value="SEMANAL">semanal</option>
+        <option value="MENSUAL">mensual</option>
+        <option value="ANUAL">anual</option>
+      </select>
     </div>
 
     <input type="hidden" id="fr_recurrencia_tipo" value="MENSUAL_DIA_MES">
@@ -6097,6 +6096,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
+      document.getElementById("fr_bloque_periodo")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
@@ -6164,7 +6164,7 @@ function actualizarEtiquetaOpcionSemanal() {
   const option = document.querySelector("#fr_repeticion_selector option[value='SEMANAL']");
   if (!option) return;
   const etiquetas = etiquetasWeekdaysActividad();
-  option.textContent = etiquetas.length ? `semana (${etiquetas.join(", ")})` : "semana";
+  option.textContent = etiquetas.length ? `semanal (${etiquetas.join(", ")})` : "semanal";
 }
 
 function textoOpcionMensualDiaMes(monthday = document.getElementById("fr_recurrencia_monthday")?.value || "1") {
@@ -6187,7 +6187,7 @@ function actualizarEtiquetaOpcionMensual() {
   } else if (tipo === "MENSUAL_DIA_MES") {
     option.textContent = textoOpcionMensualDiaMes();
   } else {
-    option.textContent = "mes";
+    option.textContent = "mensual";
   }
 }
 
