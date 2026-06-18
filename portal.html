@@ -1484,6 +1484,8 @@
   flex: 1 1 auto;
   width: 100%;
   align-items: flex-start;
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 .tabla-franjas h4 {
@@ -2683,11 +2685,11 @@
     }
 
     function textoProgramacionFranja(f) {
-      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
-        return f.patron_recurrencia;
-      }
       if (f.fecha) {
         return formatearFechaLargaES(f.fecha);
+      }
+      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
+        return f.patron_recurrencia;
       }
       return "";
     }

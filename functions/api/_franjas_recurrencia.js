@@ -78,7 +78,7 @@ function finMes(fecha) {
 }
 
 function finVentanaRecurrencia() {
-  return finMes(sumarMeses(inicioMes(new Date()), 2));
+  return finMes(sumarMeses(inicioMes(new Date()), 1));
 }
 
 function nthWeekdayOfMonth(year, monthIndex, weekday, ordinal) {
@@ -148,12 +148,12 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
     SELECT id
     FROM franjas
     WHERE actividad_id = ?
-      AND recurrencia_origen_id = ?
       AND fecha = ?
       AND hora_inicio = ?
       AND COALESCE(hora_fin, '') = COALESCE(?, '')
+      AND COALESCE(es_recurrente, 0) = 0
     LIMIT 1
-  `).bind(patron.actividad_id, patron.id, fecha, patron.hora_inicio, patron.hora_fin).first();
+  `).bind(patron.actividad_id, fecha, patron.hora_inicio, patron.hora_fin).first();
 
   if (existente) return false;
 

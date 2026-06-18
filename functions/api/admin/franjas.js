@@ -129,6 +129,10 @@ function fechaIsoLocal(fecha) {
   return `${y}-${m}-${d}`;
 }
 
+function fechaHoyIso() {
+  return fechaIsoLocal(new Date());
+}
+
 function crearFechaLocal(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) return null;
   const [y, m, d] = String(iso).split("-").map(Number);
@@ -157,9 +161,9 @@ function finMes(fecha) {
   return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
 }
 
-function finVentanaRecurrencia(tresMesesDesde = new Date()) {
-  const base = inicioMes(tresMesesDesde);
-  return finMes(sumarMeses(base, 2));
+function finVentanaRecurrencia(dosMesesDesde = new Date()) {
+  const base = inicioMes(dosMesesDesde);
+  return finMes(sumarMeses(base, 1));
 }
 
 function normalizarReglaRecurrencia(data = {}) {
@@ -335,7 +339,18 @@ function franjaHaCambiado(existente = {}, siguiente = {}) {
     normalizarTexto(existente.hora_fin) !== normalizarTexto(siguiente.hora_fin) ||
     String(Number(existente.capacidad ?? "")) !== String(Number(siguiente.capacidad ?? "")) ||
     Number(existente.es_recurrente || 0) !== Number(siguiente.es_recurrente || 0) ||
-    normalizarTexto(existente.patron_recurrencia) !== normalizarTexto(siguiente.patron_recurrencia)
+    normalizarTexto(existente.patron_recurrencia) !== normalizarTexto(siguiente.patron_recurrencia) ||
+    normalizarTexto(existente.recurrencia_tipo) !== normalizarTexto(siguiente.recurrencia_tipo) ||
+    String(Number(existente.recurrencia_intervalo || 1)) !== String(Number(siguiente.recurrencia_intervalo || 1)) ||
+    normalizarTexto(existente.recurrencia_weekday) !== normalizarTexto(siguiente.recurrencia_weekday) ||
+    normalizarTexto(existente.recurrencia_weekdays) !== normalizarTexto(siguiente.recurrencia_weekdays) ||
+    normalizarTexto(existente.recurrencia_ordinal) !== normalizarTexto(siguiente.recurrencia_ordinal) ||
+    normalizarTexto(existente.recurrencia_monthday) !== normalizarTexto(siguiente.recurrencia_monthday) ||
+    normalizarTexto(existente.recurrencia_month) !== normalizarTexto(siguiente.recurrencia_month) ||
+    normalizarTexto(existente.recurrencia_inicio) !== normalizarTexto(siguiente.recurrencia_inicio) ||
+    normalizarTexto(existente.recurrencia_fin) !== normalizarTexto(siguiente.recurrencia_fin) ||
+    normalizarTexto(existente.recurrencia_fin_tipo) !== normalizarTexto(siguiente.recurrencia_fin_tipo) ||
+    normalizarTexto(existente.recurrencia_repeticiones) !== normalizarTexto(siguiente.recurrencia_repeticiones)
   );
 }
 
@@ -912,13 +927,13 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
     SELECT id
     FROM franjas
     WHERE actividad_id = ?
-      AND recurrencia_origen_id = ?
       AND fecha = ?
       AND hora_inicio = ?
       AND COALESCE(hora_fin, '') = COALESCE(?, '')
+      AND COALESCE(es_recurrente, 0) = 0
     LIMIT 1
   `)
-    .bind(patron.actividad_id, patron.id, fecha, patron.hora_inicio, patron.hora_fin)
+    .bind(patron.actividad_id, fecha, patron.hora_inicio, patron.hora_fin)
     .first();
 
   if (existente) return false;
@@ -1092,6 +1107,38 @@ function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
   return null;
 }
 
+function validarFechaNuevaNoPasada(fecha) {
+  const normalizada = normalizarFecha(fecha);
+  if (normalizada && normalizada < fechaHoyIso()) {
+    return "La fecha de inicio de una nueva franja no puede ser anterior a la fecha actual.";
+  }
+  return null;
+}
+
+function validarReglaRecurrenciaDentroDeActividad(actividad, regla = {}) {
+  if (!actividad) {
+    return "La actividad indicada no existe.";
+  }
+
+  if (Number(actividad.borrador_tecnico) === 1) {
+    return null;
+  }
+
+  if (normalizarTexto(actividad.tipo).toUpperCase() === "PENDIENTE") {
+    return "Para programar franjas horarias la actividad debe ser temporal o permanente.";
+  }
+
+  if (actividad.fecha_inicio && regla.inicio && regla.inicio < actividad.fecha_inicio) {
+    return `La fecha de inicio del patrón no puede ser anterior al inicio de la actividad (${actividad.fecha_inicio}).`;
+  }
+
+  if (actividad.fecha_fin && regla.fin_tipo === "FECHA" && regla.fin && regla.fin > actividad.fecha_fin) {
+    return `La fecha de finalización del patrón no puede ser posterior a la finalización de la actividad (${actividad.fecha_fin}).`;
+  }
+
+  return null;
+}
+
 async function obtenerBloqueoActualFranja(env, franjaId) {
   const sql = `
     SELECT
@@ -1139,6 +1186,123 @@ async function contarFranjasMaterializadasDelMismoPatron(env, recurrenciaOrigenI
     .first();
 
   return Number(result?.total || 0);
+}
+
+async function obtenerMaterializacionesFuturasPatron(env, recurrenciaOrigenId) {
+  if (!recurrenciaOrigenId) return [];
+
+  const result = await env.DB.prepare(`
+    SELECT *
+    FROM franjas
+    WHERE recurrencia_origen_id = ?
+      AND COALESCE(es_recurrente, 0) = 0
+      AND (
+        fecha IS NULL
+        OR datetime(fecha || ' ' || COALESCE(NULLIF(hora_inicio, ''), '00:00')) > datetime('now')
+      )
+    ORDER BY fecha ASC, hora_inicio ASC, id ASC
+  `).bind(recurrenciaOrigenId).all();
+
+  return result?.results || [];
+}
+
+async function contarReservasFuturasMaterializacionesPatron(env, recurrenciaOrigenId) {
+  const franjas = await obtenerMaterializacionesFuturasPatron(env, recurrenciaOrigenId);
+  let total = 0;
+
+  for (const franja of franjas) {
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    total += reservas.length;
+  }
+
+  return total;
+}
+
+async function limpiarMaterializacionesFuturasPatron(env, patron = {}) {
+  const franjas = await obtenerMaterializacionesFuturasPatron(env, patron.id);
+  const resumen = {
+    franjas_eliminadas: 0,
+    reservas_afectadas: 0,
+    correos_enviados: 0,
+    incidencias: []
+  };
+
+  for (const franja of franjas) {
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    if (reservas.length > 0) {
+      const alternativas = await obtenerFranjasDisponiblesAlternativas(env, franja.actividad_id, franja.id);
+      const resultado = await eliminarReservasPorEliminacionFranja(env, reservas, franja, alternativas);
+      resumen.reservas_afectadas += Number(resultado?.reservas_eliminadas || 0);
+      resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+      resumen.incidencias.push(...(resultado?.incidencias || []));
+    }
+
+    const deleteResult = await env.DB.prepare(`
+      DELETE FROM franjas
+      WHERE id = ?
+        AND COALESCE(es_recurrente, 0) = 0
+        AND recurrencia_origen_id = ?
+    `).bind(franja.id, patron.id).run();
+
+    if ((deleteResult?.meta?.changes || 0) > 0) {
+      resumen.franjas_eliminadas += 1;
+    }
+  }
+
+  return resumen;
+}
+
+async function obtenerFranjasActividadParaReset(env, actividadId) {
+  const result = await env.DB.prepare(`
+    SELECT *
+    FROM franjas
+    WHERE actividad_id = ?
+    ORDER BY COALESCE(es_recurrente, 0) ASC, fecha ASC, hora_inicio ASC, id ASC
+  `).bind(actividadId).all();
+
+  return result?.results || [];
+}
+
+async function resetearProgramacionActividad(env, actividadId) {
+  const franjas = await obtenerFranjasActividadParaReset(env, actividadId);
+  const resumen = {
+    franjas_eliminadas: 0,
+    reservas_afectadas: 0,
+    correos_enviados: 0,
+    incidencias: []
+  };
+
+  for (const franja of franjas) {
+    const historicas = await contarReservasHistoricasFranja(env, franja.id);
+    if (historicas > 0) {
+      return {
+        ok: false,
+        bloquear: true,
+        error: "No se puede resetear la programación porque existen solicitudes históricas asociadas. El histórico debe conservarse."
+      };
+    }
+  }
+
+  for (const franja of franjas) {
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    if (reservas.length > 0) {
+      const resultado = await eliminarReservasPorEliminacionFranja(env, reservas, franja, []);
+      resumen.reservas_afectadas += Number(resultado?.reservas_eliminadas || 0);
+      resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+      resumen.incidencias.push(...(resultado?.incidencias || []));
+    }
+
+    const deleteResult = await env.DB.prepare(`
+      DELETE FROM franjas
+      WHERE id = ?
+    `).bind(franja.id).run();
+
+    if ((deleteResult?.meta?.changes || 0) > 0) {
+      resumen.franjas_eliminadas += 1;
+    }
+  }
+
+  return { ok: true, resumen };
 }
 
 async function obtenerResumenFranjas(env, actividad_id) {
@@ -1379,6 +1543,19 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: errorFecha }, { status: 400 });
     }
 
+    const errorFechaPasada = validarFechaNuevaNoPasada(es_recurrente === 1 ? regla_recurrencia.inicio : fecha);
+
+    if (errorFechaPasada) {
+      return json({ ok: false, error: errorFechaPasada }, { status: 400 });
+    }
+
+    if (es_recurrente === 1) {
+      const errorReglaActividad = validarReglaRecurrenciaDentroDeActividad(actividad, regla_recurrencia);
+      if (errorReglaActividad) {
+        return json({ ok: false, error: errorReglaActividad }, { status: 400 });
+      }
+    }
+
     let duplicada;
 
     if (es_recurrente === 1) {
@@ -1598,8 +1775,16 @@ export async function onRequestPut(context) {
       es_recurrente,
       patron_recurrencia: es_recurrente === 1 ? patron_recurrencia : null,
       recurrencia_tipo: es_recurrente === 1 ? regla_recurrencia.tipo : null,
+      recurrencia_intervalo: es_recurrente === 1 ? regla_recurrencia.intervalo : 1,
+      recurrencia_weekday: es_recurrente === 1 ? regla_recurrencia.weekday : null,
       recurrencia_weekdays: es_recurrente === 1 ? regla_recurrencia.weekdays.join(",") : null,
-      recurrencia_fin_tipo: es_recurrente === 1 ? regla_recurrencia.fin_tipo : null
+      recurrencia_ordinal: es_recurrente === 1 ? regla_recurrencia.ordinal : null,
+      recurrencia_monthday: es_recurrente === 1 ? regla_recurrencia.monthday : null,
+      recurrencia_month: es_recurrente === 1 ? regla_recurrencia.month : null,
+      recurrencia_inicio: es_recurrente === 1 ? regla_recurrencia.inicio : null,
+      recurrencia_fin: es_recurrente === 1 && regla_recurrencia.fin_tipo === "FECHA" ? regla_recurrencia.fin : null,
+      recurrencia_fin_tipo: es_recurrente === 1 ? regla_recurrencia.fin_tipo : null,
+      recurrencia_repeticiones: es_recurrente === 1 ? regla_recurrencia.repeticiones : null
     };
 
     const errorValidacion = validarDatosFranja({
@@ -1621,6 +1806,24 @@ export async function onRequestPut(context) {
 
     if (errorFecha) {
       return json({ ok: false, error: errorFecha }, { status: 400 });
+    }
+
+    const fechaReferenciaNueva = es_recurrente === 1 ? regla_recurrencia.inicio : fecha;
+    const fechaReferenciaAnterior = Number(existente.es_recurrente || 0) === 1
+      ? normalizarFecha(existente.recurrencia_inicio)
+      : normalizarFecha(existente.fecha);
+    if (fechaReferenciaNueva !== fechaReferenciaAnterior) {
+      const errorFechaPasada = validarFechaNuevaNoPasada(fechaReferenciaNueva);
+      if (errorFechaPasada) {
+        return json({ ok: false, error: errorFechaPasada }, { status: 400 });
+      }
+    }
+
+    if (es_recurrente === 1) {
+      const errorReglaActividad = validarReglaRecurrenciaDentroDeActividad(actividad, regla_recurrencia);
+      if (errorReglaActividad) {
+        return json({ ok: false, error: errorReglaActividad }, { status: 400 });
+      }
     }
 
     let duplicada;
@@ -1706,15 +1909,20 @@ export async function onRequestPut(context) {
     const hayCambioReal = franjaHaCambiado(existente, siguienteFranja);
     const franjaEstabaActiva = Number(existente.activa ?? 1) === 1;
     const debeNotificarCambios = hayCambioReal && franjaEstabaActiva;
+    const debeResincronizarPatron = hayCambioReal && Number(existente.es_recurrente || 0) === 1;
     const reservasAfectadas = debeNotificarCambios ? await obtenerReservasAfectadasFranja(env, id) : [];
-    if (debeNotificarCambios && reservasAfectadas.length > 0 && !confirmarAfectacion) {
+    const reservasMaterializadasAfectadas = debeResincronizarPatron
+      ? await contarReservasFuturasMaterializacionesPatron(env, id)
+      : 0;
+    if (debeNotificarCambios && (reservasAfectadas.length > 0 || reservasMaterializadasAfectadas > 0) && !confirmarAfectacion) {
+      const totalAfectadas = reservasAfectadas.length + reservasMaterializadasAfectadas;
       return json({
         ok: false,
         requiere_confirmacion_afectacion: true,
-        total_afectadas: reservasAfectadas.length,
-        mensaje: reservasAfectadas.length === 1
-          ? "Existe 1 solicitud vinculada a esta franja. Si continúas, se notificará al solicitante y, si estaba pendiente o confirmada, pasará a suspendida."
-          : `Existen ${reservasAfectadas.length} solicitudes vinculadas a esta franja. Si continúas, se notificará a los solicitantes y las que estuvieran pendientes o confirmadas pasarán a suspendida.`
+        total_afectadas: totalAfectadas,
+        mensaje: totalAfectadas === 1
+          ? "Existe 1 solicitud vinculada a esta programación. Si continúas, se notificará al solicitante y se aplicarán las reglas de negocio correspondientes."
+          : `Existen ${totalAfectadas} solicitudes vinculadas a esta programación. Si continúas, se notificará a los solicitantes y se aplicarán las reglas de negocio correspondientes.`
       }, { status: 409 });
     }
 
@@ -1783,6 +1991,24 @@ export async function onRequestPut(context) {
       );
     }
 
+    if (debeResincronizarPatron) {
+      const resumenMaterializaciones = await limpiarMaterializacionesFuturasPatron(env, existente);
+      if (es_recurrente === 1) {
+        await materializarPatronRecurrencia(env, {
+          ...existente,
+          ...siguienteFranja,
+          id,
+          actividad_id: existente.actividad_id
+        });
+      }
+      if (resumenMaterializaciones.franjas_eliminadas > 0 || resumenMaterializaciones.reservas_afectadas > 0) {
+        resumenAfectacion = {
+          ...(resumenAfectacion || {}),
+          materializaciones: resumenMaterializaciones
+        };
+      }
+    }
+
     const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
 
     return json({
@@ -1813,6 +2039,34 @@ export async function onRequestDelete(context) {
     await asegurarEstructuraEstadoFranjas(env);
     const session = await getAdminSession(request, env);
     const data = await request.json();
+    const resetProgramacion = data.reset_programacion === true || data.reset_programacion === 1 || data.reset_programacion === "1";
+    const actividadResetId = parsearIdPositivo(data.actividad_id);
+
+    if (resetProgramacion) {
+      if (!actividadResetId) {
+        return json({ ok: false, error: "actividad_id es obligatorio para resetear la programación." }, { status: 400 });
+      }
+
+      await checkAdminActividad(env, session.usuario_id, actividadResetId);
+      const resultadoReset = await resetearProgramacionActividad(env, actividadResetId);
+
+      if (resultadoReset?.bloquear) {
+        return json(
+          { ok: false, bloquear: true, error: resultadoReset.error },
+          { status: 400 }
+        );
+      }
+
+      const franjas = await obtenerResumenFranjas(env, actividadResetId);
+
+      return json({
+        ok: true,
+        mensaje: "Programación reseteada correctamente.",
+        resumen_afectacion: resultadoReset?.resumen || null,
+        franjas
+      });
+    }
+
     const id = parsearIdPositivo(data.id);
 
     if (!id) {

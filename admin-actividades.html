@@ -1165,6 +1165,28 @@
   border-color: #d7e2ee;
 }
 
+.btn-reset-programacion {
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid #bfc9d4;
+  background: #fff;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-reset-programacion:hover {
+  background: #f7f9fb;
+  border-color: #9fb2c7;
+}
+
 .tabla-franjas-admin tbody td {
   vertical-align: middle;
 }
@@ -1522,6 +1544,8 @@
       flex: 1 1 auto;
       width: 100%;
       align-items: flex-start;
+      max-height: 360px;
+      overflow-y: auto;
     }
 
     .tabla-franjas-preview h4 {
@@ -3345,6 +3369,9 @@
 
     <div class="acciones-franja-toolbar" id="accionesFranjasToolbar">
       <div class="acciones-franja-botones" id="accionesFranjasBotones">
+      <button type="button" class="btn-reset-programacion" id="btnResetProgramacion" title="Resetear programación">
+        Resetear programación
+      </button>
       <button type="button" class="btn-icono-franja" id="btnGuardarFranja" title="Guardar franja" aria-label="Guardar franja">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -4679,11 +4706,11 @@ function establecerVisibilidadModalActividad(id, activo) {
     }
 
     function textoProgramacionFranja(f) {
-      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
-        return f.patron_recurrencia;
-      }
       if (f.fecha) {
         return formatearFechaLargaES(f.fecha);
+      }
+      if (f.patron_recurrencia && String(f.patron_recurrencia).trim() !== "") {
+        return f.patron_recurrencia;
       }
       return "";
     }
@@ -7340,6 +7367,63 @@ function editarFranja(id) {
       mostrarMensaje("ok", data.mensaje || "Franja guardada correctamente.");
     }
 
+async function resetearProgramacion() {
+  if (pantallaBloqueadaPorErrorActividad) return;
+
+  const actividadId = document.getElementById("actividadId").value;
+  if (!actividadId) {
+    mostrarMensaje("error", "No hay una actividad guardada sobre la que resetear la programación.");
+    return;
+  }
+
+  async function ejecutarReset() {
+    const respuesta = await fetch("/api/admin/franjas", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        actividad_id: actividadId,
+        reset_programacion: true
+      })
+    });
+
+    const data = await respuesta.json().catch(() => null);
+
+    if (data?.bloquear) {
+      mostrarMensaje("error", data.error || "No se puede resetear la programación.");
+      return;
+    }
+
+    if (!respuesta.ok || !data?.ok) {
+      mostrarMensaje("error", data?.error || "No se pudo resetear la programación.");
+      return;
+    }
+
+    franjaSeleccionadaId = null;
+    franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
+    renderListaFranjas();
+    renderPreviewFranjas();
+    actualizarEstadoFranjasUI();
+    limpiarFormularioFranja();
+    mostrarMensaje("ok", data.mensaje || "Programación reseteada correctamente.");
+  }
+
+  mostrarMensaje(
+    "aviso",
+    "Esta acción eliminará todas las franjas horarias de la programación actual. Si existen solicitudes futuras vinculadas, se aplicarán las notificaciones automáticas previstas. ¿Deseas continuar?",
+    {
+      confirmable: true,
+      onAccept: async () => {
+        try {
+          await ejecutarReset();
+        } catch (error) {
+          mostrarMensaje("error", error?.message || "Error al resetear la programación.");
+        }
+      }
+    }
+  );
+}
+
 async function borrarFranja(id) {
   if (pantallaBloqueadaPorErrorActividad) return;
 
@@ -8281,6 +8365,7 @@ function retrocederPaso() {
         actualizarEnlaceCalendarioActividad();
         actualizarAccesoPlantillasActividad();
         document.getElementById("btnGuardarFranja").addEventListener("click", guardarFranja);
+        document.getElementById("btnResetProgramacion").addEventListener("click", resetearProgramacion);
         document.getElementById("btnBorrarFranjaSeleccionada").addEventListener("click", borrarFranjaSeleccionada);
         document.getElementById("fr_repeticion_selector")?.addEventListener("change", () => {
           manejarCambioSelectorRepeticion();
