@@ -262,23 +262,30 @@ function generarFechasRecurrencia(regla = {}, hasta = finVentanaRecurrencia()) {
   const inicio = crearFechaLocal(regla.inicio);
   if (!inicio) return [];
   const finRegla = regla.fin_tipo === "FECHA" && regla.fin ? crearFechaLocal(regla.fin) : null;
-  const limite = finRegla && finRegla < hasta ? finRegla : hasta;
+  const objetivoOcurrencias = regla.fin_tipo === "NUNCA" ? 2 : null;
+  const limite = objetivoOcurrencias ? null : (finRegla && finRegla < hasta ? finRegla : hasta);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
   const fechas = [];
   const maxRepeticiones = regla.fin_tipo === "REPETICIONES" ? Number(regla.repeticiones || 0) : null;
   const agregarFecha = (fecha) => {
     if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
-    if (fecha < inicio || fecha > limite) return true;
+    if (fecha < inicio || fecha < hoy || (!objetivoOcurrencias && fecha > limite)) return true;
     fechas.push(fechaIsoLocal(fecha));
-    return !(maxRepeticiones && fechas.length >= maxRepeticiones);
+    return !(
+      (maxRepeticiones && fechas.length >= maxRepeticiones) ||
+      (objetivoOcurrencias && fechas.length >= objetivoOcurrencias)
+    );
   };
+  const debeSeguir = (fecha, iteraciones) => iteraciones < 10000 && (objetivoOcurrencias ? fechas.length < objetivoOcurrencias : fecha <= limite);
 
   if (regla.tipo === "DIARIA") {
-    for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, regla.intervalo || 1)) {
+    for (let actual = new Date(inicio), i = 0; debeSeguir(actual, i); actual = sumarDias(actual, regla.intervalo || 1), i += 1) {
       if (!agregarFecha(actual)) break;
     }
   } else if (regla.tipo === "SEMANAL") {
     const weekdays = (regla.weekdays?.length ? regla.weekdays : [regla.weekday]).map(Number).sort((a, b) => a - b);
-    for (let semanaBase = new Date(inicio); semanaBase <= limite; semanaBase = sumarDias(semanaBase, 7 * (regla.intervalo || 1))) {
+    for (let semanaBase = new Date(inicio), i = 0; debeSeguir(semanaBase, i); semanaBase = sumarDias(semanaBase, 7 * (regla.intervalo || 1)), i += 1) {
       const inicioSemana = sumarDias(semanaBase, -semanaBase.getDay());
       for (const weekday of weekdays) {
         const fecha = sumarDias(inicioSemana, weekday);
@@ -286,17 +293,17 @@ function generarFechasRecurrencia(regla = {}, hasta = finVentanaRecurrencia()) {
       }
     }
   } else if (regla.tipo === "MENSUAL_DIA_SEMANA") {
-    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
+    for (let cursor = inicioMes(inicio), i = 0; debeSeguir(cursor, i); cursor = sumarMeses(cursor, regla.intervalo || 1), i += 1) {
       const fecha = nthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), regla.weekday, regla.ordinal);
       if (fecha && !agregarFecha(fecha)) break;
     }
   } else if (regla.tipo === "MENSUAL_DIA_MES") {
-    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, regla.intervalo || 1)) {
+    for (let cursor = inicioMes(inicio), i = 0; debeSeguir(cursor, i); cursor = sumarMeses(cursor, regla.intervalo || 1), i += 1) {
       const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), Number(regla.monthday));
       if (fecha.getMonth() === cursor.getMonth() && !agregarFecha(fecha)) break;
     }
   } else if (regla.tipo === "ANUAL") {
-    for (let year = inicio.getFullYear(); year <= limite.getFullYear(); year += regla.intervalo || 1) {
+    for (let year = inicio.getFullYear(), i = 0; i < 10000 && (objetivoOcurrencias ? fechas.length < objetivoOcurrencias : year <= limite.getFullYear()); year += regla.intervalo || 1, i += 1) {
       const fecha = new Date(year, Number(regla.month) - 1, Number(regla.monthday));
       if (fecha.getMonth() === Number(regla.month) - 1 && !agregarFecha(fecha)) break;
     }

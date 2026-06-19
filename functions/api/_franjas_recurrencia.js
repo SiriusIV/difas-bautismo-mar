@@ -98,25 +98,32 @@ function generarFechasRecurrencia(patron = {}, hasta = finVentanaRecurrencia()) 
   if (!inicio) return [];
   const finTipo = normalizarTexto(patron.recurrencia_fin_tipo || (patron.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase();
   const finRegla = finTipo === "FECHA" && patron.recurrencia_fin ? crearFechaLocal(patron.recurrencia_fin) : null;
-  const limite = finRegla && finRegla < hasta ? finRegla : hasta;
+  const objetivoOcurrencias = finTipo === "NUNCA" ? 2 : null;
+  const limite = objetivoOcurrencias ? null : (finRegla && finRegla < hasta ? finRegla : hasta);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
   const tipo = normalizarTexto(patron.recurrencia_tipo).toUpperCase();
   const intervalo = Math.max(Number(patron.recurrencia_intervalo || 1), 1);
   const maxRepeticiones = finTipo === "REPETICIONES" ? Number(patron.recurrencia_repeticiones || 0) : null;
   const fechas = [];
   const agregarFecha = (fecha) => {
     if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
-    if (fecha < inicio || fecha > limite) return true;
+    if (fecha < inicio || fecha < hoy || (!objetivoOcurrencias && fecha > limite)) return true;
     fechas.push(fechaIsoLocal(fecha));
-    return !(maxRepeticiones && fechas.length >= maxRepeticiones);
+    return !(
+      (maxRepeticiones && fechas.length >= maxRepeticiones) ||
+      (objetivoOcurrencias && fechas.length >= objetivoOcurrencias)
+    );
   };
+  const debeSeguir = (fecha, iteraciones) => iteraciones < 10000 && (objetivoOcurrencias ? fechas.length < objetivoOcurrencias : fecha <= limite);
 
   if (tipo === "DIARIA") {
-    for (let actual = new Date(inicio); actual <= limite; actual = sumarDias(actual, intervalo)) {
+    for (let actual = new Date(inicio), i = 0; debeSeguir(actual, i); actual = sumarDias(actual, intervalo), i += 1) {
       if (!agregarFecha(actual)) break;
     }
   } else if (tipo === "SEMANAL") {
     const weekdays = normalizarListaWeekdays(patron.recurrencia_weekdays || patron.recurrencia_weekday);
-    for (let semanaBase = new Date(inicio); semanaBase <= limite; semanaBase = sumarDias(semanaBase, 7 * intervalo)) {
+    for (let semanaBase = new Date(inicio), i = 0; debeSeguir(semanaBase, i); semanaBase = sumarDias(semanaBase, 7 * intervalo), i += 1) {
       const inicioSemana = sumarDias(semanaBase, -semanaBase.getDay());
       for (const weekday of weekdays) {
         const fecha = sumarDias(inicioSemana, weekday);
@@ -124,17 +131,17 @@ function generarFechasRecurrencia(patron = {}, hasta = finVentanaRecurrencia()) 
       }
     }
   } else if (tipo === "MENSUAL_DIA_SEMANA") {
-    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, intervalo)) {
+    for (let cursor = inicioMes(inicio), i = 0; debeSeguir(cursor, i); cursor = sumarMeses(cursor, intervalo), i += 1) {
       const fecha = nthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), patron.recurrencia_weekday, patron.recurrencia_ordinal);
       if (fecha && !agregarFecha(fecha)) break;
     }
   } else if (tipo === "MENSUAL_DIA_MES") {
-    for (let cursor = inicioMes(inicio); cursor <= limite; cursor = sumarMeses(cursor, intervalo)) {
+    for (let cursor = inicioMes(inicio), i = 0; debeSeguir(cursor, i); cursor = sumarMeses(cursor, intervalo), i += 1) {
       const fecha = new Date(cursor.getFullYear(), cursor.getMonth(), Number(patron.recurrencia_monthday));
       if (fecha.getMonth() === cursor.getMonth() && !agregarFecha(fecha)) break;
     }
   } else if (tipo === "ANUAL") {
-    for (let year = inicio.getFullYear(); year <= limite.getFullYear(); year += intervalo) {
+    for (let year = inicio.getFullYear(), i = 0; i < 10000 && (objetivoOcurrencias ? fechas.length < objetivoOcurrencias : year <= limite.getFullYear()); year += intervalo, i += 1) {
       const fecha = new Date(year, Number(patron.recurrencia_month) - 1, Number(patron.recurrencia_monthday));
       if (fecha.getMonth() === Number(patron.recurrencia_month) - 1 && !agregarFecha(fecha)) break;
     }
