@@ -988,6 +988,35 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   return true;
 }
 
+async function contarConflictosMismaFechaDistintoHorario(env, actividadId, fechas = [], horaInicio, horaFin, excluirId = null) {
+  const listaFechas = [...new Set((Array.isArray(fechas) ? fechas : [fechas]).map(normalizarFecha).filter(Boolean))];
+  if (!listaFechas.length) return 0;
+
+  let total = 0;
+  for (const fecha of listaFechas) {
+    const row = await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM franjas
+      WHERE actividad_id = ?
+        AND COALESCE(es_recurrente, 0) = 0
+        AND fecha = ?
+        AND (
+          hora_inicio <> ?
+          OR COALESCE(hora_fin, '') <> COALESCE(?, '')
+        )
+        AND (? IS NULL OR id <> ?)
+    `).bind(actividadId, fecha, horaInicio, horaFin, excluirId, excluirId).first();
+    total += Number(row?.total || 0);
+  }
+
+  return total;
+}
+
+function fechasPrevistasReglaRecurrencia(regla = {}) {
+  if (validarReglaRecurrencia(regla)) return [];
+  return generarFechasRecurrencia(regla, finVentanaRecurrencia());
+}
+
 async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecurrencia()) {
   if (!patron || Number(patron.es_recurrente || 0) !== 1) return 0;
   const regla = {
@@ -1506,6 +1535,7 @@ export async function onRequestPost(context) {
     const patron_recurrencia = es_recurrente === 1
       ? (normalizarTexto(data.patron_recurrencia) || describirReglaRecurrencia(regla_recurrencia))
       : normalizarTexto(data.patron_recurrencia);
+    const confirmarDuplicadoFecha = data.confirmar_duplicado_fecha === true || data.confirmar_duplicado_fecha === 1 || data.confirmar_duplicado_fecha === "1";
 
     if (!actividad_id) {
       return json({ ok: false, error: "actividad_id es obligatorio." }, { status: 400 });
@@ -1617,6 +1647,26 @@ export async function onRequestPost(context) {
         },
         { status: 409 }
       );
+    }
+
+    const fechasParaConflicto = es_recurrente === 1 ? fechasPrevistasReglaRecurrencia(regla_recurrencia) : [fecha];
+    const conflictosMismaFecha = await contarConflictosMismaFechaDistintoHorario(
+      env,
+      actividad_id,
+      fechasParaConflicto,
+      hora_inicio,
+      hora_fin
+    );
+
+    if (conflictosMismaFecha > 0 && !confirmarDuplicadoFecha) {
+      return json({
+        ok: false,
+        requiere_confirmacion_duplicado_fecha: true,
+        total_conflictos_fecha: conflictosMismaFecha,
+        mensaje: conflictosMismaFecha === 1
+          ? "Ya existe una franja en la misma fecha con un horario distinto. ¿Deseas incluir también esta nueva franja?"
+          : `Ya existen ${conflictosMismaFecha} franjas en las mismas fechas con horarios distintos. ¿Deseas incluir también esta nueva programación?`
+      }, { status: 409 });
     }
 
     const insertResult = await env.DB.prepare(`
@@ -1763,6 +1813,7 @@ export async function onRequestPut(context) {
       ? (normalizarTexto(data.patron_recurrencia) || describirReglaRecurrencia(regla_recurrencia))
       : normalizarTexto(data.patron_recurrencia);
     const confirmarAfectacion = data.confirmar_afectacion === true || data.confirmar_afectacion === 1 || data.confirmar_afectacion === "1";
+    const confirmarDuplicadoFecha = data.confirmar_duplicado_fecha === true || data.confirmar_duplicado_fecha === 1 || data.confirmar_duplicado_fecha === "1";
 
     const actividadBase = await obtenerActividad(env, existente.actividad_id);
     const actividad = resolverActividadActual(data, actividadBase);
@@ -1890,6 +1941,27 @@ export async function onRequestPut(context) {
         },
         { status: 409 }
       );
+    }
+
+    const fechasParaConflicto = es_recurrente === 1 ? fechasPrevistasReglaRecurrencia(regla_recurrencia) : [fecha];
+    const conflictosMismaFecha = await contarConflictosMismaFechaDistintoHorario(
+      env,
+      existente.actividad_id,
+      fechasParaConflicto,
+      hora_inicio,
+      hora_fin,
+      id
+    );
+
+    if (conflictosMismaFecha > 0 && !confirmarDuplicadoFecha) {
+      return json({
+        ok: false,
+        requiere_confirmacion_duplicado_fecha: true,
+        total_conflictos_fecha: conflictosMismaFecha,
+        mensaje: conflictosMismaFecha === 1
+          ? "Ya existe una franja en la misma fecha con un horario distinto. ¿Deseas mantener también esta franja?"
+          : `Ya existen ${conflictosMismaFecha} franjas en las mismas fechas con horarios distintos. ¿Deseas mantener también esta programación?`
+      }, { status: 409 });
     }
 
     if (aforo_limitado === 1) {

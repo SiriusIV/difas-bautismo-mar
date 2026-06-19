@@ -8,7 +8,7 @@ import {
 } from "./actividades-eliminar.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
-import { registrarEventoReserva } from "../_reservas_historial.js";
+import { borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaAforoMaximo } from "../_actividades_aforo.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { notificarNuevosSolicitantesHabilitadosPorDocumentacionActividad } from "../_avisos_actividad_documentacion.js";
@@ -430,6 +430,202 @@ async function notificarCambioRequisitosActividad(env, reservas = [], actividadN
   }
 
   return resumen;
+}
+
+function descripcionFranja(row = {}) {
+  const fecha = limpiarTexto(row.fecha || "");
+  const inicio = limpiarTexto(row.hora_inicio || "");
+  const fin = limpiarTexto(row.hora_fin || "");
+  return [fecha, [inicio, fin].filter(Boolean).join(" - ")].filter(Boolean).join(" ");
+}
+
+async function obtenerFranjasFueraRangoActividad(env, actividadId, fechaInicio, fechaFin) {
+  if (!fechaInicio && !fechaFin) return [];
+  const result = await env.DB.prepare(`
+    SELECT *
+    FROM franjas
+    WHERE actividad_id = ?
+      AND COALESCE(es_recurrente, 0) = 0
+      AND fecha IS NOT NULL
+      AND (
+        (? IS NOT NULL AND fecha < ?)
+        OR (? IS NOT NULL AND fecha > ?)
+      )
+    ORDER BY fecha ASC, hora_inicio ASC, id ASC
+  `).bind(actividadId, fechaInicio, fechaInicio, fechaFin, fechaFin).all();
+
+  return result?.results || [];
+}
+
+async function contarReservasHistoricasFranja(env, franjaId) {
+  const row = await env.DB.prepare(`
+    SELECT COUNT(*) AS total
+    FROM reservas r
+    JOIN franjas f ON f.id = r.franja_id
+    WHERE r.franja_id = ?
+      AND f.fecha IS NOT NULL
+      AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) <= datetime('now')
+  `).bind(franjaId).first();
+
+  return Number(row?.total || 0);
+}
+
+async function obtenerReservasFuturasFranja(env, franjaId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.contacto,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
+      r.estado,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+    FROM reservas r
+    JOIN franjas f ON f.id = r.franja_id
+    LEFT JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN usuarios us ON us.id = r.usuario_id
+    WHERE r.franja_id = ?
+      AND (
+        f.fecha IS NULL
+        OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
+      )
+    ORDER BY r.id ASC
+  `).bind(franjaId).all();
+
+  return result?.results || [];
+}
+
+async function eliminarReservasPorRecorteFranja(env, reservas = [], franja = {}) {
+  const resumen = {
+    reservas_eliminadas: 0,
+    correos_enviados: 0,
+    notificaciones_creadas: 0,
+    incidencias: []
+  };
+  const franjaTexto = descripcionFranja(franja);
+
+  for (const reserva of reservas) {
+    try {
+      const actividad = limpiarTexto(reserva.actividad_nombre || "la actividad");
+      const codigo = limpiarTexto(reserva.codigo_reserva || "");
+      const contacto = limpiarTexto(reserva.contacto || "");
+      const destinatario = limpiarTexto(reserva.email || "");
+      const organizador = limpiarTexto(reserva.organizador_nombre || "el organizador");
+      const saludo = contacto ? `Hola ${contacto},` : "Hola,";
+      const mensaje = `La franja horaria ${franjaTexto} asociada a tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminada por un cambio en el periodo de programacion de la actividad. La solicitud vinculada a esa franja ha sido eliminada del sistema.`;
+
+      await borrarHistorialReservas(env, [reserva.id]);
+      await env.DB.prepare(`DELETE FROM visitantes WHERE reserva_id = ?`).bind(reserva.id).run();
+      const borrado = await env.DB.prepare(`DELETE FROM reservas WHERE id = ?`).bind(reserva.id).run();
+
+      if ((borrado?.meta?.changes || 0) > 0) {
+        resumen.reservas_eliminadas += 1;
+      } else {
+        resumen.incidencias.push(`Reserva ${reserva.id}: no se pudo eliminar tras recortar la franja.`);
+        continue;
+      }
+
+      if (Number(reserva.usuario_id || 0) > 0) {
+        const notificacion = await crearNotificacion(env, {
+          usuarioId: Number(reserva.usuario_id || 0),
+          rolDestino: "SOLICITANTE",
+          tipo: "RESERVA",
+          titulo: "Solicitud eliminada por cambio de programacion",
+          mensaje,
+          urlDestino: "/mis-actividades.html"
+        });
+        if (notificacion?.ok) resumen.notificaciones_creadas += 1;
+      }
+
+      if (destinatario) {
+        const text = [
+          saludo,
+          "",
+          mensaje,
+          "",
+          `Actividad: ${actividad}`,
+          codigo ? `Codigo de solicitud: ${codigo}` : "",
+          `Franja eliminada: ${franjaTexto}`,
+          `Organiza: ${organizador}`,
+          "",
+          "Puedes consultar el portal para revisar otras actividades o franjas disponibles."
+        ].filter(Boolean).join("\n");
+
+        const html = `
+          <p>${escaparHtml(saludo)}</p>
+          <p>${escaparHtml(mensaje)}</p>
+          <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+          ${codigo ? `<p><strong>Codigo de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+          <p><strong>Franja eliminada:</strong> ${escaparHtml(franjaTexto)}</p>
+          <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
+          <p>Puedes consultar el portal para revisar otras actividades o franjas disponibles.</p>
+        `;
+
+        const correo = await enviarEmail(env, {
+          to: destinatario,
+          subject: "[Reservas] Solicitud eliminada por cambio de programacion",
+          text,
+          html
+        });
+
+        if (correo?.ok) {
+          resumen.correos_enviados += 1;
+        } else if (!correo?.skipped) {
+          resumen.incidencias.push(`Correo reserva ${reserva.id}: ${correo?.error || "error desconocido"}`);
+        }
+      }
+    } catch (error) {
+      resumen.incidencias.push(`Reserva ${reserva.id}: ${error?.message || String(error || "")}`);
+    }
+  }
+
+  return resumen;
+}
+
+async function recortarFranjasFueraRangoActividad(env, actividadId, fechaInicio, fechaFin) {
+  const franjas = await obtenerFranjasFueraRangoActividad(env, actividadId, fechaInicio, fechaFin);
+  const resumen = {
+    franjas_eliminadas: 0,
+    reservas_eliminadas: 0,
+    correos_enviados: 0,
+    notificaciones_creadas: 0,
+    incidencias: []
+  };
+
+  for (const franja of franjas) {
+    const historicas = await contarReservasHistoricasFranja(env, franja.id);
+    if (historicas > 0) {
+      return {
+        ok: false,
+        bloquear: true,
+        error: "No se pueden eliminar franjas fuera de rango porque existen solicitudes historicas asociadas. El historico debe conservarse."
+      };
+    }
+  }
+
+  for (const franja of franjas) {
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    if (reservas.length > 0) {
+      const resultado = await eliminarReservasPorRecorteFranja(env, reservas, franja);
+      resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
+      resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+      resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
+      resumen.incidencias.push(...(resultado?.incidencias || []));
+    }
+
+    const deleteResult = await env.DB.prepare(`
+      DELETE FROM franjas
+      WHERE id = ?
+        AND COALESCE(es_recurrente, 0) = 0
+    `).bind(franja.id).run();
+
+    if ((deleteResult?.meta?.changes || 0) > 0) {
+      resumen.franjas_eliminadas += 1;
+    }
+  }
+
+  return { ok: true, resumen };
 }
 
 function validarActividad(data) {
@@ -862,6 +1058,7 @@ export async function onRequestPut(context) {
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
     const confirmadoEliminacionDocumentalCritica = body.confirmado_eliminacion_documental_critica === true || body.confirmado_eliminacion_documental_critica === 1 || body.confirmado_eliminacion_documental_critica === "1";
+    const confirmadoRecorteFranjas = body.confirmado_recorte_franjas === true || body.confirmado_recorte_franjas === 1 || body.confirmado_recorte_franjas === "1";
     const activaActual = Number(actual?.activa || 0) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
 
@@ -1013,24 +1210,28 @@ export async function onRequestPut(context) {
     // VALIDACIONES DE NEGOCIO
     // ===============================
 
-    const franjas = await env.DB.prepare(`
-      SELECT fecha, hora_inicio
-      FROM franjas
-      WHERE actividad_id = ?
-    `).bind(id).all();
+    const listaFranjasFueraRango = await obtenerFranjasFueraRangoActividad(env, id, p.fecha_inicio, p.fecha_fin);
 
-    const listaFranjas = franjas.results || [];
+    if (activaNueva === 1 && (p.tipo === "TEMPORAL" || p.tipo === "PERMANENTE") && Number(p.usa_franjas || 0) === 1 && listaFranjasFueraRango.length > 0 && (p.fecha_inicio || p.fecha_fin)) {
+      for (const franjaFueraRango of listaFranjasFueraRango) {
+        const historicas = await contarReservasHistoricasFranja(env, franjaFueraRango.id);
+        if (historicas > 0) {
+          return json({
+            ok: false,
+            error: "No puedes cambiar las fechas porque existen franjas fuera del nuevo rango con solicitudes históricas asociadas. El histórico debe conservarse."
+          }, 400);
+        }
+      }
 
-    if (activaNueva === 1 && (p.tipo === "TEMPORAL" || p.tipo === "PERMANENTE") && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0 && (p.fecha_inicio || p.fecha_fin)) {
-      const fueraRango = listaFranjas.some(f =>
-        f.fecha && ((p.fecha_inicio && f.fecha < p.fecha_inicio) || (p.fecha_fin && f.fecha > p.fecha_fin))
-      );
-
-      if (fueraRango) {
+      if (!confirmadoRecorteFranjas) {
         return json({
           ok: false,
-          error: "No puedes cambiar las fechas porque existen franjas fuera del nuevo rango."
-        }, 400);
+          requiere_confirmacion_recorte_franjas: true,
+          total_franjas_fuera_rango: listaFranjasFueraRango.length,
+          mensaje: listaFranjasFueraRango.length === 1
+            ? "Existe 1 franja horaria fuera del nuevo intervalo de la actividad. Si continúas, esa franja será eliminada de la programación actual."
+            : `Existen ${listaFranjasFueraRango.length} franjas horarias fuera del nuevo intervalo de la actividad. Si continúas, esas franjas serán eliminadas de la programación actual.`
+        }, 409);
       }
     }
 
@@ -1226,6 +1427,23 @@ export async function onRequestPut(context) {
       });
     }
 
+    let resumenRecorteFranjas = null;
+    if (
+      activaNueva === 1 &&
+      (p.tipo === "TEMPORAL" || p.tipo === "PERMANENTE") &&
+      Number(p.usa_franjas || 0) === 1 &&
+      listaFranjasFueraRango.length > 0
+    ) {
+      const resultadoRecorte = await recortarFranjasFueraRangoActividad(env, id, p.fecha_inicio, p.fecha_fin);
+      if (resultadoRecorte?.bloquear) {
+        return json(
+          { ok: false, error: resultadoRecorte.error || "No se pudieron recortar las franjas fuera de rango." },
+          400
+        );
+      }
+      resumenRecorteFranjas = resultadoRecorte?.resumen || null;
+    }
+
     await guardarRequisitosActividad(env, id, p.requisitos_particulares);
     await guardarConfiguracionDocumentalActividad(
       env,
@@ -1308,6 +1526,7 @@ export async function onRequestPut(context) {
       resumen_cambio_requisitos: resumenCambioRequisitos,
       resumen_impacto_documental: resumenImpactoDocumental,
       resumen_habilitados_documentacion: resumenHabilitadosDocumentacion,
+      resumen_recorte_franjas: resumenRecorteFranjas,
       mensaje: p.borrador_tecnico ? "Borrador tÃ©cnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
