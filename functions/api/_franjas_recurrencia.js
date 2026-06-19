@@ -98,14 +98,18 @@ function generarFechasRecurrencia(patron = {}, hasta = finVentanaRecurrencia()) 
   if (!inicio) return [];
   const finTipo = normalizarTexto(patron.recurrencia_fin_tipo || (patron.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase();
   const finRegla = finTipo === "FECHA" && patron.recurrencia_fin ? crearFechaLocal(patron.recurrencia_fin) : null;
-  const limite = finRegla && finRegla < hasta ? finRegla : hasta;
+  const finActividad = crearFechaLocal(patron.actividad_fecha_fin);
+  const limiteRegla = finRegla && finRegla < hasta ? finRegla : hasta;
+  const limite = finActividad && finActividad < limiteRegla ? finActividad : limiteRegla;
+  const inicioActividad = crearFechaLocal(patron.actividad_fecha_inicio);
+  const minimo = inicioActividad && inicioActividad > inicio ? inicioActividad : inicio;
   const tipo = normalizarTexto(patron.recurrencia_tipo).toUpperCase();
   const intervalo = Math.max(Number(patron.recurrencia_intervalo || 1), 1);
   const maxRepeticiones = finTipo === "REPETICIONES" ? Number(patron.recurrencia_repeticiones || 0) : null;
   const fechas = [];
   const agregarFecha = (fecha) => {
     if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
-    if (fecha < inicio || fecha > limite) return true;
+    if (fecha < minimo || fecha > limite) return true;
     fechas.push(fechaIsoLocal(fecha));
     return !(maxRepeticiones && fechas.length >= maxRepeticiones);
   };
@@ -147,7 +151,7 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   const existente = await env.DB.prepare(`
     SELECT id
     FROM franjas
-    WHERE actividad_id = ?
+    WHERE f.actividad_id = ?
       AND fecha = ?
       AND hora_inicio = ?
       AND COALESCE(hora_fin, '') = COALESCE(?, '')
@@ -244,11 +248,15 @@ export async function materializarPatronesActividad(env, actividadId) {
   await asegurarEstructuraRecurrenciaFranjas(env);
   await limpiarDuplicadosExactosFuturosActividad(env, actividadId);
   const result = await env.DB.prepare(`
-    SELECT *
-    FROM franjas
-    WHERE actividad_id = ?
-      AND COALESCE(es_recurrente, 0) = 1
-      AND recurrencia_tipo IS NOT NULL
+    SELECT
+      f.*,
+      a.fecha_inicio AS actividad_fecha_inicio,
+      a.fecha_fin AS actividad_fecha_fin
+    FROM franjas f
+    LEFT JOIN actividades a ON a.id = f.actividad_id
+    WHERE f.actividad_id = ?
+      AND COALESCE(f.es_recurrente, 0) = 1
+      AND f.recurrencia_tipo IS NOT NULL
   `).bind(actividadId).all();
 
   let creadas = 0;

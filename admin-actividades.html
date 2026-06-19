@@ -7878,6 +7878,9 @@ async function borrarFranja(id) {
               if (payload.id) {
                 await cargarFranjas();
               }
+              actualizarVisibilidadFormulario();
+              actualizarPreview();
+              renderPreviewFranjas();
               const avisoBorrado = await procesarImagenesPendientesPostGuardado();
               actividadEsBorradorTecnico = false;
               limpiarCambiosPendientesActividad();
@@ -8716,6 +8719,10 @@ function retrocederPaso() {
         });
 
         el.addEventListener("change", () => {
+          if (id === "es_recurrente" && !cargandoActividad) {
+            franjaSeleccionadaId = null;
+            limpiarFormularioFranja();
+          }
           marcarCambiosPendientesActividad();
           actualizarVisibilidadFormulario();
           actualizarPreview();

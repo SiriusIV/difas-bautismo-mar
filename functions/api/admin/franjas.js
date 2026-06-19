@@ -263,11 +263,13 @@ function generarFechasRecurrencia(regla = {}, hasta = finVentanaRecurrencia()) {
   if (!inicio) return [];
   const finRegla = regla.fin_tipo === "FECHA" && regla.fin ? crearFechaLocal(regla.fin) : null;
   const limite = finRegla && finRegla < hasta ? finRegla : hasta;
+  const inicioMinimo = crearFechaLocal(regla.inicio_minimo);
+  const minimo = inicioMinimo && inicioMinimo > inicio ? inicioMinimo : inicio;
   const fechas = [];
   const maxRepeticiones = regla.fin_tipo === "REPETICIONES" ? Number(regla.repeticiones || 0) : null;
   const agregarFecha = (fecha) => {
     if (maxRepeticiones && fechas.length >= maxRepeticiones) return false;
-    if (fecha < inicio || fecha > limite) return true;
+    if (fecha < minimo || fecha > limite) return true;
     fechas.push(fechaIsoLocal(fecha));
     return !(maxRepeticiones && fechas.length >= maxRepeticiones);
   };
@@ -1065,6 +1067,9 @@ function fechasPrevistasReglaRecurrencia(regla = {}) {
 
 async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecurrencia()) {
   if (!patron || Number(patron.es_recurrente || 0) !== 1) return 0;
+  const finActividad = crearFechaLocal(patron.actividad_fecha_fin);
+  const hastaEfectivo = finActividad && finActividad < hasta ? finActividad : hasta;
+  const inicioActividad = normalizarFecha(patron.actividad_fecha_inicio);
   const regla = {
     tipo: normalizarTexto(patron.recurrencia_tipo).toUpperCase(),
     intervalo: Number(patron.recurrencia_intervalo || 1),
@@ -1074,6 +1079,7 @@ async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecu
     monthday: patron.recurrencia_monthday === null || patron.recurrencia_monthday === undefined ? null : Number(patron.recurrencia_monthday),
     month: patron.recurrencia_month === null || patron.recurrencia_month === undefined ? null : Number(patron.recurrencia_month),
     inicio: normalizarFecha(patron.recurrencia_inicio),
+    inicio_minimo: inicioActividad,
     fin: normalizarFecha(patron.recurrencia_fin),
     fin_tipo: normalizarTexto(patron.recurrencia_fin_tipo || (patron.recurrencia_fin ? "FECHA" : "NUNCA")).toUpperCase(),
     repeticiones: parsearEnteroNullable(patron.recurrencia_repeticiones)
@@ -1082,7 +1088,7 @@ async function materializarPatronRecurrencia(env, patron, hasta = finVentanaRecu
   if (validarReglaRecurrencia(regla)) return 0;
 
   let creadas = 0;
-  for (const fecha of generarFechasRecurrencia(regla, hasta)) {
+  for (const fecha of generarFechasRecurrencia(regla, hastaEfectivo)) {
     const insertada = await insertarFranjaMaterializada(env, patron, fecha);
     if (insertada) creadas += 1;
   }
@@ -1093,28 +1099,31 @@ async function materializarPatronesActividad(env, actividadId) {
   await limpiarDuplicadosExactosFuturosActividad(env, actividadId);
   const result = await env.DB.prepare(`
     SELECT
-      id,
-      actividad_id,
-      hora_inicio,
-      hora_fin,
-      capacidad,
-      es_recurrente,
-      patron_recurrencia,
-      recurrencia_tipo,
-      recurrencia_intervalo,
-      recurrencia_weekday,
-      recurrencia_weekdays,
-      recurrencia_ordinal,
-      recurrencia_monthday,
-      recurrencia_month,
-      recurrencia_inicio,
-      recurrencia_fin,
-      recurrencia_fin_tipo,
-      recurrencia_repeticiones
-    FROM franjas
-    WHERE actividad_id = ?
-      AND COALESCE(es_recurrente, 0) = 1
-      AND recurrencia_tipo IS NOT NULL
+      f.id,
+      f.actividad_id,
+      f.hora_inicio,
+      f.hora_fin,
+      f.capacidad,
+      f.es_recurrente,
+      f.patron_recurrencia,
+      f.recurrencia_tipo,
+      f.recurrencia_intervalo,
+      f.recurrencia_weekday,
+      f.recurrencia_weekdays,
+      f.recurrencia_ordinal,
+      f.recurrencia_monthday,
+      f.recurrencia_month,
+      f.recurrencia_inicio,
+      f.recurrencia_fin,
+      f.recurrencia_fin_tipo,
+      f.recurrencia_repeticiones,
+      a.fecha_inicio AS actividad_fecha_inicio,
+      a.fecha_fin AS actividad_fecha_fin
+    FROM franjas f
+    LEFT JOIN actividades a ON a.id = f.actividad_id
+    WHERE f.actividad_id = ?
+      AND COALESCE(f.es_recurrente, 0) = 1
+      AND f.recurrencia_tipo IS NOT NULL
   `).bind(actividadId).all();
 
   let creadas = 0;
