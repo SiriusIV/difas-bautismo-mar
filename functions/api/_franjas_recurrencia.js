@@ -151,7 +151,7 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   const existente = await env.DB.prepare(`
     SELECT id
     FROM franjas
-    WHERE f.actividad_id = ?
+    WHERE actividad_id = ?
       AND fecha = ?
       AND hora_inicio = ?
       AND COALESCE(hora_fin, '') = COALESCE(?, '')
