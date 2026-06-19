@@ -188,8 +188,61 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   return true;
 }
 
+async function limpiarDuplicadosExactosFuturosActividad(env, actividadId) {
+  const grupos = await env.DB.prepare(`
+    SELECT
+      fecha,
+      hora_inicio,
+      COALESCE(hora_fin, '') AS hora_fin_norm,
+      COUNT(*) AS total
+    FROM franjas
+    WHERE actividad_id = ?
+      AND COALESCE(es_recurrente, 0) = 0
+      AND fecha IS NOT NULL
+      AND datetime(fecha || ' ' || COALESCE(NULLIF(hora_inicio, ''), '00:00')) > datetime('now')
+    GROUP BY fecha, hora_inicio, COALESCE(hora_fin, '')
+    HAVING COUNT(*) > 1
+  `).bind(actividadId).all();
+
+  let eliminadas = 0;
+  for (const grupo of grupos?.results || []) {
+    const filas = await env.DB.prepare(`
+      SELECT
+        f.id,
+        COUNT(r.id) AS reservas
+      FROM franjas f
+      LEFT JOIN reservas r ON r.franja_id = f.id
+      WHERE f.actividad_id = ?
+        AND COALESCE(f.es_recurrente, 0) = 0
+        AND f.fecha = ?
+        AND f.hora_inicio = ?
+        AND COALESCE(f.hora_fin, '') = ?
+      GROUP BY f.id
+      ORDER BY COUNT(r.id) DESC, f.id ASC
+    `).bind(actividadId, grupo.fecha, grupo.hora_inicio, grupo.hora_fin_norm).all();
+
+    const rows = filas?.results || [];
+    const conservar = rows[0]?.id;
+    for (const row of rows.slice(1)) {
+      if (Number(row.reservas || 0) > 0) continue;
+      const borrado = await env.DB.prepare(`
+        DELETE FROM franjas
+        WHERE id = ?
+      `).bind(row.id).run();
+      eliminadas += Number(borrado?.meta?.changes || 0);
+    }
+
+    if (!conservar && rows.length) {
+      continue;
+    }
+  }
+
+  return eliminadas;
+}
+
 export async function materializarPatronesActividad(env, actividadId) {
   await asegurarEstructuraRecurrenciaFranjas(env);
+  await limpiarDuplicadosExactosFuturosActividad(env, actividadId);
   const result = await env.DB.prepare(`
     SELECT *
     FROM franjas
@@ -204,6 +257,7 @@ export async function materializarPatronesActividad(env, actividadId) {
       if (await insertarFranjaMaterializada(env, patron, fecha)) creadas += 1;
     }
   }
+  await limpiarDuplicadosExactosFuturosActividad(env, actividadId);
   return creadas;
 }
 

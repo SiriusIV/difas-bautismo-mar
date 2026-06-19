@@ -177,6 +177,7 @@ async function obtenerFranjasProgramadasCalendario(env, filtros, session) {
   const where = [
     "f.fecha IS NOT NULL",
     "f.hora_inicio IS NOT NULL",
+    "COALESCE(f.activa, 1) = 1",
     "COALESCE(a.activa, 0) = 1",
     "COALESCE(a.visible_portal, 0) = 1"
   ];
