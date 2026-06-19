@@ -1227,14 +1227,24 @@
       font-size: 13px;
     }
 
+    .tabla-wrap-franjas {
+      max-height: 326px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
     .tabla-franjas-admin {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 0;
       font-size: 13px;
       background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 0;
+      border-radius: 0;
       overflow: hidden;
     }
 
@@ -1247,6 +1257,9 @@
     }
 
     .tabla-franjas-admin th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       background: #f2f6fb;
       color: #334250;
     }
@@ -1544,7 +1557,7 @@
       flex: 1 1 auto;
       width: 100%;
       align-items: flex-start;
-      max-height: 360px;
+      max-height: 294px;
       overflow-y: auto;
     }
 
@@ -1573,9 +1586,13 @@
     }
 
     .tabla-franjas-preview th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       color: #123a63;
       font-size: 12px;
       font-weight: 600;
+      background: rgba(255, 255, 255, 0.98);
       border-bottom: 1px solid #dde4ea;
       padding-bottom: 6px;
     }
