@@ -227,19 +227,6 @@ export async function onRequestPost(context) {
 
     const listaFranjas = franjas.results || [];
 
-    if ((p.tipo === "TEMPORAL" || p.tipo === "PERMANENTE") && Number(p.usa_franjas || 0) === 1 && listaFranjas.length > 0 && (p.fecha_inicio || p.fecha_fin)) {
-      const fueraRango = listaFranjas.some(f =>
-        f.fecha && ((p.fecha_inicio && f.fecha < p.fecha_inicio) || (p.fecha_fin && f.fecha > p.fecha_fin))
-      );
-
-      if (fueraRango) {
-        return json({
-          ok: false,
-          error: "No puedes cambiar las fechas porque existen franjas fuera del nuevo rango."
-        }, 200);
-      }
-    }
-
     const confirmadasFuturas = await env.DB.prepare(`
       SELECT COUNT(*) AS total
       FROM reservas r
