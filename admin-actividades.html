@@ -2115,6 +2115,10 @@
       grid-template-columns: minmax(150px, 190px) 150px 150px minmax(260px, 1fr) minmax(110px, 126px);
     }
 
+    .fila-franja-inline:has(#fr_bloque_patron.oculto):has(#fr_bloque_capacidad.oculto) #avisoPatronVigente {
+      grid-column: 4 / -1;
+    }
+
 .campo-franja-inline {
   display: flex;
   flex-direction: column;
@@ -6485,6 +6489,15 @@ function resumenPatronVigente(franja = obtenerPatronVigentePermanente()) {
   if (inicio) partes.push(`desde ${inicio.split("-").reverse().join("/")}`);
   if (horario) partes.push(`horario ${horario}`);
   return partes.join(" · ");
+}
+
+function escaparHtml(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function formularioPatronFranjaVacio() {
