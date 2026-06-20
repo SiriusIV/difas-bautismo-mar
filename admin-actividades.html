@@ -240,7 +240,7 @@
 .mensaje.aviso .btn-mensaje-cancelar:hover {
   background: #fff6dd;
 }
-    
+
     .mensaje-inner {
   display: flex;
   align-items: center;
@@ -304,7 +304,7 @@
   pointer-events: auto;
   opacity: 1;
 }
-    
+
     .bloque-superior,
     .bloque-inferior {
       background: var(--card);
@@ -1204,7 +1204,7 @@
 }
 
 
-    
+
     .subbloque h4 {
       margin: 0 0 4px;
       font-size: 14px;
@@ -3823,6 +3823,7 @@
     let marcadorPreviewActividad = null;
     let mapaPreviewTouchHandlers = null;
     let franjasCache = [];
+    let patronesRecurrentesCache = [];
     let actividadEsBorradorTecnico = false;
     let franjaSeleccionadaId = null;
     let requisitosParticulares = [];
@@ -6093,7 +6094,7 @@ async function buscarDireccionYCentrar(direccion, localidad = "", fijarMarcador 
     return false;
   }
 }
-    
+
 async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
   if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon))) return false;
 
@@ -6167,7 +6168,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
     return false;
   }
 }
-    
+
     function programarRecentradoLocalidad() {
   const localidad = document.getElementById("provincia").value.trim();
   if (!localidad) return;
@@ -6195,8 +6196,8 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
     }
   }, 500);
 }
-    
-    
+
+
     function actualizarEstadoFranjasUI() {
       const usaFranjas = document.getElementById("usa_franjas").value === "1";
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
@@ -6465,7 +6466,10 @@ function actividadEsPermanenteSinFin() {
 
 function obtenerPatronVigentePermanente() {
   if (!actividadEsPermanenteSinFin() || document.getElementById("usa_franjas")?.value !== "1") return null;
-  const patrones = (Array.isArray(franjasCache) ? franjasCache : [])
+  const origen = Array.isArray(patronesRecurrentesCache) && patronesRecurrentesCache.length
+    ? patronesRecurrentesCache
+    : franjasCache;
+  const patrones = (Array.isArray(origen) ? origen : [])
     .filter((franja) => Number(franja?.es_recurrente || 0) === 1 && Number(franja?.activa ?? 1) === 1)
     .sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
   return patrones[0] || null;
@@ -7069,7 +7073,7 @@ async function borrarFranjaSeleccionada() {
 }
 
 
-    
+
 function renderListaFranjas() {
   const wrap = document.getElementById("listaFranjas");
   const esMovil = window.matchMedia("(max-width: 700px)").matches;
@@ -7260,12 +7264,7 @@ async function aplicarCambioEstadoFranja(id, activa, input, confirmado = false) 
     return;
   }
 
-  if (Array.isArray(data.franjas)) {
-    franjasCache = data.franjas;
-    renderListaFranjas();
-    renderPreviewFranjas();
-    actualizarEstadoFranjasUI();
-  } else {
+  if (!aplicarFranjasRespuesta(data)) {
     await cargarFranjas();
   }
 
@@ -7378,12 +7377,26 @@ function editarFranja(id) {
   actualizarVisibilidadFormulario();
 }
 
+function aplicarFranjasRespuesta(respuesta) {
+  if (!respuesta || !Array.isArray(respuesta.franjas)) return false;
+  franjasCache = respuesta.franjas;
+  patronesRecurrentesCache = Array.isArray(respuesta.patrones_recurrentes)
+    ? respuesta.patrones_recurrentes
+    : [];
+  renderListaFranjas();
+  renderPreviewFranjas();
+  actualizarEstadoFranjasUI();
+  return true;
+}
+
     async function cargarFranjas() {
       const actividadId = document.getElementById("actividadId").value;
       if (!actividadId || document.getElementById("usa_franjas").value !== "1") {
         franjasCache = [];
+        patronesRecurrentesCache = [];
         renderListaFranjas();
         renderPreviewFranjas();
+        actualizarEstadoFranjasUI();
         return;
       }
 
@@ -7398,10 +7411,7 @@ function editarFranja(id) {
         return;
       }
 
-      franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
-      renderListaFranjas();
-      renderPreviewFranjas();
-      actualizarEstadoFranjasUI();
+      aplicarFranjasRespuesta(data);
     }
 
     async function guardarFranja() {
@@ -7456,17 +7466,6 @@ function editarFranja(id) {
 
       const data = await res.json();
 
-      function aplicarFranjasDevueltas(respuesta) {
-        if (Array.isArray(respuesta?.franjas)) {
-          franjasCache = respuesta.franjas;
-          renderListaFranjas();
-          renderPreviewFranjas();
-          actualizarEstadoFranjasUI();
-          return true;
-        }
-        return false;
-      }
-
       if (data?.requiere_confirmacion_afectacion) {
         mostrarMensaje(
           "aviso",
@@ -7488,7 +7487,7 @@ function editarFranja(id) {
                 return;
               }
 
-              const aplicado = aplicarFranjasDevueltas(dataFinal);
+              const aplicado = aplicarFranjasRespuesta(dataFinal);
               if (!aplicado) {
                 await cargarFranjas();
               }
@@ -7522,7 +7521,7 @@ function editarFranja(id) {
                 return;
               }
 
-              const aplicado = aplicarFranjasDevueltas(dataFinal);
+              const aplicado = aplicarFranjasRespuesta(dataFinal);
               if (!aplicado) {
                 await cargarFranjas();
               }
@@ -7540,7 +7539,7 @@ function editarFranja(id) {
         return;
       }
 
-      const aplicado = aplicarFranjasDevueltas(data);
+      const aplicado = aplicarFranjasRespuesta(data);
       if (!aplicado) {
         await cargarFranjas();
       }
@@ -7582,10 +7581,7 @@ async function resetearProgramacion() {
     }
 
     franjaSeleccionadaId = null;
-    franjasCache = Array.isArray(data.franjas) ? data.franjas : [];
-    renderListaFranjas();
-    renderPreviewFranjas();
-    actualizarEstadoFranjasUI();
+    aplicarFranjasRespuesta({ franjas: data.franjas || [], patrones_recurrentes: data.patrones_recurrentes || [] });
     limpiarFormularioFranja();
     mostrarMensaje("ok", data.mensaje || "Programación reseteada correctamente.");
   }
@@ -7656,12 +7652,7 @@ async function borrarFranja(id) {
       franjaSeleccionadaId = null;
     }
 
-    if (Array.isArray(data.franjas)) {
-      franjasCache = data.franjas;
-      renderListaFranjas();
-      renderPreviewFranjas();
-      actualizarEstadoFranjasUI();
-    } else {
+    if (!aplicarFranjasRespuesta(data)) {
       await cargarFranjas();
     }
     limpiarFormularioFranja();
@@ -8769,8 +8760,10 @@ function retrocederPaso() {
               await cargarFranjas();
             } else {
               franjasCache = [];
+              patronesRecurrentesCache = [];
               renderListaFranjas();
               renderPreviewFranjas();
+              actualizarEstadoFranjasUI();
             }
           }
         });

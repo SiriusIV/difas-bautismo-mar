@@ -1562,6 +1562,51 @@ async function obtenerResumenFranjas(env, actividad_id) {
   return franjas;
 }
 
+async function obtenerPatronesRecurrentesActividad(env, actividad_id) {
+  const result = await dbPrimaria(env).prepare(`
+    SELECT
+      id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      capacidad,
+      actividad_id,
+      COALESCE(activa, 1) AS activa,
+      es_recurrente,
+      patron_recurrencia,
+      recurrencia_origen_id,
+      recurrencia_tipo,
+      recurrencia_intervalo,
+      recurrencia_weekday,
+      recurrencia_weekdays,
+      recurrencia_ordinal,
+      recurrencia_monthday,
+      recurrencia_month,
+      recurrencia_inicio,
+      recurrencia_fin,
+      recurrencia_fin_tipo,
+      recurrencia_repeticiones
+    FROM franjas
+    WHERE actividad_id = ?
+      AND COALESCE(es_recurrente, 0) = 1
+    ORDER BY COALESCE(activa, 1) DESC, id ASC
+  `).bind(actividad_id).all();
+
+  return (result.results || []).map((row) => ({
+    ...row,
+    activa: Number(row.activa ?? 1) === 1 ? 1 : 0,
+    es_recurrente: Number(row.es_recurrente || 0),
+    capacidad: row.capacidad === null || row.capacidad === undefined ? null : Number(row.capacidad || 0),
+    generada_por_recurrencia: 0
+  }));
+}
+
+async function obtenerProgramacionAdminRespuesta(env, actividad_id) {
+  const franjas = await obtenerResumenFranjas(env, actividad_id);
+  const patrones_recurrentes = await obtenerPatronesRecurrentesActividad(env, actividad_id);
+  return { franjas, patrones_recurrentes };
+}
+
 async function obtenerFranjaPorId(env, id) {
   return await dbPrimaria(env).prepare(`
     SELECT
@@ -1613,12 +1658,13 @@ export async function onRequestGet(context) {
 
     await checkAdminActividad(env, session.usuario_id, actividad_id);
 
-    const franjas = await obtenerResumenFranjas(env, actividad_id);
+    const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, actividad_id);
 
     return json({
       ok: true,
       total: franjas.length,
-      franjas
+      franjas,
+      patrones_recurrentes
     });
   } catch (error) {
     return json(
@@ -1855,12 +1901,13 @@ export async function onRequestPost(context) {
       await materializarPatronRecurrencia(env, patronCreado);
     }
 
-    const franjas = await obtenerResumenFranjas(env, actividad_id);
+    const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, actividad_id);
 
     return json({
       ok: true,
       mensaje: "Franja creada correctamente.",
-      franjas
+      franjas,
+      patrones_recurrentes
     });
   } catch (error) {
     return json(
@@ -1912,12 +1959,13 @@ export async function onRequestPut(context) {
         return json({ ok: false, ...resultado }, { status: 409 });
       }
 
-      const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
+      const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, existente.actividad_id);
       return json({
         ok: true,
         mensaje: resultado?.mensaje || "Estado de franja actualizado correctamente.",
         resumen_afectacion: resultado?.resumen || null,
-        franjas
+        franjas,
+        patrones_recurrentes
       });
     }
 
@@ -2199,13 +2247,14 @@ export async function onRequestPut(context) {
       }
     }
 
-    const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
+    const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, existente.actividad_id);
 
     return json({
       ok: true,
       mensaje: "Franja actualizada correctamente.",
       resumen_afectacion: resumenAfectacion,
-      franjas
+      franjas,
+      patrones_recurrentes
     });
   } catch (error) {
     return json(
@@ -2247,13 +2296,14 @@ export async function onRequestDelete(context) {
         );
       }
 
-      const franjas = await obtenerResumenFranjas(env, actividadResetId);
+      const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, actividadResetId);
 
       return json({
         ok: true,
         mensaje: "Programación reseteada correctamente.",
         resumen_afectacion: resultadoReset?.resumen || null,
-        franjas
+        franjas,
+        patrones_recurrentes
       });
     }
 
@@ -2349,13 +2399,14 @@ export async function onRequestDelete(context) {
       }
     }
 
-    const franjas = await obtenerResumenFranjas(env, existente.actividad_id);
+    const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, existente.actividad_id);
 
     return json({
       ok: true,
       mensaje: "Franja eliminada correctamente.",
       resumen_afectacion: resumenAfectacion,
-      franjas
+      franjas,
+      patrones_recurrentes
     });
   } catch (error) {
     return json(
