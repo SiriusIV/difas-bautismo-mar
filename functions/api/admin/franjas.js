@@ -100,6 +100,29 @@ async function asegurarEstructuraEstadoFranjas(env) {
       reactivado_at TEXT
     )
   `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS franja_recurrencia_excepciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recurrencia_origen_id INTEGER NOT NULL,
+      actividad_id INTEGER NOT NULL,
+      fecha TEXT NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      hora_fin TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_franja_recurrencia_excepcion_unica
+    ON franja_recurrencia_excepciones (
+      recurrencia_origen_id,
+      actividad_id,
+      fecha,
+      hora_inicio,
+      COALESCE(hora_fin, '')
+    )
+  `).run();
 }
 
 function parsearEnteroNullable(valor) {
@@ -942,6 +965,21 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
 
   if (existente) return false;
 
+  const excepcion = await env.DB.prepare(`
+    SELECT id
+    FROM franja_recurrencia_excepciones
+    WHERE recurrencia_origen_id = ?
+      AND actividad_id = ?
+      AND fecha = ?
+      AND hora_inicio = ?
+      AND COALESCE(hora_fin, '') = COALESCE(?, '')
+    LIMIT 1
+  `)
+    .bind(patron.id, patron.actividad_id, fecha, patron.hora_inicio, patron.hora_fin)
+    .first();
+
+  if (excepcion) return false;
+
   await env.DB.prepare(`
     INSERT INTO franjas (
       fecha,
@@ -990,6 +1028,27 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
     .run();
 
   return true;
+}
+
+async function registrarExcepcionRecurrencia(env, franja) {
+  if (!franja?.recurrencia_origen_id || !franja?.fecha || !franja?.hora_inicio) return;
+
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO franja_recurrencia_excepciones (
+      recurrencia_origen_id,
+      actividad_id,
+      fecha,
+      hora_inicio,
+      hora_fin
+    )
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(
+    franja.recurrencia_origen_id,
+    franja.actividad_id,
+    franja.fecha,
+    franja.hora_inicio,
+    franja.hora_fin
+  ).run();
 }
 
 async function contarConflictosMismaFechaDistintoHorario(env, actividadId, fechas = [], horaInicio, horaFin, excluirId = null) {
@@ -2255,6 +2314,9 @@ export async function onRequestDelete(context) {
         franjasAlternativas
       );
     }
+
+    await registrarExcepcionRecurrencia(env, existente);
+
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
       WHERE id = ?

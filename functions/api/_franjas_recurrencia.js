@@ -31,6 +31,29 @@ export async function asegurarEstructuraRecurrenciaFranjas(env) {
       if (!esErrorColumnaDuplicada(error)) throw error;
     }
   }
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS franja_recurrencia_excepciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recurrencia_origen_id INTEGER NOT NULL,
+      actividad_id INTEGER NOT NULL,
+      fecha TEXT NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      hora_fin TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_franja_recurrencia_excepcion_unica
+    ON franja_recurrencia_excepciones (
+      recurrencia_origen_id,
+      actividad_id,
+      fecha,
+      hora_inicio,
+      COALESCE(hora_fin, '')
+    )
+  `).run();
 }
 
 function fechaIsoLocal(fecha) {
@@ -160,6 +183,19 @@ async function insertarFranjaMaterializada(env, patron, fecha) {
   `).bind(patron.actividad_id, fecha, patron.hora_inicio, patron.hora_fin).first();
 
   if (existente) return false;
+
+  const excepcion = await env.DB.prepare(`
+    SELECT id
+    FROM franja_recurrencia_excepciones
+    WHERE recurrencia_origen_id = ?
+      AND actividad_id = ?
+      AND fecha = ?
+      AND hora_inicio = ?
+      AND COALESCE(hora_fin, '') = COALESCE(?, '')
+    LIMIT 1
+  `).bind(patron.id, patron.actividad_id, fecha, patron.hora_inicio, patron.hora_fin).first();
+
+  if (excepcion) return false;
 
   await env.DB.prepare(`
     INSERT INTO franjas (
