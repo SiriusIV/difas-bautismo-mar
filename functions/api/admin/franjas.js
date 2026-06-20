@@ -170,9 +170,10 @@ function normalizarReglaRecurrencia(data = {}) {
   const tipo = normalizarTexto(data.recurrencia_tipo).toUpperCase();
   const weekdays = normalizarListaWeekdays(data.recurrencia_weekdays || data.recurrencia_weekday);
   const weekday = weekdays.length ? weekdays[0] : parsearEnteroNullable(data.recurrencia_weekday);
+  const intervaloRaw = normalizarTexto(data.recurrencia_intervalo);
   return {
     tipo,
-    intervalo: Math.max(parsearEnteroNullable(data.recurrencia_intervalo) || 1, 1),
+    intervalo: intervaloRaw ? Math.max(parsearEnteroNullable(intervaloRaw) || 1, 1) : null,
     weekday,
     weekdays,
     ordinal: parsearEnteroNullable(data.recurrencia_ordinal),
@@ -224,6 +225,7 @@ function validarReglaRecurrencia(regla = {}) {
   const tipos = new Set(["DIARIA", "SEMANAL", "MENSUAL_DIA_SEMANA", "MENSUAL_DIA_MES", "ANUAL"]);
   if (!tipos.has(regla.tipo)) return "Debe seleccionar un tipo de repetición válido.";
   if (!crearFechaLocal(regla.inicio)) return "Debe indicar una fecha de inicio válida para el patrón.";
+  if (!(Number(regla.intervalo) > 0)) return "Debe indicar un periodo de repetición válido.";
   if (!["NUNCA", "FECHA", "REPETICIONES"].includes(regla.fin_tipo || "NUNCA")) return "Debe seleccionar un modo de finalización válido.";
   if (regla.fin_tipo === "FECHA" && !crearFechaLocal(regla.fin)) return "La fecha de fin del patrón no es válida.";
   if (regla.fin_tipo === "FECHA" && regla.fin < regla.inicio) return "La fecha de fin del patrón no puede ser anterior a la fecha de inicio.";
