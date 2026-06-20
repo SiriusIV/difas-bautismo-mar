@@ -2112,7 +2112,7 @@
     }
 
     .fila-franja-inline:has(#fr_bloque_patron.oculto) {
-      grid-template-columns: minmax(150px, 190px) 150px 150px minmax(110px, 126px);
+      grid-template-columns: minmax(150px, 190px) 150px 150px minmax(260px, 1fr) minmax(110px, 126px);
     }
 
 .campo-franja-inline {
@@ -2125,6 +2125,23 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
+}
+
+.aviso-patron-vigente {
+  align-self: end;
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid #f2cf74;
+  border-radius: 10px;
+  background: #fff7df;
+  color: #6c4a00;
+  font-size: 12px;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+.aviso-patron-vigente strong {
+  color: #5b3f00;
 }
 
 #bloqueFranjasEditor {
@@ -2950,6 +2967,10 @@
         grid-area: termina;
       }
 
+      #avisoPatronVigente {
+        grid-column: 1 / -1;
+      }
+
       #fr_bloque_capacidad {
         grid-area: capacidad;
       }
@@ -3467,6 +3488,8 @@
       <label>Fin (opcional)</label>
       <input type="time" id="fr_hora_fin">
     </div>
+
+    <div id="avisoPatronVigente" class="aviso-patron-vigente oculto"></div>
 
     <div id="fr_bloque_termina" class="campo-franja-inline campo-franja-patron campo-franja-termina">
       <label for="toggleFranjaTermina">Termina</label>
@@ -6188,8 +6211,12 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
       accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
+      if (usaFranjas && esRecurrente) {
+        volcarPatronVigenteEnFormulario();
+      }
       actualizarToggleTerminaFranja();
       actualizarTextoPatronRecurrencia();
+      actualizarAvisoPatronVigente();
     }
 
 function nombreDiaRecurrencia(valor) {
@@ -6372,6 +6399,7 @@ function limpiarFormularioFranja() {
   document.getElementById("fr_hora_fin").value = "";
   document.getElementById("fr_capacidad").value = "";
   actualizarAccionesFranjaUI();
+  actualizarAvisoPatronVigente();
 }
 
 function actualizarAccionesFranjaUI() {
@@ -6428,6 +6456,99 @@ function convertirTemporalAPermanenteSinFinalizacion(marcarCambio = true) {
   sincronizarTogglesPanelConfiguracion();
   if (marcarCambio) marcarCambiosPendientesActividad();
   return true;
+}
+
+function actividadEsPermanenteSinFin() {
+  return String(document.getElementById("tipo")?.value || "").toUpperCase() === "PERMANENTE"
+    && !fechaFinActividadGeneral();
+}
+
+function obtenerPatronVigentePermanente() {
+  if (!actividadEsPermanenteSinFin() || document.getElementById("usa_franjas")?.value !== "1") return null;
+  const patrones = (Array.isArray(franjasCache) ? franjasCache : [])
+    .filter((franja) => Number(franja?.es_recurrente || 0) === 1 && Number(franja?.activa ?? 1) === 1)
+    .sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+  return patrones[0] || null;
+}
+
+function resumenPatronVigente(franja = obtenerPatronVigentePermanente()) {
+  if (!franja) return "";
+  const patron = String(franja.patron_recurrencia || "").trim();
+  const inicio = String(franja.recurrencia_inicio || "").trim();
+  const horario = [franja.hora_inicio, franja.hora_fin].filter(Boolean).join(" - ");
+  const partes = [];
+  if (patron) partes.push(patron);
+  if (inicio) partes.push(`desde ${inicio.split("-").reverse().join("/")}`);
+  if (horario) partes.push(`horario ${horario}`);
+  return partes.join(" · ");
+}
+
+function formularioPatronFranjaVacio() {
+  const ids = [
+    "fr_recurrencia_tipo",
+    "fr_recurrencia_intervalo",
+    "fr_recurrencia_inicio",
+    "fr_recurrencia_fin",
+    "fr_recurrencia_repeticiones",
+    "fr_recurrencia_ordinal",
+    "fr_recurrencia_weekday",
+    "fr_recurrencia_weekdays",
+    "fr_recurrencia_monthday",
+    "fr_recurrencia_month",
+    "fr_hora_inicio",
+    "fr_hora_fin",
+    "fr_capacidad"
+  ];
+  return ids.every((id) => !String(document.getElementById(id)?.value || "").trim());
+}
+
+function volcarPatronVigenteEnFormulario(franja = obtenerPatronVigentePermanente()) {
+  if (!franja || document.getElementById("franjaId")?.value) return false;
+  if (!formularioPatronFranjaVacio()) return false;
+
+  document.getElementById("fr_recurrencia_tipo").value = franja.recurrencia_tipo || "";
+  document.getElementById("fr_recurrencia_intervalo").value = franja.recurrencia_intervalo ? String(franja.recurrencia_intervalo) : "";
+  document.getElementById("fr_recurrencia_inicio").value = franja.recurrencia_inicio || "";
+  document.getElementById("fr_recurrencia_fin").value = franja.recurrencia_fin || "";
+  document.getElementById("fr_recurrencia_fin_tipo").value = franja.recurrencia_fin_tipo || (franja.recurrencia_fin ? "FECHA" : "NUNCA");
+  document.getElementById("fr_recurrencia_repeticiones").value = franja.recurrencia_repeticiones || "";
+  document.getElementById("fr_recurrencia_ordinal").value = franja.recurrencia_ordinal ?? "";
+  document.getElementById("fr_recurrencia_weekday").value = franja.recurrencia_weekday ?? "";
+  document.getElementById("fr_recurrencia_weekdays").value = franja.recurrencia_weekdays || (franja.recurrencia_weekday ?? "");
+  document.getElementById("fr_recurrencia_monthday").value = franja.recurrencia_monthday ?? "";
+  document.getElementById("fr_recurrencia_month").value = franja.recurrencia_month ?? "";
+  document.getElementById("fr_hora_inicio").value = franja.hora_inicio || "";
+  document.getElementById("fr_hora_fin").value = franja.hora_fin || "";
+  document.getElementById("fr_capacidad").value = franja.capacidad == null ? "" : franja.capacidad;
+
+  const selector = document.getElementById("fr_repeticion_selector");
+  if (selector) {
+    const tipo = franja.recurrencia_tipo || "";
+    if (tipo === "DIARIA") selector.value = "DIARIA";
+    else if (tipo === "SEMANAL") selector.value = "SEMANAL";
+    else if (tipo === "ANUAL") selector.value = "ANUAL";
+    else if (tipo === "MENSUAL_DIA_SEMANA" || tipo === "MENSUAL_DIA_MES") selector.value = "MENSUAL";
+    else selector.value = "";
+  }
+
+  actualizarToggleTerminaFranja();
+  actualizarResumenFrecuenciaVisible();
+  sincronizarSelectFrecuenciaParaReapertura();
+  sincronizarPatronRecurrenciaOculto();
+  return true;
+}
+
+function actualizarAvisoPatronVigente() {
+  const aviso = document.getElementById("avisoPatronVigente");
+  if (!aviso) return;
+  const esRecurrente = document.getElementById("es_recurrente")?.value === "1";
+  const patron = obtenerPatronVigentePermanente();
+  const resumen = resumenPatronVigente(patron);
+  const visible = !!patron && !!resumen && !esRecurrente;
+  aviso.classList.toggle("oculto", !visible);
+  aviso.innerHTML = visible
+    ? `<strong>Patrón vigente:</strong> ${escaparHtml(resumen)}`
+    : "";
 }
 
 function fechaHoyIsoLocalActividad() {
