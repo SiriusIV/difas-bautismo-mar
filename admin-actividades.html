@@ -2444,6 +2444,42 @@
       width: min(560px, calc(100vw - 40px));
     }
 
+    .modal-desactivar-franjas .modal-panel {
+      width: min(680px, calc(100vw - 40px));
+    }
+
+    .tabla-impacto-franjas {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .tabla-impacto-franjas th,
+    .tabla-impacto-franjas td {
+      border: 1px solid var(--soft-border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .tabla-impacto-franjas th {
+      background: #f3f7fb;
+      color: var(--brand);
+      font-weight: 700;
+    }
+
+    .impacto-franjas-vacio {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border: 1px solid var(--soft-border);
+      border-radius: 10px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     .modal-periodicidad .modal-panel {
       width: min(430px, calc(100vw - 34px));
       max-height: calc(100vh - 42px);
@@ -3675,6 +3711,27 @@
           </div>
         </div>
 
+        <div class="modal-confirmacion-salida modal-desactivar-franjas" id="modalDesactivarFranjasActividad" aria-hidden="true">
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalDesactivarFranjasActividad">
+            <button type="button" class="modal-cerrar" id="btnCerrarModalDesactivarFranjasActividad" aria-label="Cerrar aviso">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h4 id="tituloModalDesactivarFranjasActividad">Desactivar franjas horarias</h4>
+            <p>Si continúa se eliminará la programación actual de la actividad y se cancelarán todas las solicitudes existentes.</p>
+
+            <div id="impactoDesactivarFranjasActividad"></div>
+
+            <div class="modal-acciones">
+              <button type="button" class="btn btn-secundario" id="btnCancelarModalDesactivarFranjasActividad">Cancelar</button>
+              <button type="button" class="btn btn-peligro" id="btnAceptarModalDesactivarFranjasActividad">Continuar</button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-confirmacion-salida modal-periodicidad" id="modalPeriodicidadFranja" aria-hidden="true">
           <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalPeriodicidadFranja">
             <button type="button" class="modal-cerrar" id="btnCerrarModalPeriodicidadFranja" aria-label="Cerrar periodicidad">
@@ -3860,6 +3917,7 @@
     let documentosDocumentacionActividad = [];
     let puedeEditarDocumentacionActividad = true;
     let modoSecretariaDocumental = false;
+    let desactivacionFranjasConfirmada = false;
 
     let imagenOriginalId = "";
     let imagenOriginalUrl = "";
@@ -4115,6 +4173,92 @@
       cerrarModalAvisoDesactivacionActividad();
     }
 
+    async function obtenerImpactoDesactivarFranjasActividad() {
+      const actividadId = document.getElementById("actividadId")?.value;
+      if (!actividadId) return null;
+
+      const res = await fetch(`/api/admin/franjas?actividad_id=${encodeURIComponent(actividadId)}&impacto_reset=1`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo comprobar el impacto de la desactivación de franjas.");
+      }
+      return data;
+    }
+
+    function renderImpactoDesactivarFranjasActividad(impacto = {}) {
+      const contenedor = document.getElementById("impactoDesactivarFranjasActividad");
+      if (!contenedor) return;
+
+      const franjas = Array.isArray(impacto.franjas_con_solicitudes)
+        ? impacto.franjas_con_solicitudes
+        : [];
+
+      if (!franjas.length) {
+        contenedor.innerHTML = `<div class="impacto-franjas-vacio">No constan solicitudes futuras vinculadas a las franjas horarias programadas.</div>`;
+        return;
+      }
+
+      contenedor.innerHTML = `
+        <table class="tabla-impacto-franjas" aria-label="Franjas horarias con solicitudes afectadas">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Horario</th>
+              <th>Solicitudes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${franjas.map((franja) => `
+              <tr>
+                <td>${escaparHtml(formatearFechaCorta(franja.fecha || ""))}</td>
+                <td>${escaparHtml(formatearHorarioFranja(franja.hora_inicio || "", franja.hora_fin || ""))}</td>
+                <td>${Number(franja.solicitudes || 0)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function cerrarModalDesactivarFranjasActividad() {
+      establecerVisibilidadModalActividad("modalDesactivarFranjasActividad", false);
+    }
+
+    async function abrirModalDesactivarFranjasActividad() {
+      try {
+        const impacto = await obtenerImpactoDesactivarFranjasActividad();
+        renderImpactoDesactivarFranjasActividad(impacto || {});
+      } catch (_) {
+        renderImpactoDesactivarFranjasActividad({});
+      }
+      establecerVisibilidadModalActividad("modalDesactivarFranjasActividad", true);
+    }
+
+    function cancelarDesactivacionFranjasActividad() {
+      cerrarModalDesactivarFranjasActividad();
+      restaurarValorPrevioCampoCritico("usa_franjas");
+      desactivacionFranjasConfirmada = false;
+      sincronizarTogglesPanelConfiguracion();
+      actualizarVisibilidadFormulario();
+      actualizarPreview();
+      renderPreviewFranjas();
+    }
+
+    function aceptarDesactivacionFranjasActividad() {
+      const selectUsaFranjas = document.getElementById("usa_franjas");
+      cerrarModalDesactivarFranjasActividad();
+      desactivacionFranjasConfirmada = true;
+      if (selectUsaFranjas) selectUsaFranjas.value = "0";
+      guardarValorPrevioCampoCritico("usa_franjas");
+      sincronizarTogglesPanelConfiguracion();
+      actualizarVisibilidadFormulario();
+      actualizarPreview();
+      renderPreviewFranjas();
+      marcarCambiosPendientesActividad();
+    }
+
     function marcarCambiosPendientesActividad() {
       if (cargandoActividad) return;
       formularioActividadModificado = true;
@@ -4122,6 +4266,7 @@
 
     function limpiarCambiosPendientesActividad() {
       formularioActividadModificado = false;
+      desactivacionFranjasConfirmada = false;
     }
 
     function hayCambiosPendientesActividad() {
@@ -4955,6 +5100,15 @@ function debeAplazarValidacionCambioCritico(id) {
   return true;
 }
 
+function debeConfirmarDesactivacionFranjas() {
+  const selectUsaFranjas = document.getElementById("usa_franjas");
+  if (!selectUsaFranjas || selectUsaFranjas.value !== "0") return false;
+  if (String(valoresPreviosCamposCriticos.usa_franjas ?? "0") !== "1") return false;
+  if (desactivacionFranjasConfirmada) return false;
+  return (Array.isArray(franjasCache) && franjasCache.length > 0)
+    || (Array.isArray(patronesRecurrentesCache) && patronesRecurrentesCache.length > 0);
+}
+
 async function manejarCambioCriticoCampo(id) {
   if (pantallaBloqueadaPorErrorActividad) return false;
   if (cargandoActividad) return true;
@@ -4971,6 +5125,20 @@ async function manejarCambioCriticoCampo(id) {
   }
 
   limpiarMensaje();
+
+  if (id === "usa_franjas") {
+    if (document.getElementById("usa_franjas")?.value === "1") {
+      desactivacionFranjasConfirmada = false;
+    } else if (debeConfirmarDesactivacionFranjas()) {
+      restaurarValorPrevioCampoCritico(id);
+      sincronizarTogglesPanelConfiguracion();
+      actualizarVisibilidadFormulario();
+      actualizarPreview();
+      renderPreviewFranjas();
+      await abrirModalDesactivarFranjasActividad();
+      return false;
+    }
+  }
 
   if (debeAplazarValidacionCambioCritico(id)) {
     guardarValorPrevioCampoCritico(id);
@@ -7738,6 +7906,7 @@ async function borrarFranja(id) {
           longitud: document.getElementById("longitud").value.trim(),
           zoom_mapa: document.getElementById("zoom_mapa").value.trim(),
           borrador_tecnico: borradorTecnico,
+          confirmado_desactivar_franjas: desactivacionFranjasConfirmada,
           requisitos_particulares: obtenerRequisitosParticularesFormulario(),
           documentacion_actividad_modo: obtenerModoDocumentacionActividadSeleccionado(),
           documentacion_actividad_documentos: obtenerDocumentosDocumentacionActividadParaGuardar()
@@ -7907,6 +8076,12 @@ async function borrarFranja(id) {
         return false;
       }
 
+      if (data?.requiere_confirmacion_desactivar_franjas) {
+        desactivacionFranjasConfirmada = false;
+        await abrirModalDesactivarFranjasActividad();
+        return false;
+      }
+
       if (data?.requiere_confirmacion_requisitos) {
         mostrarMensaje(
           "aviso",
@@ -8042,6 +8217,12 @@ async function borrarFranja(id) {
         }
 
         await cargarActividades();
+        if (data?.resumen_reset_franjas) {
+          franjasCache = [];
+          patronesRecurrentesCache = [];
+          renderPreviewFranjas();
+          actualizarPreview();
+        }
 
         const avisoBorrado = await procesarImagenesPendientesPostGuardado();
 
@@ -8510,6 +8691,9 @@ function retrocederPaso() {
       document.getElementById("btnCerrarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
       document.getElementById("btnCancelarModalAvisoDesactivacionActividad").addEventListener("click", cancelarAvisoDesactivacionActividad);
       document.getElementById("btnAceptarModalAvisoDesactivacionActividad").addEventListener("click", confirmarAvisoDesactivacionActividad);
+      document.getElementById("btnCerrarModalDesactivarFranjasActividad")?.addEventListener("click", cancelarDesactivacionFranjasActividad);
+      document.getElementById("btnCancelarModalDesactivarFranjasActividad")?.addEventListener("click", cancelarDesactivacionFranjasActividad);
+      document.getElementById("btnAceptarModalDesactivarFranjasActividad")?.addEventListener("click", aceptarDesactivacionFranjasActividad);
       document.getElementById("btnCerrarModalPeriodicidadFranja")?.addEventListener("click", cerrarModalPeriodicidadFranja);
       document.getElementById("btnAceptarModalPeriodicidadFranja")?.addEventListener("click", aceptarModalPeriodicidadFranja);
       document.getElementById("btnCerrarModalDiasSemanaFranja")?.addEventListener("click", cerrarModalDiasSemanaFranja);

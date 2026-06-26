@@ -1452,6 +1452,35 @@ async function resetearProgramacionActividad(env, actividadId) {
   return { ok: true, resumen };
 }
 
+async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
+  const franjas = await obtenerFranjasActividadParaReset(env, actividadId);
+  const impacto = {
+    total_franjas: franjas.length,
+    total_solicitudes_futuras: 0,
+    total_solicitudes_historicas: 0,
+    franjas_con_solicitudes: []
+  };
+
+  for (const franja of franjas) {
+    const historicas = await contarReservasHistoricasFranja(env, franja.id);
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    impacto.total_solicitudes_historicas += Number(historicas || 0);
+
+    if (reservas.length > 0) {
+      impacto.total_solicitudes_futuras += reservas.length;
+      impacto.franjas_con_solicitudes.push({
+        id: Number(franja.id || 0),
+        fecha: franja.fecha || "",
+        hora_inicio: franja.hora_inicio || "",
+        hora_fin: franja.hora_fin || "",
+        solicitudes: reservas.length
+      });
+    }
+  }
+
+  return impacto;
+}
+
 async function obtenerResumenFranjas(env, actividad_id) {
   await materializarPatronesActividad(env, actividad_id);
 
@@ -1657,6 +1686,14 @@ export async function onRequestGet(context) {
     }
 
     await checkAdminActividad(env, session.usuario_id, actividad_id);
+
+    if (url.searchParams.get("impacto_reset") === "1") {
+      const impacto = await obtenerImpactoResetProgramacionActividad(env, actividad_id);
+      return json({
+        ok: true,
+        ...impacto
+      });
+    }
 
     const { franjas, patrones_recurrentes } = await obtenerProgramacionAdminRespuesta(env, actividad_id);
 

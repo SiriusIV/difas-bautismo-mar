@@ -628,6 +628,61 @@ async function recortarFranjasFueraRangoActividad(env, actividadId, fechaInicio,
   return { ok: true, resumen };
 }
 
+async function obtenerFranjasActividadParaReset(env, actividadId) {
+  const result = await env.DB.prepare(`
+    SELECT *
+    FROM franjas
+    WHERE actividad_id = ?
+    ORDER BY COALESCE(es_recurrente, 0) ASC, fecha ASC, hora_inicio ASC, id ASC
+  `).bind(actividadId).all();
+
+  return result?.results || [];
+}
+
+async function resetearProgramacionActividad(env, actividadId) {
+  const franjas = await obtenerFranjasActividadParaReset(env, actividadId);
+  const resumen = {
+    franjas_eliminadas: 0,
+    reservas_eliminadas: 0,
+    correos_enviados: 0,
+    notificaciones_creadas: 0,
+    incidencias: []
+  };
+
+  for (const franja of franjas) {
+    const historicas = await contarReservasHistoricasFranja(env, franja.id);
+    if (historicas > 0) {
+      return {
+        ok: false,
+        bloquear: true,
+        error: "No se puede resetear la programación porque existen solicitudes históricas asociadas. El histórico debe conservarse."
+      };
+    }
+  }
+
+  for (const franja of franjas) {
+    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
+    if (reservas.length > 0) {
+      const resultado = await eliminarReservasPorRecorteFranja(env, reservas, franja);
+      resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
+      resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+      resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
+      resumen.incidencias.push(...(resultado?.incidencias || []));
+    }
+
+    const deleteResult = await env.DB.prepare(`
+      DELETE FROM franjas
+      WHERE id = ?
+    `).bind(franja.id).run();
+
+    if ((deleteResult?.meta?.changes || 0) > 0) {
+      resumen.franjas_eliminadas += 1;
+    }
+  }
+
+  return { ok: true, resumen };
+}
+
 function validarActividad(data) {
   const nombre = limpiarTexto(data.nombre);
   const tipo = limpiarTexto(data.tipo).toUpperCase();
@@ -1059,6 +1114,7 @@ export async function onRequestPut(context) {
     const confirmadoCambioRequisitos = body.confirmado_cambio_requisitos === true || body.confirmado_cambio_requisitos === 1 || body.confirmado_cambio_requisitos === "1";
     const confirmadoEliminacionDocumentalCritica = body.confirmado_eliminacion_documental_critica === true || body.confirmado_eliminacion_documental_critica === 1 || body.confirmado_eliminacion_documental_critica === "1";
     const confirmadoRecorteFranjas = body.confirmado_recorte_franjas === true || body.confirmado_recorte_franjas === 1 || body.confirmado_recorte_franjas === "1";
+    const confirmadoDesactivarFranjas = body.confirmado_desactivar_franjas === true || body.confirmado_desactivar_franjas === 1 || body.confirmado_desactivar_franjas === "1";
     const activaActual = Number(actual?.activa || 0) === 1 ? 1 : 0;
     const activaNueva = Number(p.activa || 0) === 1 ? 1 : 0;
 
@@ -1285,13 +1341,16 @@ export async function onRequestPut(context) {
 
     if (
       activaNueva === 1 &&
+      resumenFranjas.total > 0 &&
       solicitudesVivas > 0 &&
       Number(actual.usa_franjas || 0) === 1 &&
       Number(p.usa_franjas || 0) === 0
+      && !confirmadoDesactivarFranjas
     ) {
       return json({
         ok: false,
-        error: "No puedes desactivar las franjas porque existen solicitudes activas asociadas a esta actividad."
+        requiere_confirmacion_desactivar_franjas: true,
+        mensaje: "Si continúa se eliminará la programación actual de la actividad y se cancelarán todas las solicitudes existentes."
       }, 400);
     }
 
@@ -1346,6 +1405,31 @@ export async function onRequestPut(context) {
           ? "Existe 1 solicitud vinculada a esta actividad. Si continÃºas, se notificarÃ¡ al solicitante y, si estaba pendiente o confirmada, pasarÃ¡ a suspendida."
           : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continÃºas, se notificarÃ¡ a los solicitantes y las que estuvieran pendientes o confirmadas pasarÃ¡n a suspendida.`
       }, 409);
+    }
+
+    let resumenResetFranjas = null;
+    if (
+      activaNueva === 1 &&
+      resumenFranjas.total > 0 &&
+      Number(actual.usa_franjas || 0) === 1 &&
+      Number(p.usa_franjas || 0) === 0
+    ) {
+      if (!confirmadoDesactivarFranjas) {
+        return json({
+          ok: false,
+          requiere_confirmacion_desactivar_franjas: true,
+          mensaje: "Si continúa se eliminará la programación actual de la actividad y se cancelarán todas las solicitudes existentes."
+        }, 409);
+      }
+
+      const resultadoReset = await resetearProgramacionActividad(env, id);
+      if (resultadoReset?.bloquear) {
+        return json(
+          { ok: false, error: resultadoReset.error || "No se pudo resetear la programación." },
+          400
+        );
+      }
+      resumenResetFranjas = resultadoReset?.resumen || null;
     }
 
     const result = await env.DB.prepare(`
@@ -1527,6 +1611,7 @@ export async function onRequestPut(context) {
       resumen_impacto_documental: resumenImpactoDocumental,
       resumen_habilitados_documentacion: resumenHabilitadosDocumentacion,
       resumen_recorte_franjas: resumenRecorteFranjas,
+      resumen_reset_franjas: resumenResetFranjas,
       mensaje: p.borrador_tecnico ? "Borrador tÃ©cnico actualizado correctamente." : "Actividad actualizada correctamente."
     });
   } catch (error) {
