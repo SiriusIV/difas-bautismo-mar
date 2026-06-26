@@ -412,29 +412,48 @@
     }
 
     @media (min-width: 701px) {
-      body.paso-requisitos-documentacion .contexto-head-top {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+      .contexto-head-top {
+        display: flex;
         align-items: flex-start;
-        column-gap: 14px;
+        gap: 14px;
+        width: 100%;
       }
 
-      body.paso-requisitos-documentacion .contexto-cabecera-superior {
-        grid-column: 1;
-        grid-row: 1;
+      .contexto-cabecera-superior {
+        display: contents;
+      }
+
+      .contexto-titulos {
+        order: 1;
+        flex: 1 1 auto;
         min-width: 0;
       }
 
-      body.paso-requisitos-documentacion .contexto-acciones-secundarias {
-        grid-column: 2;
-        grid-row: 1;
-        width: auto;
+      .contexto-acciones-grupo.estado-actividad {
+        order: 2;
+        flex: 0 0 auto;
         align-self: flex-start;
-        justify-content: flex-end;
       }
 
-      body.paso-requisitos-documentacion .contexto-acciones-grupo.acciones-edicion,
-      body.paso-requisitos-documentacion .contexto-acciones-grupo.portal-acceso {
+      .contexto-acciones-secundarias {
+        order: 3;
+        width: auto;
+        flex: 0 0 auto;
+        align-self: flex-start;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        gap: 8px;
+      }
+
+      .contexto-acciones-grupo.acciones-edicion,
+      .contexto-acciones-grupo.portal-acceso {
+        flex-wrap: nowrap;
+      }
+
+      .contexto-acciones-grupo.pasos {
+        order: 4;
+        flex: 0 0 auto;
+        align-self: flex-start;
         flex-wrap: nowrap;
       }
     }
