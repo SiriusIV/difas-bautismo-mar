@@ -3198,16 +3198,6 @@
                     <polyline points="7 3 7 8 15 8"></polyline>
                   </svg>
                 </button>
-
-                <button type="button" class="btn-icono btn-icono-peligro" id="btnEliminarActividad" title="Eliminar actividad" aria-label="Eliminar actividad">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                </button>
               </div>
 
               <div class="contexto-acciones-grupo portal-acceso">
@@ -4404,7 +4394,7 @@
       destinoSalidaPendiente = "portal.html";
     }
 
-    function abrirModalAnulacionActividad({ modo = "eliminar", textoBase = "", resumen = null } = {}) {
+    function abrirModalAnulacionActividad({ modo = "desactivar", textoBase = "", resumen = null } = {}) {
       const modal = document.getElementById("modalAnulacionActividad");
       const resumenEl = document.getElementById("resumenModalAnulacionActividad");
       const textoEl = document.getElementById("textoModalAnulacionActividad");
@@ -4578,7 +4568,6 @@ function aplicarModoSecretariaDocumentalUI() {
   }
 
   [
-    "btnEliminarActividad",
     "btnIrCalendarioAdminActividad",
     "btnIrPlantillasActividad"
   ].forEach((id) => {
@@ -4871,19 +4860,6 @@ function establecerVisibilidadModalActividad(id, activo) {
       const el = document.getElementById(id);
       if (!el) return;
       el.value = valor ?? "";
-    }
-
-    function actualizarBotonEliminar() {
-      const btn = document.getElementById("btnEliminarActividad");
-      if (!btn) return;
-      if (modoSecretariaDocumental) {
-        btn.classList.add("oculto");
-        btn.disabled = true;
-        return;
-      }
-      const hayId = !!document.getElementById("actividadId").value;
-      btn.disabled = !hayId;
-      btn.title = hayId ? "Eliminar actividad" : "Guarda o abre una actividad existente para poder eliminarla";
     }
 
     function guardarValorPrevioCampoCritico(id) {
@@ -5557,7 +5533,6 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     cargarRequisitosActividad(actividad);
     cargarConfiguracionDocumentacionActividad(actividad);
     sincronizarTogglesPanelConfiguracion();
-    actualizarBotonEliminar();
     actualizarVisibilidadFormulario();
     aplicarModoSecretariaDocumentalUI();
     actualizarPreview();
@@ -5578,7 +5553,6 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
         registrarImagenOriginalDesdeFormulario();
         cargarRequisitosActividad(null);
         cargarConfiguracionDocumentacionActividad(null);
-        actualizarBotonEliminar();
         limpiarCambiosPendientesActividad();
         return;
       }
@@ -7931,7 +7905,6 @@ async function borrarFranja(id) {
                 document.getElementById("tituloFormulario").textContent = "Editar actividad";
                 actualizarEnlaceCalendarioActividad();
                 actualizarAccesoPlantillasActividad();
-                actualizarBotonEliminar();
               }
 
               await cargarActividades();
@@ -8037,7 +8010,6 @@ async function borrarFranja(id) {
           document.getElementById("tituloFormulario").textContent = "Editar actividad";
           actualizarEnlaceCalendarioActividad();
           actualizarAccesoPlantillasActividad();
-          actualizarBotonEliminar();
         }
 
         await cargarActividades();
@@ -8095,7 +8067,6 @@ async function borrarFranja(id) {
         document.getElementById("tituloFormulario").textContent = "Editar actividad";
         actualizarEnlaceCalendarioActividad();
         actualizarAccesoPlantillasActividad();
-        actualizarBotonEliminar();
       }
 
       actividadEsBorradorTecnico = true;
@@ -8189,97 +8160,10 @@ async function borrarFranja(id) {
       abrirModalSalidaSinGuardar();
     }
 
-async function accionEliminarActividadUI() {
-  if (pantallaBloqueadaPorErrorActividad) return;
-
-  limpiarMensaje();
-
-  const id = document.getElementById("actividadId").value;
-  if (!id) {
-    mostrarMensaje("error", "Debes guardar primero la actividad antes de poder eliminarla.");
-    return;
-  }
-
-  try {
-    const primeraRespuesta = await fetch("/api/admin/actividades-eliminar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ id })
-    });
-
-    const primerData = await primeraRespuesta.json().catch(() => null);
-
-    if (!primeraRespuesta.ok && !primerData?.requiere_confirmacion && !primerData?.bloqueado) {
-      mostrarMensaje("error", primerData?.error || "No se pudo comprobar si la actividad puede eliminarse.");
-      return;
-    }
-
-    if (primerData?.bloqueado) {
-      mostrarMensaje("error", primerData.error || "La actividad no se puede eliminar.");
-      return;
-    }
-
-    const textoConfirmacion = primerData?.requiere_confirmacion
-      ? (primerData.mensaje || "Esta acción requiere confirmación.")
-      : "¿Seguro que quieres eliminar esta actividad? Esta acción no se puede deshacer.";
-
-    mostrarMensaje(
-      "aviso",
-      textoConfirmacion,
-      {
-        confirmable: true,
-        onAccept: async () => {
-          try {
-            if (primerData?.requiere_observaciones) {
-              limpiarMensaje();
-              abrirModalAnulacionActividad({
-                modo: "eliminar",
-                textoBase: primerData?.mensaje || textoConfirmacion,
-                resumen: primerData?.resumen || null
-              });
-              return;
-            }
-
-            const resFinal = await fetch("/api/admin/actividades-eliminar", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "same-origin",
-              body: JSON.stringify({
-                id,
-                confirmado: true
-              })
-            });
-
-            const dataFinal = await resFinal.json().catch(() => null);
-
-            if (!resFinal.ok || !dataFinal?.ok) {
-              mostrarMensaje("error", dataFinal?.error || "No se pudo eliminar la actividad.");
-              return;
-            }
-
-            mostrarMensaje("ok", dataFinal.mensaje || "Actividad eliminada correctamente.");
-
-            setTimeout(() => {
-              window.location.href = "portal.html";
-            }, 900);
-          } catch (error) {
-            mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
-          }
-        }
-      }
-    );
-  } catch (error) {
-    mostrarMensaje("error", error?.message || "Error al eliminar la actividad.");
-  }
-}
-
 async function confirmarAnulacionActividadDesdeModal() {
   const id = document.getElementById("actividadId").value;
-  const modal = document.getElementById("modalAnulacionActividad");
   const textarea = document.getElementById("txtObservacionesAnulacionActividad");
   const observacionesAdmin = String(textarea?.value || "").trim();
-  const modo = String(modal?.dataset?.modo || "eliminar").toLowerCase();
 
   if (!id) {
     cerrarModalAnulacionActividad();
@@ -8294,59 +8178,36 @@ async function confirmarAnulacionActividadDesdeModal() {
   }
 
   try {
-    let resFinal;
-    if (modo === "desactivar") {
-      const payload = construirPayloadActividad(0);
-      payload.id = id;
-      payload.confirmado_anulacion = true;
-      payload.observaciones_admin = observacionesAdmin;
+    const payload = construirPayloadActividad(0);
+    payload.id = id;
+    payload.confirmado_anulacion = true;
+    payload.observaciones_admin = observacionesAdmin;
 
-      resFinal = await fetch("/api/admin/actividades-guardar", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload)
-      });
-    } else {
-      resFinal = await fetch("/api/admin/actividades-eliminar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          id,
-          confirmado: true,
-          observaciones_admin: observacionesAdmin
-        })
-      });
-    }
+    const resFinal = await fetch("/api/admin/actividades-guardar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload)
+    });
 
     const dataFinal = await resFinal.json().catch(() => null);
 
     if (!resFinal.ok || !dataFinal?.ok) {
-      mostrarMensaje("error", dataFinal?.error || (modo === "desactivar" ? "No se pudo desactivar la actividad." : "No se pudo anular la actividad."));
+      mostrarMensaje("error", dataFinal?.error || "No se pudo desactivar la actividad.");
       return;
     }
 
     cerrarModalAnulacionActividad();
-    if (modo === "desactivar") {
-      await cargarActividades();
-      const actividadActualizada = actividadesCache.find((a) => Number(a.id) === Number(id));
-      if (actividadActualizada) {
-        rellenarFormulario(actividadActualizada);
-        sincronizarTogglesPanelConfiguracion();
-      }
-      limpiarCambiosPendientesActividad();
-      mostrarMensaje("ok", dataFinal.mensaje || "Actividad desactivada correctamente.");
-      return;
+    await cargarActividades();
+    const actividadActualizada = actividadesCache.find((a) => Number(a.id) === Number(id));
+    if (actividadActualizada) {
+      rellenarFormulario(actividadActualizada);
+      sincronizarTogglesPanelConfiguracion();
     }
-
-    mostrarMensaje("ok", dataFinal.mensaje || "Actividad anulada correctamente.");
-
-    setTimeout(() => {
-      window.location.href = "portal.html";
-    }, 900);
+    limpiarCambiosPendientesActividad();
+    mostrarMensaje("ok", dataFinal.mensaje || "Actividad desactivada correctamente.");
   } catch (error) {
-    mostrarMensaje("error", error?.message || (modo === "desactivar" ? "Error al desactivar la actividad." : "Error al anular la actividad."));
+    mostrarMensaje("error", error?.message || "Error al desactivar la actividad.");
   }
 }
 
@@ -8549,7 +8410,6 @@ function retrocederPaso() {
         compactarCabeceraFranjas();
         reubicarBotonGuardarFranjaSegunViewport();
 
-      document.getElementById("btnEliminarActividad").addEventListener("click", accionEliminarActividadUI);
       document.getElementById("btnGuardarActividad").addEventListener("click", () => {
         registrarTrazaActividad("click:btnGuardarActividad", {
           actividadId: document.getElementById("actividadId")?.value || "",
@@ -8904,7 +8764,6 @@ function retrocederPaso() {
 
         actualizarVisibilidadFormulario();
         actualizarPreview();
-        actualizarBotonEliminar();
         renderTablaRequisitos();
         actualizarTituloRequisitos();
         renderListaFranjas();
