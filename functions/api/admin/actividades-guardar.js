@@ -496,7 +496,7 @@ async function obtenerReservasFuturasFranja(env, franjaId) {
   return result?.results || [];
 }
 
-async function obtenerReservasFuturasActividadSinFranja(env, actividadId) {
+async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
   const result = await env.DB.prepare(`
     SELECT
       r.id,
@@ -506,14 +506,24 @@ async function obtenerReservasFuturasActividadSinFranja(env, actividadId) {
       COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
       r.estado,
       COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
-      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      r.franja_id,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      f.es_recurrente,
+      f.patron_recurrencia
     FROM reservas r
+    LEFT JOIN franjas f ON f.id = r.franja_id
     LEFT JOIN actividades a ON a.id = r.actividad_id
     LEFT JOIN usuarios us ON us.id = r.usuario_id
     WHERE r.actividad_id = ?
-      AND r.franja_id IS NULL
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
-    ORDER BY r.id ASC
+      AND (
+        f.fecha IS NULL
+        OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
+      )
+    ORDER BY COALESCE(f.fecha, '') ASC, COALESCE(f.hora_inicio, '') ASC, r.id ASC
   `).bind(actividadId).all();
 
   return result?.results || [];
@@ -636,7 +646,9 @@ async function recortarFranjasFueraRangoActividad(env, actividadId, fechaInicio,
       resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
       resumen.incidencias.push(...(resultado?.incidencias || []));
     }
+  }
 
+  for (const franja of franjas) {
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
       WHERE id = ?
@@ -683,16 +695,25 @@ async function resetearProgramacionActividad(env, actividadId) {
     }
   }
 
-  for (const franja of franjas) {
-    const reservas = await obtenerReservasFuturasFranja(env, franja.id);
-    if (reservas.length > 0) {
-      const resultado = await eliminarReservasPorRecorteFranja(env, reservas, franja);
-      resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
-      resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
-      resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
-      resumen.incidencias.push(...(resultado?.incidencias || []));
-    }
+  const reservasAfectadas = await obtenerReservasFuturasActividadParaReset(env, actividadId);
+  for (const reserva of reservasAfectadas) {
+    const franjaReserva = {
+      id: reserva.franja_id || null,
+      actividad_id: actividadId,
+      fecha: reserva.fecha || null,
+      hora_inicio: reserva.hora_inicio || "",
+      hora_fin: reserva.hora_fin || "",
+      es_recurrente: reserva.es_recurrente || 0,
+      patron_recurrencia: reserva.patron_recurrencia || ""
+    };
+    const resultado = await eliminarReservasPorRecorteFranja(env, [reserva], franjaReserva);
+    resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
+    resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+    resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
+    resumen.incidencias.push(...(resultado?.incidencias || []));
+  }
 
+  for (const franja of franjas) {
     const deleteResult = await env.DB.prepare(`
       DELETE FROM franjas
       WHERE id = ?
@@ -701,20 +722,6 @@ async function resetearProgramacionActividad(env, actividadId) {
     if ((deleteResult?.meta?.changes || 0) > 0) {
       resumen.franjas_eliminadas += 1;
     }
-  }
-
-  const reservasSinFranja = await obtenerReservasFuturasActividadSinFranja(env, actividadId);
-  if (reservasSinFranja.length > 0) {
-    const resultado = await eliminarReservasPorRecorteFranja(env, reservasSinFranja, {
-      actividad_id: actividadId,
-      fecha: null,
-      hora_inicio: "",
-      hora_fin: ""
-    });
-    resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
-    resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
-    resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
-    resumen.incidencias.push(...(resultado?.incidencias || []));
   }
 
   return { ok: true, resumen };

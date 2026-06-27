@@ -1456,39 +1456,31 @@ async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
   const franjas = await obtenerFranjasActividadParaReset(env, actividadId);
   const solicitudesPorFranja = await env.DB.prepare(`
     SELECT
-      f.id,
-      f.fecha,
-      f.hora_inicio,
-      f.hora_fin,
+      COALESCE(f.id, 0) AS id,
+      COALESCE(f.fecha, '') AS fecha,
+      COALESCE(f.hora_inicio, '') AS hora_inicio,
+      COALESCE(f.hora_fin, '') AS hora_fin,
       COUNT(r.id) AS solicitudes
-    FROM franjas f
-    LEFT JOIN reservas r
-      ON r.franja_id = f.id
+    FROM reservas r
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    WHERE r.actividad_id = ?
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
       AND (
         f.fecha IS NULL
         OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
       )
-    WHERE f.actividad_id = ?
-    GROUP BY f.id, f.fecha, f.hora_inicio, f.hora_fin
+    GROUP BY COALESCE(f.id, 0), COALESCE(f.fecha, ''), COALESCE(f.hora_inicio, ''), COALESCE(f.hora_fin, '')
     HAVING COUNT(r.id) > 0
-    ORDER BY f.fecha ASC, f.hora_inicio ASC, f.id ASC
+    ORDER BY COALESCE(f.fecha, '') ASC, COALESCE(f.hora_inicio, '') ASC, COALESCE(f.id, 0) ASC
   `).bind(actividadId).all();
-
-  const solicitudesSinFranja = await env.DB.prepare(`
-    SELECT COUNT(*) AS total
-    FROM reservas r
-    WHERE r.actividad_id = ?
-      AND r.franja_id IS NULL
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
-  `).bind(actividadId).first();
 
   const historicas = await env.DB.prepare(`
     SELECT COUNT(r.id) AS total
     FROM reservas r
     JOIN franjas f
       ON f.id = r.franja_id
-    WHERE f.actividad_id = ?
+    WHERE r.actividad_id = ?
       AND f.fecha IS NOT NULL
       AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) <= datetime('now')
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
@@ -1499,20 +1491,9 @@ async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
     fecha: franja.fecha || "",
     hora_inicio: franja.hora_inicio || "",
     hora_fin: franja.hora_fin || "",
-    solicitudes: Number(franja.solicitudes || 0)
+    solicitudes: Number(franja.solicitudes || 0),
+    sin_franja: Number(franja.id || 0) <= 0
   }));
-
-  const totalSolicitudesSinFranja = Number(solicitudesSinFranja?.total || 0);
-  if (totalSolicitudesSinFranja > 0) {
-    franjasConSolicitudes.push({
-      id: 0,
-      fecha: "",
-      hora_inicio: "",
-      hora_fin: "",
-      solicitudes: totalSolicitudesSinFranja,
-      sin_franja: true
-    });
-  }
 
   const impacto = {
     total_franjas: franjas.length,
