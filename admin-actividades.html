@@ -4193,6 +4193,11 @@
       const contenedor = document.getElementById("impactoDesactivarFranjasActividad");
       if (!contenedor) return;
 
+      if (impacto.error) {
+        contenedor.innerHTML = `<div class="impacto-franjas-vacio impacto-franjas-error">${escaparHtml(impacto.error)}</div>`;
+        return;
+      }
+
       const franjas = Array.isArray(impacto.franjas_con_solicitudes)
         ? impacto.franjas_con_solicitudes
         : [];
@@ -4232,8 +4237,10 @@
       try {
         const impacto = await obtenerImpactoDesactivarFranjasActividad();
         renderImpactoDesactivarFranjasActividad(impacto || {});
-      } catch (_) {
-        renderImpactoDesactivarFranjasActividad({});
+      } catch (error) {
+        renderImpactoDesactivarFranjasActividad({
+          error: error?.message || "No se pudo comprobar si existen solicitudes futuras vinculadas."
+        });
       }
       establecerVisibilidadModalActividad("modalDesactivarFranjasActividad", true);
     }

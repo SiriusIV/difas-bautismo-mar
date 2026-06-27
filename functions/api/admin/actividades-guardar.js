@@ -497,7 +497,8 @@ async function obtenerReservasFuturasFranja(env, franjaId) {
 }
 
 async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
-  const result = await env.DB.prepare(`
+  const db = dbPrimaria(env);
+  const result = await db.prepare(`
     SELECT
       r.id,
       r.usuario_id,
@@ -505,8 +506,8 @@ async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
       r.contacto,
       COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
       r.estado,
-      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
-      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      COALESCE(a.organizador_publico, af.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, af.titulo_publico, a.nombre, af.nombre, 'Actividad') AS actividad_nombre,
       r.franja_id,
       f.fecha,
       f.hora_inicio,
@@ -516,8 +517,9 @@ async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
     FROM reservas r
     LEFT JOIN franjas f ON f.id = r.franja_id
     LEFT JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN actividades af ON af.id = f.actividad_id
     LEFT JOIN usuarios us ON us.id = r.usuario_id
-    WHERE r.actividad_id = ?
+    WHERE (r.actividad_id = ? OR f.actividad_id = ?)
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
       AND (
         f.fecha IS NULL
@@ -525,7 +527,7 @@ async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
         OR date(f.fecha) >= date('now')
       )
     ORDER BY COALESCE(f.fecha, '') ASC, COALESCE(f.hora_inicio, '') ASC, r.id ASC
-  `).bind(actividadId).all();
+  `).bind(actividadId, actividadId).all();
 
   return result?.results || [];
 }

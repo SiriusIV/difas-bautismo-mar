@@ -1454,7 +1454,8 @@ async function resetearProgramacionActividad(env, actividadId) {
 
 async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
   const franjas = await obtenerFranjasActividadParaReset(env, actividadId);
-  const solicitudesPorFranja = await env.DB.prepare(`
+  const db = dbPrimaria(env);
+  const solicitudesPorFranja = await db.prepare(`
     SELECT
       COALESCE(f.id, 0) AS id,
       COALESCE(f.fecha, '') AS fecha,
@@ -1464,7 +1465,7 @@ async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
     FROM reservas r
     LEFT JOIN franjas f
       ON f.id = r.franja_id
-    WHERE r.actividad_id = ?
+    WHERE (r.actividad_id = ? OR f.actividad_id = ?)
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
       AND (
         f.fecha IS NULL
@@ -1474,18 +1475,18 @@ async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
     GROUP BY COALESCE(f.id, 0), COALESCE(f.fecha, ''), COALESCE(f.hora_inicio, ''), COALESCE(f.hora_fin, '')
     HAVING COUNT(r.id) > 0
     ORDER BY COALESCE(f.fecha, '') ASC, COALESCE(f.hora_inicio, '') ASC, COALESCE(f.id, 0) ASC
-  `).bind(actividadId).all();
+  `).bind(actividadId, actividadId).all();
 
-  const historicas = await env.DB.prepare(`
+  const historicas = await db.prepare(`
     SELECT COUNT(r.id) AS total
     FROM reservas r
     JOIN franjas f
       ON f.id = r.franja_id
-    WHERE r.actividad_id = ?
+    WHERE (r.actividad_id = ? OR f.actividad_id = ?)
       AND f.fecha IS NOT NULL
       AND datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) <= datetime('now')
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
-  `).bind(actividadId).first();
+  `).bind(actividadId, actividadId).first();
 
   const franjasConSolicitudes = (solicitudesPorFranja?.results || []).map((franja) => ({
     id: Number(franja.id || 0),
