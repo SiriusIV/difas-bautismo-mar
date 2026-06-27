@@ -1468,7 +1468,8 @@ async function obtenerImpactoResetProgramacionActividad(env, actividadId) {
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
       AND (
         f.fecha IS NULL
-        OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
+        OR date(f.fecha) IS NULL
+        OR date(f.fecha) >= date('now')
       )
     GROUP BY COALESCE(f.id, 0), COALESCE(f.fecha, ''), COALESCE(f.hora_inicio, ''), COALESCE(f.hora_fin, '')
     HAVING COUNT(r.id) > 0

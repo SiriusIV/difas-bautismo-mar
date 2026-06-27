@@ -521,7 +521,8 @@ async function obtenerReservasFuturasActividadParaReset(env, actividadId) {
       AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
       AND (
         f.fecha IS NULL
-        OR datetime(f.fecha || ' ' || COALESCE(NULLIF(f.hora_inicio, ''), '00:00')) > datetime('now')
+        OR date(f.fecha) IS NULL
+        OR date(f.fecha) >= date('now')
       )
     ORDER BY COALESCE(f.fecha, '') ASC, COALESCE(f.hora_inicio, '') ASC, r.id ASC
   `).bind(actividadId).all();
