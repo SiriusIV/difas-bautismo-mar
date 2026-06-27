@@ -496,6 +496,29 @@ async function obtenerReservasFuturasFranja(env, franjaId) {
   return result?.results || [];
 }
 
+async function obtenerReservasFuturasActividadSinFranja(env, actividadId) {
+  const result = await env.DB.prepare(`
+    SELECT
+      r.id,
+      r.usuario_id,
+      r.codigo_reserva,
+      r.contacto,
+      COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us.email), '')) AS email,
+      r.estado,
+      COALESCE(a.organizador_publico, 'Organizador') AS organizador_nombre,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre
+    FROM reservas r
+    LEFT JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN usuarios us ON us.id = r.usuario_id
+    WHERE r.actividad_id = ?
+      AND r.franja_id IS NULL
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('CANCELADA', 'BORRADOR')
+    ORDER BY r.id ASC
+  `).bind(actividadId).all();
+
+  return result?.results || [];
+}
+
 async function eliminarReservasPorRecorteFranja(env, reservas = [], franja = {}) {
   const resumen = {
     reservas_eliminadas: 0,
@@ -678,6 +701,20 @@ async function resetearProgramacionActividad(env, actividadId) {
     if ((deleteResult?.meta?.changes || 0) > 0) {
       resumen.franjas_eliminadas += 1;
     }
+  }
+
+  const reservasSinFranja = await obtenerReservasFuturasActividadSinFranja(env, actividadId);
+  if (reservasSinFranja.length > 0) {
+    const resultado = await eliminarReservasPorRecorteFranja(env, reservasSinFranja, {
+      actividad_id: actividadId,
+      fecha: null,
+      hora_inicio: "",
+      hora_fin: ""
+    });
+    resumen.reservas_eliminadas += Number(resultado?.reservas_eliminadas || 0);
+    resumen.correos_enviados += Number(resultado?.correos_enviados || 0);
+    resumen.notificaciones_creadas += Number(resultado?.notificaciones_creadas || 0);
+    resumen.incidencias.push(...(resultado?.incidencias || []));
   }
 
   return { ok: true, resumen };

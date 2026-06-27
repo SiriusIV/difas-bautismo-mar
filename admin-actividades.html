@@ -3904,6 +3904,8 @@
     let pasoActual = 0;
     let mapaPreviewActividad = null;
     let marcadorPreviewActividad = null;
+    let firmaMapaPreviewActividad = "";
+    let firmaPreviewFranjasActividad = "";
     let mapaPreviewTouchHandlers = null;
     let franjasCache = [];
     let patronesRecurrentesCache = [];
@@ -4212,8 +4214,8 @@
           <tbody>
             ${franjas.map((franja) => `
               <tr>
-                <td>${escaparHtml(formatearFechaCorta(franja.fecha || ""))}</td>
-                <td>${escaparHtml(formatearHorarioFranja(franja.hora_inicio || "", franja.hora_fin || ""))}</td>
+                <td>${franja.sin_franja ? "Sin franja" : escaparHtml(formatearFechaCorta(franja.fecha || ""))}</td>
+                <td>${franja.sin_franja ? "Solicitud general de la actividad" : escaparHtml(formatearHorarioFranja(franja.hora_inicio || "", franja.hora_fin || ""))}</td>
                 <td>${Number(franja.solicitudes || 0)}</td>
               </tr>
             `).join("")}
@@ -6047,6 +6049,7 @@ function actualizarVisibilidadAforoMaximoUI() {
     mapaPreviewActividad.remove();
     mapaPreviewActividad = null;
     marcadorPreviewActividad = null;
+    firmaMapaPreviewActividad = "";
   }
 }
 
@@ -6166,6 +6169,10 @@ function sincronizarMapaPreviewActividad(lat, lng, zoom = 13) {
 
   mostrarMapaPreviewActividad();
   asegurarMapaPreviewActividad([lat, lng], zoom);
+
+  const firma = `${lat.toFixed(6)}|${lng.toFixed(6)}|${Number(zoom || 13)}`;
+  if (firma === firmaMapaPreviewActividad) return;
+  firmaMapaPreviewActividad = firma;
 
   if (mapaPreviewActividad) {
     mapaPreviewActividad.setView([lat, lng], zoom);
@@ -7491,8 +7498,23 @@ function renderPreviewFranjas() {
       if (!franjasCache.length || document.getElementById("usa_franjas").value !== "1") {
         wrap.style.display = "none";
         body.innerHTML = "";
+        firmaPreviewFranjasActividad = "";
         return;
       }
+
+      const firma = JSON.stringify({
+        aforoLimitado,
+        franjas: franjasCache.map((f) => [
+          f?.id,
+          f?.fecha,
+          f?.patron_recurrencia,
+          f?.hora_inicio,
+          f?.hora_fin,
+          f?.capacidad
+        ])
+      });
+      if (firma === firmaPreviewFranjasActividad) return;
+      firmaPreviewFranjasActividad = firma;
 
       if (tabla) {
         tabla.innerHTML = `
