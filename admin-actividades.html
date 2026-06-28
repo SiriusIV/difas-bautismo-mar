@@ -1214,6 +1214,21 @@
   border-color: #9fb2c7;
 }
 
+.btn-reset-programacion:disabled,
+.btn-reset-programacion[disabled] {
+  background: #f3f6f9;
+  color: #95a2b1;
+  border-color: #d7e2ee;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.btn-reset-programacion:disabled:hover,
+.btn-reset-programacion[disabled]:hover {
+  background: #f3f6f9;
+  border-color: #d7e2ee;
+}
+
 .tabla-franjas-admin tbody td {
   vertical-align: middle;
 }
@@ -6419,6 +6434,7 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
       actualizarToggleTerminaFranja();
       actualizarTextoPatronRecurrencia();
       actualizarAvisoPatronVigente();
+      actualizarAccionesFranjaUI();
     }
 
 function nombreDiaRecurrencia(valor) {
@@ -6604,11 +6620,40 @@ function limpiarFormularioFranja() {
   actualizarAvisoPatronVigente();
 }
 
+function franjaPermiteResetProgramacion(franja) {
+  if (!franja) return false;
+  if (Number(franja.es_recurrente || 0) === 1) return true;
+
+  const fecha = String(franja.fecha || "").trim();
+  if (!fecha) return true;
+
+  const hora = String(franja.hora_inicio || "").trim() || "00:00";
+  const inicio = new Date(`${fecha}T${hora}`);
+  if (Number.isNaN(inicio.getTime())) {
+    const soloFecha = new Date(`${fecha}T23:59:59`);
+    return !Number.isNaN(soloFecha.getTime()) && soloFecha.getTime() >= Date.now();
+  }
+
+  return inicio.getTime() > Date.now();
+}
+
+function hayProgramacionFuturaReseteable() {
+  return Array.isArray(franjasCache) && franjasCache.some(franjaPermiteResetProgramacion);
+}
+
 function actualizarAccionesFranjaUI() {
   const btnBorrar = document.getElementById("btnBorrarFranjaSeleccionada");
+  const btnReset = document.getElementById("btnResetProgramacion");
   const haySeleccion = Number.isInteger(Number(franjaSeleccionadaId)) && Number(franjaSeleccionadaId) > 0;
+  const puedeResetear = document.getElementById("usa_franjas")?.value === "1" && hayProgramacionFuturaReseteable();
 
   if (btnBorrar) btnBorrar.disabled = !haySeleccion;
+  if (btnReset) {
+    btnReset.disabled = !puedeResetear;
+    btnReset.title = puedeResetear
+      ? "Resetear programación"
+      : "No hay franjas horarias futuras que resetear";
+  }
 }
 
 function seleccionarFranja(id) {
@@ -7779,6 +7824,11 @@ async function resetearProgramacion() {
   const actividadId = document.getElementById("actividadId").value;
   if (!actividadId) {
     mostrarMensaje("error", "No hay una actividad guardada sobre la que resetear la programación.");
+    return;
+  }
+
+  if (!hayProgramacionFuturaReseteable()) {
+    actualizarAccionesFranjaUI();
     return;
   }
 
