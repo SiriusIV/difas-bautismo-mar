@@ -4895,6 +4895,15 @@ function establecerVisibilidadModalActividad(id, activo) {
       return `${dias[fecha.getDay()]} ${dd} de ${meses[mm - 1]} de ${yyyy}`;
     }
 
+    function formatearFechaCorta(fechaISO) {
+      if (!fechaISO) return "";
+      const partes = String(fechaISO).split("-");
+      if (partes.length !== 3) return fechaISO;
+      const [yyyy, mm, dd] = partes;
+      if (!yyyy || !mm || !dd) return fechaISO;
+      return `${String(dd).padStart(2, "0")}/${String(mm).padStart(2, "0")}/${String(yyyy).padStart(4, "0")}`;
+    }
+
     function formatearIntervaloFechaES(fechaInicioISO, fechaFinISO) {
       if (!fechaInicioISO || !fechaFinISO) {
         return formatearFechaLargaES(fechaInicioISO || fechaFinISO);
