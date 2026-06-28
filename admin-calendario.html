@@ -2520,10 +2520,12 @@ function abrirModalEvento(info) {
       return limpio ? limpio.charAt(0).toUpperCase() + limpio.slice(1) : "";
     }
 
-    function construirTextoDiaSemanaCompleto(fecha) {
+    function construirTextoDiaSemanaCompleto(fecha, incluirDia = true) {
       const weekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" }).format(fecha);
+      const texto = capitalizarTextoCalendario(weekday);
+      if (!incluirDia) return texto;
       const day = new Intl.DateTimeFormat("es-ES", { day: "numeric" }).format(fecha);
-      return `${capitalizarTextoCalendario(weekday)} ${day}`;
+      return `${texto} ${day}`;
     }
 
     function construirTextoDiaSemanaAbreviado(fecha, incluirDia = false) {
@@ -2707,8 +2709,8 @@ function abrirModalEvento(info) {
 
     function formatearCabeceraDiaCalendario(arg) {
       const fecha = arg?.date || new Date();
+      const tipoVista = String(arg?.view?.type || calendar?.view?.type || "");
       if (esMovilCalendario()) {
-        const tipoVista = String(arg?.view?.type || calendar?.view?.type || "");
         if (tipoVista === "dayGridMonth") {
           return construirTextoDiaSemanaAbreviado(fecha, false);
         }
@@ -2716,6 +2718,9 @@ function abrirModalEvento(info) {
           return construirTextoDiaSemanaAbreviado(fecha, true);
         }
         return construirTextoDiaMovilCompleto(fecha);
+      }
+      if (tipoVista === "dayGridMonth") {
+        return construirTextoDiaSemanaCompleto(fecha, false);
       }
       return construirTextoDiaSemanaCompleto(fecha);
     }
