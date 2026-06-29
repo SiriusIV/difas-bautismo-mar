@@ -22,6 +22,7 @@ import {
   resolverDocumentosExigiblesActividad
 } from "../_actividad_documentacion.js";
 import { secretariaEsResponsableDeAdmin } from "../secretaria/_documental.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -989,7 +990,11 @@ export async function onRequestPost(context) {
     }
 
     const p = construirPayload(body, admin_id);
-    const catalogoDocumentalActivo = await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id);
+    const catalogoDocumentalActivo = await obtenerCatalogoDocumentalVinculadoAdmin(
+      env,
+      p.admin_id,
+      await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id)
+    );
     const nombresDocumentosActivos = new Set(
       catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
     );
@@ -1150,7 +1155,11 @@ export async function onRequestPut(context) {
     }
 
     const p = construirPayload(body, admin_id);
-    const catalogoDocumentalActivo = await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id);
+    const catalogoDocumentalActivo = await obtenerCatalogoDocumentalVinculadoAdmin(
+      env,
+      p.admin_id,
+      await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id)
+    );
     const nombresDocumentosActivos = new Set(
       catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
     );

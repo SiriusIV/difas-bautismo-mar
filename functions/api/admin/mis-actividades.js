@@ -8,6 +8,7 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades
 } from "../_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -298,7 +299,11 @@ export async function onRequestGet(context) {
     for (const adminId of adminIds) {
       catalogoDocumentacionPorAdmin.set(
         adminId,
-        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+        await obtenerCatalogoDocumentalVinculadoAdmin(
+          env,
+          adminId,
+          await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+        )
       );
     }
     const catalogoDocumentacionAdminSesion = await obtenerCatalogoDocumentosActivosAdmin(env, session.usuario_id);

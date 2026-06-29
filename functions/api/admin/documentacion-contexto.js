@@ -1,6 +1,5 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
-import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -22,17 +21,6 @@ async function resolverAdminObjetivo(env, session, adminIdParam) {
     return parsearIdPositivo(adminIdParam) || session.usuario_id;
   }
   return session.usuario_id;
-}
-
-function formatearModoDocumental(resolucion) {
-  const modo = String(resolucion?.modo || "").toUpperCase();
-  if (modo === "AUTOGESTION") {
-    return "Autogesti\u00f3n";
-  }
-  if (modo === "SECRETARIA_EXTERNA") {
-    return "Gestionado por secretar\u00eda";
-  }
-  return "Autogesti\u00f3n";
 }
 
 function construirResumenDocumentacion(documentos) {
@@ -61,17 +49,19 @@ export async function onRequestGet(context) {
 
     const url = new URL(request.url);
     const adminId = await resolverAdminObjetivo(env, session, url.searchParams.get("admin_id"));
-    const resolucion = await resolverResponsableDocumental(env, adminId);
+    const rolSesion = await getRolUsuario(env, session.usuario_id);
+    const adminRow = await env.DB.prepare(`
+      SELECT id, nombre, nombre_publico, email, rol
+      FROM usuarios
+      WHERE id = ? AND UPPER(COALESCE(rol, '')) = 'ADMIN'
+      LIMIT 1
+    `).bind(adminId).first();
 
-    if (!resolucion) {
+    if (!adminRow) {
       return json({ ok: false, error: "Administrador no encontrado." }, 404);
     }
 
-    const propietarioDocumentalId = Number(
-      resolucion.modo === "SECRETARIA_EXTERNA"
-        ? resolucion.responsable?.id || 0
-        : resolucion.admin?.id || 0
-    );
+    const propietarioDocumentalId = Number(adminRow.id || adminId);
 
     const documentosRows = await env.DB.prepare(`
       SELECT
@@ -107,21 +97,32 @@ export async function onRequestGet(context) {
     );
 
     const editable = (
-      resolucion.modo === "AUTOGESTION" &&
-      Number(resolucion.responsable?.id || 0) === Number(session.usuario_id || 0)
+      String(rolSesion || "").toUpperCase() === "SUPERADMIN" ||
+      Number(propietarioDocumentalId || 0) === Number(session.usuario_id || 0)
     );
 
     return json({
       ok: true,
-      admin_id: Number(resolucion.admin?.id || 0),
-      modo_documental: resolucion.modo || "",
-      modo_documental_etiqueta: formatearModoDocumental(resolucion),
+      admin_id: Number(adminRow.id || 0),
+      modo_documental: "PROPIO",
+      modo_documental_etiqueta: "Repositorio propio",
       editable,
       propietario_documental_id: propietarioDocumentalId,
       resumen: construirResumenDocumentacion(documentos),
-      observacion: resolucion.observacion || "",
-      admin: resolucion.admin || null,
-      responsable_documental: resolucion.responsable || null,
+      observacion: "",
+      admin: {
+        id: Number(adminRow.id || 0),
+        nombre: adminRow.nombre || "",
+        nombre_publico: adminRow.nombre_publico || "",
+        email: adminRow.email || ""
+      },
+      responsable_documental: {
+        id: Number(adminRow.id || 0),
+        nombre: adminRow.nombre || "",
+        nombre_publico: adminRow.nombre_publico || "",
+        email: adminRow.email || "",
+        rol: "ADMIN"
+      },
       version_actual: versionActual > 0 ? versionActual : 1,
       documentos
     });

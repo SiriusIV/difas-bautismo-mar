@@ -4,6 +4,7 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades
 } from "../_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 import { materializarPatronesGlobales } from "../_franjas_recurrencia.js";
 
 function json(data, init = {}) {
@@ -253,7 +254,11 @@ export async function onRequestGet(context) {
     for (const adminId of adminIds) {
       catalogoDocumentacionPorAdmin.set(
         adminId,
-        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+        await obtenerCatalogoDocumentalVinculadoAdmin(
+          env,
+          adminId,
+          await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+        )
       );
     }
 

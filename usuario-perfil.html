@@ -284,6 +284,74 @@
     .documentacion-admin-pill.version { color: #123a63; background: #eef4ff; border-color: #c6d8f0; }
     .documentacion-admin-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .documentacion-admin-toolbar .btn-icono:disabled { opacity: 0.45; cursor: not-allowed; background: #f8fafc; color: #8090a0; }
+    .documentacion-propietarios-panel {
+      display: none;
+      border: 1px solid #dbe4ee;
+      border-radius: 14px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+    .documentacion-propietarios-panel.activo { display: block; }
+    .documentacion-propietarios-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .documentacion-propietarios-head h4 {
+      margin: 0;
+      color: var(--brand);
+      font-size: 15px;
+    }
+    .documentacion-propietarios-head p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .documentacion-propietarios-lista {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+    }
+    .documentacion-propietario-opcion {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      border: 1px solid #e3ebf3;
+      border-radius: 12px;
+      padding: 9px 10px;
+      background: #f8fbff;
+      color: #243648;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .documentacion-propietario-opcion input {
+      width: 17px;
+      height: 17px;
+      margin-top: 1px;
+      accent-color: var(--primary);
+      flex: 0 0 auto;
+    }
+    .documentacion-propietario-nombre {
+      display: block;
+      font-weight: 700;
+      color: #123a63;
+      line-height: 1.25;
+    }
+    .documentacion-propietario-meta {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+    .documentacion-propietarios-vacio {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 0;
+    }
     .btn-toolbar-secretaria {
       height: 34px;
       border-radius: 999px;
@@ -1616,6 +1684,17 @@
             <p class="documentacion-admin-resumen" id="documentacionAdminResumen">Cambiar el responsable sustituirá la documentación obligatoria vigente por la del nuevo responsable.</p>
           </div>
         </div>
+        <div class="documentacion-propietarios-panel" id="panelPropietariosDocumentalesAdmin">
+          <div class="documentacion-propietarios-head">
+            <div>
+              <h4>Propietarios documentales vinculados</h4>
+              <p>Selecciona los administradores o secretarías cuyos documentos base podrás exigir en tus actividades.</p>
+            </div>
+            <button type="button" class="btn btn-suave" id="btnGuardarPropietariosDocumentalesAdmin">Guardar vinculaciones</button>
+          </div>
+          <div class="documentacion-propietarios-lista" id="listaPropietariosDocumentalesAdmin"></div>
+          <div class="documentacion-propietarios-vacio oculto" id="vacioPropietariosDocumentalesAdmin">No hay propietarios documentales disponibles con documentos activos.</div>
+        </div>
         <div class="tabs-documentacion-admin" role="tablist" aria-label="Pestañas de la documentación del administrador">
           <button type="button" class="tab-documentacion-admin-btn activa" id="tabDocumentacionAdminBase" data-tab-admin-doc="base" role="tab" aria-selected="true">Documentos base</button>
           <button type="button" class="tab-documentacion-admin-btn" id="tabDocumentacionAdminPendientes" data-tab-admin-doc="pendientes" role="tab" aria-selected="false">
@@ -2090,6 +2169,8 @@
     let contextoModalObservacionesDocumento = null;
     let modoEdicionDocumentoBaseAdmin = "nuevo";
     let secretariasDisponiblesAdmin = [];
+    let propietariosDocumentalesDisponiblesAdmin = [];
+    let propietariosDocumentalesVinculadosAdmin = new Set();
     let detalleCambiosPendientes = new Map();
     let cambioTabBloquePendiente = null;
     let organizadorPendienteId = null;
@@ -3946,6 +4027,108 @@
       actualizarBotonActualizarEstadosDocs();
     }
 
+    function nombrePropietarioDocumental(item) {
+      return item?.nombre_publico || item?.nombre || item?.email || `Propietario ${item?.id || ""}`;
+    }
+
+    function renderizarPropietariosDocumentalesAdmin() {
+      const panel = document.getElementById("panelPropietariosDocumentalesAdmin");
+      const lista = document.getElementById("listaPropietariosDocumentalesAdmin");
+      const vacio = document.getElementById("vacioPropietariosDocumentalesAdmin");
+      const btn = document.getElementById("btnGuardarPropietariosDocumentalesAdmin");
+      if (!panel || !lista || !vacio || !btn) return;
+
+      const visible = esAdmin() || esSuperadmin();
+      panel.classList.toggle("activo", visible);
+      if (!visible) {
+        lista.innerHTML = "";
+        vacio.classList.add("oculto");
+        return;
+      }
+
+      const disponibles = Array.isArray(propietariosDocumentalesDisponiblesAdmin)
+        ? propietariosDocumentalesDisponiblesAdmin
+        : [];
+      lista.innerHTML = "";
+      vacio.classList.toggle("oculto", disponibles.length > 0);
+      btn.disabled = !disponibles.length;
+
+      disponibles.forEach((item) => {
+        const id = Number(item.id || 0);
+        if (!id) return;
+        const label = document.createElement("label");
+        label.className = "documentacion-propietario-opcion";
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = String(id);
+        input.checked = propietariosDocumentalesVinculadosAdmin.has(id);
+
+        const texto = document.createElement("span");
+        const nombre = document.createElement("span");
+        nombre.className = "documentacion-propietario-nombre";
+        nombre.textContent = nombrePropietarioDocumental(item);
+
+        const meta = document.createElement("span");
+        meta.className = "documentacion-propietario-meta";
+        meta.textContent = `${String(item.rol || "").toUpperCase() === "SECRETARIA" ? "Secretaría" : "Administrador"} · ${Number(item.total_documentos || 0)} documento(s) activo(s)`;
+
+        texto.append(nombre, meta);
+        label.append(input, texto);
+        lista.appendChild(label);
+      });
+    }
+
+    async function cargarPropietariosDocumentalesAdmin() {
+      if (!esAdmin() && !esSuperadmin()) {
+        propietariosDocumentalesDisponiblesAdmin = [];
+        propietariosDocumentalesVinculadosAdmin = new Set();
+        renderizarPropietariosDocumentalesAdmin();
+        return;
+      }
+
+      const adminId = Number(documentacionAdminContexto?.admin_id || 0);
+      const url = new URL("/api/admin/documentacion-propietarios", window.location.origin);
+      if (adminId > 0) url.searchParams.set("admin_id", String(adminId));
+
+      const res = await fetch(url.toString(), { credentials: "include", cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudieron cargar los propietarios documentales.");
+      }
+
+      propietariosDocumentalesDisponiblesAdmin = Array.isArray(data.disponibles) ? data.disponibles : [];
+      propietariosDocumentalesVinculadosAdmin = new Set(
+        (data.vinculados_ids || []).map((id) => Number(id || 0)).filter((id) => id > 0)
+      );
+      renderizarPropietariosDocumentalesAdmin();
+    }
+
+    async function guardarPropietariosDocumentalesAdmin() {
+      const checks = Array.from(document.querySelectorAll("#listaPropietariosDocumentalesAdmin input[type='checkbox']:checked"));
+      const ids = checks.map((input) => Number(input.value || 0)).filter((id) => id > 0);
+      const adminId = Number(documentacionAdminContexto?.admin_id || 0);
+      const body = { propietarios_ids: ids };
+      if (adminId > 0) body.admin_id = adminId;
+
+      const res = await fetch("/api/admin/documentacion-propietarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudieron guardar las vinculaciones documentales.");
+      }
+
+      propietariosDocumentalesVinculadosAdmin = new Set(
+        (data.vinculados_ids || []).map((id) => Number(id || 0)).filter((id) => id > 0)
+      );
+      renderizarPropietariosDocumentalesAdmin();
+      mostrarMensajePerfilTemporal("ok", data.mensaje || "Vinculaciones documentales actualizadas.");
+    }
+
     function renderizarBloqueDocumentacionAdmin() {
       const bloque = document.getElementById("bloqueDocumentacionAdmin");
       const body = document.getElementById("tablaDocumentacionAdminBody");
@@ -3961,6 +4144,7 @@
         body.innerHTML = "";
         vacio.classList.add("oculto");
         documentacionAdminSeleccionId = null;
+        renderizarPropietariosDocumentalesAdmin();
         return;
       }
 
@@ -3977,23 +4161,14 @@
         nota.textContent = "Consulta aquí la documentación base exigida para las actividades gestionadas dentro del ámbito de esta secretaría y mantén actualizado el marco documental aplicable.";
         resumen.textContent = "La documentación base definida por esta secretaría será la que se aplique a los administradores adscritos a ella.";
       } else {
-        modo.textContent = modoDocumental === "SECRETARIA_EXTERNA" ? "Gestionado por secretaría" : "Autogestión";
-        subtitulo.textContent = obtenerTextoResponsableDocumentalAdmin(contexto);
-        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y actúa sobre ella si tu cuenta se autogestiona.";
-        resumen.textContent = "El cambio de responsable conlleva la desactivación del marco documental obligatorio vigente y la aplicación de la documentación correspondiente a la nueva dependencia de adscripción";
-      }
-
-      if (!esSecretaria() && modoDocumental === "SECRETARIA_EXTERNA" && contexto?.responsable_documental) {
-        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades. Al estar adscrito a una secretaría externa, puedes consultarla pero su edición y mantenimiento corresponden a esa oficina.";
-      } else if (!esSecretaria() && modoDocumental === "AUTOGESTION") {
-        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y mantén actualizado el marco documental aplicable cuando tu cuenta se autogestiona.";
-      } else if (!esSecretaria()) {
-        modo.textContent = "Autogestión";
-        nota.textContent = "Consulta aquí la documentación base exigida para tus actividades y mantén actualizado el marco documental aplicable.";
+        modo.textContent = "Repositorio propio";
+        subtitulo.textContent = contexto?.admin?.nombre_publico || contexto?.admin?.nombre || "Administrador";
+        nota.textContent = "Gestiona aquí los documentos base de los que eres propietario documental.";
+        resumen.textContent = "Vincula propietarios documentales para elegir qué repositorios podrás usar al configurar tus actividades.";
       }
 
       if (btnCambioModo) {
-        btnCambioModo.classList.toggle("oculto", esSecretaria());
+        btnCambioModo.classList.add("oculto");
       }
 
       if (!documentos.length) {
@@ -4007,6 +4182,7 @@
           vacio.textContent = "No hay documentos base disponibles actualmente para este administrador.";
         }
         actualizarAccionesDocumentacionAdmin();
+        renderizarPropietariosDocumentalesAdmin();
         return;
       }
 
@@ -4047,11 +4223,14 @@
       });
 
       actualizarAccionesDocumentacionAdmin();
+      renderizarPropietariosDocumentalesAdmin();
     }
 
     async function cargarDocumentacionAdmin() {
       if (!esPerfilOrganizador()) {
         documentacionAdminContexto = null;
+        propietariosDocumentalesDisponiblesAdmin = [];
+        propietariosDocumentalesVinculadosAdmin = new Set();
         pendientesRevisionAdmin = [];
         renderizarBloqueDocumentacionAdmin();
         renderizarPendientesRevisionAdmin();
@@ -4059,6 +4238,8 @@
       }
 
       documentacionAdminContexto = null;
+      propietariosDocumentalesDisponiblesAdmin = [];
+      propietariosDocumentalesVinculadosAdmin = new Set();
       renderizarBloqueDocumentacionAdmin();
 
       try {
@@ -4083,6 +4264,16 @@
           editable: esSecretaria() ? true : modoDocumentalAdmin === "SECRETARIA_EXTERNA" ? false : true
         };
         renderizarBloqueDocumentacionAdmin();
+        if (esAdmin() || esSuperadmin()) {
+          try {
+            await cargarPropietariosDocumentalesAdmin();
+          } catch (error) {
+            propietariosDocumentalesDisponiblesAdmin = [];
+            propietariosDocumentalesVinculadosAdmin = new Set();
+            renderizarPropietariosDocumentalesAdmin();
+            mostrarMensajePerfilTemporal("error", error.message || "No se pudieron cargar los propietarios documentales.");
+          }
+        }
         activarVistaDocumentacionAdmin(documentacionAdminVistaActual);
         if (esAutogestionAdminEditable()) {
           await cargarPendientesRevisionAdmin();
@@ -4100,8 +4291,10 @@
             : "No se pudo cargar la documentación base del administrador."),
           responsable_documental: null,
           documentos: [],
-          editable: !!esSecretaria()
+          editable: !!(esSecretaria() || esAdmin() || esSuperadmin())
         };
+        propietariosDocumentalesDisponiblesAdmin = [];
+        propietariosDocumentalesVinculadosAdmin = new Set();
         renderizarBloqueDocumentacionAdmin();
         pendientesRevisionAdmin = [];
         renderizarPendientesRevisionAdmin();
@@ -5215,7 +5408,14 @@
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el documento.");
       }
     });
-    document.getElementById("btnCambiarModoDocumentalAdmin").addEventListener("click", abrirModalCambioModoDocumentalAdmin);
+    document.getElementById("btnCambiarModoDocumentalAdmin")?.addEventListener("click", abrirModalCambioModoDocumentalAdmin);
+    document.getElementById("btnGuardarPropietariosDocumentalesAdmin")?.addEventListener("click", async () => {
+      try {
+        await guardarPropietariosDocumentalesAdmin();
+      } catch (error) {
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudieron guardar las vinculaciones documentales.");
+      }
+    });
     document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("click", function (event) {
       const botonVer = event.target.closest("[data-ver-documento-pendiente]");
       if (botonVer) {
