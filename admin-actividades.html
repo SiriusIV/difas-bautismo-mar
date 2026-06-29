@@ -5425,12 +5425,12 @@ function actualizarResumenDocumentacionActividad() {
   if (esVistaMovilDocumentacionActividad()) {
     resumen.textContent = puedeEditarDocumentacionActividad
       ? "Añade la documentación preceptiva que sea necesaria para la realización de esta actividad."
-      : "Puedes consultar la documentación preceptiva de esta actividad, pero su modificación corresponde al responsable documental.";
+      : "Puedes consultar la documentación preceptiva de esta actividad, pero solo el administrador responsable puede modificarla.";
     return;
   }
 
   if (!puedeEditarDocumentacionActividad) {
-    resumen.textContent = "Documentación preceptiva en modo consulta. Solo el responsable documental puede modificar los documentos exigibles de esta actividad.";
+    resumen.textContent = "Documentación preceptiva en modo consulta. Solo el administrador responsable de la actividad puede modificar los documentos exigibles.";
     return;
   }
 

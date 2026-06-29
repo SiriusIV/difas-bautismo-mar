@@ -21,7 +21,6 @@ import {
   obtenerCatalogoDocumentosActivosAdmin,
   resolverDocumentosExigiblesActividad
 } from "../_actividad_documentacion.js";
-import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import { secretariaEsResponsableDeAdmin } from "../secretaria/_documental.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
@@ -166,11 +165,12 @@ function configuracionDocumentalActividadIgual(a = {}, b = {}) {
   return true;
 }
 
-async function usuarioEsResponsableDocumentalActividad(env, sessionUserId, adminId) {
-  const resolucion = await resolverResponsableDocumental(env, adminId);
-  const responsableId = Number(resolucion?.responsable?.id || 0);
+function usuarioPuedeConfigurarDocumentacionActividad(sessionUserId, rol, adminId) {
+  const rolNormalizado = limpiarTexto(rol).toUpperCase();
+  if (rolNormalizado === "SUPERADMIN") return true;
   const usuarioId = Number(sessionUserId || 0);
-  return responsableId > 0 && usuarioId > 0 && responsableId === usuarioId;
+  const administradorId = Number(adminId || 0);
+  return usuarioId > 0 && administradorId > 0 && usuarioId === administradorId;
 }
 
 function escaparHtml(valor) {
@@ -996,7 +996,7 @@ export async function onRequestPost(context) {
     p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
       nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
     );
-    const puedeEditarDocumentacionActividad = await usuarioEsResponsableDocumentalActividad(env, session.usuario_id, p.admin_id);
+    const puedeEditarDocumentacionActividad = usuarioPuedeConfigurarDocumentacionActividad(session.usuario_id, rol, p.admin_id);
     if (!puedeEditarDocumentacionActividad) {
       p.documentacion_actividad = {
         modo: "PERSONALIZADA",
@@ -1173,7 +1173,7 @@ export async function onRequestPut(context) {
     const requisitosActuales = await obtenerRequisitosActividad(env, id);
     const requisitosNuevos = p.requisitos_particulares;
     const requisitosHanCambiado = !requisitosSonIguales(requisitosActuales, requisitosNuevos);
-    const puedeEditarDocumentacionActividad = await usuarioEsResponsableDocumentalActividad(env, session.usuario_id, actual.admin_id);
+    const puedeEditarDocumentacionActividad = usuarioPuedeConfigurarDocumentacionActividad(session.usuario_id, rol, actual.admin_id);
     const documentacionActividadActual = await leerConfiguracionDocumentalActividad(env, id);
     let documentacionActividadNueva = {
       modo: p.documentacion_actividad.modo,

@@ -274,7 +274,7 @@ export async function onRequestGet(context) {
           configuracionActividad
         ),
         documentos_admin_activos: catalogoActividad,
-        puede_editar_documentacion_actividad: true,
+        puede_editar_documentacion_actividad: false,
         ...a,
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
