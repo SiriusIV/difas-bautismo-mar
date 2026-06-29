@@ -48,6 +48,31 @@ export async function asegurarTablasDocumentacionActividad(env) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_actividad_documentacion_documentos_unq
     ON actividad_documentacion_documentos (actividad_id, nombre_documento)
   `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_documentos_obligatorios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actividad_id INTEGER NOT NULL,
+      documento_id INTEGER NOT NULL,
+      propietario_id INTEGER NOT NULL,
+      propietario_rol TEXT,
+      activo INTEGER NOT NULL DEFAULT 1,
+      orden INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (actividad_id, documento_id)
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_actividad_documentos_obligatorios_actividad
+    ON actividad_documentos_obligatorios (actividad_id, activo, orden)
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_actividad_documentos_obligatorios_propietario
+    ON actividad_documentos_obligatorios (propietario_id, activo)
+  `).run();
 }
 
 async function obtenerPropietarioDocumentalId(env, adminId) {
@@ -67,18 +92,21 @@ export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
 
   const rows = await env.DB.prepare(`
     SELECT
-      id,
-      admin_id,
-      nombre,
-      descripcion,
-      archivo_url,
-      orden,
-      version_documental,
-      fecha_actualizacion
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-    ORDER BY orden ASC, id ASC
+      d.id,
+      d.admin_id,
+      d.nombre,
+      d.descripcion,
+      d.archivo_url,
+      d.orden,
+      d.version_documental,
+      d.fecha_actualizacion,
+      u.rol AS propietario_rol,
+      COALESCE(NULLIF(TRIM(u.nombre_publico), ''), NULLIF(TRIM(u.nombre), ''), NULLIF(TRIM(u.email), ''), '') AS propietario_nombre
+    FROM admin_documentos_comunes d
+    LEFT JOIN usuarios u ON u.id = d.admin_id
+    WHERE d.admin_id = ?
+      AND d.activo = 1
+    ORDER BY d.orden ASC, d.id ASC
   `).bind(propietarioDocumentalId).all();
 
   return (rows?.results || []).map((row) => ({
@@ -90,8 +118,26 @@ export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
     orden: Number(row.orden || 0),
     version_documental: Number(row.version_documental || 0)
     ,
-    fecha_actualizacion: row.fecha_actualizacion || ""
+    fecha_actualizacion: row.fecha_actualizacion || "",
+    propietario_id: Number(row.admin_id || 0),
+    propietario_rol: limpiarTexto(row.propietario_rol),
+    propietario_nombre: limpiarTexto(row.propietario_nombre)
   })).filter((row) => row.nombre);
+}
+
+function obtenerDocumentosCatalogoPorNombres(catalogo = [], nombresEntrada = []) {
+  const nombres = normalizarNombresDocumentosActividad(nombresEntrada);
+  const mapa = new Map();
+  for (const doc of Array.isArray(catalogo) ? catalogo : []) {
+    const nombre = limpiarTexto(doc?.nombre);
+    const id = Number(doc?.id || 0);
+    if (!nombre || !(id > 0)) continue;
+    const key = nombre.toUpperCase();
+    if (!mapa.has(key)) {
+      mapa.set(key, doc);
+    }
+  }
+  return nombres.map((nombre) => mapa.get(nombre.toUpperCase())).filter(Boolean);
 }
 
 export async function leerConfiguracionDocumentalActividad(env, actividadId) {
@@ -119,11 +165,34 @@ export async function leerConfiguracionDocumentalActividad(env, actividadId) {
     ORDER BY orden ASC, id ASC
   `).bind(id).all();
 
+  const docsIdsRows = await env.DB.prepare(`
+    SELECT
+      ado.documento_id,
+      ado.propietario_id,
+      ado.propietario_rol,
+      d.nombre
+    FROM actividad_documentos_obligatorios ado
+    INNER JOIN admin_documentos_comunes d ON d.id = ado.documento_id
+    WHERE ado.actividad_id = ?
+      AND COALESCE(ado.activo, 1) = 1
+    ORDER BY ado.orden ASC, ado.id ASC
+  `).bind(id).all();
+
+  const documentosRelacionados = docsIdsRows?.results || [];
+
   return {
     modo: normalizarModoDocumentacionActividad(configRow?.modo),
     documentos: normalizarNombresDocumentosActividad(
-      (docsRows?.results || []).map((row) => row.nombre_documento)
-    )
+      documentosRelacionados.length
+        ? documentosRelacionados.map((row) => row.nombre)
+        : (docsRows?.results || []).map((row) => row.nombre_documento)
+    ),
+    documento_ids: documentosRelacionados.map((row) => Number(row.documento_id || 0)).filter((documentoId) => documentoId > 0),
+    propietarios: documentosRelacionados.map((row) => ({
+      documento_id: Number(row.documento_id || 0),
+      propietario_id: Number(row.propietario_id || 0),
+      propietario_rol: limpiarTexto(row.propietario_rol)
+    })).filter((row) => row.documento_id > 0 && row.propietario_id > 0)
   };
 }
 
@@ -159,6 +228,20 @@ export async function obtenerConfiguracionDocumentalPorActividades(env, activida
     ORDER BY actividad_id ASC, orden ASC, id ASC
   `).bind(...ids).all();
 
+  const docsIdsResult = await env.DB.prepare(`
+    SELECT
+      ado.actividad_id,
+      ado.documento_id,
+      ado.propietario_id,
+      ado.propietario_rol,
+      d.nombre
+    FROM actividad_documentos_obligatorios ado
+    INNER JOIN admin_documentos_comunes d ON d.id = ado.documento_id
+    WHERE ado.actividad_id IN (${placeholders})
+      AND COALESCE(ado.activo, 1) = 1
+    ORDER BY ado.actividad_id ASC, ado.orden ASC, ado.id ASC
+  `).bind(...ids).all();
+
   for (const row of docsResult?.results || []) {
     const actividadId = Number(row.actividad_id || 0);
     if (!mapa.has(actividadId)) {
@@ -168,6 +251,26 @@ export async function obtenerConfiguracionDocumentalPorActividades(env, activida
       });
     }
     mapa.get(actividadId).documentos.push(row.nombre_documento);
+  }
+
+  for (const row of docsIdsResult?.results || []) {
+    const actividadId = Number(row.actividad_id || 0);
+    if (!mapa.has(actividadId)) {
+      mapa.set(actividadId, {
+        modo: "HEREDADA",
+        documentos: []
+      });
+    }
+    const actual = mapa.get(actividadId);
+    if (!Array.isArray(actual.documento_ids)) actual.documento_ids = [];
+    if (!Array.isArray(actual.propietarios)) actual.propietarios = [];
+    actual.documento_ids.push(Number(row.documento_id || 0));
+    actual.propietarios.push({
+      documento_id: Number(row.documento_id || 0),
+      propietario_id: Number(row.propietario_id || 0),
+      propietario_rol: limpiarTexto(row.propietario_rol)
+    });
+    actual.documentos.push(row.nombre);
   }
 
   for (const id of ids) {
@@ -181,6 +284,12 @@ export async function obtenerConfiguracionDocumentalPorActividades(env, activida
 
     const actual = mapa.get(id);
     actual.documentos = normalizarNombresDocumentosActividad(actual.documentos);
+    actual.documento_ids = Array.from(
+      new Set((actual.documento_ids || []).map((documentoId) => Number(documentoId || 0)).filter((documentoId) => documentoId > 0))
+    );
+    actual.propietarios = (actual.propietarios || []).filter((row) =>
+      Number(row?.documento_id || 0) > 0 && Number(row?.propietario_id || 0) > 0
+    );
     actual.modo = normalizarModoDocumentacionActividad(actual.modo);
   }
 
@@ -199,12 +308,20 @@ export function resolverDocumentosExigiblesActividad(catalogo = [], configuracio
   const nombresPermitidos = new Set(
     normalizarNombresDocumentosActividad(config.documentos).map((nombre) => nombre.toUpperCase())
   );
+  const idsPermitidos = new Set(
+    (Array.isArray(config.documento_ids) ? config.documento_ids : [])
+      .map((documentoId) => Number(documentoId || 0))
+      .filter((documentoId) => documentoId > 0)
+  );
 
-  if (!nombresPermitidos.size) {
+  if (!nombresPermitidos.size && !idsPermitidos.size) {
     return [];
   }
 
-  return docs.filter((doc) => nombresPermitidos.has(limpiarTexto(doc.nombre).toUpperCase()));
+  return docs.filter((doc) =>
+    idsPermitidos.has(Number(doc.id || 0)) ||
+    nombresPermitidos.has(limpiarTexto(doc.nombre).toUpperCase())
+  );
 }
 
 export function construirResumenDocumentacionActividad(catalogo = [], configuracion = null) {
@@ -220,13 +337,16 @@ export function construirResumenDocumentacionActividad(catalogo = [], configurac
       nombre: limpiarTexto(doc.nombre),
       descripcion: limpiarTexto(doc.descripcion),
       orden: Number(doc.orden || 0),
-      version_documental: Number(doc.version_documental || 0)
+      version_documental: Number(doc.version_documental || 0),
+      propietario_id: Number(doc.propietario_id || doc.admin_id || 0),
+      propietario_rol: limpiarTexto(doc.propietario_rol),
+      propietario_nombre: limpiarTexto(doc.propietario_nombre)
     })),
     requiere_documentacion: documentosExigibles.length > 0
   };
 }
 
-export async function guardarConfiguracionDocumentalActividad(env, actividadId, modoEntrada, nombresEntrada) {
+export async function guardarConfiguracionDocumentalActividad(env, actividadId, modoEntrada, nombresEntrada, catalogoDocumentos = []) {
   await asegurarTablasDocumentacionActividad(env);
 
   const id = Number(actividadId || 0);
@@ -237,6 +357,11 @@ export async function guardarConfiguracionDocumentalActividad(env, actividadId, 
 
   await env.DB.prepare(`
     DELETE FROM actividad_documentacion_documentos
+    WHERE actividad_id = ?
+  `).bind(id).run();
+
+  await env.DB.prepare(`
+    DELETE FROM actividad_documentos_obligatorios
     WHERE actividad_id = ?
   `).bind(id).run();
 
@@ -270,6 +395,38 @@ export async function guardarConfiguracionDocumentalActividad(env, actividadId, 
       VALUES (?, ?, ?)
     `).bind(id, nombres[i], i + 1).run();
   }
+
+  const documentosSeleccionados = obtenerDocumentosCatalogoPorNombres(catalogoDocumentos, nombres);
+  for (let i = 0; i < documentosSeleccionados.length; i += 1) {
+    const documento = documentosSeleccionados[i];
+    const documentoId = Number(documento?.id || 0);
+    const propietarioId = Number(documento?.propietario_id || documento?.admin_id || 0);
+    if (!(documentoId > 0) || !(propietarioId > 0)) continue;
+    await env.DB.prepare(`
+      INSERT INTO actividad_documentos_obligatorios (
+        actividad_id,
+        documento_id,
+        propietario_id,
+        propietario_rol,
+        activo,
+        orden,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(actividad_id, documento_id) DO UPDATE SET
+        propietario_id = excluded.propietario_id,
+        propietario_rol = excluded.propietario_rol,
+        activo = 1,
+        orden = excluded.orden,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      id,
+      documentoId,
+      propietarioId,
+      limpiarTexto(documento?.propietario_rol),
+      i + 1
+    ).run();
+  }
 }
 
 export async function borrarConfiguracionDocumentalActividad(env, actividadId) {
@@ -280,6 +437,11 @@ export async function borrarConfiguracionDocumentalActividad(env, actividadId) {
 
   await env.DB.prepare(`
     DELETE FROM actividad_documentacion_documentos
+    WHERE actividad_id = ?
+  `).bind(id).run();
+
+  await env.DB.prepare(`
+    DELETE FROM actividad_documentos_obligatorios
     WHERE actividad_id = ?
   `).bind(id).run();
 
@@ -333,7 +495,7 @@ export async function depurarConfiguracionDocumentalActividadesAdmin(env, adminI
     const igualContenido = igualLongitud && original.every((nombre, indice) => nombre === filtrados[indice]);
     if (igualContenido) continue;
 
-    await guardarConfiguracionDocumentalActividad(env, actividadId, "PERSONALIZADA", filtrados);
+    await guardarConfiguracionDocumentalActividad(env, actividadId, "PERSONALIZADA", filtrados, catalogoDocumentos);
     actualizadas += 1;
   }
 

@@ -1090,7 +1090,8 @@ export async function onRequestPost(context) {
         env,
         actividadId,
         p.documentacion_actividad.modo,
-        p.documentacion_actividad.documentos
+        p.documentacion_actividad.documentos,
+        catalogoDocumentalActivo
       );
     }
 
@@ -1234,7 +1235,8 @@ export async function onRequestPut(context) {
         env,
         id,
         p.documentacion_actividad.modo,
-        p.documentacion_actividad.documentos
+        p.documentacion_actividad.documentos,
+        catalogoDocumentalActivo
       );
 
       const baseUrlSecretaria = new URL(request.url).origin;
@@ -1580,7 +1582,8 @@ export async function onRequestPut(context) {
       env,
       id,
       p.documentacion_actividad.modo,
-      p.documentacion_actividad.documentos
+      p.documentacion_actividad.documentos,
+      catalogoDocumentalActivo
     );
 
     let baseUrl = "";

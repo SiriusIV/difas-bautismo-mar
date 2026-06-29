@@ -2001,6 +2001,18 @@
       color: #44576a;
     }
 
+    .documentacion-actividad-nombre {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .documentacion-actividad-propietario {
+      color: #6b7a8a;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
     .tabla-documentacion-actividad .celda-acciones {
       width: 34px;
       text-align: left;
@@ -2118,6 +2130,13 @@
       height: 20px;
       margin: 1px 0 0;
       accent-color: var(--primary);
+    }
+
+    .modal-documentacion-opcion-texto {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.25;
     }
 
     .modal-documentacion-vacia {
@@ -5370,7 +5389,10 @@ function normalizarCatalogoDocumentacionActividad(lista) {
       archivo_url: String(item?.archivo_url || "").trim(),
       version_documental: Number(item?.version_documental || 0),
       fecha_actualizacion: String(item?.fecha_actualizacion || "").trim(),
-      orden: Number(item?.orden || 0)
+      orden: Number(item?.orden || 0),
+      propietario_id: Number(item?.propietario_id || item?.admin_id || 0),
+      propietario_rol: String(item?.propietario_rol || "").trim(),
+      propietario_nombre: String(item?.propietario_nombre || "").trim()
     }))
     .filter((item) => {
       const key = item.nombre.toUpperCase();
@@ -5466,6 +5488,13 @@ function obtenerDocumentoCatalogoDocumentacionActividad(nombre) {
   ) || null;
 }
 
+function obtenerEtiquetaPropietarioDocumentacionActividad(doc) {
+  const nombre = String(doc?.propietario_nombre || "").trim();
+  if (nombre) return `Propietario: ${nombre}`;
+  const propietarioId = Number(doc?.propietario_id || doc?.admin_id || 0);
+  return propietarioId > 0 ? `Propietario documental #${propietarioId}` : "";
+}
+
 function abrirDocumentoBaseDocumentacionActividad(nombre) {
   const documento = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
   const url = String(documento?.archivo_url || "").trim();
@@ -5550,9 +5579,11 @@ function renderSelectDocumentacionActividad() {
 
   const opciones = [
     `<option value="">Selecciona un documento...</option>`,
-    ...opcionesDisponibles.map((doc) =>
-      `<option value="${escaparHtmlDocumentacionActividad(doc.nombre)}">${escaparHtmlDocumentacionActividad(doc.nombre)}</option>`
-    )
+    ...opcionesDisponibles.map((doc) => {
+      const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(doc);
+      const texto = propietario ? `${doc.nombre} — ${propietario.replace(/^Propietario: /, "")}` : doc.nombre;
+      return `<option value="${escaparHtmlDocumentacionActividad(doc.nombre)}">${escaparHtmlDocumentacionActividad(texto)}</option>`;
+    })
   ];
 
   if (!opcionesDisponibles.length) {
@@ -5596,10 +5627,22 @@ function abrirSelectorDocumentacionActividadMovil() {
     input.id = id;
     input.value = String(doc.nombre || "").trim();
 
-    const span = document.createElement("span");
-    span.textContent = String(doc.nombre || "").trim();
+    const texto = document.createElement("span");
+    texto.className = "modal-documentacion-opcion-texto";
 
-    label.append(input, span);
+    const nombre = document.createElement("span");
+    nombre.textContent = String(doc.nombre || "").trim();
+    texto.appendChild(nombre);
+
+    const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(doc);
+    if (propietario) {
+      const meta = document.createElement("span");
+      meta.className = "documentacion-actividad-propietario";
+      meta.textContent = propietario;
+      texto.appendChild(meta);
+    }
+
+    label.append(input, texto);
     lista.appendChild(label);
   });
 
@@ -5688,7 +5731,21 @@ function renderConfiguracionDocumentacionActividad() {
     }
 
     const tdNombre = document.createElement("td");
-    tdNombre.textContent = nombre;
+    const contenedorNombre = document.createElement("div");
+    contenedorNombre.className = "documentacion-actividad-nombre";
+    const textoNombre = document.createElement("span");
+    textoNombre.textContent = nombre;
+    contenedorNombre.appendChild(textoNombre);
+
+    const documentoCatalogo = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
+    const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(documentoCatalogo);
+    if (propietario) {
+      const meta = document.createElement("span");
+      meta.className = "documentacion-actividad-propietario";
+      meta.textContent = propietario;
+      contenedorNombre.appendChild(meta);
+    }
+    tdNombre.appendChild(contenedorNombre);
 
     tr.append(tdAcciones, tdNombre);
     tbody.appendChild(tr);
