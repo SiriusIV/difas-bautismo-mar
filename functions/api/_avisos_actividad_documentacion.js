@@ -1,4 +1,5 @@
 ﻿import { obtenerCatalogoDocumentosActivosAdmin, resolverDocumentosExigiblesActividad } from "./_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { crearNotificacion } from "./_notificaciones.js";
 
@@ -208,12 +209,16 @@ export async function notificarNuevosSolicitantesHabilitadosPorDocumentacionActi
     return { ok: true, skipped: true, motivo: "Actividad no notificable.", notificados: 0 };
   }
 
-  const catalogo = await obtenerCatalogoDocumentosActivosAdmin(env, adminNumerico);
+  const catalogo = await obtenerCatalogoDocumentalVinculadoAdmin(
+    env,
+    adminNumerico,
+    await obtenerCatalogoDocumentosActivosAdmin(env, adminNumerico)
+  );
   const docsAnteriores = resolverDocumentosExigiblesActividad(catalogo, configuracionAnterior);
   const docsNuevos = resolverDocumentosExigiblesActividad(catalogo, configuracionNueva);
   if (docsAnteriores.length === docsNuevos.length) {
-    const firmaAnterior = docsAnteriores.map((doc) => normalizarClaveDocumento(doc.nombre)).sort().join("|");
-    const firmaNueva = docsNuevos.map((doc) => normalizarClaveDocumento(doc.nombre)).sort().join("|");
+    const firmaAnterior = docsAnteriores.map((doc) => Number(doc.id || 0) > 0 ? `ID:${Number(doc.id || 0)}` : normalizarClaveDocumento(doc.nombre)).sort().join("|");
+    const firmaNueva = docsNuevos.map((doc) => Number(doc.id || 0) > 0 ? `ID:${Number(doc.id || 0)}` : normalizarClaveDocumento(doc.nombre)).sort().join("|");
     if (firmaAnterior === firmaNueva) {
       return { ok: true, skipped: true, motivo: "No hay cambio efectivo de documentos exigibles.", notificados: 0 };
     }
@@ -291,4 +296,3 @@ export async function notificarNuevosSolicitantesHabilitadosPorDocumentacionActi
     errores
   };
 }
-

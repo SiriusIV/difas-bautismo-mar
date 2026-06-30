@@ -26,6 +26,20 @@ export function normalizarNombresDocumentosActividad(lista) {
   return salida;
 }
 
+export function normalizarIdsDocumentosActividad(lista) {
+  const vistos = new Set();
+  const salida = [];
+
+  for (const item of Array.isArray(lista) ? lista : []) {
+    const id = Number(typeof item === "object" ? item?.id || item?.documento_id : item || 0);
+    if (!(id > 0) || vistos.has(id)) continue;
+    vistos.add(id);
+    salida.push(id);
+  }
+
+  return salida;
+}
+
 export async function asegurarTablasDocumentacionActividad(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS actividad_documentacion_config (
@@ -125,19 +139,37 @@ export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
   })).filter((row) => row.nombre);
 }
 
-function obtenerDocumentosCatalogoPorNombres(catalogo = [], nombresEntrada = []) {
+function obtenerDocumentosCatalogoPorNombres(catalogo = [], nombresEntrada = [], idsEntrada = []) {
   const nombres = normalizarNombresDocumentosActividad(nombresEntrada);
-  const mapa = new Map();
+  const ids = normalizarIdsDocumentosActividad(idsEntrada);
+  const mapaNombres = new Map();
+  const mapaIds = new Map();
   for (const doc of Array.isArray(catalogo) ? catalogo : []) {
     const nombre = limpiarTexto(doc?.nombre);
     const id = Number(doc?.id || 0);
     if (!nombre || !(id > 0)) continue;
+    mapaIds.set(id, doc);
     const key = nombre.toUpperCase();
-    if (!mapa.has(key)) {
-      mapa.set(key, doc);
+    if (!mapaNombres.has(key)) {
+      mapaNombres.set(key, doc);
     }
   }
-  return nombres.map((nombre) => mapa.get(nombre.toUpperCase())).filter(Boolean);
+
+  const salida = [];
+  const vistos = new Set();
+  for (const id of ids) {
+    const doc = mapaIds.get(id);
+    if (!doc || vistos.has(Number(doc.id || 0))) continue;
+    vistos.add(Number(doc.id || 0));
+    salida.push(doc);
+  }
+  for (const nombre of nombres) {
+    const doc = mapaNombres.get(nombre.toUpperCase());
+    if (!doc || vistos.has(Number(doc.id || 0))) continue;
+    vistos.add(Number(doc.id || 0));
+    salida.push(doc);
+  }
+  return salida;
 }
 
 export async function leerConfiguracionDocumentalActividad(env, actividadId) {
@@ -332,6 +364,7 @@ export function construirResumenDocumentacionActividad(catalogo = [], configurac
   return {
     modo: normalizarModoDocumentacionActividad(config.modo),
     documentos_configurados: documentosConfigurados,
+    documento_ids_configurados: normalizarIdsDocumentosActividad(config.documento_ids || []),
     documentos_exigidos: documentosExigibles.map((doc) => ({
       id: Number(doc.id || 0),
       nombre: limpiarTexto(doc.nombre),
@@ -346,14 +379,18 @@ export function construirResumenDocumentacionActividad(catalogo = [], configurac
   };
 }
 
-export async function guardarConfiguracionDocumentalActividad(env, actividadId, modoEntrada, nombresEntrada, catalogoDocumentos = []) {
+export async function guardarConfiguracionDocumentalActividad(env, actividadId, modoEntrada, nombresEntrada, catalogoDocumentos = [], idsEntrada = []) {
   await asegurarTablasDocumentacionActividad(env);
 
   const id = Number(actividadId || 0);
   if (!(id > 0)) return;
 
   const modo = normalizarModoDocumentacionActividad(modoEntrada);
-  const nombres = normalizarNombresDocumentosActividad(nombresEntrada);
+  const ids = normalizarIdsDocumentosActividad(idsEntrada);
+  const documentosSeleccionados = obtenerDocumentosCatalogoPorNombres(catalogoDocumentos, nombresEntrada, ids);
+  const nombres = documentosSeleccionados.length
+    ? normalizarNombresDocumentosActividad(documentosSeleccionados.map((doc) => doc.nombre))
+    : normalizarNombresDocumentosActividad(nombresEntrada);
 
   await env.DB.prepare(`
     DELETE FROM actividad_documentacion_documentos
@@ -396,7 +433,6 @@ export async function guardarConfiguracionDocumentalActividad(env, actividadId, 
     `).bind(id, nombres[i], i + 1).run();
   }
 
-  const documentosSeleccionados = obtenerDocumentosCatalogoPorNombres(catalogoDocumentos, nombres);
   for (let i = 0; i < documentosSeleccionados.length; i += 1) {
     const documento = documentosSeleccionados[i];
     const documentoId = Number(documento?.id || 0);
@@ -466,6 +502,11 @@ export async function depurarConfiguracionDocumentalActividadesAdmin(env, adminI
     normalizarNombresDocumentosActividad((catalogoDocumentos || []).map((doc) => doc?.nombre || doc))
       .map((nombre) => nombre.toUpperCase())
   );
+  const idsPermitidos = new Set(
+    (Array.isArray(catalogoDocumentos) ? catalogoDocumentos : [])
+      .map((doc) => Number(doc?.id || 0))
+      .filter((documentoId) => documentoId > 0)
+  );
 
   const actividades = await env.DB.prepare(`
     SELECT
@@ -489,13 +530,17 @@ export async function depurarConfiguracionDocumentalActividadesAdmin(env, adminI
     const filtrados = normalizarNombresDocumentosActividad(config.documentos).filter((nombre) =>
       permitidos.has(String(nombre || "").trim().toUpperCase())
     );
+    const idsOriginales = normalizarIdsDocumentosActividad(config.documento_ids || []);
+    const idsFiltrados = idsOriginales.filter((documentoId) => idsPermitidos.has(documentoId));
 
     const original = normalizarNombresDocumentosActividad(config.documentos);
-    const igualLongitud = original.length === filtrados.length;
-    const igualContenido = igualLongitud && original.every((nombre, indice) => nombre === filtrados[indice]);
+    const igualLongitud = original.length === filtrados.length && idsOriginales.length === idsFiltrados.length;
+    const igualContenido = igualLongitud &&
+      original.every((nombre, indice) => nombre === filtrados[indice]) &&
+      idsOriginales.every((documentoId, indice) => documentoId === idsFiltrados[indice]);
     if (igualContenido) continue;
 
-    await guardarConfiguracionDocumentalActividad(env, actividadId, "PERSONALIZADA", filtrados, catalogoDocumentos);
+    await guardarConfiguracionDocumentalActividad(env, actividadId, "PERSONALIZADA", filtrados, catalogoDocumentos, idsFiltrados);
     actualizadas += 1;
   }
 

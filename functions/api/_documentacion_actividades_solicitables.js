@@ -3,6 +3,7 @@ import {
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -63,7 +64,11 @@ export async function construirResumenActividadesSolicitables(env, {
   }
 
   const [catalogo, actividadesRows, archivosRows] = await Promise.all([
-    obtenerCatalogoDocumentosActivosAdmin(env, admin),
+    obtenerCatalogoDocumentalVinculadoAdmin(
+      env,
+      admin,
+      await obtenerCatalogoDocumentosActivosAdmin(env, admin)
+    ),
     env.DB.prepare(`
       SELECT
         id,
@@ -231,7 +236,14 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
 
   const adminIds = [...new Set(actividades.map((item) => item.admin_id))];
   const catalogosPorAdmin = new Map(
-    await Promise.all(adminIds.map(async (id) => [id, await obtenerCatalogoDocumentosActivosAdmin(env, id)]))
+    await Promise.all(adminIds.map(async (id) => [
+      id,
+      await obtenerCatalogoDocumentalVinculadoAdmin(
+        env,
+        id,
+        await obtenerCatalogoDocumentosActivosAdmin(env, id)
+      )
+    ]))
   );
 
   const actividadesPorAdmin = new Map();
@@ -380,7 +392,14 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
 
   const adminIds = [...new Set(actividades.map((item) => item.admin_id))];
   const catalogosPorAdmin = new Map(
-    await Promise.all(adminIds.map(async (id) => [id, await obtenerCatalogoDocumentosActivosAdmin(env, id)]))
+    await Promise.all(adminIds.map(async (id) => [
+      id,
+      await obtenerCatalogoDocumentalVinculadoAdmin(
+        env,
+        id,
+        await obtenerCatalogoDocumentosActivosAdmin(env, id)
+      )
+    ]))
   );
 
   const actividadesPorAdmin = new Map();

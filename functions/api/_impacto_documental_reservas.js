@@ -10,10 +10,11 @@ import {
   construirEmailTextoReservaEliminadaDocumentacionCritica,
   construirEmailTextoReservaReactivadaDocumentacion
 } from "./_email_reservas_documentacion.js";
-import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import {
+  obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
@@ -141,30 +142,25 @@ function construirUrlPerfilDocumentacion(baseUrl, adminId) {
 }
 
 async function obtenerDocumentosActivosVigentes(env, adminId) {
-  const resolucion = await resolverResponsableDocumental(env, adminId);
-  const propietarioId = Number(
-    String(resolucion?.modo || "").toUpperCase() === "SECRETARIA_EXTERNA"
-      ? resolucion?.responsable?.id || 0
-      : resolucion?.admin?.id || 0
-  );
-
-  const rows = await env.DB.prepare(`
+  const admin = await env.DB.prepare(`
     SELECT
       id,
       nombre,
-      descripcion,
-      version_documental,
-      fecha_actualizacion
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-    ORDER BY orden ASC, id ASC
-  `).bind(propietarioId || adminId).all();
+      nombre_publico,
+      email,
+      localidad
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(adminId).first();
+
+  const catalogoFallback = await obtenerCatalogoDocumentosActivosAdmin(env, adminId);
+  const documentos = await obtenerCatalogoDocumentalVinculadoAdmin(env, adminId, catalogoFallback);
 
   return {
-    resolucion,
-    propietario_documental_id: propietarioId || adminId,
-    documentos: rows?.results || []
+    resolucion: { admin: admin || { id: adminId } },
+    propietario_documental_id: adminId,
+    documentos
   };
 }
 

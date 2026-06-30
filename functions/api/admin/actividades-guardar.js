@@ -16,6 +16,7 @@ import {
   borrarConfiguracionDocumentalActividad,
   guardarConfiguracionDocumentalActividad,
   leerConfiguracionDocumentalActividad,
+  normalizarIdsDocumentosActividad,
   normalizarModoDocumentacionActividad,
   normalizarNombresDocumentosActividad,
   obtenerCatalogoDocumentosActivosAdmin,
@@ -86,7 +87,8 @@ function normalizarRequisitosEntrada(valor) {
 function normalizarDocumentacionActividadEntrada(body = {}) {
   return {
     modo: normalizarModoDocumentacionActividad(body.documentacion_actividad_modo),
-    documentos: normalizarNombresDocumentosActividad(body.documentacion_actividad_documentos)
+    documentos: normalizarNombresDocumentosActividad(body.documentacion_actividad_documentos),
+    documento_ids: normalizarIdsDocumentosActividad(body.documentacion_actividad_documento_ids)
   };
 }
 
@@ -155,6 +157,15 @@ function configuracionDocumentalActividadIgual(a = {}, b = {}) {
 
   const docsA = normalizarNombresDocumentosActividad(a?.documentos || []);
   const docsB = normalizarNombresDocumentosActividad(b?.documentos || []);
+  const idsA = normalizarIdsDocumentosActividad(a?.documento_ids || []);
+  const idsB = normalizarIdsDocumentosActividad(b?.documento_ids || []);
+  if (idsA.length || idsB.length) {
+    if (idsA.length !== idsB.length) return false;
+    for (let i = 0; i < idsA.length; i += 1) {
+      if (idsA[i] !== idsB[i]) return false;
+    }
+    return true;
+  }
   if (docsA.length !== docsB.length) return false;
 
   for (let i = 0; i < docsA.length; i += 1) {
@@ -172,6 +183,30 @@ function usuarioPuedeConfigurarDocumentacionActividad(sessionUserId, rol, adminI
   const usuarioId = Number(sessionUserId || 0);
   const administradorId = Number(adminId || 0);
   return usuarioId > 0 && administradorId > 0 && usuarioId === administradorId;
+}
+
+function depurarDocumentacionActividadConCatalogo(configuracion = {}, catalogo = []) {
+  const idsPermitidos = new Set(
+    (Array.isArray(catalogo) ? catalogo : [])
+      .map((doc) => Number(doc?.id || 0))
+      .filter((id) => id > 0)
+  );
+  const nombresPermitidos = new Set(
+    (Array.isArray(catalogo) ? catalogo : [])
+      .map((doc) => limpiarTexto(doc?.nombre).toUpperCase())
+      .filter(Boolean)
+  );
+
+  const documentoIds = normalizarIdsDocumentosActividad(configuracion?.documento_ids || [])
+    .filter((id) => idsPermitidos.has(id));
+  const documentos = normalizarNombresDocumentosActividad(configuracion?.documentos || [])
+    .filter((nombre) => nombresPermitidos.has(limpiarTexto(nombre).toUpperCase()));
+
+  return {
+    modo: normalizarModoDocumentacionActividad(configuracion?.modo),
+    documentos,
+    documento_ids: documentoIds
+  };
 }
 
 function escaparHtml(valor) {
@@ -995,11 +1030,9 @@ export async function onRequestPost(context) {
       p.admin_id,
       await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id)
     );
-    const nombresDocumentosActivos = new Set(
-      catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
-    );
-    p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
-      nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
+    p.documentacion_actividad = depurarDocumentacionActividadConCatalogo(
+      p.documentacion_actividad,
+      catalogoDocumentalActivo
     );
     const puedeEditarDocumentacionActividad = usuarioPuedeConfigurarDocumentacionActividad(session.usuario_id, rol, p.admin_id);
     if (!puedeEditarDocumentacionActividad) {
@@ -1096,7 +1129,8 @@ export async function onRequestPost(context) {
         actividadId,
         p.documentacion_actividad.modo,
         p.documentacion_actividad.documentos,
-        catalogoDocumentalActivo
+        catalogoDocumentalActivo,
+        p.documentacion_actividad.documento_ids
       );
     }
 
@@ -1160,11 +1194,9 @@ export async function onRequestPut(context) {
       p.admin_id,
       await obtenerCatalogoDocumentosActivosAdmin(env, p.admin_id)
     );
-    const nombresDocumentosActivos = new Set(
-      catalogoDocumentalActivo.map((doc) => limpiarTexto(doc.nombre).toUpperCase()).filter(Boolean)
-    );
-    p.documentacion_actividad.documentos = p.documentacion_actividad.documentos.filter((nombre) =>
-      nombresDocumentosActivos.has(limpiarTexto(nombre).toUpperCase())
+    p.documentacion_actividad = depurarDocumentacionActividadConCatalogo(
+      p.documentacion_actividad,
+      catalogoDocumentalActivo
     );
     const observacionesAdmin = limpiarTexto(body.observaciones_admin || "");
     const confirmadoAnulacion = body.confirmado_anulacion === true || body.confirmado_anulacion === 1 || body.confirmado_anulacion === "1";
@@ -1187,7 +1219,8 @@ export async function onRequestPut(context) {
     const documentacionActividadActual = await leerConfiguracionDocumentalActividad(env, id);
     let documentacionActividadNueva = {
       modo: p.documentacion_actividad.modo,
-      documentos: p.documentacion_actividad.documentos
+      documentos: p.documentacion_actividad.documentos,
+      documento_ids: p.documentacion_actividad.documento_ids
     };
     let documentacionActividadHaCambiado = !configuracionDocumentalActividadIgual(
       documentacionActividadActual,
@@ -1197,11 +1230,13 @@ export async function onRequestPut(context) {
     if (!puedeEditarDocumentacionActividad && documentacionActividadHaCambiado) {
       p.documentacion_actividad = {
         modo: documentacionActividadActual.modo,
-        documentos: documentacionActividadActual.documentos
+        documentos: documentacionActividadActual.documentos,
+        documento_ids: documentacionActividadActual.documento_ids || []
       };
       documentacionActividadNueva = {
         modo: p.documentacion_actividad.modo,
-        documentos: p.documentacion_actividad.documentos
+        documentos: p.documentacion_actividad.documentos,
+        documento_ids: p.documentacion_actividad.documento_ids
       };
       documentacionActividadHaCambiado = false;
     }
@@ -1245,7 +1280,8 @@ export async function onRequestPut(context) {
         id,
         p.documentacion_actividad.modo,
         p.documentacion_actividad.documentos,
-        catalogoDocumentalActivo
+        catalogoDocumentalActivo,
+        p.documentacion_actividad.documento_ids
       );
 
       const baseUrlSecretaria = new URL(request.url).origin;
@@ -1592,7 +1628,8 @@ export async function onRequestPut(context) {
       id,
       p.documentacion_actividad.modo,
       p.documentacion_actividad.documentos,
-      catalogoDocumentalActivo
+      catalogoDocumentalActivo,
+      p.documentacion_actividad.documento_ids
     );
 
     let baseUrl = "";

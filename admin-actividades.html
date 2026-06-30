@@ -5395,7 +5395,7 @@ function normalizarCatalogoDocumentacionActividad(lista) {
       propietario_nombre: String(item?.propietario_nombre || "").trim()
     }))
     .filter((item) => {
-      const key = item.nombre.toUpperCase();
+      const key = item.id > 0 ? `ID:${item.id}` : item.nombre.toUpperCase();
       if (!item.nombre || vistos.has(key)) return false;
       vistos.add(key);
       return true;
@@ -5406,13 +5406,26 @@ function normalizarCatalogoDocumentacionActividad(lista) {
     });
 }
 
+function claveDocumentoCatalogoDocumentacionActividad(doc) {
+  const id = Number(doc?.id || 0);
+  if (id > 0) return `ID:${id}`;
+  return String(doc?.nombre || "").trim().toUpperCase();
+}
+
 function normalizarDocumentosDocumentacionActividad(lista) {
   const vistos = new Set();
   return (Array.isArray(lista) ? lista : [])
-    .map((item) => String(typeof item === "string" ? item : item?.nombre || "").trim())
-    .filter((nombre) => {
-      const key = nombre.toUpperCase();
-      if (!nombre || vistos.has(key)) return false;
+    .map((item) => {
+      if (typeof item === "object" && item) {
+        const id = Number(item.id || item.documento_id || 0);
+        if (id > 0) return `ID:${id}`;
+        return String(item.nombre || "").trim();
+      }
+      return String(item || "").trim();
+    })
+    .filter((clave) => {
+      const key = clave.toUpperCase();
+      if (!clave || vistos.has(key)) return false;
       vistos.add(key);
       return true;
     });
@@ -5433,10 +5446,10 @@ function esVistaMovilDocumentacionActividad() {
 
 function obtenerDocumentosDisponiblesDocumentacionActividad() {
   const seleccionados = new Set(
-    obtenerDocumentosDocumentacionActividadParaGuardar().map((nombre) => nombre.toUpperCase())
+    normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).map((clave) => clave.toUpperCase())
   );
   return catalogoDocumentacionActividad.filter(
-    (doc) => !seleccionados.has(String(doc.nombre || "").trim().toUpperCase())
+    (doc) => !seleccionados.has(claveDocumentoCatalogoDocumentacionActividad(doc).toUpperCase())
   );
 }
 
@@ -5477,14 +5490,27 @@ function obtenerModoDocumentacionActividadSeleccionado() {
 }
 
 function obtenerDocumentosDocumentacionActividadParaGuardar() {
-  return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
+  return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad)
+    .map((clave) => obtenerDocumentoCatalogoDocumentacionActividad(clave)?.nombre || clave)
+    .map((nombre) => String(nombre || "").trim())
+    .filter(Boolean);
 }
 
-function obtenerDocumentoCatalogoDocumentacionActividad(nombre) {
-  const clave = String(nombre || "").trim().toUpperCase();
+function obtenerDocumentoIdsDocumentacionActividadParaGuardar() {
+  return normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad)
+    .map((clave) => Number(obtenerDocumentoCatalogoDocumentacionActividad(clave)?.id || 0))
+    .filter((id) => id > 0);
+}
+
+function obtenerDocumentoCatalogoDocumentacionActividad(valor) {
+  const clave = String(valor || "").trim();
   if (!clave) return null;
+  if (/^ID:\d+$/i.test(clave)) {
+    const id = Number(clave.replace(/^ID:/i, ""));
+    return catalogoDocumentacionActividad.find((doc) => Number(doc.id || 0) === id) || null;
+  }
   return catalogoDocumentacionActividad.find((doc) =>
-    String(doc.nombre || "").trim().toUpperCase() === clave
+    String(doc.nombre || "").trim().toUpperCase() === clave.toUpperCase()
   ) || null;
 }
 
@@ -5509,7 +5535,7 @@ function agregarDocumentoSeleccionadoDocumentacionActividad() {
   if (!valor) return false;
 
   const docsActuales = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
-  const existe = docsActuales.some((nombre) => nombre.toUpperCase() === valor.toUpperCase());
+  const existe = docsActuales.some((clave) => clave.toUpperCase() === valor.toUpperCase());
   if (existe) {
     if (select) select.value = "";
     return false;
@@ -5531,8 +5557,8 @@ function agregarDocumentosSeleccionadosDocumentacionActividad(nombres = []) {
   if (!nuevos.length) return false;
 
   const docsActuales = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
-  const docsActualesSet = new Set(docsActuales.map((nombre) => nombre.toUpperCase()));
-  const docsAAgregar = nuevos.filter((nombre) => !docsActualesSet.has(nombre.toUpperCase()));
+  const docsActualesSet = new Set(docsActuales.map((clave) => clave.toUpperCase()));
+  const docsAAgregar = nuevos.filter((clave) => !docsActualesSet.has(clave.toUpperCase()));
   if (!docsAAgregar.length) return false;
 
   modoDocumentacionActividad = "PERSONALIZADA";
@@ -5582,7 +5608,7 @@ function renderSelectDocumentacionActividad() {
     ...opcionesDisponibles.map((doc) => {
       const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(doc);
       const texto = propietario ? `${doc.nombre} — ${propietario.replace(/^Propietario: /, "")}` : doc.nombre;
-      return `<option value="${escaparHtmlDocumentacionActividad(doc.nombre)}">${escaparHtmlDocumentacionActividad(texto)}</option>`;
+      return `<option value="${escaparHtmlDocumentacionActividad(claveDocumentoCatalogoDocumentacionActividad(doc))}">${escaparHtmlDocumentacionActividad(texto)}</option>`;
     })
   ];
 
@@ -5625,7 +5651,7 @@ function abrirSelectorDocumentacionActividadMovil() {
     const input = document.createElement("input");
     input.type = "checkbox";
     input.id = id;
-    input.value = String(doc.nombre || "").trim();
+    input.value = claveDocumentoCatalogoDocumentacionActividad(doc);
 
     const texto = document.createElement("span");
     texto.className = "modal-documentacion-opcion-texto";
@@ -5674,14 +5700,16 @@ function renderConfiguracionDocumentacionActividad() {
   const documentosActivos = obtenerDocumentosDocumentacionActividadParaGuardar();
   vacia.classList.toggle("oculto", documentosActivos.length > 0);
 
-  documentosActivos.forEach((nombre, index) => {
+  normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).forEach((claveDocumento, index) => {
+    const documentoCatalogo = obtenerDocumentoCatalogoDocumentacionActividad(claveDocumento);
+    const nombre = String(documentoCatalogo?.nombre || claveDocumento || "").trim();
     const tr = document.createElement("tr");
 
     const tdAcciones = document.createElement("td");
     tdAcciones.className = "celda-acciones";
 
     if (!puedeEditarDocumentacionActividad) {
-      const documentoBase = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
+      const documentoBase = documentoCatalogo || obtenerDocumentoCatalogoDocumentacionActividad(nombre);
       const btnVer = document.createElement("button");
       btnVer.type = "button";
       btnVer.className = "btn-documentacion-ver-base";
@@ -5716,13 +5744,13 @@ function renderConfiguracionDocumentacionActividad() {
         if (modoDocumentacionActividad === "HEREDADA") {
           documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(
             catalogoDocumentacionActividad
-              .map((item) => item.nombre)
-              .filter((itemNombre) => String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase())
+              .map((item) => claveDocumentoCatalogoDocumentacionActividad(item))
+              .filter((itemClave) => String(itemClave || "").trim().toUpperCase() !== String(claveDocumento || "").trim().toUpperCase())
           );
           modoDocumentacionActividad = "PERSONALIZADA";
         } else {
-          documentosDocumentacionActividad = documentosDocumentacionActividad.filter((itemNombre) =>
-            String(itemNombre || "").trim().toUpperCase() !== String(nombre || "").trim().toUpperCase()
+          documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).filter((itemClave) =>
+            String(itemClave || "").trim().toUpperCase() !== String(claveDocumento || "").trim().toUpperCase()
           );
         }
         marcarCambiosPendientesActividad();
@@ -5737,7 +5765,6 @@ function renderConfiguracionDocumentacionActividad() {
     textoNombre.textContent = nombre;
     contenedorNombre.appendChild(textoNombre);
 
-    const documentoCatalogo = obtenerDocumentoCatalogoDocumentacionActividad(nombre);
     const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(documentoCatalogo);
     if (propietario) {
       const meta = document.createElement("span");
@@ -5768,10 +5795,14 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     : "PERSONALIZADA";
   documentosDocumentacionActividad = (
     modoDocumentacionActividad === "HEREDADA"
-      ? catalogoDocumentacionActividad.map((doc) => doc.nombre)
-      : normalizarDocumentosDocumentacionActividad(resumen?.documentos_configurados || [])
-  ).filter((nombre) =>
-    catalogoDocumentacionActividad.some((doc) => String(doc.nombre || "").trim().toUpperCase() === nombre.toUpperCase())
+      ? catalogoDocumentacionActividad.map((doc) => claveDocumentoCatalogoDocumentacionActividad(doc))
+      : normalizarDocumentosDocumentacionActividad(
+          (Array.isArray(resumen?.documento_ids_configurados) && resumen.documento_ids_configurados.length)
+            ? resumen.documento_ids_configurados.map((id) => `ID:${id}`)
+            : (resumen?.documentos_configurados || [])
+        )
+  ).filter((clave) =>
+    !!obtenerDocumentoCatalogoDocumentacionActividad(clave)
   );
   renderConfiguracionDocumentacionActividad();
 }
@@ -8054,7 +8085,8 @@ async function borrarFranja(id) {
           confirmado_desactivar_franjas: desactivacionFranjasConfirmada,
           requisitos_particulares: obtenerRequisitosParticularesFormulario(),
           documentacion_actividad_modo: obtenerModoDocumentacionActividadSeleccionado(),
-          documentacion_actividad_documentos: obtenerDocumentosDocumentacionActividadParaGuardar()
+          documentacion_actividad_documentos: obtenerDocumentosDocumentacionActividadParaGuardar(),
+          documentacion_actividad_documento_ids: obtenerDocumentoIdsDocumentacionActividadParaGuardar()
         };
       }
 
