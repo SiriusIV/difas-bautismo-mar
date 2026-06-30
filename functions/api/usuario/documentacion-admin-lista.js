@@ -1,4 +1,6 @@
 import { getUserSession } from "./_auth.js";
+import { obtenerCatalogoDocumentosActivosAdmin } from "../_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -40,30 +42,42 @@ export async function onRequestGet(context) {
         u.nombre,
         u.nombre_publico,
         u.localidad,
-        u.email,
-        MAX(adc.version_documental) AS version_requerida,
-        COUNT(adc.id) AS total_documentos
-      FROM admin_documentos_comunes adc
-      JOIN usuarios u
-        ON u.id = adc.admin_id
-      WHERE adc.activo = 1
+        u.email
+      FROM usuarios u
+      WHERE COALESCE(u.activo, 1) = 1
         AND u.rol IN ('ADMIN', 'SUPERADMIN')
-      GROUP BY u.id, u.nombre, u.email
-      HAVING COUNT(adc.id) > 0
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).all();
 
-    return json({
-      ok: true,
-      administradores: (result?.results || []).map((row) => ({
-        id: row.id,
+    const administradores = [];
+    for (const row of result?.results || []) {
+      const adminId = Number(row.id || 0);
+      if (!(adminId > 0)) continue;
+      const catalogo = await obtenerCatalogoDocumentalVinculadoAdmin(
+        env,
+        adminId,
+        await obtenerCatalogoDocumentosActivosAdmin(env, adminId)
+      );
+      if (!catalogo.length) continue;
+
+      administradores.push({
+        id: adminId,
         nombre: row.nombre || "",
         nombre_publico: row.nombre_publico || "",
         localidad: row.localidad || "",
         email: row.email || "",
-        version_requerida: Number(row.version_requerida || 0),
-        total_documentos: Number(row.total_documentos || 0)
-      }))
+        version_requerida: catalogo.reduce((max, doc) =>
+          Math.max(max, Number(doc?.version_documental || 0)), 0),
+        total_documentos: catalogo.length,
+        total_propietarios_documentales: new Set(
+          catalogo.map((doc) => Number(doc?.propietario_id || doc?.admin_id || 0)).filter((id) => id > 0)
+        ).size
+      });
+    }
+
+    return json({
+      ok: true,
+      administradores
     });
   } catch (error) {
     return json(

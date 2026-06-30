@@ -1,5 +1,6 @@
 import { getUserSession } from "./_auth.js";
-import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
+import { obtenerCatalogoDocumentosActivosAdmin } from "../_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -54,20 +55,37 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function obtenerPropietarioDocumentalDocumento(doc) {
+  return Number(doc?.propietario_id || doc?.admin_id || 0);
+}
+
+function claveDocumento(nombre, propietarioId = 0) {
+  const nombreNormalizado = limpiarTexto(nombre);
+  const propietario = Number(propietarioId || 0);
+  return propietario > 0
+    ? `${propietario}::${nombreNormalizado}`
+    : nombreNormalizado;
+}
+
 function seleccionarUltimosArchivosPorDocumento(archivos = []) {
   const porNombre = new Map();
 
   for (const archivo of Array.isArray(archivos) ? archivos : []) {
     const nombre = limpiarTexto(archivo?.nombre_documento);
     if (!nombre) continue;
+    const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+    const key = claveDocumento(nombre, propietarioId);
 
-    const existente = porNombre.get(nombre);
+    const existente = porNombre.get(key);
     if (!existente || Number(archivo?.id || 0) > Number(existente?.id || 0)) {
-      porNombre.set(nombre, archivo);
+      porNombre.set(key, archivo);
+      if (!porNombre.has(nombre)) {
+        porNombre.set(nombre, archivo);
+      }
     }
   }
 
-  return Array.from(porNombre.values());
+  return Array.from(new Set(porNombre.values()));
 }
 
 function calcularEstadoDocumento(doc, entrega) {
@@ -93,12 +111,20 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
     return "NO_REQUERIDA";
   }
 
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const archivosPorNombre = new Map();
+  for (const archivo of archivosActivos || []) {
+    const nombre = limpiarTexto(archivo.nombre_documento);
+    if (!nombre) continue;
+    const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+    archivosPorNombre.set(claveDocumento(nombre, propietarioId), archivo);
+    if (!archivosPorNombre.has(nombre)) archivosPorNombre.set(nombre, archivo);
+  }
 
   const estados = documentosActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const nombre = limpiarTexto(doc.nombre);
+    const entrega = archivosPorNombre.get(claveDocumento(nombre, obtenerPropietarioDocumentalDocumento(doc))) ||
+      archivosPorNombre.get(nombre) ||
+      null;
     return calcularEstadoDocumento(doc, entrega);
   });
 
@@ -126,13 +152,21 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
 }
 
 function contarDocumentosValidados(documentosActivos, archivosActivos) {
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const archivosPorNombre = new Map();
+  for (const archivo of archivosActivos || []) {
+    const nombre = limpiarTexto(archivo.nombre_documento);
+    if (!nombre) continue;
+    const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+    archivosPorNombre.set(claveDocumento(nombre, propietarioId), archivo);
+    if (!archivosPorNombre.has(nombre)) archivosPorNombre.set(nombre, archivo);
+  }
 
   let validados = 0;
   for (const doc of documentosActivos || []) {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const nombre = limpiarTexto(doc.nombre);
+    const entrega = archivosPorNombre.get(claveDocumento(nombre, obtenerPropietarioDocumentalDocumento(doc))) ||
+      archivosPorNombre.get(nombre) ||
+      null;
     const estadoDocumento = calcularEstadoDocumento(doc, entrega);
     if (estadoDocumento === "VALIDADO") {
       validados += 1;
@@ -140,6 +174,43 @@ function contarDocumentosValidados(documentosActivos, archivosActivos) {
   }
 
   return validados;
+}
+
+function obtenerPropietariosDocumentales(documentos = []) {
+  return Array.from(new Set(
+    (Array.isArray(documentos) ? documentos : [])
+      .map((doc) => obtenerPropietarioDocumentalDocumento(doc))
+      .filter((id) => id > 0)
+  ));
+}
+
+async function obtenerDocumentosPropios(env, propietarioId) {
+  const rows = await env.DB.prepare(`
+    SELECT
+      d.id,
+      d.admin_id,
+      d.nombre,
+      d.version_documental,
+      d.fecha_actualizacion,
+      u.rol AS propietario_rol,
+      COALESCE(NULLIF(TRIM(u.nombre_publico), ''), NULLIF(TRIM(u.nombre), ''), NULLIF(TRIM(u.email), ''), '') AS propietario_nombre
+    FROM admin_documentos_comunes d
+    LEFT JOIN usuarios u ON u.id = d.admin_id
+    WHERE d.admin_id = ?
+      AND COALESCE(d.activo, 1) = 1
+    ORDER BY d.orden ASC, d.id ASC
+  `).bind(propietarioId).all();
+
+  return (rows?.results || []).map((row) => ({
+    id: Number(row.id || 0),
+    admin_id: Number(row.admin_id || 0),
+    propietario_id: Number(row.admin_id || 0),
+    propietario_rol: limpiarTexto(row.propietario_rol),
+    propietario_nombre: limpiarTexto(row.propietario_nombre),
+    nombre: row.nombre || "",
+    version_documental: Number(row.version_documental || 0),
+    fecha_actualizacion: row.fecha_actualizacion || ""
+  }));
 }
 
 export async function onRequestGet(context) {
@@ -201,11 +272,12 @@ export async function onRequestGet(context) {
         u.nombre AS admin_nombre,
         u.nombre_publico AS admin_nombre_publico,
         u.localidad AS admin_localidad,
-        u.email AS admin_email
+        u.email AS admin_email,
+        u.rol AS admin_rol
       FROM admins_fuente af
       INNER JOIN usuarios u
         ON u.id = af.admin_id
-      WHERE u.rol IN ('ADMIN', 'SUPERADMIN')
+      WHERE u.rol IN ('ADMIN', 'SUPERADMIN', 'SECRETARIA')
       ORDER BY COALESCE(u.nombre_publico, u.nombre, u.email) ASC
     `).bind(usuario.id, usuario.id).all();
 
@@ -219,6 +291,7 @@ export async function onRequestGet(context) {
           admin_nombre_publico: row.admin_nombre_publico || "",
           admin_localidad: row.admin_localidad || "",
           admin_email: row.admin_email || "",
+          admin_rol: row.admin_rol || "",
           propietario_documental_id: null,
           documentos: []
         });
@@ -234,6 +307,7 @@ export async function onRequestGet(context) {
           admin_nombre_publico: adminPreferente.nombre_publico || "",
           admin_localidad: adminPreferente.localidad || "",
           admin_email: adminPreferente.email || "",
+          admin_rol: adminPreferente.rol || "",
           propietario_documental_id: null,
           documentos: []
         });
@@ -241,33 +315,18 @@ export async function onRequestGet(context) {
     }
 
     for (const admin of adminsAgrupados.values()) {
-      const resolucion = await resolverResponsableDocumental(env, admin.admin_id);
-      const propietarioDocumentalId = Number(
-        String(resolucion?.modo || "").toUpperCase() === "SECRETARIA_EXTERNA"
-          ? resolucion?.responsable?.id || 0
-          : resolucion?.admin?.id || 0
-      );
-
-      admin.propietario_documental_id = propietarioDocumentalId || admin.admin_id;
-
-      const documentosRows = await env.DB.prepare(`
-        SELECT
-          id,
-          nombre,
-          version_documental,
-          fecha_actualizacion
-        FROM admin_documentos_comunes
-        WHERE admin_id = ?
-          AND activo = 1
-        ORDER BY orden ASC, id ASC
-      `).bind(admin.propietario_documental_id).all();
-
-      admin.documentos = (documentosRows?.results || []).map((row) => ({
-        id: Number(row.id || 0),
-        nombre: row.nombre || "",
-        version_documental: Number(row.version_documental || 0),
-        fecha_actualizacion: row.fecha_actualizacion || ""
-      }));
+      const rolAdmin = String(admin.admin_rol || "").toUpperCase();
+      const documentos = rolAdmin === "SECRETARIA"
+        ? await obtenerDocumentosPropios(env, admin.admin_id)
+        : await obtenerCatalogoDocumentalVinculadoAdmin(
+            env,
+            admin.admin_id,
+            await obtenerCatalogoDocumentosActivosAdmin(env, admin.admin_id)
+          );
+      const propietarios = obtenerPropietariosDocumentales(documentos);
+      admin.propietario_documental_id = propietarios.length === 1 ? propietarios[0] : null;
+      admin.propietarios_documentales = propietarios;
+      admin.documentos = documentos;
     }
 
     const expedientesRows = await env.DB.prepare(`
@@ -320,16 +379,40 @@ export async function onRequestGet(context) {
     }
 
     const administradores = Array.from(adminsAgrupados.values()).map((admin) => {
-      const expediente = expedientesPorAdmin.get(admin.admin_id) || null;
-      const archivosActivos = expediente ? seleccionarUltimosArchivosPorDocumento(archivosPorExpediente.get(Number(expediente.id || 0)) || []) : [];
+      const propietarios = admin.propietarios_documentales?.length
+        ? admin.propietarios_documentales
+        : [admin.admin_id];
+      const expedientes = propietarios
+        .map((propietarioId) => expedientesPorAdmin.get(Number(propietarioId || 0)) || null)
+        .filter(Boolean);
+      const expediente = expedientesPorAdmin.get(admin.admin_id) || expedientes[0] || null;
+      const archivosActivos = seleccionarUltimosArchivosPorDocumento(
+        expedientes.flatMap((expedienteItem) => {
+          const expedienteId = Number(expedienteItem?.id || 0);
+          const propietarioId = Number(expedienteItem?.admin_id || 0);
+          return (archivosPorExpediente.get(expedienteId) || []).map((archivo) => ({
+            ...archivo,
+            propietario_documental_id: propietarioId
+          }));
+        })
+      );
       const estadoEfectivo = calcularEstadoGlobal(admin.documentos, archivosActivos);
       const versionRequerida = admin.documentos.reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
       const totalValidados = contarDocumentosValidados(admin.documentos, archivosActivos);
-      const archivosPorNombre = new Map(
-        (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-      );
+      const archivosPorNombre = new Map();
+      for (const archivo of archivosActivos || []) {
+        const nombre = limpiarTexto(archivo.nombre_documento);
+        if (!nombre) continue;
+        const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+        archivosPorNombre.set(claveDocumento(nombre, propietarioId), archivo);
+        if (!archivosPorNombre.has(nombre)) archivosPorNombre.set(nombre, archivo);
+      }
       const alertasRevision = (admin.documentos || []).map((doc) => {
-        const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+        const nombre = limpiarTexto(doc.nombre);
+        const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
+        const entrega = archivosPorNombre.get(claveDocumento(nombre, propietarioId)) ||
+          archivosPorNombre.get(nombre) ||
+          null;
         if (!entrega) return null;
         const estadoDocumento = calcularEstadoDocumento(doc, entrega);
         if (!["VALIDADO", "RECHAZADO", "NO_ACTUALIZADO"].includes(estadoDocumento)) {
@@ -337,6 +420,8 @@ export async function onRequestGet(context) {
         }
         return {
           nombre_documento: doc.nombre || "",
+          propietario_documental_id: propietarioId,
+          propietario_documental_nombre: limpiarTexto(doc.propietario_nombre),
           estado: estadoDocumento,
           fecha_subida: entrega.fecha_subida || "",
           fecha_validacion: entrega.fecha_validacion || "",
@@ -350,16 +435,20 @@ export async function onRequestGet(context) {
         admin_nombre_publico: admin.admin_nombre_publico,
         admin_localidad: admin.admin_localidad,
         admin_email: admin.admin_email,
+        admin_rol: admin.admin_rol || "",
+        propietarios_documentales: propietarios,
         version_requerida: versionRequerida,
-        version_aportada: Number(expediente?.version_aportada || 0),
+        version_aportada: expedientes.reduce((max, item) => Math.max(max, Number(item?.version_aportada || 0)), 0),
         total_documentos: admin.documentos.length,
         total_documentos_validados: totalValidados,
         expediente_id: Number(expediente?.id || 0),
-        estado: expediente?.estado || "",
+        estado: estadoEfectivo,
         estado_efectivo: estadoEfectivo,
-        fecha_ultima_entrega: archivosActivos.length ? (expediente?.fecha_ultima_entrega || "") : "",
-        fecha_validacion: expediente?.fecha_validacion || "",
-        observaciones_admin: expediente?.observaciones_admin || "",
+        fecha_ultima_entrega: archivosActivos.length
+          ? expedientes.map((item) => item?.fecha_ultima_entrega || "").filter(Boolean).sort().pop() || ""
+          : "",
+        fecha_validacion: expedientes.map((item) => item?.fecha_validacion || "").filter(Boolean).sort().pop() || "",
+        observaciones_admin: expedientes.map((item) => item?.observaciones_admin || "").filter(Boolean).join(" | "),
         al_dia: estadoEfectivo === "VALIDADA",
         total_alertas_revision: alertasRevision.length,
         alertas_revision: alertasRevision
