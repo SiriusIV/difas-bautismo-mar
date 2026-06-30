@@ -8,9 +8,11 @@ import {
 import { crearNotificacion } from "../_notificaciones.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import {
+  obtenerCatalogoDocumentosActivosAdmin,
   leerConfiguracionDocumentalActividad,
   resolverDocumentosExigiblesActividad
 } from "../_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
@@ -43,6 +45,27 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function obtenerPropietarioDocumentalDocumento(doc) {
+  return Number(doc?.propietario_id || doc?.admin_id || 0);
+}
+
+function claveEntregaDocumento(nombre, propietarioId = 0) {
+  const nombreNormalizado = limpiarTexto(nombre);
+  const propietario = Number(propietarioId || 0);
+  return propietario > 0
+    ? `${propietario}::${nombreNormalizado}`
+    : nombreNormalizado;
+}
+
+function obtenerEntregaDocumento(doc, indiceArchivos) {
+  const nombre = limpiarTexto(doc?.nombre);
+  if (!nombre || !indiceArchivos?.porNombre) return null;
+  const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
+  return indiceArchivos.porNombre.get(claveEntregaDocumento(nombre, propietarioId)) ||
+    indiceArchivos.porNombre.get(nombre) ||
+    null;
+}
+
 function indexarArchivosActivosPorDocumento(archivos = []) {
   const porNombre = new Map();
   const duplicados = [];
@@ -50,15 +73,20 @@ function indexarArchivosActivosPorDocumento(archivos = []) {
   for (const archivo of Array.isArray(archivos) ? archivos : []) {
     const nombre = limpiarTexto(archivo?.nombre_documento);
     if (!nombre) continue;
+    const key = claveEntregaDocumento(nombre, archivo?.propietario_documental_id || archivo?.admin_id || 0);
 
-    const existente = porNombre.get(nombre);
+    const existente = porNombre.get(key);
     if (!existente) {
-      porNombre.set(nombre, archivo);
+      porNombre.set(key, archivo);
+      if (!porNombre.has(nombre)) {
+        porNombre.set(nombre, archivo);
+      }
       continue;
     }
 
     if (Number(archivo?.id || 0) > Number(existente?.id || 0)) {
       duplicados.push(existente);
+      porNombre.set(key, archivo);
       porNombre.set(nombre, archivo);
     } else {
       duplicados.push(archivo);
@@ -111,6 +139,24 @@ async function obtenerUsuarioSolicitante(env, userId) {
 async function obtenerAdmin(env, adminId) {
   const resolucion = await resolverResponsableDocumental(env, adminId);
   return resolucion?.admin || null;
+}
+
+async function obtenerUsuarioPorId(env, usuarioId) {
+  const id = parsearIdPositivo(usuarioId);
+  if (!id) return null;
+
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      nombre,
+      nombre_publico,
+      email,
+      localidad,
+      rol
+    FROM usuarios
+    WHERE id = ?
+    LIMIT 1
+  `).bind(id).first();
 }
 
 async function obtenerActividadMinima(env, actividadId) {
@@ -196,7 +242,12 @@ async function obtenerDocumentosActivos(env, adminId) {
     ORDER BY orden ASC, id ASC
   `).bind(propietarioDocumentalId).all();
 
-  return rows?.results || [];
+  return (rows?.results || []).map((row) => ({
+    ...row,
+    propietario_id: Number(row.admin_id || 0),
+    propietario_rol: "",
+    propietario_nombre: ""
+  }));
 }
 
 async function obtenerExpediente(env, centroUsuarioId, adminId) {
@@ -246,6 +297,151 @@ async function obtenerArchivosActivos(env, documentacionId) {
   return rows?.results || [];
 }
 
+async function obtenerContextoDocumental(env, adminId, actividadId = null) {
+  const actividad = actividadId ? await obtenerActividadMinima(env, actividadId) : null;
+  if (actividadId && !actividad) {
+    return { error: "Actividad no encontrada." };
+  }
+  if (actividad && Number(actividad.admin_id || 0) !== Number(adminId)) {
+    return { error: "La actividad no corresponde al administrador indicado." };
+  }
+
+  const catalogoLegacy = await obtenerCatalogoDocumentosActivosAdmin(env, adminId);
+  const documentosBase = actividadId
+    ? await obtenerCatalogoDocumentalVinculadoAdmin(env, adminId, catalogoLegacy)
+    : await obtenerDocumentosActivos(env, adminId);
+  const configuracionActividad = actividadId
+    ? await leerConfiguracionDocumentalActividad(env, actividadId)
+    : null;
+  const documentos = actividadId
+    ? resolverDocumentosExigiblesActividad(documentosBase, configuracionActividad)
+    : documentosBase;
+
+  return {
+    actividad,
+    configuracionActividad,
+    documentosBase,
+    documentos
+  };
+}
+
+function obtenerPropietariosDocumentalesDocumentos(documentos = []) {
+  return Array.from(new Set(
+    (Array.isArray(documentos) ? documentos : [])
+      .map((doc) => obtenerPropietarioDocumentalDocumento(doc))
+      .filter((id) => id > 0)
+  ));
+}
+
+function agruparDocumentosPorPropietario(documentos = []) {
+  const mapa = new Map();
+  for (const doc of Array.isArray(documentos) ? documentos : []) {
+    const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
+    if (!(propietarioId > 0)) continue;
+    if (!mapa.has(propietarioId)) {
+      mapa.set(propietarioId, []);
+    }
+    mapa.get(propietarioId).push(doc);
+  }
+  return mapa;
+}
+
+async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = []) {
+  const ids = obtenerPropietariosDocumentalesDocumentos(
+    propietarios.map((id) => ({ propietario_id: id }))
+  );
+  const mapa = new Map();
+  if (!ids.length) return mapa;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT
+      id,
+      centro_usuario_id,
+      admin_id,
+      version_requerida,
+      version_aportada,
+      estado,
+      fecha_ultima_entrega,
+      fecha_validacion,
+      validado_por_admin_id,
+      observaciones_admin,
+      created_at,
+      updated_at
+    FROM centro_admin_documentacion
+    WHERE centro_usuario_id = ?
+      AND admin_id IN (${placeholders})
+  `).bind(centroUsuarioId, ...ids).all();
+
+  for (const row of rows?.results || []) {
+    mapa.set(Number(row.admin_id || 0), row);
+  }
+  return mapa;
+}
+
+async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario = new Map()) {
+  const expedientes = Array.from(expedientesPorPropietario.values())
+    .filter((expediente) => Number(expediente?.id || 0) > 0);
+  const mapaExpedienteAPropietario = new Map(
+    expedientes.map((expediente) => [Number(expediente.id || 0), Number(expediente.admin_id || 0)])
+  );
+  const salida = [];
+  if (!expedientes.length) return salida;
+
+  const placeholders = expedientes.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT
+      id,
+      documentacion_id,
+      nombre_documento,
+      archivo_url,
+      version_documental,
+      estado,
+      fecha_validacion,
+      validado_por_admin_id,
+      observaciones_admin,
+      fecha_subida,
+      activo
+    FROM centro_admin_documentacion_archivos
+    WHERE documentacion_id IN (${placeholders})
+      AND activo = 1
+    ORDER BY id ASC
+  `).bind(...expedientes.map((expediente) => expediente.id)).all();
+
+  for (const row of rows?.results || []) {
+    salida.push({
+      ...row,
+      propietario_documental_id: mapaExpedienteAPropietario.get(Number(row.documentacion_id || 0)) || 0
+    });
+  }
+  return salida;
+}
+
+async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId, versionRequerida) {
+  const existente = await obtenerExpediente(env, centroUsuarioId, propietarioId);
+  if (existente) return existente;
+
+  await env.DB.prepare(`
+    INSERT INTO centro_admin_documentacion (
+      centro_usuario_id,
+      admin_id,
+      version_requerida,
+      version_aportada,
+      estado,
+      fecha_ultima_entrega,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, 0, 'NO_INICIADO', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `).bind(
+    centroUsuarioId,
+    propietarioId,
+    versionRequerida
+  ).run();
+
+  return await obtenerExpediente(env, centroUsuarioId, propietarioId);
+}
+
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) {
     return "NO_ENVIADO";
@@ -269,12 +465,10 @@ function calcularEstadoEfectivo(documentosActivos, archivosActivos) {
     return "NO_REQUERIDA";
   }
 
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const indiceArchivos = indexarArchivosActivosPorDocumento(archivosActivos || []);
 
   const estados = documentosActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const entrega = obtenerEntregaDocumento(doc, indiceArchivos);
     return calcularEstadoDocumento(doc, entrega);
   });
 
@@ -302,13 +496,12 @@ function calcularEstadoEfectivo(documentosActivos, archivosActivos) {
 }
 
 function construirResumenDocumentos(documentos, archivosActivos) {
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const indiceArchivos = indexarArchivosActivosPorDocumento(archivosActivos || []);
 
   return (documentos || []).map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const entrega = obtenerEntregaDocumento(doc, indiceArchivos);
     const estadoDocumento = calcularEstadoDocumento(doc, entrega);
+    const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
 
     return {
       id: doc.id,
@@ -317,6 +510,9 @@ function construirResumenDocumentos(documentos, archivosActivos) {
       archivo_url: doc.archivo_url,
       orden: Number(doc.orden || 0),
       version_documental: Number(doc.version_documental || 0),
+      propietario_id: propietarioId,
+      propietario_rol: limpiarTexto(doc.propietario_rol),
+      propietario_nombre: limpiarTexto(doc.propietario_nombre),
       estado_documento: estadoDocumento,
       entregado: !!entrega,
       entrega_archivo_id: Number(entrega?.id || 0),
@@ -416,7 +612,7 @@ function validarEntregas(entregas) {
 
 function construirEntregasDesdeOperaciones(documentos, archivosExistentes, operaciones) {
   const docsPorId = new Map((documentos || []).map((doc) => [Number(doc.id), doc]));
-  const archivosPorNombre = indexarArchivosActivosPorDocumento(archivosExistentes || []).porNombre;
+  const indiceArchivos = indexarArchivosActivosPorDocumento(archivosExistentes || []);
   const operacionesPorId = new Map();
 
   (operaciones || []).forEach((item) => {
@@ -431,7 +627,7 @@ function construirEntregasDesdeOperaciones(documentos, archivosExistentes, opera
   const entregas = [];
   for (const doc of documentos) {
     const op = operacionesPorId.get(Number(doc.id));
-    const existente = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const existente = obtenerEntregaDocumento(doc, indiceArchivos);
 
     if (op?.accion === "eliminar") {
       continue;
@@ -454,19 +650,20 @@ function construirEntregasDesdeOperaciones(documentos, archivosExistentes, opera
 
 function construirArchivosSimuladosDesdeEntregas(documentos, entregas, archivosExistentes = []) {
   const entregasPorId = new Map((entregas || []).map((item) => [Number(item.documento_id || 0), item]));
-  const existentesPorNombre = indexarArchivosActivosPorDocumento(archivosExistentes || []).porNombre;
+  const indiceExistentes = indexarArchivosActivosPorDocumento(archivosExistentes || []);
   const ahora = new Date().toISOString().replace("T", " ").slice(0, 19);
 
   return (documentos || [])
     .map((doc) => {
       const entrega = entregasPorId.get(Number(doc.id || 0));
       if (!entrega?.archivo_url) return null;
-      const existente = existentesPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      const existente = obtenerEntregaDocumento(doc, indiceExistentes);
       if (existente && limpiarTexto(existente.archivo_url) === limpiarTexto(entrega.archivo_url)) {
         return existente;
       }
       return {
         nombre_documento: doc.nombre,
+        propietario_documental_id: obtenerPropietarioDocumentalDocumento(doc),
         archivo_url: entrega.archivo_url,
         version_documental: Number(doc.version_documental || 0),
         estado: "EN_REVISION",
@@ -535,15 +732,13 @@ async function obtenerReservasCriticasAfectadasPorEntregas(env, adminId, usuario
 }
 
 function resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIds = []) {
-  const archivosPorNombre = new Map(
-    (archivosFinales || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const indiceArchivos = indexarArchivosActivosPorDocumento(archivosFinales || []);
   const ids = new Set((cambiosIds || []).map((id) => Number(id)));
 
   return (documentos || [])
     .filter((doc) => ids.has(Number(doc.id)))
     .map((doc) => {
-      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      const entrega = obtenerEntregaDocumento(doc, indiceArchivos);
       return {
         nombre: doc.nombre,
         estado: calcularEstadoDocumento(doc, entrega)
@@ -578,23 +773,14 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Administrador no encontrado." }, 404);
     }
 
-    let actividad = null;
-    let configuracionActividad = null;
-    if (actividadId) {
-      actividad = await obtenerActividadMinima(env, actividadId);
-      if (!actividad) {
-        return json({ ok: false, error: "Actividad no encontrada." }, 404);
-      }
-      if (Number(actividad.admin_id || 0) !== Number(adminId)) {
-        return json({ ok: false, error: "La actividad no corresponde al administrador indicado." }, 400);
-      }
-      configuracionActividad = await leerConfiguracionDocumentalActividad(env, actividadId);
+    const contextoDocumental = await obtenerContextoDocumental(env, adminId, actividadId);
+    if (contextoDocumental.error) {
+      return json({ ok: false, error: contextoDocumental.error }, contextoDocumental.error.includes("no corresponde") ? 400 : 404);
     }
-
-    const documentosBase = await obtenerDocumentosActivos(env, adminId);
-    const documentos = actividadId
-      ? resolverDocumentosExigiblesActividad(documentosBase, configuracionActividad)
-      : documentosBase;
+    const actividad = contextoDocumental.actividad;
+    const configuracionActividad = contextoDocumental.configuracionActividad;
+    const documentosBase = contextoDocumental.documentosBase;
+    const documentos = contextoDocumental.documentos;
     const actividadesAdmin = await obtenerActividadesAdmin(env, adminId);
     const configuracionesActividades = actividadesAdmin.length
       ? await Promise.all(
@@ -613,8 +799,12 @@ export async function onRequestGet(context) {
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
       0
     );
-    const expediente = await obtenerExpediente(env, usuario.id, adminId);
-    const archivosActivos = await obtenerArchivosActivos(env, expediente?.id);
+    const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
+    const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    const expediente = expedientesPorPropietario.get(adminId) ||
+      Array.from(expedientesPorPropietario.values())[0] ||
+      null;
+    const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
     const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosActivos);
     const requiereDocumentacion = documentos.length > 0;
     const documentosPendientes = construirDocumentosPendientes(documentos, archivosActivos);
@@ -688,6 +878,7 @@ export async function onRequestPost(context) {
 
     const body = await request.json().catch(() => null);
     const adminId = parsearIdPositivo(body?.admin_id);
+    const actividadId = parsearIdPositivo(body?.actividad_id);
 
     if (!adminId) {
       return json({ ok: false, error: "Debes indicar un administrador válido." }, 400);
@@ -698,21 +889,28 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Administrador no encontrado." }, 404);
     }
 
-    const versionRequerida = await obtenerVersionRequerida(env, adminId);
-    const documentos = await obtenerDocumentosActivos(env, adminId);
+    const contextoDocumental = await obtenerContextoDocumental(env, adminId, actividadId);
+    if (contextoDocumental.error) {
+      return json({ ok: false, error: contextoDocumental.error }, contextoDocumental.error.includes("no corresponde") ? 400 : 404);
+    }
+    const documentos = contextoDocumental.documentos;
+    const versionRequerida = documentos.reduce(
+      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+      0
+    );
 
     if (!versionRequerida || documentos.length === 0) {
       return json(
-        { ok: false, error: "Este administrador no tiene documentación común activa." },
+        { ok: false, error: "No hay documentación activa exigible para este trámite." },
         400
       );
     }
 
-    let expediente = await obtenerExpediente(env, usuario.id, adminId);
-    const archivosExistentes = await obtenerArchivosActivos(env, expediente?.id);
+    const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
+    let expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    const archivosExistentes = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
     const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosExistentes);
     const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
-    const archivosPorNombre = indiceArchivosExistentes.porNombre;
 
     let entregas = [];
     let cambiosIds = [];
@@ -768,7 +966,7 @@ export async function onRequestPost(context) {
     }
 
     for (const doc of documentos) {
-      const existente = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+      const existente = obtenerEntregaDocumento(doc, indiceArchivosExistentes);
       const deseada = entregasDeseadasPorDocumento.get(Number(doc.id)) || null;
 
       if (!existente && !deseada) {
@@ -838,65 +1036,68 @@ export async function onRequestPost(context) {
       }
     }
 
-    const necesitaExpediente = !!expediente || entregas.length > 0 || aDesactivar.length > 0 || aInsertar.length > 0;
+    const propietariosConCambios = new Set();
+    for (const archivo of aDesactivar) {
+      const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+      if (propietarioId > 0) propietariosConCambios.add(propietarioId);
+    }
+    for (const item of aInsertar) {
+      const propietarioId = obtenerPropietarioDocumentalDocumento(item.documento);
+      if (propietarioId > 0) propietariosConCambios.add(propietarioId);
+    }
 
-    if (!expediente && necesitaExpediente) {
-      await env.DB.prepare(`
-        INSERT INTO centro_admin_documentacion (
-          centro_usuario_id,
-          admin_id,
-          version_requerida,
-          version_aportada,
-          estado,
-          fecha_ultima_entrega,
-          created_at,
-          updated_at
-        )
-        VALUES (?, ?, ?, 0, 'NO_INICIADO', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).bind(
+    for (const propietarioId of propietariosConCambios) {
+      const documentosPropietario = documentos.filter((doc) => obtenerPropietarioDocumentalDocumento(doc) === propietarioId);
+      const versionRequeridaPropietario = documentosPropietario.reduce(
+        (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+        0
+      );
+      const expedientePropietario = await asegurarExpedienteDocumental(
+        env,
         usuario.id,
-        adminId,
-        versionRequerida
+        propietarioId,
+        versionRequeridaPropietario || versionRequerida
+      );
+      expedientesPorPropietario.set(propietarioId, expedientePropietario);
+    }
+
+    for (const archivo of aDesactivar) {
+      await env.DB.prepare(`
+        UPDATE centro_admin_documentacion_archivos
+        SET activo = 0
+        WHERE id = ?
+      `).bind(archivo.id).run();
+    }
+
+    for (const item of aInsertar) {
+      const propietarioId = obtenerPropietarioDocumentalDocumento(item.documento);
+      const expedientePropietario = expedientesPorPropietario.get(propietarioId) || null;
+      if (!expedientePropietario) continue;
+
+      await env.DB.prepare(`
+        INSERT INTO centro_admin_documentacion_archivos (
+          documentacion_id,
+          nombre_documento,
+          archivo_url,
+          version_documental,
+          estado,
+          fecha_validacion,
+          validado_por_admin_id,
+          observaciones_admin,
+          fecha_subida,
+          activo
+        )
+        VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
+      `).bind(
+        expedientePropietario.id,
+        item.documento.nombre,
+        item.archivo_url,
+        Number(item.documento.version_documental || 0)
       ).run();
-
-      expediente = await obtenerExpediente(env, usuario.id, adminId);
     }
 
-    if (expediente) {
-      for (const archivo of aDesactivar) {
-        await env.DB.prepare(`
-          UPDATE centro_admin_documentacion_archivos
-          SET activo = 0
-          WHERE id = ?
-        `).bind(archivo.id).run();
-      }
-
-      for (const item of aInsertar) {
-        await env.DB.prepare(`
-          INSERT INTO centro_admin_documentacion_archivos (
-            documentacion_id,
-            nombre_documento,
-            archivo_url,
-            version_documental,
-            estado,
-            fecha_validacion,
-            validado_por_admin_id,
-            observaciones_admin,
-            fecha_subida,
-            activo
-          )
-          VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
-        `).bind(
-          expediente.id,
-          item.documento.nombre,
-          item.archivo_url,
-          Number(item.documento.version_documental || 0)
-        ).run();
-      }
-
-    }
-
-    const archivosFinales = expediente ? await obtenerArchivosActivos(env, expediente.id) : [];
+    expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    const archivosFinales = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
     const urlsActivasFinales = new Set(
       archivosFinales
         .map((archivo) => limpiarTexto(archivo.archivo_url))
@@ -910,7 +1111,24 @@ export async function onRequestPost(context) {
     const estadoExpediente = calcularEstadoEfectivo(documentos, archivosFinales);
     const versionAportada = archivosFinales.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
 
-    if (expediente) {
+    for (const propietarioId of propietariosDocumentales) {
+      const expedientePropietario = expedientesPorPropietario.get(propietarioId) || null;
+      if (!expedientePropietario) continue;
+      const documentosPropietario = documentos.filter((doc) => obtenerPropietarioDocumentalDocumento(doc) === propietarioId);
+      const archivosPropietario = archivosFinales.filter((archivo) =>
+        Number(archivo?.propietario_documental_id || 0) === propietarioId
+      );
+      const estadoPropietario = calcularEstadoEfectivo(documentosPropietario, archivosPropietario);
+      const versionRequeridaPropietario = documentosPropietario.reduce(
+        (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+        0
+      );
+      const versionAportadaPropietario = archivosPropietario.reduce(
+        (max, archivo) => Math.max(max, Number(archivo.version_documental || 0)),
+        0
+      );
+      const cambiosPropietario = documentosPropietario.some((doc) => cambiosRealesIds.has(Number(doc.id || 0))) ? 1 : 0;
+
       await env.DB.prepare(`
         UPDATE centro_admin_documentacion
         SET
@@ -924,74 +1142,97 @@ export async function onRequestPost(context) {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
-        versionRequerida,
-        versionAportada,
-        estadoExpediente,
-        cambiosRealesIds.size,
-        estadoExpediente,
-        estadoExpediente,
-        estadoExpediente,
-        expediente.id
+        versionRequeridaPropietario,
+        versionAportadaPropietario,
+        estadoPropietario,
+        cambiosPropietario,
+        estadoPropietario,
+        estadoPropietario,
+        estadoPropietario,
+        expedientePropietario.id
       ).run();
-
-      expediente = await obtenerExpediente(env, usuario.id, adminId);
     }
+
+    expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    const expediente = expedientesPorPropietario.get(adminId) ||
+      Array.from(expedientesPorPropietario.values())[0] ||
+      null;
 
     const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, Array.from(cambiosRealesIds));
     let notificacionAdmin = { ok: false, skipped: true, error: "", destinatario: "" };
     let notificacionInternaResponsable = { ok: false, skipped: true, error: "" };
 
     if (cambiosCorreo.length > 0) {
-      const responsableDocumental = await resolverResponsableDocumental(env, adminId);
-      const destinatarioResponsable = responsableDocumental?.responsable?.email || admin.email || "";
-      const payloadEmail = {
-        admin,
-        centro: usuario,
-        versionRequerida,
-        cambios: cambiosCorreo
-      };
+      const documentosCambiados = documentos.filter((doc) => cambiosRealesIds.has(Number(doc.id || 0)));
+      const documentosPorPropietario = agruparDocumentosPorPropietario(documentosCambiados);
 
-      try {
-      notificacionAdmin = await enviarEmail(env, {
-        to: destinatarioResponsable,
-        subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
-        text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
-        html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail),
-        dedupe: true,
-        dedupeSegundos: 900
-      });
-      notificacionAdmin.destinatario = destinatarioResponsable;
+      for (const [propietarioId, documentosPropietario] of documentosPorPropietario.entries()) {
+        const propietario = await obtenerUsuarioPorId(env, propietarioId);
+        const cambiosPropietario = resumirCambiosParaCorreo(
+          documentosPropietario,
+          archivosFinales,
+          documentosPropietario.map((doc) => Number(doc.id || 0))
+        );
+        if (!propietario?.email || !cambiosPropietario.length) continue;
 
-      if (Number(responsableDocumental?.responsable?.id || 0) > 0) {
-        notificacionInternaResponsable = await crearNotificacion(env, {
-          usuarioId: Number(responsableDocumental.responsable.id || 0),
-          rolDestino: responsableDocumental?.responsable?.rol || "",
-          tipo: "DOCUMENTACION",
-          titulo: "Nueva documentación remitida",
-          mensaje: `${usuario.centro || "Un usuario"} ha remitido documentación para revisión en ${nombreVisibleAdmin(admin)}.`,
-          urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(Number(admin?.id || 0)))}&tab=bandeja`,
-          dedupeSegundos: 900
-        });
-      }
+        const payloadEmail = {
+          admin: propietario,
+          centro: usuario,
+          versionRequerida: documentosPropietario.reduce(
+            (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+            0
+          ),
+          cambios: cambiosPropietario
+        };
 
-      if (!notificacionAdmin.ok && !notificacionAdmin.skipped) {
-        console.error("No se pudo enviar el correo al responsable documental tras guardar cambios documentales.", {
-          admin_id: admin.id,
-          admin_nombre: nombreVisibleAdmin(admin),
-          responsable_documental_id: responsableDocumental?.responsable?.id || null,
-          responsable_documental_email: destinatarioResponsable,
-          modo_responsable_documental: responsableDocumental?.modo || "",
-          centro_usuario_id: usuario.id,
-          error: notificacionAdmin.error || ""
-        });
-      }
-      } catch (errorNotificacionResponsable) {
-        console.error("No se pudo notificar al responsable documental tras guardar cambios documentales.", {
-          admin_id: admin.id,
-          centro_usuario_id: usuario.id,
-          responsable_documental_id: responsableDocumental?.responsable?.id || null,
-          error: errorNotificacionResponsable?.message || String(errorNotificacionResponsable || "")
-        });
+        try {
+          const resultadoCorreo = await enviarEmail(env, {
+            to: propietario.email,
+            subject: `[Documentaci?n] Cambios guardados - ${usuario.centro || "Centro"}`,
+            text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
+            html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail),
+            dedupe: true,
+            dedupeSegundos: 900
+          });
+
+          if (!notificacionAdmin.ok && !notificacionAdmin.destinatario) {
+            notificacionAdmin = {
+              ...resultadoCorreo,
+              destinatario: propietario.email
+            };
+          }
+
+          const resultadoNotificacion = await crearNotificacion(env, {
+            usuarioId: propietarioId,
+            rolDestino: propietario.rol || "",
+            tipo: "DOCUMENTACION",
+            titulo: "Nueva documentaci?n remitida",
+            mensaje: `${usuario.centro || "Un usuario"} ha remitido documentaci?n para revisi?n en ${nombreVisibleAdmin(propietario)}.`,
+            urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(propietarioId))}&tab=bandeja`,
+            dedupeSegundos: 900
+          });
+
+          if (!notificacionInternaResponsable.ok) {
+            notificacionInternaResponsable = resultadoNotificacion;
+          }
+
+          if (!resultadoCorreo.ok && !resultadoCorreo.skipped) {
+            console.error("No se pudo enviar el correo al propietario documental tras guardar cambios documentales.", {
+              organizador_id: admin.id,
+              propietario_documental_id: propietarioId,
+              propietario_documental_email: propietario.email,
+              centro_usuario_id: usuario.id,
+              error: resultadoCorreo.error || ""
+            });
+          }
+        } catch (errorNotificacionResponsable) {
+          console.error("No se pudo notificar al propietario documental tras guardar cambios documentales.", {
+            organizador_id: admin.id,
+            propietario_documental_id: propietarioId,
+            centro_usuario_id: usuario.id,
+            error: errorNotificacionResponsable?.message || String(errorNotificacionResponsable || "")
+          });
+        }
       }
     }
 

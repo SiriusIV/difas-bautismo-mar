@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DocumentaciÃ³n requerida</title>
+  <title>Documentación requerida</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -477,8 +477,8 @@
       <div class="cabecera-inner">
         <img src="logo.png" alt="Logo Armada" class="logo-cabecera">
         <div class="cabecera-titulos">
-          <h1>DocumentaciÃ³n requerida</h1>
-          <h2 id="subtituloCabecera">RemisiÃ³n anticipada de documentaciÃ³n</h2>
+          <h1>Documentación requerida</h1>
+          <h2 id="subtituloCabecera">Remisión anticipada de documentación</h2>
         </div>
       </div>
     </div>
@@ -490,8 +490,8 @@
         <div>
           <h3>Selecciona organizador</h3>
           <p>
-            Puedes adelantar aquÃ­ la remisiÃ³n de la documentaciÃ³n que exigen uno o varios organizadores.
-            AsÃ­, cuando mÃ¡s adelante quieras solicitar una actividad, no tendrÃ¡s que esperar a preparar este trÃ¡mite.
+            Puedes adelantar aquí la remisión de la documentación que exigen uno o varios organizadores.
+            Así, cuando más adelante quieras solicitar una actividad, no tendrás que esperar a preparar este trámite.
           </p>
         </div>
         <div class="acciones-superiores">
@@ -507,19 +507,19 @@
 
       <div id="listaAdministradores" class="admin-lista"></div>
       <div id="estadoVacioAdministradores" class="estado-vacio oculto">
-        No hay administradores con documentaciÃ³n comÃºn activa disponible en este momento.
+        No hay administradores con documentación común activa disponible en este momento.
       </div>
     </div>
 
     <div class="bloque" id="bloqueDocumentacion">
       <div class="bloque-head">
         <div>
-          <h3 id="tituloBloqueDocumentacion">DocumentaciÃ³n del organizador</h3>
+          <h3 id="tituloBloqueDocumentacion">Documentación del organizador</h3>
           <p id="textoBloqueDocumentacion">
-            Remite aquÃ­ la documentaciÃ³n firmada que exige este organizador. Hasta que la documentaciÃ³n estÃ© validada, no podrÃ¡s solicitar sus actividades.
+            Remite aquí la documentación firmada que exige este organizador. Hasta que la documentación esté validada, no podrás solicitar sus actividades.
           </p>
           <div class="resumen-estado">
-            <div class="pill" id="pillVersion">VersiÃ³n requerida: -</div>
+            <div class="pill" id="pillVersion">Versión requerida: -</div>
             <div class="pill pill-estado" id="pillEstado">Estado: -</div>
           </div>
         </div>
@@ -544,7 +544,7 @@
 
       <div class="acciones-inferiores">
         <button type="button" class="btn-suave" id="btnRecargarDocumentacion">Recargar</button>
-        <button type="button" class="btn-principal" id="btnRemitirDocumentacion">Remitir documentaciÃ³n</button>
+        <button type="button" class="btn-principal" id="btnRemitirDocumentacion">Remitir documentación</button>
       </div>
     </div>
   </div>
@@ -638,14 +638,14 @@
 
       if (esModoSolicitud()) {
         subtitulo.textContent = "Paso previo obligatorio para solicitar la actividad";
-        tituloBloque.textContent = "Paso previo: documentaciÃ³n del organizador";
-        textoBloque.textContent = "Antes de poder solicitar esta actividad, debes remitir la documentaciÃ³n firmada exigida por su organizador y esperar a que quede validada.";
+        tituloBloque.textContent = "Paso previo: documentación del organizador";
+        textoBloque.textContent = "Antes de poder solicitar esta actividad, debes remitir la documentación firmada exigida por su organizador y esperar a que quede validada.";
         bloqueSeleccion.classList.add("oculto");
         btnCambiarAdmin.classList.add("oculto");
       } else {
-        subtitulo.textContent = "RemisiÃ³n anticipada de documentaciÃ³n";
-        tituloBloque.textContent = "DocumentaciÃ³n del organizador";
-        textoBloque.textContent = "Puedes remitir aquÃ­ la documentaciÃ³n exigida por un organizador antes de solicitar sus actividades. Si ya estÃ¡ validada, no tendrÃ¡s que repetir este paso.";
+        subtitulo.textContent = "Remisión anticipada de documentación";
+        tituloBloque.textContent = "Documentación del organizador";
+        textoBloque.textContent = "Puedes remitir aquí la documentación exigida por un organizador antes de solicitar sus actividades. Si ya está validada, no tendrás que repetir este paso.";
         bloqueSeleccion.classList.remove("oculto");
         btnCambiarAdmin.classList.remove("oculto");
       }
@@ -694,7 +694,7 @@
         card.dataset.adminId = admin.id;
         card.querySelector(".admin-nombre").textContent = nombreVisibleOrganizador(admin);
         card.querySelector(".admin-localidad").textContent = admin.localidad || "";
-        card.querySelector(".admin-version").textContent = `VersiÃ³n requerida: ${Number(admin.version_requerida || 0)}`;
+        card.querySelector(".admin-version").textContent = `Versión requerida: ${Number(admin.version_requerida || 0)}`;
         card.querySelector(".admin-total").textContent = `${Number(admin.total_documentos || 0)} documento(s) activos`;
 
         if (Number(admin.id) === Number(adminSeleccionadoId)) {
@@ -719,7 +719,7 @@
         (estadoDocumentacion?.requiere_documentacion ? "NO_INICIADO" : "NO_REQUERIDA")
       ).toUpperCase();
 
-      document.getElementById("pillVersion").textContent = `VersiÃ³n requerida: ${version || 0}`;
+      document.getElementById("pillVersion").textContent = `Versión requerida: ${version || 0}`;
 
       const pillEstado = document.getElementById("pillEstado");
       pillEstado.className = "pill pill-estado";
@@ -743,41 +743,41 @@
       }
 
       if (!estadoDocumentacion.requiere_documentacion) {
-        box.textContent = `${adminVisible} no tiene documentaciÃ³n comÃºn activa en este momento.`;
+        box.textContent = `${adminVisible} no tiene documentación común activa en este momento.`;
         return;
       }
 
       if (estado === "VALIDADA") {
-        box.textContent = `La documentaciÃ³n de ${adminVisible} ya estÃ¡ validada para la versiÃ³n actual. Puedes solicitar sus actividades cuando lo necesites.`;
+        box.textContent = `La documentación de ${adminVisible} ya está validada para la versión actual. Puedes solicitar sus actividades cuando lo necesites.`;
         return;
       }
 
       if (estado === "NO_INICIADO") {
-        box.textContent = `TodavÃ­a no has remitido ningÃºn documento exigido por ${adminVisible}.`;
+        box.textContent = `Todavía no has remitido ningún documento exigido por ${adminVisible}.`;
         return;
       }
 
       if (estado === "NO_COMPLETADO") {
-        box.textContent = `AÃºn no has completado toda la documentaciÃ³n exigida por ${adminVisible}. Debes remitir los documentos que faltan para continuar.`;
+        box.textContent = `Aún no has completado toda la documentación exigida por ${adminVisible}. Debes remitir los documentos que faltan para continuar.`;
         return;
       }
 
       if (estado === "EN_REVISION") {
-        box.textContent = `Tu documentaciÃ³n ya fue remitida y estÃ¡ pendiente de revisiÃ³n por ${adminVisible}. Hasta que se valide, no podrÃ¡s solicitar sus actividades.`;
+        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${adminVisible}. Hasta que se valide, no podrás solicitar sus actividades.`;
         return;
       }
 
       if (estado === "RECHAZADA") {
-        box.textContent = `La documentaciÃ³n fue rechazada. Revisa de nuevo los documentos y remite una nueva versiÃ³n firmada para ${adminVisible}.`;
+        box.textContent = `La documentación fue rechazada. Revisa de nuevo los documentos y remite una nueva versión firmada para ${adminVisible}.`;
         return;
       }
 
       if (estado === "NO_ACTUALIZADO") {
-        box.textContent = `El organizador actualizÃ³ sus documentos. Debes remitir la versiÃ³n vigente para volver a quedar habilitado frente a ${adminVisible}.`;
+        box.textContent = `El organizador actualizó sus documentos. Debes remitir la versión vigente para volver a quedar habilitado frente a ${adminVisible}.`;
         return;
       }
 
-      box.textContent = `TodavÃ­a no has remitido la documentaciÃ³n exigida por ${adminVisible}.`;
+      box.textContent = `Todavía no has remitido la documentación exigida por ${adminVisible}.`;
     }
 
     function renderDocumentos() {
@@ -788,7 +788,7 @@
       if (!docs.length) {
         const div = document.createElement("div");
         div.className = "estado-vacio";
-        div.textContent = "No hay documentaciÃ³n activa que remitir para este organizador.";
+        div.textContent = "No hay documentación activa que remitir para este organizador.";
         lista.appendChild(div);
         return;
       }
@@ -812,7 +812,7 @@
         const pill = card.querySelector(".doc-entrega-pill");
 
         card.querySelector(".doc-nombre").textContent = doc.nombre || "Documento";
-        card.querySelector(".doc-descripcion").textContent = doc.descripcion || "Sin descripciÃ³n adicional.";
+        card.querySelector(".doc-descripcion").textContent = doc.descripcion || "Sin descripción adicional.";
         card.querySelector(".doc-base-link").href = doc.archivo_url || "#";
         card.querySelector(".doc-base-link").textContent = doc.archivo_url || "Documento base";
 
@@ -837,8 +837,8 @@
         if (doc.entregado) {
           pill.textContent = "Remitido";
           entregaInfo.textContent = doc.entrega_fecha_subida
-            ? `Ãšltima remisiÃ³n: ${doc.entrega_fecha_subida}`
-            : "Ya existe una remisiÃ³n activa para este documento.";
+            ? `Última remisión: ${doc.entrega_fecha_subida}`
+            : "Ya existe una remisión activa para este documento.";
         } else {
           pill.textContent = "No enviado";
           entregaInfo.textContent = "Debes subir el PDF firmado que vas a remitir para este documento.";
@@ -877,7 +877,7 @@
 
             input.value = data.archivo_url || "";
             actualizarEstadoEntrega();
-            entregaInfo.textContent = "Documento firmado cargado correctamente. Cuando remitas el conjunto, quedarÃ¡ en revisiÃ³n por el organizador.";
+            entregaInfo.textContent = "Documento firmado cargado correctamente. Cuando remitas el conjunto, quedará en revisión por el organizador.";
             mostrarMensaje("ok", data?.mensaje || "Documento PDF remitido correctamente.");
           } catch (error) {
             mostrarMensaje("error", error.message || "No se pudo subir el documento firmado.");
@@ -899,7 +899,7 @@
         });
 
         btnEliminar.addEventListener("click", async function () {
-          const confirmar = window.confirm("Este PDF firmado se eliminarÃ¡ del sistema y dejarÃ¡ de contar como remitido. Â¿Deseas continuar?");
+          const confirmar = window.confirm("Este PDF firmado se eliminará del sistema y dejará de contar como remitido. ¿Deseas continuar?");
           if (!confirmar) return;
 
           limpiarMensaje();
@@ -939,12 +939,12 @@
         estadoDocumentacion = null;
         document.getElementById("listaDocumentos").innerHTML = "";
         document.getElementById("tituloBloqueDocumentacion").textContent = esModoSolicitud()
-          ? "Paso previo: documentaciÃ³n del organizador"
-          : "DocumentaciÃ³n del organizador";
+          ? "Paso previo: documentación del organizador"
+          : "Documentación del organizador";
         document.getElementById("notaEstadoAdmin").textContent = esModoSolicitud()
-          ? "Debes indicar un organizador vÃ¡lido antes de continuar."
-          : "Selecciona un organizador para ver la documentaciÃ³n que exige.";
-        document.getElementById("pillVersion").textContent = "VersiÃ³n requerida: -";
+          ? "Debes indicar un organizador válido antes de continuar."
+          : "Selecciona un organizador para ver la documentación que exige.";
+        document.getElementById("pillVersion").textContent = "Versión requerida: -";
         document.getElementById("pillEstado").textContent = "Estado: -";
         return;
       }
@@ -963,12 +963,12 @@
 
       if (!res.ok || !data?.ok) {
         estadoDocumentacion = null;
-        mostrarMensaje("error", data?.error || "No se pudo consultar la documentaciÃ³n exigida.");
+        mostrarMensaje("error", data?.error || "No se pudo consultar la documentación exigida.");
         return;
       }
 
       estadoDocumentacion = data;
-      document.getElementById("tituloBloqueDocumentacion").textContent = `DocumentaciÃ³n de ${nombreVisibleOrganizador(data.admin)}`;
+      document.getElementById("tituloBloqueDocumentacion").textContent = `Documentación de ${nombreVisibleOrganizador(data.admin)}`;
       actualizarPills();
       actualizarNotaEstado();
       renderDocumentos();
@@ -989,7 +989,7 @@
 
       for (let i = 0; i < entregas.length; i++) {
         if (!Number.isInteger(entregas[i].documento_id) || entregas[i].documento_id <= 0) {
-          return "Se ha detectado un documento invÃ¡lido en el formulario.";
+          return "Se ha detectado un documento inválido en el formulario.";
         }
         if (!entregas[i].archivo_url) {
           return `Debes subir el PDF firmado del documento ${i + 1}.`;
@@ -1003,18 +1003,18 @@
       limpiarMensaje();
 
       if (!Number.isInteger(adminSeleccionadoId) || adminSeleccionadoId <= 0) {
-        mostrarMensaje("error", "Debes seleccionar un organizador vÃ¡lido.");
+        mostrarMensaje("error", "Debes seleccionar un organizador válido.");
         return;
       }
 
       const estadoActual = String(estadoDocumentacion?.expediente?.estado_efectivo || "").toUpperCase();
       if (estadoActual === "EN_REVISION") {
-        mostrarMensaje("warn", "Tu documentaciÃ³n ya fue remitida y estÃ¡ pendiente de validaciÃ³n manual. No es necesario volver a enviarla.");
+        mostrarMensaje("warn", "Tu documentación ya fue remitida y está pendiente de validación manual. No es necesario volver a enviarla.");
         return;
       }
 
       if (estadoActual === "VALIDADA") {
-        mostrarMensaje("warn", "La documentaciÃ³n ya estÃ¡ validada para este organizador. No es necesario volver a remitirla.");
+        mostrarMensaje("warn", "La documentación ya está validada para este organizador. No es necesario volver a remitirla.");
         return;
       }
 
@@ -1030,17 +1030,18 @@
         credentials: "include",
         body: JSON.stringify({
           admin_id: adminSeleccionadoId,
+          actividad_id: Number.isInteger(actividadId) && actividadId > 0 && esModoSolicitud() ? actividadId : null,
           entregas: obtenerEntregasFormulario()
         })
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        mostrarMensaje("error", data?.error || "No se pudo remitir la documentaciÃ³n.");
+        mostrarMensaje("error", data?.error || "No se pudo remitir la documentación.");
         return;
       }
 
-      mostrarMensaje("ok", data?.mensaje || "DocumentaciÃ³n remitida correctamente.");
+      mostrarMensaje("ok", data?.mensaje || "Documentación remitida correctamente.");
       await cargarEstadoDocumentacion();
     }
 
@@ -1056,13 +1057,13 @@
       if (!esModoSolicitud()) {
         await cargarListaAdministradores();
       } else if (!adminSeleccionadoId) {
-        mostrarMensaje("error", "No se ha indicado un organizador vÃ¡lido para este trÃ¡mite.");
+        mostrarMensaje("error", "No se ha indicado un organizador válido para este trámite.");
       }
 
       await cargarEstadoDocumentacion();
 
       if (esModoSolicitud() && Number.isInteger(actividadId) && actividadId > 0) {
-        mostrarMensaje("warn", "Antes de solicitar esta actividad, debes remitir y esperar la validaciÃ³n de la documentaciÃ³n exigida por su organizador.");
+        mostrarMensaje("warn", "Antes de solicitar esta actividad, debes remitir y esperar la validación de la documentación exigida por su organizador.");
       }
     }
 
