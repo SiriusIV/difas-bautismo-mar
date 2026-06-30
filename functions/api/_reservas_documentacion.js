@@ -3,6 +3,7 @@ import {
   leerConfiguracionDocumentalActividad,
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
+import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -11,6 +12,18 @@ function limpiarTexto(valor) {
 function normalizarEstadoDocumento(estado) {
   const valor = limpiarTexto(estado).toUpperCase();
   return valor || "EN_REVISION";
+}
+
+function obtenerPropietarioDocumentalDocumento(doc) {
+  return Number(doc?.propietario_id || doc?.admin_id || 0);
+}
+
+function claveDocumento(nombre, propietarioId = 0) {
+  const nombreNormalizado = limpiarTexto(nombre).toUpperCase();
+  const propietario = Number(propietarioId || 0);
+  return propietario > 0
+    ? `${propietario}::${nombreNormalizado}`
+    : nombreNormalizado;
 }
 
 function parsearFechaComparable(valor) {
@@ -38,17 +51,45 @@ function calcularEstadoDocumento(doc, entrega) {
   return normalizarEstadoDocumento(entrega.estado);
 }
 
+function indexarArchivosPorDocumento(archivosActivos = []) {
+  const porDocumento = new Map();
+
+  for (const archivo of Array.isArray(archivosActivos) ? archivosActivos : []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    if (!nombre) continue;
+    const propietarioId = Number(archivo?.propietario_documental_id || archivo?.admin_id || 0);
+    const keyPropietario = claveDocumento(nombre, propietarioId);
+    const keyLegacy = claveDocumento(nombre);
+    const existente = porDocumento.get(keyPropietario);
+    if (!existente || Number(archivo?.id || 0) > Number(existente?.id || 0)) {
+      porDocumento.set(keyPropietario, archivo);
+      if (!porDocumento.has(keyLegacy)) {
+        porDocumento.set(keyLegacy, archivo);
+      }
+    }
+  }
+
+  return porDocumento;
+}
+
+function obtenerEntregaDocumento(doc, archivosPorDocumento) {
+  const nombre = limpiarTexto(doc?.nombre);
+  if (!nombre || !archivosPorDocumento) return null;
+  const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
+  return archivosPorDocumento.get(claveDocumento(nombre, propietarioId)) ||
+    archivosPorDocumento.get(claveDocumento(nombre)) ||
+    null;
+}
+
 function calcularEstadoGlobal(documentosActivos, archivosActivos) {
   if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
     return "NO_REQUERIDA";
   }
 
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento).toUpperCase(), archivo])
-  );
+  const archivosPorDocumento = indexarArchivosPorDocumento(archivosActivos);
 
   const estados = documentosActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+    const entrega = obtenerEntregaDocumento(doc, archivosPorDocumento);
     return calcularEstadoDocumento(doc, entrega);
   });
 
@@ -65,52 +106,85 @@ function estadoDocumentalCompleto(estado) {
 }
 
 function construirDocumentosPendientes(documentosActivos, archivosActivos) {
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento).toUpperCase(), archivo])
-  );
+  const archivosPorDocumento = indexarArchivosPorDocumento(archivosActivos);
 
   return (documentosActivos || [])
     .map((doc) => {
-      const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre).toUpperCase()) || null;
+      const entrega = obtenerEntregaDocumento(doc, archivosPorDocumento);
       const estado = calcularEstadoDocumento(doc, entrega);
       return {
         id: Number(doc.id || 0),
         nombre: limpiarTexto(doc.nombre),
+        propietario_documental_id: obtenerPropietarioDocumentalDocumento(doc),
+        propietario_documental_nombre: limpiarTexto(doc.propietario_nombre),
         estado
       };
     })
     .filter((doc) => doc.estado !== "VALIDADO");
 }
 
-async function obtenerExpediente(env, centroUsuarioId, adminId) {
-  return await env.DB.prepare(`
+function obtenerPropietariosDocumentales(documentos = []) {
+  return Array.from(new Set(
+    (Array.isArray(documentos) ? documentos : [])
+      .map((doc) => obtenerPropietarioDocumentalDocumento(doc))
+      .filter((id) => id > 0)
+  ));
+}
+
+async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = []) {
+  const ids = Array.from(new Set(
+    (Array.isArray(propietarios) ? propietarios : [])
+      .map((id) => Number(id || 0))
+      .filter((id) => id > 0)
+  ));
+  const mapa = new Map();
+  if (!ids.length) return mapa;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
     SELECT
       id,
+      admin_id,
       estado
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
-      AND admin_id = ?
-    LIMIT 1
-  `).bind(centroUsuarioId, adminId).first();
+      AND admin_id IN (${placeholders})
+  `).bind(centroUsuarioId, ...ids).all();
+
+  for (const row of rows?.results || []) {
+    mapa.set(Number(row.admin_id || 0), row);
+  }
+  return mapa;
 }
 
-async function obtenerArchivosActivos(env, documentacionId) {
-  if (!documentacionId) return [];
+async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario = new Map()) {
+  const expedientes = Array.from(expedientesPorPropietario.values())
+    .filter((expediente) => Number(expediente?.id || 0) > 0);
+  if (!expedientes.length) return [];
+
+  const propietarioPorExpediente = new Map(
+    expedientes.map((expediente) => [Number(expediente.id || 0), Number(expediente.admin_id || 0)])
+  );
+  const placeholders = expedientes.map(() => "?").join(", ");
 
   const rows = await env.DB.prepare(`
     SELECT
       id,
+      documentacion_id,
       nombre_documento,
       version_documental,
       estado,
       fecha_subida
     FROM centro_admin_documentacion_archivos
-    WHERE documentacion_id = ?
+    WHERE documentacion_id IN (${placeholders})
       AND activo = 1
     ORDER BY id ASC
-  `).bind(documentacionId).all();
+  `).bind(...expedientes.map((expediente) => expediente.id)).all();
 
-  return rows?.results || [];
+  return (rows?.results || []).map((row) => ({
+    ...row,
+    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0
+  }));
 }
 
 export async function validarDocumentacionReserva(env, {
@@ -129,7 +203,11 @@ export async function validarDocumentacionReserva(env, {
     };
   }
 
-  const catalogo = await obtenerCatalogoDocumentosActivosAdmin(env, admin);
+  const catalogo = await obtenerCatalogoDocumentalVinculadoAdmin(
+    env,
+    admin,
+    await obtenerCatalogoDocumentosActivosAdmin(env, admin)
+  );
   const configuracion = await leerConfiguracionDocumentalActividad(env, actividad);
   const documentosExigibles = resolverDocumentosExigiblesActividad(catalogo, configuracion);
 
@@ -142,17 +220,23 @@ export async function validarDocumentacionReserva(env, {
     };
   }
 
-  const expediente = await obtenerExpediente(env, usuario, admin);
-  const archivosActivos = expediente?.id ? await obtenerArchivosActivos(env, expediente.id) : [];
+  const propietarios = obtenerPropietariosDocumentales(documentosExigibles);
+  const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario, propietarios);
+  const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);
   const okFinal = estadoDocumentalCompleto(estadoDocumental);
+  const estadosExpedientes = propietarios.map((propietarioId) =>
+    String(expedientesPorPropietario.get(propietarioId)?.estado || "").trim().toUpperCase()
+  ).filter(Boolean);
 
   return {
     ok: okFinal,
     requiere_documentacion: true,
     estado_documental: estadoDocumental,
-    estado_expediente: String(expediente?.estado || "").trim().toUpperCase(),
+    estado_expediente: estadosExpedientes.includes("EN_REVISION")
+      ? "EN_REVISION"
+      : (estadosExpedientes[0] || ""),
     documentos_pendientes: documentosPendientes,
     error: okFinal
       ? ""
