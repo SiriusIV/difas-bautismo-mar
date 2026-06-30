@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -120,8 +120,8 @@ export async function onRequestPost(context) {
         documentoId
       ).run();
 
-      const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-        adminId: Number(actual.admin_id || 0),
+      const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+        propietarioDocumentalId: Number(actual.admin_id || 0),
         baseUrl,
         motivo: "documentos_actualizados",
         avisarCambioMarcoSinCambios: true
@@ -161,8 +161,8 @@ export async function onRequestPost(context) {
       version
     ).run();
 
-    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId: Number(session.usuario_id || 0),
+    const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+      propietarioDocumentalId: Number(session.usuario_id || 0),
       baseUrl,
       motivo: "documento_creado",
       avisarCambioMarcoSinCambios: true

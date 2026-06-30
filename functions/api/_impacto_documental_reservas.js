@@ -10,10 +10,14 @@ import {
   construirEmailTextoReservaEliminadaDocumentacionCritica,
   construirEmailTextoReservaReactivadaDocumentacion
 } from "./_email_reservas_documentacion.js";
-import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
+import {
+  asegurarTablaPropietariosDocumentalesAdmin,
+  obtenerCatalogoDocumentalVinculadoAdmin
+} from "./_documentacion_propietarios.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import {
+  asegurarTablasDocumentacionActividad,
   obtenerCatalogoDocumentosActivosAdmin,
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
@@ -21,6 +25,18 @@ import {
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
+}
+
+function normalizarClaveTexto(valor) {
+  return limpiarTexto(valor).toUpperCase();
+}
+
+function obtenerPropietarioDocumento(doc = {}) {
+  return Number(doc?.propietario_id || doc?.admin_id || 0);
+}
+
+function claveDocumentoEntregable(nombre, propietarioId = 0) {
+  return `${Number(propietarioId || 0)}::${normalizarClaveTexto(nombre)}`;
 }
 
 function escaparHtml(valor) {
@@ -76,17 +92,55 @@ function calcularEstadoDocumento(doc, entrega) {
   return normalizarEstadoDocumento(entrega.estado);
 }
 
+function indexarArchivosActivos(archivosActivos) {
+  const porPropietarioYNombre = new Map();
+  const porNombre = new Map();
+
+  for (const archivo of archivosActivos || []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    if (!nombre) continue;
+
+    const propietario = Number(
+      archivo?.propietario_id ||
+      archivo?.documento_propietario_id ||
+      archivo?.admin_id ||
+      0
+    );
+    if (propietario > 0) {
+      porPropietarioYNombre.set(claveDocumentoEntregable(nombre, propietario), archivo);
+    }
+    if (!porNombre.has(normalizarClaveTexto(nombre))) {
+      porNombre.set(normalizarClaveTexto(nombre), archivo);
+    }
+  }
+
+  return { porPropietarioYNombre, porNombre };
+}
+
+function obtenerEntregaDocumento(doc, indiceArchivos) {
+  const nombre = limpiarTexto(doc?.nombre);
+  if (!nombre) return null;
+
+  const propietario = obtenerPropietarioDocumento(doc);
+  if (propietario > 0) {
+    const entregaPropietaria = indiceArchivos.porPropietarioYNombre.get(
+      claveDocumentoEntregable(nombre, propietario)
+    );
+    if (entregaPropietaria) return entregaPropietaria;
+  }
+
+  return indiceArchivos.porNombre.get(normalizarClaveTexto(nombre)) || null;
+}
+
 function calcularEstadoGlobal(documentosActivos, archivosActivos) {
   if (!Array.isArray(documentosActivos) || documentosActivos.length === 0) {
     return "NO_REQUERIDA";
   }
 
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const indiceArchivos = indexarArchivosActivos(archivosActivos);
 
   const estados = documentosActivos.map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const entrega = obtenerEntregaDocumento(doc, indiceArchivos);
     return calcularEstadoDocumento(doc, entrega);
   });
 
@@ -232,6 +286,48 @@ async function asegurarExpediente(env, adminId, centroUsuarioId, versionRequerid
   return await obtenerExpediente(env, adminId, centroUsuarioId);
 }
 
+function obtenerPropietariosDocumentos(documentos = [], adminIdFallback = 0) {
+  const ids = new Set();
+  for (const doc of documentos || []) {
+    const propietario = obtenerPropietarioDocumento(doc) || Number(adminIdFallback || 0);
+    if (propietario > 0) ids.add(propietario);
+  }
+  if (!ids.size && Number(adminIdFallback || 0) > 0) {
+    ids.add(Number(adminIdFallback || 0));
+  }
+  return Array.from(ids);
+}
+
+async function asegurarExpedientesPropietarios(
+  env,
+  centroUsuarioId,
+  propietarios = [],
+  documentos = [],
+  estadoInicial = "NO_INICIADO"
+) {
+  const mapa = new Map();
+  for (const propietarioId of propietarios) {
+    const documentosPropietario = (documentos || []).filter((doc) =>
+      (obtenerPropietarioDocumento(doc) || Number(propietarioId || 0)) === Number(propietarioId || 0)
+    );
+    const versionRequerida = documentosPropietario.reduce(
+      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+      0
+    );
+    const expediente = await asegurarExpediente(
+      env,
+      Number(propietarioId || 0),
+      Number(centroUsuarioId || 0),
+      versionRequerida,
+      documentosPropietario.length > 0 ? estadoInicial : "NO_REQUERIDA"
+    );
+    if (expediente?.id) {
+      mapa.set(Number(propietarioId || 0), expediente);
+    }
+  }
+  return mapa;
+}
+
 async function obtenerArchivosActivosExpediente(env, expedienteId) {
   const rows = await env.DB.prepare(`
     SELECT
@@ -308,6 +404,36 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
   return rows?.results || [];
 }
 
+async function obtenerArchivosActivosExpedientes(env, expedientesPorPropietario = new Map()) {
+  const expedientes = Array.from(expedientesPorPropietario.entries())
+    .filter(([, expediente]) => Number(expediente?.id || 0) > 0);
+  if (!expedientes.length) return [];
+
+  const propietarioPorExpediente = new Map(
+    expedientes.map(([propietarioId, expediente]) => [Number(expediente.id || 0), Number(propietarioId || 0)])
+  );
+  const placeholders = expedientes.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT
+      id,
+      documentacion_id,
+      nombre_documento,
+      version_documental,
+      estado,
+      archivo_url,
+      fecha_subida
+    FROM centro_admin_documentacion_archivos
+    WHERE documentacion_id IN (${placeholders})
+      AND activo = 1
+    ORDER BY id ASC
+  `).bind(...expedientes.map(([, expediente]) => expediente.id)).all();
+
+  return (rows?.results || []).map((row) => ({
+    ...row,
+    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0
+  }));
+}
+
 function reservaEnPlazoCriticoDocumental(reserva = {}) {
   const inicio = parsearFecha(reserva?.inicio_reserva);
   if (!inicio) return false;
@@ -316,15 +442,14 @@ function reservaEnPlazoCriticoDocumental(reserva = {}) {
 }
 
 function construirPendientes(documentosActivos, archivosActivos) {
-  const archivosPorNombre = new Map(
-    (archivosActivos || []).map((archivo) => [limpiarTexto(archivo.nombre_documento), archivo])
-  );
+  const indiceArchivos = indexarArchivosActivos(archivosActivos);
 
   return (documentosActivos || []).map((doc) => {
-    const entrega = archivosPorNombre.get(limpiarTexto(doc.nombre)) || null;
+    const entrega = obtenerEntregaDocumento(doc, indiceArchivos);
     const estado = calcularEstadoDocumento(doc, entrega);
     return {
       id: Number(doc.id || 0),
+      propietario_id: obtenerPropietarioDocumento(doc),
       nombre: limpiarTexto(doc.nombre),
       descripcion: limpiarTexto(doc.descripcion),
       version_documental: Number(doc.version_documental || 0),
@@ -543,6 +668,93 @@ function debeAvisarCambioMarcoSinCambios(motivo = "", avisarCambioMarcoSinCambio
   );
 }
 
+async function obtenerAdminsAfectadosPorPropietario(env, propietarioDocumentalId) {
+  const propietario = Number(propietarioDocumentalId || 0);
+  if (!(propietario > 0)) return [];
+
+  await asegurarTablaPropietariosDocumentalesAdmin(env);
+  await asegurarTablasDocumentacionActividad(env);
+
+  const rows = await env.DB.prepare(`
+    SELECT DISTINCT
+      u.id,
+      u.nombre,
+      u.nombre_publico
+    FROM usuarios u
+    WHERE u.id IN (
+      SELECT DISTINCT a.admin_id
+      FROM actividades a
+      INNER JOIN actividad_documentos_obligatorios ado
+        ON ado.actividad_id = a.id
+      WHERE ado.propietario_id = ?
+        AND COALESCE(ado.activo, 1) = 1
+      UNION
+      SELECT DISTINCT v.admin_id
+      FROM admin_documentacion_propietarios v
+      WHERE v.propietario_id = ?
+        AND COALESCE(v.activo, 1) = 1
+      UNION
+      SELECT ?
+    )
+      AND UPPER(COALESCE(u.rol, '')) IN ('ADMIN', 'SUPERADMIN')
+      AND COALESCE(u.activo, 1) = 1
+    ORDER BY
+      CASE
+        WHEN u.nombre_publico IS NOT NULL AND TRIM(u.nombre_publico) <> '' THEN TRIM(u.nombre_publico)
+        ELSE TRIM(u.nombre)
+      END COLLATE NOCASE ASC,
+      u.id ASC
+  `).bind(propietario, propietario, propietario).all();
+
+  return (rows?.results || [])
+    .map((row) => ({
+      id: Number(row.id || 0),
+      nombre: limpiarTexto(row.nombre),
+      nombre_publico: limpiarTexto(row.nombre_publico)
+    }))
+    .filter((row) => row.id > 0);
+}
+
+export async function recalcularImpactoDocumentalReservasPorPropietario(env, {
+  propietarioDocumentalId,
+  baseUrl = "",
+  motivo = "documentos_actualizados",
+  avisarCambioMarcoSinCambios = false
+} = {}) {
+  const propietario = Number(propietarioDocumentalId || 0);
+  if (!(propietario > 0)) {
+    return {
+      ok: false,
+      error: "propietario_documental_id no valido."
+    };
+  }
+
+  const admins = await obtenerAdminsAfectadosPorPropietario(env, propietario);
+  const resumen = {
+    ok: true,
+    propietario_documental_id: propietario,
+    motivo,
+    admins_afectados: admins.length,
+    detalle: []
+  };
+
+  for (const admin of admins) {
+    const impacto = await recalcularImpactoDocumentalReservas(env, {
+      adminId: Number(admin.id || 0),
+      baseUrl,
+      motivo,
+      avisarCambioMarcoSinCambios
+    });
+    resumen.detalle.push({
+      admin_id: Number(admin.id || 0),
+      admin_nombre: admin.nombre_publico || admin.nombre || "",
+      impacto
+    });
+  }
+
+  return resumen;
+}
+
 export async function recalcularImpactoDocumentalReservas(env, {
   adminId,
   baseUrl = "",
@@ -589,17 +801,19 @@ export async function recalcularImpactoDocumentalReservas(env, {
     resumen.total_solicitantes_revisados += 1;
 
     const estadoInicial = (documentos || []).length > 0 ? "NO_INICIADO" : "NO_REQUERIDA";
-    const expediente = await asegurarExpediente(
+    const propietariosDocumentales = obtenerPropietariosDocumentos(documentos, adminIdNumerico);
+    const expedientesPorPropietario = await asegurarExpedientesPropietarios(
       env,
-      adminIdNumerico,
       Number(solicitante.id || 0),
-      versionRequerida,
+      propietariosDocumentales,
+      documentos,
       estadoInicial
     );
+    const expediente = expedientesPorPropietario.get(adminIdNumerico) ||
+      Array.from(expedientesPorPropietario.values())[0] ||
+      null;
 
-    const archivosActivos = expediente?.id
-      ? await obtenerArchivosActivosExpediente(env, Number(expediente.id || 0))
-      : [];
+    const archivosActivos = await obtenerArchivosActivosExpedientes(env, expedientesPorPropietario);
 
     const estadoGlobal = calcularEstadoGlobal(documentos, archivosActivos);
     const pendientes = construirPendientes(documentos, archivosActivos);
@@ -614,13 +828,41 @@ export async function recalcularImpactoDocumentalReservas(env, {
       return max;
     }, null);
 
-    await actualizarExpediente(env, Number(expediente.id || 0), {
-      version_requerida: versionRequerida,
-      version_aportada: versionAportada,
-      estado: estadoGlobal,
-      fecha_ultima_entrega: fechaUltimaEntrega ? fechaUltimaEntrega.toISOString().replace("T", " ").slice(0, 19) : null,
-      fecha_validacion: estadoGlobal === "VALIDADA" ? (expediente?.fecha_validacion || null) : null
-    });
+    for (const propietarioId of propietariosDocumentales) {
+      const expedientePropietario = expedientesPorPropietario.get(Number(propietarioId || 0));
+      if (!expedientePropietario?.id) continue;
+      const documentosPropietario = (documentos || []).filter((doc) =>
+        (obtenerPropietarioDocumento(doc) || Number(propietarioId || 0)) === Number(propietarioId || 0)
+      );
+      const archivosPropietario = archivosActivos.filter((archivo) =>
+        Number(archivo?.propietario_documental_id || 0) === Number(propietarioId || 0)
+      );
+      const estadoPropietario = calcularEstadoGlobal(documentosPropietario, archivosPropietario);
+      const versionRequeridaPropietario = documentosPropietario.reduce(
+        (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+        0
+      );
+      const versionAportadaPropietario = archivosPropietario.reduce(
+        (max, archivo) => Math.max(max, Number(archivo.version_documental || 0)),
+        0
+      );
+      const fechaUltimaEntregaPropietario = archivosPropietario.reduce((max, archivo) => {
+        const actual = parsearFecha(archivo.fecha_subida);
+        if (!actual) return max;
+        if (!max || actual > max) return actual;
+        return max;
+      }, null);
+
+      await actualizarExpediente(env, Number(expedientePropietario.id || 0), {
+        version_requerida: versionRequeridaPropietario,
+        version_aportada: versionAportadaPropietario,
+        estado: estadoPropietario,
+        fecha_ultima_entrega: fechaUltimaEntregaPropietario
+          ? fechaUltimaEntregaPropietario.toISOString().replace("T", " ").slice(0, 19)
+          : null,
+        fecha_validacion: estadoPropietario === "VALIDADA" ? (expedientePropietario?.fecha_validacion || null) : null
+      });
+    }
 
     const reservas = await obtenerReservasActivasPorUsuario(env, adminIdNumerico, Number(solicitante.id || 0));
     if (!reservas.length) {

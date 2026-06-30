@@ -1,5 +1,5 @@
 import { getUserSession } from "../usuario/_auth.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function limpiarTexto(valor) {
@@ -131,29 +131,12 @@ export async function obtenerDocumentosBaseSecretaria(env, secretariaId) {
 }
 
 export async function recalcularImpactoSecretaria(env, secretariaId, baseUrl, motivo) {
-  const admins = await obtenerAdminsAdscritos(env, secretariaId);
-  const resumen = {
-    ok: true,
-    secretaria_id: Number(secretariaId || 0),
-    motivo: motivo || "",
-    admins_afectados: admins.length,
-    detalle: []
-  };
-
-  for (const admin of admins) {
-    const impacto = await recalcularImpactoDocumentalReservas(env, {
-      adminId: Number(admin.id || 0),
-      baseUrl,
-      motivo
-    });
-    resumen.detalle.push({
-      admin_id: Number(admin.id || 0),
-      admin_nombre: admin.nombre_publico || admin.nombre || "",
-      impacto
-    });
-  }
-
-  return resumen;
+  return await recalcularImpactoDocumentalReservasPorPropietario(env, {
+    propietarioDocumentalId: Number(secretariaId || 0),
+    baseUrl,
+    motivo,
+    avisarCambioMarcoSinCambios: true
+  });
 }
 
 export async function secretariaEsResponsableDeAdmin(env, secretariaId, adminId) {

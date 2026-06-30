@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -303,8 +303,8 @@ export async function onRequestPost(context) {
     const versionActual = documentos
       .filter((doc) => Number(doc.activo || 0) === 1)
       .reduce((max, doc) => Math.max(max, Number(doc.version_documental || 0)), 0);
-    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId,
+    const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+      propietarioDocumentalId: adminId,
       baseUrl,
       motivo: "documentos_actualizados",
       avisarCambioMarcoSinCambios: true
