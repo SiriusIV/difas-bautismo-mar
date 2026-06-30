@@ -47,6 +47,8 @@ export async function onRequestGet(context) {
         admin.nombre AS admin_nombre,
         admin.nombre_publico AS admin_nombre_publico,
         av.id AS archivo_id,
+        doc.id AS documento_base_id,
+        doc.admin_id AS propietario_documental_id,
         av.nombre_documento,
         av.archivo_url,
         av.version_documental,
@@ -61,9 +63,11 @@ export async function onRequestGet(context) {
       INNER JOIN archivos_vigentes av
         ON av.documentacion_id = cad.id
        AND av.rn = 1
+      INNER JOIN admin_documentos_comunes doc
+        ON doc.admin_id = ?
+       AND COALESCE(doc.activo, 1) = 1
+       AND UPPER(TRIM(COALESCE(doc.nombre, ''))) = UPPER(TRIM(COALESCE(av.nombre_documento, '')))
       WHERE admin.rol = 'ADMIN'
-        AND admin.secretaria_usuario_id = ?
-        AND COALESCE(admin.modulo_secretaria, 0) = 0
         AND UPPER(TRIM(COALESCE(av.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
       ORDER BY
         datetime(COALESCE(av.fecha_subida, cad.fecha_ultima_entrega)) DESC,
@@ -78,6 +82,8 @@ export async function onRequestGet(context) {
       admin_id: Number(row.admin_id || 0),
       admin_nombre: row.admin_nombre || "",
       admin_nombre_publico: row.admin_nombre_publico || "",
+      documento_base_id: Number(row.documento_base_id || 0),
+      propietario_documental_id: Number(row.propietario_documental_id || 0),
       centro: row.centro || "",
       email: row.email || "",
       telefono_contacto: row.telefono_contacto || "",

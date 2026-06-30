@@ -1,4 +1,4 @@
-import { getSecretariaSession, obtenerExpedienteGestionadoPorSecretaria } from "./_documental.js";
+import { getSecretariaSession } from "./_documental.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -27,7 +27,42 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Debes indicar un expediente válido." }, { status: 400 });
     }
 
-    const expediente = await obtenerExpedienteGestionadoPorSecretaria(env, session.usuario_id, documentacionId);
+    const expediente = await env.DB.prepare(`
+      SELECT
+        cad.id,
+        cad.centro_usuario_id,
+        cad.admin_id,
+        cad.version_requerida,
+        cad.version_aportada,
+        cad.estado,
+        cad.fecha_ultima_entrega,
+        cad.fecha_validacion,
+        cad.observaciones_admin,
+        cad.updated_at,
+        u.centro,
+        u.email,
+        u.telefono_contacto,
+        admin.nombre AS admin_nombre,
+        admin.nombre_publico AS admin_nombre_publico
+      FROM centro_admin_documentacion cad
+      INNER JOIN usuarios u
+        ON u.id = cad.centro_usuario_id
+      INNER JOIN usuarios admin
+        ON admin.id = cad.admin_id
+      WHERE cad.id = ?
+        AND EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          INNER JOIN admin_documentos_comunes d
+            ON d.admin_id = ?
+           AND COALESCE(d.activo, 1) = 1
+           AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+          WHERE a.documentacion_id = cad.id
+            AND a.activo = 1
+        )
+      LIMIT 1
+    `).bind(documentacionId, session.usuario_id).first();
+
     if (!expediente) {
       return json({ ok: false, error: "Expediente documental no encontrado." }, { status: 404 });
     }
@@ -53,10 +88,14 @@ export async function onRequestGet(context) {
         GROUP BY nombre_documento
       ) ult
         ON ult.id = a.id
+      INNER JOIN admin_documentos_comunes d
+        ON d.admin_id = ?
+       AND COALESCE(d.activo, 1) = 1
+       AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
       WHERE a.documentacion_id = ?
         AND a.activo = 1
       ORDER BY a.nombre_documento ASC, a.id ASC
-    `).bind(documentacionId, documentacionId).all();
+    `).bind(documentacionId, session.usuario_id, documentacionId).all();
 
     return json({
       ok: true,
@@ -64,6 +103,7 @@ export async function onRequestGet(context) {
         id: Number(expediente.id || 0),
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
         admin_id: Number(expediente.admin_id || 0),
+        propietario_documental_id: Number(session.usuario_id || 0),
         admin_nombre: expediente.admin_nombre || "",
         admin_nombre_publico: expediente.admin_nombre_publico || "",
         centro: expediente.centro || "",

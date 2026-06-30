@@ -1,6 +1,5 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
-import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -32,25 +31,9 @@ export async function onRequestGet(context) {
     }
 
     const url = new URL(request.url);
-    const rolSesion = await getRolUsuario(env, session.usuario_id);
-    const adminId = await resolverAdminObjetivo(env, session, url.searchParams.get("admin_id"));
-    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
+    const propietarioDocumentalId = await resolverAdminObjetivo(env, session, url.searchParams.get("admin_id"));
+    const actividadAdminId = parsearIdPositivo(url.searchParams.get("actividad_admin_id"));
     const centroUsuarioId = parsearIdPositivo(url.searchParams.get("centro_usuario_id"));
-
-    if (!permiso.permitido) {
-      const mensaje = permiso.motivo === "RESPONSABLE_DISTINTO"
-        ? "La documentación de este administrador está gestionada por una secretaría externa."
-        : "Este administrador no tiene la gestión documental operativa habilitada.";
-      return json(
-        {
-          ok: false,
-          error: mensaje,
-          modo_documental: permiso.resolucion?.modo || "",
-          responsable_documental_id: Number(permiso.resolucion?.responsable?.id || 0)
-        },
-        { status: 403 }
-      );
-    }
 
     if (!centroUsuarioId) {
       return json({ ok: false, error: "Debes indicar un centro válido." }, { status: 400 });
@@ -74,10 +57,24 @@ export async function onRequestGet(context) {
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios u
         ON u.id = cad.centro_usuario_id
-      WHERE cad.admin_id = ?
-        AND cad.centro_usuario_id = ?
+      WHERE cad.centro_usuario_id = ?
+        ${actividadAdminId ? "AND cad.admin_id = ?" : ""}
+        AND EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          INNER JOIN admin_documentos_comunes d
+            ON d.admin_id = ?
+           AND COALESCE(d.activo, 1) = 1
+           AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+          WHERE a.documentacion_id = cad.id
+            AND a.activo = 1
+        )
       LIMIT 1
-    `).bind(adminId, centroUsuarioId).first();
+    `).bind(
+      ...(actividadAdminId
+        ? [centroUsuarioId, actividadAdminId, propietarioDocumentalId]
+        : [centroUsuarioId, propietarioDocumentalId])
+    ).first();
 
     if (!expediente) {
       return json({ ok: false, error: "Expediente documental no encontrado." }, { status: 404 });
@@ -104,10 +101,14 @@ export async function onRequestGet(context) {
         GROUP BY nombre_documento
       ) ult
         ON ult.id = a.id
+      INNER JOIN admin_documentos_comunes d
+        ON d.admin_id = ?
+       AND COALESCE(d.activo, 1) = 1
+       AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
       WHERE a.documentacion_id = ?
         AND a.activo = 1
       ORDER BY a.nombre_documento ASC, a.id ASC
-    `).bind(expediente.id, expediente.id).all();
+    `).bind(expediente.id, propietarioDocumentalId, expediente.id).all();
 
     return json({
       ok: true,
@@ -115,6 +116,7 @@ export async function onRequestGet(context) {
         id: expediente.id,
         centro_usuario_id: expediente.centro_usuario_id,
         admin_id: expediente.admin_id,
+        propietario_documental_id: propietarioDocumentalId,
         centro: expediente.centro || "",
         email: expediente.email || "",
         telefono_contacto: expediente.telefono_contacto || "",

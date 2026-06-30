@@ -1,6 +1,5 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
-import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import {
   construirEmailHtmlResolucionExpedienteDocumental,
@@ -44,13 +43,16 @@ async function resolverAdminObjetivo(env, session, adminIdParam) {
   return session.usuario_id;
 }
 
-async function obtenerDocumentosBaseActivos(env, adminId) {
+async function obtenerDocumentosBaseActivos(env, documentacionId) {
   const rows = await env.DB.prepare(`
-    SELECT nombre, version_documental
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-  `).bind(adminId).all();
+    SELECT DISTINCT d.nombre, d.version_documental
+    FROM centro_admin_documentacion_archivos a
+    INNER JOIN admin_documentos_comunes d
+      ON UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+     AND COALESCE(d.activo, 1) = 1
+    WHERE a.documentacion_id = ?
+      AND a.activo = 1
+  `).bind(documentacionId).all();
 
   return rows?.results || [];
 }
@@ -158,29 +160,11 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const rolSesion = await getRolUsuario(env, session.usuario_id);
     const adminId = await resolverAdminObjetivo(env, session, body?.admin_id);
-    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
     const documentacionId = parsearIdPositivo(body?.documentacion_id);
     const archivoId = parsearIdPositivo(body?.archivo_id);
     const accion = limpiarTexto(body?.accion || "").toLowerCase();
     const observaciones = limpiarTexto(body?.observaciones_admin || "");
-
-    if (!permiso.permitido) {
-      const mensaje = permiso.motivo === "RESPONSABLE_DISTINTO"
-        ? "La documentación de este administrador está gestionada por una secretaría externa."
-        : "Este administrador no tiene la gestión documental operativa habilitada.";
-      return json(
-        {
-          ok: false,
-          error: mensaje,
-          modo_documental: permiso.resolucion?.modo || "",
-          responsable_documental_id: Number(permiso.resolucion?.responsable?.id || 0)
-        },
-        { status: 403 }
-      );
-    }
-
     if (!documentacionId) {
       return json({ ok: false, error: "Debes indicar un expediente válido." }, { status: 400 });
     }
@@ -198,7 +182,16 @@ export async function onRequestPost(context) {
         estado
       FROM centro_admin_documentacion
       WHERE id = ?
-        AND admin_id = ?
+        AND EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          INNER JOIN admin_documentos_comunes d
+            ON d.admin_id = ?
+           AND COALESCE(d.activo, 1) = 1
+           AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+          WHERE a.documentacion_id = centro_admin_documentacion.id
+            AND a.activo = 1
+        )
       LIMIT 1
     `).bind(documentacionId, adminId).first();
 
@@ -232,13 +225,17 @@ export async function onRequestPost(context) {
 
     if (archivoId) {
       const archivoObjetivo = await env.DB.prepare(`
-        SELECT id
-        FROM centro_admin_documentacion_archivos
-        WHERE id = ?
-          AND documentacion_id = ?
-          AND activo = 1
+        SELECT a.id
+        FROM centro_admin_documentacion_archivos a
+        INNER JOIN admin_documentos_comunes d
+          ON d.admin_id = ?
+         AND COALESCE(d.activo, 1) = 1
+         AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+        WHERE a.id = ?
+          AND a.documentacion_id = ?
+          AND a.activo = 1
         LIMIT 1
-      `).bind(archivoId, documentacionId).first();
+      `).bind(adminId, archivoId, documentacionId).first();
 
       if (!archivoObjetivo) {
         return json({ ok: false, error: "Documento documental no encontrado." }, { status: 404 });
@@ -269,12 +266,20 @@ export async function onRequestPost(context) {
           observaciones_admin = ?
         WHERE documentacion_id = ?
           AND activo = 1
+          AND EXISTS (
+            SELECT 1
+            FROM admin_documentos_comunes d
+            WHERE d.admin_id = ?
+              AND COALESCE(d.activo, 1) = 1
+              AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(centro_admin_documentacion_archivos.nombre_documento, '')))
+          )
       `).bind(
         nuevoEstadoDocumento,
         nuevoEstadoDocumento,
         session.usuario_id,
         observaciones || null,
-        documentacionId
+        documentacionId,
+        adminId
       ).run();
     }
 
@@ -291,7 +296,7 @@ export async function onRequestPost(context) {
     `).bind(documentacionId).all();
 
     const archivosResumen = archivosActuales?.results || [];
-    const documentosBaseActivos = await obtenerDocumentosBaseActivos(env, adminId);
+    const documentosBaseActivos = await obtenerDocumentosBaseActivos(env, documentacionId);
     const estadoExpediente = calcularEstadoGlobal(
       documentosBaseActivos,
       archivosResumen
@@ -372,7 +377,7 @@ export async function onRequestPost(context) {
         mensaje: estadoExpediente === "VALIDADA"
           ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`
           : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay observaciones o documentos rechazados que debes revisar.`,
-        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
+        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(expediente.admin_id || 0))}&tab=documentos`
       });
     } catch (errorNotificacionInterna) {
       notificacionInternaCentro = {
@@ -383,7 +388,7 @@ export async function onRequestPost(context) {
       console.error("No se pudo crear la notificación interna de resolución documental.", {
         expediente_id: Number(documentacionId || 0),
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
-        admin_id: Number(adminId || 0),
+        admin_id: Number(expediente.admin_id || 0),
         revisor_id: Number(session.usuario_id || 0),
         error: notificacionInternaCentro.error
       });

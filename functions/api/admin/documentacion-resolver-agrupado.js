@@ -1,6 +1,5 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
-import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import {
@@ -16,11 +15,9 @@ function json(data, init = {}) {
     ...init
   });
 }
-
 function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
-
 function parsearIdPositivo(valor) {
   const n = parseInt(valor, 10);
   return Number.isInteger(n) && n > 0 ? n : null;
@@ -65,13 +62,16 @@ async function resolverAdminObjetivo(env, session, adminIdParam) {
   return session.usuario_id;
 }
 
-async function obtenerDocumentosBaseActivos(env, adminId) {
+async function obtenerDocumentosBaseActivos(env, documentacionId) {
   const rows = await env.DB.prepare(`
-    SELECT nombre, version_documental
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-  `).bind(adminId).all();
+    SELECT DISTINCT d.nombre, d.version_documental
+    FROM centro_admin_documentacion_archivos a
+    INNER JOIN admin_documentos_comunes d
+      ON UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+     AND COALESCE(d.activo, 1) = 1
+    WHERE a.documentacion_id = ?
+      AND a.activo = 1
+  `).bind(documentacionId).all();
 
   return rows?.results || [];
 }
@@ -163,28 +163,10 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const rolSesion = await getRolUsuario(env, session.usuario_id);
     const adminId = await resolverAdminObjetivo(env, session, body?.admin_id);
-    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
     const documentacionId = parsearIdPositivo(body?.documentacion_id);
     const cambiosEntrada = Array.isArray(body?.cambios) ? body.cambios : [];
     const baseUrl = new URL(request.url).origin;
-
-    if (!permiso.permitido) {
-      const mensaje = permiso.motivo === "RESPONSABLE_DISTINTO"
-        ? "La documentación de este administrador está gestionada por una secretaría externa."
-        : "Este administrador no tiene la gestión documental operativa habilitada.";
-      return json(
-        {
-          ok: false,
-          error: mensaje,
-          modo_documental: permiso.resolucion?.modo || "",
-          responsable_documental_id: Number(permiso.resolucion?.responsable?.id || 0)
-        },
-        { status: 403 }
-      );
-    }
-
     if (!documentacionId) {
       return json({ ok: false, error: "Debes indicar un expediente válido." }, { status: 400 });
     }
@@ -204,7 +186,16 @@ export async function onRequestPost(context) {
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios u ON u.id = cad.centro_usuario_id
       WHERE cad.id = ?
-        AND cad.admin_id = ?
+        AND EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          INNER JOIN admin_documentos_comunes d
+            ON d.admin_id = ?
+           AND COALESCE(d.activo, 1) = 1
+           AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+          WHERE a.documentacion_id = cad.id
+            AND a.activo = 1
+        )
       LIMIT 1
     `).bind(documentacionId, adminId).first();
 
@@ -214,17 +205,21 @@ export async function onRequestPost(context) {
 
     const archivos = await env.DB.prepare(`
       SELECT
-        id,
-        nombre_documento,
-        archivo_url,
-        version_documental,
-        estado,
-        observaciones_admin
-      FROM centro_admin_documentacion_archivos
-      WHERE documentacion_id = ?
-        AND activo = 1
-      ORDER BY nombre_documento ASC, id ASC
-    `).bind(documentacionId).all();
+        a.id,
+        a.nombre_documento,
+        a.archivo_url,
+        a.version_documental,
+        a.estado,
+        a.observaciones_admin
+      FROM centro_admin_documentacion_archivos a
+      INNER JOIN admin_documentos_comunes d
+        ON d.admin_id = ?
+       AND COALESCE(d.activo, 1) = 1
+       AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(a.nombre_documento, '')))
+      WHERE a.documentacion_id = ?
+        AND a.activo = 1
+      ORDER BY a.nombre_documento ASC, a.id ASC
+    `).bind(adminId, documentacionId).all();
 
     const archivosLista = seleccionarUltimosArchivosPorDocumento(archivos?.results || []);
     const archivosPorId = new Map(archivosLista.map((item) => [Number(item.id || 0), item]));
@@ -281,7 +276,7 @@ export async function onRequestPost(context) {
     `).bind(documentacionId).all();
 
     const ultimosArchivos = seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || []);
-    const documentosBaseActivos = await obtenerDocumentosBaseActivos(env, adminId);
+    const documentosBaseActivos = await obtenerDocumentosBaseActivos(env, documentacionId);
     const estadoExpediente = calcularEstadoGlobal(
       documentosBaseActivos,
       ultimosArchivos
@@ -347,7 +342,7 @@ export async function onRequestPost(context) {
         mensaje: hayRechazos
           ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay documentos rechazados o con observaciones que debes revisar.`
           : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`,
-        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId || 0))}&tab=documentos`
+        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(expediente.admin_id || 0))}&tab=documentos`
       });
     } catch (errorNotificacion) {
       notificacionInternaCentro = {
@@ -358,14 +353,14 @@ export async function onRequestPost(context) {
       console.error("No se pudo crear la notificación interna de resolución documental del administrador.", {
         expediente_id: Number(documentacionId || 0),
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
-        admin_id: Number(adminId || 0),
+        admin_id: Number(expediente.admin_id || 0),
         revisor_id: Number(session.usuario_id || 0),
         error: notificacionInternaCentro.error
       });
     }
 
     const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId,
+      adminId: Number(expediente.admin_id || 0),
       baseUrl,
       motivo: "documentos_actualizados"
     });
