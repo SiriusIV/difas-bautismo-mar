@@ -5615,7 +5615,7 @@ function renderSelectDocumentacionActividad() {
   if (!opcionesDisponibles.length) {
     select.innerHTML = `<option value="">No hay más documentos disponibles</option>`;
     select.disabled = true;
-    btnAgregar.disabled = true;
+    btnAgregar.disabled = false;
     actualizarBotonDocumentacionActividadMovil(opcionesDisponibles);
     return;
   }
@@ -5624,7 +5624,7 @@ function renderSelectDocumentacionActividad() {
   select.innerHTML = opciones.join("");
   select.disabled = false;
   select.value = "";
-  btnAgregar.disabled = esVistaMovilDocumentacionActividad() ? false : true;
+  btnAgregar.disabled = false;
   actualizarBotonDocumentacionActividadMovil(opcionesDisponibles);
 }
 
@@ -8817,17 +8817,13 @@ function retrocederPaso() {
         document.getElementById("documentacionActividadSelect").addEventListener("change", () => {
           const select = document.getElementById("documentacionActividadSelect");
           const hayValor = !!String(select?.value || "").trim();
-          document.getElementById("btnAgregarDocumentoActividad").disabled = !hayValor;
+          document.getElementById("btnAgregarDocumentoActividad").disabled = false;
           if (hayValor) {
             agregarDocumentoSeleccionadoDocumentacionActividad();
           }
         });
         document.getElementById("btnAgregarDocumentoActividad").addEventListener("click", () => {
-          if (esVistaMovilDocumentacionActividad()) {
-            abrirSelectorDocumentacionActividadMovil();
-            return;
-          }
-          agregarDocumentoSeleccionadoDocumentacionActividad();
+          abrirSelectorDocumentacionActividadMovil();
         });
         document.getElementById("btnAbrirDocumentacionActividadMovil")?.addEventListener("click", abrirSelectorDocumentacionActividadMovil);
         document.getElementById("btnCerrarDocumentacionActividadMovil")?.addEventListener("click", cerrarSelectorDocumentacionActividadMovil);
