@@ -1,5 +1,3 @@
-import { resolverResponsableDocumental } from "./_documentacion_responsable.js";
-
 function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
@@ -89,20 +87,9 @@ export async function asegurarTablasDocumentacionActividad(env) {
   `).run();
 }
 
-async function obtenerPropietarioDocumentalId(env, adminId) {
-  const resolucion = await resolverResponsableDocumental(env, adminId);
-  if (!resolucion) return null;
-
-  if (String(resolucion.modo || "").toUpperCase() === "SECRETARIA_EXTERNA") {
-    return Number(resolucion.responsable?.id || 0) || null;
-  }
-
-  return Number(resolucion.admin?.id || 0) || null;
-}
-
 export async function obtenerCatalogoDocumentosActivosAdmin(env, adminId) {
-  const propietarioDocumentalId = await obtenerPropietarioDocumentalId(env, adminId);
-  if (!propietarioDocumentalId) return [];
+  const propietarioDocumentalId = Number(adminId || 0);
+  if (!(propietarioDocumentalId > 0)) return [];
 
   const rows = await env.DB.prepare(`
     SELECT
@@ -424,7 +411,7 @@ export async function guardarConfiguracionDocumentalActividad(env, actividadId, 
 
   for (let i = 0; i < nombres.length; i += 1) {
     await env.DB.prepare(`
-      INSERT INTO actividad_documentacion_documentos (
+      INSERT OR IGNORE INTO actividad_documentacion_documentos (
         actividad_id,
         nombre_documento,
         orden
