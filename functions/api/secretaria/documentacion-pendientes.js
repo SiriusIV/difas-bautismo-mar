@@ -1,4 +1,5 @@
 import { getSecretariaSession } from "./_documental.js";
+import { asegurarColumnasContextoDocumental } from "../_documentacion_contextual.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -21,6 +22,8 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, { status: 401 });
     }
 
+    await asegurarColumnasContextoDocumental(env);
+
     const rows = await env.DB.prepare(`
       WITH archivos_vigentes AS (
         SELECT
@@ -36,6 +39,8 @@ export async function onRequestGet(context) {
         cad.id AS documentacion_id,
         cad.centro_usuario_id,
         cad.admin_id,
+        cad.actividad_id,
+        cad.reserva_id,
         cad.version_requerida,
         cad.version_aportada,
         cad.estado AS estado_expediente,
@@ -44,6 +49,8 @@ export async function onRequestGet(context) {
         u.centro,
         u.email,
         u.telefono_contacto,
+        COALESCE(act.titulo_publico, act.nombre, '') AS actividad_nombre,
+        r.codigo_reserva,
         admin.nombre AS admin_nombre,
         admin.nombre_publico AS admin_nombre_publico,
         av.id AS archivo_id,
@@ -60,6 +67,10 @@ export async function onRequestGet(context) {
         ON u.id = cad.centro_usuario_id
       INNER JOIN usuarios admin
         ON admin.id = cad.admin_id
+      LEFT JOIN actividades act
+        ON act.id = cad.actividad_id
+      LEFT JOIN reservas r
+        ON r.id = cad.reserva_id
       INNER JOIN archivos_vigentes av
         ON av.documentacion_id = cad.id
        AND av.rn = 1
@@ -80,6 +91,10 @@ export async function onRequestGet(context) {
       archivo_id: Number(row.archivo_id || 0),
       centro_usuario_id: Number(row.centro_usuario_id || 0),
       admin_id: Number(row.admin_id || 0),
+      actividad_id: Number(row.actividad_id || 0),
+      reserva_id: Number(row.reserva_id || 0),
+      actividad_nombre: row.actividad_nombre || "",
+      codigo_reserva: row.codigo_reserva || "",
       admin_nombre: row.admin_nombre || "",
       admin_nombre_publico: row.admin_nombre_publico || "",
       documento_base_id: Number(row.documento_base_id || 0),

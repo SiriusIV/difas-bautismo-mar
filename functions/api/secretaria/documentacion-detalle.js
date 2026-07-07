@@ -1,4 +1,5 @@
 import { getSecretariaSession } from "./_documental.js";
+import { asegurarColumnasContextoDocumental } from "../_documentacion_contextual.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -21,6 +22,8 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "No autorizado." }, { status: 401 });
     }
 
+    await asegurarColumnasContextoDocumental(env);
+
     const url = new URL(request.url);
     const documentacionId = parsearIdPositivo(url.searchParams.get("documentacion_id"));
     if (!documentacionId) {
@@ -32,6 +35,8 @@ export async function onRequestGet(context) {
         cad.id,
         cad.centro_usuario_id,
         cad.admin_id,
+        cad.actividad_id,
+        cad.reserva_id,
         cad.version_requerida,
         cad.version_aportada,
         cad.estado,
@@ -42,6 +47,8 @@ export async function onRequestGet(context) {
         u.centro,
         u.email,
         u.telefono_contacto,
+        COALESCE(act.titulo_publico, act.nombre, '') AS actividad_nombre,
+        r.codigo_reserva,
         admin.nombre AS admin_nombre,
         admin.nombre_publico AS admin_nombre_publico
       FROM centro_admin_documentacion cad
@@ -49,6 +56,10 @@ export async function onRequestGet(context) {
         ON u.id = cad.centro_usuario_id
       INNER JOIN usuarios admin
         ON admin.id = cad.admin_id
+      LEFT JOIN actividades act
+        ON act.id = cad.actividad_id
+      LEFT JOIN reservas r
+        ON r.id = cad.reserva_id
       WHERE cad.id = ?
         AND EXISTS (
           SELECT 1
@@ -103,6 +114,10 @@ export async function onRequestGet(context) {
         id: Number(expediente.id || 0),
         centro_usuario_id: Number(expediente.centro_usuario_id || 0),
         admin_id: Number(expediente.admin_id || 0),
+        actividad_id: Number(expediente.actividad_id || 0),
+        reserva_id: Number(expediente.reserva_id || 0),
+        actividad_nombre: expediente.actividad_nombre || "",
+        codigo_reserva: expediente.codigo_reserva || "",
         propietario_documental_id: Number(session.usuario_id || 0),
         admin_nombre: expediente.admin_nombre || "",
         admin_nombre_publico: expediente.admin_nombre_publico || "",

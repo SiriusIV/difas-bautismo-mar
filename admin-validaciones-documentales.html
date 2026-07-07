@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -490,7 +490,7 @@
         <div>
           <h3>Expedientes documentales del administrador</h3>
           <p>
-            AquÃ­ puedes revisar la documentaciÃ³n remitida por los centros, validar los expedientes pendientes y consultar en cualquier momento la documentaciÃ³n vigente de cada centro.
+            Aquí puedes revisar la documentación remitida por los centros, validar los expedientes pendientes y consultar en cualquier momento la documentación vigente de cada centro.
           </p>
         </div>
         <div class="acciones-superiores">
@@ -520,8 +520,8 @@
       <div class="bloque">
         <div class="bloque-head">
           <div>
-            <h3 id="tituloListado">Pendientes de revisiÃ³n</h3>
-            <p id="textoListado">Se muestran Ãºnicamente los expedientes que estÃ¡n en revisiÃ³n manual.</p>
+            <h3 id="tituloListado">Pendientes de revisión</h3>
+            <p id="textoListado">Se muestran únicamente los expedientes que están en revisión manual.</p>
           </div>
         </div>
         <div id="listaExpedientes" class="lista-expedientes"></div>
@@ -531,12 +531,12 @@
         <div class="bloque-head">
           <div>
             <h3>Detalle del expediente</h3>
-            <p>Selecciona un centro para consultar su documentaciÃ³n vigente actual y resolver la validaciÃ³n si estÃ¡ pendiente.</p>
+            <p>Selecciona un centro para consultar su documentación vigente actual y resolver la validación si está pendiente.</p>
           </div>
         </div>
 
         <div id="detalleVacio" class="estado-vacio">
-          Selecciona un expediente para ver el detalle de la documentaciÃ³n vigente de ese centro.
+          Selecciona un expediente para ver el detalle de la documentación vigente de ese centro.
         </div>
 
         <div id="detalleExpediente" class="oculto">
@@ -550,27 +550,27 @@
               <div class="valor"><span id="detalleEstado" class="pill pill-estado">-</span></div>
             </div>
             <div class="detalle-campo">
-              <label>Correo electrÃ³nico</label>
+              <label>Correo electrónico</label>
               <div class="valor" id="detalleEmail"></div>
             </div>
             <div class="detalle-campo">
-              <label>TelÃ©fono</label>
+              <label>Teléfono</label>
               <div class="valor" id="detalleTelefono"></div>
             </div>
             <div class="detalle-campo">
-              <label>VersiÃ³n requerida</label>
+              <label>Versión requerida</label>
               <div class="valor" id="detalleVersionRequerida"></div>
             </div>
             <div class="detalle-campo">
-              <label>VersiÃ³n aportada</label>
+              <label>Versión aportada</label>
               <div class="valor" id="detalleVersionAportada"></div>
             </div>
             <div class="detalle-campo">
-              <label>Ãšltima entrega</label>
+              <label>Última entrega</label>
               <div class="valor" id="detalleFechaEntrega"></div>
             </div>
             <div class="detalle-campo">
-              <label>Fecha de validaciÃ³n</label>
+              <label>Fecha de validación</label>
               <div class="valor" id="detalleFechaValidacion"></div>
             </div>
           </div>
@@ -591,6 +591,7 @@
     <button type="button" class="expediente-card">
       <h4 class="exp-centro"></h4>
       <div class="expediente-meta exp-contacto"></div>
+      <div class="expediente-meta exp-contexto"></div>
       <div class="expediente-meta exp-version"></div>
       <div class="expediente-meta exp-fecha"></div>
       <div class="pill pill-estado exp-estado"></div>
@@ -672,11 +673,11 @@
       }
 
       document.getElementById("tituloListado").textContent = filtroActual === "pendientes"
-        ? "Pendientes de revisiÃ³n"
+        ? "Pendientes de revisión"
         : "Todos los centros con expediente";
 
       document.getElementById("textoListado").textContent = filtroActual === "pendientes"
-        ? "Se muestran Ãºnicamente los expedientes que estÃ¡n en revisiÃ³n manual."
+        ? "Se muestran únicamente los expedientes que están en revisión manual."
         : "Se muestran todos los centros que tienen expediente documental actual con este administrador.";
     }
 
@@ -700,21 +701,26 @@
         const fragment = tpl.content.cloneNode(true);
         const card = fragment.querySelector(".expediente-card");
         card.querySelector(".exp-centro").textContent = exp.centro || "Centro";
-        card.querySelector(".exp-contacto").textContent = [exp.email, exp.telefono_contacto].filter(Boolean).join(" Â· ") || "Sin datos de contacto";
-        card.querySelector(".exp-version").textContent = `VersiÃ³n requerida ${exp.version_requerida} Â· aportada ${exp.version_aportada}`;
+        const contexto = [
+          exp.actividad_nombre ? `Actividad: ${exp.actividad_nombre}` : "",
+          exp.codigo_reserva ? `Solicitud: ${exp.codigo_reserva}` : ""
+        ].filter(Boolean).join(" · ");
+        card.querySelector(".exp-contexto").textContent = contexto || "Documentación sin solicitud asociada";
+        card.querySelector(".exp-contacto").textContent = [exp.email, exp.telefono_contacto].filter(Boolean).join(" · ") || "Sin datos de contacto";
+        card.querySelector(".exp-version").textContent = `Versión requerida ${exp.version_requerida} · aportada ${exp.version_aportada}`;
         card.querySelector(".exp-fecha").textContent = exp.fecha_ultima_entrega
-          ? `Ãšltima entrega: ${exp.fecha_ultima_entrega}`
+          ? `Última entrega: ${exp.fecha_ultima_entrega}`
           : "Sin fecha de entrega";
         pintarEstado(card.querySelector(".exp-estado"), exp.estado);
 
-        if (expedienteSeleccionado && Number(expedienteSeleccionado.centro_usuario_id) === Number(exp.centro_usuario_id)) {
+        if (expedienteSeleccionado && Number(expedienteSeleccionado.id) === Number(exp.id)) {
           card.classList.add("activo");
         }
 
         card.addEventListener("click", () => {
           expedienteSeleccionado = exp;
           renderListaExpedientes();
-          cargarDetalleExpediente(exp.centro_usuario_id);
+          cargarDetalleExpediente(exp);
         });
 
         lista.appendChild(fragment);
@@ -765,7 +771,7 @@
         docs.forEach((doc) => {
           const fragment = tpl.content.cloneNode(true);
           fragment.querySelector(".doc-nombre").textContent = doc.nombre_documento || "Documento";
-          fragment.querySelector(".doc-meta").textContent = `VersiÃ³n ${doc.version_documental || 0} Â· Subido ${doc.fecha_subida || ""}`;
+          fragment.querySelector(".doc-meta").textContent = `Versión ${doc.version_documental || 0} · Subido ${doc.fecha_subida || ""}`;
           fragment.querySelector(".documento-link").href = doc.archivo_url || "#";
           pintarEstado(fragment.querySelector(".doc-estado"), doc.estado || "EN_REVISION");
 
@@ -803,21 +809,29 @@
 
       if (expedienteSeleccionado) {
         expedienteSeleccionado = expedientesActuales.find(
-          (item) => Number(item.centro_usuario_id) === Number(expedienteSeleccionado.centro_usuario_id)
+          (item) => Number(item.id) === Number(expedienteSeleccionado.id)
         ) || null;
       }
 
       renderListaExpedientes();
 
       if (expedienteSeleccionado) {
-        await cargarDetalleExpediente(expedienteSeleccionado.centro_usuario_id);
+        await cargarDetalleExpediente(expedienteSeleccionado);
       } else {
         limpiarDetalle();
       }
     }
 
-    async function cargarDetalleExpediente(centroUsuarioId) {
-      const res = await fetch(`/api/admin/documentacion-detalle?centro_usuario_id=${encodeURIComponent(centroUsuarioId)}`, {
+    async function cargarDetalleExpediente(expediente) {
+      const documentacionId = Number(expediente?.id || expediente || 0);
+      const centroUsuarioId = Number(expediente?.centro_usuario_id || 0);
+      const query = new URLSearchParams();
+      if (documentacionId > 0) {
+        query.set("documentacion_id", String(documentacionId));
+      } else if (centroUsuarioId > 0) {
+        query.set("centro_usuario_id", String(centroUsuarioId));
+      }
+      const res = await fetch(`/api/admin/documentacion-detalle?${query.toString()}`, {
         credentials: "include"
       });
       const data = await res.json().catch(() => null);
@@ -836,8 +850,8 @@
 
       const observaciones = document.getElementById("detalleObservaciones").value.trim();
       const texto = accion === "validar"
-        ? "Â¿Deseas validar este documento?"
-        : "Â¿Deseas rechazar este documento?";
+        ? "¿Deseas validar este documento?"
+        : "¿Deseas rechazar este documento?";
 
       if (!window.confirm(texto)) return;
 
@@ -857,14 +871,14 @@
 
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        mostrarMensaje("error", data?.error || "No se pudo resolver la validaciÃ³n documental.");
+        mostrarMensaje("error", data?.error || "No se pudo resolver la validación documental.");
         return;
       }
 
       mostrarMensaje("ok", data?.mensaje || "Documento actualizado correctamente.");
       await cargarExpedientes();
       if (expedienteSeleccionado) {
-        await cargarDetalleExpediente(expedienteSeleccionado.centro_usuario_id);
+        await cargarDetalleExpediente(expedienteSeleccionado);
       }
     }
 

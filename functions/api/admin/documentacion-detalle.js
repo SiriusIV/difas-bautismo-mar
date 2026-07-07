@@ -1,5 +1,6 @@
 import { getAdminSession } from "./_auth.js";
 import { getRolUsuario } from "./_permisos.js";
+import { asegurarColumnasContextoDocumental } from "../_documentacion_contextual.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -31,11 +32,13 @@ export async function onRequestGet(context) {
     }
 
     const url = new URL(request.url);
+    await asegurarColumnasContextoDocumental(env);
     const propietarioDocumentalId = await resolverAdminObjetivo(env, session, url.searchParams.get("admin_id"));
     const actividadAdminId = parsearIdPositivo(url.searchParams.get("actividad_admin_id"));
     const centroUsuarioId = parsearIdPositivo(url.searchParams.get("centro_usuario_id"));
+    const documentacionId = parsearIdPositivo(url.searchParams.get("documentacion_id"));
 
-    if (!centroUsuarioId) {
+    if (!centroUsuarioId && !documentacionId) {
       return json({ ok: false, error: "Debes indicar un centro válido." }, { status: 400 });
     }
 
@@ -44,6 +47,8 @@ export async function onRequestGet(context) {
         cad.id,
         cad.centro_usuario_id,
         cad.admin_id,
+        cad.actividad_id,
+        cad.reserva_id,
         cad.version_requerida,
         cad.version_aportada,
         cad.estado,
@@ -53,11 +58,17 @@ export async function onRequestGet(context) {
         cad.updated_at,
         u.centro,
         u.email,
-        u.telefono_contacto
+        u.telefono_contacto,
+        COALESCE(act.titulo_publico, act.nombre, '') AS actividad_nombre,
+        r.codigo_reserva
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios u
         ON u.id = cad.centro_usuario_id
-      WHERE cad.centro_usuario_id = ?
+      LEFT JOIN actividades act
+        ON act.id = cad.actividad_id
+      LEFT JOIN reservas r
+        ON r.id = cad.reserva_id
+      WHERE ${documentacionId ? "cad.id = ?" : "cad.centro_usuario_id = ?"}
         ${actividadAdminId ? "AND cad.admin_id = ?" : ""}
         AND EXISTS (
           SELECT 1
@@ -72,8 +83,8 @@ export async function onRequestGet(context) {
       LIMIT 1
     `).bind(
       ...(actividadAdminId
-        ? [centroUsuarioId, actividadAdminId, propietarioDocumentalId]
-        : [centroUsuarioId, propietarioDocumentalId])
+        ? [documentacionId || centroUsuarioId, actividadAdminId, propietarioDocumentalId]
+        : [documentacionId || centroUsuarioId, propietarioDocumentalId])
     ).first();
 
     if (!expediente) {
@@ -116,6 +127,10 @@ export async function onRequestGet(context) {
         id: expediente.id,
         centro_usuario_id: expediente.centro_usuario_id,
         admin_id: expediente.admin_id,
+        actividad_id: Number(expediente.actividad_id || 0),
+        reserva_id: Number(expediente.reserva_id || 0),
+        actividad_nombre: expediente.actividad_nombre || "",
+        codigo_reserva: expediente.codigo_reserva || "",
         propietario_documental_id: propietarioDocumentalId,
         centro: expediente.centro || "",
         email: expediente.email || "",

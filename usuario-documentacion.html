@@ -516,7 +516,7 @@
         <div>
           <h3 id="tituloBloqueDocumentacion">Documentación del organizador</h3>
           <p id="textoBloqueDocumentacion">
-            Remite aquí la documentación firmada que exige este organizador. Hasta que la documentación esté validada, no podrás solicitar sus actividades.
+            Remite aquí la documentación firmada exigida para esta actividad. La documentación quedará vinculada a esta solicitud.
           </p>
           <div class="resumen-estado">
             <div class="pill" id="pillVersion">Versión requerida: -</div>
@@ -640,13 +640,13 @@
       if (esModoSolicitud()) {
         subtitulo.textContent = "Paso previo obligatorio para solicitar la actividad";
         tituloBloque.textContent = "Paso previo: documentación del organizador";
-        textoBloque.textContent = "Antes de poder solicitar esta actividad, debes remitir la documentación firmada exigida por su organizador y esperar a que quede validada.";
+        textoBloque.textContent = "Antes de poder solicitar esta actividad, debes remitir la documentación firmada exigida para esta solicitud y esperar a que quede validada.";
         bloqueSeleccion.classList.add("oculto");
         btnCambiarAdmin.classList.add("oculto");
       } else {
         subtitulo.textContent = "Remisión anticipada de documentación";
         tituloBloque.textContent = "Documentación del organizador";
-        textoBloque.textContent = "Puedes remitir aquí la documentación exigida por un organizador antes de solicitar sus actividades. Si ya está validada, no tendrás que repetir este paso.";
+        textoBloque.textContent = "Puedes consultar la documentación exigida por un organizador. Para solicitar una actividad, la documentación remitida quedará asociada a esa actividad o solicitud concreta.";
         bloqueSeleccion.classList.remove("oculto");
         btnCambiarAdmin.classList.remove("oculto");
       }
@@ -749,7 +749,9 @@
       }
 
       if (estado === "VALIDADA") {
-        box.textContent = `La documentación de ${adminVisible} ya está validada para la versión actual. Puedes solicitar sus actividades cuando lo necesites.`;
+        box.textContent = esModoSolicitud()
+          ? `La documentación exigida por ${adminVisible} ya está validada para esta solicitud.`
+          : `La documentación de ${adminVisible} aparece validada en este contexto. Para otra actividad puede ser necesario remitirla de nuevo.`;
         return;
       }
 
@@ -764,7 +766,7 @@
       }
 
       if (estado === "EN_REVISION") {
-        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${adminVisible}. Hasta que se valide, no podrás solicitar sus actividades.`;
+        box.textContent = `Tu documentación ya fue remitida y está pendiente de revisión por ${adminVisible}. Hasta que se valide, no podrás continuar con esta solicitud.`;
         return;
       }
 
@@ -1018,7 +1020,7 @@
       }
 
       if (estadoActual === "VALIDADA") {
-        mostrarMensaje("warn", "La documentación ya está validada para este organizador. No es necesario volver a remitirla.");
+        mostrarMensaje("warn", "La documentación ya está validada para este contexto. No es necesario volver a remitirla.");
         return;
       }
 

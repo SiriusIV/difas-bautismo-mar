@@ -1111,31 +1111,36 @@
       }).format(fecha);
     }
 
-    function construirUrlDocumentacion(adminId, actividadId) {
+    function construirUrlDocumentacion(adminId, actividadId, reservaId = null) {
       const admin = Number(adminId || 0);
       if (!(admin > 0)) return "";
       const query = new URLSearchParams({
         admin_id: String(admin),
-        tab: "documentos"
+        modo: "solicitud"
       });
       const actividad = Number(actividadId || 0);
       if (actividad > 0) {
         query.set("actividad_id", String(actividad));
       }
-      return `usuario-perfil.html?${query.toString()}`;
+      const reserva = Number(reservaId || 0);
+      if (reserva > 0) {
+        query.set("reserva_id", String(reserva));
+      }
+      return `usuario-documentacion.html?${query.toString()}`;
     }
 
     function extraerAccesoDocumentacion(data) {
       const adminId = Number(data?.admin_id || 0);
       const actividadId = Number(data?.actividad_id || 0);
+      const reservaId = Number(data?.reserva_id || data?.id || 0);
       const pendientes = Array.isArray(data?.documentos_pendientes) ? data.documentos_pendientes : [];
       const estado = String(data?.estado_documental || "").trim().toUpperCase();
       if (!(adminId > 0) || (!estado && !pendientes.length)) {
         return null;
       }
-      const url = construirUrlDocumentacion(adminId, actividadId);
+      const url = construirUrlDocumentacion(adminId, actividadId, reservaId);
       if (!url) return null;
-      return { url, adminId, actividadId };
+      return { url, adminId, actividadId, reservaId };
     }
 
     function aplicarAccionDocumentacionAviso(acceso) {
@@ -1569,7 +1574,7 @@
             label: "Ir a documentación",
             principal: true,
             onClick: () => {
-              location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
+              location.href = construirUrlDocumentacion(reserva.admin_id, reserva.actividad_id, reserva.id);
             }
           });
         }
@@ -1597,7 +1602,7 @@
         acciones.push({
           label: "Ir a documentación",
           onClick: () => {
-            location.href = `usuario-perfil.html?admin_id=${encodeURIComponent(reserva.admin_id)}&tab=documentos`;
+            location.href = construirUrlDocumentacion(reserva.admin_id, reserva.actividad_id, reserva.id);
           }
         });
       }

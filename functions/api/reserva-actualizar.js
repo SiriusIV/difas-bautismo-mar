@@ -804,7 +804,8 @@ export async function onRequestPost(context) {
             estado_documental: validacionDocumental.estado_documental || "",
             documentos_pendientes: validacionDocumental.documentos_pendientes || [],
             actividad_id: Number(reservaActual.actividad_id || 0),
-            admin_id: Number(actividad.admin_id || 0)
+            admin_id: Number(actividad.admin_id || 0),
+            reserva_id: Number(reservaActual.id || 0)
           },
           { status: 400 }
         );
