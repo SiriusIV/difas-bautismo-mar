@@ -5,7 +5,7 @@ import {
 } from "../_email_resolucion_documental_expediente.js";
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, status = 200) {
@@ -93,11 +93,8 @@ export async function onRequestPost(context) {
     const expediente = await env.DB.prepare(`
       SELECT cad.id, cad.admin_id, cad.centro_usuario_id
       FROM centro_admin_documentacion cad
-      INNER JOIN usuarios admin ON admin.id = cad.admin_id
       WHERE cad.id = ?
-        AND admin.rol = 'ADMIN'
-        AND COALESCE(admin.modulo_secretaria, 0) = 0
-        AND admin.secretaria_usuario_id = ?
+        AND cad.admin_id = ?
       LIMIT 1
     `).bind(documentacionId, Number(session.usuario_id || 0)).first();
     if (!expediente) return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
@@ -255,8 +252,8 @@ export async function onRequestPost(context) {
       error: "No se pudo recalcular el impacto documental de reservas."
     };
     try {
-      impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-        adminId,
+      impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+        propietarioDocumentalId: adminId,
         baseUrl,
         motivo: "documentos_actualizados"
       });

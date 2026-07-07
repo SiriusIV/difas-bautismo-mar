@@ -1,5 +1,4 @@
 import { getAdminSession } from "./_auth.js";
-import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -69,13 +68,13 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Usuario público no válido." }, { status: 404 });
     }
 
-    const adminId = Number(session.usuario_id || 0);
-    const resolucion = await resolverResponsableDocumental(env, adminId);
-    if (!resolucion?.responsable?.id) {
-      return json({ ok: false, error: "No se pudo resolver el gestor documental activo." }, { status: 409 });
-    }
-
-    const responsableId = Number(resolucion.responsable.id || 0);
+    const responsableId = Number(session.usuario_id || 0);
+    const responsable = await env.DB.prepare(`
+      SELECT id, nombre, nombre_publico
+      FROM usuarios
+      WHERE id = ?
+      LIMIT 1
+    `).bind(responsableId).first();
     const docsBaseRes = await env.DB.prepare(`
       SELECT
         nombre,
@@ -104,9 +103,9 @@ export async function onRequestGet(context) {
         },
         gestor_documental: {
           id: responsableId,
-          modo: resolucion.modo || "AUTOGESTION",
-          nombre: resolucion.responsable.nombre || "",
-          nombre_publico: resolucion.responsable.nombre_publico || ""
+          modo: "PROPIO",
+          nombre: responsable?.nombre || "",
+          nombre_publico: responsable?.nombre_publico || ""
         },
         total: 0,
         documentos: []
@@ -120,7 +119,7 @@ export async function onRequestGet(context) {
         AND admin_id = ?
       ORDER BY id DESC
       LIMIT 1
-    `).bind(usuarioId, adminId).first();
+    `).bind(usuarioId, responsableId).first();
 
     const archivosMap = new Map();
     if (expediente?.id) {
@@ -190,12 +189,12 @@ export async function onRequestGet(context) {
       },
       gestor_documental: {
         id: responsableId,
-        modo: resolucion.modo || "AUTOGESTION",
-        nombre: resolucion.responsable.nombre || "",
-        nombre_publico: resolucion.responsable.nombre_publico || ""
+        modo: "PROPIO",
+        nombre: responsable?.nombre || "",
+        nombre_publico: responsable?.nombre_publico || ""
       },
       permisos: {
-        puede_editar_documentacion: Number(responsableId || 0) === Number(adminId || 0)
+        puede_editar_documentacion: true
       },
       total: documentos.length,
       documentos

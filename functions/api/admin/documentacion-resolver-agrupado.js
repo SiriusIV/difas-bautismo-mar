@@ -6,7 +6,7 @@ import {
   construirEmailHtmlResolucionExpedienteDocumental,
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, init = {}) {
@@ -359,8 +359,8 @@ export async function onRequestPost(context) {
       });
     }
 
-    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId: Number(expediente.admin_id || 0),
+    const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+      propietarioDocumentalId: Number(expediente.admin_id || 0),
       baseUrl,
       motivo: "documentos_actualizados"
     });

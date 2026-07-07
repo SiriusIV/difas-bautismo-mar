@@ -84,14 +84,10 @@ export async function onRequestGet(context) {
         a.version_documental,
         a.fecha_subida,
         a.id
-      FROM usuarios admin
-      INNER JOIN centro_admin_documentacion cad
-        ON cad.admin_id = admin.id
+      FROM centro_admin_documentacion cad
       INNER JOIN centro_admin_documentacion_archivos a
         ON a.documentacion_id = cad.id
-      WHERE admin.rol = 'ADMIN'
-        AND COALESCE(admin.modulo_secretaria, 0) = 0
-        AND admin.secretaria_usuario_id = ?
+      WHERE cad.admin_id = ?
         AND cad.centro_usuario_id = ?
         AND a.activo = 1
       ORDER BY datetime(COALESCE(a.fecha_subida, '1970-01-01 00:00:00')) DESC, a.id DESC

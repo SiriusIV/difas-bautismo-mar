@@ -1,13 +1,11 @@
 import { getAdminSession } from "./_auth.js";
-import { puedeGestionarDocumentacionAdmin } from "../_documentacion_responsable.js";
-import { getRolUsuario } from "./_permisos.js";
 import {
   construirEmailHtmlResolucionExpedienteDocumental,
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { enviarEmail, nombreVisibleAdmin } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
-import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
 
 function json(data, status = 200) {
@@ -113,17 +111,12 @@ export async function onRequestPost(context) {
       SELECT id, admin_id, centro_usuario_id
       FROM centro_admin_documentacion
       WHERE id = ?
+        AND admin_id = ?
       LIMIT 1
-    `).bind(documentacionId).first();
+    `).bind(documentacionId, Number(session.usuario_id || 0)).first();
     if (!expediente) return json({ ok: false, error: "Expediente no encontrado." }, 404);
 
     const adminId = Number(expediente.admin_id || 0);
-    const rolSesion = await getRolUsuario(env, session.usuario_id);
-    const permiso = await puedeGestionarDocumentacionAdmin(env, session.usuario_id, adminId, rolSesion);
-    if (!permiso?.permitido) {
-      return json({ ok: false, error: "Sin permisos para gestionar esta documentación." }, 403);
-    }
-
     const archivo = await env.DB.prepare(`
       SELECT id, nombre_documento
       FROM centro_admin_documentacion_archivos
@@ -161,7 +154,7 @@ export async function onRequestPost(context) {
       FROM admin_documentos_comunes
       WHERE admin_id = ?
         AND activo = 1
-    `).bind(Number(permiso?.resolucion?.responsable?.id || adminId)).all();
+    `).bind(adminId).all();
     const documentosBaseActivos = (docsBaseRows?.results || []).map((row) => ({
       nombre: limpiarTexto(row.nombre),
       version_documental: Number(row.version_documental || 0)
@@ -243,8 +236,8 @@ export async function onRequestPost(context) {
     });
 
     const baseUrl = new URL(request.url).origin;
-    const impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-      adminId,
+    const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+      propietarioDocumentalId: adminId,
       baseUrl,
       motivo: "documentos_actualizados"
     });
