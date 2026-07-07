@@ -5,6 +5,7 @@ import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail } from "./_email.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
+import { vincularDocumentacionPendienteAReserva } from "./_documentacion_contextual.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
 import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
@@ -862,6 +863,14 @@ if (Number(actividad.activa || 0) !== 1) {
       WHERE token_edicion = ?
       LIMIT 1
     `).bind(tokenEdicion).first();
+
+    if (!guardarComoBorrador && reservaCreada?.id) {
+      await vincularDocumentacionPendienteAReserva(env, {
+        usuarioId,
+        actividadId,
+        reservaId: reservaCreada.id
+      });
+    }
 
     if (!guardarComoBorrador) {
       await registrarEventoReserva(env, {

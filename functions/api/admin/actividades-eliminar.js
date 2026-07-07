@@ -3,6 +3,7 @@ import { crearNotificacion } from "../_notificaciones.js";
 import { crearAvisoUsuario } from "../_avisos_usuario.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
+import { eliminarDocumentacionDeReserva } from "../_documentacion_contextual.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -337,6 +338,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       const esBorrador = estadoOrigen === "BORRADOR";
 
       await borrarHistorialReservas(env, [reserva.id]);
+      await eliminarDocumentacionDeReserva(env, reserva.id);
       await db.prepare(`
         DELETE FROM visitantes
         WHERE reserva_id = ?
@@ -412,6 +414,9 @@ async function borrarActividadFisicamente(env, actividadId) {
   `).bind(actividadId).all();
   const reservaIds = (reservasActividad?.results || []).map((row) => Number(row.id || 0)).filter(Boolean);
   await borrarHistorialReservas(env, reservaIds);
+  for (const reservaId of reservaIds) {
+    await eliminarDocumentacionDeReserva(env, reservaId);
+  }
 
   await env.DB.prepare(`
     DELETE FROM visitantes

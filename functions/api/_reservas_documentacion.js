@@ -4,6 +4,11 @@ import {
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
+import {
+  asegurarColumnasContextoDocumental,
+  construirCondicionContextoDocumental,
+  normalizarContextoDocumental
+} from "./_documentacion_contextual.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -131,7 +136,7 @@ function obtenerPropietariosDocumentales(documentos = []) {
   ));
 }
 
-async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = []) {
+async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = [], contexto = {}) {
   const ids = Array.from(new Set(
     (Array.isArray(propietarios) ? propietarios : [])
       .map((id) => Number(id || 0))
@@ -140,16 +145,20 @@ async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietari
   const mapa = new Map();
   if (!ids.length) return mapa;
 
+  const condicion = construirCondicionContextoDocumental(contexto);
   const placeholders = ids.map(() => "?").join(", ");
   const rows = await env.DB.prepare(`
     SELECT
       id,
       admin_id,
+      actividad_id,
+      reserva_id,
       estado
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
       AND admin_id IN (${placeholders})
-  `).bind(centroUsuarioId, ...ids).all();
+      AND ${condicion.sql}
+  `).bind(centroUsuarioId, ...ids, ...condicion.valores).all();
 
   for (const row of rows?.results || []) {
     mapa.set(Number(row.admin_id || 0), row);
@@ -190,7 +199,8 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
 export async function validarDocumentacionReserva(env, {
   usuarioId,
   adminId,
-  actividadId
+  actividadId,
+  reservaId = null
 } = {}) {
   const usuario = Number(usuarioId || 0);
   const admin = Number(adminId || 0);
@@ -203,6 +213,11 @@ export async function validarDocumentacionReserva(env, {
     };
   }
 
+  await asegurarColumnasContextoDocumental(env);
+  const contextoEntrega = normalizarContextoDocumental({
+    actividadId: actividad,
+    reservaId
+  });
   const catalogo = await obtenerCatalogoDocumentalVinculadoAdmin(
     env,
     admin,
@@ -221,7 +236,18 @@ export async function validarDocumentacionReserva(env, {
   }
 
   const propietarios = obtenerPropietariosDocumentales(documentosExigibles);
-  const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario, propietarios);
+  const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario, propietarios, contextoEntrega);
+  if (contextoEntrega.reservaId) {
+    const pendientesActividad = await obtenerExpedientesPorPropietario(env, usuario, propietarios, {
+      actividadId: contextoEntrega.actividadId,
+      reservaId: null
+    });
+    for (const propietarioId of propietarios) {
+      if (!expedientesPorPropietario.has(propietarioId) && pendientesActividad.has(propietarioId)) {
+        expedientesPorPropietario.set(propietarioId, pendientesActividad.get(propietarioId));
+      }
+    }
+  }
   const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);

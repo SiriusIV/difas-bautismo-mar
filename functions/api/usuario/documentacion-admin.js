@@ -14,6 +14,11 @@ import {
 } from "../_actividad_documentacion.js";
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import {
+  asegurarColumnasContextoDocumental,
+  construirCondicionContextoDocumental,
+  normalizarContextoDocumental
+} from "../_documentacion_contextual.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -250,12 +255,15 @@ async function obtenerDocumentosActivos(env, adminId) {
   }));
 }
 
-async function obtenerExpediente(env, centroUsuarioId, adminId) {
+async function obtenerExpediente(env, centroUsuarioId, adminId, contexto = {}) {
+  const condicion = construirCondicionContextoDocumental(contexto);
   return await env.DB.prepare(`
     SELECT
       id,
       centro_usuario_id,
       admin_id,
+      actividad_id,
+      reserva_id,
       version_requerida,
       version_aportada,
       estado,
@@ -268,8 +276,9 @@ async function obtenerExpediente(env, centroUsuarioId, adminId) {
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
       AND admin_id = ?
+      AND ${condicion.sql}
     LIMIT 1
-  `).bind(centroUsuarioId, adminId).first();
+  `).bind(centroUsuarioId, adminId, ...condicion.valores).first();
 }
 
 async function obtenerArchivosActivos(env, documentacionId) {
@@ -279,6 +288,8 @@ async function obtenerArchivosActivos(env, documentacionId) {
     SELECT
       id,
       documentacion_id,
+      actividad_id,
+      reserva_id,
       nombre_documento,
       archivo_url,
       version_documental,
@@ -346,19 +357,22 @@ function agruparDocumentosPorPropietario(documentos = []) {
   return mapa;
 }
 
-async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = []) {
+async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietarios = [], contexto = {}) {
   const ids = obtenerPropietariosDocumentalesDocumentos(
     propietarios.map((id) => ({ propietario_id: id }))
   );
   const mapa = new Map();
   if (!ids.length) return mapa;
 
+  const condicion = construirCondicionContextoDocumental(contexto);
   const placeholders = ids.map(() => "?").join(", ");
   const rows = await env.DB.prepare(`
     SELECT
       id,
       centro_usuario_id,
       admin_id,
+      actividad_id,
+      reserva_id,
       version_requerida,
       version_aportada,
       estado,
@@ -371,7 +385,8 @@ async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietari
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
       AND admin_id IN (${placeholders})
-  `).bind(centroUsuarioId, ...ids).all();
+      AND ${condicion.sql}
+  `).bind(centroUsuarioId, ...ids, ...condicion.valores).all();
 
   for (const row of rows?.results || []) {
     mapa.set(Number(row.admin_id || 0), row);
@@ -393,6 +408,8 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
     SELECT
       id,
       documentacion_id,
+      actividad_id,
+      reserva_id,
       nombre_documento,
       archivo_url,
       version_documental,
@@ -417,14 +434,17 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
   return salida;
 }
 
-async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId, versionRequerida) {
-  const existente = await obtenerExpediente(env, centroUsuarioId, propietarioId);
+async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId, versionRequerida, contexto = {}) {
+  const contextoNormalizado = normalizarContextoDocumental(contexto);
+  const existente = await obtenerExpediente(env, centroUsuarioId, propietarioId, contextoNormalizado);
   if (existente) return existente;
 
   await env.DB.prepare(`
     INSERT INTO centro_admin_documentacion (
       centro_usuario_id,
       admin_id,
+      actividad_id,
+      reserva_id,
       version_requerida,
       version_aportada,
       estado,
@@ -432,14 +452,16 @@ async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId,
       created_at,
       updated_at
     )
-    VALUES (?, ?, ?, 0, 'NO_INICIADO', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, ?, 0, 'NO_INICIADO', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `).bind(
     centroUsuarioId,
     propietarioId,
+    contextoNormalizado.actividadId,
+    contextoNormalizado.reservaId,
     versionRequerida
   ).run();
 
-  return await obtenerExpediente(env, centroUsuarioId, propietarioId);
+  return await obtenerExpediente(env, centroUsuarioId, propietarioId, contextoNormalizado);
 }
 
 function calcularEstadoDocumento(doc, entrega) {
@@ -750,6 +772,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnasContextoDocumental(env);
     const session = await getUserSession(request, env.SECRET_KEY);
     if (!session?.id) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -763,6 +786,11 @@ export async function onRequestGet(context) {
     const url = new URL(request.url);
     const adminId = parsearIdPositivo(url.searchParams.get("admin_id"));
     const actividadId = parsearIdPositivo(url.searchParams.get("actividad_id"));
+    const reservaId = parsearIdPositivo(url.searchParams.get("reserva_id"));
+    const contextoEntrega = normalizarContextoDocumental({
+      actividadId,
+      reservaId
+    });
 
     if (!adminId) {
       return json({ ok: false, error: "Debes indicar un administrador válido." }, 400);
@@ -800,7 +828,12 @@ export async function onRequestGet(context) {
       0
     );
     const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
-    const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    const expedientesPorPropietario = await obtenerExpedientesPorPropietario(
+      env,
+      usuario.id,
+      propietariosDocumentales,
+      actividadId ? contextoEntrega : {}
+    );
     const expediente = expedientesPorPropietario.get(adminId) ||
       Array.from(expedientesPorPropietario.values())[0] ||
       null;
@@ -866,6 +899,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    await asegurarColumnasContextoDocumental(env);
     const session = await getUserSession(request, env.SECRET_KEY);
     if (!session?.id) {
       return json({ ok: false, error: "No autorizado." }, 401);
@@ -879,6 +913,11 @@ export async function onRequestPost(context) {
     const body = await request.json().catch(() => null);
     const adminId = parsearIdPositivo(body?.admin_id);
     const actividadId = parsearIdPositivo(body?.actividad_id);
+    const reservaId = parsearIdPositivo(body?.reserva_id);
+    const contextoEntrega = normalizarContextoDocumental({
+      actividadId,
+      reservaId
+    });
 
     if (!adminId) {
       return json({ ok: false, error: "Debes indicar un administrador válido." }, 400);
@@ -907,7 +946,12 @@ export async function onRequestPost(context) {
     }
 
     const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
-    let expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    let expedientesPorPropietario = await obtenerExpedientesPorPropietario(
+      env,
+      usuario.id,
+      propietariosDocumentales,
+      actividadId ? contextoEntrega : {}
+    );
     const archivosExistentes = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
     const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosExistentes);
     const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
@@ -1056,7 +1100,8 @@ export async function onRequestPost(context) {
         env,
         usuario.id,
         propietarioId,
-        versionRequeridaPropietario || versionRequerida
+        versionRequeridaPropietario || versionRequerida,
+        actividadId ? contextoEntrega : {}
       );
       expedientesPorPropietario.set(propietarioId, expedientePropietario);
     }
@@ -1077,6 +1122,8 @@ export async function onRequestPost(context) {
       await env.DB.prepare(`
         INSERT INTO centro_admin_documentacion_archivos (
           documentacion_id,
+          actividad_id,
+          reserva_id,
           nombre_documento,
           archivo_url,
           version_documental,
@@ -1087,16 +1134,23 @@ export async function onRequestPost(context) {
           fecha_subida,
           activo
         )
-        VALUES (?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
+        VALUES (?, ?, ?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
       `).bind(
         expedientePropietario.id,
+        contextoEntrega.actividadId,
+        contextoEntrega.reservaId,
         item.documento.nombre,
         item.archivo_url,
         Number(item.documento.version_documental || 0)
       ).run();
     }
 
-    expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    expedientesPorPropietario = await obtenerExpedientesPorPropietario(
+      env,
+      usuario.id,
+      propietariosDocumentales,
+      actividadId ? contextoEntrega : {}
+    );
     const archivosFinales = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
     const urlsActivasFinales = new Set(
       archivosFinales
@@ -1153,7 +1207,12 @@ export async function onRequestPost(context) {
       ).run();
     }
 
-    expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario.id, propietariosDocumentales);
+    expedientesPorPropietario = await obtenerExpedientesPorPropietario(
+      env,
+      usuario.id,
+      propietariosDocumentales,
+      actividadId ? contextoEntrega : {}
+    );
     const expediente = expedientesPorPropietario.get(adminId) ||
       Array.from(expedientesPorPropietario.values())[0] ||
       null;

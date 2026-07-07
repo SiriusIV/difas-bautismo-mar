@@ -5,6 +5,7 @@ import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
+import { eliminarDocumentacionDeReserva } from "../_documentacion_contextual.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -652,6 +653,7 @@ async function eliminarReservasPorEliminacionFranja(env, reservas = [], franjaEl
       const alternativasHtml = construirHtmlFranjasAlternativas(franjasAlternativas);
 
       await borrarHistorialReservas(env, [reserva.id]);
+      await eliminarDocumentacionDeReserva(env, reserva.id);
       await env.DB.prepare(`
         DELETE FROM visitantes
         WHERE reserva_id = ?

@@ -590,6 +590,7 @@
     const modo = (params.get("modo") || "registro").trim().toLowerCase();
     const adminIdInicial = Number.parseInt(params.get("admin_id") || "", 10);
     const actividadId = Number.parseInt(params.get("actividad_id") || "", 10);
+    const reservaId = Number.parseInt(params.get("reserva_id") || "", 10);
 
     let adminSeleccionadoId = Number.isInteger(adminIdInicial) && adminIdInicial > 0 ? adminIdInicial : null;
     let estadoDocumentacion = null;
@@ -955,6 +956,9 @@
       if (Number.isInteger(actividadId) && actividadId > 0 && esModoSolicitud()) {
         query.set("actividad_id", String(actividadId));
       }
+      if (Number.isInteger(reservaId) && reservaId > 0 && esModoSolicitud()) {
+        query.set("reserva_id", String(reservaId));
+      }
 
       const res = await fetch(`/api/usuario/documentacion-admin?${query.toString()}`, {
         credentials: "include"
@@ -1031,6 +1035,7 @@
         body: JSON.stringify({
           admin_id: adminSeleccionadoId,
           actividad_id: Number.isInteger(actividadId) && actividadId > 0 && esModoSolicitud() ? actividadId : null,
+          reserva_id: Number.isInteger(reservaId) && reservaId > 0 && esModoSolicitud() ? reservaId : null,
           entregas: obtenerEntregasFormulario()
         })
       });

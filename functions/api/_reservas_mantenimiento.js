@@ -2,6 +2,7 @@
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
 import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb } from "./_reservas_rechazo_plazo.js";
+import { eliminarDocumentacionDeReserva } from "./_documentacion_contextual.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -425,6 +426,9 @@ async function borrarReservasRechazadasVencidas(env) {
   if (!ids.length) return 0;
 
   await borrarHistorialReservas(env, ids);
+  for (const id of ids) {
+    await eliminarDocumentacionDeReserva(env, id);
+  }
 
   const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes
@@ -648,6 +652,7 @@ async function normalizarPrereservasExpiradas(env) {
     `).bind(Number(reserva.id || 0)).run();
 
     await borrarHistorialReservas(env, [Number(reserva.id || 0)]);
+    await eliminarDocumentacionDeReserva(env, Number(reserva.id || 0));
 
     const deleteResult = await db.prepare(`
       DELETE FROM reservas
@@ -748,6 +753,9 @@ async function borrarReservasFinalizadas(env, reservas) {
   if (!ids.length) return 0;
 
   await borrarHistorialReservas(env, ids);
+  for (const id of ids) {
+    await eliminarDocumentacionDeReserva(env, id);
+  }
 
   const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes
@@ -813,6 +821,9 @@ async function borrarReservasResidualesLegacy(env, reservas) {
   if (!ids.length) return 0;
 
   await borrarHistorialReservas(env, ids);
+  for (const id of ids) {
+    await eliminarDocumentacionDeReserva(env, id);
+  }
 
   const sentenciasVisitantes = ids.map((id) => db.prepare(`
     DELETE FROM visitantes

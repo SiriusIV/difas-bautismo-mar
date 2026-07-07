@@ -4,6 +4,7 @@ import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
+import { vincularDocumentacionPendienteAReserva } from "./_documentacion_contextual.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
 import { asegurarColumnaRechazoEliminaEn, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
@@ -791,7 +792,8 @@ export async function onRequestPost(context) {
       const validacionDocumental = await validarDocumentacionReserva(env, {
         usuarioId: user.id,
         adminId: actividad.admin_id,
-        actividadId: reservaActual.actividad_id
+        actividadId: reservaActual.actividad_id,
+        reservaId: reservaActual.id
       });
 
       if (!validacionDocumental.ok) {
@@ -807,6 +809,12 @@ export async function onRequestPost(context) {
           { status: 400 }
         );
       }
+
+      await vincularDocumentacionPendienteAReserva(env, {
+        usuarioId: user.id,
+        actividadId: reservaActual.actividad_id,
+        reservaId: reservaActual.id
+      });
     }
 
     if (usaFranjas && franjaTieneCapacidadLimitada(actividad, franjaNueva)) {

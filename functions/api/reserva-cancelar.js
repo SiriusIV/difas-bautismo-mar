@@ -2,6 +2,7 @@ import { getUserSession } from "./usuario/_auth.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { borrarHistorialReservas } from "./_reservas_historial.js";
+import { eliminarDocumentacionDeReserva } from "./_documentacion_contextual.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -176,6 +177,7 @@ export async function onRequestPost(context) {
 
     if (String(reserva.estado || "").toUpperCase() === "BORRADOR") {
       await borrarHistorialReservas(env, [reserva.id]);
+      await eliminarDocumentacionDeReserva(env, reserva.id);
       await session
         .prepare(`
           DELETE FROM visitantes
@@ -254,6 +256,8 @@ export async function onRequestPost(context) {
       `)
       .bind(reserva.id)
       .run();
+
+    await eliminarDocumentacionDeReserva(env, reserva.id);
 
     const deleteResult = await session
       .prepare(`
