@@ -4077,17 +4077,20 @@ function obtenerActividadesFiltradas() {
         const clasesCard = ["card"];
         if (activa) clasesCard.push("activa");
         if (claseEstadoAdmin) clasesCard.push(claseEstadoAdmin);
+        const tituloSeguro = escapeHtml(a.titulo_publico || a.nombre || "");
+        const imagenUrl = String(a.imagen_url || "").trim() || "logo.png";
+        const lugarProvincia = [a.lugar, a.provincia].filter(Boolean).join(" - ");
 
         return `
           <div class="${clasesCard.join(" ")}" data-actividad-id="${a.id}" onclick="seleccionarActividad(${a.id})">
-            <div class="card-img-wrap">
-              <img src="${a.imagen_url || 'logo.png'}" class="card-img" alt="${a.titulo_publico || a.nombre}">
+            <div class="card-img-wrap" data-imagen-url="${escapeHtml(imagenUrl)}">
+              <img src="logo.png" class="card-img" alt="${tituloSeguro}" loading="lazy">
               ${badgeEstado ? `<div class="badge-estado-actividad ${badgeEstado.clase}">${badgeEstado.texto}</div>` : ``}
             </div>
             <div class="card-body">
-              <h3>${a.titulo_publico || a.nombre}</h3>
+              <h3>${tituloSeguro}</h3>
               <div class="card-meta">
-                ${(a.lugar || a.provincia) ? `<div>${[a.lugar, a.provincia].filter(Boolean).join(" - ")}</div>` : ""}
+                ${lugarProvincia ? `<div>${escapeHtml(lugarProvincia)}</div>` : ""}
                 ${a.tipo === "TEMPORAL" && (a.fecha_inicio || a.fecha_fin) ? `<div>${formatearIntervaloFechaCortoES(a.fecha_inicio, a.fecha_fin)}</div>` : ""}
                 ${a.tipo === "PENDIENTE" ? `<div>Fechas pendientes de determinar</div>` : ""}
               </div>
@@ -4095,6 +4098,17 @@ function obtenerActividadesFiltradas() {
           </div>
         `;
       }).join("");
+
+      cont.querySelectorAll(".card-img-wrap").forEach((wrap) => {
+        const img = wrap.querySelector(".card-img");
+        if (!img) return;
+        const url = String(wrap.dataset.imagenUrl || "").trim() || "logo.png";
+        img.onerror = () => {
+          if (img.src.endsWith("/logo.png") || img.getAttribute("src") === "logo.png") return;
+          img.src = "logo.png";
+        };
+        img.src = url;
+      });
 
       document.querySelectorAll(".btn-carrusel").forEach(btn => {
         btn.style.display = actividadesVisibles.length > 1 ? "inline-flex" : "none";
