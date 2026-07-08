@@ -3187,57 +3187,11 @@
       const body = document.getElementById("tablaEstadoDocumentacionBody");
       const vacio = document.getElementById("estadoVacioDocumentacionPerfil");
 
-      if (!esSolicitante()) {
-        bloque.classList.remove("activo");
-        body.innerHTML = "";
-        vacio.classList.add("oculto");
-        return;
-      }
-
-      bloque.classList.add("activo");
       body.innerHTML = "";
-
-      if (!Array.isArray(resumenDocumentacion) || !resumenDocumentacion.length) {
-        organizadorSeleccionadoId = null;
-        vacio.classList.remove("oculto");
-        actualizarAccionesOrganizadores();
-        renderizarPanelDocumentosVacio("Selecciona un organizador en la tabla para consultar y gestionar sus documentos.");
-        return;
-      }
-
-      const existeSeleccion = resumenDocumentacion.some((item) => Number(item.admin_id || 0) === Number(organizadorSeleccionadoId || 0));
-      if (!existeSeleccion) {
-        const preferenteExiste = resumenDocumentacion.some((item) => Number(item.admin_id || 0) === Number(adminIdPreferentePerfil || 0));
-        organizadorSeleccionadoId = preferenteExiste
-          ? Number(adminIdPreferentePerfil || 0)
-          : (Number(resumenDocumentacion[0]?.admin_id || 0) || null);
-      }
-
+      bloque.classList.remove("activo");
       vacio.classList.add("oculto");
-
-      resumenDocumentacion.forEach((item) => {
-        const tr = document.createElement("tr");
-        const estado = String(item.estado_efectivo || "").toUpperCase();
-        const adminId = Number(item.admin_id || 0);
-        const seleccionado = adminId === Number(organizadorSeleccionadoId || 0);
-        const indicador = obtenerIndicadorEstadoExpediente(estado);
-
-        tr.classList.toggle("fila-seleccionada", seleccionado);
-        tr.innerHTML = `
-          <td class="td-centro">
-            <div class="admin-doc-nombre">${item.admin_nombre_publico || item.admin_nombre || "Organizador"}</div>
-            <div class="admin-doc-meta">${item.admin_localidad || ""}</div>
-          </td>
-          <td>Requeridos: ${Number(item.total_documentos || 0)} / Aprobados: ${Number(item.total_documentos_validados || 0)}</td>
-          <td><button type="button" class="btn-indicador-expediente" data-abrir-documentacion="${adminId}" aria-label="Abrir documentos del organizador">${indicador.html}</button></td>
-        `;
-        body.appendChild(tr);
-      });
-
       actualizarAccionesOrganizadores();
-      if (document.getElementById("panelBloqueDocumentos").classList.contains("activo")) {
-        cargarDetalleSeleccionado();
-      }
+      renderizarPanelDocumentosVacio("La documentación obligatoria se gestiona ahora desde cada solicitud del panel de reservas.");
     }
 
     function obtenerDocumentoBaseAdminSeleccionado() {
@@ -4481,34 +4435,8 @@
     }
 
     async function cargarResumenDocumentacion() {
-      if (!esSolicitante()) {
-        resumenDocumentacion = [];
-        renderizarResumenDocumentacion();
-        return;
-      }
-
-      try {
-        const url = new URL("/api/usuario/documentacion-resumen", window.location.origin);
-        if (Number.isInteger(Number(adminIdPreferentePerfil || 0)) && Number(adminIdPreferentePerfil || 0) > 0) {
-          url.searchParams.set("admin_id", String(Number(adminIdPreferentePerfil || 0)));
-        }
-        const res = await fetch(url.toString(), {
-          credentials: "include"
-        });
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok || !data?.ok) {
-          resumenDocumentacion = [];
-          renderizarResumenDocumentacion();
-          return;
-        }
-
-        resumenDocumentacion = Array.isArray(data.administradores) ? data.administradores : [];
-        renderizarResumenDocumentacion();
-      } catch (_) {
-        resumenDocumentacion = [];
-        renderizarResumenDocumentacion();
-      }
+      resumenDocumentacion = [];
+      renderizarResumenDocumentacion();
     }
 
     async function cargarPerfil() {
@@ -4539,9 +4467,6 @@
       aplicarEstadoForzadoPassword();
       await cargarResumenDocumentacion();
       await cargarDocumentacionAdmin();
-      if (esSolicitante() && Number(adminIdPreferentePerfil || 0) > 0) {
-        activarTabBloqueDocumentacion("documentos");
-      }
       appPerfil.classList.remove("app-perfil-cargando");
 
       if (forzarCambioPasswordObligatorio) {

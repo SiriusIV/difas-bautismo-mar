@@ -272,6 +272,11 @@
       min-width: 114px;
       text-align: center;
     }
+    th.documentacion-col, td.documentacion-col {
+      width: 128px;
+      min-width: 128px;
+      text-align: center;
+    }
     .encabezado-estado {
       display: inline-flex;
       align-items: center;
@@ -434,6 +439,30 @@
     }
     .btn-accion-documentacion:hover {
       background: rgba(255,255,255,1);
+    }
+    .btn-documentacion-reserva {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid #bfd0e3;
+      background: #fff;
+      color: #123a63;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-documentacion-reserva:hover {
+      background: #eef4ff;
+      border-color: #8fb0d7;
+    }
+    .btn-documentacion-reserva svg {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
     }
     .icono-observacion {
       display: inline-flex;
@@ -695,6 +724,7 @@
         grid-template-areas:
           "actividad"
           "estado"
+          "documentacion"
           "fecha"
           "horario"
           "plazas";
@@ -739,12 +769,14 @@
       }
       td.fecha-col,
       td.horario-col,
+      td.documentacion-col,
       td.plazas-col {
         display: flex;
         align-items: flex-start;
         gap: 10px;
         padding: 8px 14px 8px 14px;
       }
+      td.documentacion-col { grid-area: documentacion; }
       td.fecha-col { grid-area: fecha; }
       td.horario-col { grid-area: horario; }
       td.plazas-col {
@@ -869,12 +901,14 @@
         grid-template-areas:
           "actividad"
           "estado"
+          "documentacion"
           "fecha"
           "horario"
           "plazas";
       }
       tr.fila-seleccionable-movil td.actividad-col,
       tr.fila-seleccionable-movil td.estado-col,
+      tr.fila-seleccionable-movil td.documentacion-col,
       tr.fila-seleccionable-movil td.fecha-col,
       tr.fila-seleccionable-movil td.horario-col,
       tr.fila-seleccionable-movil td.plazas-col {
@@ -1032,6 +1066,7 @@
                   <span>Estado</span>
                 </span>
               </th>
+              <th class="documentacion-col">Documentación</th>
               <th class="fecha-col">Fecha</th>
               <th class="horario-col">Horario</th>
               <th class="plazas-col">Plazas</th>
@@ -1356,6 +1391,17 @@
       document.getElementById("btnAnularSolicitud").disabled = !hay;
     }
 
+    function abrirDocumentacionReserva(id) {
+      const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)) || null;
+      if (!reserva) return;
+      const url = construirUrlDocumentacion(reserva.admin_id, reserva.actividad_id, reserva.id);
+      if (!url) {
+        mostrarMensaje("error", "No se pudo abrir la documentación de esta solicitud.");
+        return;
+      }
+      location.href = url;
+    }
+
     function seleccionarReserva(id) {
       reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null;
       const filtradas = filtrarReservas(reservasActuales);
@@ -1677,7 +1723,7 @@
       }
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay reservas que coincidan con los filtros.</td></tr>`;
         actualizarBotones();
         return;
       }
@@ -1712,6 +1758,13 @@
               <span class="mobile-dato-etiqueta">Estado</span>
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
                 <span class="estado-badge estado-badge-con-icono ${claseEstado(r.estado)}"><img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="estado-badge-icono"><span>${textoEstadoVisible(r.estado)}</span></span>
+              </button>
+            </td>
+            <td class="documentacion-col">
+              <span class="mobile-dato-etiqueta">Documentación</span>
+              <button type="button" class="btn-documentacion-reserva" onclick="event.stopPropagation(); abrirDocumentacionReserva(${r.id});" title="Ver documentación de esta solicitud">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>
+                <span>Ver</span>
               </button>
             </td>
             <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
