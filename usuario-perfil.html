@@ -2575,6 +2575,15 @@
       return formatter.format(fecha);
     }
 
+    function escapeHtml(valor) {
+      return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function estadoDetalleDocumento(_expedienteEstado, documento) {
       return String(documento?.estado_documento || "NO_INICIADO").toUpperCase();
     }
@@ -3681,9 +3690,9 @@
         }
         tbody.innerHTML = docs.map((doc, index) => `
           <tr data-doc-sec-idx="${index}">
-            <td>${doc.nombre_documento || "-"}</td>
-            <td><span class="estado-doc-sec ${claseEstadoDocumentoSecretaria(doc.estado)}">${doc.estado || "-"}</span></td>
-            <td>${formatearFechaCorta(doc.fecha_subida || "")}</td>
+            <td>${escapeHtml(doc.nombre_documento || "-")}${doc.contexto ? `<div class="muted">${escapeHtml(doc.contexto)}</div>` : ""}</td>
+            <td><span class="estado-doc-sec ${claseEstadoDocumentoSecretaria(doc.estado)}">${escapeHtml(doc.estado || "-")}</span></td>
+            <td>${escapeHtml(formatearFechaCorta(doc.fecha_subida || ""))}</td>
           </tr>
         `).join("");
         tbody.querySelectorAll("tr[data-doc-sec-idx]").forEach((fila) => {

@@ -63,6 +63,8 @@ async function obtenerExpedienteConDocumentosPropios(env, propietarioId, documen
       cad.id,
       cad.centro_usuario_id,
       cad.admin_id,
+      cad.actividad_id,
+      cad.reserva_id,
       cad.version_requerida,
       u.centro,
       u.email,

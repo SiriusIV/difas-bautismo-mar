@@ -6,7 +6,6 @@ import {
   nombreVisibleAdmin
 } from "../_email.js";
 import { crearNotificacion } from "../_notificaciones.js";
-import { resolverResponsableDocumental } from "../_documentacion_responsable.js";
 import {
   obtenerCatalogoDocumentosActivosAdmin,
   leerConfiguracionDocumentalActividad,
@@ -142,8 +141,7 @@ async function obtenerUsuarioSolicitante(env, userId) {
 }
 
 async function obtenerAdmin(env, adminId) {
-  const resolucion = await resolverResponsableDocumental(env, adminId);
-  return resolucion?.admin || null;
+  return await obtenerUsuarioPorId(env, adminId);
 }
 
 async function obtenerUsuarioPorId(env, usuarioId) {
@@ -200,59 +198,6 @@ async function obtenerActividadesAdmin(env, adminId) {
     admin_id: Number(row.admin_id || 0),
     nombre_publico: limpiarTexto(row.nombre_publico) || "Actividad"
   })).filter((row) => row.id > 0);
-}
-
-async function obtenerPropietarioDocumentalId(env, adminId) {
-  const resolucion = await resolverResponsableDocumental(env, adminId);
-  if (!resolucion) return null;
-
-  if (String(resolucion.modo || "").toUpperCase() === "SECRETARIA_EXTERNA") {
-    return Number(resolucion.responsable?.id || 0) || null;
-  }
-
-  return Number(resolucion.admin?.id || 0) || null;
-}
-
-async function obtenerVersionRequerida(env, adminId) {
-  const propietarioDocumentalId = await obtenerPropietarioDocumentalId(env, adminId);
-  if (!propietarioDocumentalId) return 0;
-
-  const row = await env.DB.prepare(`
-    SELECT COALESCE(MAX(version_documental), 0) AS version_actual
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-  `).bind(propietarioDocumentalId).first();
-
-  return Number(row?.version_actual || 0);
-}
-
-async function obtenerDocumentosActivos(env, adminId) {
-  const propietarioDocumentalId = await obtenerPropietarioDocumentalId(env, adminId);
-  if (!propietarioDocumentalId) return [];
-
-  const rows = await env.DB.prepare(`
-    SELECT
-      id,
-      admin_id,
-      nombre,
-      descripcion,
-      archivo_url,
-      orden,
-      version_documental,
-      fecha_actualizacion
-    FROM admin_documentos_comunes
-    WHERE admin_id = ?
-      AND activo = 1
-    ORDER BY orden ASC, id ASC
-  `).bind(propietarioDocumentalId).all();
-
-  return (rows?.results || []).map((row) => ({
-    ...row,
-    propietario_id: Number(row.admin_id || 0),
-    propietario_rol: "",
-    propietario_nombre: ""
-  }));
 }
 
 async function obtenerExpediente(env, centroUsuarioId, adminId, contexto = {}) {
@@ -318,9 +263,7 @@ async function obtenerContextoDocumental(env, adminId, actividadId = null) {
   }
 
   const catalogoLegacy = await obtenerCatalogoDocumentosActivosAdmin(env, adminId);
-  const documentosBase = actividadId
-    ? await obtenerCatalogoDocumentalVinculadoAdmin(env, adminId, catalogoLegacy)
-    : await obtenerDocumentosActivos(env, adminId);
+  const documentosBase = await obtenerCatalogoDocumentalVinculadoAdmin(env, adminId, catalogoLegacy);
   const configuracionActividad = actividadId
     ? await leerConfiguracionDocumentalActividad(env, actividadId)
     : null;

@@ -1138,7 +1138,7 @@
           }
           const estadoLabel = `<span class="${claseEstado}">${escapeHtml(estado)}</span>`;
           return `<tr data-doc-idx="${index}">
-            <td data-label="Documento">${escapeHtml(doc.nombre_documento || "-")}</td>
+            <td data-label="Documento">${escapeHtml(doc.nombre_documento || "-")}${doc.contexto ? `<div class="muted">${escapeHtml(doc.contexto)}</div>` : ""}</td>
             <td data-label="Estado">${estadoLabel}</td>
             <td data-label="Fecha">${escapeHtml(fecha || "-")}</td>
           </tr>`;
