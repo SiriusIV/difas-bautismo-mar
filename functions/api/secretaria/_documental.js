@@ -85,6 +85,8 @@ export async function obtenerExpedienteGestionadoPorSecretaria(env, secretariaId
       cad.id,
       cad.centro_usuario_id,
       cad.admin_id,
+      cad.actividad_id,
+      cad.reserva_id,
       cad.version_requerida,
       cad.version_aportada,
       cad.estado,

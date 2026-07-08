@@ -1,4 +1,5 @@
 ﻿import { obtenerCatalogoDocumentosActivosAdmin, resolverDocumentosExigiblesActividad } from "./_actividad_documentacion.js";
+import { asegurarColumnasContextoDocumental } from "./_documentacion_contextual.js";
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { crearNotificacion } from "./_notificaciones.js";
@@ -56,7 +57,9 @@ function calcularEstadoDocumento(doc, entrega) {
 
 function documentosCumplidos(documentosExigibles = [], archivosPorNombre = new Map()) {
   return (documentosExigibles || []).every((doc) => {
-    const entrega = archivosPorNombre.get(normalizarClaveDocumento(doc.nombre)) || null;
+    const propietario = Number(doc?.propietario_id || doc?.admin_id || 0);
+    const clave = normalizarClaveDocumento(doc.nombre);
+    const entrega = archivosPorNombre.get(`${propietario}::${clave}`) || archivosPorNombre.get(clave) || null;
     return calcularEstadoDocumento(doc, entrega) === "VALIDADO";
   });
 }
@@ -133,47 +136,77 @@ async function obtenerActividadNotificable(env, actividadId, adminId) {
   `).bind(actividadId, adminId).first();
 }
 
-async function obtenerExpedientesConArchivos(env, adminId) {
+function obtenerPropietariosDocumentos(documentos = [], adminIdFallback = 0) {
+  const ids = new Set();
+  for (const doc of documentos || []) {
+    const propietario = Number(doc?.propietario_id || doc?.admin_id || adminIdFallback || 0);
+    if (propietario > 0) ids.add(propietario);
+  }
+  return Array.from(ids);
+}
+
+async function obtenerExpedientesConArchivos(env, actividadId, documentos = [], adminIdFallback = 0) {
+  await asegurarColumnasContextoDocumental(env);
+  const propietarios = obtenerPropietariosDocumentos(documentos, adminIdFallback);
+  if (!propietarios.length || !(Number(actividadId || 0) > 0)) {
+    return { expedientes: [], archivosPorExpediente: new Map() };
+  }
+  const placeholders = propietarios.map(() => "?").join(", ");
   const expedientesRows = await env.DB.prepare(`
     SELECT
       cad.id,
+      cad.admin_id,
       cad.centro_usuario_id,
       u.centro,
       u.email
     FROM centro_admin_documentacion cad
     INNER JOIN usuarios u ON u.id = cad.centro_usuario_id
-    WHERE cad.admin_id = ?
+    WHERE cad.admin_id IN (${placeholders})
+      AND cad.actividad_id = ?
+      AND cad.reserva_id IS NULL
       AND u.rol = 'SOLICITANTE'
       AND COALESCE(u.activo, 1) = 1
-  `).bind(adminId).all();
+  `).bind(...propietarios, Number(actividadId || 0)).all();
 
-  const expedientes = (expedientesRows?.results || [])
+  const expedientesBase = (expedientesRows?.results || [])
     .map((row) => ({
       id: Number(row.id || 0),
+      admin_id: Number(row.admin_id || 0),
       centro_usuario_id: Number(row.centro_usuario_id || 0),
       centro: limpiarTexto(row.centro || "Usuario público"),
       email: limpiarTexto(row.email || "")
     }))
-    .filter((row) => row.id > 0 && row.centro_usuario_id > 0 && row.email);
+    .filter((row) => row.id > 0 && row.admin_id > 0 && row.centro_usuario_id > 0 && row.email);
 
+  const expedientesPorUsuario = new Map();
   const archivosPorExpediente = new Map();
-  for (const expediente of expedientes) {
+  for (const expediente of expedientesBase) {
+    if (!expedientesPorUsuario.has(expediente.centro_usuario_id)) {
+      expedientesPorUsuario.set(expediente.centro_usuario_id, {
+        ...expediente,
+        ids_expedientes: []
+      });
+    }
+    const expedienteUsuario = expedientesPorUsuario.get(expediente.centro_usuario_id);
+    expedienteUsuario.ids_expedientes.push(expediente.id);
+    if (!archivosPorExpediente.has(expedienteUsuario.id)) {
+      archivosPorExpediente.set(expedienteUsuario.id, new Map());
+    }
+    const mapaArchivosUsuario = archivosPorExpediente.get(expedienteUsuario.id);
     const archivosRows = await env.DB.prepare(`
       SELECT nombre_documento, version_documental, estado, fecha_subida
       FROM centro_admin_documentacion_archivos
       WHERE documentacion_id = ?
         AND activo = 1
     `).bind(expediente.id).all();
-    archivosPorExpediente.set(
-      expediente.id,
-      new Map((archivosRows?.results || []).map((archivo) => [
-        normalizarClaveDocumento(archivo.nombre_documento),
-        archivo
-      ]))
-    );
+    for (const archivo of archivosRows?.results || []) {
+      const clave = normalizarClaveDocumento(archivo.nombre_documento);
+      mapaArchivosUsuario.set(clave, archivo);
+      mapaArchivosUsuario.set(`${expediente.admin_id}::${clave}`, archivo);
+    }
   }
 
-  return { expedientes, archivosPorExpediente };
+  return { expedientes: Array.from(expedientesPorUsuario.values()), archivosPorExpediente };
 }
 
 async function obtenerUsuariosConReservaVivaActividad(env, actividadId) {
@@ -225,7 +258,7 @@ export async function notificarNuevosSolicitantesHabilitadosPorDocumentacionActi
   }
 
   const [{ expedientes, archivosPorExpediente }, usuariosConReservaViva] = await Promise.all([
-    obtenerExpedientesConArchivos(env, adminNumerico),
+    obtenerExpedientesConArchivos(env, actividadNumerica, docsNuevos, adminNumerico),
     obtenerUsuariosConReservaVivaActividad(env, actividadNumerica)
   ]);
   const admin = {

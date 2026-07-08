@@ -3,6 +3,11 @@ import {
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
+import {
+  asegurarColumnasContextoDocumental,
+  construirCondicionContextoDocumental,
+  normalizarContextoDocumental
+} from "./_documentacion_contextual.js";
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "./_documentacion_propietarios.js";
 
 function limpiarTexto(valor) {
@@ -46,6 +51,49 @@ function mapNombreAdmin(row = {}) {
   return limpiarTexto(row.admin_nombre_publico || row.admin_nombre || "Organizador");
 }
 
+function resultadoVacio() {
+  return {
+    total_activas: 0,
+    solicitables_total: 0,
+    bloqueadas_total: 0,
+    puede_todas: false,
+    solicitables: [],
+    bloqueadas: []
+  };
+}
+
+function obtenerPropietarioDocumento(doc = {}, fallback = 0) {
+  return Number(doc?.propietario_id || doc?.admin_id || fallback || 0);
+}
+
+async function construirArchivosPorPropietario(env, expedientes = []) {
+  const archivosPorPropietario = new Map();
+  for (const exp of expedientes) {
+    const propietarioId = Number(exp.admin_id || 0);
+    if (!(propietarioId > 0)) continue;
+    const rows = await env.DB.prepare(`
+      SELECT nombre_documento, version_documental, estado
+      FROM centro_admin_documentacion_archivos
+      WHERE documentacion_id = ?
+        AND activo = 1
+    `).bind(exp.id).all();
+    archivosPorPropietario.set(
+      propietarioId,
+      new Map((rows?.results || []).map((item) => [normalizarClaveDocumento(item.nombre_documento), item]))
+    );
+  }
+  return archivosPorPropietario;
+}
+
+function documentosCumplidosPorPropietario(documentos = [], archivosPorPropietario = new Map(), fallbackPropietario = 0) {
+  return (documentos || []).every((doc) => {
+    const propietarioId = obtenerPropietarioDocumento(doc, fallbackPropietario);
+    const archivosMap = archivosPorPropietario.get(propietarioId) || new Map();
+    const entrega = archivosMap.get(normalizarClaveDocumento(doc.nombre)) || null;
+    return documentoCumple(doc, entrega);
+  });
+}
+
 export async function construirResumenActividadesSolicitables(env, {
   adminId,
   documentacionId
@@ -53,15 +101,23 @@ export async function construirResumenActividadesSolicitables(env, {
   const admin = Number(adminId || 0);
   const docId = Number(documentacionId || 0);
   if (!(admin > 0) || !(docId > 0)) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
+
+  await asegurarColumnasContextoDocumental(env);
+
+  const expediente = await env.DB.prepare(`
+    SELECT admin_id, centro_usuario_id, actividad_id, reserva_id
+    FROM centro_admin_documentacion
+    WHERE id = ?
+    LIMIT 1
+  `).bind(docId).first();
+  const actividadContexto = Number(expediente?.actividad_id || 0);
+  const contextoExpediente = normalizarContextoDocumental({
+    actividadId: expediente?.actividad_id || null,
+    reservaId: expediente?.reserva_id || null
+  });
+  const condicionContexto = construirCondicionContextoDocumental(contextoExpediente, "cad");
 
   const [catalogo, actividadesRows, archivosRows] = await Promise.all([
     obtenerCatalogoDocumentalVinculadoAdmin(
@@ -79,12 +135,13 @@ export async function construirResumenActividadesSolicitables(env, {
       FROM actividades
       WHERE admin_id = ?
         AND activa = 1
+        ${actividadContexto > 0 ? "AND id = ?" : ""}
         AND (
           fecha_fin IS NULL
           OR date(fecha_fin) >= date('now')
         )
       ORDER BY id DESC
-    `).bind(admin).all(),
+    `).bind(...(actividadContexto > 0 ? [admin, actividadContexto] : [admin])).all(),
     env.DB.prepare(`
       SELECT nombre_documento, version_documental, estado
       FROM centro_admin_documentacion_archivos
@@ -105,14 +162,7 @@ export async function construirResumenActividadesSolicitables(env, {
     .filter((row) => esActividadConReserva(row));
 
   if (!actividades.length) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
 
   const configuraciones = await obtenerConfiguracionDocumentalPorActividades(
@@ -120,10 +170,25 @@ export async function construirResumenActividadesSolicitables(env, {
     actividades.map((item) => item.id)
   );
 
-  const archivos = archivosRows?.results || [];
-  const archivosPorNombre = new Map(
-    archivos.map((item) => [normalizarClaveDocumento(item.nombre_documento), item])
-  );
+  let expedientesContexto = [{
+    id: docId,
+    admin_id: Number(expediente?.admin_id || admin)
+  }];
+  if (Number(expediente?.centro_usuario_id || 0) > 0 && contextoExpediente.actividadId) {
+    const expedientesRows = await env.DB.prepare(`
+      SELECT cad.id, cad.admin_id
+      FROM centro_admin_documentacion cad
+      WHERE cad.centro_usuario_id = ?
+        AND ${condicionContexto.sql}
+    `).bind(Number(expediente.centro_usuario_id || 0), ...condicionContexto.valores).all();
+    expedientesContexto = (expedientesRows?.results || [])
+      .map((row) => ({ id: Number(row.id || 0), admin_id: Number(row.admin_id || 0) }))
+      .filter((row) => row.id > 0 && row.admin_id > 0);
+  }
+  if (!expedientesContexto.length && archivosRows?.results?.length) {
+    expedientesContexto = [{ id: docId, admin_id: Number(expediente?.admin_id || admin) }];
+  }
+  const archivosPorPropietario = await construirArchivosPorPropietario(env, expedientesContexto);
 
   const solicitables = [];
   const bloqueadas = [];
@@ -134,10 +199,7 @@ export async function construirResumenActividadesSolicitables(env, {
       bloqueadas.push(actividad.nombre);
       continue;
     }
-    const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosPorNombre.get(normalizarClaveDocumento(doc.nombre)) || null;
-      return documentoCumple(doc, entrega);
-    });
+    const cumple = documentosCumplidosPorPropietario(docsExigibles, archivosPorPropietario, admin);
     if (cumple) solicitables.push(actividad.nombre);
     else bloqueadas.push(actividad.nombre);
   }
@@ -154,20 +216,20 @@ export async function construirResumenActividadesSolicitables(env, {
 
 export async function construirResumenActividadesSolicitablesSecretaria(env, {
   secretariaId,
-  centroUsuarioId
+  centroUsuarioId,
+  actividadId = null,
+  reservaId = null
 } = {}) {
   const secretaria = Number(secretariaId || 0);
   const centroUsuario = Number(centroUsuarioId || 0);
   if (!(secretaria > 0) || !(centroUsuario > 0)) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
+
+  await asegurarColumnasContextoDocumental(env);
+
+  const contexto = normalizarContextoDocumental({ actividadId, reservaId });
+  const condicionContexto = construirCondicionContextoDocumental(contexto, "cad");
 
   const [expedientesRows, actividadesRows] = await Promise.all([
     env.DB.prepare(`
@@ -179,10 +241,11 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios admin ON admin.id = cad.admin_id
       WHERE cad.centro_usuario_id = ?
+        AND ${condicionContexto.sql}
         AND admin.rol = 'ADMIN'
         AND admin.secretaria_usuario_id = ?
         AND COALESCE(admin.modulo_secretaria, 0) = 0
-    `).bind(centroUsuario, secretaria).all(),
+    `).bind(centroUsuario, ...condicionContexto.valores, secretaria).all(),
     env.DB.prepare(`
       SELECT
         a.id,
@@ -196,6 +259,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
       FROM actividades a
       INNER JOIN usuarios admin ON admin.id = a.admin_id
       WHERE a.activa = 1
+        ${contexto.actividadId ? "AND a.id = ?" : ""}
         AND admin.rol = 'ADMIN'
         AND admin.secretaria_usuario_id = ?
         AND COALESCE(admin.modulo_secretaria, 0) = 0
@@ -204,7 +268,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
           OR date(a.fecha_fin) >= date('now')
         )
       ORDER BY a.id DESC
-    `).bind(secretaria).all()
+    `).bind(...(contexto.actividadId ? [contexto.actividadId, secretaria] : [secretaria])).all()
   ]);
 
   const expedientes = (expedientesRows?.results || []).map((row) => ({
@@ -224,14 +288,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
   })).filter((row) => row.id > 0 && row.admin_id > 0 && esActividadConReserva(row));
 
   if (!actividades.length) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
 
   const adminIds = [...new Set(actividades.map((item) => item.admin_id))];
@@ -258,23 +315,11 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
     for (const [actividadId, cfg] of configMap.entries()) configuracionesPorActividad.set(actividadId, cfg);
   }
 
-  const expedientePorAdmin = new Map(expedientes.map((exp) => [exp.admin_id, exp]));
-  const archivosPorExpediente = new Map();
-  for (const exp of expedientes) {
-    const rows = await env.DB.prepare(`
-      SELECT nombre_documento, version_documental, estado
-      FROM centro_admin_documentacion_archivos
-      WHERE documentacion_id = ?
-        AND activo = 1
-    `).bind(exp.id).all();
-    const map = new Map((rows?.results || []).map((item) => [normalizarClaveDocumento(item.nombre_documento), item]));
-    archivosPorExpediente.set(exp.id, map);
-  }
+  const archivosPorPropietario = await construirArchivosPorPropietario(env, expedientes);
 
   const solicitables = [];
   const bloqueadas = [];
   for (const actividad of actividades) {
-    const expediente = expedientePorAdmin.get(actividad.admin_id) || null;
     const catalogo = catalogosPorAdmin.get(actividad.admin_id) || [];
     const config = configuracionesPorActividad.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
@@ -285,12 +330,7 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
       });
       continue;
     }
-    const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
-
-    const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosMap.get(normalizarClaveDocumento(doc.nombre)) || null;
-      return documentoCumple(doc, entrega);
-    });
+    const cumple = documentosCumplidosPorPropietario(docsExigibles, archivosPorPropietario, actividad.admin_id);
 
     const item = {
       actividad: actividad.nombre,
@@ -311,19 +351,19 @@ export async function construirResumenActividadesSolicitablesSecretaria(env, {
 }
 
 export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
-  centroUsuarioId
+  centroUsuarioId,
+  actividadId = null,
+  reservaId = null
 } = {}) {
   const centroUsuario = Number(centroUsuarioId || 0);
   if (!(centroUsuario > 0)) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
+
+  await asegurarColumnasContextoDocumental(env);
+
+  const contexto = normalizarContextoDocumental({ actividadId, reservaId });
+  const condicionContexto = construirCondicionContextoDocumental(contexto, "cad");
 
   const [expedientesRows, actividadesRows] = await Promise.all([
     env.DB.prepare(`
@@ -335,8 +375,9 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
       FROM centro_admin_documentacion cad
       INNER JOIN usuarios admin ON admin.id = cad.admin_id
       WHERE cad.centro_usuario_id = ?
+        AND ${condicionContexto.sql}
         AND admin.rol = 'ADMIN'
-    `).bind(centroUsuario).all(),
+    `).bind(centroUsuario, ...condicionContexto.valores).all(),
     env.DB.prepare(`
       SELECT
         a.id,
@@ -350,6 +391,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
       FROM actividades a
       INNER JOIN usuarios admin ON admin.id = a.admin_id
       WHERE a.activa = 1
+        ${contexto.actividadId ? "AND a.id = ?" : ""}
         AND COALESCE(a.visible_portal, 0) = 1
         AND admin.rol = 'ADMIN'
         AND (
@@ -357,7 +399,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
           OR date(a.fecha_fin) >= date('now')
         )
       ORDER BY a.id DESC
-    `).all()
+    `).bind(...(contexto.actividadId ? [contexto.actividadId] : [])).all()
   ]);
 
   const expedientes = (expedientesRows?.results || []).map((row) => ({
@@ -365,8 +407,6 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     admin_id: Number(row.admin_id || 0),
     admin_nombre: mapNombreAdmin(row)
   })).filter((row) => row.id > 0 && row.admin_id > 0);
-
-  const expedientePorAdmin = new Map(expedientes.map((exp) => [exp.admin_id, exp]));
 
   const actividades = (actividadesRows?.results || []).map((row) => ({
     id: Number(row.id || 0),
@@ -380,14 +420,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     .filter((row) => row.id > 0 && row.admin_id > 0 && esActividadConReserva(row));
 
   if (!actividades.length) {
-    return {
-      total_activas: 0,
-      solicitables_total: 0,
-      bloqueadas_total: 0,
-      puede_todas: false,
-      solicitables: [],
-      bloqueadas: []
-    };
+    return resultadoVacio();
   }
 
   const adminIds = [...new Set(actividades.map((item) => item.admin_id))];
@@ -414,22 +447,11 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
     for (const [actividadId, cfg] of configMap.entries()) configuracionesPorActividad.set(actividadId, cfg);
   }
 
-  const archivosPorExpediente = new Map();
-  for (const exp of expedientes) {
-    const rows = await env.DB.prepare(`
-      SELECT nombre_documento, version_documental, estado
-      FROM centro_admin_documentacion_archivos
-      WHERE documentacion_id = ?
-        AND activo = 1
-    `).bind(exp.id).all();
-    const map = new Map((rows?.results || []).map((item) => [normalizarClaveDocumento(item.nombre_documento), item]));
-    archivosPorExpediente.set(exp.id, map);
-  }
+  const archivosPorPropietario = await construirArchivosPorPropietario(env, expedientes);
 
   const solicitables = [];
   const bloqueadas = [];
   for (const actividad of actividades) {
-    const expediente = expedientePorAdmin.get(actividad.admin_id) || null;
     const catalogo = catalogosPorAdmin.get(actividad.admin_id) || [];
     const config = configuracionesPorActividad.get(actividad.id) || { modo: "HEREDADA", documentos: [] };
     const docsExigibles = resolverDocumentosExigiblesActividad(catalogo, config);
@@ -440,12 +462,7 @@ export async function construirResumenActividadesSolicitablesGlobalCentro(env, {
       });
       continue;
     }
-    const archivosMap = expediente ? (archivosPorExpediente.get(expediente.id) || new Map()) : new Map();
-
-    const cumple = docsExigibles.every((doc) => {
-      const entrega = archivosMap.get(normalizarClaveDocumento(doc.nombre)) || null;
-      return documentoCumple(doc, entrega);
-    });
+    const cumple = documentosCumplidosPorPropietario(docsExigibles, archivosPorPropietario, actividad.admin_id);
 
     const item = { actividad: actividad.nombre, organizador: actividad.admin_nombre };
     if (cumple) solicitables.push(item);

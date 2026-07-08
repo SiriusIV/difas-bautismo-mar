@@ -108,7 +108,7 @@ export async function onRequestPost(context) {
     }
 
     const expediente = await env.DB.prepare(`
-      SELECT id, admin_id, centro_usuario_id
+      SELECT id, admin_id, centro_usuario_id, actividad_id, reserva_id
       FROM centro_admin_documentacion
       WHERE id = ?
         AND admin_id = ?
@@ -192,7 +192,9 @@ export async function onRequestPost(context) {
 
     const resumenCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosActivos);
     const resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
-      centroUsuarioId: Number(expediente.centro_usuario_id || 0)
+      centroUsuarioId: Number(expediente.centro_usuario_id || 0),
+      actividadId: Number(expediente.actividad_id || 0) || null,
+      reservaId: Number(expediente.reserva_id || 0) || null
     });
     const cambioTexto = accion === "eliminar" ? "NO_ENVIADO" : (accion === "validar" ? "VALIDADO" : "RECHAZADO");
     await enviarEmail(env, {

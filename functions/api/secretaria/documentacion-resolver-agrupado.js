@@ -270,7 +270,9 @@ export async function onRequestPost(context) {
     let resumenActividadesCorreo = null;
     try {
       resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
-        centroUsuarioId: Number(expediente.centro_usuario_id || 0)
+        centroUsuarioId: Number(expediente.centro_usuario_id || 0),
+        actividadId: Number(expediente.actividad_id || 0) || null,
+        reservaId: Number(expediente.reserva_id || 0) || null
       });
     } catch (errorResumenActividades) {
       console.error("No se pudo calcular el resumen de actividades solicitables (secretaria).", {

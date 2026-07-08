@@ -22,6 +22,7 @@ import {
   obtenerConfiguracionDocumentalPorActividades,
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
+import { asegurarColumnasContextoDocumental } from "./_documentacion_contextual.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -156,6 +157,19 @@ function estadoDocumentalCompleto(estado) {
   return ["VALIDADA", "NO_REQUERIDA"].includes(String(estado || "").toUpperCase());
 }
 
+function resumirEstadosDocumentales(estados = []) {
+  const normalizados = (Array.isArray(estados) ? estados : [])
+    .map((estado) => limpiarTexto(estado).toUpperCase())
+    .filter(Boolean);
+  if (!normalizados.length) return "NO_REQUERIDA";
+  if (normalizados.some((estado) => estado === "RECHAZADA")) return "RECHAZADA";
+  if (normalizados.some((estado) => estado === "NO_ACTUALIZADO")) return "NO_ACTUALIZADO";
+  if (normalizados.some((estado) => estado === "NO_COMPLETADO")) return "NO_COMPLETADO";
+  if (normalizados.some((estado) => estado === "EN_REVISION")) return "EN_REVISION";
+  if (normalizados.every((estado) => estado === "VALIDADA" || estado === "NO_REQUERIDA")) return "VALIDADA";
+  return normalizados[0] || "NO_REQUERIDA";
+}
+
 function motivoImpactoDocumentalTexto(motivo) {
   const clave = limpiarTexto(motivo).toLowerCase();
   if (clave === "cambio_responsable") {
@@ -242,12 +256,16 @@ async function obtenerSolicitantesAfectados(env, adminId) {
   return rows?.results || [];
 }
 
-async function obtenerExpediente(env, adminId, centroUsuarioId) {
+async function obtenerExpediente(env, adminId, centroUsuarioId, contexto = {}) {
+  const actividadId = Number(contexto?.actividadId || 0);
+  const reservaId = Number(contexto?.reservaId || 0);
   return await env.DB.prepare(`
     SELECT
       id,
       admin_id,
       centro_usuario_id,
+      actividad_id,
+      reserva_id,
       version_requerida,
       version_aportada,
       estado,
@@ -257,33 +275,47 @@ async function obtenerExpediente(env, adminId, centroUsuarioId) {
     FROM centro_admin_documentacion
     WHERE admin_id = ?
       AND centro_usuario_id = ?
+      AND ${actividadId > 0 ? "actividad_id = ?" : "actividad_id IS NULL"}
+      AND ${reservaId > 0 ? "reserva_id = ?" : "reserva_id IS NULL"}
     LIMIT 1
-  `).bind(adminId, centroUsuarioId).first();
+  `).bind(...[
+    adminId,
+    centroUsuarioId,
+    ...(actividadId > 0 ? [actividadId] : []),
+    ...(reservaId > 0 ? [reservaId] : [])
+  ]).first();
 }
 
-async function asegurarExpediente(env, adminId, centroUsuarioId, versionRequerida, estadoInicial) {
-  let expediente = await obtenerExpediente(env, adminId, centroUsuarioId);
+async function asegurarExpediente(env, adminId, centroUsuarioId, versionRequerida, estadoInicial, contexto = {}) {
+  await asegurarColumnasContextoDocumental(env);
+  const actividadId = Number(contexto?.actividadId || 0) || null;
+  const reservaId = Number(contexto?.reservaId || 0) || null;
+  let expediente = await obtenerExpediente(env, adminId, centroUsuarioId, { actividadId, reservaId });
   if (expediente) return expediente;
 
   await env.DB.prepare(`
     INSERT INTO centro_admin_documentacion (
       centro_usuario_id,
       admin_id,
+      actividad_id,
+      reserva_id,
       version_requerida,
       version_aportada,
       estado,
       created_at,
       updated_at
     )
-    VALUES (?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    VALUES (?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `).bind(
     centroUsuarioId,
     adminId,
+    actividadId,
+    reservaId,
     versionRequerida,
     estadoInicial
   ).run();
 
-  return await obtenerExpediente(env, adminId, centroUsuarioId);
+  return await obtenerExpediente(env, adminId, centroUsuarioId, { actividadId, reservaId });
 }
 
 function obtenerPropietariosDocumentos(documentos = [], adminIdFallback = 0) {
@@ -303,7 +335,8 @@ async function asegurarExpedientesPropietarios(
   centroUsuarioId,
   propietarios = [],
   documentos = [],
-  estadoInicial = "NO_INICIADO"
+  estadoInicial = "NO_INICIADO",
+  contexto = {}
 ) {
   const mapa = new Map();
   for (const propietarioId of propietarios) {
@@ -319,7 +352,8 @@ async function asegurarExpedientesPropietarios(
       Number(propietarioId || 0),
       Number(centroUsuarioId || 0),
       versionRequerida,
-      documentosPropietario.length > 0 ? estadoInicial : "NO_REQUERIDA"
+      documentosPropietario.length > 0 ? estadoInicial : "NO_REQUERIDA",
+      contexto
     );
     if (expediente?.id) {
       mapa.set(Number(propietarioId || 0), expediente);
@@ -779,11 +813,6 @@ export async function recalcularImpactoDocumentalReservas(env, {
 
   const admin = resolucion.admin;
   const solicitantes = await obtenerSolicitantesAfectados(env, adminIdNumerico);
-  const versionRequerida = (documentos || []).reduce(
-    (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
-    0
-  );
-
   const resumen = {
     ok: true,
     admin_id: adminIdNumerico,
@@ -802,67 +831,6 @@ export async function recalcularImpactoDocumentalReservas(env, {
 
     const estadoInicial = (documentos || []).length > 0 ? "NO_INICIADO" : "NO_REQUERIDA";
     const propietariosDocumentales = obtenerPropietariosDocumentos(documentos, adminIdNumerico);
-    const expedientesPorPropietario = await asegurarExpedientesPropietarios(
-      env,
-      Number(solicitante.id || 0),
-      propietariosDocumentales,
-      documentos,
-      estadoInicial
-    );
-    const expediente = expedientesPorPropietario.get(adminIdNumerico) ||
-      Array.from(expedientesPorPropietario.values())[0] ||
-      null;
-
-    const archivosActivos = await obtenerArchivosActivosExpedientes(env, expedientesPorPropietario);
-
-    const estadoGlobal = calcularEstadoGlobal(documentos, archivosActivos);
-    const pendientes = construirPendientes(documentos, archivosActivos);
-    const versionAportada = archivosActivos.reduce(
-      (max, archivo) => Math.max(max, Number(archivo.version_documental || 0)),
-      0
-    );
-    const fechaUltimaEntrega = archivosActivos.reduce((max, archivo) => {
-      const actual = parsearFecha(archivo.fecha_subida);
-      if (!actual) return max;
-      if (!max || actual > max) return actual;
-      return max;
-    }, null);
-
-    for (const propietarioId of propietariosDocumentales) {
-      const expedientePropietario = expedientesPorPropietario.get(Number(propietarioId || 0));
-      if (!expedientePropietario?.id) continue;
-      const documentosPropietario = (documentos || []).filter((doc) =>
-        (obtenerPropietarioDocumento(doc) || Number(propietarioId || 0)) === Number(propietarioId || 0)
-      );
-      const archivosPropietario = archivosActivos.filter((archivo) =>
-        Number(archivo?.propietario_documental_id || 0) === Number(propietarioId || 0)
-      );
-      const estadoPropietario = calcularEstadoGlobal(documentosPropietario, archivosPropietario);
-      const versionRequeridaPropietario = documentosPropietario.reduce(
-        (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
-        0
-      );
-      const versionAportadaPropietario = archivosPropietario.reduce(
-        (max, archivo) => Math.max(max, Number(archivo.version_documental || 0)),
-        0
-      );
-      const fechaUltimaEntregaPropietario = archivosPropietario.reduce((max, archivo) => {
-        const actual = parsearFecha(archivo.fecha_subida);
-        if (!actual) return max;
-        if (!max || actual > max) return actual;
-        return max;
-      }, null);
-
-      await actualizarExpediente(env, Number(expedientePropietario.id || 0), {
-        version_requerida: versionRequeridaPropietario,
-        version_aportada: versionAportadaPropietario,
-        estado: estadoPropietario,
-        fecha_ultima_entrega: fechaUltimaEntregaPropietario
-          ? fechaUltimaEntregaPropietario.toISOString().replace("T", " ").slice(0, 19)
-          : null,
-        fecha_validacion: estadoPropietario === "VALIDADA" ? (expedientePropietario?.fecha_validacion || null) : null
-      });
-    }
 
     const reservas = await obtenerReservasActivasPorUsuario(env, adminIdNumerico, Number(solicitante.id || 0));
     if (!reservas.length) {
@@ -870,7 +838,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
         centro_usuario_id: Number(solicitante.id || 0),
         email: solicitante.email || "",
         reservas_afectadas: [],
-        estado_documental: estadoGlobal,
+        estado_documental: "NO_REQUERIDA",
         accion: "SIN_RESERVAS"
       });
       continue;
@@ -885,15 +853,66 @@ export async function recalcularImpactoDocumentalReservas(env, {
     const reservasReactivadas = [];
     const reservasEliminadas = [];
     const pendientesPorReserva = new Map();
+    const estadosDocumentalesReserva = [];
 
     for (const reserva of reservas) {
       const estadoReserva = limpiarTexto(reserva.estado).toUpperCase();
       const configuracionActividad = configuracionDocumentalPorActividad.get(Number(reserva.actividad_id || 0)) || null;
       const documentosExigiblesReserva = resolverDocumentosExigiblesActividad(documentos, configuracionActividad);
-      const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivos);
+      const expedientesPorPropietarioReserva = await asegurarExpedientesPropietarios(
+        env,
+        Number(solicitante.id || 0),
+        obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico),
+        documentosExigiblesReserva,
+        estadoInicial,
+        {
+          actividadId: Number(reserva.actividad_id || 0),
+          reservaId: Number(reserva.id || 0)
+        }
+      );
+      const archivosActivosReserva = await obtenerArchivosActivosExpedientes(env, expedientesPorPropietarioReserva);
+      const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivosReserva);
+      estadosDocumentalesReserva.push(estadoDocumentalReserva);
+
+      for (const propietarioId of obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico)) {
+        const expedientePropietario = expedientesPorPropietarioReserva.get(Number(propietarioId || 0));
+        if (!expedientePropietario?.id) continue;
+        const documentosPropietario = (documentosExigiblesReserva || []).filter((doc) =>
+          (obtenerPropietarioDocumento(doc) || Number(propietarioId || 0)) === Number(propietarioId || 0)
+        );
+        const archivosPropietario = archivosActivosReserva.filter((archivo) =>
+          Number(archivo?.propietario_documental_id || 0) === Number(propietarioId || 0)
+        );
+        const estadoPropietario = calcularEstadoGlobal(documentosPropietario, archivosPropietario);
+        const versionRequeridaPropietario = documentosPropietario.reduce(
+          (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+          0
+        );
+        const versionAportadaPropietario = archivosPropietario.reduce(
+          (max, archivo) => Math.max(max, Number(archivo.version_documental || 0)),
+          0
+        );
+        const fechaUltimaEntregaPropietario = archivosPropietario.reduce((max, archivo) => {
+          const actual = parsearFecha(archivo.fecha_subida);
+          if (!actual) return max;
+          if (!max || actual > max) return actual;
+          return max;
+        }, null);
+
+        await actualizarExpediente(env, Number(expedientePropietario.id || 0), {
+          version_requerida: versionRequeridaPropietario,
+          version_aportada: versionAportadaPropietario,
+          estado: estadoPropietario,
+          fecha_ultima_entrega: fechaUltimaEntregaPropietario
+            ? fechaUltimaEntregaPropietario.toISOString().replace("T", " ").slice(0, 19)
+            : null,
+          fecha_validacion: estadoPropietario === "VALIDADA" ? (expedientePropietario?.fecha_validacion || null) : null
+        });
+      }
+
       pendientesPorReserva.set(
         Number(reserva.id || 0),
-        construirPendientes(documentosExigiblesReserva, archivosActivos)
+        construirPendientes(documentosExigiblesReserva, archivosActivosReserva)
       );
 
       if (estadoDocumentalCompleto(estadoDocumentalReserva)) {
@@ -946,6 +965,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
     const pendientesSinCambios = unificarPendientesReservas(
       reservas.map((reserva) => pendientesPorReserva.get(Number(reserva.id || 0)) || [])
     );
+    const estadoGlobal = resumirEstadosDocumentales(estadosDocumentalesReserva);
 
     const debeAvisarSinCambios = debeAvisarCambioMarcoSinCambios(motivo, avisarCambioMarcoSinCambios);
 

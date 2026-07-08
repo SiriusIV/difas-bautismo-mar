@@ -178,6 +178,8 @@ export async function onRequestPost(context) {
         id,
         admin_id,
         centro_usuario_id,
+        actividad_id,
+        reserva_id,
         version_requerida,
         estado
       FROM centro_admin_documentacion
@@ -303,7 +305,9 @@ export async function onRequestPost(context) {
     );
     const resumenDocumentalCorreo = construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosResumen);
     const resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
-      centroUsuarioId: Number(expediente.centro_usuario_id || 0)
+      centroUsuarioId: Number(expediente.centro_usuario_id || 0),
+      actividadId: Number(expediente.actividad_id || 0) || null,
+      reservaId: Number(expediente.reserva_id || 0) || null
     });
 
     await env.DB.prepare(`

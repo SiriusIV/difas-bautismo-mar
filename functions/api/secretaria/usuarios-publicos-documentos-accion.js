@@ -91,7 +91,7 @@ export async function onRequestPost(context) {
     if (!documentacionId || !archivoId) return json({ ok: false, error: "Faltan identificadores de documento." }, 400);
 
     const expediente = await env.DB.prepare(`
-      SELECT cad.id, cad.admin_id, cad.centro_usuario_id
+      SELECT cad.id, cad.admin_id, cad.centro_usuario_id, cad.actividad_id, cad.reserva_id
       FROM centro_admin_documentacion cad
       WHERE cad.id = ?
         AND cad.admin_id = ?
@@ -178,7 +178,9 @@ export async function onRequestPost(context) {
     let resumenActividadesCorreo = null;
     try {
       resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
-        centroUsuarioId: Number(expediente.centro_usuario_id || 0)
+        centroUsuarioId: Number(expediente.centro_usuario_id || 0),
+        actividadId: Number(expediente.actividad_id || 0) || null,
+        reservaId: Number(expediente.reserva_id || 0) || null
       });
     } catch (errorResumenActividades) {
       console.error("No se pudo calcular el resumen de actividades solicitables (secretaría).", {
