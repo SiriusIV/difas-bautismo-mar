@@ -720,6 +720,10 @@
       background: #f8fbff;
     }
 
+    .documento-solicitud-info {
+      min-width: 0;
+    }
+
     .documento-solicitud-titulo {
       display: block;
       color: var(--color-primario);
@@ -772,6 +776,51 @@
       border-color: #efb0b0;
       background: #fff0f0;
       color: #a32626;
+    }
+
+    .documento-solicitud-panel {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+
+    .documento-solicitud-acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .documento-solicitud-accion {
+      border: 1px solid #b8c8db;
+      background: #fff;
+      color: var(--color-primario);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .documento-solicitud-accion:hover {
+      background: #eef5ff;
+    }
+
+    .documento-solicitud-accion.peligro {
+      border-color: #efb0b0;
+      color: #a32626;
+    }
+
+    .documento-solicitud-accion[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: #f2f5f8;
+    }
+
+    .documento-solicitud-input {
+      display: none;
     }
 
     .documentacion-solicitud-vacia {
@@ -1388,6 +1437,7 @@
     let modoModalAsistentes = "alta";
     let redireccionPendienteTrasConfirmacion = "";
     let accesoDocumentacionPendiente = null;
+    let documentacionSolicitudActual = null;
 
     function construirUrlDocumentacion(adminId, actividadId, reservaId = null) {
       const admin = Number(adminId || 0);
@@ -1448,6 +1498,7 @@
       const boton = document.getElementById("btnGestionarDocumentacionSolicitud");
       if (!bloque || !lista || !texto || !boton) return;
 
+      documentacionSolicitudActual = data || null;
       const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
       const requiereDocumentacion = !!data?.requiere_documentacion || documentos.length > 0;
       if (!requiereDocumentacion) {
@@ -1464,10 +1515,11 @@
 
       bloque.classList.add("activo");
       boton.dataset.url = urlDocumentacion || "";
-      boton.disabled = !(reservaId > 0 && urlDocumentacion);
+      boton.disabled = false;
+      boton.textContent = reservaId > 0 ? "Gestionar documentación" : "Guardar y gestionar";
       texto.textContent = reservaId > 0
-        ? "Revisa aquí el estado de los documentos exigidos y accede a su remisión contextual para esta solicitud."
-        : "Guarda el borrador o envía la solicitud para habilitar la remisión documental contextual.";
+        ? "Revisa aquí el estado de los documentos exigidos y remite cada archivo para esta solicitud."
+        : "Al subir el primer documento se guardará un borrador para asociar la documentación a esta solicitud.";
 
       if (!documentos.length) {
         lista.innerHTML = '<div class="documentacion-solicitud-vacia">Esta actividad no requiere presentar documentación previa.</div>';
@@ -1479,16 +1531,189 @@
         const claseEstado = estado.toLowerCase();
         const propietario = String(doc.propietario_nombre || doc.propietario_documental || doc.admin_nombre || doc.admin_nombre_publico || "").trim();
         const version = Number(doc.version_documental || doc.version || 0);
+        const archivoBase = String(doc.archivo_url || "").trim();
+        const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
+        const entregado = !!archivoRemitido || !!doc.entregado;
+        const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         return `
-          <div class="documento-solicitud-item">
-            <div>
+          <div class="documento-solicitud-item" data-documento-id="${Number(doc.id || 0)}">
+            <div class="documento-solicitud-info">
               <span class="documento-solicitud-titulo">${escapeHtml(doc.nombre || doc.titulo || "Documento")}</span>
               <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
             </div>
-            <span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>
+            <div class="documento-solicitud-panel">
+              <span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>
+              <div class="documento-solicitud-acciones">
+                ${archivoBase ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer">Ver base</a>` : ""}
+                ${archivoRemitido ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoRemitido)}" target="_blank" rel="noopener noreferrer">Ver remitido</a>` : ""}
+                <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"}>${entregado ? "Sustituir PDF" : "Subir PDF"}</button>
+                ${entregado ? `<button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"}>Eliminar</button>` : ""}
+                <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
+              </div>
+            </div>
           </div>
         `;
       }).join("");
+      enlazarAccionesDocumentacionSolicitud();
+    }
+
+    function obtenerDocumentoSolicitudPorId(documentoId) {
+      const id = Number(documentoId || 0);
+      if (!(id > 0)) return null;
+      return (Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [])
+        .find((doc) => Number(doc.id || 0) === id) || null;
+    }
+
+    function obtenerEntregasActualesDocumentacionSolicitud() {
+      return (Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [])
+        .map((doc) => ({
+          documento_id: Number(doc.id || 0),
+          archivo_url: String(doc.entrega_archivo_url || "").trim()
+        }))
+        .filter((item) => item.documento_id > 0 && item.archivo_url);
+    }
+
+    async function asegurarReservaContextualDocumental() {
+      const reservaId = obtenerReservaIdDocumental();
+      if (reservaId > 0) return reservaId;
+      await guardarBorrador();
+      return obtenerReservaIdDocumental();
+    }
+
+    async function subirPdfDocumentacionSolicitud(doc, file) {
+      if (!doc || !file) return "";
+      const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
+      if (!esPdf) {
+        mostrarMensaje("error", "Solo se admiten archivos PDF.");
+        return "";
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("admin_id", String(Number(doc.propietario_id || doc.admin_id || actividadActual?.admin_id || 0)));
+      formData.append("nombre_documento", doc.nombre || doc.titulo || "documento");
+
+      const res = await fetch("/api/usuario/documentacion-upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo subir el documento firmado.");
+      }
+      return data.archivo_url || "";
+    }
+
+    async function remitirOperacionDocumentalSolicitud(operacion) {
+      const adminId = Number(actividadActual?.admin_id || documentacionSolicitudActual?.admin?.id || 0);
+      const actividadId = Number(getActividadId() || 0);
+      const reservaId = await asegurarReservaContextualDocumental();
+      if (!(adminId > 0) || !(actividadId > 0) || !(reservaId > 0)) {
+        throw new Error("Guarda primero la solicitud para habilitar la documentación contextual.");
+      }
+
+      const res = await fetch("/api/usuario/documentacion-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          admin_id: adminId,
+          actividad_id: actividadId,
+          reserva_id: reservaId,
+          operaciones: [operacion]
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo actualizar la documentación de la solicitud.");
+      }
+      return data;
+    }
+
+    async function gestionarSubidaDocumentoSolicitud(documentoId, file, boton) {
+      const doc = obtenerDocumentoSolicitudPorId(documentoId);
+      if (!doc || !file) return;
+      const textoOriginal = boton?.textContent || "";
+      try {
+        if (boton) {
+          boton.disabled = true;
+          boton.textContent = "Subiendo...";
+        }
+        limpiarMensaje();
+        await asegurarReservaContextualDocumental();
+        const archivoUrl = await subirPdfDocumentacionSolicitud(doc, file);
+        if (!archivoUrl) return;
+        if (boton) boton.textContent = "Remitiendo...";
+        await remitirOperacionDocumentalSolicitud({
+          accion: "subir",
+          documento_id: Number(doc.id || 0),
+          archivo_url: archivoUrl
+        });
+        mostrarMensaje("ok", "Documento remitido correctamente. El propietario documental recibirá el aviso para revisarlo.");
+        await cargarDocumentacionSolicitud();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo remitir el documento.");
+      } finally {
+        if (boton) {
+          boton.disabled = false;
+          boton.textContent = textoOriginal || "Subir PDF";
+        }
+      }
+    }
+
+    async function gestionarEliminacionDocumentoSolicitud(documentoId, boton) {
+      const doc = obtenerDocumentoSolicitudPorId(documentoId);
+      if (!doc) return;
+      const confirmar = window.confirm("Este documento remitido dejará de estar presentado para esta solicitud. ¿Deseas continuar?");
+      if (!confirmar) return;
+      const textoOriginal = boton?.textContent || "";
+      try {
+        if (boton) {
+          boton.disabled = true;
+          boton.textContent = "Eliminando...";
+        }
+        limpiarMensaje();
+        await remitirOperacionDocumentalSolicitud({
+          accion: "eliminar",
+          documento_id: Number(doc.id || 0)
+        });
+        mostrarMensaje("ok", "Documento remitido eliminado correctamente para esta solicitud.");
+        await cargarDocumentacionSolicitud();
+      } catch (error) {
+        mostrarMensaje("error", error.message || "No se pudo eliminar el documento remitido.");
+      } finally {
+        if (boton) {
+          boton.disabled = false;
+          boton.textContent = textoOriginal || "Eliminar";
+        }
+      }
+    }
+
+    function enlazarAccionesDocumentacionSolicitud() {
+      document.querySelectorAll("[data-accion-documento='subir']").forEach((boton) => {
+        boton.addEventListener("click", () => {
+          if (boton.disabled) return;
+          const documentoId = Number(boton.dataset.documentoId || 0);
+          const input = document.querySelector(`[data-input-documento="${documentoId}"]`);
+          input?.click();
+        });
+      });
+      document.querySelectorAll("[data-input-documento]").forEach((input) => {
+        input.addEventListener("change", async () => {
+          const documentoId = Number(input.dataset.inputDocumento || 0);
+          const boton = document.querySelector(`[data-accion-documento="subir"][data-documento-id="${documentoId}"]`);
+          const file = input.files && input.files[0];
+          if (file) await gestionarSubidaDocumentoSolicitud(documentoId, file, boton);
+          input.value = "";
+        });
+      });
+      document.querySelectorAll("[data-accion-documento='eliminar']").forEach((boton) => {
+        boton.addEventListener("click", async () => {
+          if (boton.disabled) return;
+          await gestionarEliminacionDocumentoSolicitud(Number(boton.dataset.documentoId || 0), boton);
+        });
+      });
     }
 
     async function cargarDocumentacionSolicitud() {
@@ -2587,7 +2812,16 @@ function obtenerDisponiblesFormulario(franja) {
         irADocumentacionPendiente(this.dataset.url || "");
       });
       document.getElementById("btnGestionarDocumentacionSolicitud").addEventListener("click", function () {
-        irADocumentacionPendiente(this.dataset.url || "");
+        (async () => {
+          try {
+            limpiarMensaje();
+            await asegurarReservaContextualDocumental();
+            await cargarDocumentacionSolicitud();
+            document.getElementById("listaDocumentacionSolicitud")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo habilitar la gestión documental de la solicitud.");
+          }
+        })();
       });
 
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
