@@ -711,8 +711,8 @@
 
     .documento-solicitud-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 14px;
       align-items: center;
       padding: 10px 12px;
       border: 1px solid #d9e4ef;
@@ -756,6 +756,17 @@
       white-space: nowrap;
     }
 
+    button.documento-solicitud-estado {
+      appearance: none;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.documento-solicitud-estado:hover {
+      box-shadow: 0 0 0 2px rgba(11,94,215,0.12);
+      transform: translateY(-1px);
+    }
+
     .documento-solicitud-estado.validada,
     .documento-solicitud-estado.validado,
     .documento-solicitud-estado.aceptado {
@@ -771,6 +782,7 @@
     }
 
     .documento-solicitud-estado.rechazado,
+    .documento-solicitud-estado.rechazada,
     .documento-solicitud-estado.no_enviado,
     .documento-solicitud-estado.no_actualizado {
       border-color: #efb0b0;
@@ -778,30 +790,33 @@
       color: #a32626;
     }
 
-    .documento-solicitud-panel {
-      display: grid;
-      gap: 8px;
-      justify-items: end;
-    }
-
     .documento-solicitud-acciones {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 7px;
       flex-wrap: wrap;
     }
 
     .documento-solicitud-accion {
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 1px solid #b8c8db;
       background: #fff;
       color: var(--color-primario);
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 700;
+      padding: 0;
       text-decoration: none;
       cursor: pointer;
       line-height: 1;
+    }
+
+    .documento-solicitud-accion img {
+      width: 17px;
+      height: 17px;
+      display: block;
     }
 
     .documento-solicitud-accion:hover {
@@ -817,6 +832,16 @@
       opacity: 0.55;
       cursor: not-allowed;
       background: #f2f5f8;
+    }
+
+    .modal-observaciones-documento {
+      color: #24384d;
+      line-height: 1.55;
+      border: 1px solid #f1d18a;
+      background: #fff7df;
+      border-radius: 12px;
+      padding: 14px 16px;
+      white-space: pre-wrap;
     }
 
     .documento-solicitud-input {
@@ -1190,6 +1215,9 @@
       .documento-solicitud-estado {
         justify-self: flex-start;
       }
+      .documento-solicitud-acciones {
+        justify-content: flex-start;
+      }
     }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -1339,7 +1367,6 @@
               <h3>Documentación obligatoria de la solicitud</h3>
               <p id="textoDocumentacionSolicitud">Consulta y completa aquí la documentación exigida para esta actividad.</p>
             </div>
-            <button type="button" id="btnGestionarDocumentacionSolicitud" class="btn-accion-documentacion">Gestionar documentación</button>
           </div>
           <div id="listaDocumentacionSolicitud" class="lista-documentacion-solicitud"></div>
         </div>
@@ -1386,6 +1413,17 @@
       <div class="acciones">
         <button type="button" id="btnConfirmarEnvio">Enviar solicitud</button>
       </div>
+    </div>
+  </div>
+
+  <div id="modalObservacionesDocumento" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 640px;">
+      <div class="modal-encabezado">
+        <h3>Observaciones del documento</h3>
+        <button type="button" id="btnCerrarModalObservacionesDocumentoSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
+      </div>
+      <p id="subtituloModalObservacionesDocumento" style="color:#4a5a6a; margin-bottom:12px;"></p>
+      <div id="textoModalObservacionesDocumento" class="modal-observaciones-documento"></div>
     </div>
   </div>
 
@@ -1495,8 +1533,7 @@
       const bloque = document.getElementById("bloqueDocumentacionSolicitud");
       const lista = document.getElementById("listaDocumentacionSolicitud");
       const texto = document.getElementById("textoDocumentacionSolicitud");
-      const boton = document.getElementById("btnGestionarDocumentacionSolicitud");
-      if (!bloque || !lista || !texto || !boton) return;
+      if (!bloque || !lista || !texto) return;
 
       documentacionSolicitudActual = data || null;
       const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
@@ -1504,19 +1541,14 @@
       if (!requiereDocumentacion) {
         bloque.classList.remove("activo");
         lista.innerHTML = "";
-        boton.dataset.url = "";
         return;
       }
 
       const reservaId = obtenerReservaIdDocumental();
       const adminId = Number(data?.admin?.id || actividadActual?.admin_id || 0);
       const actividadId = Number(data?.actividad?.id || getActividadId() || 0);
-      const urlDocumentacion = construirUrlDocumentacion(adminId, actividadId, reservaId);
 
       bloque.classList.add("activo");
-      boton.dataset.url = urlDocumentacion || "";
-      boton.disabled = false;
-      boton.textContent = reservaId > 0 ? "Gestionar documentación" : "Guardar y gestionar";
       texto.textContent = reservaId > 0
         ? "Revisa aquí el estado de los documentos exigidos y remite cada archivo para esta solicitud."
         : "Al subir el primer documento se guardará un borrador para asociar la documentación a esta solicitud.";
@@ -1535,21 +1567,23 @@
         const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
         const entregado = !!archivoRemitido || !!doc.entregado;
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
+        const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
+        const estadoHtml = esRechazado
+          ? `<button type="button" class="documento-solicitud-estado ${escapeHtml(claseEstado)}" data-accion-documento="observaciones" data-documento-id="${Number(doc.id || 0)}" title="Ver observaciones del rechazo">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</button>`
+          : `<span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>`;
         return `
           <div class="documento-solicitud-item" data-documento-id="${Number(doc.id || 0)}">
             <div class="documento-solicitud-info">
               <span class="documento-solicitud-titulo">${escapeHtml(doc.nombre || doc.titulo || "Documento")}</span>
               <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
             </div>
-            <div class="documento-solicitud-panel">
-              <span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>
-              <div class="documento-solicitud-acciones">
-                ${archivoBase ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer">Ver base</a>` : ""}
-                ${archivoRemitido ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoRemitido)}" target="_blank" rel="noopener noreferrer">Ver remitido</a>` : ""}
-                <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"}>${entregado ? "Sustituir PDF" : "Subir PDF"}</button>
-                ${entregado ? `<button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"}>Eliminar</button>` : ""}
-                <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
-              </div>
+            ${estadoHtml}
+            <div class="documento-solicitud-acciones">
+              <button type="button" class="documento-solicitud-accion" data-accion-documento="ver-remitido" data-documento-id="${Number(doc.id || 0)}" ${archivoRemitido ? "" : "disabled"} title="Visualizar documento presentado" aria-label="Visualizar documento presentado"><img src="assets/icono-ver-documento.svg" alt=""></button>
+              ${archivoBase ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base" aria-label="Descargar documento base"><img src="assets/icono-descargar-documento.svg" alt=""></a>` : `<button type="button" class="documento-solicitud-accion" disabled title="Documento base no disponible" aria-label="Documento base no disponible"><img src="assets/icono-descargar-documento.svg" alt=""></button>`}
+              <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><img src="assets/icono-subir-documento.svg" alt=""></button>
+              <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><img src="assets/icono-rechazar-documento.svg" alt=""></button>
+              <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
             </div>
           </div>
         `;
@@ -1562,6 +1596,24 @@
       if (!(id > 0)) return null;
       return (Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [])
         .find((doc) => Number(doc.id || 0) === id) || null;
+    }
+
+    function abrirObservacionesDocumentoSolicitud(documentoId) {
+      const doc = obtenerDocumentoSolicitudPorId(documentoId);
+      if (!doc) return;
+      const modal = document.getElementById("modalObservacionesDocumento");
+      const subtitulo = document.getElementById("subtituloModalObservacionesDocumento");
+      const texto = document.getElementById("textoModalObservacionesDocumento");
+      if (!modal || !subtitulo || !texto) return;
+
+      subtitulo.textContent = doc.nombre || doc.titulo || "Documento";
+      texto.textContent = String(doc.entrega_observaciones_admin || doc.observaciones_admin || "").trim()
+        || "No constan observaciones asociadas al rechazo.";
+      establecerVisibilidadModal("modalObservacionesDocumento", true);
+    }
+
+    function cerrarObservacionesDocumentoSolicitud() {
+      establecerVisibilidadModal("modalObservacionesDocumento", false);
     }
 
     function obtenerEntregasActualesDocumentacionSolicitud() {
@@ -1634,17 +1686,18 @@
     async function gestionarSubidaDocumentoSolicitud(documentoId, file, boton) {
       const doc = obtenerDocumentoSolicitudPorId(documentoId);
       if (!doc || !file) return;
-      const textoOriginal = boton?.textContent || "";
+      const tituloOriginal = boton?.getAttribute("title") || "";
       try {
         if (boton) {
           boton.disabled = true;
-          boton.textContent = "Subiendo...";
+          boton.setAttribute("title", "Subiendo documento...");
+          boton.setAttribute("aria-busy", "true");
         }
         limpiarMensaje();
         await asegurarReservaContextualDocumental();
         const archivoUrl = await subirPdfDocumentacionSolicitud(doc, file);
         if (!archivoUrl) return;
-        if (boton) boton.textContent = "Remitiendo...";
+        if (boton) boton.setAttribute("title", "Remitiendo documento...");
         await remitirOperacionDocumentalSolicitud({
           accion: "subir",
           documento_id: Number(doc.id || 0),
@@ -1657,7 +1710,8 @@
       } finally {
         if (boton) {
           boton.disabled = false;
-          boton.textContent = textoOriginal || "Subir PDF";
+          boton.setAttribute("title", tituloOriginal || "Subir documento cumplimentado");
+          boton.removeAttribute("aria-busy");
         }
       }
     }
@@ -1667,11 +1721,12 @@
       if (!doc) return;
       const confirmar = window.confirm("Este documento remitido dejará de estar presentado para esta solicitud. ¿Deseas continuar?");
       if (!confirmar) return;
-      const textoOriginal = boton?.textContent || "";
+      const tituloOriginal = boton?.getAttribute("title") || "";
       try {
         if (boton) {
           boton.disabled = true;
-          boton.textContent = "Eliminando...";
+          boton.setAttribute("title", "Eliminando documento...");
+          boton.setAttribute("aria-busy", "true");
         }
         limpiarMensaje();
         await remitirOperacionDocumentalSolicitud({
@@ -1685,7 +1740,8 @@
       } finally {
         if (boton) {
           boton.disabled = false;
-          boton.textContent = textoOriginal || "Eliminar";
+          boton.setAttribute("title", tituloOriginal || "Eliminar documento presentado");
+          boton.removeAttribute("aria-busy");
         }
       }
     }
@@ -1714,19 +1770,28 @@
           await gestionarEliminacionDocumentoSolicitud(Number(boton.dataset.documentoId || 0), boton);
         });
       });
+      document.querySelectorAll("[data-accion-documento='ver-remitido']").forEach((boton) => {
+        boton.addEventListener("click", () => {
+          if (boton.disabled) return;
+          const doc = obtenerDocumentoSolicitudPorId(Number(boton.dataset.documentoId || 0));
+          const url = String(doc?.entrega_archivo_url || "").trim();
+          if (url) window.open(url, "_blank", "noopener,noreferrer");
+        });
+      });
+      document.querySelectorAll("[data-accion-documento='observaciones']").forEach((boton) => {
+        boton.addEventListener("click", () => abrirObservacionesDocumentoSolicitud(Number(boton.dataset.documentoId || 0)));
+      });
     }
 
     async function cargarDocumentacionSolicitud() {
       const bloque = document.getElementById("bloqueDocumentacionSolicitud");
       const lista = document.getElementById("listaDocumentacionSolicitud");
-      const boton = document.getElementById("btnGestionarDocumentacionSolicitud");
       const adminId = Number(actividadActual?.admin_id || 0);
       const actividadId = Number(getActividadId() || 0);
 
       if (!(adminId > 0) || !(actividadId > 0)) {
         if (bloque) bloque.classList.remove("activo");
         if (lista) lista.innerHTML = "";
-        if (boton) boton.dataset.url = "";
         return;
       }
 
@@ -2811,17 +2876,9 @@ function obtenerDisponiblesFormulario(franja) {
       document.getElementById("btnIrDocumentacionModalConfirmacion").addEventListener("click", function () {
         irADocumentacionPendiente(this.dataset.url || "");
       });
-      document.getElementById("btnGestionarDocumentacionSolicitud").addEventListener("click", function () {
-        (async () => {
-          try {
-            limpiarMensaje();
-            await asegurarReservaContextualDocumental();
-            await cargarDocumentacionSolicitud();
-            document.getElementById("listaDocumentacionSolicitud")?.scrollIntoView({ behavior: "smooth", block: "center" });
-          } catch (error) {
-            mostrarMensaje("error", error.message || "No se pudo habilitar la gestión documental de la solicitud.");
-          }
-        })();
+      document.getElementById("btnCerrarModalObservacionesDocumentoSuperior")?.addEventListener("click", cerrarObservacionesDocumentoSolicitud);
+      document.getElementById("modalObservacionesDocumento")?.addEventListener("click", function (event) {
+        if (event.target === this) cerrarObservacionesDocumentoSolicitud();
       });
 
       document.getElementById("franja").addEventListener("change", actualizarResumenPantalla);
