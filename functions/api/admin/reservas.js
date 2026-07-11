@@ -6,6 +6,7 @@ import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb } from "../_reservas_rechazo_plazo.js";
+import { validarDocumentacionReserva } from "../_reservas_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -197,6 +198,7 @@ async function obtenerReservas(env, filtros) {
       r.usuario_id,
       r.franja_id,
       r.actividad_id,
+      COALESCE(a.admin_id, 0) AS actividad_admin_id,
       r.codigo_reserva,
       r.token_edicion,
       r.estado,
@@ -441,6 +443,7 @@ async function obtenerContextoNotificacionReserva(env, reservaId) {
       r.usuario_id,
       r.actividad_id,
       r.franja_id,
+      COALESCE(a.admin_id, 0) AS actividad_admin_id,
       r.codigo_reserva,
       r.centro,
       r.contacto,
@@ -905,11 +908,20 @@ export async function onRequestGet(context) {
     ]);
     const historialMap = await obtenerHistorialReservas(env, rows.map((row) => row.id));
 
-    const reservas = rows.map(row => ({
+    const reservas = await Promise.all(rows.map(async (row) => {
+      const validacionDocumental = await validarDocumentacionReserva(env, {
+        usuarioId: row.usuario_id,
+        adminId: row.actividad_admin_id,
+        actividadId: row.actividad_id,
+        reservaId: row.id
+      });
+      const documentacionValidada = !!validacionDocumental?.ok;
+      return ({
       id: row.id,
       usuario_id: row.usuario_id,
       franja_id: row.franja_id,
       actividad_id: row.actividad_id,
+      actividad_admin_id: row.actividad_admin_id,
       actividad_nombre: row.actividad_nombre,
       codigo_reserva: row.codigo_reserva,
       token_edicion: row.token_edicion || "",
@@ -933,7 +945,14 @@ export async function onRequestGet(context) {
       plazas_asignadas: calcularPlazasAsignadas(row),
       alumnos: Number(row.alumnos || 0),
       profesores: Number(row.profesores || 0),
+      requiere_documentacion: !!validacionDocumental?.requiere_documentacion,
+      estado_documental: validacionDocumental?.estado_documental || "",
+      estado_expediente_documental: validacionDocumental?.estado_expediente || "",
+      documentacion_validada: documentacionValidada ? 1 : 0,
+      documentacion_bloqueante: validacionDocumental?.requiere_documentacion && !documentacionValidada ? 1 : 0,
+      documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
       historial_estados: historialMap.get(Number(row.id)) || []
+      });
     }));
 
     const resumen = resumirReservas(rows);
@@ -1045,6 +1064,25 @@ export async function onRequestGet(context) {
     if (requiereObservaciones && !observacionesAdmin) {
       return json(
         { ok: false, error: "Debe indicar observaciones administrativas para este cambio de estado." },
+        { status: 400 }
+      );
+    }
+
+    const validacionDocumental = await validarDocumentacionReserva(env, {
+      usuarioId: contextoReserva?.usuario_id,
+      adminId: contextoReserva?.actividad_admin_id,
+      actividadId,
+      reservaId: id
+    });
+
+    if (!validacionDocumental.ok) {
+      return json(
+        {
+          ok: false,
+          error: "La solicitud no puede resolverse hasta que la documentación obligatoria haya sido validada por sus propietarios documentales.",
+          estado_documental: validacionDocumental.estado_documental || "",
+          documentos_pendientes: validacionDocumental.documentos_pendientes || []
+        },
         { status: 400 }
       );
     }
