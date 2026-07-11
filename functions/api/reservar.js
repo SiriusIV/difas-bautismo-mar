@@ -743,27 +743,11 @@ if (Number(actividad.activa || 0) !== 1) {
       );
     }
 
-    if (!guardarComoBorrador) {
-      const validacionDocumental = await validarDocumentacionReserva(env, {
+    const validacionDocumental = await validarDocumentacionReserva(env, {
         usuarioId,
         adminId: actividad.admin_id,
         actividadId
       });
-
-      if (!validacionDocumental.ok) {
-        return json(
-          {
-            ok: false,
-            error: validacionDocumental.error || "La documentación obligatoria de la actividad no est completa.",
-            estado_documental: validacionDocumental.estado_documental || "",
-            documentos_pendientes: validacionDocumental.documentos_pendientes || [],
-            actividad_id: actividadId,
-            admin_id: Number(actividad.admin_id || 0)
-          },
-          { status: 400 }
-        );
-      }
-    }
 
     if (
       ((usaFranjas && disponibles !== null) || (!usaFranjas && Number(actividad.aforo_limitado || 0) === 1))
@@ -864,7 +848,7 @@ if (Number(actividad.activa || 0) !== 1) {
       LIMIT 1
     `).bind(tokenEdicion).first();
 
-    if (!guardarComoBorrador && reservaCreada?.id) {
+    if (reservaCreada?.id) {
       await vincularDocumentacionPendienteAReserva(env, {
         usuarioId,
         actividadId,
@@ -933,9 +917,16 @@ if (Number(actividad.activa || 0) !== 1) {
     return json({
       ok: true,
       mensaje: guardarComoBorrador ? "Borrador guardado correctamente." : "Solicitud creada correctamente.",
+      id: reservaCreada.id,
+      reserva_id: reservaCreada.id,
       codigo_reserva: reservaCreada.codigo_reserva,
       token_edicion: reservaCreada.token_edicion,
       estado: reservaCreada.estado,
+      estado_documental: validacionDocumental?.estado_documental || "",
+      documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+      requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
+      admin_id: Number(actividad.admin_id || 0),
+      actividad_id: Number(actividadId || 0),
       franja: franja ? {
         id: franja.id,
         actividad_id: franja.actividad_id,

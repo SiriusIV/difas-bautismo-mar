@@ -788,29 +788,15 @@ export async function onRequestPost(context) {
       }
     }
 
-    if (enviarBorrador || reenviarRechazada) {
-      const validacionDocumental = await validarDocumentacionReserva(env, {
+    const validacionDocumental = await validarDocumentacionReserva(env, {
         usuarioId: user.id,
         adminId: actividad.admin_id,
         actividadId: reservaActual.actividad_id,
         reservaId: reservaActual.id
       });
 
-      if (!validacionDocumental.ok) {
-        return json(
-          {
-            ok: false,
-            error: validacionDocumental.error || "La documentación obligatoria de la actividad no está completa.",
-            estado_documental: validacionDocumental.estado_documental || "",
-            documentos_pendientes: validacionDocumental.documentos_pendientes || [],
-            actividad_id: Number(reservaActual.actividad_id || 0),
-            admin_id: Number(actividad.admin_id || 0),
-            reserva_id: Number(reservaActual.id || 0)
-          },
-          { status: 400 }
-        );
-      }
 
+    if (enviarBorrador || reenviarRechazada) {
       await vincularDocumentacionPendienteAReserva(env, {
         usuarioId: user.id,
         actividadId: reservaActual.actividad_id,
@@ -903,10 +889,23 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "No se pudo guardar el borrador." }, { status: 500 });
       }
 
+      await vincularDocumentacionPendienteAReserva(env, {
+        usuarioId: user.id,
+        actividadId: reservaActual.actividad_id,
+        reservaId: reservaActual.id
+      });
+
       return json({
         ok: true,
+        id: reservaActual.id,
+        reserva_id: reservaActual.id,
         estado: "BORRADOR",
         mensaje: "Borrador guardado correctamente.",
+        estado_documental: validacionDocumental?.estado_documental || "",
+        documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+        requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
+        admin_id: Number(actividad.admin_id || 0),
+        actividad_id: Number(reservaActual.actividad_id || 0),
         franja: franjaNueva ? {
           id: franjaNueva.id,
           fecha: franjaNueva.fecha,
@@ -1018,8 +1017,15 @@ export async function onRequestPost(context) {
         ok: true,
         estado: "PENDIENTE",
         mensaje: "Solicitud enviada correctamente.",
+        id: reservaActual.id,
+        reserva_id: reservaActual.id,
         codigo_reserva: reservaActual.codigo_reserva,
         token_edicion: tokenEdicion,
+        estado_documental: validacionDocumental?.estado_documental || "",
+        documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+        requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
+        admin_id: Number(actividad.admin_id || 0),
+        actividad_id: Number(reservaActual.actividad_id || 0),
         minutos_consolidacion: minutosConsolidacion,
         prereserva_expira_en: prereservaExpiraEn,
         notificacion_admin: {
@@ -1147,6 +1153,13 @@ export async function onRequestPost(context) {
         mensaje: "Solicitud reenviada correctamente y pendiente de nueva validación.",
         codigo_reserva: reservaActual.codigo_reserva,
         token_edicion: tokenEdicion,
+        id: reservaActual.id,
+        reserva_id: reservaActual.id,
+        estado_documental: validacionDocumental?.estado_documental || "",
+        documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+        requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
+        admin_id: Number(actividad.admin_id || 0),
+        actividad_id: Number(reservaActual.actividad_id || 0),
         minutos_consolidacion: minutosConsolidacion,
         prereserva_expira_en: prereservaExpiraEn,
         plazas_asignadas: asistentesCargados,
@@ -1243,6 +1256,13 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       mensaje: "Solicitud actualizada correctamente.",
+      id: reservaActual.id,
+      reserva_id: reservaActual.id,
+      estado_documental: validacionDocumental?.estado_documental || "",
+      documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+      requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
+      admin_id: Number(actividad.admin_id || 0),
+      actividad_id: Number(reservaActual.actividad_id || 0),
       plazas_asignadas: asistentesCargados,
       plazas_reservadas: plazasSolicitadas,
       plazas_bloqueadas_total: totalBloqueadoNuevo,

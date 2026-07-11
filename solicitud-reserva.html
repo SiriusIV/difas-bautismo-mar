@@ -674,6 +674,115 @@
       color: #8a5a00;
     }
 
+    .bloque-documentacion-solicitud {
+      display: none;
+    }
+
+    .bloque-documentacion-solicitud.activo {
+      display: block;
+    }
+
+    .documentacion-solicitud-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .documentacion-solicitud-cabecera h3 {
+      margin: 0 0 4px;
+      color: var(--color-primario);
+      font-size: 16px;
+    }
+
+    .documentacion-solicitud-cabecera p {
+      margin: 0;
+      color: #43566b;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .lista-documentacion-solicitud {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .documento-solicitud-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid #d9e4ef;
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .documento-solicitud-titulo {
+      display: block;
+      color: var(--color-primario);
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .documento-solicitud-meta {
+      display: block;
+      margin-top: 2px;
+      color: #586a7c;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .documento-solicitud-estado {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 112px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid #c9d5e2;
+      background: #fff;
+      color: #43566b;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .documento-solicitud-estado.validada,
+    .documento-solicitud-estado.validado,
+    .documento-solicitud-estado.aceptado {
+      border-color: #87d3a0;
+      background: #eaf8ef;
+      color: #0f7a35;
+    }
+
+    .documento-solicitud-estado.en_revision {
+      border-color: #f1d18a;
+      background: #fff7df;
+      color: #8a5a00;
+    }
+
+    .documento-solicitud-estado.rechazado,
+    .documento-solicitud-estado.no_enviado,
+    .documento-solicitud-estado.no_actualizado {
+      border-color: #efb0b0;
+      background: #fff0f0;
+      color: #a32626;
+    }
+
+    .documentacion-solicitud-vacia {
+      padding: 12px;
+      border: 1px dashed #c9d8ea;
+      border-radius: 12px;
+      background: #f8fbff;
+      color: #43566b;
+      font-size: 13px;
+    }
+
     .tarjeta-aviso-encabezado {
       display: flex;
       align-items: center;
@@ -1022,6 +1131,16 @@
       .modal .acciones .btn-enlace {
         width: 100%;
       }
+      .documentacion-solicitud-cabecera,
+      .documento-solicitud-item {
+        grid-template-columns: 1fr;
+      }
+      .documentacion-solicitud-cabecera {
+        align-items: stretch;
+      }
+      .documento-solicitud-estado {
+        justify-self: flex-start;
+      }
     }
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
@@ -1164,6 +1283,17 @@
             </div>
           </div>
         </div>
+
+        <div id="bloqueDocumentacionSolicitud" class="solicitud-bloque bloque-documentacion-solicitud">
+          <div class="documentacion-solicitud-cabecera">
+            <div>
+              <h3>Documentación obligatoria de la solicitud</h3>
+              <p id="textoDocumentacionSolicitud">Consulta y completa aquí la documentación exigida para esta actividad.</p>
+            </div>
+            <button type="button" id="btnGestionarDocumentacionSolicitud" class="btn-accion-documentacion">Gestionar documentación</button>
+          </div>
+          <div id="listaDocumentacionSolicitud" class="lista-documentacion-solicitud"></div>
+        </div>
       </form>
 
       <div class="solicitud-bloque">
@@ -1289,6 +1419,120 @@
       const url = construirUrlDocumentacion(adminId, actividadId, reservaId);
       if (!url) return null;
       return { url, adminId, actividadId, reservaId };
+    }
+
+    function obtenerReservaIdDocumental() {
+      return Number(reservaCreada?.reserva_id || reservaCreada?.id || reservaExistente?.id || 0) || 0;
+    }
+
+    function normalizarEstadoDocumentoSolicitud(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (!valor) return "NO_ENVIADO";
+      return valor;
+    }
+
+    function textoEstadoDocumentoSolicitud(estado) {
+      const valor = normalizarEstadoDocumentoSolicitud(estado);
+      if (valor === "VALIDADA" || valor === "VALIDADO" || valor === "ACEPTADO") return "Aprobado";
+      if (valor === "EN_REVISION") return "En revisión";
+      if (valor === "RECHAZADO") return "Rechazado";
+      if (valor === "NO_ACTUALIZADO") return "No actualizado";
+      if (valor === "NO_ENVIADO") return "No presentado";
+      return valor.replace(/_/g, " ").toLowerCase();
+    }
+
+    function renderizarDocumentacionSolicitud(data) {
+      const bloque = document.getElementById("bloqueDocumentacionSolicitud");
+      const lista = document.getElementById("listaDocumentacionSolicitud");
+      const texto = document.getElementById("textoDocumentacionSolicitud");
+      const boton = document.getElementById("btnGestionarDocumentacionSolicitud");
+      if (!bloque || !lista || !texto || !boton) return;
+
+      const documentos = Array.isArray(data?.documentos) ? data.documentos : [];
+      const requiereDocumentacion = !!data?.requiere_documentacion || documentos.length > 0;
+      if (!requiereDocumentacion) {
+        bloque.classList.remove("activo");
+        lista.innerHTML = "";
+        boton.dataset.url = "";
+        return;
+      }
+
+      const reservaId = obtenerReservaIdDocumental();
+      const adminId = Number(data?.admin?.id || actividadActual?.admin_id || 0);
+      const actividadId = Number(data?.actividad?.id || getActividadId() || 0);
+      const urlDocumentacion = construirUrlDocumentacion(adminId, actividadId, reservaId);
+
+      bloque.classList.add("activo");
+      boton.dataset.url = urlDocumentacion || "";
+      boton.disabled = !(reservaId > 0 && urlDocumentacion);
+      texto.textContent = reservaId > 0
+        ? "Revisa aquí el estado de los documentos exigidos y accede a su remisión contextual para esta solicitud."
+        : "Guarda el borrador o envía la solicitud para habilitar la remisión documental contextual.";
+
+      if (!documentos.length) {
+        lista.innerHTML = '<div class="documentacion-solicitud-vacia">Esta actividad no requiere presentar documentación previa.</div>';
+        return;
+      }
+
+      lista.innerHTML = documentos.map((doc) => {
+        const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.estado_efectivo);
+        const claseEstado = estado.toLowerCase();
+        const propietario = String(doc.propietario_nombre || doc.propietario_documental || doc.admin_nombre || doc.admin_nombre_publico || "").trim();
+        const version = Number(doc.version_documental || doc.version || 0);
+        return `
+          <div class="documento-solicitud-item">
+            <div>
+              <span class="documento-solicitud-titulo">${escapeHtml(doc.nombre || doc.titulo || "Documento")}</span>
+              <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
+            </div>
+            <span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function cargarDocumentacionSolicitud() {
+      const bloque = document.getElementById("bloqueDocumentacionSolicitud");
+      const lista = document.getElementById("listaDocumentacionSolicitud");
+      const boton = document.getElementById("btnGestionarDocumentacionSolicitud");
+      const adminId = Number(actividadActual?.admin_id || 0);
+      const actividadId = Number(getActividadId() || 0);
+
+      if (!(adminId > 0) || !(actividadId > 0)) {
+        if (bloque) bloque.classList.remove("activo");
+        if (lista) lista.innerHTML = "";
+        if (boton) boton.dataset.url = "";
+        return;
+      }
+
+      const query = new URLSearchParams({
+        admin_id: String(adminId),
+        actividad_id: String(actividadId)
+      });
+      const reservaId = obtenerReservaIdDocumental();
+      if (reservaId > 0) {
+        query.set("reserva_id", String(reservaId));
+      }
+
+      try {
+        const response = await fetch(`/api/usuario/documentacion-admin?${query.toString()}`, {
+          credentials: "include"
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo consultar la documentación obligatoria.");
+        }
+        renderizarDocumentacionSolicitud(data);
+      } catch (error) {
+        if (bloque) bloque.classList.add("activo");
+        if (lista) {
+          lista.innerHTML = `<div class="documentacion-solicitud-vacia">${escapeHtml(error.message || "No se pudo consultar la documentación obligatoria.")}</div>`;
+        }
+        if (boton) {
+          boton.disabled = true;
+          boton.dataset.url = "";
+        }
+      }
     }
 
     function aplicarAccionDocumentacionAviso(acceso) {
@@ -1562,7 +1806,7 @@
       tokenBorrador = token;
       actividadIdActual = Number(data.reserva.actividad_id || 0) || null;
       franjaIdInicial = Number(data.reserva.franja_id || 0) || null;
-      reservaExistente = esReservaBorrador(data.reserva) ? null : data.reserva;
+      reservaExistente = data.reserva;
       return data.reserva;
     }
 
@@ -2070,6 +2314,7 @@ function obtenerDisponiblesFormulario(franja) {
         }
         reservaExistente = {
           ...(reservaExistente || {}),
+          id: Number(data.reserva_id || data.id || reservaExistente?.id || 0) || null,
           token_edicion: tokenBorrador || getTokenEdicion(),
           actividad_id: validacion.datos.actividad_id,
           franja_id: validacion.datos.franja ? Number(validacion.datos.franja) : null,
@@ -2085,9 +2330,11 @@ function obtenerDisponiblesFormulario(franja) {
         datosPendientesEnvio = null;
         limpiarSolicitudPendiente();
         mostrarMensaje("ok", data.mensaje || "Borrador guardado correctamente.");
+        aplicarAccionDocumentacionAviso(extraerAccesoDocumentacion(data));
         if (actividadUsaFranjas()) {
           await cargarFranjas();
         }
+        await cargarDocumentacionSolicitud();
         configurarPantallaSegunModo(reservaExistente);
         actualizarResumenPantalla();
       } catch (error) {
@@ -2148,6 +2395,7 @@ function obtenerDisponiblesFormulario(franja) {
         const reservaActualizada = await cargarReservaExistente();
         await cargarActividad();
         await cargarFranjas();
+        await cargarDocumentacionSolicitud();
         aplicarDatosReservaEnFormulario(reservaActualizada);
         limpiarSolicitudPendiente();
         mostrarMensaje(data?.correo_admin?.enviado === false ? "aviso" : "ok", `${data.mensaje || "Solicitud actualizada correctamente."}${construirAvisoCorreoAdmin(data)}`);
@@ -2293,7 +2541,9 @@ function obtenerDisponiblesFormulario(franja) {
         reservaCreada = data;
         limpiarSolicitudPendiente();
         tokenBorrador = "";
+        await cargarDocumentacionSolicitud();
         mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${construirAvisoCorreoAdmin(data)}`);
+        aplicarAccionDocumentacionModal(extraerAccesoDocumentacion(data));
         document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
         redireccionPendienteTrasConfirmacion = "usuario-panel.html";
 
@@ -2334,6 +2584,9 @@ function obtenerDisponiblesFormulario(franja) {
         irADocumentacionPendiente(this.dataset.url || "");
       });
       document.getElementById("btnIrDocumentacionModalConfirmacion").addEventListener("click", function () {
+        irADocumentacionPendiente(this.dataset.url || "");
+      });
+      document.getElementById("btnGestionarDocumentacionSolicitud").addEventListener("click", function () {
         irADocumentacionPendiente(this.dataset.url || "");
       });
 
@@ -2460,6 +2713,7 @@ function obtenerDisponiblesFormulario(franja) {
         await precargarDatosSolicitante();
         await cargarActividad();
         await cargarFranjas();
+        await cargarDocumentacionSolicitud();
         aplicarDatosReservaEnFormulario(reservaInicial);
         configurarPantallaSegunModo(reservaInicial);
       } catch (error) {
