@@ -233,8 +233,8 @@ export async function onRequestPost(context) {
       rolDestino: "SOLICITANTE",
       tipo: "DOCUMENTACION",
       titulo: "Documentación actualizada",
-      mensaje: "Se ha actualizado el estado de tu documentación obligatoria. Revisa tu perfil.",
-      urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId))}&tab=documentos`
+      mensaje: "Se ha actualizado el estado de tu documentación obligatoria. Revisa tu panel de reservas.",
+      urlDestino: "/usuario-panel.html"
     });
 
     const baseUrl = new URL(request.url).origin;

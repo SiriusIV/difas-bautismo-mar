@@ -236,8 +236,8 @@ export async function onRequestPost(context) {
         rolDestino: "SOLICITANTE",
         tipo: "DOCUMENTACION",
         titulo: "Documentacin actualizada",
-        mensaje: "Se ha actualizado el estado de tu documentacin obligatoria. Revisa tu perfil.",
-        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(adminId))}&tab=documentos`
+        mensaje: "Se ha actualizado el estado de tu documentacin obligatoria. Revisa tu panel de reservas.",
+        urlDestino: "/usuario-panel.html"
       });
     } catch (errorNotificacion) {
       console.error("No se pudo crear notificacin interna de actualizacin documental (secretara).", {

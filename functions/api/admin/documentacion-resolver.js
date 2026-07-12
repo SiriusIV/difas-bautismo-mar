@@ -7,6 +7,7 @@ import {
 } from "../_email_resolucion_documental_expediente.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { construirResumenActividadesSolicitablesGlobalCentro } from "../_documentacion_actividades_solicitables.js";
+import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -165,6 +166,7 @@ export async function onRequestPost(context) {
     const archivoId = parsearIdPositivo(body?.archivo_id);
     const accion = limpiarTexto(body?.accion || "").toLowerCase();
     const observaciones = limpiarTexto(body?.observaciones_admin || "");
+    const baseUrl = new URL(request.url).origin;
     if (!documentacionId) {
       return json({ ok: false, error: "Debes indicar un expediente válido." }, { status: 400 });
     }
@@ -379,9 +381,9 @@ export async function onRequestPost(context) {
         tipo: "DOCUMENTACION",
         titulo: estadoExpediente === "VALIDADA" ? "Documentación validada" : "Documentación revisada con incidencias",
         mensaje: estadoExpediente === "VALIDADA"
-          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu perfil.`
-          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay observaciones o documentos rechazados que debes revisar.`,
-        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(expediente.admin_id || 0))}&tab=documentos`
+          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Ya puedes consultar el resultado en tu panel de reservas.`
+          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(admin || {})}. Hay observaciones o documentos rechazados que debes revisar en tu solicitud.`,
+        urlDestino: "/usuario-panel.html"
       });
     } catch (errorNotificacionInterna) {
       notificacionInternaCentro = {
@@ -398,6 +400,25 @@ export async function onRequestPost(context) {
       });
     }
 
+    let impactoReservas = {
+      ok: false,
+      error: "No se pudo recalcular el impacto documental de reservas."
+    };
+    try {
+      impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+        propietarioDocumentalId: Number(expediente.admin_id || adminId || 0),
+        baseUrl,
+        motivo: "documentos_actualizados"
+      });
+    } catch (errorImpacto) {
+      console.error("No se pudo recalcular impacto documental tras resolver documento individual.", {
+        expediente_id: Number(documentacionId || 0),
+        admin_id: Number(expediente.admin_id || adminId || 0),
+        revisor_id: Number(session.usuario_id || 0),
+        error: errorImpacto?.message || String(errorImpacto || "")
+      });
+    }
+
     return json({
       ok: true,
       mensaje: nuevoEstadoDocumento === "VALIDADO"
@@ -405,6 +426,7 @@ export async function onRequestPost(context) {
         : "Documento rechazado correctamente.",
       estado_documento: nuevoEstadoDocumento,
       estado_expediente: estadoExpediente,
+      impacto_reservas: impactoReservas,
       notificacion_centro: {
         enviada: !!notificacionCentro.ok,
         omitida: !!notificacionCentro.skipped,

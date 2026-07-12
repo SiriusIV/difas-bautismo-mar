@@ -348,9 +348,9 @@ export async function onRequestPost(context) {
         tipo: "DOCUMENTACION",
         titulo: hayRechazos ? "Documentación revisada con incidencias" : "Documentación revisada",
         mensaje: hayRechazos
-          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(secretaria || {})}. Hay documentos rechazados o con observaciones que debes revisar.`
-          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(secretaria || {})}. Ya puedes consultar el resultado en tu perfil.`,
-        urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(expediente.admin_id || 0))}&tab=documentos`
+          ? `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(secretaria || {})}. Hay documentos rechazados o con observaciones que debes revisar en tu solicitud.`
+          : `Se ha actualizado la revisión de tu documentación para ${nombreVisibleAdmin(secretaria || {})}. Ya puedes consultar el resultado en tu panel de reservas.`,
+        urlDestino: "/usuario-panel.html"
       });
     } catch (errorNotificacion) {
       notificacionInternaCentro = {

@@ -201,8 +201,7 @@ function construirUrlPerfilDocumentacion(baseUrl, adminId) {
   if (!base || !adminId) return "";
 
   try {
-    const url = new URL("/usuario-perfil.html", base);
-    url.searchParams.set("admin_id", String(adminId));
+    const url = new URL("/usuario-panel.html", base);
     return url.toString();
   } catch {
     return "";
