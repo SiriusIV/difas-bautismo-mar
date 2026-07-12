@@ -1476,6 +1476,7 @@
     let redireccionPendienteTrasConfirmacion = "";
     let accesoDocumentacionPendiente = null;
     let documentacionSolicitudActual = null;
+    const documentosPendientesSolicitud = new Map();
 
     function construirUrlDocumentacion(adminId, actividadId, reservaId = null) {
       const admin = Number(adminId || 0);
@@ -1526,7 +1527,37 @@
       if (valor === "RECHAZADO") return "Rechazado";
       if (valor === "NO_ACTUALIZADO") return "No actualizado";
       if (valor === "NO_ENVIADO") return "No presentado";
+      if (valor === "CARGADO") return "";
       return valor.replace(/_/g, " ").toLowerCase();
+    }
+
+    function obtenerDocumentoPendienteSolicitud(documentoId) {
+      return documentosPendientesSolicitud.get(Number(documentoId || 0)) || null;
+    }
+
+    function liberarDocumentoPendienteSolicitud(documentoId) {
+      const id = Number(documentoId || 0);
+      const pendiente = documentosPendientesSolicitud.get(id);
+      if (pendiente?.objectUrl) {
+        URL.revokeObjectURL(pendiente.objectUrl);
+      }
+      documentosPendientesSolicitud.delete(id);
+    }
+
+    function registrarDocumentoPendienteSolicitud(doc, file) {
+      const id = Number(doc?.id || 0);
+      if (!(id > 0) || !file) return;
+      liberarDocumentoPendienteSolicitud(id);
+      documentosPendientesSolicitud.set(id, {
+        documento_id: id,
+        file,
+        objectUrl: URL.createObjectURL(file),
+        nombre: file.name || doc.nombre || doc.titulo || "documento.pdf"
+      });
+    }
+
+    function limpiarDocumentosPendientesSolicitud() {
+      Array.from(documentosPendientesSolicitud.keys()).forEach(liberarDocumentoPendienteSolicitud);
     }
 
     function renderizarDocumentacionSolicitud(data) {
@@ -1549,9 +1580,7 @@
       const actividadId = Number(data?.actividad?.id || getActividadId() || 0);
 
       bloque.classList.add("activo");
-      texto.textContent = reservaId > 0
-        ? "Revisa aquí el estado de los documentos exigidos y remite cada archivo para esta solicitud."
-        : "Al subir el primer documento se guardará un borrador para asociar la documentación a esta solicitud.";
+      texto.textContent = "Revisa aquí el estado de los documentos exigidos y carga cada archivo para esta solicitud.";
 
       if (!documentos.length) {
         lista.innerHTML = '<div class="documentacion-solicitud-vacia">Esta actividad no requiere presentar documentación previa.</div>';
@@ -1559,16 +1588,21 @@
       }
 
       lista.innerHTML = documentos.map((doc) => {
-        const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.estado_efectivo);
+        const pendiente = obtenerDocumentoPendienteSolicitud(doc.id);
+        const estado = pendiente
+          ? "CARGADO"
+          : normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.estado_efectivo);
         const claseEstado = estado.toLowerCase();
         const propietario = String(doc.propietario_nombre || doc.propietario_documental || doc.admin_nombre || doc.admin_nombre_publico || "").trim();
         const version = Number(doc.version_documental || doc.version || 0);
         const archivoBase = String(doc.archivo_url || "").trim();
-        const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
+        const archivoRemitido = pendiente?.objectUrl || String(doc.entrega_archivo_url || "").trim();
         const entregado = !!archivoRemitido || !!doc.entregado;
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
-        const estadoHtml = esRechazado
+        const estadoHtml = estado === "CARGADO"
+          ? ""
+          : esRechazado
           ? `<button type="button" class="documento-solicitud-estado ${escapeHtml(claseEstado)}" data-accion-documento="observaciones" data-documento-id="${Number(doc.id || 0)}" title="Ver observaciones del rechazo">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</button>`
           : `<span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>`;
         return `
@@ -1616,22 +1650,6 @@
       establecerVisibilidadModal("modalObservacionesDocumento", false);
     }
 
-    function obtenerEntregasActualesDocumentacionSolicitud() {
-      return (Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [])
-        .map((doc) => ({
-          documento_id: Number(doc.id || 0),
-          archivo_url: String(doc.entrega_archivo_url || "").trim()
-        }))
-        .filter((item) => item.documento_id > 0 && item.archivo_url);
-    }
-
-    async function asegurarReservaContextualDocumental() {
-      const reservaId = obtenerReservaIdDocumental();
-      if (reservaId > 0) return reservaId;
-      await guardarBorrador({ silencioso: true });
-      return obtenerReservaIdDocumental();
-    }
-
     async function subirPdfDocumentacionSolicitud(doc, file) {
       if (!doc || !file) return "";
       const esPdf = String(file.type || "").toLowerCase() === "application/pdf" || String(file.name || "").toLowerCase().endsWith(".pdf");
@@ -1660,10 +1678,15 @@
     async function remitirOperacionDocumentalSolicitud(operacion) {
       const adminId = Number(actividadActual?.admin_id || documentacionSolicitudActual?.admin?.id || 0);
       const actividadId = Number(getActividadId() || 0);
-      const reservaId = await asegurarReservaContextualDocumental();
+      const reservaId = obtenerReservaIdDocumental();
       if (!(adminId > 0) || !(actividadId > 0) || !(reservaId > 0)) {
         throw new Error("Guarda primero la solicitud para habilitar la documentación contextual.");
       }
+
+      const operaciones = Array.isArray(operacion?.documentos)
+        ? operacion.documentos
+        : [operacion];
+      const modo = String(operacion?.modo || "").trim().toLowerCase();
 
       const res = await fetch("/api/usuario/documentacion-admin", {
         method: "POST",
@@ -1673,7 +1696,8 @@
           admin_id: adminId,
           actividad_id: actividadId,
           reserva_id: reservaId,
-          operaciones: [operacion]
+          modo,
+          operaciones
         })
       });
       const data = await res.json().catch(() => null);
@@ -1681,6 +1705,44 @@
         throw new Error(data?.detalle || data?.error || "No se pudo actualizar la documentación de la solicitud.");
       }
       return data;
+    }
+
+    async function remitirDocumentosPendientesSolicitud(modo = "borrador") {
+      const reservaId = obtenerReservaIdDocumental();
+      if (!(reservaId > 0)) return;
+
+      const documentos = Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [];
+      const operaciones = [];
+
+      for (const doc of documentos) {
+        const id = Number(doc.id || 0);
+        const pendiente = obtenerDocumentoPendienteSolicitud(id);
+        if (pendiente?.file) {
+          const archivoUrl = await subirPdfDocumentacionSolicitud(doc, pendiente.file);
+          if (archivoUrl) {
+            operaciones.push({
+              accion: "subir",
+              documento_id: id,
+              archivo_url: archivoUrl
+            });
+          }
+          continue;
+        }
+
+        const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.entrega_estado);
+        const archivoUrl = String(doc.entrega_archivo_url || "").trim();
+        if (modo === "remitir" && archivoUrl && estado === "CARGADO") {
+          operaciones.push({
+            accion: "subir",
+            documento_id: id,
+            archivo_url: archivoUrl
+          });
+        }
+      }
+
+      if (!operaciones.length) return;
+      await remitirOperacionDocumentalSolicitud({ accion: "__batch__", documentos: operaciones, modo });
+      limpiarDocumentosPendientesSolicitud();
     }
 
     async function gestionarSubidaDocumentoSolicitud(documentoId, file, boton) {
@@ -1694,19 +1756,12 @@
           boton.setAttribute("aria-busy", "true");
         }
         limpiarMensaje();
-        await asegurarReservaContextualDocumental();
-        const archivoUrl = await subirPdfDocumentacionSolicitud(doc, file);
-        if (!archivoUrl) return;
-        if (boton) boton.setAttribute("title", "Remitiendo documento...");
-        await remitirOperacionDocumentalSolicitud({
-          accion: "subir",
-          documento_id: Number(doc.id || 0),
-          archivo_url: archivoUrl
-        });
-        mostrarMensaje("ok", "Documento remitido correctamente. El propietario documental recibirá el aviso para revisarlo.");
-        await cargarDocumentacionSolicitud();
+        registrarDocumentoPendienteSolicitud(doc, file);
+        marcarSolicitudPendiente();
+        renderizarDocumentacionSolicitud(documentacionSolicitudActual);
+        mostrarMensaje("ok", "Documento cargado en el formulario. Guarda el borrador o envía la solicitud para conservarlo.");
       } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo remitir el documento.");
+        mostrarMensaje("error", error.message || "No se pudo cargar el documento.");
       } finally {
         if (boton) {
           boton.disabled = false;
@@ -1719,6 +1774,14 @@
     async function gestionarEliminacionDocumentoSolicitud(documentoId, boton) {
       const doc = obtenerDocumentoSolicitudPorId(documentoId);
       if (!doc) return;
+      const pendiente = obtenerDocumentoPendienteSolicitud(documentoId);
+      if (pendiente) {
+        liberarDocumentoPendienteSolicitud(documentoId);
+        marcarSolicitudPendiente();
+        renderizarDocumentacionSolicitud(documentacionSolicitudActual);
+        mostrarMensaje("ok", "Documento cargado retirado del formulario.");
+        return;
+      }
       const confirmar = window.confirm("Este documento remitido dejará de estar presentado para esta solicitud. ¿Deseas continuar?");
       if (!confirmar) return;
       const tituloOriginal = boton?.getAttribute("title") || "";
@@ -1729,9 +1792,11 @@
           boton.setAttribute("aria-busy", "true");
         }
         limpiarMensaje();
+        const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.entrega_estado);
         await remitirOperacionDocumentalSolicitud({
           accion: "eliminar",
-          documento_id: Number(doc.id || 0)
+          documento_id: Number(doc.id || 0),
+          modo: estado === "CARGADO" ? "borrador" : "remitir"
         });
         mostrarMensaje("ok", "Documento remitido eliminado correctamente para esta solicitud.");
         await cargarDocumentacionSolicitud();
@@ -2617,6 +2682,7 @@ function obtenerDisponiblesFormulario(franja) {
         reservaCreada = null;
         datosPendientesEnvio = null;
         limpiarSolicitudPendiente();
+        await remitirDocumentosPendientesSolicitud("borrador");
         if (opciones?.silencioso !== true) {
           mostrarMensaje("ok", data.mensaje || "Borrador guardado correctamente.");
         }
@@ -2665,6 +2731,8 @@ function obtenerDisponiblesFormulario(franja) {
           error.documentacion = extraerAccesoDocumentacion(data);
           throw error;
         }
+
+        await remitirDocumentosPendientesSolicitud("remitir");
 
         if (String(data.estado || "").toUpperCase() === "PENDIENTE") {
           if (data?.correo_admin?.enviado === false) {
@@ -2829,6 +2897,7 @@ function obtenerDisponiblesFormulario(franja) {
         }
 
         reservaCreada = data;
+        await remitirDocumentosPendientesSolicitud("remitir");
         limpiarSolicitudPendiente();
         tokenBorrador = "";
         await cargarDocumentacionSolicitud();

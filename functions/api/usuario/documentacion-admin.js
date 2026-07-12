@@ -49,6 +49,11 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function esEstadoDocumentoCargado(estado) {
+  const valor = normalizarEstadoDocumento(estado);
+  return valor === "CARGADO" || valor === "BORRADOR" || valor === "PENDIENTE_ENVIO";
+}
+
 function obtenerPropietarioDocumentalDocumento(doc) {
   return Number(doc?.propietario_id || doc?.admin_id || 0);
 }
@@ -519,6 +524,10 @@ function calcularEstadoEfectivo(documentosActivos, archivosActivos) {
     return "NO_COMPLETADO";
   }
 
+  if (estados.some((estado) => esEstadoDocumentoCargado(estado))) {
+    return "NO_COMPLETADO";
+  }
+
   if (estados.every((estado) => estado === "VALIDADO")) {
     return "VALIDADA";
   }
@@ -927,6 +936,9 @@ export async function onRequestPost(context) {
     const adminId = parsearIdPositivo(body?.admin_id);
     const actividadId = parsearIdPositivo(body?.actividad_id);
     const reservaId = parsearIdPositivo(body?.reserva_id);
+    const modoDocumental = limpiarTexto(body?.modo).toLowerCase();
+    const remisionDefinitiva = modoDocumental !== "borrador";
+    const estadoNuevaEntrega = remisionDefinitiva ? "EN_REVISION" : "CARGADO";
     const contextoEntrega = normalizarContextoDocumental({
       actividadId,
       reservaId
@@ -1017,6 +1029,7 @@ export async function onRequestPost(context) {
     const aDesactivar = [];
     const idsADesactivar = new Set();
     const aInsertar = [];
+    const aPromocionar = [];
     const cambiosRealesIds = new Set();
 
     for (const duplicado of indiceArchivosExistentes.duplicados) {
@@ -1065,11 +1078,14 @@ export async function onRequestPost(context) {
             archivo_url: deseada.archivo_url
           });
           cambiosRealesIds.add(Number(doc.id));
+        } else if (remisionDefinitiva && esEstadoDocumentoCargado(existente.estado)) {
+          aPromocionar.push(existente);
+          cambiosRealesIds.add(Number(doc.id));
         }
       }
     }
 
-    if (cambiosRealesIds.size > 0 && body?.confirmar_eliminacion_documental_critica !== true) {
+    if (remisionDefinitiva && cambiosRealesIds.size > 0 && body?.confirmar_eliminacion_documental_critica !== true) {
       const archivosSimulados = construirArchivosSimuladosDesdeEntregas(documentos, entregas, archivosExistentes);
       const reservasCriticas = await obtenerReservasCriticasAfectadasPorEntregas(
         env,
@@ -1151,15 +1167,28 @@ export async function onRequestPost(context) {
           fecha_subida,
           activo
         )
-        VALUES (?, ?, ?, ?, ?, ?, 'EN_REVISION', NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
       `).bind(
         expedientePropietario.id,
         contextoEntrega.actividadId,
         contextoEntrega.reservaId,
         item.documento.nombre,
         item.archivo_url,
-        Number(item.documento.version_documental || 0)
+        Number(item.documento.version_documental || 0),
+        estadoNuevaEntrega
       ).run();
+    }
+
+    for (const archivo of aPromocionar) {
+      await env.DB.prepare(`
+        UPDATE centro_admin_documentacion_archivos
+        SET
+          estado = 'EN_REVISION',
+          fecha_validacion = NULL,
+          validado_por_admin_id = NULL,
+          observaciones_admin = NULL
+        WHERE id = ?
+      `).bind(archivo.id).run();
     }
 
     expedientesPorPropietario = await obtenerExpedientesPorPropietario(
@@ -1242,7 +1271,7 @@ export async function onRequestPost(context) {
     let notificacionAdmin = { ok: false, skipped: true, error: "", destinatario: "" };
     let notificacionInternaResponsable = { ok: false, skipped: true, error: "" };
 
-    if (cambiosCorreo.length > 0) {
+    if (remisionDefinitiva && cambiosCorreo.length > 0) {
       const documentosCambiados = documentos.filter((doc) => cambiosRealesIds.has(Number(doc.id || 0)));
       const documentosPorPropietario = agruparDocumentosPorPropietario(documentosCambiados);
 
@@ -1321,7 +1350,7 @@ export async function onRequestPost(context) {
       skipped: true,
       motivo: "Sin cambios documentales reales del solicitante."
     };
-    if (cambiosRealesIds.size > 0) {
+    if (remisionDefinitiva && cambiosRealesIds.size > 0) {
       try {
         impactoReservas = await recalcularImpactoDocumentalReservas(env, {
           adminId,
