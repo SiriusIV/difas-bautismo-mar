@@ -1628,7 +1628,7 @@
     async function asegurarReservaContextualDocumental() {
       const reservaId = obtenerReservaIdDocumental();
       if (reservaId > 0) return reservaId;
-      await guardarBorrador();
+      await guardarBorrador({ silencioso: true });
       return obtenerReservaIdDocumental();
     }
 
@@ -1817,10 +1817,6 @@
         if (bloque) bloque.classList.add("activo");
         if (lista) {
           lista.innerHTML = `<div class="documentacion-solicitud-vacia">${escapeHtml(error.message || "No se pudo consultar la documentación obligatoria.")}</div>`;
-        }
-        if (boton) {
-          boton.disabled = true;
-          boton.dataset.url = "";
         }
       }
     }
@@ -2559,7 +2555,7 @@ function obtenerDisponiblesFormulario(franja) {
       window.history.replaceState({}, "", url.toString());
     }
 
-    async function guardarBorrador() {
+    async function guardarBorrador(opciones = {}) {
       if (envioEnCurso) return;
 
       limpiarMensaje();
@@ -2621,8 +2617,10 @@ function obtenerDisponiblesFormulario(franja) {
         reservaCreada = null;
         datosPendientesEnvio = null;
         limpiarSolicitudPendiente();
-        mostrarMensaje("ok", data.mensaje || "Borrador guardado correctamente.");
-        aplicarAccionDocumentacionAviso(extraerAccesoDocumentacion(data));
+        if (opciones?.silencioso !== true) {
+          mostrarMensaje("ok", data.mensaje || "Borrador guardado correctamente.");
+        }
+        aplicarAccionDocumentacionAviso(null);
         if (actividadUsaFranjas()) {
           await cargarFranjas();
         }
@@ -2631,7 +2629,7 @@ function obtenerDisponiblesFormulario(franja) {
         actualizarResumenPantalla();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo guardar el borrador.");
-        aplicarAccionDocumentacionAviso(error?.documentacion || null);
+        aplicarAccionDocumentacionAviso(null);
       } finally {
         envioEnCurso = false;
         document.getElementById("btnGuardarBorrador").disabled = false;

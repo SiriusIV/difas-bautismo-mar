@@ -209,8 +209,9 @@ async function obtenerActividadesAdmin(env, adminId) {
 }
 
 async function obtenerExpediente(env, centroUsuarioId, adminId, contexto = {}) {
-  const condicion = construirCondicionContextoDocumental(contexto);
-  return await env.DB.prepare(`
+  const contextoNormalizado = normalizarContextoDocumental(contexto);
+  const condicion = construirCondicionContextoDocumental(contextoNormalizado);
+  const contextual = await env.DB.prepare(`
     SELECT
       id,
       centro_usuario_id,
@@ -232,6 +233,56 @@ async function obtenerExpediente(env, centroUsuarioId, adminId, contexto = {}) {
       AND ${condicion.sql}
     LIMIT 1
   `).bind(centroUsuarioId, adminId, ...condicion.valores).first();
+  if (contextual) return contextual;
+
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      centro_usuario_id,
+      admin_id,
+      actividad_id,
+      reserva_id,
+      version_requerida,
+      version_aportada,
+      estado,
+      fecha_ultima_entrega,
+      fecha_validacion,
+      validado_por_admin_id,
+      observaciones_admin,
+      created_at,
+      updated_at
+    FROM centro_admin_documentacion
+    WHERE centro_usuario_id = ?
+      AND admin_id = ?
+      AND actividad_id IS NULL
+      AND reserva_id IS NULL
+    LIMIT 1
+  `).bind(centroUsuarioId, adminId).first();
+}
+
+async function obtenerCualquierExpediente(env, centroUsuarioId, adminId) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      centro_usuario_id,
+      admin_id,
+      actividad_id,
+      reserva_id,
+      version_requerida,
+      version_aportada,
+      estado,
+      fecha_ultima_entrega,
+      fecha_validacion,
+      validado_por_admin_id,
+      observaciones_admin,
+      created_at,
+      updated_at
+    FROM centro_admin_documentacion
+    WHERE centro_usuario_id = ?
+      AND admin_id = ?
+    ORDER BY id ASC
+    LIMIT 1
+  `).bind(centroUsuarioId, adminId).first();
 }
 
 async function obtenerArchivosActivos(env, documentacionId) {
@@ -315,7 +366,8 @@ async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietari
   const mapa = new Map();
   if (!ids.length) return mapa;
 
-  const condicion = construirCondicionContextoDocumental(contexto);
+  const contextoNormalizado = normalizarContextoDocumental(contexto);
+  const condicion = construirCondicionContextoDocumental(contextoNormalizado);
   const placeholders = ids.map(() => "?").join(", ");
   const rows = await env.DB.prepare(`
     SELECT
@@ -336,16 +388,20 @@ async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietari
     FROM centro_admin_documentacion
     WHERE centro_usuario_id = ?
       AND admin_id IN (${placeholders})
-      AND ${condicion.sql}
+    ORDER BY
+      CASE WHEN ${condicion.sql} THEN 0 ELSE 1 END,
+      CASE WHEN actividad_id IS NULL AND reserva_id IS NULL THEN 0 ELSE 1 END,
+      id ASC
   `).bind(centroUsuarioId, ...ids, ...condicion.valores).all();
 
   for (const row of rows?.results || []) {
-    mapa.set(Number(row.admin_id || 0), row);
+    const propietarioId = Number(row.admin_id || 0);
+    if (!mapa.has(propietarioId)) mapa.set(propietarioId, row);
   }
   return mapa;
 }
 
-async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario = new Map()) {
+async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario = new Map(), contexto = {}) {
   const expedientes = Array.from(expedientesPorPropietario.values())
     .filter((expediente) => Number(expediente?.id || 0) > 0);
   const mapaExpedienteAPropietario = new Map(
@@ -355,6 +411,7 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
   if (!expedientes.length) return salida;
 
   const placeholders = expedientes.map(() => "?").join(", ");
+  const condicion = construirCondicionContextoDocumental(contexto);
   const rows = await env.DB.prepare(`
     SELECT
       id,
@@ -373,8 +430,9 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
     FROM centro_admin_documentacion_archivos
     WHERE documentacion_id IN (${placeholders})
       AND activo = 1
+      AND ${condicion.sql}
     ORDER BY id ASC
-  `).bind(...expedientes.map((expediente) => expediente.id)).all();
+  `).bind(...expedientes.map((expediente) => expediente.id), ...condicion.valores).all();
 
   for (const row of rows?.results || []) {
     salida.push({
@@ -386,8 +444,8 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
 }
 
 async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId, versionRequerida, contexto = {}) {
-  const contextoNormalizado = normalizarContextoDocumental(contexto);
-  const existente = await obtenerExpediente(env, centroUsuarioId, propietarioId, contextoNormalizado);
+  const existente = await obtenerExpediente(env, centroUsuarioId, propietarioId, {}) ||
+    await obtenerCualquierExpediente(env, centroUsuarioId, propietarioId);
   if (existente) return existente;
 
   await env.DB.prepare(`
@@ -407,12 +465,12 @@ async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId,
   `).bind(
     centroUsuarioId,
     propietarioId,
-    contextoNormalizado.actividadId,
-    contextoNormalizado.reservaId,
+    null,
+    null,
     versionRequerida
   ).run();
 
-  return await obtenerExpediente(env, centroUsuarioId, propietarioId, contextoNormalizado);
+  return await obtenerExpediente(env, centroUsuarioId, propietarioId, {});
 }
 
 function calcularEstadoDocumento(doc, entrega) {
@@ -788,7 +846,11 @@ export async function onRequestGet(context) {
     const expediente = expedientesPorPropietario.get(adminId) ||
       Array.from(expedientesPorPropietario.values())[0] ||
       null;
-    const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
+    const archivosActivos = await obtenerArchivosActivosPorExpedientes(
+      env,
+      expedientesPorPropietario,
+      actividadId ? contextoEntrega : {}
+    );
     const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosActivos);
     const requiereDocumentacion = documentos.length > 0;
     const documentosPendientes = construirDocumentosPendientes(documentos, archivosActivos);
@@ -903,7 +965,11 @@ export async function onRequestPost(context) {
       propietariosDocumentales,
       actividadId ? contextoEntrega : {}
     );
-    const archivosExistentes = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
+    const archivosExistentes = await obtenerArchivosActivosPorExpedientes(
+      env,
+      expedientesPorPropietario,
+      actividadId ? contextoEntrega : {}
+    );
     const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosExistentes);
     const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
 
@@ -1102,7 +1168,11 @@ export async function onRequestPost(context) {
       propietariosDocumentales,
       actividadId ? contextoEntrega : {}
     );
-    const archivosFinales = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
+    const archivosFinales = await obtenerArchivosActivosPorExpedientes(
+      env,
+      expedientesPorPropietario,
+      actividadId ? contextoEntrega : {}
+    );
     const urlsActivasFinales = new Set(
       archivosFinales
         .map((archivo) => limpiarTexto(archivo.archivo_url))
