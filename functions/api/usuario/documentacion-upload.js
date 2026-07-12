@@ -52,10 +52,11 @@ async function obtenerAdmin(env, adminId) {
     SELECT
       id,
       nombre,
+      nombre_publico,
       rol
     FROM usuarios
     WHERE id = ?
-      AND rol IN ('ADMIN', 'SUPERADMIN')
+      AND rol IN ('ADMIN', 'SUPERADMIN', 'SECRETARIA')
     LIMIT 1
   `).bind(adminId).first();
 }
@@ -95,7 +96,7 @@ export async function onRequestPost(context) {
 
     const admin = await obtenerAdmin(env, adminId);
     if (!admin) {
-      return json({ ok: false, error: "Organizador no encontrado." }, 404);
+      return json({ ok: false, error: "Propietario documental no encontrado." }, 404);
     }
 
     if (!(file instanceof File)) {
@@ -113,7 +114,7 @@ export async function onRequestPost(context) {
     }
 
     const centroSeguro = sanitizarSegmento(usuario.centro || `usuario-${usuario.id}`) || `usuario-${usuario.id}`;
-    const adminSeguro = sanitizarSegmento(admin.nombre || `admin-${adminId}`) || `admin-${adminId}`;
+    const adminSeguro = sanitizarSegmento(admin.nombre_publico || admin.nombre || `propietario-${adminId}`) || `propietario-${adminId}`;
     const nombreSeguro = sanitizarSegmento(nombreDocumento) || "documento";
     const sufijo = generarSufijoUnico();
     const key = `documentos/centros/${centroSeguro}/admin-${adminId}-${adminSeguro}/${nombreSeguro}-${sufijo}.pdf`;

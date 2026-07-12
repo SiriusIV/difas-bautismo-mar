@@ -1660,7 +1660,8 @@
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("admin_id", String(Number(doc.propietario_id || doc.admin_id || actividadActual?.admin_id || 0)));
+      const propietarioId = Number(doc.propietario_id || doc.propietario_documental_id || doc.admin_id || actividadActual?.admin_id || documentacionSolicitudActual?.admin?.id || 0);
+      formData.append("admin_id", String(propietarioId));
       formData.append("nombre_documento", doc.nombre || doc.titulo || "documento");
 
       const res = await fetch("/api/usuario/documentacion-upload", {
