@@ -123,8 +123,16 @@ function extraerKeyDesdeArchivoUrl(archivoUrl) {
 async function borrarArchivoBucketSiExiste(env, archivoUrl) {
   const key = extraerKeyDesdeArchivoUrl(archivoUrl);
   if (!key || !env.DOCS_BUCKET) return false;
-  await env.DOCS_BUCKET.delete(key);
-  return true;
+  try {
+    await env.DOCS_BUCKET.delete(key);
+    return true;
+  } catch (error) {
+    console.error("No se pudo borrar el archivo físico documental sustituido.", {
+      key,
+      error: error?.message || String(error || "")
+    });
+    return false;
+  }
 }
 
 async function obtenerUsuarioSolicitante(env, userId) {

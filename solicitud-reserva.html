@@ -1678,7 +1678,7 @@
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "No se pudo actualizar la documentación de la solicitud.");
+        throw new Error(data?.detalle || data?.error || "No se pudo actualizar la documentación de la solicitud.");
       }
       return data;
     }
@@ -1871,6 +1871,8 @@
 
     function getFranjaId() {
       if (Number.isInteger(franjaIdInicial) && franjaIdInicial > 0) return franjaIdInicial;
+      const franjaReserva = Number(reservaExistente?.franja_id || 0);
+      if (Number.isInteger(franjaReserva) && franjaReserva > 0) return franjaReserva;
       const params = new URLSearchParams(window.location.search);
       const id = parseInt(params.get("franja_id") || "", 10);
       return Number.isInteger(id) && id > 0 ? id : null;
