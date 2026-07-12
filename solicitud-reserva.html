@@ -1527,7 +1527,7 @@
       if (valor === "RECHAZADO") return "Rechazado";
       if (valor === "NO_ACTUALIZADO") return "No actualizado";
       if (valor === "NO_ENVIADO") return "No presentado";
-      if (valor === "CARGADO") return "";
+      if (valor === "CARGADO") return "En revisión";
       return valor.replace(/_/g, " ").toLowerCase();
     }
 
@@ -1592,7 +1592,7 @@
         const estado = pendiente
           ? "CARGADO"
           : normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.estado_efectivo);
-        const claseEstado = estado.toLowerCase();
+        const claseEstado = estado === "CARGADO" ? "en_revision" : estado.toLowerCase();
         const propietario = String(doc.propietario_nombre || doc.propietario_documental || doc.admin_nombre || doc.admin_nombre_publico || "").trim();
         const version = Number(doc.version_documental || doc.version || 0);
         const archivoBase = String(doc.archivo_url || "").trim();
@@ -1600,9 +1600,7 @@
         const entregado = !!archivoRemitido || !!doc.entregado;
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
-        const estadoHtml = estado === "CARGADO"
-          ? ""
-          : esRechazado
+        const estadoHtml = esRechazado
           ? `<button type="button" class="documento-solicitud-estado ${escapeHtml(claseEstado)}" data-accion-documento="observaciones" data-documento-id="${Number(doc.id || 0)}" title="Ver observaciones del rechazo">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</button>`
           : `<span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>`;
         return `
