@@ -732,6 +732,14 @@
       line-height: 1.25;
     }
 
+    a.documento-solicitud-titulo {
+      text-decoration: none;
+    }
+
+    a.documento-solicitud-titulo:hover {
+      text-decoration: underline;
+    }
+
     .documento-solicitud-meta {
       display: block;
       margin-top: 2px;
@@ -1597,6 +1605,10 @@
         const version = Number(doc.version_documental || doc.version || 0);
         const archivoBase = String(doc.archivo_url || "").trim();
         const archivoRemitido = pendiente?.objectUrl || String(doc.entrega_archivo_url || "").trim();
+        const tituloDocumento = doc.nombre || doc.titulo || "Documento";
+        const tituloHtml = archivoBase
+          ? `<a class="documento-solicitud-titulo" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base">${escapeHtml(tituloDocumento)}</a>`
+          : `<span class="documento-solicitud-titulo">${escapeHtml(tituloDocumento)}</span>`;
         const entregado = !!archivoRemitido || !!doc.entregado;
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
@@ -1606,13 +1618,12 @@
         return `
           <div class="documento-solicitud-item" data-documento-id="${Number(doc.id || 0)}">
             <div class="documento-solicitud-info">
-              <span class="documento-solicitud-titulo">${escapeHtml(doc.nombre || doc.titulo || "Documento")}</span>
+              ${tituloHtml}
               <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
             </div>
             ${estadoHtml}
             <div class="documento-solicitud-acciones">
               <button type="button" class="documento-solicitud-accion" data-accion-documento="ver-remitido" data-documento-id="${Number(doc.id || 0)}" ${archivoRemitido ? "" : "disabled"} title="Visualizar documento presentado" aria-label="Visualizar documento presentado"><img src="assets/icono-ver-documento.svg" alt=""></button>
-              ${archivoBase ? `<a class="documento-solicitud-accion" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base" aria-label="Descargar documento base"><img src="assets/icono-descargar-documento.svg" alt=""></a>` : `<button type="button" class="documento-solicitud-accion" disabled title="Documento base no disponible" aria-label="Documento base no disponible"><img src="assets/icono-descargar-documento.svg" alt=""></button>`}
               <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><img src="assets/icono-subir-documento.svg" alt=""></button>
               <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><img src="assets/icono-rechazar-documento.svg" alt=""></button>
               <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
@@ -1758,7 +1769,6 @@
         registrarDocumentoPendienteSolicitud(doc, file);
         marcarSolicitudPendiente();
         renderizarDocumentacionSolicitud(documentacionSolicitudActual);
-        mostrarMensaje("ok", "Documento cargado en el formulario. Guarda el borrador o envía la solicitud para conservarlo.");
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo cargar el documento.");
       } finally {
