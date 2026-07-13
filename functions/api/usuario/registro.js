@@ -99,6 +99,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
 
     const tipo_cuenta = limpiarTexto(body.tipo_cuenta).toUpperCase() === "ARMADA" ? "ARMADA" : "PUBLICO";
+    const rol_solicitado = limpiarTexto(body.rol_solicitado).toUpperCase() === "SECRETARIA" ? "SECRETARIA" : "ADMIN";
     const nombre_interno = limpiarTextoSolicitud(body.nombre_interno);
     const centro = limpiarTexto(body.centro);
     const localidad = limpiarTexto(body.localidad);
@@ -202,6 +203,7 @@ export async function onRequestPost(context) {
       await db.prepare(`
         INSERT INTO solicitudes_registro_armada (
           nombre_interno,
+          rol_solicitado,
           centro,
           localidad,
           responsable_legal,
@@ -214,9 +216,10 @@ export async function onRequestPost(context) {
           estado,
           fecha_solicitud
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', datetime('now'))
       `).bind(
         nombre_interno,
+        rol_solicitado,
         centro,
         "",
         responsable_legal,

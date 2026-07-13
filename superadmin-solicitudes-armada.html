@@ -421,6 +421,7 @@
           <thead>
             <tr>
               <th>Unidad / dependencia</th>
+              <th class="centrado">Tipo</th>
               <th class="centrado">Contacto</th>
               <th class="centrado">Cargo / puesto</th>
               <th class="centrado">Email</th>
@@ -515,6 +516,7 @@
       document.getElementById("tituloModalSolicitud").textContent = `Solicitud · ${solicitudSeleccionada.centro || "Usuario Armada"}`;
       document.getElementById("detalleSolicitud").innerHTML = `
         <dt>Nombre interno</dt><dd>${escapeHtml(solicitudSeleccionada.nombre_interno || "-")}</dd>
+        <dt>Tipo de usuario</dt><dd>${escapeHtml(etiquetaRolArmada(solicitudSeleccionada.rol_solicitado))}</dd>
         <dt>Unidad / dependencia</dt><dd>${escapeHtml(solicitudSeleccionada.centro || "")}</dd>
         <dt>Contacto</dt><dd>${escapeHtml(solicitudSeleccionada.responsable_legal || "")}</dd>
         <dt>Cargo / puesto</dt><dd>${escapeHtml(solicitudSeleccionada.cargo_puesto || "-")}</dd>
@@ -543,6 +545,12 @@
       renderizarTabla();
     }
 
+    function etiquetaRolArmada(rol) {
+      return String(rol || "").toUpperCase() === "SECRETARIA"
+        ? "Administrador documental"
+        : "Administrador de actividades";
+    }
+
     function abrirModal() {
       const modal = document.getElementById("modalSolicitudArmada");
       modal.classList.add("activo");
@@ -560,6 +568,7 @@
       tbody.innerHTML = solicitudesCache.map((item) => `
         <tr class="${Number(solicitudTactilSeleccionada) === Number(item.id) ? "fila-seleccionada" : ""}" onclick="seleccionarSolicitud(${Number(item.id)})">
           <td data-label="Unidad / dependencia">${escapeHtml(item.centro || "")}</td>
+          <td class="centrado" data-label="Tipo">${escapeHtml(etiquetaRolArmada(item.rol_solicitado))}</td>
           <td class="centrado" data-label="Contacto">${escapeHtml(item.responsable_legal || "")}</td>
           <td class="centrado" data-label="Cargo / puesto">${escapeHtml(item.cargo_puesto || "-")}</td>
           <td class="centrado" data-label="Email">${escapeHtml(item.email || "")}</td>

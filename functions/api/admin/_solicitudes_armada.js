@@ -3,6 +3,7 @@ export async function asegurarTablaSolicitudesArmada(db) {
     CREATE TABLE IF NOT EXISTS solicitudes_registro_armada (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre_interno TEXT,
+      rol_solicitado TEXT NOT NULL DEFAULT 'ADMIN',
       centro TEXT NOT NULL,
       localidad TEXT,
       responsable_legal TEXT NOT NULL,
@@ -22,6 +23,7 @@ export async function asegurarTablaSolicitudesArmada(db) {
   `).run();
 
   await asegurarColumnaSolicitudArmada(db, "nombre_interno", "TEXT");
+  await asegurarColumnaSolicitudArmada(db, "rol_solicitado", "TEXT NOT NULL DEFAULT 'ADMIN'");
   await asegurarColumnaSolicitudArmada(db, "cargo_puesto", "TEXT");
   await asegurarColumnaSolicitudArmada(db, "telefono_rpv", "TEXT");
 }

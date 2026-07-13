@@ -27,6 +27,7 @@ export async function onRequestGet(context) {
       SELECT
         id,
         nombre_interno,
+        COALESCE(rol_solicitado, 'ADMIN') AS rol_solicitado,
         centro,
         localidad,
         responsable_legal,

@@ -622,6 +622,15 @@
               </select>
             </div>
 
+            <div class="campo-completo" id="campoRolArmada" style="display:none;">
+              <label for="rol_solicitado">Tipo de usuario Armada<span class="campo-obligatorio">*</span></label>
+              <select id="rol_solicitado" name="rol_solicitado">
+                <option value="ADMIN">Administrador de actividades</option>
+                <option value="SECRETARIA">Administrador documental</option>
+              </select>
+              <div class="nota">El administrador de actividades puede crear y gestionar actividades. El administrador documental solo gestiona documentos propios y sus revisiones.</div>
+            </div>
+
             <div class="campo-completo" id="campoNombreInterno" style="display:none;">
               <label for="nombre_interno" id="labelNombreInterno">Nombre interno<span class="campo-obligatorio">*</span></label>
               <div class="input-con-ayuda">
@@ -1029,6 +1038,7 @@
       const bloquePasswordConfirmacion = document.getElementById("bloquePasswordConfirmacion");
       const bloqueNotaPassword = document.getElementById("bloqueNotaPassword");
       const avisoCuentaArmada = document.getElementById("avisoCuentaArmada");
+      const campoRolArmada = document.getElementById("campoRolArmada");
       const campoNombreInterno = document.getElementById("campoNombreInterno");
       const inputPassword = document.getElementById("password");
       const inputPasswordConfirmacion = document.getElementById("password_confirmacion");
@@ -1044,6 +1054,7 @@
       const inputNifCifEntidad = document.getElementById("nif_cif_entidad");
       const inputLocalidad = document.getElementById("localidad");
       const inputTelefonoRpv = document.getElementById("telefono_rpv");
+      const inputRolSolicitado = document.getElementById("rol_solicitado");
       const labelNombreInterno = document.getElementById("labelNombreInterno");
       const labelCentro = document.getElementById("labelCentro");
       const labelResponsable = document.getElementById("labelResponsable");
@@ -1116,6 +1127,7 @@
       if (campoNifCifEntidad) campoNifCifEntidad.style.display = armada ? "none" : "";
       if (campoLocalidad) campoLocalidad.style.display = armada ? "none" : "";
       if (campoTelefonoRpv) campoTelefonoRpv.style.display = armada ? "" : "none";
+      if (campoRolArmada) campoRolArmada.style.display = armada ? "" : "none";
       if (campoNombreInterno) campoNombreInterno.style.display = armada ? "" : "none";
       if (avisoCuentaArmada) avisoCuentaArmada.style.display = armada ? "block" : "none";
 
@@ -1127,9 +1139,11 @@
       inputDocumento.required = !armada;
       inputNifCifEntidad.required = !armada;
       inputTelefonoRpv.required = armada;
+      if (inputRolSolicitado) inputRolSolicitado.required = armada;
 
       if (!armada) {
         inputNombreInterno.value = "";
+        if (inputRolSolicitado) inputRolSolicitado.value = "ADMIN";
       }
 
       if (armada) {
@@ -1151,6 +1165,7 @@
 
       const tipo_cuenta = document.getElementById("tipo_cuenta").value.trim().toUpperCase();
       const armada = tipo_cuenta === "ARMADA";
+      const rol_solicitado = document.getElementById("rol_solicitado")?.value.trim().toUpperCase() || "ADMIN";
       const nombre_interno = document.getElementById("nombre_interno").value.trim();
       const centro = document.getElementById("centro").value.trim();
       const responsable_legal = document.getElementById("responsable_legal").value.trim();
@@ -1174,6 +1189,11 @@
 
       if (armada && !nombre_interno) {
         mostrarMensaje("error", "Debe indicar el nombre interno de la cuenta.");
+        return;
+      }
+
+      if (armada && !["ADMIN", "SECRETARIA"].includes(rol_solicitado)) {
+        mostrarMensaje("error", "Debe indicar si solicita un alta como administrador de actividades o administrador documental.");
         return;
       }
 
@@ -1248,6 +1268,7 @@
           credentials: "include",
           body: JSON.stringify({
             tipo_cuenta,
+            rol_solicitado,
             nombre_interno,
             centro,
             responsable_legal,
@@ -1365,6 +1386,3 @@
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
-
-

@@ -72,10 +72,11 @@ function escaparHtml(valor) {
     .replace(/'/g, "&#39;");
 }
 
-function construirCorreoAltaArmadaTexto({ unidad, cargoPuesto, email, passwordTemporal, baseUrl }) {
+function construirCorreoAltaArmadaTexto({ unidad, cargoPuesto, email, passwordTemporal, baseUrl, rolTexto = "Administrador de actividades" }) {
   const lineas = [
     "Tu solicitud de Usuario Armada ha sido aprobada.",
     "",
+    `Tipo de cuenta: ${rolTexto}`,
     `Unidad / dependencia: ${unidad}`,
     `Correo de acceso: ${email}`
   ];
@@ -96,9 +97,10 @@ function construirCorreoAltaArmadaTexto({ unidad, cargoPuesto, email, passwordTe
   return lineas.join("\n");
 }
 
-function construirCorreoAltaArmadaHtml({ unidad, cargoPuesto, email, passwordTemporal, baseUrl }) {
+function construirCorreoAltaArmadaHtml({ unidad, cargoPuesto, email, passwordTemporal, baseUrl, rolTexto = "Administrador de actividades" }) {
   return `
     <p>Tu solicitud de <strong>Usuario Armada</strong> ha sido aprobada.</p>
+    <p><strong>Tipo de cuenta:</strong> ${escaparHtml(rolTexto)}</p>
     <p><strong>Unidad / dependencia:</strong> ${escaparHtml(unidad)}</p>
     ${cargoPuesto ? `<p><strong>Cargo / puesto:</strong> ${escaparHtml(cargoPuesto)}</p>` : ""}
     <p><strong>Correo de acceso:</strong> ${escaparHtml(email)}</p>
@@ -145,6 +147,8 @@ function construirCorreoRechazoHtml({ unidad, cargoPuesto, motivo }) {
 async function enviarCorreoAprobacion(env, request, solicitud, passwordTemporal) {
   const email = limpiarTexto(solicitud.email).toLowerCase();
   const baseUrl = new URL(request.url).origin;
+  const rolSolicitado = normalizarRolSolicitado(solicitud.rol_solicitado);
+  const rolTexto = etiquetaRolArmada(rolSolicitado);
 
   return await enviarEmail(env, {
     to: email,
@@ -154,16 +158,26 @@ async function enviarCorreoAprobacion(env, request, solicitud, passwordTemporal)
       cargoPuesto: limpiarTexto(solicitud.cargo_puesto),
       email,
       passwordTemporal,
-      baseUrl
+      baseUrl,
+      rolTexto
     }),
     html: construirCorreoAltaArmadaHtml({
       unidad: limpiarTexto(solicitud.centro),
       cargoPuesto: limpiarTexto(solicitud.cargo_puesto),
       email,
       passwordTemporal,
-      baseUrl
+      baseUrl,
+      rolTexto
     })
   });
+}
+
+function normalizarRolSolicitado(valor) {
+  return limpiarTexto(valor).toUpperCase() === "SECRETARIA" ? "SECRETARIA" : "ADMIN";
+}
+
+function etiquetaRolArmada(rol) {
+  return rol === "SECRETARIA" ? "Administrador documental" : "Administrador de actividades";
 }
 
 async function enviarCorreoRechazo(env, solicitud, motivo) {
@@ -263,6 +277,7 @@ export async function onRequestPost(context) {
 
     const email = limpiarTexto(solicitud.email).toLowerCase();
     const centroNormalizado = normalizarCentro(solicitud.centro);
+    const rolSolicitado = normalizarRolSolicitado(solicitud.rol_solicitado);
 
     const existingEmail = await env.DB.prepare(`
       SELECT id
@@ -279,7 +294,7 @@ export async function onRequestPost(context) {
       SELECT id
       FROM usuarios
       WHERE UPPER(TRIM(centro)) = ?
-        AND rol IN ('ADMIN', 'SUPERADMIN')
+        AND rol IN ('ADMIN', 'SUPERADMIN', 'SECRETARIA')
       LIMIT 1
     `).bind(centroNormalizado).first();
 
@@ -309,7 +324,7 @@ export async function onRequestPost(context) {
         activo,
         fecha_alta
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', ?, ?, ?, ?, ?, ?, 1, 1, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, datetime('now'))
     `).bind(
       limpiarTexto(solicitud.nombre_interno) || limpiarTexto(solicitud.responsable_legal) || limpiarTexto(solicitud.centro),
       limpiarTexto(solicitud.centro),
@@ -317,6 +332,7 @@ export async function onRequestPost(context) {
       limpiarTexto(solicitud.localidad),
       email,
       passwordHash,
+      rolSolicitado,
       limpiarTexto(solicitud.telefono_contacto),
       limpiarTexto(solicitud.telefono_rpv),
       limpiarTexto(solicitud.responsable_legal),

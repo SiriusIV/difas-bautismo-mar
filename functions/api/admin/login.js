@@ -38,7 +38,7 @@ export async function onRequestPost(context) {
       return json(
         {
           ok: false,
-          error: "Usuario o contraseÃ±a incorrectos."
+          error: "Usuario o contraseña incorrectos."
         },
         { status: 401 }
       );
@@ -49,7 +49,7 @@ export async function onRequestPost(context) {
       FROM usuarios
       WHERE email = ?
         AND activo = 1
-        AND rol IN ('ADMIN', 'SUPERADMIN')
+        AND rol IN ('ADMIN', 'SUPERADMIN', 'SECRETARIA')
       LIMIT 1
     `)
       .bind(username)
@@ -83,11 +83,11 @@ export async function onRequestPost(context) {
     return new Response(
       JSON.stringify({
         ok: true,
-        mensaje: "SesiÃ³n iniciada correctamente.",
+        mensaje: "Sesión iniciada correctamente.",
         requiere_cambio_password: requiereCambioPassword,
         redirect_to: requiereCambioPassword
           ? "/usuario-perfil.html?forzar_password=1"
-          : "/admin-reservas.html"
+          : (rol === "SECRETARIA" ? "/usuario-perfil.html" : "/admin-reservas.html")
       }),
       {
         status: 200,
@@ -101,7 +101,7 @@ export async function onRequestPost(context) {
     return json(
       {
         ok: false,
-        error: "Error al iniciar sesiÃ³n.",
+        error: "Error al iniciar sesión.",
         detalle: error.message
       },
       { status: 500 }
