@@ -1487,21 +1487,7 @@
     const documentosPendientesSolicitud = new Map();
 
     function construirUrlDocumentacion(adminId, actividadId, reservaId = null) {
-      const admin = Number(adminId || 0);
-      if (!(admin > 0)) return "";
-      const query = new URLSearchParams({
-        admin_id: String(admin),
-        modo: "solicitud"
-      });
-      const actividad = Number(actividadId || 0);
-      if (actividad > 0) {
-        query.set("actividad_id", String(actividad));
-      }
-      const reserva = Number(reservaId || 0);
-      if (reserva > 0) {
-        query.set("reserva_id", String(reserva));
-      }
-      return `usuario-documentacion.html?${query.toString()}`;
+      return "";
     }
 
     function extraerAccesoDocumentacion(data) {
