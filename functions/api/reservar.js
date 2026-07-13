@@ -16,6 +16,18 @@ function json(data, init = {}) {
   });
 }
 
+function ejecutarEnSegundoPlano(context, tarea, etiqueta = "tarea") {
+  const promesa = Promise.resolve(tarea).catch((error) => {
+    console.error(`Error en ${etiqueta}.`, {
+      error: error?.message || String(error || "")
+    });
+  });
+
+  if (typeof context?.waitUntil === "function") {
+    context.waitUntil(promesa);
+  }
+}
+
 function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
 }
@@ -848,25 +860,53 @@ if (Number(actividad.activa || 0) !== 1) {
       LIMIT 1
     `).bind(tokenEdicion).first();
 
+    let contextoDocumentalReserva = { ok: true, error: "" };
     if (reservaCreada?.id) {
-      await vincularDocumentacionPendienteAReserva(env, {
-        usuarioId,
-        actividadId,
-        reservaId: reservaCreada.id
-      });
+      try {
+        contextoDocumentalReserva = await vincularDocumentacionPendienteAReserva(env, {
+          usuarioId,
+          actividadId,
+          reservaId: reservaCreada.id
+        });
+      } catch (errorContextoDocumental) {
+        contextoDocumentalReserva = {
+          ok: false,
+          error: errorContextoDocumental?.message || String(errorContextoDocumental || "")
+        };
+        console.error("No se pudo vincular documentación pendiente a la reserva creada.", {
+          reserva_id: Number(reservaCreada?.id || 0),
+          actividad_id: Number(actividadId || 0),
+          usuario_id: Number(usuarioId || 0),
+          error: contextoDocumentalReserva.error
+        });
+      }
     }
 
+    let historialReserva = { ok: true, error: "" };
     if (!guardarComoBorrador) {
-      await registrarEventoReserva(env, {
-        reservaId: reservaCreada?.id,
-        accion: "SOLICITUD_PRESENTADA",
-        estadoOrigen: null,
-        estadoDestino: "PENDIENTE",
-        observaciones,
-        actorUsuarioId: usuarioId,
-        actorRol: "SOLICITANTE",
-        actorNombre: contacto || centro || "Solicitante"
-      });
+      try {
+        await registrarEventoReserva(env, {
+          reservaId: reservaCreada?.id,
+          accion: "SOLICITUD_PRESENTADA",
+          estadoOrigen: null,
+          estadoDestino: "PENDIENTE",
+          observaciones,
+          actorUsuarioId: usuarioId,
+          actorRol: "SOLICITANTE",
+          actorNombre: contacto || centro || "Solicitante"
+        });
+      } catch (errorHistorial) {
+        historialReserva = {
+          ok: false,
+          error: errorHistorial?.message || String(errorHistorial || "")
+        };
+        console.error("No se pudo registrar el historial de la solicitud presentada.", {
+          reserva_id: Number(reservaCreada?.id || 0),
+          actividad_id: Number(actividadId || 0),
+          usuario_id: Number(usuarioId || 0),
+          error: historialReserva.error
+        });
+      }
     }
 
     let notificacionAdmin = { ok: false, skipped: true, error: "" };
@@ -880,7 +920,8 @@ if (Number(actividad.activa || 0) !== 1) {
           centro,
           codigoReserva: reservaCreada?.codigo_reserva || codigoReserva
         });
-        correoAdmin = await enviarCorreoNuevaSolicitudAdmin(env, {
+        correoAdmin = { ok: true, skipped: false, pendiente: true, error: "" };
+        ejecutarEnSegundoPlano(context, enviarCorreoNuevaSolicitudAdmin(env, {
           ...actividad,
           ...reservaCreada,
           base_url: baseUrl,
@@ -890,16 +931,7 @@ if (Number(actividad.activa || 0) !== 1) {
           fecha: franja?.fecha || "",
           hora_inicio: franja?.hora_inicio || "",
           hora_fin: franja?.hora_fin || ""
-        });
-        if (!correoAdmin.ok && !correoAdmin.skipped) {
-          console.error("No se pudo enviar el correo al administrador tras crear una nueva solicitud.", {
-            reserva_id: Number(reservaCreada?.id || 0),
-            actividad_id: Number(actividadId || 0),
-            admin_id: Number(actividad?.admin_id || 0),
-            email_admin: actividad?.admin_email || "",
-            error: correoAdmin.error || ""
-          });
-        }
+        }), "correo de nueva solicitud al administrador");
       } catch (errorNotificacion) {
         notificacionAdmin = {
           ok: false,
@@ -946,8 +978,11 @@ if (Number(actividad.activa || 0) !== 1) {
       },
       correo_admin: {
         enviado: !!correoAdmin.ok,
+        pendiente: !!correoAdmin.pendiente,
         error: correoAdmin.ok ? "" : (correoAdmin.error || "")
-      }
+      },
+      contexto_documental: contextoDocumentalReserva,
+      historial: historialReserva
     });
   } catch (error) {
     return json(

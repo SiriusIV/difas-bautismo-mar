@@ -1723,32 +1723,34 @@
 
       const documentos = Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [];
       const operaciones = [];
-
-      for (const doc of documentos) {
+      const subidas = documentos.map(async (doc) => {
         const id = Number(doc.id || 0);
         const pendiente = obtenerDocumentoPendienteSolicitud(id);
         if (pendiente?.file) {
           const archivoUrl = await subirPdfDocumentacionSolicitud(doc, pendiente.file);
           if (archivoUrl) {
-            operaciones.push({
+            return {
               accion: "subir",
               documento_id: id,
               archivo_url: archivoUrl
-            });
+            };
           }
-          continue;
+          return null;
         }
 
         const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.entrega_estado);
         const archivoUrl = String(doc.entrega_archivo_url || "").trim();
         if (modo === "remitir" && archivoUrl && estado === "CARGADO") {
-          operaciones.push({
+          return {
             accion: "subir",
             documento_id: id,
             archivo_url: archivoUrl
-          });
+          };
         }
-      }
+        return null;
+      });
+
+      operaciones.push(...(await Promise.all(subidas)).filter(Boolean));
 
       if (!operaciones.length) return;
       await remitirOperacionDocumentalSolicitud({ accion: "__batch__", documentos: operaciones, modo });
@@ -2908,7 +2910,17 @@ function obtenerDisponiblesFormulario(franja) {
         }
 
         reservaCreada = data;
-        await remitirDocumentosPendientesSolicitud("remitir");
+        mostrarMensajeModalConfirmacion("ok", "Solicitud creada correctamente. Remitiendo documentación obligatoria...");
+        try {
+          await remitirDocumentosPendientesSolicitud("remitir");
+        } catch (errorDocumentacion) {
+          mostrarMensajeModalConfirmacion(
+            "error",
+            `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}. No se pudo remitir la documentación obligatoria: ${errorDocumentacion.message || "error no especificado"}.`
+          );
+          redireccionPendienteTrasConfirmacion = "usuario-panel.html";
+          return;
+        }
         limpiarSolicitudPendiente();
         tokenBorrador = "";
         await cargarDocumentacionSolicitud();
