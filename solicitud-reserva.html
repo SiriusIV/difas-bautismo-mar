@@ -1847,8 +1847,10 @@
       document.querySelectorAll("[data-accion-documento='ver-remitido']").forEach((boton) => {
         boton.addEventListener("click", () => {
           if (boton.disabled) return;
-          const doc = obtenerDocumentoSolicitudPorId(Number(boton.dataset.documentoId || 0));
-          const url = String(doc?.entrega_archivo_url || "").trim();
+          const documentoId = Number(boton.dataset.documentoId || 0);
+          const doc = obtenerDocumentoSolicitudPorId(documentoId);
+          const pendiente = obtenerDocumentoPendienteSolicitud(documentoId);
+          const url = String(pendiente?.objectUrl || doc?.entrega_archivo_url || "").trim();
           if (url) window.open(url, "_blank", "noopener,noreferrer");
         });
       });
