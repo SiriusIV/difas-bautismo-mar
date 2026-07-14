@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { actualizarEstadoAdministrador } from "./_admins_gestion.js";
+import { actualizarEstadoAdministrador, actualizarEstadoSecretariaDocumental } from "./_admins_gestion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -30,7 +30,26 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Administrador no válido." }, 400);
     }
 
-    const resumen = await actualizarEstadoAdministrador(env, adminId, activo, {
+    const objetivo = await env.DB.prepare(`
+      SELECT rol
+      FROM usuarios
+      WHERE id = ?
+        AND rol IN ('ADMIN', 'SECRETARIA')
+    `).bind(adminId).first();
+
+    if (!objetivo) {
+      return json({ ok: false, error: "Usuario Armada no encontrado." }, 404);
+    }
+
+    const rolObjetivo = String(objetivo.rol || "").toUpperCase();
+    const resumen = rolObjetivo === "SECRETARIA"
+      ? await actualizarEstadoSecretariaDocumental(env, adminId, activo, {
+        actorUsuarioId: session.usuario_id,
+        actorRol: session.rol,
+        actorNombre: session.username,
+        motivo
+      })
+      : await actualizarEstadoAdministrador(env, adminId, activo, {
       actorUsuarioId: session.usuario_id,
       actorRol: session.rol,
       actorNombre: session.username,
@@ -39,9 +58,13 @@ export async function onRequestPost(context) {
 
     return json({
       ok: true,
-      mensaje: activo
-        ? "Administrador reactivado correctamente."
-        : "Administrador desactivado correctamente.",
+      mensaje: rolObjetivo === "SECRETARIA"
+        ? (activo
+          ? "Administrador documental reactivado correctamente."
+          : "Administrador documental desactivado correctamente.")
+        : (activo
+          ? "Administrador reactivado correctamente."
+          : "Administrador desactivado correctamente."),
       resumen
     });
   } catch (error) {

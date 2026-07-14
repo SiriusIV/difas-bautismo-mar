@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { listarAdministradores } from "./_admins_gestion.js";
+import { listarUsuariosArmada } from "./_admins_gestion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -21,9 +21,13 @@ export async function onRequestGet(context) {
       return json({ ok: false, error: "Solo SUPERADMIN" }, 403);
     }
 
+    const usuariosArmada = await listarUsuariosArmada(env);
+
     return json({
       ok: true,
-      usuarios: await listarAdministradores(env)
+      usuarios: usuariosArmada.administradores,
+      administradores: usuariosArmada.administradores,
+      secretarias: usuariosArmada.secretarias
     });
   } catch (error) {
     return json(

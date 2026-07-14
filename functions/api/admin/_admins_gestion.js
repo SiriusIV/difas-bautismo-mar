@@ -247,6 +247,7 @@ export async function listarAdministradores(env) {
 
   return (rows.results || []).map((row) => ({
     id: Number(row.id || 0),
+    rol: "ADMIN",
     nombre: row.nombre || "",
     nombre_publico: row.nombre_publico || "",
     email: row.email || "",
@@ -263,6 +264,123 @@ export async function listarAdministradores(env) {
     actividades: actividadesPorAdmin.get(Number(row.id || 0)) || [],
     actividades_publicadas: (actividadesPorAdmin.get(Number(row.id || 0)) || []).filter((item) => Number(item.publicada_vigente || 0) === 1).length
   }));
+}
+
+export async function listarSecretariasDocumentales(env) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "telefono_rpv", "TEXT");
+
+  const documentosRows = await env.DB.prepare(`
+    SELECT
+      id,
+      admin_id,
+      nombre,
+      descripcion,
+      archivo_url,
+      activo,
+      version_documental,
+      fecha_actualizacion
+    FROM admin_documentos_comunes
+    ORDER BY UPPER(COALESCE(NULLIF(TRIM(nombre), ''), 'Documento')) ASC, id ASC
+  `).all();
+
+  const documentosPorPropietario = new Map();
+  for (const documento of (documentosRows.results || [])) {
+    const propietarioId = Number(documento.admin_id || 0);
+    if (!documentosPorPropietario.has(propietarioId)) {
+      documentosPorPropietario.set(propietarioId, []);
+    }
+    documentosPorPropietario.get(propietarioId).push({
+      id: Number(documento.id || 0),
+      nombre: documento.nombre || "Documento",
+      descripcion: documento.descripcion || "",
+      archivo_url: documento.archivo_url || "",
+      activo: Number(documento.activo || 0) === 1 ? 1 : 0,
+      version_documental: Number(documento.version_documental || 1),
+      fecha_actualizacion: documento.fecha_actualizacion || ""
+    });
+  }
+
+  const rows = await env.DB.prepare(`
+    SELECT *
+    FROM usuarios
+    WHERE rol = 'SECRETARIA'
+    ORDER BY UPPER(COALESCE(NULLIF(TRIM(nombre_publico), ''), NULLIF(TRIM(nombre), ''), email)) ASC
+  `).all();
+
+  return (rows.results || []).map((row) => {
+    const documentos = documentosPorPropietario.get(Number(row.id || 0)) || [];
+    return {
+      id: Number(row.id || 0),
+      rol: "SECRETARIA",
+      nombre: row.nombre || "",
+      nombre_publico: row.nombre_publico || "",
+      email: row.email || "",
+      centro: row.centro || "",
+      localidad: row.localidad || "",
+      telefono_contacto: row.telefono_contacto || "",
+      telefono_rpv: row.telefono_rpv || "",
+      responsable_legal: row.responsable_legal || "",
+      cargo_puesto: row.cargo_puesto || "",
+      tipo_documento: row.tipo_documento || "",
+      documento_identificacion: row.documento_identificacion || "",
+      activo: Number(row.activo || 0) === 1 ? 1 : 0,
+      fecha_alta: row.fecha_alta || "",
+      documentos,
+      documentos_total: documentos.length,
+      documentos_activos: documentos.filter((item) => Number(item.activo || 0) === 1).length
+    };
+  });
+}
+
+export async function listarUsuariosArmada(env) {
+  const administradores = await listarAdministradores(env);
+  const secretarias = await listarSecretariasDocumentales(env);
+  return { administradores, secretarias };
+}
+
+export async function actualizarEstadoSecretariaDocumental(env, secretariaId, activo, actor = {}) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "cargo_puesto", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnaUsuarioAdmin(env.DB, "telefono_rpv", "TEXT");
+
+  const secretaria = await obtenerAdministrador(env, secretariaId);
+  if (!secretaria || String(secretaria.rol || "").toUpperCase() !== "SECRETARIA") {
+    throw new Error("Administrador documental no encontrado.");
+  }
+
+  const activar = Number(activo) === 1;
+  const motivo = limpiarTexto(actor?.motivo || "");
+  if (!activar && !motivo) {
+    throw new Error("Debes indicar observaciones para bloquear temporalmente la sesiÃ³n.");
+  }
+
+  await dbPrimaria(env).prepare(`
+    UPDATE usuarios
+    SET activo = ?
+    WHERE id = ?
+      AND rol = 'SECRETARIA'
+  `).bind(activar ? 1 : 0, secretariaId).run();
+
+  const destinatario = limpiarTexto(secretaria.email);
+  if (destinatario) {
+    await enviarEmail(env, {
+      to: destinatario,
+      subject: activar ? "[Acceso] Cuenta de administrador documental reactivada" : "[Acceso] Cuenta de administrador documental suspendida",
+      text: activar
+        ? `Hola ${secretaria.nombre || "usuario"},\n\nTu cuenta de administrador documental ha sido reactivada.`
+        : `Hola ${secretaria.nombre || "usuario"},\n\nTu cuenta de administrador documental ha sido suspendida temporalmente.\n\nObservaciones: ${motivo}`,
+      html: activar
+        ? `<p>Hola ${escapeHtml(secretaria.nombre || "usuario")},</p><p>Tu cuenta de administrador documental ha sido reactivada.</p>`
+        : `<p>Hola ${escapeHtml(secretaria.nombre || "usuario")},</p><p>Tu cuenta de administrador documental ha sido suspendida temporalmente.</p><p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>`
+    });
+  }
+
+  return {
+    secretaria_id: Number(secretariaId),
+    secretaria_activa: activar ? 1 : 0
+  };
 }
 
 function construirCorreoBloqueoAdministrador(admin, motivo) {
