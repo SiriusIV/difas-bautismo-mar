@@ -1,5 +1,5 @@
 import { getAdminSession } from "./_auth.js";
-import { eliminarAdministrador } from "./_admins_gestion.js";
+import { eliminarAdministrador, eliminarAdministradorDocumental } from "./_admins_gestion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -33,16 +33,35 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Debes indicar observaciones para eliminar la cuenta." }, 400);
     }
 
-    const resumen = await eliminarAdministrador(env, adminId, {
+    const objetivo = await env.DB.prepare(`
+      SELECT rol
+      FROM usuarios
+      WHERE id = ?
+        AND rol IN ('ADMIN', 'SECRETARIA')
+      LIMIT 1
+    `).bind(adminId).first();
+
+    if (!objetivo) {
+      return json({ ok: false, error: "Usuario Armada no encontrado." }, 404);
+    }
+
+    const rolObjetivo = String(objetivo.rol || "").toUpperCase();
+    const contexto = {
       actorUsuarioId: session.usuario_id,
       actorRol: session.rol,
       actorNombre: session.username,
       motivo
-    });
+    };
+
+    const resumen = rolObjetivo === "SECRETARIA"
+      ? await eliminarAdministradorDocumental(env, adminId, contexto)
+      : await eliminarAdministrador(env, adminId, contexto);
 
     return json({
       ok: true,
-      mensaje: "Administrador eliminado correctamente.",
+      mensaje: rolObjetivo === "SECRETARIA"
+        ? "Administrador documental eliminado correctamente."
+        : "Administrador eliminado correctamente.",
       resumen
     });
   } catch (error) {

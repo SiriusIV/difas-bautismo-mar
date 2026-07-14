@@ -48,6 +48,79 @@ function dbPrimaria(env) {
   return env.DB;
 }
 
+function extraerKeyDesdeArchivoUrl(archivoUrl) {
+  const texto = limpiarTexto(archivoUrl);
+  if (!texto) return null;
+  try {
+    const base = texto.startsWith("http://") || texto.startsWith("https://")
+      ? texto
+      : `https://local${texto.startsWith("/") ? "" : "/"}${texto}`;
+    const url = new URL(base);
+    return limpiarTexto(url.searchParams.get("key")) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function asegurarTablasDocumentacionUsuarioArmada(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_documentos_obligatorios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actividad_id INTEGER NOT NULL,
+      documento_id INTEGER NOT NULL,
+      propietario_id INTEGER NOT NULL,
+      propietario_rol TEXT,
+      activo INTEGER NOT NULL DEFAULT 1,
+      orden INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (actividad_id, documento_id)
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_documentacion_propietarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id INTEGER NOT NULL,
+      propietario_id INTEGER NOT NULL,
+      activo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (admin_id, propietario_id)
+    )
+  `).run();
+}
+
+async function obtenerResumenDocumentalPropietarios(env, propietarioIds = []) {
+  await asegurarTablasDocumentacionUsuarioArmada(env);
+  const ids = Array.from(new Set(propietarioIds.map((id) => Number(id || 0)).filter((id) => id > 0)));
+  if (!ids.length) return new Map();
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT
+      d.admin_id AS propietario_id,
+      COUNT(DISTINCT d.id) AS documentos_total,
+      COUNT(DISTINCT CASE WHEN COALESCE(d.activo, 1) = 1 THEN d.id END) AS documentos_activos,
+      COUNT(DISTINCT CASE WHEN COALESCE(ado.activo, 1) = 1 THEN ado.actividad_id END) AS actividades_vinculadas
+    FROM admin_documentos_comunes d
+    LEFT JOIN actividad_documentos_obligatorios ado
+      ON ado.documento_id = d.id
+    WHERE d.admin_id IN (${placeholders})
+    GROUP BY d.admin_id
+  `).bind(...ids).all();
+
+  const salida = new Map();
+  for (const row of (rows?.results || [])) {
+    salida.set(Number(row.propietario_id || 0), {
+      documentos_total: Number(row.documentos_total || 0),
+      documentos_activos: Number(row.documentos_activos || 0),
+      actividades_vinculadas: Number(row.actividades_vinculadas || 0)
+    });
+  }
+  return salida;
+}
+
 function actividadSigueVigente(actividad) {
   const tipo = limpiarTexto(actividad?.tipo).toUpperCase();
   if (tipo === "PERMANENTE") return true;
@@ -137,6 +210,132 @@ async function eliminarDocumentacionAsociadaSecretaria(env, secretariaId) {
   } catch (_) {
     // tablas opcionales o esquema parcial
   }
+}
+
+async function eliminarDocumentacionPropietario(env, propietarioId, actor = {}) {
+  await asegurarTablasDocumentacionUsuarioArmada(env);
+
+  const propietario = Number(propietarioId || 0);
+  if (!(propietario > 0)) {
+    return {
+      documentos_eliminados: 0,
+      documentos_vinculados_eliminados: 0,
+      actividades_desvinculadas: 0,
+      remisiones_eliminadas: 0,
+      archivos_bucket_eliminados: 0
+    };
+  }
+
+  const documentosRows = await env.DB.prepare(`
+    SELECT id, nombre, archivo_url
+    FROM admin_documentos_comunes
+    WHERE admin_id = ?
+    ORDER BY id ASC
+  `).bind(propietario).all();
+
+  const documentos = documentosRows?.results || [];
+  const documentoIds = documentos.map((item) => Number(item.id || 0)).filter((id) => id > 0);
+  const nombres = documentos.map((item) => limpiarTexto(item.nombre)).filter(Boolean);
+
+  const resumen = {
+    documentos_eliminados: documentoIds.length,
+    documentos_vinculados_eliminados: 0,
+    actividades_desvinculadas: 0,
+    remisiones_eliminadas: 0,
+    archivos_bucket_eliminados: 0
+  };
+
+  if (!documentoIds.length) {
+    await env.DB.prepare(`
+      DELETE FROM admin_documentacion_propietarios
+      WHERE admin_id = ?
+         OR propietario_id = ?
+    `).bind(propietario, propietario).run();
+    return resumen;
+  }
+
+  const placeholdersDocs = documentoIds.map(() => "?").join(", ");
+  const vinculaciones = await env.DB.prepare(`
+    SELECT DISTINCT actividad_id
+    FROM actividad_documentos_obligatorios
+    WHERE documento_id IN (${placeholdersDocs})
+       OR propietario_id = ?
+  `).bind(...documentoIds, propietario).all();
+  const actividadIds = (vinculaciones?.results || [])
+    .map((row) => Number(row.actividad_id || 0))
+    .filter((id) => id > 0);
+  resumen.actividades_desvinculadas = new Set(actividadIds).size;
+
+  if (env.DOCS_BUCKET) {
+    for (const documento of documentos) {
+      const key = extraerKeyDesdeArchivoUrl(documento.archivo_url);
+      if (key) {
+        await env.DOCS_BUCKET.delete(key);
+        resumen.archivos_bucket_eliminados += 1;
+      }
+    }
+  }
+
+  if (nombres.length) {
+    const placeholdersNombres = nombres.map(() => "?").join(", ");
+    const archivos = await env.DB.prepare(`
+      SELECT a.id, a.archivo_url
+      FROM centro_admin_documentacion_archivos a
+      INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
+      WHERE d.admin_id = ?
+        AND TRIM(COALESCE(a.nombre_documento, '')) IN (${placeholdersNombres})
+    `).bind(propietario, ...nombres).all();
+
+    for (const archivo of (archivos?.results || [])) {
+      const key = extraerKeyDesdeArchivoUrl(archivo.archivo_url);
+      if (key && env.DOCS_BUCKET) {
+        await env.DOCS_BUCKET.delete(key);
+        resumen.archivos_bucket_eliminados += 1;
+      }
+    }
+
+    await env.DB.prepare(`
+      DELETE FROM centro_admin_documentacion_archivos
+      WHERE id IN (
+        SELECT a.id
+        FROM centro_admin_documentacion_archivos a
+        INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
+        WHERE d.admin_id = ?
+          AND TRIM(COALESCE(a.nombre_documento, '')) IN (${placeholdersNombres})
+      )
+    `).bind(propietario, ...nombres).run();
+    resumen.remisiones_eliminadas = archivos?.results?.length || 0;
+  }
+
+  await env.DB.prepare(`
+    DELETE FROM actividad_documentos_obligatorios
+    WHERE documento_id IN (${placeholdersDocs})
+       OR propietario_id = ?
+  `).bind(...documentoIds, propietario).run();
+  resumen.documentos_vinculados_eliminados = documentoIds.length;
+
+  if (actividadIds.length && nombres.length) {
+    const placeholdersActividades = actividadIds.map(() => "?").join(", ");
+    const placeholdersNombres = nombres.map(() => "?").join(", ");
+    await env.DB.prepare(`
+      DELETE FROM actividad_documentacion_documentos
+      WHERE actividad_id IN (${placeholdersActividades})
+        AND TRIM(COALESCE(nombre_documento, '')) IN (${placeholdersNombres})
+    `).bind(...actividadIds, ...nombres).run();
+  }
+
+  await env.DB.prepare(`
+    DELETE FROM admin_documentacion_propietarios
+    WHERE admin_id = ?
+       OR propietario_id = ?
+  `).bind(propietario, propietario).run();
+
+  await env.DB.prepare(`
+    DELETE FROM admin_documentos_comunes
+    WHERE admin_id = ?
+  `).bind(propietario).run();
+
+  return resumen;
 }
 
 async function notificarCambioCuentaSecretaria(env, secretaria, accion) {
@@ -245,7 +444,15 @@ export async function listarAdministradores(env) {
     ORDER BY UPPER(COALESCE(NULLIF(TRIM(nombre), ''), email)) ASC
   `).all();
 
-  return (rows.results || []).map((row) => ({
+  const usuarios = rows.results || [];
+  const resumenDocumental = await obtenerResumenDocumentalPropietarios(
+    env,
+    usuarios.map((row) => Number(row.id || 0))
+  );
+
+  return usuarios.map((row) => {
+    const resumenPropietario = resumenDocumental.get(Number(row.id || 0)) || {};
+    return {
     id: Number(row.id || 0),
     rol: "ADMIN",
     nombre: row.nombre || "",
@@ -262,8 +469,12 @@ export async function listarAdministradores(env) {
     activo: Number(row.activo || 0) === 1 ? 1 : 0,
     fecha_alta: row.fecha_alta || "",
     actividades: actividadesPorAdmin.get(Number(row.id || 0)) || [],
-    actividades_publicadas: (actividadesPorAdmin.get(Number(row.id || 0)) || []).filter((item) => Number(item.publicada_vigente || 0) === 1).length
-  }));
+    actividades_publicadas: (actividadesPorAdmin.get(Number(row.id || 0)) || []).filter((item) => Number(item.publicada_vigente || 0) === 1).length,
+    documentos_total: Number(resumenPropietario.documentos_total || 0),
+    documentos_activos: Number(resumenPropietario.documentos_activos || 0),
+    documentos_actividades_vinculadas: Number(resumenPropietario.actividades_vinculadas || 0)
+  };
+  });
 }
 
 export async function listarSecretariasDocumentales(env) {
@@ -309,8 +520,15 @@ export async function listarSecretariasDocumentales(env) {
     ORDER BY UPPER(COALESCE(NULLIF(TRIM(nombre_publico), ''), NULLIF(TRIM(nombre), ''), email)) ASC
   `).all();
 
-  return (rows.results || []).map((row) => {
+  const usuarios = rows.results || [];
+  const resumenDocumental = await obtenerResumenDocumentalPropietarios(
+    env,
+    usuarios.map((row) => Number(row.id || 0))
+  );
+
+  return usuarios.map((row) => {
     const documentos = documentosPorPropietario.get(Number(row.id || 0)) || [];
+    const resumenPropietario = resumenDocumental.get(Number(row.id || 0)) || {};
     return {
       id: Number(row.id || 0),
       rol: "SECRETARIA",
@@ -328,8 +546,9 @@ export async function listarSecretariasDocumentales(env) {
       activo: Number(row.activo || 0) === 1 ? 1 : 0,
       fecha_alta: row.fecha_alta || "",
       documentos,
-      documentos_total: documentos.length,
-      documentos_activos: documentos.filter((item) => Number(item.activo || 0) === 1).length
+      documentos_total: Number(resumenPropietario.documentos_total ?? documentos.length),
+      documentos_activos: Number(resumenPropietario.documentos_activos ?? documentos.filter((item) => Number(item.activo || 0) === 1).length),
+      documentos_actividades_vinculadas: Number(resumenPropietario.actividades_vinculadas || 0)
     };
   });
 }
@@ -756,14 +975,23 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
   }
 
   const actividades = await obtenerActividadesAdministrador(env, adminId);
-  const secretarias = await listarSecretariasDeAdministrador(env, adminId);
   const resumen = {
     administrador_id: Number(adminId),
     actividades_eliminadas: 0,
     reservas_afectadas: 0,
     correos_enviados: 0,
-    secretarias_eliminadas: 0
+    secretarias_eliminadas: 0,
+    documentos_eliminados: 0,
+    documentos_vinculados_eliminados: 0,
+    actividades_desvinculadas_documentacion: 0,
+    remisiones_documentales_eliminadas: 0
   };
+
+  const resumenDocumental = await eliminarDocumentacionPropietario(env, adminId, actor);
+  resumen.documentos_eliminados = Number(resumenDocumental.documentos_eliminados || 0);
+  resumen.documentos_vinculados_eliminados = Number(resumenDocumental.documentos_vinculados_eliminados || 0);
+  resumen.actividades_desvinculadas_documentacion = Number(resumenDocumental.actividades_desvinculadas || 0);
+  resumen.remisiones_documentales_eliminadas = Number(resumenDocumental.remisiones_eliminadas || 0);
 
   for (const actividad of actividades) {
     const rechazo = await rechazarReservasPorAnulacionActividad(
@@ -777,17 +1005,6 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
 
     await borrarActividadFisicamente(env, Number(actividad.id));
     resumen.actividades_eliminadas += 1;
-  }
-
-  for (const secretaria of secretarias) {
-    await eliminarDocumentacionAsociadaSecretaria(env, Number(secretaria.id || 0));
-    await env.DB.prepare(`
-      DELETE FROM usuarios
-      WHERE id = ?
-        AND rol = 'SECRETARIA'
-    `).bind(Number(secretaria.id)).run();
-    await notificarCambioCuentaSecretaria(env, secretaria, "eliminada");
-    resumen.secretarias_eliminadas += 1;
   }
 
   const destinatario = limpiarTexto(admin.email);
@@ -807,6 +1024,49 @@ export async function eliminarAdministrador(env, adminId, actor = {}) {
     WHERE id = ?
       AND rol = 'ADMIN'
   `).bind(adminId).run();
+
+  return resumen;
+}
+
+export async function eliminarAdministradorDocumental(env, secretariaId, actor = {}) {
+  await asegurarColumnaUsuarioAdmin(env.DB, "nombre_publico", "TEXT");
+  await asegurarColumnasSecretaria(env.DB);
+  const secretaria = await obtenerAdministrador(env, secretariaId);
+  if (!secretaria || String(secretaria.rol || "").toUpperCase() !== "SECRETARIA") {
+    throw new Error("Administrador documental no encontrado.");
+  }
+
+  const motivo = limpiarTexto(actor?.motivo);
+  if (!motivo) {
+    throw new Error("Debes indicar observaciones para eliminar la cuenta del administrador documental.");
+  }
+
+  const resumenDocumental = await eliminarDocumentacionPropietario(env, secretariaId, actor);
+  const resumen = {
+    secretaria_id: Number(secretariaId),
+    documentos_eliminados: Number(resumenDocumental.documentos_eliminados || 0),
+    documentos_vinculados_eliminados: Number(resumenDocumental.documentos_vinculados_eliminados || 0),
+    actividades_desvinculadas_documentacion: Number(resumenDocumental.actividades_desvinculadas || 0),
+    remisiones_documentales_eliminadas: Number(resumenDocumental.remisiones_eliminadas || 0),
+    correos_enviados: 0
+  };
+
+  const destinatario = limpiarTexto(secretaria.email);
+  if (destinatario) {
+    await enviarEmail(env, {
+      to: destinatario,
+      subject: "[Acceso] Cuenta de administrador documental eliminada",
+      text: `Hola ${secretaria.nombre || "usuario"},\n\nTu cuenta de administrador documental ha sido eliminada.\n\nObservaciones: ${motivo}`,
+      html: `<p>Hola ${escapeHtml(secretaria.nombre || "usuario")},</p><p>Tu cuenta de administrador documental ha sido eliminada.</p><p><strong>Observaciones:</strong> ${escapeHtml(motivo)}</p>`
+    });
+    resumen.correos_enviados += 1;
+  }
+
+  await env.DB.prepare(`
+    DELETE FROM usuarios
+    WHERE id = ?
+      AND rol = 'SECRETARIA'
+  `).bind(secretariaId).run();
 
   return resumen;
 }

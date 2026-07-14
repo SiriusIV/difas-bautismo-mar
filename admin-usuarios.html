@@ -1458,7 +1458,10 @@
     function actualizarBotonesAccion() {
       const hay = !!usuarioSeleccionado;
       document.getElementById("btnVerFicha").disabled = !hay;
-      document.getElementById("btnEliminarAdmin").disabled = !hay || String(usuarioSeleccionado?.rol || "").toUpperCase() !== "ADMIN";
+      document.getElementById("btnEliminarAdmin").disabled = !hay;
+      document.getElementById("btnEliminarAdmin").title = String(usuarioSeleccionado?.rol || "").toUpperCase() === "SECRETARIA"
+        ? "Eliminar administrador documental"
+        : "Eliminar administrador";
     }
 
     function obtenerListaUsuariosActual() {
@@ -2013,19 +2016,26 @@
 
     async function eliminarAdminSeleccionado() {
       if (!usuarioSeleccionado) return;
-      if (String(usuarioSeleccionado.rol || "").toUpperCase() !== "ADMIN") {
-        mostrarMensaje("error", "La eliminación directa solo está disponible para administradores de actividades.");
-        return;
-      }
-      const admin = usuarioSeleccionado;
-      const ofertadas = Number(admin.actividades_publicadas || 0);
+      const usuario = usuarioSeleccionado;
+      const esDocumental = String(usuario.rol || "").toUpperCase() === "SECRETARIA";
+      const ofertadas = Number(usuario.actividades_publicadas || 0);
+      const documentos = Number(usuario.documentos_total || 0);
+      const vinculadas = Number(usuario.documentos_actividades_vinculadas || 0);
+      const titulo = esDocumental ? "Confirmar eliminación de administrador documental" : "Confirmar eliminación";
+      const nombre = usuario.nombre || (esDocumental ? "Administrador documental" : "Administrador");
+      const impactoDocumental = documentos > 0
+        ? `<br><br>Posee <strong>${documentos}</strong> documento(s) base. Se eliminarán definitivamente y se desvincularán de las actividades donde sean exigibles.${vinculadas > 0 ? `<br>Actualmente afectan a <strong>${vinculadas}</strong> actividad(es).` : ""}`
+        : "<br><br>No consta documentación base propia asociada a esta cuenta.";
+      const impactoActividades = !esDocumental
+        ? `<br><br>También se eliminarán sus actividades asociadas y las solicitudes futuras vinculadas.${ofertadas > 0 ? `<br>Actualmente tiene <strong>${ofertadas}</strong> actividades ofertadas activas.` : ""}`
+        : "";
       abrirConfirmacionAdmin(
-        "Confirmar eliminación",
-        `Se eliminará definitivamente el administrador <strong>${escapeHtml(admin.nombre || "Administrador")}</strong>.<br><br>Esta acción implica la eliminación de sus usuarios secretaría vinculados, de sus actividades y la suspensión de las reservas relacionadas con ese ámbito.${ofertadas > 0 ? `<br><br>Actualmente tiene <strong>${ofertadas}</strong> actividades ofertadas activas.` : ""}`,
+        titulo,
+        `Se eliminará definitivamente ${esDocumental ? "el administrador documental" : "el administrador"} <strong>${escapeHtml(nombre)}</strong>.${impactoActividades}${impactoDocumental}<br><br>Esta acción no se puede deshacer.`,
         async function () {
           const motivo = document.getElementById("observacionesEliminacion").value.trim();
           if (!motivo) {
-            mostrarMensaje("error", "Debes indicar observaciones para eliminar la cuenta del administrador.");
+            mostrarMensaje("error", "Debes indicar observaciones para eliminar la cuenta.");
             return;
           }
           cerrarModal("modalConfirmacionAdmin");
@@ -2036,7 +2046,7 @@
               headers: { "Content-Type": "application/json" },
               credentials: "include",
               body: JSON.stringify({
-                usuario_id: admin.id,
+                usuario_id: usuario.id,
                 motivo
               })
             });
@@ -2047,10 +2057,10 @@
             }
 
             usuarioSeleccionado = null;
-            mostrarMensaje("ok", data.mensaje || "Administrador eliminado correctamente.");
+            mostrarMensaje("ok", data.mensaje || "Usuario Armada eliminado correctamente.");
             await cargarUsuarios();
           } catch (error) {
-            mostrarMensaje("error", error.message || "No se pudo eliminar el administrador.");
+            mostrarMensaje("error", error.message || "No se pudo eliminar el usuario Armada.");
           }
         },
         { requiereObservaciones: true }
