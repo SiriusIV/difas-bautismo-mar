@@ -78,13 +78,13 @@ export async function onRequestGet(context) {
         ON doc.admin_id = ?
        AND COALESCE(doc.activo, 1) = 1
        AND UPPER(TRIM(COALESCE(doc.nombre, ''))) = UPPER(TRIM(COALESCE(av.nombre_documento, '')))
-      WHERE admin.rol = 'ADMIN'
+      WHERE cad.admin_id = ?
         AND UPPER(TRIM(COALESCE(av.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
       ORDER BY
         datetime(COALESCE(av.fecha_subida, cad.fecha_ultima_entrega)) DESC,
         u.centro ASC,
         av.nombre_documento ASC
-    `).bind(session.usuario_id).all();
+    `).bind(session.usuario_id, session.usuario_id).all();
 
     const expedientes = (rows?.results || []).map((row) => ({
       id: Number(row.documentacion_id || 0),

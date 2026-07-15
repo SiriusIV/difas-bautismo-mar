@@ -2,6 +2,21 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function sanearTextoNotificacion(valor) {
+  return limpiarTexto(valor)
+    .replace(/documentaci\?n/gi, "documentación")
+    .replace(/revisi\?n/gi, "revisión")
+    .replace(/notificaci\?n/gi, "notificación")
+    .replace(/DocumentaciÃ³n/g, "Documentación")
+    .replace(/documentaciÃ³n/g, "documentación")
+    .replace(/NotificaciÃ³n/g, "Notificación")
+    .replace(/notificaciÃ³n/g, "notificación")
+    .replace(/revisiÃ³n/g, "revisión")
+    .replace(/RevisiÃ³n/g, "Revisión")
+    .replace(/invÃ¡lido/g, "inválido")
+    .replace(/InvÃ¡lido/g, "Inválido");
+}
+
 function dbPrimaria(env) {
   if (typeof env?.DB?.withSession === "function") {
     return env.DB.withSession("first-primary");
@@ -551,8 +566,8 @@ export async function listarNotificaciones(env, usuarioId, { limit = 25, soloNoL
     usuario_id: Number(row.usuario_id || 0),
     rol_destino: row.rol_destino || "",
     tipo: row.tipo || "",
-    titulo: row.titulo || "",
-    mensaje: row.mensaje || "",
+    titulo: sanearTextoNotificacion(row.titulo || ""),
+    mensaje: sanearTextoNotificacion(row.mensaje || ""),
     url_destino: row.url_destino || "",
     leida: Number(row.leida || 0) === 1,
     created_at: row.created_at || "",

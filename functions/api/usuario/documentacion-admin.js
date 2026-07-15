@@ -1297,7 +1297,7 @@ export async function onRequestPost(context) {
         try {
           const resultadoCorreo = await enviarEmail(env, {
             to: propietario.email,
-            subject: `[Documentaci?n] Cambios guardados - ${usuario.centro || "Centro"}`,
+            subject: `[Documentación] Cambios guardados - ${usuario.centro || "Centro"}`,
             text: construirEmailTextoDocumentacionRemitidaAgrupada(payloadEmail),
             html: construirEmailHtmlDocumentacionRemitidaAgrupada(payloadEmail),
             dedupe: true,
@@ -1315,8 +1315,8 @@ export async function onRequestPost(context) {
             usuarioId: propietarioId,
             rolDestino: propietario.rol || "",
             tipo: "DOCUMENTACION",
-            titulo: "Nueva documentaci?n remitida",
-            mensaje: `${usuario.centro || "Un usuario"} ha remitido documentaci?n para revisi?n en ${nombreVisibleAdmin(propietario)}.`,
+            titulo: "Nueva documentación remitida",
+            mensaje: `${usuario.centro || "Un usuario"} ha remitido documentación para revisión en ${nombreVisibleAdmin(propietario)}.`,
             urlDestino: `/usuario-perfil.html?admin_id=${encodeURIComponent(String(propietarioId))}&tab=bandeja`,
             dedupeSegundos: 900
           });
