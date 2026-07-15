@@ -811,8 +811,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #b8c8db;
-      background: #fff;
+      border: 0;
+      background: transparent;
       color: var(--color-primario);
       border-radius: 999px;
       padding: 0;
@@ -827,19 +827,24 @@
       display: block;
     }
 
+    .documento-solicitud-accion svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
     .documento-solicitud-accion:hover {
       background: #eef5ff;
     }
 
     .documento-solicitud-accion.peligro {
-      border-color: #efb0b0;
       color: #a32626;
     }
 
     .documento-solicitud-accion[disabled] {
       opacity: 0.55;
       cursor: not-allowed;
-      background: #f2f5f8;
+      background: transparent;
     }
 
     .modal-observaciones-documento {
@@ -1610,8 +1615,8 @@
             ${estadoHtml}
             <div class="documento-solicitud-acciones">
               <button type="button" class="documento-solicitud-accion" data-accion-documento="ver-remitido" data-documento-id="${Number(doc.id || 0)}" ${archivoRemitido ? "" : "disabled"} title="Visualizar documento presentado" aria-label="Visualizar documento presentado"><img src="assets/icono-ver-documento.svg" alt=""></button>
-              <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><img src="assets/icono-subir-documento.svg" alt=""></button>
-              <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><img src="assets/icono-rechazar-documento.svg" alt=""></button>
+              <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4 20-7Z"></path></svg></button>
+              <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
               <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
             </div>
           </div>
