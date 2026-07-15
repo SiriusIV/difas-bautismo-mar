@@ -65,8 +65,8 @@ export async function onRequestGet(context) {
         cad.id AS documentacion_id,
         cad.centro_usuario_id,
         cad.admin_id,
-        cad.actividad_id,
-        cad.reserva_id,
+        COALESCE(cad.actividad_id, av.actividad_id) AS actividad_id,
+        COALESCE(cad.reserva_id, av.reserva_id) AS reserva_id,
         cad.version_requerida,
         cad.version_aportada,
         cad.estado AS estado_expediente,
@@ -95,8 +95,8 @@ export async function onRequestGet(context) {
         ON admin.id = cad.admin_id
       LEFT JOIN actividades act
         ON act.id = cad.actividad_id
-      LEFT JOIN reservas r
-        ON r.id = cad.reserva_id
+      INNER JOIN reservas r
+        ON r.id = COALESCE(cad.reserva_id, av.reserva_id)
       INNER JOIN archivos_vigentes av
         ON av.documentacion_id = cad.id
        AND av.rn = 1
@@ -104,7 +104,8 @@ export async function onRequestGet(context) {
         ON doc.admin_id = ?
        AND COALESCE(doc.activo, 1) = 1
        AND UPPER(TRIM(COALESCE(doc.nombre, ''))) = UPPER(TRIM(COALESCE(av.nombre_documento, '')))
-      WHERE 1 = 1
+      WHERE COALESCE(cad.reserva_id, av.reserva_id) IS NOT NULL
+        AND UPPER(TRIM(COALESCE(r.estado, ''))) NOT IN ('ANULADA', 'CANCELADA')
         ${condicionPendientes}
       ORDER BY
         datetime(COALESCE(av.fecha_subida, cad.fecha_ultima_entrega)) DESC,

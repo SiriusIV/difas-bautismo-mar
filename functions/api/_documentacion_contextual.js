@@ -82,12 +82,22 @@ export async function vincularDocumentacionPendienteAReserva(env, {
   await asegurarColumnasContextoDocumental(env);
 
   const expedientes = await env.DB.prepare(`
-    SELECT id
-    FROM centro_admin_documentacion
-    WHERE centro_usuario_id = ?
-      AND actividad_id = ?
-      AND reserva_id IS NULL
-  `).bind(usuario, actividad).all();
+    SELECT DISTINCT cad.id
+    FROM centro_admin_documentacion cad
+    WHERE cad.centro_usuario_id = ?
+      AND cad.reserva_id IS NULL
+      AND (
+        cad.actividad_id = ?
+        OR EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = cad.id
+            AND a.actividad_id = ?
+            AND a.reserva_id IS NULL
+            AND COALESCE(a.activo, 1) = 1
+        )
+      )
+  `).bind(usuario, actividad, actividad).all();
 
   const ids = (expedientes?.results || [])
     .map((row) => idPositivo(row.id))
@@ -101,16 +111,22 @@ export async function vincularDocumentacionPendienteAReserva(env, {
 
   await env.DB.prepare(`
     UPDATE centro_admin_documentacion
-    SET reserva_id = ?,
+    SET reserva_id = CASE
+          WHEN actividad_id = ? OR actividad_id IS NOT NULL THEN ?
+          ELSE reserva_id
+        END,
         updated_at = CURRENT_TIMESTAMP
     WHERE id IN (${placeholders})
-  `).bind(reserva, ...ids).run();
+  `).bind(actividad, reserva, ...ids).run();
 
   await env.DB.prepare(`
     UPDATE centro_admin_documentacion_archivos
-    SET reserva_id = ?
+    SET reserva_id = ?,
+        actividad_id = COALESCE(actividad_id, ?)
     WHERE documentacion_id IN (${placeholders})
-  `).bind(reserva, ...ids).run();
+      AND (actividad_id = ? OR actividad_id IS NULL)
+      AND reserva_id IS NULL
+  `).bind(reserva, actividad, ...ids, actividad).run();
 
   return { ok: true, actualizados: ids.length };
 }
