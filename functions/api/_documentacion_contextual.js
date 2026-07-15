@@ -156,37 +156,126 @@ export async function eliminarDocumentacionDeReserva(env, reservaId) {
 
   await asegurarColumnasContextoDocumental(env);
 
+  const contextoReserva = await env.DB.prepare(`
+    SELECT usuario_id, actividad_id
+    FROM reservas
+    WHERE id = ?
+    LIMIT 1
+  `).bind(reserva).first();
+
+  const usuario = idPositivo(contextoReserva?.usuario_id);
+  const actividad = idPositivo(contextoReserva?.actividad_id);
+
   const expedientes = await env.DB.prepare(`
     SELECT id
     FROM centro_admin_documentacion
     WHERE reserva_id = ?
-  `).bind(reserva).all();
+      OR (
+        ? IS NOT NULL
+        AND ? IS NOT NULL
+        AND centro_usuario_id = ?
+        AND actividad_id = ?
+        AND reserva_id IS NULL
+      )
+  `).bind(
+    reserva,
+    usuario,
+    actividad,
+    usuario,
+    actividad
+  ).all();
 
-  const ids = (expedientes?.results || [])
+  const idsExpediente = (expedientes?.results || [])
     .map((row) => idPositivo(row.id))
     .filter(Boolean);
 
-  if (!ids.length) {
+  const archivosContextuales = await env.DB.prepare(`
+    SELECT id, documentacion_id, archivo_url
+    FROM centro_admin_documentacion_archivos
+    WHERE reserva_id = ?
+      OR (
+        ? IS NOT NULL
+        AND ? IS NOT NULL
+        AND actividad_id = ?
+        AND reserva_id IS NULL
+        AND documentacion_id IN (
+          SELECT id
+          FROM centro_admin_documentacion
+          WHERE centro_usuario_id = ?
+        )
+      )
+  `).bind(
+    reserva,
+    usuario,
+    actividad,
+    actividad,
+    usuario
+  ).all();
+
+  const archivosRows = archivosContextuales?.results || [];
+  const idsDesdeArchivos = archivosRows
+    .map((row) => idPositivo(row.documentacion_id))
+    .filter(Boolean);
+  const ids = Array.from(new Set([...idsExpediente, ...idsDesdeArchivos]));
+
+  if (!ids.length && !archivosRows.length) {
     return { ok: true, expedientes: 0, archivos: 0 };
   }
 
-  const placeholders = ids.map(() => "?").join(", ");
-  const archivosExistentes = await env.DB.prepare(`
-    SELECT archivo_url
-    FROM centro_admin_documentacion_archivos
-    WHERE documentacion_id IN (${placeholders})
-  `).bind(...ids).all();
-  const archivosFisicos = await borrarArchivosFisicos(env, archivosExistentes?.results || []);
+  const placeholdersArchivos = archivosRows.map(() => "?").join(", ");
+  const placeholdersExpedientes = ids.map(() => "?").join(", ");
+  const archivosExistentes = archivosRows.length
+    ? archivosRows
+    : (await env.DB.prepare(`
+        SELECT archivo_url
+        FROM centro_admin_documentacion_archivos
+        WHERE documentacion_id IN (${placeholdersExpedientes})
+      `).bind(...ids).all())?.results || [];
+  const archivosFisicos = await borrarArchivosFisicos(env, archivosExistentes);
 
-  const archivos = await env.DB.prepare(`
-    DELETE FROM centro_admin_documentacion_archivos
-    WHERE documentacion_id IN (${placeholders})
-  `).bind(...ids).run();
+  let archivos = { meta: { changes: 0 } };
+  if (archivosRows.length) {
+    archivos = await env.DB.prepare(`
+      DELETE FROM centro_admin_documentacion_archivos
+      WHERE id IN (${placeholdersArchivos})
+    `).bind(...archivosRows.map((row) => row.id)).run();
+  } else if (ids.length) {
+    archivos = await env.DB.prepare(`
+      DELETE FROM centro_admin_documentacion_archivos
+      WHERE documentacion_id IN (${placeholdersExpedientes})
+    `).bind(...ids).run();
+  }
 
-  const expedientesEliminados = await env.DB.prepare(`
-    DELETE FROM centro_admin_documentacion
-    WHERE id IN (${placeholders})
-  `).bind(...ids).run();
+  const expedientesContextuales = idsExpediente.filter((id) => ids.includes(id));
+  const placeholdersContextuales = expedientesContextuales.map(() => "?").join(", ");
+  const expedientesEliminados = expedientesContextuales.length
+    ? await env.DB.prepare(`
+        DELETE FROM centro_admin_documentacion
+        WHERE id IN (${placeholdersContextuales})
+      `).bind(...expedientesContextuales).run()
+    : { meta: { changes: 0 } };
+
+  const expedientesGlobales = ids.filter((id) => !expedientesContextuales.includes(id));
+  if (expedientesGlobales.length) {
+    const placeholdersGlobales = expedientesGlobales.map(() => "?").join(", ");
+    await env.DB.prepare(`
+      UPDATE centro_admin_documentacion
+      SET estado = 'NO_INICIADO',
+          version_aportada = 0,
+          fecha_ultima_entrega = NULL,
+          fecha_validacion = NULL,
+          validado_por_admin_id = NULL,
+          observaciones_admin = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id IN (${placeholdersGlobales})
+        AND NOT EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = centro_admin_documentacion.id
+            AND COALESCE(a.activo, 1) = 1
+        )
+    `).bind(...expedientesGlobales).run();
+  }
 
   return {
     ok: true,
