@@ -16,6 +16,8 @@ function limpiarTexto(valor) {
 
 function normalizarEstadoDocumento(estado) {
   const valor = limpiarTexto(estado).toUpperCase();
+  if (valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "EN REVISIÓN" || valor === "EN REVISION") return "EN_REVISION";
   return valor || "EN_REVISION";
 }
 

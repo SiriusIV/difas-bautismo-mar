@@ -28,7 +28,7 @@ function normalizarEstadoDocumento(estado) {
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  if (valor === "VALIDADA" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "VALIDADA" || valor === "APROBADA" || valor === "APROBADO") return "VALIDADO";
   if (valor === "EN REVISION") return "EN_REVISION";
   if (["VALIDADO", "RECHAZADO", "EN_REVISION"].includes(valor)) return valor;
   return "";
