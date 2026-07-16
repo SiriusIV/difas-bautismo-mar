@@ -5,9 +5,6 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
-import {
-  construirResumenActividadesSolicitablesGlobalCentro
-} from "../_documentacion_actividades_solicitables.js";
 import { getSecretariaSession } from "./_documental.js";
 
 function json(data, init = {}) {
@@ -67,12 +64,22 @@ async function obtenerExpedienteConDocumentosPropios(env, propietarioId, documen
       cad.reserva_id,
       cad.version_requerida,
       u.centro,
+      u.nombre AS usuario_nombre,
+      u.nombre_publico AS usuario_nombre_publico,
       u.email,
+      COALESCE(a.titulo_publico, a.nombre, '') AS actividad_nombre,
+      r.codigo_reserva,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
       admin.nombre AS admin_nombre,
       admin.nombre_publico AS admin_nombre_publico
     FROM centro_admin_documentacion cad
     INNER JOIN usuarios u ON u.id = cad.centro_usuario_id
     INNER JOIN usuarios admin ON admin.id = cad.admin_id
+    LEFT JOIN actividades a ON a.id = cad.actividad_id
+    LEFT JOIN reservas r ON r.id = cad.reserva_id
+    LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE cad.id = ?
       AND EXISTS (
         SELECT 1
@@ -269,21 +276,6 @@ export async function onRequestPost(context) {
       documentosBaseActivos,
       seleccionarUltimosArchivosPorDocumento(archivosActualizados?.results || [])
     );
-    let resumenActividadesCorreo = null;
-    try {
-      resumenActividadesCorreo = await construirResumenActividadesSolicitablesGlobalCentro(env, {
-        centroUsuarioId: Number(expediente.centro_usuario_id || 0),
-        actividadId: Number(expediente.actividad_id || 0) || null,
-        reservaId: Number(expediente.reserva_id || 0) || null
-      });
-    } catch (errorResumenActividades) {
-      console.error("No se pudo calcular el resumen de actividades solicitables (secretaria).", {
-        expediente_id: Number(documentacionId || 0),
-        admin_id: Number(expediente.admin_id || 0),
-        secretaria_id: Number(session.usuario_id || 0),
-        error: errorResumenActividades?.message || String(errorResumenActividades || "")
-      });
-    }
 
     await env.DB.prepare(`
       UPDATE centro_admin_documentacion
@@ -306,22 +298,20 @@ export async function onRequestPost(context) {
     try {
       notificacionCentro = await enviarEmail(env, {
         to: expediente.email || "",
-        subject: `[Documentacion] Revision actualizada por ${nombreVisibleAdmin(secretaria || {})}`,
+        subject: `[Documentación] Revisión actualizada por ${nombreVisibleAdmin(secretaria || {})}`,
         text: construirEmailTextoResolucionExpedienteDocumental({
           admin: secretaria || {},
           centro: expediente || {},
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
-          resumen_documental: resumenDocumentalCorreo,
-          resumen_actividades: resumenActividadesCorreo
+          resumen_documental: resumenDocumentalCorreo
         }),
         html: construirEmailHtmlResolucionExpedienteDocumental({
           admin: secretaria || {},
           centro: expediente || {},
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
-          resumen_documental: resumenDocumentalCorreo,
-          resumen_actividades: resumenActividadesCorreo
+          resumen_documental: resumenDocumentalCorreo
         })
       });
     } catch (errorEmail) {
