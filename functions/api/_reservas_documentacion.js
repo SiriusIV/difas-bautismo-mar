@@ -122,7 +122,8 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
 }
 
 function estadoDocumentalCompleto(estado) {
-  return ["VALIDADA", "NO_REQUERIDA"].includes(String(estado || "").toUpperCase());
+  const valor = normalizarEstadoDocumento(estado);
+  return ["VALIDADA", "VALIDADO", "NO_REQUERIDA"].includes(valor);
 }
 
 function normalizarEstadoExpediente(estado) {
@@ -179,23 +180,56 @@ async function obtenerExpedientesPorPropietario(env, centroUsuarioId, propietari
   const mapa = new Map();
   if (!ids.length) return mapa;
 
-  const condicion = construirCondicionContextoDocumental(contexto);
+  const condicion = construirCondicionContextoDocumental(contexto, "cad");
+  const condicionArchivo = construirCondicionContextoDocumental(contexto, "a");
   const placeholders = ids.map(() => "?").join(", ");
   const rows = await env.DB.prepare(`
     SELECT
-      id,
-      admin_id,
-      actividad_id,
-      reserva_id,
-      estado
-    FROM centro_admin_documentacion
-    WHERE centro_usuario_id = ?
-      AND admin_id IN (${placeholders})
-      AND ${condicion.sql}
-  `).bind(centroUsuarioId, ...ids, ...condicion.valores).all();
+      cad.id,
+      cad.admin_id,
+      cad.actividad_id,
+      cad.reserva_id,
+      cad.estado
+    FROM centro_admin_documentacion cad
+    WHERE cad.centro_usuario_id = ?
+      AND cad.admin_id IN (${placeholders})
+      AND (
+        ${condicion.sql}
+        OR (cad.actividad_id IS NULL AND cad.reserva_id IS NULL)
+        OR EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = cad.id
+            AND COALESCE(a.activo, 1) = 1
+            AND ${condicionArchivo.sql}
+        )
+      )
+    ORDER BY
+      CASE
+        WHEN ${condicion.sql} THEN 0
+        WHEN EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion_archivos a
+          WHERE a.documentacion_id = cad.id
+            AND COALESCE(a.activo, 1) = 1
+            AND ${condicionArchivo.sql}
+        ) THEN 1
+        WHEN cad.actividad_id IS NULL AND cad.reserva_id IS NULL THEN 2
+        ELSE 3
+      END,
+      cad.id DESC
+  `).bind(
+    centroUsuarioId,
+    ...ids,
+    ...condicion.valores,
+    ...condicionArchivo.valores,
+    ...condicion.valores,
+    ...condicionArchivo.valores
+  ).all();
 
   for (const row of rows?.results || []) {
-    mapa.set(Number(row.admin_id || 0), row);
+    const propietarioId = Number(row.admin_id || 0);
+    if (!mapa.has(propietarioId)) mapa.set(propietarioId, row);
   }
   return mapa;
 }
@@ -250,13 +284,14 @@ async function obtenerArchivosActivosContextoReserva(env, {
 
   const placeholders = ids.map(() => "?").join(", ");
   const condicionesReserva = reserva > 0
-    ? "(cad.reserva_id = ? OR cad.reserva_id IS NULL)"
-    : "cad.reserva_id IS NULL";
+    ? "(cad.reserva_id = ? OR a.reserva_id = ? OR cad.reserva_id IS NULL OR a.reserva_id IS NULL)"
+    : "(cad.reserva_id IS NULL OR a.reserva_id IS NULL)";
   const binds = [
     usuario,
-    actividad,
     ...ids,
-    ...(reserva > 0 ? [reserva] : [])
+    actividad,
+    actividad,
+    ...(reserva > 0 ? [reserva, reserva] : [])
   ];
 
   const rows = await env.DB.prepare(`
@@ -269,9 +304,13 @@ async function obtenerArchivosActivosContextoReserva(env, {
       a.fecha_subida,
       cad.admin_id AS propietario_documental_id,
       cad.reserva_id,
+      a.reserva_id AS archivo_reserva_id,
+      cad.actividad_id,
+      a.actividad_id AS archivo_actividad_id,
       CASE
-        WHEN ? > 0 AND cad.reserva_id = ? THEN 3
-        WHEN cad.reserva_id IS NULL THEN 2
+        WHEN ? > 0 AND (cad.reserva_id = ? OR a.reserva_id = ?) THEN 4
+        WHEN cad.actividad_id = ? OR a.actividad_id = ? THEN 3
+        WHEN cad.reserva_id IS NULL OR a.reserva_id IS NULL THEN 2
         ELSE 1
       END AS prioridad_contexto
     FROM centro_admin_documentacion cad
@@ -279,13 +318,16 @@ async function obtenerArchivosActivosContextoReserva(env, {
       ON a.documentacion_id = cad.id
      AND COALESCE(a.activo, 1) = 1
     WHERE cad.centro_usuario_id = ?
-      AND cad.actividad_id = ?
       AND cad.admin_id IN (${placeholders})
+      AND (cad.actividad_id = ? OR a.actividad_id = ?)
       AND ${condicionesReserva}
     ORDER BY prioridad_contexto DESC, a.id ASC
   `).bind(
     reserva,
     reserva,
+    reserva,
+    actividad,
+    actividad,
     ...binds
   ).all();
 
