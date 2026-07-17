@@ -61,6 +61,16 @@ function calcularEstadoDocumento(doc, entrega) {
   return normalizarEstadoDocumento(entrega.estado);
 }
 
+function esMejorEntregaDocumento(candidata, actual) {
+  if (!actual) return true;
+  const prioridadCandidata = Number(candidata?.prioridad_contexto || 0);
+  const prioridadActual = Number(actual?.prioridad_contexto || 0);
+  if (prioridadCandidata !== prioridadActual) {
+    return prioridadCandidata > prioridadActual;
+  }
+  return Number(candidata?.id || 0) > Number(actual?.id || 0);
+}
+
 function indexarArchivosPorDocumento(archivosActivos = []) {
   const porDocumento = new Map();
 
@@ -71,9 +81,9 @@ function indexarArchivosPorDocumento(archivosActivos = []) {
     const keyPropietario = claveDocumento(nombre, propietarioId);
     const keyLegacy = claveDocumento(nombre);
     const existente = porDocumento.get(keyPropietario);
-    if (!existente || Number(archivo?.id || 0) > Number(existente?.id || 0)) {
+    if (esMejorEntregaDocumento(archivo, existente)) {
       porDocumento.set(keyPropietario, archivo);
-      if (!porDocumento.has(keyLegacy)) {
+      if (esMejorEntregaDocumento(archivo, porDocumento.get(keyLegacy))) {
         porDocumento.set(keyLegacy, archivo);
       }
     }
@@ -216,8 +226,70 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
 
   return (rows?.results || []).map((row) => ({
     ...row,
-    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0
+    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0,
+    prioridad_contexto: 1
   }));
+}
+
+async function obtenerArchivosActivosContextoReserva(env, {
+  usuarioId,
+  actividadId,
+  reservaId,
+  propietarios
+} = {}) {
+  const usuario = Number(usuarioId || 0);
+  const actividad = Number(actividadId || 0);
+  const reserva = Number(reservaId || 0);
+  const ids = Array.from(new Set(
+    (Array.isArray(propietarios) ? propietarios : [])
+      .map((id) => Number(id || 0))
+      .filter((id) => id > 0)
+  ));
+
+  if (!(usuario > 0) || !(actividad > 0) || !ids.length) return [];
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const condicionesReserva = reserva > 0
+    ? "(cad.reserva_id = ? OR cad.reserva_id IS NULL)"
+    : "cad.reserva_id IS NULL";
+  const binds = [
+    usuario,
+    actividad,
+    ...ids,
+    ...(reserva > 0 ? [reserva] : [])
+  ];
+
+  const rows = await env.DB.prepare(`
+    SELECT
+      a.id,
+      a.documentacion_id,
+      a.nombre_documento,
+      a.version_documental,
+      a.estado,
+      a.fecha_subida,
+      cad.admin_id AS propietario_documental_id,
+      cad.reserva_id,
+      CASE
+        WHEN ? > 0 AND cad.reserva_id = ? THEN 3
+        WHEN cad.reserva_id IS NULL THEN 2
+        ELSE 1
+      END AS prioridad_contexto
+    FROM centro_admin_documentacion cad
+    INNER JOIN centro_admin_documentacion_archivos a
+      ON a.documentacion_id = cad.id
+     AND COALESCE(a.activo, 1) = 1
+    WHERE cad.centro_usuario_id = ?
+      AND cad.actividad_id = ?
+      AND cad.admin_id IN (${placeholders})
+      AND ${condicionesReserva}
+    ORDER BY prioridad_contexto DESC, a.id ASC
+  `).bind(
+    reserva,
+    reserva,
+    ...binds
+  ).all();
+
+  return rows?.results || [];
 }
 
 export async function validarDocumentacionReserva(env, {
@@ -273,8 +345,18 @@ export async function validarDocumentacionReserva(env, {
     }
   }
   const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
-  const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
-  const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);
+  const archivosContextoReserva = await obtenerArchivosActivosContextoReserva(env, {
+    usuarioId: usuario,
+    actividadId: actividad,
+    reservaId: contextoEntrega.reservaId,
+    propietarios
+  });
+  const archivosParaCalculo = [
+    ...archivosActivos,
+    ...archivosContextoReserva
+  ];
+  const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosParaCalculo);
+  const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosParaCalculo);
   const expedientesCompletos = expedientesDocumentalesCompletos(propietarios, expedientesPorPropietario);
   const okFinal = estadoDocumentalCompleto(estadoDocumental) || expedientesCompletos;
   const estadosExpedientes = propietarios.map((propietarioId) =>
