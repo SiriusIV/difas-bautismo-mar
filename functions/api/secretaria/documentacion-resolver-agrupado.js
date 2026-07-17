@@ -5,6 +5,7 @@ import {
   construirEmailTextoResolucionExpedienteDocumental
 } from "../_email_resolucion_documental_expediente.js";
 import { recalcularImpactoDocumentalReservasPorPropietario } from "../_impacto_documental_reservas.js";
+import { registrarEventoReserva } from "../_reservas_historial.js";
 import { getSecretariaSession } from "./_documental.js";
 
 function json(data, init = {}) {
@@ -166,6 +167,40 @@ function construirResumenDocumentalParaCorreo(documentosBaseActivos, archivosAct
   return { completo: pendientes.length === 0 && validados.length > 0, validados, pendientes };
 }
 
+async function registrarHistorialRevisionDocumental(env, {
+  expediente,
+  cambios = [],
+  actorUsuarioId,
+  actorRol = "SECRETARIA",
+  actorNombre = ""
+} = {}) {
+  const reservaId = parsearIdPositivo(expediente?.reserva_id);
+  if (!reservaId) return;
+
+  for (const cambio of Array.isArray(cambios) ? cambios : []) {
+    const estado = normalizarEstadoDocumento(cambio?.estado);
+    const accion = estado === "RECHAZADO" ? "DOCUMENTACION_RECHAZADA" : estado === "VALIDADO" ? "DOCUMENTACION_VALIDADA" : "DOCUMENTACION_REVISADA";
+    try {
+      await registrarEventoReserva(env, {
+        reservaId,
+        accion,
+        estadoOrigen: "EN_REVISION",
+        estadoDestino: estado,
+        observaciones: `Documento: ${limpiarTexto(cambio?.nombre_documento) || "Documento"}.${limpiarTexto(cambio?.observaciones_admin) ? ` Observaciones: ${limpiarTexto(cambio.observaciones_admin)}` : ""}`,
+        actorUsuarioId,
+        actorRol,
+        actorNombre
+      });
+    } catch (errorHistorial) {
+      console.error("No se pudo registrar el hito de revisión documental en el historial de la reserva.", {
+        reserva_id: reservaId,
+        documentacion_id: Number(expediente?.id || 0),
+        archivo_id: Number(cambio?.archivo_id || 0),
+        error: errorHistorial?.message || String(errorHistorial || "")
+      });
+    }
+  }
+}
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -328,6 +363,14 @@ export async function onRequestPost(context) {
         error: notificacionCentro.error
       });
     }
+
+    await registrarHistorialRevisionDocumental(env, {
+      expediente,
+      cambios: cambiosAplicados,
+      actorUsuarioId: session.usuario_id,
+      actorRol: "SECRETARIA",
+      actorNombre: nombreVisibleAdmin(secretaria || {})
+    });
 
     const hayRechazos = cambiosAplicados.some((item) => String(item.estado || "").toUpperCase() === "RECHAZADO");
     let notificacionInternaCentro = { ok: false, skipped: true, error: "" };

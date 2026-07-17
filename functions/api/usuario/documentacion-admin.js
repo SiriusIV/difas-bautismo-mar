@@ -13,6 +13,7 @@ import {
 } from "../_actividad_documentacion.js";
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
+import { registrarEventoReserva } from "../_reservas_historial.js";
 import {
   asegurarColumnasContextoDocumental,
   construirCondicionContextoDocumental,
@@ -786,6 +787,38 @@ function resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIds = []) 
     });
 }
 
+async function registrarHistorialDocumentacionRemitida(env, {
+  reservaId,
+  usuario,
+  documentos = [],
+  cambiosIds = []
+} = {}) {
+  const idReserva = parsearIdPositivo(reservaId);
+  if (!idReserva) return;
+
+  const ids = new Set((cambiosIds || []).map((id) => Number(id || 0)).filter((id) => id > 0));
+  const documentosCambiados = (documentos || []).filter((doc) => ids.has(Number(doc.id || 0)));
+  for (const doc of documentosCambiados) {
+    try {
+      await registrarEventoReserva(env, {
+        reservaId: idReserva,
+        accion: "DOCUMENTACION_REMITIDA",
+        estadoOrigen: "NO_PRESENTADO",
+        estadoDestino: "EN_REVISION",
+        observaciones: `Documento remitido: ${limpiarTexto(doc.nombre) || "Documento"}. Propietario documental: ${limpiarTexto(doc.propietario_nombre) || "No indicado"}.`,
+        actorUsuarioId: usuario?.id,
+        actorRol: "SOLICITANTE",
+        actorNombre: usuario?.centro || usuario?.nombre_publico || usuario?.nombre || "Solicitante"
+      });
+    } catch (errorHistorial) {
+      console.error("No se pudo registrar el hito documental remitido en el historial de la reserva.", {
+        reserva_id: idReserva,
+        documento_id: Number(doc.id || 0),
+        error: errorHistorial?.message || String(errorHistorial || "")
+      });
+    }
+  }
+}
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -1267,7 +1300,16 @@ export async function onRequestPost(context) {
       Array.from(expedientesPorPropietario.values())[0] ||
       null;
 
-    const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, Array.from(cambiosRealesIds));
+    const cambiosIdsFinales = Array.from(cambiosRealesIds);
+    const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIdsFinales);
+    if (remisionDefinitiva && cambiosIdsFinales.length > 0) {
+      await registrarHistorialDocumentacionRemitida(env, {
+        reservaId: contextoEntrega.reservaId,
+        usuario,
+        documentos,
+        cambiosIds: cambiosIdsFinales
+      });
+    }
     let notificacionAdmin = { ok: false, skipped: true, error: "", destinatario: "" };
     let notificacionInternaResponsable = { ok: false, skipped: true, error: "" };
 
