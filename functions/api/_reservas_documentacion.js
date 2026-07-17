@@ -15,9 +15,12 @@ function limpiarTexto(valor) {
 }
 
 function normalizarEstadoDocumento(estado) {
-  const valor = limpiarTexto(estado).toUpperCase();
-  if (valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
-  if (valor === "EN REVISIÓN" || valor === "EN REVISION") return "EN_REVISION";
+  const valor = limpiarTexto(estado)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (valor === "VALIDADA" || valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "EN REVISION") return "EN_REVISION";
   return valor || "EN_REVISION";
 }
 
@@ -110,6 +113,25 @@ function calcularEstadoGlobal(documentosActivos, archivosActivos) {
 
 function estadoDocumentalCompleto(estado) {
   return ["VALIDADA", "NO_REQUERIDA"].includes(String(estado || "").toUpperCase());
+}
+
+function normalizarEstadoExpediente(estado) {
+  const valor = normalizarEstadoDocumento(estado);
+  if (valor === "VALIDADO") return "VALIDADA";
+  return valor;
+}
+
+function expedientesDocumentalesCompletos(propietarios = [], expedientesPorPropietario = new Map()) {
+  const ids = (Array.isArray(propietarios) ? propietarios : [])
+    .map((id) => Number(id || 0))
+    .filter((id) => id > 0);
+  if (!ids.length) return false;
+
+  return ids.every((propietarioId) => {
+    const expediente = expedientesPorPropietario.get(propietarioId);
+    if (!expediente) return false;
+    return normalizarEstadoExpediente(expediente.estado) === "VALIDADA";
+  });
 }
 
 function construirDocumentosPendientes(documentosActivos, archivosActivos) {
@@ -253,19 +275,20 @@ export async function validarDocumentacionReserva(env, {
   const archivosActivos = await obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietario);
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosActivos);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosActivos);
-  const okFinal = estadoDocumentalCompleto(estadoDocumental);
+  const expedientesCompletos = expedientesDocumentalesCompletos(propietarios, expedientesPorPropietario);
+  const okFinal = estadoDocumentalCompleto(estadoDocumental) || expedientesCompletos;
   const estadosExpedientes = propietarios.map((propietarioId) =>
-    String(expedientesPorPropietario.get(propietarioId)?.estado || "").trim().toUpperCase()
+    normalizarEstadoExpediente(expedientesPorPropietario.get(propietarioId)?.estado || "")
   ).filter(Boolean);
 
   return {
     ok: okFinal,
     requiere_documentacion: true,
-    estado_documental: estadoDocumental,
+    estado_documental: okFinal ? "VALIDADA" : estadoDocumental,
     estado_expediente: estadosExpedientes.includes("EN_REVISION")
       ? "EN_REVISION"
       : (estadosExpedientes[0] || ""),
-    documentos_pendientes: documentosPendientes,
+    documentos_pendientes: okFinal ? [] : documentosPendientes,
     error: okFinal
       ? ""
       : "Para poder solicitar esta actividad debes remitir la documentación obligatoria vinculada a ella."

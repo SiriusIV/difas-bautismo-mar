@@ -76,7 +76,12 @@ function parsearFechaComparable(valor) {
 }
 
 function normalizarEstadoDocumento(estado) {
-  const valor = limpiarTexto(estado).toUpperCase();
+  const valor = limpiarTexto(estado)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (valor === "VALIDADA" || valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
+  if (valor === "EN REVISION") return "EN_REVISION";
   return valor || "EN_REVISION";
 }
 
