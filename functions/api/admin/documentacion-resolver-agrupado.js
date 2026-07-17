@@ -160,7 +160,10 @@ async function registrarHistorialRevisionDocumental(env, {
   actorRol = "ADMIN",
   actorNombre = ""
 } = {}) {
-  const reservaId = parsearIdPositivo(expediente?.reserva_id);
+  const reservaId = parsearIdPositivo(expediente?.reserva_id) ||
+    (Array.isArray(cambios)
+      ? cambios.map((cambio) => parsearIdPositivo(cambio?.reserva_id)).find(Boolean)
+      : null);
   if (!reservaId) return;
 
   for (const cambio of Array.isArray(cambios) ? cambios : []) {
@@ -256,7 +259,9 @@ export async function onRequestPost(context) {
         a.archivo_url,
         a.version_documental,
         a.estado,
-        a.observaciones_admin
+        a.observaciones_admin,
+        a.actividad_id,
+        a.reserva_id
       FROM centro_admin_documentacion_archivos a
       INNER JOIN admin_documentos_comunes d
         ON d.admin_id = ?
@@ -300,6 +305,8 @@ export async function onRequestPost(context) {
       cambiosAplicados.push({
         archivo_id: archivoId,
         nombre_documento: archivo.nombre_documento || "",
+        actividad_id: archivo.actividad_id || null,
+        reserva_id: archivo.reserva_id || null,
         estado,
         observaciones_admin: observaciones
       });
