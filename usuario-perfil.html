@@ -1601,7 +1601,7 @@
             Bandeja de entrada
           </button>
           <button type="button" class="tab-documentacion-admin-btn" id="tabDocumentacionAdminActiva" data-tab-admin-doc="activa" role="tab" aria-selected="false">
-            Documentaci??n activa
+            Documentación activa
           </button>
           <div class="tabs-documentacion-admin-acciones">
             <button type="button" class="btn-actualizar-estado-docs" id="btnActualizarEstadosDocs" disabled>
@@ -1655,6 +1655,24 @@
             </table>
           </div>
           <div class="estado-vacio-docs oculto" id="estadoVacioPendientesDocumentacionAdmin">No hay expedientes pendientes de revisión documental.</div>
+        </div>
+        <div class="panel-documentacion-admin" id="panelDocumentacionAdminActiva" role="tabpanel" aria-labelledby="tabDocumentacionAdminActiva">
+          <div class="tabla-pendientes-admin-wrap">
+            <table class="tabla-pendientes-admin">
+              <thead>
+                <tr>
+                  <th>Solicitante</th>
+                  <th>Actividad</th>
+                  <th>Documento</th>
+                  <th>Estado</th>
+                  <th>Última actualización</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaDocumentacionActivaAdminBody"></tbody>
+            </table>
+          </div>
+          <div class="estado-vacio-docs oculto" id="estadoVacioDocumentacionActivaAdmin">No hay documentación vigente asociada a solicitudes activas.</div>
         </div>
         </div>
 </div>
@@ -3324,7 +3342,7 @@
       const normalizado = String(estado || "").trim().toUpperCase();
       if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(normalizado)) return "Validado";
       if (["RECHAZADO", "RECHAZADA"].includes(normalizado)) return "Rechazado";
-      return "En revisi?n";
+      return "En revisión";
     }
 
     function renderizarDocumentacionActivaAdmin() {
@@ -3336,14 +3354,14 @@
       if (!esRepositorioDocumentalEditable()) {
         documentacionActivaSeleccionId = null;
         vacio.classList.remove("oculto");
-        vacio.textContent = "La documentaci?n activa solo est? disponible para propietarios documentales.";
+        vacio.textContent = "La documentación activa solo está disponible para propietarios documentales.";
         return;
       }
 
       if (!documentacionActivaAdmin.length) {
         documentacionActivaSeleccionId = null;
         vacio.classList.remove("oculto");
-        vacio.textContent = "No hay documentaci?n vigente asociada a solicitudes activas.";
+        vacio.textContent = "No hay documentación vigente asociada a solicitudes activas.";
         return;
       }
 
@@ -3377,10 +3395,10 @@
           </td>
           <td data-label="Documento">
             <div>${item.nombre_documento || "Documento"}</div>
-            <div class="pendiente-admin-sublinea">Versi?n ${Number(item.version_documental || 0)}</div>
+            <div class="pendiente-admin-sublinea">Versión ${Number(item.version_documental || 0)}</div>
           </td>
           <td data-label="Estado"><span class="estado-doc-activo-badge ${claseEstado}">${etiquetaEstadoDocumentoActivo(item.estado)}</span></td>
-          <td data-label="?ltima actualizaci?n">${formatearFechaCorta(item.fecha_validacion || item.fecha_ultima_entrega || "")}</td>
+          <td data-label="Última actualización">${formatearFechaCorta(item.fecha_validacion || item.fecha_ultima_entrega || "")}</td>
           <td data-label="Acciones">
             <div class="acciones-tabla-iconos">
               <button type="button" class="btn-ver-doc-base-fila" data-ver-documento-activo="${archivoId}" title="Ver documento remitido" aria-label="Ver documento remitido" ${item.archivo_url ? "" : "disabled"}>
@@ -3752,14 +3770,14 @@
         const res = await fetch(url.toString(), { credentials: "include", cache: "no-store" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo cargar la documentaci?n activa.");
+          throw new Error(data?.error || "No se pudo cargar la documentación activa.");
         }
         documentacionActivaAdmin = Array.isArray(data?.expedientes) ? data.expedientes : [];
         renderizarDocumentacionActivaAdmin();
       } catch (error) {
         documentacionActivaAdmin = [];
         renderizarDocumentacionActivaAdmin();
-        mostrarMensajePerfilTemporal("error", error.message || "No se pudo cargar la documentaci?n activa.");
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo cargar la documentación activa.");
       }
     }
 
