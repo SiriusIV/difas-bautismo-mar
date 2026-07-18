@@ -2917,7 +2917,13 @@ function obtenerDisponiblesFormulario(franja) {
         await cargarDocumentacionSolicitud();
         mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${construirAvisoCorreoAdmin(data)}`);
         aplicarAccionDocumentacionModal(extraerAccesoDocumentacion(data));
-        document.querySelector("#modalConfirmacionEnvio .acciones").innerHTML = "";
+        const accionesConfirmacion = document.querySelector("#modalConfirmacionEnvio .acciones");
+        if (accionesConfirmacion) {
+          accionesConfirmacion.innerHTML = `
+            <button type="button" id="btnIrAsistentesConfirmacion">Agregar asistentes</button>
+          `;
+          document.getElementById("btnIrAsistentesConfirmacion")?.addEventListener("click", abrirGestionAsistentes);
+        }
         redireccionPendienteTrasConfirmacion = "usuario-panel.html";
 
       } catch (error) {
@@ -2925,7 +2931,8 @@ function obtenerDisponiblesFormulario(franja) {
         aplicarAccionDocumentacionModal(error?.documentacion || null);
       } finally {
         envioEnCurso = false;
-        document.getElementById("btnConfirmarEnvio").disabled = false;
+        const btnConfirmar = document.getElementById("btnConfirmarEnvio");
+        if (btnConfirmar) btnConfirmar.disabled = false;
         document.getElementById("btnPrepararEnvio").disabled = false;
         document.getElementById("btnGuardarBorrador").disabled = false;
       }
