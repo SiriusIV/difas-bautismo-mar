@@ -435,7 +435,7 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
     LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
-      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_REVISION', 'SUSPENDIDA')
     ORDER BY r.fecha_solicitud ASC, r.id ASC
   `).bind(adminId, usuarioId).all();
 
@@ -920,7 +920,22 @@ export async function recalcularImpactoDocumentalReservas(env, {
       );
 
       if (estadoDocumentalCompleto(estadoDocumentalReserva)) {
-        if (estadoReserva === "SUSPENDIDA") {
+        if (estadoReserva === "EN_REVISION") {
+          const estadoDestino = "PENDIENTE";
+          await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
+          await registrarEventoReserva(env, {
+            reservaId: Number(reserva.id || 0),
+            accion: "REACTIVACION_DOCUMENTAL",
+            estadoOrigen: "EN_REVISION",
+            estadoDestino,
+            observaciones: "La documentación exigible de la actividad vuelve a estar completa y queda pendiente de autorización."
+          });
+          reservasReactivadas.push({
+            ...reserva,
+            estado_reactivado: estadoDestino
+          });
+          resumen.reservas_reactivadas += 1;
+        } else if (estadoReserva === "SUSPENDIDA") {
           const estadoDestino = await obtenerEstadoPrevioSuspensionDocumental(env, Number(reserva.id || 0));
           await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
           await registrarEventoReserva(env, {
@@ -949,17 +964,23 @@ export async function recalcularImpactoDocumentalReservas(env, {
           reservasEliminadas.push(reserva);
           resumen.reservas_eliminadas_plazo_critico += 1;
         }
-      } else if (estadoReserva !== "SUSPENDIDA") {
-        await actualizarEstadoReserva(env, Number(reserva.id || 0), "SUSPENDIDA");
+      } else {
+        const estadoDestinoDocumental = estadoDocumentalReserva === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+        if (estadoReserva === estadoDestinoDocumental) continue;
+        await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestinoDocumental);
         await registrarEventoReserva(env, {
           reservaId: Number(reserva.id || 0),
-          accion: "SUSPENSION_DOCUMENTAL",
+          accion: estadoDestinoDocumental === "EN_REVISION" ? "REVISION_DOCUMENTAL" : "SUSPENSION_DOCUMENTAL",
           estadoOrigen: estadoReserva,
-          estadoDestino: "SUSPENDIDA",
-          observaciones: "La actividad exige documentación pendiente, rechazada o desactualizada."
+          estadoDestino: estadoDestinoDocumental,
+          observaciones: estadoDestinoDocumental === "EN_REVISION"
+            ? "La actividad tiene documentación remitida pendiente de revisión por sus propietarios documentales."
+            : "La actividad exige documentación pendiente, rechazada o desactualizada."
         });
-        reservasSuspendidas.push(reserva);
-        resumen.reservas_suspendidas += 1;
+        if (estadoDestinoDocumental === "SUSPENDIDA") {
+          reservasSuspendidas.push(reserva);
+          resumen.reservas_suspendidas += 1;
+        }
       }
     }
 

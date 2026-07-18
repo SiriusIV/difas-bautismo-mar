@@ -560,6 +560,10 @@
     .tabla-pendientes-admin .select-estado-revision.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .tabla-pendientes-admin .select-estado-revision.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .tabla-pendientes-admin tr:hover td { background: #f9fbff; }
+    .estado-doc-activo-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 88px; padding: 7px 10px; border-radius: 999px; border: 1px solid #c9dcff; background: #eef4ff; color: #1d4f91; font-size: 12px; font-weight: 700; }
+    .estado-doc-activo-badge.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .estado-doc-activo-badge.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .estado-doc-activo-badge.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .btn-observacion-pendiente { appearance: none; border: none; background: transparent; padding: 0; margin: 0 auto; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
     .btn-observacion-pendiente img { width: 20px; height: 20px; display: block; object-fit: contain; }
     .btn-observacion-pendiente:disabled { opacity: 0.32; cursor: default; }
@@ -1596,6 +1600,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M3 7h18"></path><path d="M6 12h12"></path><path d="M10 17h4"></path></svg>
             Bandeja de entrada
           </button>
+          <button type="button" class="tab-documentacion-admin-btn" id="tabDocumentacionAdminActiva" data-tab-admin-doc="activa" role="tab" aria-selected="false">
+            Documentaci??n activa
+          </button>
           <div class="tabs-documentacion-admin-acciones">
             <button type="button" class="btn-actualizar-estado-docs" id="btnActualizarEstadosDocs" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1975,6 +1982,8 @@
     let documentacionAdminSeleccionId = null;
     let documentacionAdminVistaActual = "base";
     let pendientesRevisionAdmin = [];
+    let documentacionActivaAdmin = [];
+    let documentacionActivaSeleccionId = null;
     let pendienteRevisionSeleccionId = null;
     let cambiosPendientesRevisionAdmin = new Map();
     let salidaPendienteRevisionDocumental = null;
@@ -3199,19 +3208,23 @@
     }
 
     function activarVistaDocumentacionAdmin(vista = "base") {
-      const puedeVerPendientes = esRepositorioDocumentalEditable();
-      const objetivo = vista === "pendientes" && puedeVerPendientes ? "pendientes" : "base";
+      const puedeVerSeguimiento = esRepositorioDocumentalEditable();
+      const objetivo = ["pendientes", "activa"].includes(vista) && puedeVerSeguimiento ? vista : "base";
       const tabsWrap = document.querySelector(".tabs-documentacion-admin");
-      const tieneVariasVistas = esRepositorioDocumentalEditable();
+      const tieneVariasVistas = puedeVerSeguimiento;
       documentacionAdminVistaActual = objetivo;
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("activa", objetivo === "base");
       document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("activa", objetivo === "pendientes");
+      document.getElementById("tabDocumentacionAdminActiva").classList.toggle("activa", objetivo === "activa");
       document.getElementById("tabDocumentacionAdminBase").setAttribute("aria-selected", objetivo === "base" ? "true" : "false");
       document.getElementById("tabDocumentacionAdminPendientes").setAttribute("aria-selected", objetivo === "pendientes" ? "true" : "false");
+      document.getElementById("tabDocumentacionAdminActiva").setAttribute("aria-selected", objetivo === "activa" ? "true" : "false");
       document.getElementById("panelDocumentacionAdminBase").classList.toggle("activo", objetivo === "base");
       document.getElementById("panelDocumentacionAdminPendientes").classList.toggle("activo", objetivo === "pendientes");
+      document.getElementById("panelDocumentacionAdminActiva").classList.toggle("activo", objetivo === "activa");
       document.getElementById("tabDocumentacionAdminBase").classList.toggle("oculto", !tieneVariasVistas);
-      document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("oculto", !esRepositorioDocumentalEditable());
+      document.getElementById("tabDocumentacionAdminPendientes").classList.toggle("oculto", !puedeVerSeguimiento);
+      document.getElementById("tabDocumentacionAdminActiva").classList.toggle("oculto", !puedeVerSeguimiento);
       tabsWrap?.classList.toggle("oculto", !tieneVariasVistas);
       actualizarAccionesDocumentacionAdmin();
     }
@@ -3298,6 +3311,91 @@
       });
       actualizarAccionesDocumentacionAdmin();
       actualizarBotonActualizarEstadosDocs();
+    }
+
+    function claseEstadoDocumentoActivo(estado) {
+      const normalizado = String(estado || "").trim().toUpperCase();
+      if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(normalizado)) return "estado-validado";
+      if (["RECHAZADO", "RECHAZADA"].includes(normalizado)) return "estado-rechazado";
+      return "estado-revision";
+    }
+
+    function etiquetaEstadoDocumentoActivo(estado) {
+      const normalizado = String(estado || "").trim().toUpperCase();
+      if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(normalizado)) return "Validado";
+      if (["RECHAZADO", "RECHAZADA"].includes(normalizado)) return "Rechazado";
+      return "En revisi?n";
+    }
+
+    function renderizarDocumentacionActivaAdmin() {
+      const body = document.getElementById("tablaDocumentacionActivaAdminBody");
+      const vacio = document.getElementById("estadoVacioDocumentacionActivaAdmin");
+      if (!body || !vacio) return;
+      body.innerHTML = "";
+
+      if (!esRepositorioDocumentalEditable()) {
+        documentacionActivaSeleccionId = null;
+        vacio.classList.remove("oculto");
+        vacio.textContent = "La documentaci?n activa solo est? disponible para propietarios documentales.";
+        return;
+      }
+
+      if (!documentacionActivaAdmin.length) {
+        documentacionActivaSeleccionId = null;
+        vacio.classList.remove("oculto");
+        vacio.textContent = "No hay documentaci?n vigente asociada a solicitudes activas.";
+        return;
+      }
+
+      vacio.classList.add("oculto");
+      const existeSeleccion = documentacionActivaAdmin.some((item) => Number(item.archivo_id || 0) === Number(documentacionActivaSeleccionId || 0));
+      if (!existeSeleccion) {
+        documentacionActivaSeleccionId = Number(documentacionActivaAdmin[0]?.archivo_id || 0) || null;
+      }
+
+      documentacionActivaAdmin.forEach((item) => {
+        const tr = document.createElement("tr");
+        const archivoId = Number(item.archivo_id || 0);
+        tr.dataset.archivoActivoId = String(archivoId);
+        tr.classList.toggle("fila-seleccionada", archivoId === Number(documentacionActivaSeleccionId || 0));
+        const sublineaSolicitante = esSecretaria()
+          ? `<div class="pendiente-admin-sublinea">Administrador: ${item.admin_nombre_publico || item.admin_nombre || "Administrador"}</div>`
+          : "";
+        const fechaActividad = item.fecha_franja
+          ? `<div class="pendiente-admin-sublinea">${formatearFechaCorta(item.fecha_franja)}${item.hora_inicio || item.hora_fin ? ` ? ${item.hora_inicio || ""}${item.hora_fin ? ` - ${item.hora_fin}` : ""}` : ""}</div>`
+          : "";
+        const claseEstado = claseEstadoDocumentoActivo(item.estado);
+        tr.innerHTML = `
+          <td data-label="Solicitante">
+            <div class="pendiente-admin-solicitante">${item.centro || "Solicitante"}</div>
+            ${sublineaSolicitante}
+          </td>
+          <td data-label="Actividad">
+            <div>${item.actividad_nombre || "Actividad"}</div>
+            <div class="pendiente-admin-sublinea">${item.codigo_reserva || ""}</div>
+            ${fechaActividad}
+          </td>
+          <td data-label="Documento">
+            <div>${item.nombre_documento || "Documento"}</div>
+            <div class="pendiente-admin-sublinea">Versi?n ${Number(item.version_documental || 0)}</div>
+          </td>
+          <td data-label="Estado"><span class="estado-doc-activo-badge ${claseEstado}">${etiquetaEstadoDocumentoActivo(item.estado)}</span></td>
+          <td data-label="?ltima actualizaci?n">${formatearFechaCorta(item.fecha_validacion || item.fecha_ultima_entrega || "")}</td>
+          <td data-label="Acciones">
+            <div class="acciones-tabla-iconos">
+              <button type="button" class="btn-ver-doc-base-fila" data-ver-documento-activo="${archivoId}" title="Ver documento remitido" aria-label="Ver documento remitido" ${item.archivo_url ? "" : "disabled"}>
+                <img src="assets/icono-ver-documento.svg" alt="">
+              </button>
+              ${item.observaciones_admin ? `
+                <button type="button" class="btn-observacion-pendiente" data-ver-observacion-activa="${archivoId}" title="Ver observaciones" aria-label="Ver observaciones">
+                  <img src="assets/icono-advertencia-documental.svg" alt="">
+                </button>
+              ` : ""}
+            </div>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
     }
 
     function nombrePropietarioDocumental(item) {
@@ -3555,8 +3653,10 @@
         propietariosDocumentalesVinculadosOriginalAdmin = new Set();
         cambiosPendientesPropietariosDocumentalesAdmin = false;
         pendientesRevisionAdmin = [];
+        documentacionActivaAdmin = [];
         renderizarBloqueDocumentacionAdmin();
         renderizarPendientesRevisionAdmin();
+        renderizarDocumentacionActivaAdmin();
         return;
       }
 
@@ -3604,9 +3704,12 @@
         activarVistaDocumentacionAdmin(documentacionAdminVistaActual);
         if (esRepositorioDocumentalEditable()) {
           await cargarPendientesRevisionAdmin();
+          await cargarDocumentacionActivaAdmin();
         } else {
           pendientesRevisionAdmin = [];
+          documentacionActivaAdmin = [];
           renderizarPendientesRevisionAdmin();
+          renderizarDocumentacionActivaAdmin();
         }
       } catch (error) {
         documentacionAdminContexto = {
@@ -3626,7 +3729,37 @@
         cambiosPendientesPropietariosDocumentalesAdmin = false;
         renderizarBloqueDocumentacionAdmin();
         pendientesRevisionAdmin = [];
+        documentacionActivaAdmin = [];
         renderizarPendientesRevisionAdmin();
+        renderizarDocumentacionActivaAdmin();
+      }
+    }
+
+    async function cargarDocumentacionActivaAdmin() {
+      if (!esRepositorioDocumentalEditable()) {
+        documentacionActivaAdmin = [];
+        renderizarDocumentacionActivaAdmin();
+        return;
+      }
+
+      try {
+        const adminId = Number(documentacionAdminContexto?.admin_id || 0);
+        const url = new URL(esSecretaria() ? "/api/secretaria/documentacion-activa" : "/api/admin/documentacion-activa", window.location.origin);
+        if (!esSecretaria() && adminId > 0) {
+          url.searchParams.set("admin_id", String(adminId));
+        }
+        url.searchParams.set("_ts", String(Date.now()));
+        const res = await fetch(url.toString(), { credentials: "include", cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || "No se pudo cargar la documentaci?n activa.");
+        }
+        documentacionActivaAdmin = Array.isArray(data?.expedientes) ? data.expedientes : [];
+        renderizarDocumentacionActivaAdmin();
+      } catch (error) {
+        documentacionActivaAdmin = [];
+        renderizarDocumentacionActivaAdmin();
+        mostrarMensajePerfilTemporal("error", error.message || "No se pudo cargar la documentaci?n activa.");
       }
     }
 
@@ -3796,6 +3929,7 @@
         }
         mostrarMensajePerfilTemporal("ok", "Estados documentales actualizados.");
         await cargarPendientesRevisionAdmin();
+        await cargarDocumentacionActivaAdmin();
       } finally {
         actualizarBotonActualizarEstadosDocs();
       }
@@ -4595,6 +4729,7 @@
           return;
         }
         activarVistaDocumentacionAdmin(destino);
+        if (destino === "activa") void cargarDocumentacionActivaAdmin();
       });
     });    document.getElementById("btnEliminarImagen").addEventListener("click", eliminarImagenActual);
     document.getElementById("inputImagenAdmin").addEventListener("change", (event) => {
@@ -4701,6 +4836,36 @@
         await cargarDocumentacionAdmin();
       } catch (error) {
         mostrarMensajePerfilTemporal("error", error.message || "No se pudo eliminar el documento.");
+      }
+    });
+    document.getElementById("tablaDocumentacionActivaAdminBody")?.addEventListener("click", function (event) {
+      const botonVer = event.target.closest("[data-ver-documento-activo]");
+      if (botonVer) {
+        const archivoId = Number.parseInt(botonVer.dataset.verDocumentoActivo || "", 10);
+        const item = (documentacionActivaAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
+        if (!item || !String(item.archivo_url || "").trim()) return;
+        window.open(item.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const botonObservaciones = event.target.closest("[data-ver-observacion-activa]");
+      if (botonObservaciones) {
+        const archivoId = Number.parseInt(botonObservaciones.dataset.verObservacionActiva || "", 10);
+        const item = (documentacionActivaAdmin || []).find((fila) => Number(fila.archivo_id || 0) === archivoId);
+        if (!item || !String(item.observaciones_admin || "").trim()) return;
+        abrirModalObservacionesDocumento(item, {
+          subtitulo: item?.nombre_documento || "Documento",
+          estado: item?.estado || "EN_REVISION",
+          observaciones: item?.observaciones_admin || "",
+          editable: false
+        });
+        return;
+      }
+      const fila = event.target.closest("tr[data-archivo-activo-id]");
+      if (fila && !event.target.closest("button, a, select, option, input, label")) {
+        const archivoId = Number.parseInt(fila.dataset.archivoActivoId || "", 10);
+        if (!Number.isInteger(archivoId) || archivoId <= 0) return;
+        documentacionActivaSeleccionId = archivoId;
+        renderizarDocumentacionActivaAdmin();
       }
     });
     document.getElementById("tablaPendientesDocumentacionAdminBody").addEventListener("click", function (event) {
@@ -4968,11 +5133,13 @@
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible" && puedeAutoRefrescarPendientesRevision()) {
         void cargarPendientesRevisionAdmin();
+        if (documentacionAdminVistaActual === "activa") void cargarDocumentacionActivaAdmin();
       }
     });
     window.addEventListener("focus", function () {
       if (puedeAutoRefrescarPendientesRevision()) {
         void cargarPendientesRevisionAdmin();
+        if (documentacionAdminVistaActual === "activa") void cargarDocumentacionActivaAdmin();
       }
     });
 

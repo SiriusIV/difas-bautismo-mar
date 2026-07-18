@@ -1789,7 +1789,7 @@
         if (observacionesAdmin) {
           return "Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador.";
         }
-        return "La solicitud ha sido aceptada y ya no requiere ninguna corrección por tu parte.";
+        return "La solicitud ha sido aceptada. Puedes consultar la documentación remitida o acceder al panel de asistentes mientras la solicitud siga activa.";
       }
       if (estado === "PENDIENTE") {
         return "Su solicitud está en proceso de revisión. Si lo desea, puede actualizar/revisar la documentación obligatoria para la realización de la actividad o acceder al panel de asistentes.";
@@ -1859,13 +1859,13 @@
         return acciones;
       }
 
-      if (reserva?.token_edicion && estado !== "CANCELADA" && estado !== "CONFIRMADA") {
+      if (reserva?.token_edicion && estado !== "CANCELADA") {
         acciones.push({
           label: "Gestionar asistentes",
           onClick: () => abrirAsistentes(reserva.token_edicion)
         });
       }
-      if (Number(reserva?.admin_id || 0) > 0 && estado !== "CONFIRMADA" && estado !== "CANCELADA") {
+      if (Number(reserva?.admin_id || 0) > 0 && estado !== "CANCELADA") {
         acciones.push({
           label: "Ver documentación",
           onClick: () => abrirDocumentacionReserva(reserva.id)
