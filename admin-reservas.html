@@ -896,7 +896,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       const lista = visitantes.length
         ? `<ol class="estado-modal-lista-nombres">${visitantes.map((v) => `<li>${escapeHtml(v.nombre_completo || "Asistente")}${v.perfil_asistente ? ` <span class="muted">(${escapeHtml(v.perfil_asistente)})</span>` : ""}</li>`).join("")}</ol>`
         : `<p class="muted">No constan asistentes cargados todavía.</p>`;
-      return `<div class="estado-modal-seccion"><h4>Asistentes</h4><p><strong>Total actual:</strong> ${total}</p>${lista}</div>`;
+      return `<div class="estado-modal-seccion"><h4>Asistentes <span class="muted">(total: ${total})</span></h4>${lista}</div>`;
     }
     function renderObservacionesSolicitudAdmin(reserva) {
       const observaciones = String(reserva?.observaciones || "").trim();

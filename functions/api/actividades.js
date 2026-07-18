@@ -116,7 +116,7 @@ export async function onRequestGet(context) {
             f.capacidad,
             COALESCE(SUM(
               CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                   CASE
                     WHEN r.prereserva_expira_en IS NOT NULL
                          AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -209,7 +209,7 @@ export async function onRequestGet(context) {
               THEN COALESCE((
                 SELECT COALESCE(SUM(
                   CASE
-                    WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                    WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                       CASE
                         WHEN r.prereserva_expira_en IS NOT NULL
                              AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -241,7 +241,7 @@ export async function onRequestGet(context) {
               THEN MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                 SELECT COALESCE(SUM(
                   CASE
-                    WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                    WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                       CASE
                         WHEN r.prereserva_expira_en IS NOT NULL
                              AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -280,7 +280,7 @@ export async function onRequestGet(context) {
                     AND MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                       SELECT COALESCE(SUM(
                         CASE
-                          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                             CASE
                               WHEN r.prereserva_expira_en IS NOT NULL
                                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -346,7 +346,7 @@ export async function onRequestGet(context) {
           f.capacidad,
           COALESCE(SUM(
             CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+              WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                 CASE
                   WHEN r.prereserva_expira_en IS NOT NULL
                        AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -442,7 +442,7 @@ export async function onRequestGet(context) {
             THEN COALESCE((
               SELECT COALESCE(SUM(
                 CASE
-                  WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                  WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                     CASE
                       WHEN r.prereserva_expira_en IS NOT NULL
                            AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -474,7 +474,7 @@ export async function onRequestGet(context) {
             THEN MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
               SELECT COALESCE(SUM(
                 CASE
-                  WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                  WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                     CASE
                       WHEN r.prereserva_expira_en IS NOT NULL
                            AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -515,7 +515,7 @@ export async function onRequestGet(context) {
                   AND MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                     SELECT COALESCE(SUM(
                       CASE
-                        WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                        WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
                           CASE
                             WHEN r.prereserva_expira_en IS NOT NULL
                                  AND datetime('now') <= datetime(r.prereserva_expira_en)

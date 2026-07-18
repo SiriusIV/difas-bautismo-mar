@@ -132,19 +132,6 @@ function normalizarEstadoExpediente(estado) {
   return valor;
 }
 
-function expedientesDocumentalesCompletos(propietarios = [], expedientesPorPropietario = new Map()) {
-  const ids = (Array.isArray(propietarios) ? propietarios : [])
-    .map((id) => Number(id || 0))
-    .filter((id) => id > 0);
-  if (!ids.length) return false;
-
-  return ids.every((propietarioId) => {
-    const expediente = expedientesPorPropietario.get(propietarioId);
-    if (!expediente) return false;
-    return normalizarEstadoExpediente(expediente.estado) === "VALIDADA";
-  });
-}
-
 function construirDocumentosPendientes(documentosActivos, archivosActivos) {
   const archivosPorDocumento = indexarArchivosPorDocumento(archivosActivos);
 
@@ -421,8 +408,7 @@ export async function validarDocumentacionReserva(env, {
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosParaCalculo);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosParaCalculo);
   const documentosEstado = construirDocumentosEstado(documentosExigibles, archivosParaCalculo);
-  const expedientesCompletos = expedientesDocumentalesCompletos(propietarios, expedientesPorPropietario);
-  const okFinal = estadoDocumentalCompleto(estadoDocumental) || expedientesCompletos;
+  const okFinal = estadoDocumentalCompleto(estadoDocumental);
   const estadosExpedientes = propietarios.map((propietarioId) =>
     normalizarEstadoExpediente(expedientesPorPropietario.get(propietarioId)?.estado || "")
   ).filter(Boolean);

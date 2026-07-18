@@ -858,6 +858,20 @@ async function crearNotificacionSolicitanteReservaReabierta(env, contexto = {}) 
   });
 }
 
+async function crearNotificacionSolicitanteReservaRevisionDocumental(env, contexto = {}) {
+  const usuarioId = Number(contexto?.usuario_id || 0);
+  if (!(usuarioId > 0)) return { ok: false, skipped: true, error: "Solicitud sin usuario asociado." };
+
+  return await crearNotificacion(env, {
+    usuarioId,
+    rolDestino: "SOLICITANTE",
+    tipo: "RESERVA",
+    titulo: "Solicitud en revisión documental",
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} queda en revisión documental hasta que la documentación obligatoria esté actualizada y validada.`,
+    urlDestino: "/usuario-panel.html"
+  });
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -1081,7 +1095,10 @@ export async function onRequestGet(context) {
       reservaId: id
     });
 
-    if (!validacionDocumental.ok) {
+    const confirmacionDiferidaPorDocumentacion = !validacionDocumental.ok && nuevoEstado === "CONFIRMADA";
+    if (confirmacionDiferidaPorDocumentacion) {
+      nuevoEstado = "EN_REVISION";
+    } else if (!validacionDocumental.ok) {
       return json(
         {
           ok: false,
@@ -1094,7 +1111,7 @@ export async function onRequestGet(context) {
     }
 
     const limpiarObservacionesRechazo =
-      estadoActual === "RECHAZADA" && (nuevoEstado === "CONFIRMADA" || nuevoEstado === "PENDIENTE");
+      estadoActual === "RECHAZADA" && (nuevoEstado === "CONFIRMADA" || nuevoEstado === "PENDIENTE" || nuevoEstado === "EN_REVISION");
     const rechazoEliminaEn = nuevoEstado === "RECHAZADA"
       ? formatearFechaDb(calcularFechaEliminacionRechazo(contextoReserva))
       : "";
@@ -1161,6 +1178,8 @@ export async function onRequestGet(context) {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaRechazada(env, contextoNotificacion);
       } else if (nuevoEstado === "PENDIENTE") {
         notificacionSolicitante = await crearNotificacionSolicitanteReservaReabierta(env, contextoNotificacion);
+      } else if (nuevoEstado === "EN_REVISION") {
+        notificacionSolicitante = await crearNotificacionSolicitanteReservaRevisionDocumental(env, contextoNotificacion);
       }
       correoSolicitante = await enviarCorreoSolicitanteCambioEstado(env, contextoNotificacion, nuevoEstado);
       if (!correoSolicitante.ok && !correoSolicitante.skipped) {
@@ -1187,7 +1206,9 @@ export async function onRequestGet(context) {
 
     return json({
       ok: true,
-      mensaje: `Estado actualizado a ${nuevoEstado}.`,
+      mensaje: confirmacionDiferidaPorDocumentacion
+        ? "La solicitud queda en revisión documental hasta que todos los documentos obligatorios estén actualizados y validados."
+        : `Estado actualizado a ${nuevoEstado}.`,
       notificacion_solicitante: {
         creada: !!notificacionSolicitante.ok,
         error: notificacionSolicitante.ok ? "" : (notificacionSolicitante.error || "")
