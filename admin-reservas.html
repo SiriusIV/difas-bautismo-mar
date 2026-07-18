@@ -115,7 +115,7 @@
     .modal { position: relative; background: #fff; width: 100%; max-width: 720px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 24px; }
     .modal h3 { margin: 0 0 14px; font-size: 24px; }
     .modal-contenido { background: #f7f9fb; border: 1px solid #dde4ea; border-radius: 8px; padding: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-    .modal-contenido.estado-modal-admin { white-space: normal; background: #eef4ff; border-color: #c9dcff; }
+    .modal-contenido.estado-modal-admin { white-space: normal; background: #eef4ff; border-color: #c9dcff; padding: 10px 12px; line-height: 1.38; font-size: 12.5px; }
     .campo-modal { margin-top: 14px; }
     .campo-modal textarea { width: 100%; min-height: 110px; box-sizing: border-box; border: 1px solid #c9cfd6; border-radius: 8px; padding: 10px 12px; font-family: Arial, sans-serif; font-size: 13px; resize: vertical; }
     .nota-modal-admin { margin-top: 10px; color: #8a5b00; font-size: 12px; line-height: 1.45; }
@@ -132,14 +132,14 @@
     .estado-modal-superior {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 16px;
+      gap: 10px;
       align-items: start;
     }
     .estado-modal-lineas {
       display: grid;
-      gap: 6px;
+      gap: 4px;
       color: #21374d;
-      font-size: 13px;
+      font-size: 12.5px;
     }
     .estado-modal-botones {
       display: flex;
@@ -149,19 +149,20 @@
       justify-self: end;
       min-width: 0;
     }
-    .estado-modal-seccion { margin-top: 12px; padding: 10px 12px; border: 1px solid #dbe4ee; border-radius: 10px; background: #fff; }
-    .estado-modal-seccion h4 { margin: 0 0 8px; color: #123a63; font-size: 13px; }
-    .estado-modal-lista { display: grid; gap: 8px; }
-    .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid #edf2f7; }
+    .estado-modal-seccion { margin-top: 8px; padding: 8px 10px; border: 1px solid #dbe4ee; border-radius: 9px; background: #fff; }
+    .estado-modal-seccion h4 { margin: 0 0 6px; color: #123a63; font-size: 12.5px; }
+    .estado-modal-seccion p { margin: 0; }
+    .estado-modal-lista { display: grid; gap: 4px; }
+    .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #edf2f7; }
     .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
-    .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .estado-modal-grid div { padding: 8px 10px; border-radius: 8px; background: #f7f9fb; border: 1px solid #e5ebf2; }
-    .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 11px; margin-bottom: 3px; }
-    .estado-modal-lista-nombres { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+    .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
+    .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 10.5px; margin-bottom: 2px; }
+    .estado-modal-lista-nombres { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
     .btn-accion-estado-icono {
-      width: 128px;
-      height: 128px;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       border: 0;
       background: transparent;
       display: inline-flex;
@@ -173,8 +174,8 @@
       padding: 0;
     }
     .btn-accion-estado-icono img {
-      width: 112px;
-      height: 112px;
+      width: 34px;
+      height: 34px;
       object-fit: contain;
       display: block;
     }
@@ -185,6 +186,9 @@
     }
     .btn-accion-estado-icono.confirmar,
     .btn-accion-estado-icono.rechazar { background: transparent; }
+    .estado-modal-admin .campo-modal { margin-top: 8px; }
+    .estado-modal-admin .campo-modal textarea { min-height: 76px; font-size: 12.5px; line-height: 1.35; padding: 8px 10px; }
+    .estado-modal-admin .nota-modal-admin.aviso { margin-top: 8px; padding: 8px 10px; line-height: 1.35; }
     .mensaje-modal-admin { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45; display: none; }
     .mensaje-modal-admin.error { display: block; background: #fdeaea; color: #9b1c1c; border: 1px solid #f5c2c2; }
     .modal.modal-historial-compacto { max-width: 680px; padding: 20px; }
@@ -852,7 +856,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (["RECHAZADO", "RECHAZADA"].includes(valor)) return "Rechazado";
       if (["NO_ENVIADO", "NO_PRESENTADO", "NO_INICIADO", "NO_COMPLETADO"].includes(valor)) return "No presentado";
       if (["NO_ACTUALIZADO"].includes(valor)) return "No actualizado";
-      return "En revisi?n";
+      return "En revisión";
     }
     function claseEstadoDocumentalAdmin(estado) {
       const valor = String(estado || "").trim().toUpperCase();
@@ -862,12 +866,12 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     function renderDocumentacionSolicitudAdmin(reserva) {
       const requiere = Number(reserva?.requiere_documentacion || 0) === 1 || Array.isArray(reserva?.documentos_estado);
-      if (!requiere) return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><p class="muted">Esta solicitud no tiene documentaci?n obligatoria asociada.</p></div>`;
+      if (!requiere) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Esta solicitud no tiene documentación obligatoria asociada.</p></div>`;
       const documentos = Array.isArray(reserva?.documentos_estado) && reserva.documentos_estado.length
         ? reserva.documentos_estado
         : (Array.isArray(reserva?.documentos_pendientes) ? reserva.documentos_pendientes : []);
-      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><p class="muted">Documentaci?n obligatoria validada o sin incidencias pendientes.</p></div>`;
-      return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => `<div class="estado-modal-item"><div><strong>${escapeHtml(doc.nombre || "Documento")}</strong><div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` ? Versi?n ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div><span class="estado-badge ${claseEstadoDocumentalAdmin(doc.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc.estado))}</span></div>`).join("")}</div></div>`;
+      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Documentación obligatoria validada o sin incidencias pendientes.</p></div>`;
+      return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => `<div class="estado-modal-item"><div><strong>${escapeHtml(doc.nombre || "Documento")}</strong><div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` · Versión ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div><span class="estado-badge ${claseEstadoDocumentalAdmin(doc.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc.estado))}</span></div>`).join("")}</div></div>`;
     }
     async function cargarAsistentesReservaModal(reserva) {
       const token = String(reserva?.token_edicion || "").trim();
@@ -891,12 +895,12 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       const total = Number(asistentesData?.resumen?.total || visitantes.length || 0);
       const lista = visitantes.length
         ? `<ol class="estado-modal-lista-nombres">${visitantes.map((v) => `<li>${escapeHtml(v.nombre_completo || "Asistente")}${v.perfil_asistente ? ` <span class="muted">(${escapeHtml(v.perfil_asistente)})</span>` : ""}</li>`).join("")}</ol>`
-        : `<p class="muted">No constan asistentes cargados todav?a.</p>`;
+        : `<p class="muted">No constan asistentes cargados todavía.</p>`;
       return `<div class="estado-modal-seccion"><h4>Asistentes</h4><p><strong>Total actual:</strong> ${total}</p>${lista}</div>`;
     }
     function renderObservacionesSolicitudAdmin(reserva) {
       const observaciones = String(reserva?.observaciones || "").trim();
-      return `<div class="estado-modal-seccion"><h4>Observaciones del solicitante</h4>${observaciones ? `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div></div>` : `<p class="muted">El solicitante no incluy? observaciones.</p>`}</div>`;
+      return `<div class="estado-modal-seccion"><h4>Observaciones del solicitante</h4>${observaciones ? `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div></div>` : `<p class="muted">El solicitante no incluyó observaciones.</p>`}</div>`;
     }
     function renderRequisitosSolicitudAdmin(reserva) {
       const requisitos = Array.isArray(reserva?.requisitos_particulares) ? reserva.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean) : [];
@@ -934,8 +938,8 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`);
       if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`);
       const bloqueDecision = accionesDisponibles.length
-        ? `<div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aqu? las observaciones administrativas asociadas a esta decisi?n.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`
-        : `<div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">La revisi?n documental sigue en curso. La solicitud no puede aceptarse ni rechazarse hasta que todos los documentos obligatorios est?n validados.</div>`;
+        ? `<div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aquí las observaciones administrativas asociadas a esta decisión.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`
+        : `<div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">La revisión documental sigue en curso. La solicitud no puede aceptarse ni rechazarse hasta que todos los documentos obligatorios estén validados.</div>`;
       document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div>${renderDocumentacionSolicitudAdmin(reserva)}${renderResumenSolicitudAdmin(reserva)}${renderAsistentesSolicitudAdmin(asistentesData)}${renderObservacionesSolicitudAdmin(reserva)}${renderRequisitosSolicitudAdmin(reserva)}${bloqueDecision}`;
       document.getElementById("modalObservacionesAcciones").innerHTML = "";
       document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); });
