@@ -128,7 +128,7 @@ function fechaComparableISO(fechaDdMmAaaa) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function calcularPlazasReservadasPendientes(row) {
@@ -907,6 +907,10 @@ export async function onRequestGet(context) {
       obtenerSolicitantes(env, filtros)
     ]);
     const historialMap = await obtenerHistorialReservas(env, rows.map((row) => row.id));
+    const requisitosMap = new Map();
+    for (const actividadId of Array.from(new Set(rows.map((row) => Number(row.actividad_id || 0)).filter((id) => id > 0)))) {
+      requisitosMap.set(actividadId, await obtenerRequisitosActividad(env, actividadId));
+    }
 
     const reservas = await Promise.all(rows.map(async (row) => {
       const validacionDocumental = await validarDocumentacionReserva(env, {
@@ -950,7 +954,9 @@ export async function onRequestGet(context) {
       estado_expediente_documental: validacionDocumental?.estado_expediente || "",
       documentacion_validada: documentacionValidada ? 1 : 0,
       documentacion_bloqueante: validacionDocumental?.requiere_documentacion && !documentacionValidada ? 1 : 0,
+      documentos_estado: validacionDocumental?.documentos_estado || [],
       documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
+      requisitos_particulares: requisitosMap.get(Number(row.actividad_id || 0)) || [],
       historial_estados: historialMap.get(Number(row.id)) || []
       });
     }));

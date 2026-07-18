@@ -163,6 +163,27 @@ function construirDocumentosPendientes(documentosActivos, archivosActivos) {
     .filter((doc) => doc.estado !== "VALIDADO");
 }
 
+function construirDocumentosEstado(documentosActivos, archivosActivos) {
+  const archivosPorDocumento = indexarArchivosPorDocumento(archivosActivos);
+
+  return (documentosActivos || [])
+    .map((doc) => {
+      const entrega = obtenerEntregaDocumento(doc, archivosPorDocumento);
+      const estado = calcularEstadoDocumento(doc, entrega);
+      return {
+        id: Number(doc.id || 0),
+        nombre: limpiarTexto(doc.nombre),
+        propietario_documental_id: obtenerPropietarioDocumentalDocumento(doc),
+        propietario_documental_nombre: limpiarTexto(doc.propietario_nombre),
+        version_documental: Number(doc.version_documental || 0),
+        estado,
+        fecha_ultima_entrega: entrega?.fecha_subida || "",
+        archivo_url: entrega?.archivo_url || "",
+        observaciones_admin: entrega?.observaciones_admin || ""
+      };
+    });
+}
+
 function obtenerPropietariosDocumentales(documentos = []) {
   return Array.from(new Set(
     (Array.isArray(documentos) ? documentos : [])
@@ -399,6 +420,7 @@ export async function validarDocumentacionReserva(env, {
   ];
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosParaCalculo);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosParaCalculo);
+  const documentosEstado = construirDocumentosEstado(documentosExigibles, archivosParaCalculo);
   const expedientesCompletos = expedientesDocumentalesCompletos(propietarios, expedientesPorPropietario);
   const okFinal = estadoDocumentalCompleto(estadoDocumental) || expedientesCompletos;
   const estadosExpedientes = propietarios.map((propietarioId) =>
@@ -412,6 +434,7 @@ export async function validarDocumentacionReserva(env, {
     estado_expediente: estadosExpedientes.includes("EN_REVISION")
       ? "EN_REVISION"
       : (estadosExpedientes[0] || ""),
+    documentos_estado: documentosEstado,
     documentos_pendientes: okFinal ? [] : documentosPendientes,
     error: okFinal
       ? ""

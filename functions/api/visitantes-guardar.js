@@ -180,7 +180,7 @@ function calcularBloqueoReserva(row) {
   const prereservadas = Number(row.plazas_prereservadas || 0);
   const estado = String(row.estado || "").toUpperCase();
 
-  if (!["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
+  if (!["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
     return 0;
   }
 
@@ -245,7 +245,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (!["BORRADOR", "PENDIENTE", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase())) {
+    if (!["BORRADOR", "PENDIENTE", "EN_REVISION", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase())) {
       return json(
         { ok: false, error: "La solicitud no permite gestionar asistentes en su estado actual." },
         { status: 400 }

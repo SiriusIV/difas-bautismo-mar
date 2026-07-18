@@ -149,6 +149,15 @@
       justify-self: end;
       min-width: 0;
     }
+    .estado-modal-seccion { margin-top: 12px; padding: 10px 12px; border: 1px solid #dbe4ee; border-radius: 10px; background: #fff; }
+    .estado-modal-seccion h4 { margin: 0 0 8px; color: #123a63; font-size: 13px; }
+    .estado-modal-lista { display: grid; gap: 8px; }
+    .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid #edf2f7; }
+    .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
+    .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .estado-modal-grid div { padding: 8px 10px; border-radius: 8px; background: #f7f9fb; border: 1px solid #e5ebf2; }
+    .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 11px; margin-bottom: 3px; }
+    .estado-modal-lista-nombres { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
     .btn-accion-estado-icono {
       width: 128px;
       height: 128px;
@@ -730,7 +739,8 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       return !!reserva && Number(reserva.documentacion_bloqueante || 0) === 1;
     }
     function puedeAbrirModalEstadoReserva(reserva) {
-      if (!reserva || documentacionBloqueanteReserva(reserva)) return false;
+      if (!reserva) return false;
+      if (documentacionBloqueanteReserva(reserva)) return true;
       return ["PENDIENTE", "SUSPENDIDA", "CONFIRMADA", "RECHAZADA"].includes(String(reserva.estado || "").toUpperCase());
     }
     function puedeGestionarEstadoReserva(reserva) {
@@ -836,7 +846,103 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (event?.target?.closest("button, a, input, label, select, textarea")) return;
       seleccionarReserva(id);
     }
-    function abrirModalEstado(id, accionPreferida = "") { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva) return; if (!puedeAbrirModalEstadoReserva(reserva)) { if (documentacionBloqueanteReserva(reserva)) { mostrarMensaje("aviso", "Esta solicitud está pendiente de validación documental por sus propietarios documentales. No puede resolverse hasta que toda la documentación obligatoria esté validada."); } return; } reservaModalEstado = reserva; accionPreferidaModal = String(accionPreferida || "").toLowerCase(); document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); const accionesDisponibles = []; if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); else if (accionPreferidaModal === "rechazar" && puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); else { if (puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar"); if (puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar"); } const observacionesIniciales = (String(reserva.estado || "").toUpperCase() === "RECHAZADA" && accionesDisponibles.includes("confirmar")) ? "" : (reserva.observaciones_admin || ""); const estadoTexto = textoEstadoVisible(reserva.estado); const estadoClase = claseEstado(reserva.estado); document.getElementById("modalObservacionesTitulo").textContent = `${reserva.actividad_nombre || "Reserva"}`; document.getElementById("modalObservacionesSubtitulo").textContent = ""; document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin"; const botonesTop = []; if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`); if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`); document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div><div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aquí las observaciones administrativas asociadas a esta decisión.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`; document.getElementById("modalObservacionesAcciones").innerHTML = ""; document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); }); asegurarBotonCerrarModalSuperior(); limpiarMensajeModalEstado(); establecerVisibilidadModalObservaciones(true); }
+    function etiquetaEstadoDocumentalAdmin(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "Validado";
+      if (["RECHAZADO", "RECHAZADA"].includes(valor)) return "Rechazado";
+      if (["NO_ENVIADO", "NO_PRESENTADO", "NO_INICIADO", "NO_COMPLETADO"].includes(valor)) return "No presentado";
+      if (["NO_ACTUALIZADO"].includes(valor)) return "No actualizado";
+      return "En revisi?n";
+    }
+    function claseEstadoDocumentalAdmin(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "confirmada";
+      if (["RECHAZADO", "RECHAZADA", "NO_ACTUALIZADO"].includes(valor)) return "rechazada";
+      return "revision-documental";
+    }
+    function renderDocumentacionSolicitudAdmin(reserva) {
+      const requiere = Number(reserva?.requiere_documentacion || 0) === 1 || Array.isArray(reserva?.documentos_estado);
+      if (!requiere) return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><p class="muted">Esta solicitud no tiene documentaci?n obligatoria asociada.</p></div>`;
+      const documentos = Array.isArray(reserva?.documentos_estado) && reserva.documentos_estado.length
+        ? reserva.documentos_estado
+        : (Array.isArray(reserva?.documentos_pendientes) ? reserva.documentos_pendientes : []);
+      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><p class="muted">Documentaci?n obligatoria validada o sin incidencias pendientes.</p></div>`;
+      return `<div class="estado-modal-seccion"><h4>Documentaci?n obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => `<div class="estado-modal-item"><div><strong>${escapeHtml(doc.nombre || "Documento")}</strong><div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` ? Versi?n ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div><span class="estado-badge ${claseEstadoDocumentalAdmin(doc.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc.estado))}</span></div>`).join("")}</div></div>`;
+    }
+    async function cargarAsistentesReservaModal(reserva) {
+      const token = String(reserva?.token_edicion || "").trim();
+      const fallback = {
+        ok: false,
+        resumen: { total: Number(reserva?.plazas_asignadas || reserva?.asistentes_cargados || 0) },
+        visitantes: []
+      };
+      if (!token) return fallback;
+      try {
+        const res = await fetch(`/api/visitantes?token=${encodeURIComponent(token)}`, { credentials: "same-origin", cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) return fallback;
+        return data;
+      } catch (_) {
+        return fallback;
+      }
+    }
+    function renderAsistentesSolicitudAdmin(asistentesData) {
+      const visitantes = Array.isArray(asistentesData?.visitantes) ? asistentesData.visitantes : [];
+      const total = Number(asistentesData?.resumen?.total || visitantes.length || 0);
+      const lista = visitantes.length
+        ? `<ol class="estado-modal-lista-nombres">${visitantes.map((v) => `<li>${escapeHtml(v.nombre_completo || "Asistente")}${v.perfil_asistente ? ` <span class="muted">(${escapeHtml(v.perfil_asistente)})</span>` : ""}</li>`).join("")}</ol>`
+        : `<p class="muted">No constan asistentes cargados todav?a.</p>`;
+      return `<div class="estado-modal-seccion"><h4>Asistentes</h4><p><strong>Total actual:</strong> ${total}</p>${lista}</div>`;
+    }
+    function renderObservacionesSolicitudAdmin(reserva) {
+      const observaciones = String(reserva?.observaciones || "").trim();
+      return `<div class="estado-modal-seccion"><h4>Observaciones del solicitante</h4>${observaciones ? `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div></div>` : `<p class="muted">El solicitante no incluy? observaciones.</p>`}</div>`;
+    }
+    function renderRequisitosSolicitudAdmin(reserva) {
+      const requisitos = Array.isArray(reserva?.requisitos_particulares) ? reserva.requisitos_particulares.map((item) => String(item || "").trim()).filter(Boolean) : [];
+      if (!requisitos.length) return `<div class="estado-modal-seccion"><h4>Requisitos particulares</h4><p class="muted">Esta actividad no tiene requisitos particulares adicionales definidos.</p></div>`;
+      return `<div class="estado-modal-seccion"><h4>Requisitos particulares</h4><ol class="estado-modal-lista-nombres">${requisitos.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol></div>`;
+    }
+    function renderResumenSolicitudAdmin(reserva) {
+      const horario = `${reserva?.hora_inicio || "-"} - ${reserva?.hora_fin || "-"}`;
+      return `<div class="estado-modal-seccion"><h4>Resumen de solicitud</h4><div class="estado-modal-grid"><div><span>Fecha</span><strong>${escapeHtml(formatearFechaCorta(reserva?.fecha || "") || "-")}</strong></div><div><span>Horario</span><strong>${escapeHtml(horario)}</strong></div><div><span>Plazas reservadas</span><strong>${Number(reserva?.plazas_reservadas || 0)}</strong></div><div><span>Plazas asignadas</span><strong>${Number(reserva?.plazas_asignadas || 0)}</strong></div></div></div>`;
+    }
+    async function abrirModalEstado(id, accionPreferida = "") {
+      const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
+      if (!reserva) return;
+      if (!puedeAbrirModalEstadoReserva(reserva)) return;
+      reservaModalEstado = reserva;
+      accionPreferidaModal = String(accionPreferida || "").toLowerCase();
+      document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto");
+      const asistentesData = await cargarAsistentesReservaModal(reserva);
+      const accionesDisponibles = [];
+      if (!documentacionBloqueanteReserva(reserva)) {
+        if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar");
+        else if (accionPreferidaModal === "rechazar" && puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar");
+        else {
+          if (puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar");
+          if (puedeRechazarseReserva(reserva)) accionesDisponibles.push("rechazar");
+        }
+      }
+      const observacionesIniciales = (String(reserva.estado || "").toUpperCase() === "RECHAZADA" && accionesDisponibles.includes("confirmar")) ? "" : (reserva.observaciones_admin || "");
+      const estadoTexto = estadoVisibleReserva(reserva);
+      const estadoClase = claseEstadoReserva(reserva);
+      document.getElementById("modalObservacionesTitulo").textContent = `${reserva.actividad_nombre || "Reserva"}`;
+      document.getElementById("modalObservacionesSubtitulo").textContent = "";
+      document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin";
+      const botonesTop = [];
+      if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`);
+      if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`);
+      const bloqueDecision = accionesDisponibles.length
+        ? `<div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aqu? las observaciones administrativas asociadas a esta decisi?n.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`
+        : `<div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">La revisi?n documental sigue en curso. La solicitud no puede aceptarse ni rechazarse hasta que todos los documentos obligatorios est?n validados.</div>`;
+      document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div>${renderDocumentacionSolicitudAdmin(reserva)}${renderResumenSolicitudAdmin(reserva)}${renderAsistentesSolicitudAdmin(asistentesData)}${renderObservacionesSolicitudAdmin(reserva)}${renderRequisitosSolicitudAdmin(reserva)}${bloqueDecision}`;
+      document.getElementById("modalObservacionesAcciones").innerHTML = "";
+      document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); });
+      asegurarBotonCerrarModalSuperior();
+      limpiarMensajeModalEstado();
+      establecerVisibilidadModalObservaciones(true);
+    }
     async function guardarCambioEstadoDesdeModal(accion) { if (!reservaModalEstado) return; const accionFinal = String(accion || accionPreferidaModal || "").toLowerCase(); if (!accionFinal) return; const observacionesAdmin = (document.getElementById("txtObservacionesAdminEstado")?.value || "").trim(); if (requiereObservacionesCambio(reservaModalEstado, accionFinal) && !observacionesAdmin) { mostrarMensajeModalEstado("Debes indicar observaciones administrativas para este cambio de estado."); return; } limpiarMensajeModalEstado(); limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaModalEstado.id, accion: accionFinal, observaciones_admin: observacionesAdmin }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); cerrarModalObservaciones(); const correoSolicitante = data?.correo_solicitante || null; if (correoSolicitante && correoSolicitante.enviado !== true) { const detalleCorreo = String(correoSolicitante.error || "").trim(); mostrarMensaje("aviso", `${data.mensaje || "Estado actualizado correctamente."} Aviso: no se pudo enviar el correo automático al solicitante${detalleCorreo ? ` (${detalleCorreo})` : ""}.`); } else { mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); } reservaSeleccionada = null; await cargarPanel(); } catch (error) { mostrarMensajeModalEstado(error.message || "No se pudo cambiar el estado."); } }
     function estadoVisibleReserva(reserva) { return documentacionBloqueanteReserva(reserva) ? "EN REVISI\u00d3N" : textoEstadoVisible(reserva?.estado); }
     function claseEstadoReserva(reserva) { return documentacionBloqueanteReserva(reserva) ? "revision-documental" : claseEstado(reserva?.estado); }
