@@ -48,7 +48,7 @@ function parsearCamposDetectados(valor) {
         nombre: limpiarTexto(item?.nombre),
         tipo: limpiarTexto(item?.tipo) || "Campo",
         modo: limpiarTexto(item?.modo).toUpperCase() === "LIBRE" ? "LIBRE" : "VINCULADO",
-        nota: limpiarTexto(item?.nota || item?.observacion)
+        obligatorio: item?.obligatorio === false ? false : true
       }))
       .filter((item) => item.nombre);
   } catch {
