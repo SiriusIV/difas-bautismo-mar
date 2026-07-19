@@ -1,7 +1,7 @@
 ﻿import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
-import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 import { eliminarDocumentacionDeReserva } from "./_documentacion_contextual.js";
 
 function limpiarTexto(valor) {
@@ -35,6 +35,60 @@ function formatearFechaCorta(valor) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
   if (!match) return texto;
   return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function obtenerPartesMadrid(date) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return {
+    fecha: `${partes.year}-${partes.month}-${partes.day}`,
+    hora: `${partes.hour}:${partes.minute}:${partes.second}`
+  };
+}
+
+function sumarDiasFechaIso(fechaIso, dias) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(limpiarTexto(fechaIso));
+  if (!match) return "";
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + Number(dias || 0)));
+  return date.toISOString().slice(0, 10);
+}
+
+function esFinDeSemana(fechaIso) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(limpiarTexto(fechaIso));
+  if (!match) return false;
+  const dia = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay();
+  return dia === 0 || dia === 6;
+}
+
+function esDiaNoLaborable(fechaIso, festivos) {
+  return esFinDeSemana(fechaIso) || festivos.has(limpiarTexto(fechaIso));
+}
+
+function calcularInicioAvisoLaborable(inicio, festivos) {
+  if (!(inicio instanceof Date) || Number.isNaN(inicio.getTime())) return null;
+  const partes = obtenerPartesMadrid(inicio);
+  let fecha = partes.fecha;
+  let diasLaborables = 3;
+  while (diasLaborables > 0) {
+    fecha = sumarDiasFechaIso(fecha, -1);
+    if (!fecha) return null;
+    if (!esDiaNoLaborable(fecha, festivos)) {
+      diasLaborables -= 1;
+    }
+  }
+  return obtenerInicioReserva({ fecha, hora_inicio: partes.hora });
 }
 
 function construirCorreoAdminEliminacionPorCaducidad(contexto = {}) {
@@ -410,6 +464,194 @@ async function rechazarReservasSuspendidasVencidas(env) {
     }
   }
   return reservas.length;
+}
+
+async function asegurarTablasRecordatoriosLaborables(env) {
+  const db = env.DB.withSession("first-primary");
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS festivos_nacionales_cache (
+      pais TEXT NOT NULL,
+      anio INTEGER NOT NULL,
+      fechas_json TEXT NOT NULL,
+      fuente TEXT NOT NULL,
+      fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (pais, anio)
+    )
+  `).run();
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS recordatorios_laborables_enviados (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clave TEXT NOT NULL UNIQUE,
+      tipo TEXT NOT NULL,
+      reserva_id INTEGER NOT NULL,
+      destinatario_id INTEGER NOT NULL,
+      referencia_id INTEGER,
+      inicio_actividad TEXT,
+      aviso_desde TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS mantenimiento_avisos_internos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL,
+      mensaje TEXT NOT NULL,
+      detalle TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
+async function registrarAvisoInterno(env, tipo, mensaje, detalle = "") {
+  try {
+    await env.DB.withSession("first-primary").prepare(`
+      INSERT INTO mantenimiento_avisos_internos (tipo, mensaje, detalle)
+      VALUES (?, ?, ?)
+    `).bind(limpiarTexto(tipo), limpiarTexto(mensaje), limpiarTexto(detalle)).run();
+  } catch (error) {
+    console.error("No se pudo registrar aviso interno de mantenimiento.", {
+      tipo,
+      mensaje,
+      detalle,
+      error: error.message || ""
+    });
+  }
+}
+
+function extraerFechasFestivosNacionales(lista) {
+  return (Array.isArray(lista) ? lista : [])
+    .filter((item) => {
+      if (!item?.date) return false;
+      if (item.nationalHoliday === true) return true;
+      if (item.global === true) return true;
+      if (Array.isArray(item.counties) && item.counties.length > 0) return false;
+      if (Array.isArray(item.subdivisionCodes) && item.subdivisionCodes.length > 0) return false;
+      return true;
+    })
+    .map((item) => limpiarTexto(item.date).slice(0, 10))
+    .filter(Boolean);
+}
+
+async function descargarFestivosNagerDate(anio) {
+  const urls = [
+    `https://date.nager.at/api/v4/Holidays/ES/${encodeURIComponent(String(anio))}`,
+    `https://date.nager.at/api/v3/PublicHolidays/${encodeURIComponent(String(anio))}/ES`
+  ];
+
+  let ultimoError = "";
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) {
+        ultimoError = `${url}: HTTP ${response.status}`;
+        continue;
+      }
+      const data = await response.json();
+      return extraerFechasFestivosNacionales(data);
+    } catch (error) {
+      ultimoError = `${url}: ${error.message || "Error de conexión"}`;
+    }
+  }
+
+  throw new Error(ultimoError || "No se pudo consultar Nager.Date.");
+}
+
+async function obtenerFestivosNacionalesEspana(env, anios) {
+  await asegurarTablasRecordatoriosLaborables(env);
+  const db = env.DB.withSession("first-primary");
+  const salida = new Map();
+  const listaAnios = Array.from(new Set((anios || []).map((anio) => Number(anio || 0)).filter((anio) => anio > 0)));
+  const avisos = [];
+
+  for (const anio of listaAnios) {
+    const cache = await db.prepare(`
+      SELECT fechas_json
+      FROM festivos_nacionales_cache
+      WHERE pais = 'ES'
+        AND anio = ?
+      LIMIT 1
+    `).bind(anio).first();
+
+    if (cache?.fechas_json) {
+      try {
+        salida.set(anio, new Set(JSON.parse(cache.fechas_json)));
+        continue;
+      } catch {
+        await registrarAvisoInterno(
+          env,
+          "FESTIVOS_CACHE_CORRUPTA",
+          `La caché de festivos nacionales de España ${anio} no se pudo interpretar. Se intentará refrescar desde Nager.Date.`,
+          cache.fechas_json
+        );
+      }
+    }
+
+    try {
+      const fechas = await descargarFestivosNagerDate(anio);
+      await db.prepare(`
+        INSERT OR REPLACE INTO festivos_nacionales_cache (pais, anio, fechas_json, fuente, fetched_at)
+        VALUES ('ES', ?, ?, 'Nager.Date', CURRENT_TIMESTAMP)
+      `).bind(anio, JSON.stringify(fechas)).run();
+      salida.set(anio, new Set(fechas));
+    } catch (error) {
+      const mensaje = `No se pudo consultar Nager.Date para festivos nacionales de España ${anio}. Se aplicará solo la exclusión de sábados y domingos.`;
+      const detalle = error.message || "";
+      avisos.push({ anio, mensaje, detalle });
+      await registrarAvisoInterno(env, "FESTIVOS_NAGER_DATE", mensaje, detalle);
+      salida.set(anio, new Set());
+    }
+  }
+
+  return { festivosPorAnio: salida, avisos };
+}
+
+function combinarFestivosParaInicio(inicio, festivosPorAnio) {
+  const partes = obtenerPartesMadrid(inicio);
+  const anio = Number(partes.fecha.slice(0, 4));
+  const fechas = new Set();
+  for (const year of [anio - 1, anio, anio + 1]) {
+    for (const fecha of festivosPorAnio.get(year) || []) {
+      fechas.add(fecha);
+    }
+  }
+  return fechas;
+}
+
+async function registrarRecordatorioLaborable(env, {
+  clave,
+  tipo,
+  reservaId,
+  destinatarioId,
+  referenciaId = null,
+  inicioActividad = "",
+  avisoDesde = ""
+}) {
+  const result = await env.DB.withSession("first-primary").prepare(`
+    INSERT OR IGNORE INTO recordatorios_laborables_enviados (
+      clave,
+      tipo,
+      reserva_id,
+      destinatario_id,
+      referencia_id,
+      inicio_actividad,
+      aviso_desde
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    limpiarTexto(clave),
+    limpiarTexto(tipo),
+    Number(reservaId || 0),
+    Number(destinatarioId || 0),
+    Number(referenciaId || 0) || null,
+    limpiarTexto(inicioActividad),
+    limpiarTexto(avisoDesde)
+  ).run();
+
+  return Number(result?.meta?.changes || 0) > 0;
 }
 
 async function borrarReservasRechazadasVencidas(env) {
@@ -788,6 +1030,325 @@ async function borrarFranjasDeActividadesVencidas(env) {
   return Number(result?.meta?.changes || 0);
 }
 
+function formatearInicioActividad(row = {}) {
+  const fecha = limpiarTexto(row.fecha || row.fecha_inicio || "");
+  const hora = limpiarTexto(row.hora_inicio || "00:00:00");
+  return `${fecha} ${hora}`.trim();
+}
+
+function debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora = new Date()) {
+  const inicio = obtenerInicioReserva(row);
+  if (!inicio || Number.isNaN(inicio.getTime())) return null;
+  if (inicio.getTime() <= ahora.getTime()) return null;
+  const festivos = combinarFestivosParaInicio(inicio, festivosPorAnio);
+  const avisoDesde = calcularInicioAvisoLaborable(inicio, festivos);
+  if (!avisoDesde || Number.isNaN(avisoDesde.getTime())) return null;
+  if (ahora.getTime() < avisoDesde.getTime()) return null;
+  return {
+    inicio,
+    avisoDesde,
+    inicioTexto: formatearFechaDb(inicio),
+    avisoDesdeTexto: formatearFechaDb(avisoDesde)
+  };
+}
+
+function construirCorreoRecordatorioDocumental(row = {}) {
+  const actividad = limpiarTexto(row.actividad_nombre || "la actividad");
+  const centro = limpiarTexto(row.centro || "un centro solicitante");
+  const codigo = limpiarTexto(row.codigo_reserva || "");
+  const documentos = (row.documentos || []).map((doc) => `- ${doc}`).join("\n");
+  const programacion = formatearProgramacionReserva(row);
+  const asunto = "[Documentación] Revisión pendiente antes de la actividad";
+  const mensaje = `Existe documentación obligatoria pendiente de revisión para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
+
+  const texto = [
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Centro solicitante: ${centro}`,
+    `Programación: ${programacion}`,
+    "",
+    "Documentos pendientes:",
+    documentos || "- Documentación pendiente",
+    "",
+    "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>${escaparHtml(mensaje)}</p>
+    <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    <p><strong>Centro solicitante:</strong> ${escaparHtml(centro)}</p>
+    <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
+    <p><strong>Documentos pendientes:</strong></p>
+    <ul>${(row.documentos || []).map((doc) => `<li>${escaparHtml(doc)}</li>`).join("") || "<li>Documentación pendiente</li>"}</ul>
+    <p>Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad.</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
+function construirCorreoRecordatorioAdminSolicitud(row = {}) {
+  const actividad = limpiarTexto(row.actividad_nombre || "la actividad");
+  const centro = limpiarTexto(row.centro || "un centro solicitante");
+  const codigo = limpiarTexto(row.codigo_reserva || "");
+  const programacion = formatearProgramacionReserva(row);
+  const asunto = "[Reservas] Solicitud pendiente antes de la actividad";
+  const mensaje = `Existe una solicitud pendiente de aceptación o rechazo para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
+
+  const texto = [
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Centro solicitante: ${centro}`,
+    `Programación: ${programacion}`,
+    "",
+    "Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad."
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <p>${escaparHtml(mensaje)}</p>
+    <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+    ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+    <p><strong>Centro solicitante:</strong> ${escaparHtml(centro)}</p>
+    <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
+    <p>Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad.</p>
+  `;
+
+  return { asunto, texto, html };
+}
+
+async function obtenerRecordatoriosDocumentalesCandidatos(env) {
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
+    WITH archivos_vigentes AS (
+      SELECT
+        a.*,
+        ROW_NUMBER() OVER (
+          PARTITION BY a.documentacion_id, TRIM(COALESCE(a.nombre_documento, ''))
+          ORDER BY a.id DESC
+        ) AS rn
+      FROM centro_admin_documentacion_archivos a
+      WHERE a.activo = 1
+    )
+    SELECT
+      r.id AS reserva_id,
+      r.codigo_reserva,
+      r.centro,
+      r.contacto,
+      r.actividad_id,
+      r.estado AS estado_reserva,
+      COALESCE(act.titulo_publico, act.nombre, 'Actividad') AS actividad_nombre,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      act.fecha_inicio,
+      cad.admin_id AS propietario_id,
+      prop.rol AS propietario_rol,
+      prop.email AS propietario_email,
+      COALESCE(prop.nombre_publico, prop.nombre, prop.email, 'Propietario documental') AS propietario_nombre,
+      av.nombre_documento
+    FROM centro_admin_documentacion cad
+    INNER JOIN archivos_vigentes av
+      ON av.documentacion_id = cad.id
+     AND av.rn = 1
+    INNER JOIN reservas r
+      ON r.id = COALESCE(cad.reserva_id, av.reserva_id)
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    LEFT JOIN actividades act
+      ON act.id = COALESCE(cad.actividad_id, av.actividad_id, r.actividad_id)
+    INNER JOIN usuarios prop
+      ON prop.id = cad.admin_id
+    WHERE COALESCE(cad.reserva_id, av.reserva_id) IS NOT NULL
+      AND UPPER(TRIM(COALESCE(av.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA')
+  `).all();
+
+  const grupos = new Map();
+  for (const row of rows?.results || []) {
+    const reservaId = Number(row.reserva_id || 0);
+    const propietarioId = Number(row.propietario_id || 0);
+    if (!(reservaId > 0) || !(propietarioId > 0)) continue;
+    const clave = `${reservaId}:${propietarioId}`;
+    if (!grupos.has(clave)) {
+      grupos.set(clave, {
+        ...row,
+        documentos: []
+      });
+    }
+    const nombreDocumento = limpiarTexto(row.nombre_documento || "Documento");
+    if (nombreDocumento && !grupos.get(clave).documentos.includes(nombreDocumento)) {
+      grupos.get(clave).documentos.push(nombreDocumento);
+    }
+  }
+
+  return Array.from(grupos.values());
+}
+
+async function obtenerRecordatoriosAdminCandidatos(env) {
+  const db = env.DB.withSession("first-primary");
+  const rows = await db.prepare(`
+    SELECT
+      r.id AS reserva_id,
+      r.codigo_reserva,
+      r.centro,
+      r.contacto,
+      r.actividad_id,
+      r.estado AS estado_reserva,
+      COALESCE(act.titulo_publico, act.nombre, 'Actividad') AS actividad_nombre,
+      act.admin_id,
+      admin.email AS admin_email,
+      COALESCE(admin.nombre_publico, admin.nombre, admin.email, 'Administrador') AS admin_nombre,
+      f.fecha,
+      f.hora_inicio,
+      f.hora_fin,
+      act.fecha_inicio
+    FROM reservas r
+    LEFT JOIN franjas f
+      ON f.id = r.franja_id
+    LEFT JOIN actividades act
+      ON act.id = r.actividad_id
+    LEFT JOIN usuarios admin
+      ON admin.id = act.admin_id
+    WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'PENDIENTE'
+      AND act.admin_id IS NOT NULL
+  `).all();
+
+  return rows?.results || [];
+}
+
+async function enviarRecordatorioDocumental(env, row, timing) {
+  const reservaId = Number(row.reserva_id || 0);
+  const propietarioId = Number(row.propietario_id || 0);
+  const clave = `DOCUMENTACION:${reservaId}:${propietarioId}`;
+  const nuevo = await registrarRecordatorioLaborable(env, {
+    clave,
+    tipo: "DOCUMENTACION",
+    reservaId,
+    destinatarioId: propietarioId,
+    referenciaId: reservaId,
+    inicioActividad: timing.inicioTexto,
+    avisoDesde: timing.avisoDesdeTexto
+  });
+  if (!nuevo) return { enviado: 0, omitido: 1 };
+
+  const actividadId = Number(row.actividad_id || 0);
+  const urlDestino = `/usuario-perfil.html?admin_id=${encodeURIComponent(String(propietarioId))}&tab=bandeja`;
+  await crearNotificacion(env, {
+    usuarioId: propietarioId,
+    rolDestino: row.propietario_rol || "",
+    tipo: "DOCUMENTACION",
+    titulo: "Recordatorio de documentación pendiente",
+    mensaje: `${limpiarTexto(row.centro || "Un centro")} tiene documentación pendiente de revisión para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
+    urlDestino,
+    dedupeSegundos: 604800
+  });
+
+  if (limpiarTexto(row.propietario_email)) {
+    const correo = construirCorreoRecordatorioDocumental(row);
+    await enviarEmail(env, {
+      to: row.propietario_email,
+      subject: correo.asunto,
+      text: correo.texto,
+      html: correo.html,
+      dedupe: true,
+      dedupeSegundos: 604800
+    });
+  }
+
+  return { enviado: 1, omitido: 0, actividad_id: actividadId };
+}
+
+async function enviarRecordatorioAdminSolicitud(env, row, timing) {
+  const reservaId = Number(row.reserva_id || 0);
+  const adminId = Number(row.admin_id || 0);
+  const clave = `SOLICITUD:${reservaId}:${adminId}`;
+  const nuevo = await registrarRecordatorioLaborable(env, {
+    clave,
+    tipo: "SOLICITUD",
+    reservaId,
+    destinatarioId: adminId,
+    referenciaId: Number(row.actividad_id || 0) || null,
+    inicioActividad: timing.inicioTexto,
+    avisoDesde: timing.avisoDesdeTexto
+  });
+  if (!nuevo) return { enviado: 0, omitido: 1 };
+
+  const actividadId = Number(row.actividad_id || 0);
+  const urlDestino = actividadId > 0
+    ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
+    : "/admin-reservas.html";
+  await crearNotificacion(env, {
+    usuarioId: adminId,
+    rolDestino: "ADMIN",
+    tipo: "RESERVA",
+    titulo: "Recordatorio de solicitud pendiente",
+    mensaje: `${limpiarTexto(row.centro || "Un centro")} tiene una solicitud pendiente de aceptación o rechazo para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
+    urlDestino,
+    dedupeSegundos: 604800
+  });
+
+  if (limpiarTexto(row.admin_email)) {
+    const correo = construirCorreoRecordatorioAdminSolicitud(row);
+    await enviarEmail(env, {
+      to: row.admin_email,
+      subject: correo.asunto,
+      text: correo.texto,
+      html: correo.html,
+      dedupe: true,
+      dedupeSegundos: 604800
+    });
+  }
+
+  return { enviado: 1, omitido: 0 };
+}
+
+async function enviarRecordatoriosPendientes48hLaborables(env) {
+  await asegurarTablasRecordatoriosLaborables(env);
+  const ahora = new Date();
+  const documentales = await obtenerRecordatoriosDocumentalesCandidatos(env);
+  const administradores = await obtenerRecordatoriosAdminCandidatos(env);
+  const candidatas = [...documentales, ...administradores];
+  const anios = [];
+
+  for (const row of candidatas) {
+    const inicio = obtenerInicioReserva(row);
+    if (!inicio || Number.isNaN(inicio.getTime())) continue;
+    const anio = Number(obtenerPartesMadrid(inicio).fecha.slice(0, 4));
+    anios.push(anio - 1, anio, anio + 1);
+  }
+
+  const { festivosPorAnio, avisos } = await obtenerFestivosNacionalesEspana(env, anios);
+  const resumen = {
+    documentacion_enviados: 0,
+    documentacion_omitidos: 0,
+    solicitudes_enviados: 0,
+    solicitudes_omitidos: 0,
+    avisos_festivos: avisos.length
+  };
+
+  for (const row of documentales) {
+    const timing = debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora);
+    if (!timing) continue;
+    const resultado = await enviarRecordatorioDocumental(env, row, timing);
+    resumen.documentacion_enviados += Number(resultado.enviado || 0);
+    resumen.documentacion_omitidos += Number(resultado.omitido || 0);
+  }
+
+  for (const row of administradores) {
+    const timing = debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora);
+    if (!timing) continue;
+    const resultado = await enviarRecordatorioAdminSolicitud(env, row, timing);
+    resumen.solicitudes_enviados += Number(resultado.enviado || 0);
+    resumen.solicitudes_omitidos += Number(resultado.omitido || 0);
+  }
+
+  return resumen;
+}
+
 async function obtenerReservasResidualesLegacy(env) {
   const db = env.DB.withSession("first-primary");
   const rows = await db.prepare(`
@@ -844,6 +1405,7 @@ export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorico(env);
   await asegurarTablaHistorialReservas(env);
   await asegurarColumnaRechazoEliminaEn(env);
+  const recordatoriosLaborables = await enviarRecordatoriosPendientes48hLaborables(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
   const rechazadasEliminadasPorPlazo = await borrarReservasRechazadasVencidas(env);
   const prereservasExpiradas = await normalizarPrereservasExpiradas(env);
@@ -860,6 +1422,7 @@ export async function ejecutarMantenimientoReservas(env) {
     rechazadas_eliminadas_por_plazo: rechazadasEliminadasPorPlazo,
     prereservas_consolidadas_con_asignados: prereservasExpiradas.consolidadas_con_asignados,
     prereservas_eliminadas_sin_asignados: prereservasExpiradas.eliminadas_sin_asignados,
+    recordatorios_laborables: recordatoriosLaborables,
     residuos_legacy_eliminados: residualesEliminadas,
     archivadas,
     eliminadas,
