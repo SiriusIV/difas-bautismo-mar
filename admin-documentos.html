@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DocumentaciÃ³n requerida</title>
+  <title>Documentación requerida</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -439,7 +439,7 @@
       <div class="cabecera-inner">
         <img src="logo.png" alt="Logo Armada" class="logo-cabecera logo-pendiente">
         <div class="cabecera-titulos">
-          <h1>DocumentaciÃ³n requerida</h1>
+          <h1>Documentación requerida</h1>
           <h2 id="subtituloCabecera">Administrador</h2>
         </div>
       </div>
@@ -452,12 +452,12 @@
         <div>
           <h3>Documentos comunes del administrador</h3>
           <p>
-            Estos documentos serÃ¡n comunes a todas tus actividades. Si los cambias, el sistema generarÃ¡ una nueva versiÃ³n y los centros deberÃ¡n volver a aportar la documentaciÃ³n actualizada.
+            Estos documentos serán comunes a todas tus actividades. Si los cambias, el sistema generará una nueva versión y los centros deberán volver a aportar la documentación actualizada.
           </p>
         </div>
         <div class="acciones-superiores">
-          <div class="resumen-version" id="resumenVersion">VersiÃ³n actual: 1</div>
-          <button type="button" class="btn-guardar-icono" id="btnGuardarDocumentos" title="Guardar documentaciÃ³n" aria-label="Guardar documentaciÃ³n">
+          <div class="resumen-version" id="resumenVersion">Versión actual: 1</div>
+          <button type="button" class="btn-guardar-icono" id="btnGuardarDocumentos" title="Guardar documentación" aria-label="Guardar documentación">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -475,13 +475,13 @@
       </div>
 
       <div class="nota-compacta">
-        Cada documento se registra con nombre, descripciÃ³n y un PDF asociado. Desde esta misma pantalla puedes subir el archivo y sustituirlo por una nueva versiÃ³n cuando lo necesites.
+        Cada documento se registra con nombre, descripción y un PDF asociado. Desde esta misma pantalla puedes subir el archivo y sustituirlo por una nueva versión cuando lo necesites.
       </div>
 
       <div id="documentosLista" class="documentos-lista" style="margin-top: 14px;"></div>
 
       <div class="acciones-lista">
-        <button type="button" class="btn btn-suave" id="btnAgregarDocumento">AÃ±adir documento</button>
+        <button type="button" class="btn btn-suave" id="btnAgregarDocumento">Añadir documento</button>
       </div>
     </div>
   </div>
@@ -504,7 +504,7 @@
         <input type="hidden" class="doc-id">
         <input type="hidden" class="doc-activo">
         <div>
-          <label>DescripciÃ³n</label>
+          <label>Descripción</label>
           <textarea class="doc-descripcion" maxlength="1000"></textarea>
         </div>
         <div>
@@ -513,7 +513,7 @@
             <button type="button" class="btn btn-suave btnSubirPdf">Subir PDF</button>
             <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-suave doc-enlace-archivo oculto">Ver documento</a>
           </div>
-          <div class="nota-compacta doc-archivo-estado">TodavÃ­a no hay ningÃºn PDF asociado a este documento.</div>
+          <div class="nota-compacta doc-archivo-estado">Todavía no hay ningún PDF asociado a este documento.</div>
           <input type="file" class="input-pdf-oculto" accept="application/pdf,.pdf">
           <input type="hidden" class="doc-archivo-url" maxlength="1000">
         </div>
@@ -552,7 +552,7 @@
     }
 
     function actualizarResumenVersion() {
-      document.getElementById("resumenVersion").textContent = `VersiÃ³n actual: ${versionActual}`;
+      document.getElementById("resumenVersion").textContent = `Versión actual: ${versionActual}`;
     }
 
     function actualizarIndicesDocumentos() {
@@ -637,7 +637,7 @@
         body.style.opacity = activo ? "1" : "0.72";
         estadoArchivo.textContent = activo
           ? estadoArchivo.textContent
-          : "Documento inactivo. Mientras no lo actives, no formarÃ¡ parte de la documentaciÃ³n obligatoria.";
+          : "Documento inactivo. Mientras no lo actives, no formará parte de la documentación obligatoria.";
       }
 
       function actualizarEstadoArchivo() {
@@ -647,16 +647,16 @@
           enlaceArchivo.href = url;
           enlaceArchivo.classList.remove("oculto");
           estadoArchivo.textContent = activo
-            ? "PDF cargado correctamente. Si subes otro para este mismo documento, sustituirÃ¡ al anterior."
-            : "Documento inactivo. El PDF se conserva, pero no se exigirÃ¡ mientras siga desactivado.";
+            ? "PDF cargado correctamente. Si subes otro para este mismo documento, sustituirá al anterior."
+            : "Documento inactivo. El PDF se conserva, pero no se exigirá mientras siga desactivado.";
           return;
         }
 
         enlaceArchivo.href = "#";
         enlaceArchivo.classList.add("oculto");
         estadoArchivo.textContent = activo
-          ? "TodavÃ­a no hay ningÃºn PDF asociado a este documento."
-          : "Documento inactivo. Mientras no lo actives, no formarÃ¡ parte de la documentaciÃ³n obligatoria.";
+          ? "Todavía no hay ningún PDF asociado a este documento."
+          : "Documento inactivo. Mientras no lo actives, no formará parte de la documentación obligatoria.";
       }
 
       async function subirPdf(file) {
@@ -730,8 +730,8 @@
 
         const confirmar = window.confirm(
           estabaActivo
-            ? "Este documento dejarÃ¡ de exigirse mientras permanezca desactivado. Â¿Deseas continuar?"
-            : "Este documento volverÃ¡ a formar parte de la documentaciÃ³n obligatoria. Â¿Deseas continuar?"
+            ? "Este documento dejará de exigirse mientras permanezca desactivado. ¿Deseas continuar?"
+            : "Este documento volverá a formar parte de la documentación obligatoria. ¿Deseas continuar?"
         );
         if (!confirmar) return;
 
@@ -771,7 +771,7 @@
           return;
         }
 
-        const confirmar = window.confirm("Se eliminarÃ¡ este documento y su PDF del servidor. Â¿Deseas continuar?");
+        const confirmar = window.confirm("Se eliminará este documento y su PDF del servidor. ¿Deseas continuar?");
         if (!confirmar) return;
 
         limpiarMensaje();
@@ -813,7 +813,7 @@
           const div = document.createElement("div");
           div.id = "estadoVacioDocumentos";
           div.className = "estado-vacio";
-          div.textContent = "TodavÃ­a no has definido documentaciÃ³n comÃºn. AÃ±ade aquÃ­ los documentos que deberÃ¡n aportar los centros cuando soliciten por primera vez una actividad tuya.";
+          div.textContent = "Todavía no has definido documentación común. Añade aquí los documentos que deberán aportar los centros cuando soliciten por primera vez una actividad tuya.";
           lista.appendChild(div);
         }
       } else if (vacioPrevio) {
@@ -904,7 +904,7 @@
 
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        mostrarMensaje("error", data?.error || "No se pudo guardar la documentaciÃ³n requerida.");
+        mostrarMensaje("error", data?.error || "No se pudo guardar la documentación requerida.");
         return;
       }
 
@@ -913,7 +913,7 @@
       const documentosActualizados = (data.documentos || []).map((doc, index) => normalizarDocumentoLocal(doc, index));
       documentosOriginales = documentosActualizados.filter((doc) => doc.activo);
       renderDocumentos(documentosActualizados);
-      mostrarMensaje("ok", data.mensaje || "DocumentaciÃ³n requerida actualizada correctamente.");
+      mostrarMensaje("ok", data.mensaje || "Documentación requerida actualizada correctamente.");
     }
 
     function agregarDocumento() {
@@ -925,7 +925,7 @@
     }
 
     function volverPerfil() {
-      if (hayCambiosSinGuardar() && !window.confirm("Hay cambios sin guardar. Si sales ahora, se perderÃ¡n. Â¿Continuar?")) {
+      if (hayCambiosSinGuardar() && !window.confirm("Hay cambios sin guardar. Si sales ahora, se perderán. ¿Continuar?")) {
         return;
       }
       location.href = "usuario-perfil.html";

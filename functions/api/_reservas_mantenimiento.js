@@ -1040,6 +1040,7 @@ function debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora = new Date(
   const inicio = obtenerInicioReserva(row);
   if (!inicio || Number.isNaN(inicio.getTime())) return null;
   if (inicio.getTime() <= ahora.getTime()) return null;
+  if ((inicio.getTime() - ahora.getTime()) <= (12 * 60 * 60 * 1000)) return null;
   const festivos = combinarFestivosParaInicio(inicio, festivosPorAnio);
   const avisoDesde = calcularInicioAvisoLaborable(inicio, festivos);
   if (!avisoDesde || Number.isNaN(avisoDesde.getTime())) return null;
@@ -1052,14 +1053,33 @@ function debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora = new Date(
   };
 }
 
-function construirCorreoRecordatorioDocumental(row = {}) {
+function debeEnviarRecordatorio12h(row, ahora = new Date()) {
+  const inicio = obtenerInicioReserva(row);
+  if (!inicio || Number.isNaN(inicio.getTime())) return null;
+  if (inicio.getTime() <= ahora.getTime()) return null;
+  const avisoDesde = new Date(inicio.getTime() - (12 * 60 * 60 * 1000));
+  if (ahora.getTime() < avisoDesde.getTime()) return null;
+  return {
+    inicio,
+    avisoDesde,
+    inicioTexto: formatearFechaDb(inicio),
+    avisoDesdeTexto: formatearFechaDb(avisoDesde)
+  };
+}
+
+function construirCorreoRecordatorioDocumental(row = {}, opciones = {}) {
   const actividad = limpiarTexto(row.actividad_nombre || "la actividad");
   const centro = limpiarTexto(row.centro || "un centro solicitante");
   const codigo = limpiarTexto(row.codigo_reserva || "");
   const documentos = (row.documentos || []).map((doc) => `- ${doc}`).join("\n");
   const programacion = formatearProgramacionReserva(row);
-  const asunto = "[Documentación] Revisión pendiente antes de la actividad";
-  const mensaje = `Existe documentación obligatoria pendiente de revisión para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
+  const urgente = opciones.urgente === true;
+  const asunto = urgente
+    ? "[Documentación] Revisión pendiente en las próximas 12 horas"
+    : "[Documentación] Revisión pendiente antes de la actividad";
+  const mensaje = urgente
+    ? `Faltan menos de 12 horas para el inicio de ${actividad}${codigo ? ` (${codigo})` : ""} y existe documentación obligatoria pendiente de revisión.`
+    : `Existe documentación obligatoria pendiente de revisión para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
 
   const texto = [
     mensaje,
@@ -1072,7 +1092,9 @@ function construirCorreoRecordatorioDocumental(row = {}) {
     "Documentos pendientes:",
     documentos || "- Documentación pendiente",
     "",
-    "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad."
+    urgente
+      ? "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación con prioridad."
+      : "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad."
   ].filter(Boolean).join("\n");
 
   const html = `
@@ -1083,19 +1105,24 @@ function construirCorreoRecordatorioDocumental(row = {}) {
     <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
     <p><strong>Documentos pendientes:</strong></p>
     <ul>${(row.documentos || []).map((doc) => `<li>${escaparHtml(doc)}</li>`).join("") || "<li>Documentación pendiente</li>"}</ul>
-    <p>Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad.</p>
+    <p>${urgente ? "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación con prioridad." : "Accede a tu bandeja de entrada documental para revisar y resolver esta documentación antes del inicio de la actividad."}</p>
   `;
 
   return { asunto, texto, html };
 }
 
-function construirCorreoRecordatorioAdminSolicitud(row = {}) {
+function construirCorreoRecordatorioAdminSolicitud(row = {}, opciones = {}) {
   const actividad = limpiarTexto(row.actividad_nombre || "la actividad");
   const centro = limpiarTexto(row.centro || "un centro solicitante");
   const codigo = limpiarTexto(row.codigo_reserva || "");
   const programacion = formatearProgramacionReserva(row);
-  const asunto = "[Reservas] Solicitud pendiente antes de la actividad";
-  const mensaje = `Existe una solicitud pendiente de aceptación o rechazo para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
+  const urgente = opciones.urgente === true;
+  const asunto = urgente
+    ? "[Reservas] Solicitud pendiente en las próximas 12 horas"
+    : "[Reservas] Solicitud pendiente antes de la actividad";
+  const mensaje = urgente
+    ? `Faltan menos de 12 horas para el inicio de ${actividad}${codigo ? ` (${codigo})` : ""} y existe una solicitud pendiente de aceptación o rechazo.`
+    : `Existe una solicitud pendiente de aceptación o rechazo para ${actividad}${codigo ? ` (${codigo})` : ""}.`;
 
   const texto = [
     mensaje,
@@ -1105,7 +1132,9 @@ function construirCorreoRecordatorioAdminSolicitud(row = {}) {
     `Centro solicitante: ${centro}`,
     `Programación: ${programacion}`,
     "",
-    "Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad."
+    urgente
+      ? "Accede a tu panel de reservas para aceptar o rechazar esta solicitud con prioridad."
+      : "Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad."
   ].filter(Boolean).join("\n");
 
   const html = `
@@ -1114,7 +1143,7 @@ function construirCorreoRecordatorioAdminSolicitud(row = {}) {
     ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
     <p><strong>Centro solicitante:</strong> ${escaparHtml(centro)}</p>
     <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
-    <p>Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad.</p>
+    <p>${urgente ? "Accede a tu panel de reservas para aceptar o rechazar esta solicitud con prioridad." : "Accede a tu panel de reservas para aceptar o rechazar esta solicitud antes del inicio de la actividad."}</p>
   `;
 
   return { asunto, texto, html };
@@ -1220,13 +1249,15 @@ async function obtenerRecordatoriosAdminCandidatos(env) {
   return rows?.results || [];
 }
 
-async function enviarRecordatorioDocumental(env, row, timing) {
+async function enviarRecordatorioDocumental(env, row, timing, opciones = {}) {
   const reservaId = Number(row.reserva_id || 0);
   const propietarioId = Number(row.propietario_id || 0);
-  const clave = `DOCUMENTACION:${reservaId}:${propietarioId}`;
+  const tipo = limpiarTexto(opciones.tipo || "DOCUMENTACION");
+  const clavePrefijo = limpiarTexto(opciones.clavePrefijo || tipo || "DOCUMENTACION");
+  const clave = `${clavePrefijo}:${reservaId}:${propietarioId}`;
   const nuevo = await registrarRecordatorioLaborable(env, {
     clave,
-    tipo: "DOCUMENTACION",
+    tipo,
     reservaId,
     destinatarioId: propietarioId,
     referenciaId: reservaId,
@@ -1241,14 +1272,14 @@ async function enviarRecordatorioDocumental(env, row, timing) {
     usuarioId: propietarioId,
     rolDestino: row.propietario_rol || "",
     tipo: "DOCUMENTACION",
-    titulo: "Recordatorio de documentación pendiente",
-    mensaje: `${limpiarTexto(row.centro || "Un centro")} tiene documentación pendiente de revisión para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
+    titulo: opciones.tituloNotificacion || "Recordatorio de documentación pendiente",
+    mensaje: opciones.mensajeNotificacion || `${limpiarTexto(row.centro || "Un centro")} tiene documentación pendiente de revisión para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
     urlDestino,
     dedupeSegundos: 604800
   });
 
   if (limpiarTexto(row.propietario_email)) {
-    const correo = construirCorreoRecordatorioDocumental(row);
+    const correo = construirCorreoRecordatorioDocumental(row, opciones);
     await enviarEmail(env, {
       to: row.propietario_email,
       subject: correo.asunto,
@@ -1262,13 +1293,15 @@ async function enviarRecordatorioDocumental(env, row, timing) {
   return { enviado: 1, omitido: 0, actividad_id: actividadId };
 }
 
-async function enviarRecordatorioAdminSolicitud(env, row, timing) {
+async function enviarRecordatorioAdminSolicitud(env, row, timing, opciones = {}) {
   const reservaId = Number(row.reserva_id || 0);
   const adminId = Number(row.admin_id || 0);
-  const clave = `SOLICITUD:${reservaId}:${adminId}`;
+  const tipo = limpiarTexto(opciones.tipo || "SOLICITUD");
+  const clavePrefijo = limpiarTexto(opciones.clavePrefijo || tipo || "SOLICITUD");
+  const clave = `${clavePrefijo}:${reservaId}:${adminId}`;
   const nuevo = await registrarRecordatorioLaborable(env, {
     clave,
-    tipo: "SOLICITUD",
+    tipo,
     reservaId,
     destinatarioId: adminId,
     referenciaId: Number(row.actividad_id || 0) || null,
@@ -1285,14 +1318,14 @@ async function enviarRecordatorioAdminSolicitud(env, row, timing) {
     usuarioId: adminId,
     rolDestino: "ADMIN",
     tipo: "RESERVA",
-    titulo: "Recordatorio de solicitud pendiente",
-    mensaje: `${limpiarTexto(row.centro || "Un centro")} tiene una solicitud pendiente de aceptación o rechazo para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
+    titulo: opciones.tituloNotificacion || "Recordatorio de solicitud pendiente",
+    mensaje: opciones.mensajeNotificacion || `${limpiarTexto(row.centro || "Un centro")} tiene una solicitud pendiente de aceptación o rechazo para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""}.`,
     urlDestino,
     dedupeSegundos: 604800
   });
 
   if (limpiarTexto(row.admin_email)) {
-    const correo = construirCorreoRecordatorioAdminSolicitud(row);
+    const correo = construirCorreoRecordatorioAdminSolicitud(row, opciones);
     await enviarEmail(env, {
       to: row.admin_email,
       subject: correo.asunto,
@@ -1342,6 +1375,49 @@ async function enviarRecordatoriosPendientes48hLaborables(env) {
     const timing = debeEnviarRecordatorioLaborable(row, festivosPorAnio, ahora);
     if (!timing) continue;
     const resultado = await enviarRecordatorioAdminSolicitud(env, row, timing);
+    resumen.solicitudes_enviados += Number(resultado.enviado || 0);
+    resumen.solicitudes_omitidos += Number(resultado.omitido || 0);
+  }
+
+  return resumen;
+}
+
+async function enviarRecordatoriosPendientes12h(env) {
+  await asegurarTablasRecordatoriosLaborables(env);
+  const ahora = new Date();
+  const documentales = await obtenerRecordatoriosDocumentalesCandidatos(env);
+  const administradores = await obtenerRecordatoriosAdminCandidatos(env);
+  const resumen = {
+    documentacion_enviados: 0,
+    documentacion_omitidos: 0,
+    solicitudes_enviados: 0,
+    solicitudes_omitidos: 0
+  };
+
+  for (const row of documentales) {
+    const timing = debeEnviarRecordatorio12h(row, ahora);
+    if (!timing) continue;
+    const resultado = await enviarRecordatorioDocumental(env, row, timing, {
+      urgente: true,
+      tipo: "DOCUMENTACION_12H",
+      clavePrefijo: "DOCUMENTACION_12H",
+      tituloNotificacion: "Recordatorio urgente de documentación pendiente",
+      mensajeNotificacion: `Faltan menos de 12 horas para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""} y ${limpiarTexto(row.centro || "un centro")} tiene documentación pendiente de revisión.`
+    });
+    resumen.documentacion_enviados += Number(resultado.enviado || 0);
+    resumen.documentacion_omitidos += Number(resultado.omitido || 0);
+  }
+
+  for (const row of administradores) {
+    const timing = debeEnviarRecordatorio12h(row, ahora);
+    if (!timing) continue;
+    const resultado = await enviarRecordatorioAdminSolicitud(env, row, timing, {
+      urgente: true,
+      tipo: "SOLICITUD_12H",
+      clavePrefijo: "SOLICITUD_12H",
+      tituloNotificacion: "Recordatorio urgente de solicitud pendiente",
+      mensajeNotificacion: `Faltan menos de 12 horas para ${limpiarTexto(row.actividad_nombre || "la actividad")}${limpiarTexto(row.codigo_reserva) ? ` (${limpiarTexto(row.codigo_reserva)})` : ""} y ${limpiarTexto(row.centro || "un centro")} tiene una solicitud pendiente de aceptación o rechazo.`
+    });
     resumen.solicitudes_enviados += Number(resultado.enviado || 0);
     resumen.solicitudes_omitidos += Number(resultado.omitido || 0);
   }
@@ -1406,6 +1482,7 @@ export async function ejecutarMantenimientoReservas(env) {
   await asegurarTablaHistorialReservas(env);
   await asegurarColumnaRechazoEliminaEn(env);
   const recordatoriosLaborables = await enviarRecordatoriosPendientes48hLaborables(env);
+  const recordatoriosUrgentes12h = await enviarRecordatoriosPendientes12h(env);
   const rechazadasAutomaticamente = await rechazarReservasSuspendidasVencidas(env);
   const rechazadasEliminadasPorPlazo = await borrarReservasRechazadasVencidas(env);
   const prereservasExpiradas = await normalizarPrereservasExpiradas(env);
@@ -1423,6 +1500,7 @@ export async function ejecutarMantenimientoReservas(env) {
     prereservas_consolidadas_con_asignados: prereservasExpiradas.consolidadas_con_asignados,
     prereservas_eliminadas_sin_asignados: prereservasExpiradas.eliminadas_sin_asignados,
     recordatorios_laborables: recordatoriosLaborables,
+    recordatorios_urgentes_12h: recordatoriosUrgentes12h,
     residuos_legacy_eliminados: residualesEliminadas,
     archivadas,
     eliminadas,

@@ -1017,6 +1017,16 @@
       font-weight: 700;
     }
 
+    .confirmacion-envio-texto .linea-aviso-telefonico {
+      margin-top: 4px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #f0b8b8;
+      background: #fff1f1;
+      color: #8f1d1d;
+      font-weight: 700;
+    }
+
     .confirmacion-envio-mensaje {
       margin-top: 10px;
       padding: 10px 12px;
@@ -2242,6 +2252,22 @@ function obtenerDisponiblesFormulario(franja) {
       return disponiblesBase + Number(reservaExistente?.plazas_bloqueadas_actualmente || 0);
     }
 
+    function obtenerInicioFranjaSeleccionada(franja) {
+      const fecha = String(franja?.fecha || "").trim().slice(0, 10);
+      const hora = String(franja?.hora_inicio || "00:00").trim().slice(0, 5) || "00:00";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+      const inicio = new Date(`${fecha}T${hora}`);
+      return Number.isNaN(inicio.getTime()) ? null : inicio;
+    }
+
+    function debeAvisarConfirmacionTelefonica12h() {
+      if (!actividadUsaFranjas()) return false;
+      const inicio = obtenerInicioFranjaSeleccionada(obtenerFranjaSeleccionada());
+      if (!inicio) return false;
+      const diferencia = inicio.getTime() - Date.now();
+      return diferencia > 0 && diferencia < (12 * 60 * 60 * 1000);
+    }
+
     function configurarPantallaSegunModo(reserva) {
       const btnGuardarBorrador = document.getElementById("btnGuardarBorrador");
       const btnPrepararEnvio = document.getElementById("btnPrepararEnvio");
@@ -2775,11 +2801,15 @@ function obtenerDisponiblesFormulario(franja) {
       const textoCierre = actividadUsaFranjas()
         ? "Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria."
         : "Además, se permitirá ampliar la lista de asistentes conforme a las reglas de disponibilidad de esta actividad.";
+      const avisoTelefonico = debeAvisarConfirmacionTelefonica12h()
+        ? `<p class="linea-aviso-telefonico">Faltan menos de 12 horas para el comienzo de la actividad. Debe confirmar telefónicamente esta solicitud con el organizador.</p>`
+        : "";
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
         <p>Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con una pre-reserva de <span class="resaltado">${datos.plazas_solicitadas}</span> plazas.</p>
         <p>El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.</p>
         <p class="linea-clave-consolidacion">Transcurrido ese plazo, las plazas pre-reservadas no asignadas volverán a quedar disponibles.</p>
+        ${avisoTelefonico}
         <p>Si, pasado el tiempo de consolidación, no se ha asignado al menos un asistente, la solicitud quedará anulada automáticamente por el sistema.</p>
         <p>${textoCierre}</p>
       `;
