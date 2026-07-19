@@ -1029,6 +1029,7 @@
           <select id="filtroEstado">
             <option value="">Todos</option>
             <option value="BORRADOR">Borrador</option>
+            <option value="EN_REVISION">En revisión</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="CONFIRMADA">Confirmada</option>
             <option value="SUSPENDIDA">Suspendida</option>
@@ -1152,6 +1153,7 @@
       const e = normalizarEstadoReserva(estado).toLowerCase();
       if (e === "borrador") return "borrador";
       if (e === "pendiente") return "pendiente";
+      if (e === "en_revision") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
@@ -1162,6 +1164,7 @@
     function textoEstadoVisible(estado) {
       const e = normalizarEstadoReserva(estado);
       if (e === "BORRADOR") return "Borrador";
+      if (e === "EN_REVISION") return "En revisión";
       if (e === "PENDIENTE") return "Pendiente";
       if (e === "CONFIRMADA") return "Confirmada";
       if (e === "SUSPENDIDA") return "Suspendida";

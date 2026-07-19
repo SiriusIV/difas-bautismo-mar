@@ -2,6 +2,7 @@ import { getUserSession } from "./_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { asegurarTablaHistorialReservas } from "../_reservas_historial.js";
 import { asegurarColumnaRechazoEliminaEn } from "../_reservas_rechazo_plazo.js";
+import { validarDocumentacionReserva } from "../_reservas_documentacion.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -11,7 +12,7 @@ function json(data, status = 200) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esErrorColumnaDuplicada(error) {
@@ -70,6 +71,18 @@ function tieneProgramacionValida(row) {
     String(row?.hora_inicio || "").trim() &&
     String(row?.hora_fin || "").trim()
   );
+}
+
+function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
+  const estado = normalizarEstadoReserva(estadoActual);
+  if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) return estado;
+  if (!validacionDocumental?.requiere_documentacion) return estado;
+  if (validacionDocumental.ok) {
+    return estado === "EN_REVISION" ? "PENDIENTE" : estado;
+  }
+
+  const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
+  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
 }
 
 export async function onRequestGet(context) {
@@ -173,10 +186,20 @@ export async function onRequestGet(context) {
 
     const rows = (result.results || []).filter(tieneProgramacionValida);
 
-    const data = rows.map(row => ({
+    const data = await Promise.all(rows.map(async (row) => {
+      const validacionDocumental = await validarDocumentacionReserva(env, {
+        usuarioId: user.id,
+        adminId: row.admin_id,
+        actividadId: row.actividad_id,
+        reservaId: row.id
+      });
+      const estadoEfectivo = estadoReservaSegunDocumentacion(row.estado, validacionDocumental);
+      const rowEfectivo = { ...row, estado: estadoEfectivo };
+      return ({
       id: row.id,
       codigo_reserva: row.codigo_reserva,
-      estado: normalizarEstadoReserva(row.estado),
+      estado: estadoEfectivo,
+      estado_real: normalizarEstadoReserva(row.estado),
       token_edicion: row.token_edicion || "",
       actividad_id: Number(row.actividad_id || 0),
       franja_id: Number(row.franja_id || 0) || null,
@@ -194,14 +217,21 @@ export async function onRequestGet(context) {
       plazas_reservadas_historicas: Number(row.plazas_prereservadas || 0),
       prereserva_expira_en: row.prereserva_expira_en || "",
       rechazo_elimina_en: row.rechazo_elimina_en || "",
-      prereserva_vigente: esPrereservaVigente(row),
-      plazas_pendientes: calcularPlazasReservadasPendientes(row),
-      plazas_asignadas: calcularPlazasAsignadas(row),
+      prereserva_vigente: esPrereservaVigente(rowEfectivo),
+      plazas_pendientes: calcularPlazasReservadasPendientes(rowEfectivo),
+      plazas_asignadas: calcularPlazasAsignadas(rowEfectivo),
+      requiere_documentacion: !!validacionDocumental?.requiere_documentacion,
+      estado_documental: validacionDocumental?.estado_documental || "",
+      documentacion_validada: validacionDocumental?.ok ? 1 : 0,
+      documentacion_bloqueante: validacionDocumental?.requiere_documentacion && !validacionDocumental?.ok ? 1 : 0,
+      documentos_estado: validacionDocumental?.documentos_estado || [],
+      documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
       ultimo_actor_usuario_id: Number(row.ultimo_actor_usuario_id || 0),
       ultimo_actor_rol: String(row.ultimo_actor_rol || "").trim().toUpperCase(),
       ultima_accion_historial: String(row.ultima_accion_historial || "").trim().toUpperCase(),
       ultimo_estado_origen_historial: String(row.ultimo_estado_origen_historial || "").trim().toUpperCase(),
       ultima_observacion_historial: row.ultima_observacion_historial || ""
+      });
     }));
 
     return json({ ok: true, data });
