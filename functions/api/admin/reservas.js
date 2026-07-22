@@ -24,6 +24,34 @@ function limpiarTexto(valor) {
   return String(valor || "").trim();
 }
 
+function normalizarEstadoReserva(estado) {
+  const valor = limpiarTexto(estado).toUpperCase();
+  if (valor === "EN REVISION") return "EN_REVISION";
+  return valor;
+}
+
+function estadoDocumentalSuspende(estadoDocumental) {
+  return [
+    "NO_INICIADO",
+    "NO_COMPLETADO",
+    "NO_ENVIADO",
+    "NO_PRESENTADO",
+    "NO_ACTUALIZADO",
+    "RECHAZADA",
+    "RECHAZADO"
+  ].includes(limpiarTexto(estadoDocumental).toUpperCase());
+}
+
+function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
+  const estado = normalizarEstadoReserva(estadoActual);
+  if (["BORRADOR", "CANCELADA"].includes(estado)) return estado;
+  if (!validacionDocumental?.requiere_documentacion) return estado;
+  if (validacionDocumental.ok) {
+    return estado === "EN_REVISION" || estado === "SUSPENDIDA" ? "PENDIENTE" : estado;
+  }
+  return estadoDocumentalSuspende(validacionDocumental.estado_documental) ? "SUSPENDIDA" : "EN_REVISION";
+}
+
 function esErrorColumnaDuplicada(error) {
   const texto = limpiarTexto(error?.message || error || "").toLowerCase();
   return texto.includes("duplicate column name") || texto.includes("duplicate column");
@@ -182,11 +210,6 @@ async function obtenerReservas(env, filtros) {
 
   aplicarFiltroAdmins(where, binds, filtros);
 
-  if (filtros.estado) {
-    where.push("r.estado = ?");
-    binds.push(filtros.estado);
-  }
-
   if (filtros.buscar) {
     where.push("r.centro = ?");
     binds.push(filtros.buscar);
@@ -295,7 +318,7 @@ function resumirReservas(rows) {
   };
 
   for (const row of rows) {
-    const estado = String(row.estado || "").toUpperCase();
+    const estado = normalizarEstadoReserva(row.estado);
 
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
@@ -926,7 +949,7 @@ export async function onRequestGet(context) {
       requisitosMap.set(actividadId, await obtenerRequisitosActividad(env, actividadId));
     }
 
-    const reservas = await Promise.all(rows.map(async (row) => {
+    let reservas = await Promise.all(rows.map(async (row) => {
       const validacionDocumental = await validarDocumentacionReserva(env, {
         usuarioId: row.usuario_id,
         adminId: row.actividad_admin_id,
@@ -934,6 +957,7 @@ export async function onRequestGet(context) {
         reservaId: row.id
       });
       const documentacionValidada = !!validacionDocumental?.ok;
+      const estadoEfectivo = estadoReservaSegunDocumentacion(row.estado, validacionDocumental);
       return ({
       id: row.id,
       usuario_id: row.usuario_id,
@@ -943,7 +967,8 @@ export async function onRequestGet(context) {
       actividad_nombre: row.actividad_nombre,
       codigo_reserva: row.codigo_reserva,
       token_edicion: row.token_edicion || "",
-      estado: row.estado,
+      estado: estadoEfectivo,
+      estado_real: normalizarEstadoReserva(row.estado),
       centro: row.centro || "",
       contacto: row.contacto || "",
       telefono: row.telefono || "",
@@ -975,7 +1000,11 @@ export async function onRequestGet(context) {
       });
     }));
 
-    const resumen = resumirReservas(rows);
+    if (filtros.estado) {
+      reservas = reservas.filter((reserva) => normalizarEstadoReserva(reserva.estado) === normalizarEstadoReserva(filtros.estado));
+    }
+
+    const resumen = resumirReservas(reservas);
 
     return json({
       ok: true,
@@ -1097,7 +1126,7 @@ export async function onRequestGet(context) {
 
     const confirmacionDiferidaPorDocumentacion = !validacionDocumental.ok && nuevoEstado === "CONFIRMADA";
     if (confirmacionDiferidaPorDocumentacion) {
-      nuevoEstado = "EN_REVISION";
+      nuevoEstado = estadoReservaSegunDocumentacion(nuevoEstado, validacionDocumental);
     } else if (!validacionDocumental.ok) {
       return json(
         {
