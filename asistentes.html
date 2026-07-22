@@ -1784,6 +1784,11 @@
         categoria_edad: v.categoria_edad
       }));
 
+      if (debeMostrarAvisoSinAsistentes(visitantes)) {
+        abrirModalAvisoSinAsistentes(() => guardarVisitantesEnServidor(visitantes, { confirmarSinAsistentes: true }));
+        return;
+      }
+
       await guardarVisitantesEnServidor(visitantes);
     }
 
@@ -1821,7 +1826,7 @@
       }
     }
 
-    async function guardarVisitantesEnServidor(visitantes) {
+    async function guardarVisitantesEnServidor(visitantes, opciones = {}) {
       try {
         envioEnCurso = true;
         const btnGuardar = document.getElementById("btnGuardarAsistentes");
@@ -1834,7 +1839,8 @@
           },
           body: JSON.stringify({
             token_edicion: tokenEdicion,
-            visitantes
+            visitantes,
+            confirmar_sin_asistentes: opciones.confirmarSinAsistentes === true
           })
         });
 

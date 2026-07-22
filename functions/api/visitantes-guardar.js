@@ -229,6 +229,7 @@ export async function onRequestPost(context) {
 
     const tokenEdicion = limpiarTexto(data.token_edicion);
     const visitantesEntrada = Array.isArray(data.visitantes) ? data.visitantes : [];
+    const confirmarSinAsistentes = data.confirmar_sin_asistentes === true;
 
     if (!tokenEdicion) {
       return json(
@@ -296,6 +297,13 @@ export async function onRequestPost(context) {
     }
 
     const totalDeseado = visitantesNormalizados.length;
+    if (totalDeseado === 0 && !confirmarSinAsistentes) {
+      return json(
+        { ok: false, error: "No se han recibido asistentes para guardar. Si desea dejar la solicitud sin asistentes, confirme la acción desde el aviso correspondiente." },
+        { status: 400 }
+      );
+    }
+
     if (maximoPermitidoParaEstaReserva !== null && totalDeseado > maximoPermitidoParaEstaReserva) {
       return json(
         {
