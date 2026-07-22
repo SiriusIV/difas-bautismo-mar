@@ -1439,6 +1439,29 @@
     </div>
   </div>
 
+  <div id="modalAvisoDocumentacionIncompleta" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 720px;">
+      <div class="modal-encabezado">
+        <h3>Documentación obligatoria incompleta</h3>
+        <button type="button" id="btnCerrarModalAvisoDocumentacionIncompletaSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="bloque">
+        <div class="confirmacion-envio-texto">
+          <p>No se ha incluido toda la documentación obligatoria que debe acompañar a la solicitud.</p>
+          <p>Si continúa, la solicitud quedará en estado <span class="resaltado">Suspendida</span> y dispondrá de <span class="resaltado">24 horas</span> para completar o actualizar la documentación requerida.</p>
+          <p class="linea-clave-consolidacion">Transcurrido ese plazo sin regularizar la documentación, la solicitud será rechazada automáticamente por el sistema.</p>
+          <div id="detalleAvisoDocumentacionIncompleta"></div>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button type="button" class="btn-secundario" id="btnCancelarAvisoDocumentacionIncompleta">Cancelar</button>
+        <button type="button" id="btnContinuarAvisoDocumentacionIncompleta">Continuar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalObservacionesDocumento" class="modal-fondo" aria-hidden="true">
     <div class="modal" style="max-width: 640px;">
       <div class="modal-encabezado">
@@ -1542,6 +1565,27 @@
 
     function obtenerDocumentoPendienteSolicitud(documentoId) {
       return documentosPendientesSolicitud.get(Number(documentoId || 0)) || null;
+    }
+
+    function documentoSolicitudEstaRegularizado(doc) {
+      const documentoId = Number(doc?.id || 0);
+      const pendiente = obtenerDocumentoPendienteSolicitud(documentoId);
+      if (pendiente?.file || pendiente?.objectUrl) return true;
+
+      const estado = normalizarEstadoDocumentoSolicitud(doc?.estado_documento || doc?.estado || doc?.estado_efectivo || doc?.entrega_estado);
+      const archivoRemitido = String(doc?.entrega_archivo_url || "").trim();
+      const entregado = !!archivoRemitido || !!doc?.entregado;
+      if (!entregado) return false;
+      return !["NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADO", "RECHAZADA", "SUSPENDIDA"].includes(estado);
+    }
+
+    function obtenerDocumentosSolicitudIncompletos() {
+      const documentos = Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [];
+      return documentos.filter((doc) => !documentoSolicitudEstaRegularizado(doc));
+    }
+
+    function hayDocumentacionObligatoriaIncompleta() {
+      return obtenerDocumentosSolicitudIncompletos().length > 0;
     }
 
     function liberarDocumentoPendienteSolicitud(documentoId) {
@@ -2835,6 +2879,33 @@ function obtenerDisponiblesFormulario(franja) {
       }
     }
 
+    function abrirModalAvisoDocumentacionIncompleta(datos) {
+      datosPendientesEnvio = datos;
+      const documentos = obtenerDocumentosSolicitudIncompletos();
+      const detalle = document.getElementById("detalleAvisoDocumentacionIncompleta");
+      if (detalle) {
+        detalle.innerHTML = documentos.length
+          ? `
+            <div class="documentacion-aviso-lista">
+              <strong>Documentos pendientes:</strong>
+              <ul>${documentos.map((doc) => `<li>${escapeHtml(doc.nombre || doc.titulo || "Documento obligatorio")}</li>`).join("")}</ul>
+            </div>
+          `
+          : "";
+      }
+      establecerVisibilidadModal("modalAvisoDocumentacionIncompleta", true);
+    }
+
+    function cerrarModalAvisoDocumentacionIncompleta() {
+      establecerVisibilidadModal("modalAvisoDocumentacionIncompleta", false);
+    }
+
+    function continuarEnvioConDocumentacionIncompleta() {
+      const datos = datosPendientesEnvio;
+      cerrarModalAvisoDocumentacionIncompleta();
+      if (datos) abrirModalConfirmacion(datos);
+    }
+
     function mostrarMensajeModalConfirmacion(tipo, texto) {
       const mensaje = document.getElementById("mensajeConfirmacionEnvio");
       if (!mensaje) return;
@@ -2904,6 +2975,7 @@ function obtenerDisponiblesFormulario(franja) {
         document.getElementById("btnPrepararEnvio").disabled = true;
         document.getElementById("btnGuardarBorrador").disabled = true;
 
+        const documentacionIncompletaAlEnviar = hayDocumentacionObligatoriaIncompleta();
         const payload = { ...datosPendientesEnvio };
         const token = getTokenEdicion();
         let endpoint = "/api/reservar";
@@ -2945,7 +3017,10 @@ function obtenerDisponiblesFormulario(franja) {
         limpiarSolicitudPendiente();
         tokenBorrador = "";
         await cargarDocumentacionSolicitud();
-        mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${construirAvisoCorreoAdmin(data)}`);
+        const avisoDocumentacion = documentacionIncompletaAlEnviar
+          ? " La solicitud queda suspendida por documentación pendiente; dispone de 24 horas para completarla o actualizarla."
+          : "";
+        mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${avisoDocumentacion}${construirAvisoCorreoAdmin(data)}`);
         aplicarAccionDocumentacionModal(extraerAccesoDocumentacion(data));
         const accionesConfirmacion = document.querySelector("#modalConfirmacionEnvio .acciones");
         if (accionesConfirmacion) {
@@ -3073,6 +3148,10 @@ function obtenerDisponiblesFormulario(franja) {
         }
 
         datosPendientesEnvio = validacion.datos;
+        if (hayDocumentacionObligatoriaIncompleta()) {
+          abrirModalAvisoDocumentacionIncompleta(validacion.datos);
+          return;
+        }
         abrirModalConfirmacion(validacion.datos);
       });
 
@@ -3107,6 +3186,12 @@ function obtenerDisponiblesFormulario(franja) {
           datosPendientesEnvio = null;
           cerrarModalConfirmacion();
         }
+      });
+      document.getElementById("btnCerrarModalAvisoDocumentacionIncompletaSuperior").addEventListener("click", cerrarModalAvisoDocumentacionIncompleta);
+      document.getElementById("btnCancelarAvisoDocumentacionIncompleta").addEventListener("click", cerrarModalAvisoDocumentacionIncompleta);
+      document.getElementById("btnContinuarAvisoDocumentacionIncompleta").addEventListener("click", continuarEnvioConDocumentacionIncompleta);
+      document.getElementById("modalAvisoDocumentacionIncompleta").addEventListener("click", function (e) {
+        if (e.target.id === "modalAvisoDocumentacionIncompleta") cerrarModalAvisoDocumentacionIncompleta();
       });
       
       document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);

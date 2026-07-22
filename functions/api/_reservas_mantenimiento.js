@@ -232,7 +232,7 @@ function construirCorreoAdminCaducidadSuspension(contexto = {}) {
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad documental";
-  const mensaje = `${centro} no regularizó la documentación pendiente al menos 24 horas antes del inicio de ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud suspendida ha pasado automáticamente a rechazada.`;
+  const mensaje = `${centro} no regularizó la documentación pendiente durante las 24 horas posteriores a la suspensión documental de ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud suspendida ha pasado automáticamente a rechazada.`;
 
   const texto = [
     `Hola ${adminNombre},`,
@@ -274,7 +274,7 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
   });
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó al menos 24 horas antes del inicio de la actividad.`;
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a su suspensión documental.`;
 
   const texto = [
     saludo,
@@ -317,7 +317,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "ADMIN",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente al menos 24 horas antes del inicio de ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
+        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente durante las 24 horas posteriores a la suspensión documental de ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
         urlDestino: actividadId > 0
           ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
           : "/admin-reservas.html"
@@ -332,7 +332,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente al menos 24 horas antes del inicio.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a la suspensión documental.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -398,6 +398,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
       COALESCE(NULLIF(TRIM(r.email), ''), NULLIF(TRIM(us_solicitante.email), '')) AS email,
       COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
       a.admin_id,
+      suspension.fecha_evento AS fecha_suspension_documental,
       u.email AS admin_email,
       u.nombre AS admin_nombre,
       u.nombre_publico AS admin_nombre_publico,
@@ -415,22 +416,16 @@ async function rechazarReservasSuspendidasVencidas(env) {
       ON u.id = a.admin_id
     LEFT JOIN usuarios us_solicitante
       ON us_solicitante.id = r.usuario_id
+    INNER JOIN (
+      SELECT reserva_id, MAX(fecha_evento) AS fecha_evento
+      FROM reservas_historial_estados
+      WHERE accion = 'SUSPENSION_DOCUMENTAL'
+        AND estado_destino = 'SUSPENDIDA'
+      GROUP BY reserva_id
+    ) suspension
+      ON suspension.reserva_id = r.id
     WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'SUSPENDIDA'
-      AND datetime(
-        COALESCE(
-          CASE
-            WHEN f.fecha IS NOT NULL AND f.hora_inicio IS NOT NULL
-              THEN f.fecha || ' ' || f.hora_inicio
-            ELSE NULL
-          END,
-          CASE
-            WHEN a.fecha_inicio IS NOT NULL
-              THEN a.fecha_inicio || ' 00:00:00'
-            ELSE NULL
-          END
-        ),
-        '-24 hours'
-      ) <= datetime('now')
+      AND datetime(suspension.fecha_evento, '+24 hours') <= datetime('now')
   `).all();
 
   const reservas = rows?.results || [];
@@ -456,7 +451,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
         accion: "CADUCIDAD_SUSPENSION",
         estadoOrigen: "SUSPENDIDA",
         estadoDestino: "RECHAZADA",
-          observaciones: "La solicitud suspendida no regularizó documentación 24 horas antes del inicio de la actividad.",
+          observaciones: "La solicitud suspendida no regularizó la documentación obligatoria durante las 24 horas posteriores a la suspensión documental.",
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });

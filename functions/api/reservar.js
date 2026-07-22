@@ -74,6 +74,12 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
+function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE") {
+  if (!validacionDocumental || validacionDocumental.ok !== false) return estadoPorDefecto;
+  const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
+  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+}
+
 function accionEsGuardarBorrador(valor) {
   return limpiarTexto(valor).toLowerCase() === "guardar_borrador";
 }
@@ -178,6 +184,43 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
     mensaje: `${centro || "Un centro"} ha solicitado ${actividadNombre || "una actividad"}${codigoReserva ? ` (${codigoReserva})` : ""}.`,
     urlDestino: actividadId ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}` : "/admin-reservas.html"
   });
+}
+
+async function avisarSuspensionDocumentalInicial(env, {
+  usuarioId,
+  email,
+  actividadNombre,
+  codigoReserva
+} = {}) {
+  const idUsuario = Number(usuarioId || 0);
+  const actividad = limpiarTexto(actividadNombre || "la actividad");
+  const codigo = limpiarTexto(codigoReserva || "");
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda suspendida por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const tareas = [];
+
+  if (idUsuario > 0) {
+    tareas.push(crearNotificacion(env, {
+      usuarioId: idUsuario,
+      rolDestino: "SOLICITANTE",
+      tipo: "RESERVA",
+      titulo: "Solicitud suspendida por documentacion",
+      mensaje,
+      urlDestino: "/usuario-panel.html"
+    }).catch(() => ({ ok: false })));
+  }
+
+  if (limpiarTexto(email)) {
+    tareas.push(enviarEmail(env, {
+      to: limpiarTexto(email),
+      subject: "[Reservas] Solicitud suspendida por documentacion",
+      text: mensaje,
+      html: `<p>${escaparHtml(mensaje)}</p>`
+    }).catch(() => ({ ok: false })));
+  }
+
+  if (!tareas.length) return { ok: false, skipped: true };
+  await Promise.all(tareas);
+  return { ok: true };
 }
 
 function construirDescripcionProgramacion(contexto = {}) {
@@ -782,6 +825,9 @@ if (Number(actividad.activa || 0) !== 1) {
     const prereservaExpiraEn = guardarComoBorrador
       ? null
       : await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
+    const estadoInicialReserva = guardarComoBorrador
+      ? "BORRADOR"
+      : obtenerEstadoReservaPorDocumentacion(validacionDocumental);
 
     if (!guardarComoBorrador && !prereservaExpiraEn) {
       return json(
@@ -824,7 +870,7 @@ if (Number(actividad.activa || 0) !== 1) {
         actividadId,
         codigoReserva,
         tokenEdicion,
-        guardarComoBorrador ? "BORRADOR" : "PENDIENTE",
+        estadoInicialReserva,
         centro,
         contacto,
         telefono,
@@ -889,12 +935,30 @@ if (Number(actividad.activa || 0) !== 1) {
           reservaId: reservaCreada?.id,
           accion: "SOLICITUD_PRESENTADA",
           estadoOrigen: null,
-          estadoDestino: "PENDIENTE",
+          estadoDestino: estadoInicialReserva,
           observaciones,
           actorUsuarioId: usuarioId,
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"
         });
+        if (estadoInicialReserva === "SUSPENDIDA") {
+          await registrarEventoReserva(env, {
+            reservaId: reservaCreada?.id,
+            accion: "SUSPENSION_DOCUMENTAL",
+            estadoOrigen: "PENDIENTE",
+            estadoDestino: "SUSPENDIDA",
+            observaciones: "La solicitud se envió con documentación obligatoria pendiente de completar o actualizar. Dispone de 24 horas para regularizarla.",
+            actorUsuarioId: usuarioId,
+            actorRol: "SOLICITANTE",
+            actorNombre: contacto || centro || "Solicitante"
+          });
+          await avisarSuspensionDocumentalInicial(env, {
+            usuarioId,
+            email,
+            actividadNombre: actividad.actividad_nombre || "Actividad",
+            codigoReserva: reservaCreada?.codigo_reserva || codigoReserva
+          });
+        }
       } catch (errorHistorial) {
         historialReserva = {
           ok: false,

@@ -58,7 +58,7 @@ export function construirEmailTextoReservaCondicionadaDocumentacion({
 }) {
   const organizador = nombreVisibleAdmin(admin);
   const lineas = [
-    "Tu solicitud ha quedado suspendida por un cambio en la documentacion obligatoria vigente.",
+    "Tu solicitud ha quedado suspendida porque la documentacion obligatoria asociada a la actividad esta pendiente de completar o actualizar.",
     "",
     `${motivo_texto || "Se ha producido un cambio documental que requiere una nueva revision."}`,
     "",
@@ -76,8 +76,8 @@ export function construirEmailTextoReservaCondicionadaDocumentacion({
 
   lineas.push(
     "",
-    "Mientras no regularices la documentacion, la actividad quedara suspendida documentalmente.",
-    "Si faltan menos de 24 horas para el inicio de la actividad y la documentacion sigue sin regularizarse, la solicitud pasara automaticamente a rechazada.",
+    "Mientras no regularices la documentacion, la solicitud quedara suspendida documentalmente.",
+    "Dispones de 24 horas desde la suspension documental para completar o actualizar la documentacion. Si pasado ese plazo no queda regularizada, la solicitud pasara automaticamente a rechazada.",
     enlace_perfil ? `Acceso directo: ${enlace_perfil}` : "Accede a tu perfil para revisar y actualizar la documentacion obligatoria."
   );
 
@@ -103,7 +103,7 @@ export function construirEmailHtmlReservaCondicionadaDocumentacion({
   `).join("");
 
   return `
-    <p>Tu solicitud ha quedado suspendida por un cambio en la documentacion obligatoria vigente.</p>
+    <p>Tu solicitud ha quedado suspendida porque la documentacion obligatoria asociada a la actividad esta pendiente de completar o actualizar.</p>
     <p>${escaparHtml(motivo_texto || "Se ha producido un cambio documental que requiere una nueva revision.")}</p>
     <p><strong>Organizador:</strong> ${organizador}</p>
     <p><strong>Centro:</strong> ${escaparHtml(centro?.centro || "")}</p>
@@ -121,8 +121,8 @@ export function construirEmailHtmlReservaCondicionadaDocumentacion({
         <tbody>${filasDocs}</tbody>
       </table>
     ` : ""}
-    <p>Mientras no regularices la documentacion, la actividad quedara suspendida documentalmente.</p>
-    <p>Si faltan menos de 24 horas para el inicio de la actividad y la documentacion sigue sin regularizarse, la solicitud pasara automaticamente a rechazada.</p>
+    <p>Mientras no regularices la documentacion, la solicitud quedara suspendida documentalmente.</p>
+    <p>Dispones de 24 horas desde la suspension documental para completar o actualizar la documentacion. Si pasado ese plazo no queda regularizada, la solicitud pasara automaticamente a rechazada.</p>
     ${enlace_perfil ? `
       <p>
         <a href="${escaparHtml(enlace_perfil)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#0b5ed7;color:#ffffff;text-decoration:none;font-weight:bold;">

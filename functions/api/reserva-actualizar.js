@@ -45,6 +45,12 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
+function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE") {
+  if (!validacionDocumental || validacionDocumental.ok !== false) return estadoPorDefecto;
+  const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
+  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+}
+
 async function obtenerFechaExpiracionSQLite(env, minutos) {
   const row = await env.DB.prepare(`
     SELECT datetime('now', '+' || ? || ' minutes') AS expira
@@ -148,6 +154,43 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
     mensaje: `${centro || "Un centro"} ha solicitado ${actividadNombre || "una actividad"}${codigoReserva ? ` (${codigoReserva})` : ""}.`,
     urlDestino: actividadId ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}` : "/admin-reservas.html"
   });
+}
+
+async function avisarSuspensionDocumentalInicial(env, {
+  usuarioId,
+  email,
+  actividadNombre,
+  codigoReserva
+} = {}) {
+  const idUsuario = Number(usuarioId || 0);
+  const actividad = limpiarTexto(actividadNombre || "la actividad");
+  const codigo = limpiarTexto(codigoReserva || "");
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda suspendida por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const tareas = [];
+
+  if (idUsuario > 0) {
+    tareas.push(crearNotificacion(env, {
+      usuarioId: idUsuario,
+      rolDestino: "SOLICITANTE",
+      tipo: "RESERVA",
+      titulo: "Solicitud suspendida por documentacion",
+      mensaje,
+      urlDestino: "/usuario-panel.html"
+    }).catch(() => ({ ok: false })));
+  }
+
+  if (limpiarTexto(email)) {
+    tareas.push(enviarEmail(env, {
+      to: limpiarTexto(email),
+      subject: "[Reservas] Solicitud suspendida por documentacion",
+      text: mensaje,
+      html: `<p>${escaparHtml(mensaje)}</p>`
+    }).catch(() => ({ ok: false })));
+  }
+
+  if (!tareas.length) return { ok: false, skipped: true };
+  await Promise.all(tareas);
+  return { ok: true };
 }
 
 function construirDescripcionProgramacion(contexto = {}) {
@@ -922,6 +965,8 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "No se pudo calcular la expiración de la prereserva." }, { status: 500 });
       }
 
+      const estadoDestinoEnvio = obtenerEstadoReservaPorDocumentacion(validacionDocumental);
+
       const updateResult = await env.DB.prepare(`
         UPDATE reservas
         SET
@@ -936,7 +981,7 @@ export async function onRequestPost(context) {
           observaciones = ?,
           observaciones_admin = NULL,
           rechazo_elimina_en = NULL,
-          estado = 'PENDIENTE',
+          estado = ?,
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -951,6 +996,7 @@ export async function onRequestPost(context) {
         plazasSolicitadas,
         prereservaExpiraEn,
         observaciones,
+        estadoDestinoEnvio,
         reservaActual.id
       ).run();
 
@@ -962,12 +1008,30 @@ export async function onRequestPost(context) {
         reservaId: reservaActual.id,
         accion: "SOLICITUD_PRESENTADA",
         estadoOrigen: "BORRADOR",
-        estadoDestino: "PENDIENTE",
+        estadoDestino: estadoDestinoEnvio,
         observaciones,
         actorUsuarioId: reservaActual.usuario_id,
         actorRol: "SOLICITANTE",
         actorNombre: contacto || centro || "Solicitante"
       });
+      if (estadoDestinoEnvio === "SUSPENDIDA") {
+        await registrarEventoReserva(env, {
+          reservaId: reservaActual.id,
+          accion: "SUSPENSION_DOCUMENTAL",
+          estadoOrigen: "PENDIENTE",
+          estadoDestino: "SUSPENDIDA",
+          observaciones: "La solicitud se envio con documentacion obligatoria pendiente de completar o actualizar. Dispone de 24 horas para regularizarla.",
+          actorUsuarioId: reservaActual.usuario_id,
+          actorRol: "SOLICITANTE",
+          actorNombre: contacto || centro || "Solicitante"
+        });
+        await avisarSuspensionDocumentalInicial(env, {
+          usuarioId: reservaActual.usuario_id,
+          email,
+          actividadNombre: actividad.actividad_nombre || "Actividad",
+          codigoReserva: reservaActual.codigo_reserva
+        });
+      }
 
       let notificacionAdmin = { ok: false, skipped: true, error: "" };
       let correoAdmin = { ok: false, skipped: true, error: "" };
@@ -1015,7 +1079,7 @@ export async function onRequestPost(context) {
 
       return json({
         ok: true,
-        estado: "PENDIENTE",
+        estado: estadoDestinoEnvio,
         mensaje: "Solicitud enviada correctamente.",
         id: reservaActual.id,
         reserva_id: reservaActual.id,
@@ -1053,6 +1117,8 @@ export async function onRequestPost(context) {
         return json({ ok: false, error: "No se pudo calcular la expiración de la prereserva." }, { status: 500 });
       }
 
+      const estadoDestinoReenvio = obtenerEstadoReservaPorDocumentacion(validacionDocumental);
+
       const updateResult = await env.DB.prepare(`
         UPDATE reservas
         SET
@@ -1067,7 +1133,7 @@ export async function onRequestPost(context) {
           observaciones = ?,
           observaciones_admin = NULL,
           rechazo_elimina_en = NULL,
-          estado = 'PENDIENTE',
+          estado = ?,
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -1081,6 +1147,7 @@ export async function onRequestPost(context) {
         totalBloqueadoNuevo,
         prereservaExpiraEn,
         observaciones,
+        estadoDestinoReenvio,
         reservaActual.id
       ).run();
 
@@ -1092,12 +1159,30 @@ export async function onRequestPost(context) {
         reservaId: reservaActual.id,
         accion: "SOLICITUD_REENVIADA",
         estadoOrigen: "RECHAZADA",
-        estadoDestino: "PENDIENTE",
+        estadoDestino: estadoDestinoReenvio,
         observaciones,
         actorUsuarioId: reservaActual.usuario_id,
         actorRol: "SOLICITANTE",
         actorNombre: contacto || centro || "Solicitante"
       });
+      if (estadoDestinoReenvio === "SUSPENDIDA") {
+        await registrarEventoReserva(env, {
+          reservaId: reservaActual.id,
+          accion: "SUSPENSION_DOCUMENTAL",
+          estadoOrigen: "PENDIENTE",
+          estadoDestino: "SUSPENDIDA",
+          observaciones: "La solicitud se reenvio con documentacion obligatoria pendiente de completar o actualizar. Dispone de 24 horas para regularizarla.",
+          actorUsuarioId: reservaActual.usuario_id,
+          actorRol: "SOLICITANTE",
+          actorNombre: contacto || centro || "Solicitante"
+        });
+        await avisarSuspensionDocumentalInicial(env, {
+          usuarioId: reservaActual.usuario_id,
+          email,
+          actividadNombre: actividad.actividad_nombre || "Actividad",
+          codigoReserva: reservaActual.codigo_reserva
+        });
+      }
 
       let notificacionAdmin = { ok: false, skipped: true, error: "" };
       let correoAdmin = { ok: false, skipped: true, error: "" };
@@ -1149,7 +1234,7 @@ export async function onRequestPost(context) {
 
       return json({
         ok: true,
-        estado: "PENDIENTE",
+        estado: estadoDestinoReenvio,
         mensaje: "Solicitud reenviada correctamente y pendiente de nueva validación.",
         codigo_reserva: reservaActual.codigo_reserva,
         token_edicion: tokenEdicion,
