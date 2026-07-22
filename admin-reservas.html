@@ -745,9 +745,16 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function estadoDocumentalReserva(reserva) {
       return String(reserva?.estado_documental || "").trim().toUpperCase();
     }
+    function estadoDocumentoSuspendeReserva(estado) {
+      return ["NO_INICIADO", "NO_COMPLETADO", "NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADA", "RECHAZADO"].includes(String(estado || "").trim().toUpperCase());
+    }
     function documentacionSuspendidaReserva(reserva) {
       if (!documentacionBloqueanteReserva(reserva)) return false;
-      return ["NO_INICIADO", "NO_COMPLETADO", "NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADA", "RECHAZADO"].includes(estadoDocumentalReserva(reserva));
+      const estadosDocumentos = Array.isArray(reserva?.documentos_estado)
+        ? reserva.documentos_estado.map((doc) => String(doc?.estado || "").trim().toUpperCase()).filter(Boolean)
+        : [];
+      if (estadosDocumentos.some(estadoDocumentoSuspendeReserva)) return true;
+      return estadoDocumentoSuspendeReserva(estadoDocumentalReserva(reserva));
     }
     function documentacionEnRevisionReserva(reserva) {
       return documentacionBloqueanteReserva(reserva) && !documentacionSuspendidaReserva(reserva);

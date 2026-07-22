@@ -42,6 +42,22 @@ function estadoDocumentalSuspende(estadoDocumental) {
   ].includes(limpiarTexto(estadoDocumental).toUpperCase());
 }
 
+function estadoDocumentalEfectivo(validacionDocumental = {}) {
+  const estadosDocumentos = Array.isArray(validacionDocumental?.documentos_estado)
+    ? validacionDocumental.documentos_estado
+      .map((doc) => limpiarTexto(doc?.estado).toUpperCase())
+      .filter(Boolean)
+    : [];
+
+  if (estadosDocumentos.some((estado) => estadoDocumentalSuspende(estado))) {
+    return "SUSPENDIDA";
+  }
+
+  const estadoGlobal = limpiarTexto(validacionDocumental?.estado_documental).toUpperCase();
+  if (estadoDocumentalSuspende(estadoGlobal)) return "SUSPENDIDA";
+  return "EN_REVISION";
+}
+
 function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   const estado = normalizarEstadoReserva(estadoActual);
   if (["BORRADOR", "CANCELADA"].includes(estado)) return estado;
@@ -49,7 +65,7 @@ function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   if (validacionDocumental.ok) {
     return estado === "EN_REVISION" || estado === "SUSPENDIDA" ? "PENDIENTE" : estado;
   }
-  return estadoDocumentalSuspende(validacionDocumental.estado_documental) ? "SUSPENDIDA" : "EN_REVISION";
+  return estadoDocumentalEfectivo(validacionDocumental);
 }
 
 function esErrorColumnaDuplicada(error) {
