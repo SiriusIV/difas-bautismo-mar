@@ -1889,7 +1889,7 @@
 
     .documentacion-actividad-controles {
       display: grid;
-      grid-template-columns: minmax(280px, 1fr) auto;
+      grid-template-columns: minmax(280px, 1fr);
       gap: 10px;
       align-items: end;
     }
@@ -1900,20 +1900,6 @@
 
     .documentacion-actividad-select select {
       width: 100%;
-    }
-
-    .btn-selector-documentacion-movil {
-      display: none;
-      width: 100%;
-      min-height: 42px;
-      border: 1px solid #bfc9d4;
-      border-radius: 10px;
-      background: #fff;
-      color: var(--brand);
-      font-weight: 700;
-      text-align: left;
-      padding: 9px 12px;
-      cursor: pointer;
     }
 
     .btn-documentacion-ver-base {
@@ -2041,123 +2027,6 @@
 
     .documentacion-actividad-vacia {
       margin-top: 14px;
-    }
-
-    .modal-documentacion-movil {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 2300;
-      background: rgba(10, 18, 28, 0.48);
-      padding: 18px;
-      align-items: flex-end;
-      justify-content: center;
-    }
-
-    .modal-documentacion-movil.activo {
-      display: flex;
-    }
-
-    .modal-documentacion-panel {
-      width: min(520px, 100%);
-      max-height: min(78vh, 640px);
-      background: #fff;
-      border-radius: 22px;
-      box-shadow: 0 18px 42px rgba(8, 24, 44, 0.28);
-      padding: 24px 18px 16px;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .modal-documentacion-cerrar {
-      position: absolute;
-      top: 12px;
-      right: 14px;
-      border: none;
-      background: transparent;
-      color: #66788a;
-      width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      cursor: pointer;
-    }
-
-    .modal-documentacion-cerrar svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .modal-documentacion-panel h4 {
-      margin: 0;
-      padding-right: 26px;
-      font-size: 20px;
-      line-height: 1.2;
-      color: var(--brand);
-      font-weight: 800;
-    }
-
-    .modal-documentacion-lista {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: auto;
-      max-height: 46vh;
-      background: #f8fbff;
-    }
-
-    .modal-documentacion-opcion {
-      display: grid;
-      grid-template-columns: 28px minmax(0, 1fr);
-      gap: 10px;
-      align-items: start;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      color: #273849;
-      font-weight: 700;
-      line-height: 1.25;
-    }
-
-    .modal-documentacion-opcion:last-child {
-      border-bottom: none;
-    }
-
-    .modal-documentacion-opcion input {
-      width: 20px;
-      height: 20px;
-      margin: 1px 0 0;
-      accent-color: var(--primary);
-    }
-
-    .modal-documentacion-opcion-texto {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      line-height: 1.25;
-    }
-
-    .modal-documentacion-vacia {
-      display: none;
-      padding: 14px;
-      border: 1px dashed #b8c8d8;
-      border-radius: 12px;
-      color: var(--muted);
-      background: #f8fbff;
-      text-align: center;
-    }
-
-    .modal-documentacion-vacia.visible {
-      display: block;
-    }
-
-    .modal-documentacion-acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      padding-top: 2px;
     }
 
     .fila-compacta-config-final {
@@ -2997,21 +2866,13 @@
         margin: 0;
       }
 
-      .documentacion-actividad-head-acciones {
-        margin-left: auto;
-        flex: 0 0 auto;
-      }
-
       .documentacion-actividad-controles {
-        display: none;
+        display: grid;
+        grid-template-columns: 1fr;
       }
 
       .documentacion-actividad-select select {
-        display: none;
-      }
-
-      .btn-selector-documentacion-movil {
-        display: none;
+        display: block;
       }
 
       .control-row {
@@ -3652,10 +3513,7 @@
 
             <div class="documentacion-actividad-panel">
               <div class="documentacion-actividad-head">
-                <h3 class="step-title">Documentación preceptiva</h3>
-                <div class="documentacion-actividad-head-acciones">
-                  <button type="button" class="btn-mini" id="btnAgregarDocumentoActividad">Añadir</button>
-                </div>
+                <h3 class="step-title">Documentación obligatoria</h3>
               </div>
               <div class="documentacion-actividad-resumen" id="documentacionActividadResumen"></div>
 
@@ -3663,9 +3521,6 @@
                 <div class="documentacion-actividad-controles">
                   <div class="documentacion-actividad-select">
                     <select id="documentacionActividadSelect"></select>
-                    <button type="button" class="btn-selector-documentacion-movil" id="btnAbrirDocumentacionActividadMovil">
-                      Seleccionar documentos exigibles
-                    </button>
                   </div>
                 </div>
 
@@ -3675,7 +3530,7 @@
                   </table>
                 </div>
 
-                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Todavía no hay documentos preceptivos exigidos por esta actividad.</div>
+                <div id="documentacionActividadVacia" class="sin-franjas documentacion-actividad-vacia oculto">Todavía no hay documentos obligatorios exigidos por esta actividad.</div>
               </div>
             </div>
           </section>
@@ -3847,23 +3702,6 @@
           </div>
         </div>
 
-        <div class="modal-documentacion-movil" id="modalDocumentacionActividadMovil" aria-hidden="true">
-          <div class="modal-documentacion-panel" role="dialog" aria-modal="true" aria-labelledby="tituloModalDocumentacionActividadMovil">
-            <button type="button" class="modal-documentacion-cerrar" id="btnCerrarDocumentacionActividadMovil" aria-label="Cerrar selector">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-            <h4 id="tituloModalDocumentacionActividadMovil">Selecciona los documentos exigibles para esta actividad</h4>
-            <div class="modal-documentacion-lista" id="listaDocumentacionActividadMovil"></div>
-            <div class="modal-documentacion-vacia" id="modalDocumentacionActividadMovilVacia">No hay documentos disponibles para añadir.</div>
-            <div class="modal-documentacion-acciones">
-              <button type="button" class="btn btn-secundario" id="btnCancelarDocumentacionActividadMovil">Cancelar</button>
-              <button type="button" class="btn" id="btnAceptarDocumentacionActividadMovil">Aceptar</button>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="bloque-inferior">
@@ -5440,10 +5278,6 @@ function escaparHtmlDocumentacionActividad(valor) {
     .replace(/'/g, "&#39;");
 }
 
-function esVistaMovilDocumentacionActividad() {
-  return window.matchMedia("(max-width: 700px)").matches;
-}
-
 function obtenerDocumentosDisponiblesDocumentacionActividad() {
   const seleccionados = new Set(
     normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad).map((clave) => clave.toUpperCase())
@@ -5457,32 +5291,25 @@ function actualizarResumenDocumentacionActividad() {
   const resumen = document.getElementById("documentacionActividadResumen");
   if (!resumen) return;
 
-  if (esVistaMovilDocumentacionActividad()) {
-    resumen.textContent = puedeEditarDocumentacionActividad
-      ? "Añade la documentación preceptiva que sea necesaria para la realización de esta actividad."
-      : "Puedes consultar la documentación preceptiva de esta actividad, pero solo el administrador responsable puede modificarla.";
-    return;
-  }
-
   if (!puedeEditarDocumentacionActividad) {
-    resumen.textContent = "Documentación preceptiva en modo consulta. Solo el administrador responsable de la actividad puede modificar los documentos exigibles.";
+    resumen.textContent = "Documentación obligatoria en modo consulta. Solo el administrador responsable de la actividad puede modificar los documentos exigibles.";
     return;
   }
 
   if (!catalogoDocumentacionActividad.length) {
-    resumen.textContent = "Esta actividad no exige documentación preceptiva en este momento.";
+    resumen.textContent = "Esta actividad no exige documentación obligatoria en este momento.";
     return;
   }
 
   const totalSeleccionados = documentosDocumentacionActividad.length;
   if (totalSeleccionados === 0) {
-    resumen.textContent = "Esta actividad no exige documentación preceptiva en este momento.";
+    resumen.textContent = "Esta actividad no exige documentación obligatoria en este momento.";
     return;
   }
 
   resumen.textContent = totalSeleccionados === 1
-    ? "Esta actividad exigirá 1 documento común seleccionado específicamente para ella."
-    : `Esta actividad exigirá ${totalSeleccionados} documentos comunes seleccionados específicamente para ella.`;
+    ? "Esta actividad exigirá 1 documento obligatorio seleccionado específicamente para ella."
+    : `Esta actividad exigirá ${totalSeleccionados} documentos obligatorios seleccionados específicamente para ella.`;
 }
 
 function obtenerModoDocumentacionActividadSeleccionado() {
@@ -5551,55 +5378,17 @@ function agregarDocumentoSeleccionadoDocumentacionActividad() {
   return true;
 }
 
-function agregarDocumentosSeleccionadosDocumentacionActividad(nombres = []) {
-  if (!puedeEditarDocumentacionActividad) return false;
-  const nuevos = normalizarDocumentosDocumentacionActividad(nombres);
-  if (!nuevos.length) return false;
-
-  const docsActuales = normalizarDocumentosDocumentacionActividad(documentosDocumentacionActividad);
-  const docsActualesSet = new Set(docsActuales.map((clave) => clave.toUpperCase()));
-  const docsAAgregar = nuevos.filter((clave) => !docsActualesSet.has(clave.toUpperCase()));
-  if (!docsAAgregar.length) return false;
-
-  modoDocumentacionActividad = "PERSONALIZADA";
-  documentosDocumentacionActividad = normalizarDocumentosDocumentacionActividad([
-    ...docsActuales,
-    ...docsAAgregar
-  ]);
-  marcarCambiosPendientesActividad();
-  renderConfiguracionDocumentacionActividad();
-  return true;
-}
-
-function actualizarBotonDocumentacionActividadMovil(opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad()) {
-  const btnMovil = document.getElementById("btnAbrirDocumentacionActividadMovil");
-  if (!btnMovil) return;
-  if (!puedeEditarDocumentacionActividad) {
-    btnMovil.disabled = true;
-    btnMovil.textContent = "Documentación en modo consulta";
-    return;
-  }
-  btnMovil.disabled = !opcionesDisponibles.length;
-  btnMovil.textContent = opcionesDisponibles.length
-    ? "Seleccionar documentos exigibles"
-    : "No hay más documentos disponibles";
-}
-
 function renderSelectDocumentacionActividad() {
   const select = document.getElementById("documentacionActividadSelect");
-  const btnAgregar = document.getElementById("btnAgregarDocumentoActividad");
   const controles = document.querySelector(".documentacion-actividad-controles");
-  if (!select || !btnAgregar) return;
+  if (!select) return;
 
   const opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad();
   if (controles) controles.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
-  btnAgregar.classList.toggle("oculto", !puedeEditarDocumentacionActividad);
 
   if (!puedeEditarDocumentacionActividad) {
     select.innerHTML = "";
     select.disabled = true;
-    btnAgregar.disabled = true;
-    actualizarBotonDocumentacionActividadMovil([]);
     return;
   }
 
@@ -5615,8 +5404,6 @@ function renderSelectDocumentacionActividad() {
   if (!opcionesDisponibles.length) {
     select.innerHTML = `<option value="">No hay más documentos disponibles</option>`;
     select.disabled = true;
-    btnAgregar.disabled = false;
-    actualizarBotonDocumentacionActividadMovil(opcionesDisponibles);
     return;
   }
 
@@ -5624,70 +5411,6 @@ function renderSelectDocumentacionActividad() {
   select.innerHTML = opciones.join("");
   select.disabled = false;
   select.value = "";
-  btnAgregar.disabled = false;
-  actualizarBotonDocumentacionActividadMovil(opcionesDisponibles);
-}
-
-function abrirSelectorDocumentacionActividadMovil() {
-  if (!puedeEditarDocumentacionActividad) return;
-  const modal = document.getElementById("modalDocumentacionActividadMovil");
-  const lista = document.getElementById("listaDocumentacionActividadMovil");
-  const vacia = document.getElementById("modalDocumentacionActividadMovilVacia");
-  const btnAceptar = document.getElementById("btnAceptarDocumentacionActividadMovil");
-  if (!modal || !lista || !vacia || !btnAceptar) return;
-
-  const opcionesDisponibles = obtenerDocumentosDisponiblesDocumentacionActividad();
-  lista.innerHTML = "";
-  vacia.classList.toggle("visible", opcionesDisponibles.length === 0);
-  lista.style.display = opcionesDisponibles.length ? "" : "none";
-  btnAceptar.disabled = opcionesDisponibles.length === 0;
-
-  opcionesDisponibles.forEach((doc, index) => {
-    const id = `docActividadMovil_${index}`;
-    const label = document.createElement("label");
-    label.className = "modal-documentacion-opcion";
-    label.setAttribute("for", id);
-
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = id;
-    input.value = claveDocumentoCatalogoDocumentacionActividad(doc);
-
-    const texto = document.createElement("span");
-    texto.className = "modal-documentacion-opcion-texto";
-
-    const nombre = document.createElement("span");
-    nombre.textContent = String(doc.nombre || "").trim();
-    texto.appendChild(nombre);
-
-    const propietario = obtenerEtiquetaPropietarioDocumentacionActividad(doc);
-    if (propietario) {
-      const meta = document.createElement("span");
-      meta.className = "documentacion-actividad-propietario";
-      meta.textContent = propietario;
-      texto.appendChild(meta);
-    }
-
-    label.append(input, texto);
-    lista.appendChild(label);
-  });
-
-  modal.classList.add("activo");
-  modal.setAttribute("aria-hidden", "false");
-}
-
-function cerrarSelectorDocumentacionActividadMovil() {
-  const modal = document.getElementById("modalDocumentacionActividadMovil");
-  if (!modal) return;
-  modal.classList.remove("activo");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-function aceptarSelectorDocumentacionActividadMovil() {
-  const checks = Array.from(document.querySelectorAll("#listaDocumentacionActividadMovil input[type='checkbox']:checked"));
-  const seleccionados = checks.map((input) => String(input.value || "").trim()).filter(Boolean);
-  agregarDocumentosSeleccionadosDocumentacionActividad(seleccionados);
-  cerrarSelectorDocumentacionActividadMovil();
 }
 
 function renderConfiguracionDocumentacionActividad() {
@@ -8817,24 +8540,10 @@ function retrocederPaso() {
         document.getElementById("documentacionActividadSelect").addEventListener("change", () => {
           const select = document.getElementById("documentacionActividadSelect");
           const hayValor = !!String(select?.value || "").trim();
-          document.getElementById("btnAgregarDocumentoActividad").disabled = false;
           if (hayValor) {
             agregarDocumentoSeleccionadoDocumentacionActividad();
           }
         });
-        document.getElementById("btnAgregarDocumentoActividad").addEventListener("click", () => {
-          abrirSelectorDocumentacionActividadMovil();
-        });
-        document.getElementById("btnAbrirDocumentacionActividadMovil")?.addEventListener("click", abrirSelectorDocumentacionActividadMovil);
-        document.getElementById("btnCerrarDocumentacionActividadMovil")?.addEventListener("click", cerrarSelectorDocumentacionActividadMovil);
-        document.getElementById("btnCancelarDocumentacionActividadMovil")?.addEventListener("click", cerrarSelectorDocumentacionActividadMovil);
-        document.getElementById("btnAceptarDocumentacionActividadMovil")?.addEventListener("click", aceptarSelectorDocumentacionActividadMovil);
-        const mqDocumentacionActividadMovil = window.matchMedia("(max-width: 700px)");
-        if (typeof mqDocumentacionActividadMovil.addEventListener === "function") {
-          mqDocumentacionActividadMovil.addEventListener("change", () => renderConfiguracionDocumentacionActividad());
-        } else if (typeof mqDocumentacionActividadMovil.addListener === "function") {
-          mqDocumentacionActividadMovil.addListener(() => renderConfiguracionDocumentacionActividad());
-        }
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
         document.getElementById("btnIrPlantillasActividad").addEventListener("click", intentarIrAPlantillasActividad);
         actualizarEnlaceCalendarioActividad();
@@ -8936,12 +8645,6 @@ function retrocederPaso() {
       document.getElementById("modalMensualFranja")?.addEventListener("click", (event) => {
         if (event.target.id === "modalMensualFranja") {
           cerrarModalMensualFranja();
-        }
-      });
-
-      document.getElementById("modalDocumentacionActividadMovil")?.addEventListener("click", (event) => {
-        if (event.target.id === "modalDocumentacionActividadMovil") {
-          cerrarSelectorDocumentacionActividadMovil();
         }
       });
 
