@@ -617,8 +617,8 @@
       width: 24px;
       height: 24px;
       border-radius: 999px;
-      border: 1px solid #cfd9e4;
-      background: #fff;
+      border: 0;
+      background: transparent;
       color: #5b6b7c;
       display: inline-flex;
       align-items: center;
@@ -635,9 +635,8 @@
       flex: 0 0 auto;
     }
     .modal-cerrar-superior:hover {
-      background: #f7f9fb;
+      background: transparent;
       color: #0b5ed7;
-      border-color: #9fb2c7;
     }
     .modal-contenido {
       white-space: normal;
@@ -1171,6 +1170,14 @@
       if (e === "RECHAZADA") return "Rechazada";
       if (e === "CANCELADA") return "Cancelada";
       return e || "-";
+    }
+
+    function textoEstadoReservaVisible(reserva) {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
+        return "Suspendida · documentación pendiente";
+      }
+      return textoEstadoVisible(estado);
     }
 
     function formatearFechaHoraAviso(valor) {
@@ -1801,7 +1808,7 @@
         if (esSuspensionPorCambioFranja(reserva)) {
           return "La solicitud está suspendida porque la franja horaria asociada ha cambiado. Revisa la nueva programación y decide si deseas mantener la solicitud o anularla.";
         }
-        return "La solicitud está suspendida porque la documentación obligatoria asociada a esta actividad ha quedado desactualizada y debes regularizarla para que pueda volver a quedar en proceso.";
+        return "La solicitud queda suspendida en espera de que complete o actualice la documentación obligatoria asociada a la actividad. Mantendrá este estado durante 24 horas; pasado este plazo, será rechazada automáticamente por el sistema.";
       }
       if (estado === "RECHAZADA") {
         if (observacionesAdmin) {
@@ -1881,7 +1888,7 @@
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva) return;
 
-      const estadoTexto = textoEstadoVisible(reserva.estado);
+      const estadoTexto = textoEstadoReservaVisible(reserva);
       const estadoClase = claseEstado(reserva.estado);
       const descripcion = descripcionEstadoReserva(reserva);
       const observaciones = String(reserva.observaciones_admin || "").trim();
@@ -1979,7 +1986,7 @@
             <td class="estado-col">
               <span class="mobile-dato-etiqueta">Estado</span>
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
-                <span class="estado-badge estado-badge-con-icono ${claseEstado(r.estado)}"><img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="estado-badge-icono"><span>${textoEstadoVisible(r.estado)}</span></span>
+                <span class="estado-badge estado-badge-con-icono ${claseEstado(r.estado)}"><img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="estado-badge-icono"><span>${textoEstadoReservaVisible(r)}</span></span>
               </button>
             </td>
             <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
