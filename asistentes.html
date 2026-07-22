@@ -1118,7 +1118,7 @@
     }
 
     function solicitudEditable() {
-      return reservaActual && ["BORRADOR", "PENDIENTE", "CONFIRMADA", "ACEPTADA", "SUSPENDIDA"].includes(String(reservaActual.estado || "").toUpperCase());
+      return reservaActual && ["BORRADOR", "PENDIENTE", "EN_REVISION", "CONFIRMADA", "ACEPTADA", "SUSPENDIDA"].includes(String(reservaActual.estado || "").toUpperCase());
     }
 
     function obtenerMaximoPermitidoActual() {
@@ -1791,7 +1791,7 @@
       if (!reservaActual) return false;
       if (Array.isArray(visitantes) && visitantes.length > 0) return false;
       const estado = String(reservaActual.estado || "").trim().toUpperCase();
-      const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "SUSPENDIDA"].includes(estado);
+      const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "EN_REVISION", "SUSPENDIDA"].includes(estado);
       if (!estadoConControl) return false;
       return true;
     }
