@@ -358,19 +358,6 @@
     .estado-badge.suspendida { background: #f4c430; color: #1e2a36; }
     .estado-badge.borrador { background: #5f6d7a; }
     .estado-badge.cancelada { background: #6c757d; }
-    .estado-badge-con-icono {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .estado-badge-icono {
-      width: 12px;
-      height: 12px;
-      display: inline-block;
-      flex: 0 0 auto;
-      filter: brightness(0) invert(1);
-      opacity: 0.92;
-    }
     .estado-trigger {
       border: none;
       background: transparent;
@@ -1986,7 +1973,7 @@
             <td class="estado-col">
               <span class="mobile-dato-etiqueta">Estado</span>
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
-                <span class="estado-badge estado-badge-con-icono ${claseEstado(r.estado)}"><img src="assets/icono-estado-clicable.svg" alt="" aria-hidden="true" class="estado-badge-icono"><span>${textoEstadoReservaVisible(r)}</span></span>
+                <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
               </button>
             </td>
             <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
