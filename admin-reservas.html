@@ -743,15 +743,29 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       return !!reserva && Number(reserva.documentacion_bloqueante || 0) === 1;
     }
     function estadoDocumentalReserva(reserva) {
-      return String(reserva?.estado_documental || "").trim().toUpperCase();
+      return normalizarEstadoDocumentalReserva(reserva?.estado_documental);
+    }
+    function normalizarEstadoDocumentalReserva(estado) {
+      const valor = String(estado || "")
+        .trim()
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\s-]+/g, "_");
+      if (["NO_PRESENTADA", "NO_APORTADO", "NO_APORTADA", "NO_REMITIDO", "NO_REMITIDA"].includes(valor)) return "NO_PRESENTADO";
+      if (valor === "NO_ENVIADA") return "NO_ENVIADO";
+      if (valor === "DESACTUALIZADO" || valor === "DESACTUALIZADA") return "NO_ACTUALIZADO";
+      if (valor === "EN_REVISION_DOCUMENTAL") return "EN_REVISION";
+      if (["VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "VALIDADO";
+      return valor;
     }
     function estadoDocumentoSuspendeReserva(estado) {
-      return ["NO_INICIADO", "NO_COMPLETADO", "NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADA", "RECHAZADO"].includes(String(estado || "").trim().toUpperCase());
+      return ["NO_INICIADO", "NO_COMPLETADO", "NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADA", "RECHAZADO"].includes(normalizarEstadoDocumentalReserva(estado));
     }
     function documentacionSuspendidaReserva(reserva) {
       if (!documentacionBloqueanteReserva(reserva)) return false;
       const estadosDocumentos = Array.isArray(reserva?.documentos_estado)
-        ? reserva.documentos_estado.map((doc) => String(doc?.estado || "").trim().toUpperCase()).filter(Boolean)
+        ? reserva.documentos_estado.map((doc) => normalizarEstadoDocumentalReserva(doc?.estado)).filter(Boolean)
         : [];
       if (estadosDocumentos.some(estadoDocumentoSuspendeReserva)) return true;
       return estadoDocumentoSuspendeReserva(estadoDocumentalReserva(reserva));

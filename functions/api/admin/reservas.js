@@ -30,6 +30,20 @@ function normalizarEstadoReserva(estado) {
   return valor;
 }
 
+function normalizarEstadoDocumental(estado) {
+  const valor = limpiarTexto(estado)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+  if (["NO_PRESENTADA", "NO_APORTADO", "NO_APORTADA", "NO_REMITIDO", "NO_REMITIDA"].includes(valor)) return "NO_PRESENTADO";
+  if (valor === "NO_ENVIADA") return "NO_ENVIADO";
+  if (valor === "DESACTUALIZADO" || valor === "DESACTUALIZADA") return "NO_ACTUALIZADO";
+  if (valor === "EN_REVISION_DOCUMENTAL") return "EN_REVISION";
+  if (valor === "VALIDADA" || valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
+  return valor;
+}
+
 function estadoDocumentalSuspende(estadoDocumental) {
   return [
     "NO_INICIADO",
@@ -39,13 +53,13 @@ function estadoDocumentalSuspende(estadoDocumental) {
     "NO_ACTUALIZADO",
     "RECHAZADA",
     "RECHAZADO"
-  ].includes(limpiarTexto(estadoDocumental).toUpperCase());
+  ].includes(normalizarEstadoDocumental(estadoDocumental));
 }
 
 function estadoDocumentalEfectivo(validacionDocumental = {}) {
   const estadosDocumentos = Array.isArray(validacionDocumental?.documentos_estado)
     ? validacionDocumental.documentos_estado
-      .map((doc) => limpiarTexto(doc?.estado).toUpperCase())
+      .map((doc) => normalizarEstadoDocumental(doc?.estado))
       .filter(Boolean)
     : [];
 
@@ -53,7 +67,7 @@ function estadoDocumentalEfectivo(validacionDocumental = {}) {
     return "SUSPENDIDA";
   }
 
-  const estadoGlobal = limpiarTexto(validacionDocumental?.estado_documental).toUpperCase();
+  const estadoGlobal = normalizarEstadoDocumental(validacionDocumental?.estado_documental);
   if (estadoDocumentalSuspende(estadoGlobal)) return "SUSPENDIDA";
   return "EN_REVISION";
 }
