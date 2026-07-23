@@ -353,6 +353,7 @@
       white-space: nowrap;
     }
     .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.revision-documental { background: #0d6efd; }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.suspendida { background: #f4c430; color: #1e2a36; }
@@ -616,10 +617,6 @@
       line-height: 1;
       margin-top: -3px;
       margin-right: -3px;
-    }
-      line-height: 1;
-      margin: 2px 0 0 auto;
-      flex: 0 0 auto;
     }
     .modal-cerrar-superior:hover {
       background: transparent;
@@ -1139,7 +1136,7 @@
       const e = normalizarEstadoReserva(estado).toLowerCase();
       if (e === "borrador") return "borrador";
       if (e === "pendiente") return "pendiente";
-      if (e === "en_revision") return "pendiente";
+      if (e === "en_revision") return "revision-documental";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
@@ -1163,6 +1160,38 @@
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
         return "Suspendida · documentación pendiente";
+      }
+      return textoEstadoVisible(estado);
+    }
+
+    function claseEstado(estado) {
+      const e = normalizarEstadoReserva(estado).toLowerCase();
+      if (e === "borrador") return "borrador";
+      if (e === "pendiente") return "pendiente";
+      if (e === "en_revision") return "revision-documental";
+      if (e === "confirmada") return "confirmada";
+      if (e === "suspendida") return "suspendida";
+      if (e === "rechazada") return "rechazada";
+      if (e === "cancelada") return "cancelada";
+      return "";
+    }
+
+    function textoEstadoVisible(estado) {
+      const e = normalizarEstadoReserva(estado);
+      if (e === "BORRADOR") return "BORRADOR";
+      if (e === "EN_REVISION") return "EN REVISIÓN";
+      if (e === "PENDIENTE") return "PENDIENTE";
+      if (e === "CONFIRMADA") return "CONFIRMADA";
+      if (e === "SUSPENDIDA") return "SUSPENDIDA";
+      if (e === "RECHAZADA") return "RECHAZADA";
+      if (e === "CANCELADA") return "CANCELADA";
+      return e || "-";
+    }
+
+    function textoEstadoReservaVisible(reserva) {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
+        return "SUSPENDIDA · DOCUMENTACIÓN PENDIENTE";
       }
       return textoEstadoVisible(estado);
     }

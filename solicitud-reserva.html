@@ -946,8 +946,8 @@
       width: 24px;
       height: 24px;
       border-radius: 999px;
-      border: 1px solid #cfd9e4;
-      background: #fff;
+      border: 0;
+      background: transparent;
       color: #5b6b7c;
       display: inline-flex;
       align-items: center;
@@ -961,9 +961,8 @@
     }
 
     .modal-cerrar-superior:hover {
-      background: #f7f9fb !important;
+      background: transparent !important;
       color: #0b5ed7 !important;
-      border-color: #9fb2c7;
       opacity: 1;
     }
 
@@ -1088,6 +1087,7 @@
     }
 
     .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.revision-documental { background: #0d6efd; }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.suspendida { background: #f4c430; color: #1e2a36; }
     .estado-badge.rechazada { background: #dc3545; }
@@ -2056,6 +2056,7 @@
       const e = String(estado || "").toLowerCase();
       if (e === "borrador") return "cancelada";
       if (e === "pendiente") return "pendiente";
+      if (e === "en_revision") return "revision-documental";
       if (e === "confirmada") return "confirmada";
       if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
@@ -2065,6 +2066,7 @@
 
     function textoEstadoModal(estado) {
       if (estado === "BORRADOR") return "BORRADOR";
+      if (estado === "EN_REVISION") return "EN REVISIÓN";
       if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
       if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
