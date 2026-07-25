@@ -1379,6 +1379,7 @@
 
     function pintarResumen(lista) {
       const borradores = lista.filter((r) => normalizarEstadoReserva(r.estado) === "BORRADOR").length;
+      const enRevision = lista.filter((r) => normalizarEstadoReserva(r.estado) === "EN_REVISION").length;
       const pendientes = lista.filter((r) => normalizarEstadoReserva(r.estado) === "PENDIENTE").length;
       const confirmadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "CONFIRMADA").length;
       const suspendidas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "SUSPENDIDA").length;
@@ -1388,6 +1389,8 @@
         <span>Total solicitudes: ${lista.length}</span>
         <span>|</span>
         <span>Borradores: ${borradores}</span>
+        <span>|</span>
+        <span>En revisión: ${enRevision}</span>
         <span>|</span>
         <span>Pendientes: ${pendientes}</span>
         <span>|</span>

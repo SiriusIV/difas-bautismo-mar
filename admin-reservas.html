@@ -491,6 +491,7 @@
           <div class="resumen-centro">
             <select id="filtroEstadoCabecera">
               <option value="">Todas</option>
+              <option value="EN_REVISION">En revisión</option>
               <option value="PENDIENTE">Pendiente</option>
               <option value="CONFIRMADA">Confirmada</option>
               <option value="SUSPENDIDA">Suspendida</option>
@@ -591,7 +592,7 @@
     function mostrarMensaje(tipo, texto) { const m = document.getElementById("mensaje"); m.className = "mensaje " + tipo; m.style.display = "block"; m.textContent = texto; }
     function limpiarMensaje() { const m = document.getElementById("mensaje"); m.className = "mensaje"; m.style.display = "none"; m.textContent = ""; }
     function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
-    function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
+    function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "EN_REVISION") return "EN REVISIÓN"; if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
     function escapeHtml(texto) { return String(texto || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
     function slugTexto(texto) { return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
     function plantillaTienePdfPersistido(plantilla) { return !!String(plantilla?.archivo_url || "").trim(); }
@@ -864,7 +865,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         mostrarMensaje("error", error?.message || "No se pudo cargar el panel de reservas.");
       }
     }
-    function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
+    function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>En revisión: ${Number(resumen.en_revision || 0)}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function establecerVisibilidadModalObservaciones(activo) { const modal = document.getElementById("modalObservaciones"); if (!modal) return; modal.classList.toggle("activo", !!activo); modal.setAttribute("aria-hidden", activo ? "false" : "true"); }
     function recargarPanelDesdeFiltros({ actualizarTitulo = false } = {}) { if (actualizarTitulo) actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); }

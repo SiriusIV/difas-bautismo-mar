@@ -341,6 +341,7 @@ async function obtenerSolicitantes(env, filtros) {
 function resumirReservas(rows) {
   const resumen = {
     total_solicitudes: rows.length,
+    en_revision: 0,
     pendientes: 0,
     confirmadas: 0,
     suspendidas: 0,
@@ -350,6 +351,7 @@ function resumirReservas(rows) {
   for (const row of rows) {
     const estado = normalizarEstadoReserva(row.estado);
 
+    if (estado === "EN_REVISION") resumen.en_revision += 1;
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
     if (estado === "SUSPENDIDA") resumen.suspendidas += 1;
