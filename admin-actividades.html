@@ -1870,6 +1870,10 @@
       border-top: 1px solid var(--border);
     }
 
+    .plantillas-actividad-panel {
+      margin-top: 10px;
+    }
+
     .documentacion-actividad-head {
       display: flex;
       align-items: center;
@@ -1879,7 +1883,8 @@
       flex-wrap: wrap;
     }
 
-    .documentacion-actividad-opciones {
+    .documentacion-actividad-opciones,
+    .plantillas-actividad-opciones {
       margin-top: 14px;
       padding: 14px;
       border: 1px solid var(--border);
@@ -1887,18 +1892,21 @@
       background: #fff;
     }
 
-    .documentacion-actividad-controles {
+    .documentacion-actividad-controles,
+    .plantillas-actividad-controles {
       display: grid;
       grid-template-columns: minmax(280px, 1fr);
       gap: 10px;
       align-items: end;
     }
 
-    .documentacion-actividad-select label {
+    .documentacion-actividad-select label,
+    .plantillas-actividad-select label {
       display: none;
     }
 
-    .documentacion-actividad-select select {
+    .documentacion-actividad-select select,
+    .plantillas-actividad-select select {
       width: 100%;
     }
 
@@ -1942,14 +1950,16 @@
       justify-content: flex-start;
     }
 
-    .tabla-documentacion-actividad-wrap {
+    .tabla-documentacion-actividad-wrap,
+    .tabla-plantillas-actividad-wrap {
       margin-top: 14px;
       max-height: 248px;
       overflow-y: auto;
       border-radius: 10px;
     }
 
-    .tabla-documentacion-actividad {
+    .tabla-documentacion-actividad,
+    .tabla-plantillas-actividad {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
@@ -1959,20 +1969,24 @@
     }
 
     .tabla-documentacion-actividad th,
-    .tabla-documentacion-actividad td {
+    .tabla-documentacion-actividad td,
+    .tabla-plantillas-actividad th,
+    .tabla-plantillas-actividad td {
       padding: 5px 8px;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
       text-align: left;
     }
 
-    .tabla-documentacion-actividad th {
+    .tabla-documentacion-actividad th,
+    .tabla-plantillas-actividad th {
       background: #f2f6fb;
       color: #334250;
       font-weight: 600;
     }
 
-    .tabla-documentacion-actividad tr:last-child td {
+    .tabla-documentacion-actividad tr:last-child td,
+    .tabla-plantillas-actividad tr:last-child td {
       border-bottom: none;
     }
 
@@ -1982,24 +1996,28 @@
       white-space: nowrap;
     }
 
-    .tabla-documentacion-actividad td {
+    .tabla-documentacion-actividad td,
+    .tabla-plantillas-actividad td {
       font-size: 13px;
       color: #44576a;
     }
 
-    .documentacion-actividad-nombre {
+    .documentacion-actividad-nombre,
+    .plantillas-actividad-nombre {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
 
-    .documentacion-actividad-propietario {
+    .documentacion-actividad-propietario,
+    .plantillas-actividad-meta {
       color: #6b7a8a;
       font-size: 11px;
       line-height: 1.2;
     }
 
-    .tabla-documentacion-actividad .celda-acciones {
+    .tabla-documentacion-actividad .celda-acciones,
+    .tabla-plantillas-actividad .celda-acciones {
       width: 34px;
       text-align: left;
       vertical-align: middle;
@@ -2008,16 +2026,19 @@
     }
 
     .tabla-documentacion-actividad td:not(.celda-acciones),
+    .tabla-plantillas-actividad td:not(.celda-acciones),
     .tabla-requisitos td:not(.celda-acciones) {
       padding-left: 10px;
       vertical-align: middle;
     }
 
-    .tabla-documentacion-actividad thead {
+    .tabla-documentacion-actividad thead,
+    .tabla-plantillas-actividad thead {
       display: none;
     }
 
-    .documentacion-actividad-resumen {
+    .documentacion-actividad-resumen,
+    .plantillas-actividad-resumen {
       margin: 4px 0 0;
       font-size: 13px;
       color: #5c6b7b;
@@ -2025,7 +2046,8 @@
       text-align: left;
     }
 
-    .documentacion-actividad-vacia {
+    .documentacion-actividad-vacia,
+    .plantillas-actividad-vacia {
       margin-top: 14px;
     }
 
@@ -3488,6 +3510,30 @@
           </section>
 
           <section class="step-pane" data-step="3">
+            <div class="plantillas-actividad-panel">
+              <h3 class="step-title">Plantillas documentales</h3>
+              <p class="step-help">Selecciona una o varias plantillas documentales existentes para asociarlas a esta actividad.</p>
+              <div class="plantillas-actividad-resumen" id="plantillasActividadResumen"></div>
+
+              <div class="plantillas-actividad-opciones">
+                <div class="plantillas-actividad-controles">
+                  <div class="plantillas-actividad-select">
+                    <select id="plantillasActividadSelect"></select>
+                  </div>
+                </div>
+
+                <div class="tabla-plantillas-actividad-wrap">
+                  <table class="tabla-plantillas-actividad" aria-label="Tabla de plantillas documentales asociadas">
+                    <tbody id="tablaPlantillasActividadBody"></tbody>
+                  </table>
+                </div>
+
+                <div id="plantillasActividadVacia" class="sin-franjas plantillas-actividad-vacia oculto">Todavía no hay plantillas documentales asociadas a esta actividad.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="step-pane" data-step="4">
             <div class="requisitos-head">
               <h3 class="step-title">Requisitos particulares</h3>
               <div class="requisitos-toolbar">
@@ -3783,6 +3829,8 @@
     let catalogoDocumentacionActividad = [];
     let modoDocumentacionActividad = "HEREDADA";
     let documentosDocumentacionActividad = [];
+    let catalogoPlantillasDocumentales = [];
+    let plantillasDocumentalesActividad = [];
     let puedeEditarDocumentacionActividad = true;
     let modoSecretariaDocumental = false;
     let desactivacionFranjasConfirmada = false;
@@ -4588,12 +4636,12 @@ function aplicarModoSecretariaDocumentalUI() {
 
   const pasos = Array.from(document.querySelectorAll(".step-pane"));
   pasos.forEach((pane) => {
-    const esPasoDocumental = Number(pane.dataset.step) === 3;
+    const esPasoDocumental = Number(pane.dataset.step) === 4;
     pane.classList.toggle("oculto", modoSecretariaDocumental && !esPasoDocumental);
   });
 
   if (modoSecretariaDocumental) {
-    mostrarPaso(3);
+    mostrarPaso(4);
   }
 }
 
@@ -4837,6 +4885,21 @@ function establecerVisibilidadModalActividad(id, activo) {
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       catalogoDocumentacionAdminSesion = normalizarCatalogoDocumentacionActividad(data.catalogo_documentacion_admin);
+      if (!modoSecretariaDocumental) {
+        try {
+          const resPlantillas = await fetch("/api/admin/plantillas?solo_activas=1", {
+            credentials: "same-origin"
+          });
+          const dataPlantillas = await resPlantillas.json().catch(() => null);
+          catalogoPlantillasDocumentales = normalizarCatalogoPlantillasDocumentales(
+            dataPlantillas?.ok ? dataPlantillas.plantillas : []
+          );
+        } catch (_) {
+          catalogoPlantillasDocumentales = [];
+        }
+      } else {
+        catalogoPlantillasDocumentales = [];
+      }
       actualizarSugerenciasCamposActividad();
     }
 
@@ -5462,6 +5525,178 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
   renderConfiguracionDocumentacionActividad();
 }
 
+function normalizarCatalogoPlantillasDocumentales(lista) {
+  const vistos = new Set();
+  return (Array.isArray(lista) ? lista : [])
+    .map((item) => ({
+      id: Number(item?.id || 0),
+      admin_id: Number(item?.admin_id || 0),
+      nombre: String(item?.nombre || "").trim(),
+      descripcion: String(item?.descripcion || "").trim(),
+      tipo_generacion: String(item?.tipo_generacion || "ASISTENTE").trim() || "ASISTENTE",
+      estado: String(item?.estado || "ACTIVA").trim() || "ACTIVA",
+      archivo_url: String(item?.archivo_url || "").trim()
+    }))
+    .filter((item) => {
+      if (!item.id || !item.nombre || vistos.has(item.id)) return false;
+      vistos.add(item.id);
+      return true;
+    })
+    .sort((a, b) => {
+      const estadoA = a.estado.toUpperCase() === "ACTIVA" ? 0 : 1;
+      const estadoB = b.estado.toUpperCase() === "ACTIVA" ? 0 : 1;
+      if (estadoA !== estadoB) return estadoA - estadoB;
+      return a.nombre.localeCompare(b.nombre, "es");
+    });
+}
+
+function normalizarIdsPlantillasActividad(lista) {
+  const vistos = new Set();
+  return (Array.isArray(lista) ? lista : [])
+    .map((item) => Number(typeof item === "object" && item ? item.id || item.plantilla_id : item))
+    .filter((id) => {
+      if (!Number.isInteger(id) || id <= 0 || vistos.has(id)) return false;
+      vistos.add(id);
+      return true;
+    });
+}
+
+function obtenerPlantillasDisponiblesActividad() {
+  const seleccionadas = new Set(normalizarIdsPlantillasActividad(plantillasDocumentalesActividad));
+  return catalogoPlantillasDocumentales.filter((plantilla) => !seleccionadas.has(Number(plantilla.id || 0)));
+}
+
+function obtenerPlantillaCatalogoActividad(id) {
+  const plantillaId = Number(id || 0);
+  if (!plantillaId) return null;
+  return catalogoPlantillasDocumentales.find((plantilla) => Number(plantilla.id || 0) === plantillaId) || null;
+}
+
+function obtenerPlantillasActividadParaGuardar() {
+  return normalizarIdsPlantillasActividad(plantillasDocumentalesActividad)
+    .filter((id) => !!obtenerPlantillaCatalogoActividad(id));
+}
+
+function actualizarResumenPlantillasActividad() {
+  const resumen = document.getElementById("plantillasActividadResumen");
+  if (!resumen) return;
+
+  if (!catalogoPlantillasDocumentales.length) {
+    resumen.textContent = "No hay plantillas documentales disponibles en el repositorio.";
+    return;
+  }
+
+  const total = obtenerPlantillasActividadParaGuardar().length;
+  if (!total) {
+    resumen.textContent = "Esta actividad no tiene plantillas documentales asociadas en este momento.";
+    return;
+  }
+
+  resumen.textContent = total === 1
+    ? "Esta actividad tiene 1 plantilla documental asociada."
+    : `Esta actividad tiene ${total} plantillas documentales asociadas.`;
+}
+
+function renderSelectPlantillasActividad() {
+  const select = document.getElementById("plantillasActividadSelect");
+  if (!select) return;
+
+  const disponibles = obtenerPlantillasDisponiblesActividad();
+  if (!disponibles.length) {
+    select.innerHTML = `<option value="">No hay más plantillas disponibles</option>`;
+    select.disabled = true;
+    return;
+  }
+
+  select.innerHTML = [
+    `<option value="">Selecciona las plantillas documentales asociadas a esta actividad</option>`,
+    ...disponibles.map((plantilla) => {
+      const estado = plantilla.estado ? ` · ${plantilla.estado}` : "";
+      return `<option value="${plantilla.id}">${escaparHtmlDocumentacionActividad(`${plantilla.nombre}${estado}`)}</option>`;
+    })
+  ].join("");
+  select.value = "";
+  select.disabled = false;
+}
+
+function renderPlantillasActividad() {
+  const tbody = document.getElementById("tablaPlantillasActividadBody");
+  const vacia = document.getElementById("plantillasActividadVacia");
+  if (!tbody || !vacia) return;
+
+  tbody.innerHTML = "";
+  const ids = obtenerPlantillasActividadParaGuardar();
+  vacia.classList.toggle("oculto", ids.length > 0);
+
+  ids.forEach((plantillaId, index) => {
+    const plantilla = obtenerPlantillaCatalogoActividad(plantillaId);
+    if (!plantilla) return;
+
+    const tr = document.createElement("tr");
+    const tdAcciones = document.createElement("td");
+    tdAcciones.className = "celda-acciones";
+    const btnEliminar = document.createElement("button");
+    btnEliminar.type = "button";
+    btnEliminar.className = "btn-requisito-eliminar";
+    btnEliminar.setAttribute("aria-label", "Eliminar plantilla");
+    btnEliminar.setAttribute("title", "Eliminar plantilla");
+    btnEliminar.textContent = "×";
+    btnEliminar.addEventListener("click", () => {
+      plantillasDocumentalesActividad.splice(index, 1);
+      marcarCambiosPendientesActividad();
+      renderPlantillasActividad();
+    });
+    tdAcciones.appendChild(btnEliminar);
+
+    const tdNombre = document.createElement("td");
+    const contenedor = document.createElement("div");
+    contenedor.className = "plantillas-actividad-nombre";
+    const nombre = document.createElement("span");
+    nombre.textContent = plantilla.nombre;
+    const meta = document.createElement("span");
+    meta.className = "plantillas-actividad-meta";
+    meta.textContent = `Modo: ${plantilla.tipo_generacion || "ASISTENTE"} · Estado: ${plantilla.estado || "ACTIVA"}`;
+    contenedor.append(nombre, meta);
+    if (plantilla.descripcion) {
+      const descripcion = document.createElement("span");
+      descripcion.className = "plantillas-actividad-meta";
+      descripcion.textContent = plantilla.descripcion;
+      contenedor.appendChild(descripcion);
+    }
+    tdNombre.appendChild(contenedor);
+
+    tr.append(tdAcciones, tdNombre);
+    tbody.appendChild(tr);
+  });
+
+  renderSelectPlantillasActividad();
+  actualizarResumenPlantillasActividad();
+}
+
+function agregarPlantillaSeleccionadaActividad() {
+  const select = document.getElementById("plantillasActividadSelect");
+  const plantillaId = Number(select?.value || 0);
+  if (!plantillaId || !obtenerPlantillaCatalogoActividad(plantillaId)) return false;
+
+  const actuales = obtenerPlantillasActividadParaGuardar();
+  if (actuales.includes(plantillaId)) {
+    if (select) select.value = "";
+    return false;
+  }
+
+  plantillasDocumentalesActividad = [...actuales, plantillaId];
+  marcarCambiosPendientesActividad();
+  renderPlantillasActividad();
+  return true;
+}
+
+function cargarPlantillasActividad(actividad) {
+  plantillasDocumentalesActividad = normalizarIdsPlantillasActividad(
+    actividad?.plantilla_documental_ids || actividad?.plantillas_documentales || []
+  ).filter((id) => !!obtenerPlantillaCatalogoActividad(id));
+  renderPlantillasActividad();
+}
+
     function rellenarFormulario(actividad) {
     cargandoActividad = true;
 
@@ -5505,6 +5740,7 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     registrarImagenOriginalDesdeFormulario();
     cargarRequisitosActividad(actividad);
     cargarConfiguracionDocumentacionActividad(actividad);
+    cargarPlantillasActividad(actividad);
     sincronizarTogglesPanelConfiguracion();
     actualizarVisibilidadFormulario();
     aplicarModoSecretariaDocumentalUI();
@@ -5561,8 +5797,8 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     }
 
 function getPasoFlowActividad() {
-  if (modoSecretariaDocumental) return [3];
-  return [0, 1, 2, 3];
+  if (modoSecretariaDocumental) return [4];
+  return [0, 1, 2, 3, 4];
 }
 
 function reubicarCabeceraActividadSegunViewport() {
@@ -7762,6 +7998,7 @@ async function borrarFranja(id) {
           zoom_mapa: document.getElementById("zoom_mapa").value.trim(),
           borrador_tecnico: borradorTecnico,
           confirmado_desactivar_franjas: desactivacionFranjasConfirmada,
+          plantilla_documental_ids: obtenerPlantillasActividadParaGuardar(),
           requisitos_particulares: obtenerRequisitosParticularesFormulario(),
           documentacion_actividad_modo: obtenerModoDocumentacionActividadSeleccionado(),
           documentacion_actividad_documentos: obtenerDocumentosDocumentacionActividadParaGuardar(),
@@ -8273,7 +8510,7 @@ function mostrarPaso(index) {
   panes.forEach((pane) => {
     pane.classList.toggle("activo", Number(pane.dataset.step) === pasoActual);
   });
-  document.body.classList.toggle("paso-requisitos-documentacion", pasoActual === 3);
+  document.body.classList.toggle("paso-requisitos-documentacion", pasoActual === 4);
 
   const indiceActual = flow.indexOf(pasoActual);
   const btnAnterior = document.getElementById("btnAnterior");
@@ -8486,6 +8723,13 @@ function retrocederPaso() {
           const hayValor = !!String(select?.value || "").trim();
           if (hayValor) {
             agregarDocumentoSeleccionadoDocumentacionActividad();
+          }
+        });
+        document.getElementById("plantillasActividadSelect")?.addEventListener("change", () => {
+          const select = document.getElementById("plantillasActividadSelect");
+          const hayValor = !!String(select?.value || "").trim();
+          if (hayValor) {
+            agregarPlantillaSeleccionadaActividad();
           }
         });
         document.getElementById("btnVolverPortal").addEventListener("click", intentarSalirAlPortal);
@@ -8788,6 +9032,7 @@ function retrocederPaso() {
         actualizarPreview();
         renderTablaRequisitos();
         actualizarTituloRequisitos();
+        renderPlantillasActividad();
         renderListaFranjas();
         renderPreviewFranjas();
       CAMPOS_CRITICOS_ACTIVIDAD.forEach(guardarValorPrevioCampoCritico);

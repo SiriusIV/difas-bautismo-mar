@@ -95,6 +95,61 @@ async function obtenerRequisitosPorActividades(env, actividadIds) {
   }
 }
 
+async function obtenerPlantillasPorActividades(env, actividadIds) {
+  const ids = Array.from(
+    new Set((actividadIds || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))
+  );
+
+  if (!ids.length) return new Map();
+
+  try {
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS actividad_plantillas_documentales (
+        actividad_id INTEGER NOT NULL,
+        plantilla_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (actividad_id, plantilla_id)
+      )
+    `).run();
+
+    const placeholders = ids.map(() => "?").join(", ");
+    const result = await env.DB.prepare(`
+      SELECT
+        ap.actividad_id,
+        p.id,
+        p.admin_id,
+        p.nombre,
+        p.descripcion,
+        p.tipo_generacion,
+        p.estado,
+        p.archivo_url
+      FROM actividad_plantillas_documentales ap
+      INNER JOIN admin_plantillas_documentales p
+        ON p.id = ap.plantilla_id
+      WHERE ap.actividad_id IN (${placeholders})
+      ORDER BY ap.actividad_id ASC, p.nombre COLLATE NOCASE ASC, p.id ASC
+    `).bind(...ids).all();
+
+    const mapa = new Map();
+    for (const row of result?.results || []) {
+      const actividadId = Number(row.actividad_id || 0);
+      if (!mapa.has(actividadId)) mapa.set(actividadId, []);
+      mapa.get(actividadId).push({
+        id: Number(row.id || 0),
+        admin_id: Number(row.admin_id || 0),
+        nombre: String(row.nombre || "").trim(),
+        descripcion: String(row.descripcion || "").trim(),
+        tipo_generacion: String(row.tipo_generacion || "ASISTENTE").trim() || "ASISTENTE",
+        estado: String(row.estado || "ACTIVA").trim() || "ACTIVA",
+        archivo_url: String(row.archivo_url || "").trim()
+      });
+    }
+    return mapa;
+  } catch (_) {
+    return new Map();
+  }
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -292,6 +347,10 @@ export async function onRequestGet(context) {
       env,
       (result.results || []).map((a) => a.id)
     );
+    const plantillasPorActividad = await obtenerPlantillasPorActividades(
+      env,
+      (result.results || []).map((a) => a.id)
+    );
     const catalogoDocumentacionPorAdmin = new Map();
     const adminIds = Array.from(
       new Set((result.results || []).map((a) => Number(a.admin_id || 0)).filter((id) => id > 0))
@@ -327,6 +386,8 @@ export async function onRequestGet(context) {
         ...a,
         tipo: resolverTipoActividadVisible(a),
         aforo_maximo: Number(a.aforo_maximo || 0),
+        plantillas_documentales: plantillasPorActividad.get(Number(a.id || 0)) || [],
+        plantilla_documental_ids: (plantillasPorActividad.get(Number(a.id || 0)) || []).map((plantilla) => Number(plantilla.id || 0)),
         plazas_totales: Number(a.plazas_totales || 0),
         plazas_ocupadas: Number(a.plazas_ocupadas || 0),
         plazas_disponibles: Number(a.plazas_disponibles || 0),

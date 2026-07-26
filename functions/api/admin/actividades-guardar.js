@@ -92,6 +92,66 @@ function normalizarDocumentacionActividadEntrada(body = {}) {
   };
 }
 
+function normalizarIdsPlantillasDocumentales(valor) {
+  const lista = Array.isArray(valor) ? valor : [];
+  const vistos = new Set();
+  return lista
+    .map((item) => Number.parseInt(String(typeof item === "object" && item ? item.id || item.plantilla_id : item), 10))
+    .filter((id) => {
+      if (!Number.isInteger(id) || id <= 0 || vistos.has(id)) return false;
+      vistos.add(id);
+      return true;
+    });
+}
+
+async function asegurarTablaActividadPlantillas(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_plantillas_documentales (
+      actividad_id INTEGER NOT NULL,
+      plantilla_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (actividad_id, plantilla_id)
+    )
+  `).run();
+}
+
+async function obtenerIdsPlantillasPermitidas(env, adminId, plantillaIds) {
+  const ids = normalizarIdsPlantillasDocumentales(plantillaIds);
+  if (!ids.length) return [];
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = await env.DB.prepare(`
+    SELECT id
+    FROM admin_plantillas_documentales
+    WHERE id IN (${placeholders})
+      AND admin_id = ?
+      AND UPPER(TRIM(COALESCE(estado, 'ACTIVA'))) = 'ACTIVA'
+  `).bind(...ids, adminId).all();
+
+  const permitidas = new Set((rows?.results || []).map((row) => Number(row.id || 0)));
+  return ids.filter((id) => permitidas.has(id));
+}
+
+async function guardarPlantillasDocumentalesActividad(env, actividadId, adminId, plantillaIds) {
+  await asegurarTablaActividadPlantillas(env);
+
+  const idsPermitidos = await obtenerIdsPlantillasPermitidas(env, adminId, plantillaIds);
+  await env.DB.prepare(`
+    DELETE FROM actividad_plantillas_documentales
+    WHERE actividad_id = ?
+  `).bind(actividadId).run();
+
+  for (const plantillaId of idsPermitidos) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO actividad_plantillas_documentales (
+        actividad_id,
+        plantilla_id
+      )
+      VALUES (?, ?)
+    `).bind(actividadId, plantillaId).run();
+  }
+}
+
 async function asegurarTablaRequisitos(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS actividad_requisitos (
@@ -985,6 +1045,7 @@ function construirPayload(body, admin_id) {
     enlace_externo_url: normalizarNullable(body.enlace_externo_url),
     borrador_tecnico: parsearFlag(body.borrador_tecnico, 0),
     requisitos_particulares: normalizarRequisitosEntrada(body.requisitos_particulares),
+    plantilla_documental_ids: normalizarIdsPlantillasDocumentales(body.plantilla_documental_ids),
     documentacion_actividad: normalizarDocumentacionActividadEntrada(body)
   };
 }
@@ -1125,6 +1186,12 @@ export async function onRequestPost(context) {
         p.documentacion_actividad.documentos,
         catalogoDocumentalActivo,
         p.documentacion_actividad.documento_ids
+      );
+      await guardarPlantillasDocumentalesActividad(
+        env,
+        actividadId,
+        p.admin_id,
+        p.plantilla_documental_ids
       );
     }
 
@@ -1625,6 +1692,12 @@ export async function onRequestPut(context) {
       catalogoDocumentalActivo,
       p.documentacion_actividad.documento_ids
     );
+    await guardarPlantillasDocumentalesActividad(
+      env,
+      id,
+      p.admin_id,
+      p.plantilla_documental_ids
+    );
 
     let baseUrl = "";
     try {
@@ -1756,6 +1829,11 @@ export async function onRequestDelete(context) {
       WHERE actividad_id = ?
     `).bind(id).run();
     await borrarConfiguracionDocumentalActividad(env, id);
+    await asegurarTablaActividadPlantillas(env);
+    await env.DB.prepare(`
+      DELETE FROM actividad_plantillas_documentales
+      WHERE actividad_id = ?
+    `).bind(id).run();
 
     const result = await env.DB.prepare(`
       DELETE FROM actividades

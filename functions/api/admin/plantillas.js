@@ -82,6 +82,17 @@ async function asegurarTablaPlantillas(env) {
   }
 }
 
+async function asegurarTablaActividadPlantillas(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS actividad_plantillas_documentales (
+      actividad_id INTEGER NOT NULL,
+      plantilla_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (actividad_id, plantilla_id)
+    )
+  `).run();
+}
+
 async function obtenerPlantillaPorId(env, session, plantillaId) {
   if (!plantillaId) return null;
 
@@ -183,6 +194,7 @@ async function subirPdfPlantilla({ env, session, nombrePlantilla, file }) {
 async function listarPlantillas(context, session) {
   const { request, env } = context;
   await asegurarTablaPlantillas(env);
+  await asegurarTablaActividadPlantillas(env);
 
   const url = new URL(request.url);
   const actividadId = parsearIdPositivo(url.searchParams.get("actividad_id"));
@@ -197,7 +209,12 @@ async function listarPlantillas(context, session) {
 
   if (actividadId) {
     where += where ? " AND " : "WHERE ";
-    where += "p.actividad_id = ?";
+    where += `EXISTS (
+      SELECT 1
+      FROM actividad_plantillas_documentales ap
+      WHERE ap.actividad_id = ?
+        AND ap.plantilla_id = p.id
+    )`;
     binds.push(actividadId);
   }
 
