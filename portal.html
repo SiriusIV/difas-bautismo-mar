@@ -2937,8 +2937,8 @@ function actualizarBotonSolicitarSegunFranja() {
   btnSolicitar.style.display = "inline-block";
 
   if (Number(actividadSeleccionada.usa_franjas || 0) !== 1) {
-    btnSolicitar.disabled = false;
-    btnSolicitar.title = "";
+    btnSolicitar.disabled = true;
+    btnSolicitar.title = "La actividad debe tener una programación horaria definida.";
     return;
   }
 

@@ -139,7 +139,7 @@ function construirEstadoPropuesto(body, actual) {
     activa: parsearFlag(body.activa, Number(actual.activa ?? actual.visible_portal ?? 1)),
     fecha_inicio: (esTemporal || esPermanente) ? limpiarTexto(body.fecha_inicio ?? actual.fecha_inicio) : null,
     fecha_fin: (esTemporal || esPermanente) ? limpiarTexto(body.fecha_fin ?? actual.fecha_fin) : null,
-    usa_franjas: esPendiente ? 0 : parsearFlag(body.usa_franjas, Number(actual.usa_franjas || 0)),
+    usa_franjas: 1,
     requiere_reserva: esPendiente ? 0 : parsearFlag(body.requiere_reserva, Number(actual.requiere_reserva || 0)),
     aforo_limitado: esPendiente ? 0 : parsearFlag(body.aforo_limitado, Number(actual.aforo_limitado || 0)),
     aforo_maximo: esPendiente ? null : parsearEnteroPositivoONull(body.aforo_maximo ?? actual.aforo_maximo)

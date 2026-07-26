@@ -726,7 +726,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "La actividad asociada ya no admite reservas." }, { status: 400 });
     }
 
-    const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
+    const usaFranjas = true;
     const estadoActual = String(reservaActual.estado || "").toUpperCase();
     const esBorrador = estadoActual === "BORRADOR";
     const esRechazada = estadoActual === "RECHAZADA";

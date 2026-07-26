@@ -710,7 +710,7 @@ if (Number(actividad.activa || 0) !== 1) {
         );
       }
     }
-    const usaFranjas = Number(actividad.usa_franjas || 0) === 1;
+    const usaFranjas = true;
 
     if (!centro || !contacto || !telefono || !email) {
       return json(

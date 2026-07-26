@@ -812,13 +812,7 @@ function validarActividad(data) {
     }
   }
 
-  const usaFranjas = parsearFlag(data.usa_franjas, 1);
   const aforoLimitado = parsearFlag(data.aforo_limitado, 1);
-  const aforoMaximo = parsearEnteroPositivoONull(data.aforo_maximo);
-
-  if (aforoLimitado === 1 && usaFranjas === 0 && !(aforoMaximo > 0)) {
-    return "Debes indicar un aforo mximo vlido cuando la actividad tenga aforo limitado y no utilice franjas horarias.";
-  }
 
   return null;
 }
@@ -947,7 +941,7 @@ function construirPayload(body, admin_id) {
   const tipoPersistencia = esPendiente ? "PERMANENTE" : tipoLogico;
   const visiblePortal = parsearFlag(body.visible_portal, 1);
   const activa = parsearFlag(body.activa, 1);
-  const usaFranjas = esPendiente ? 0 : parsearFlag(body.usa_franjas, 1);
+  const usaFranjas = 1;
   const requiereReserva = esPendiente ? 0 : parsearFlag(body.requiere_reserva, 1);
   const aforoLimitado = esPendiente ? 0 : parsearFlag(body.aforo_limitado, 1);
   const aforoMaximo = esPendiente ? null : parsearEnteroPositivoONull(body.aforo_maximo);
@@ -1048,7 +1042,7 @@ export async function onRequestPost(context) {
     if (Number(p.borrador_tecnico || 0) !== 1 && Number(p.usa_franjas || 0) === 1) {
       return json({
         ok: false,
-        error: "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas."
+        error: "Debes definir al menos una franja horaria antes de guardar la actividad."
       }, 400);
     }
 
@@ -1452,7 +1446,7 @@ export async function onRequestPut(context) {
       if (resumenFranjas.total <= 0) {
         return json({
           ok: false,
-          error: "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas."
+          error: "Debes definir al menos una franja horaria antes de guardar la actividad."
         }, 400);
       }
 

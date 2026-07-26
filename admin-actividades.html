@@ -3331,16 +3331,10 @@
 
             <div class="subbloque">
               <h4>Programación</h4>
-              <p>Indica si esta actividad usa franjas horarias y, si corresponde, crea aquí mismo su programación.</p>
+              <p>Define aquí la programación horaria de la actividad. Si la actividad no admite reservas, las franjas se mostrarán solo como información en el portal.</p>
+              <input type="hidden" id="usa_franjas" value="1">
 
               <div class="fila-compacta">
-                <div>
-                  <select id="usa_franjas" class="input-mini">
-                    <option value="1">Sí</option>
-                    <option value="0">No</option>
-                  </select>
-                </div>
-
                 <div id="bloqueSelectorFrecuencia">
                   <select id="es_recurrente" class="input-mini">
                     <option value="0">Fechas concretas</option>
@@ -3806,7 +3800,6 @@
       "tipo",
       "fecha_inicio",
       "fecha_fin",
-      "usa_franjas",
       "requiere_reserva",
       "aforo_limitado"
     ];
@@ -3911,7 +3904,6 @@
       [
         "requiere_reserva",
         "aforo_limitado",
-        "usa_franjas",
         "usa_enlace_externo",
         "visible_portal"
       ].forEach((id) => {
@@ -4131,7 +4123,7 @@
       const selectUsaFranjas = document.getElementById("usa_franjas");
       cerrarModalDesactivarFranjasActividad();
       desactivacionFranjasConfirmada = true;
-      if (selectUsaFranjas) selectUsaFranjas.value = "0";
+      if (selectUsaFranjas) selectUsaFranjas.value = "1";
       guardarValorPrevioCampoCritico("usa_franjas");
       sincronizarTogglesPanelConfiguracion();
       actualizarVisibilidadFormulario();
@@ -4173,9 +4165,7 @@
           const filaControles = stepConfig.querySelector(".fila-compacta-config-final");
           const filaProgramacion = stepProgramacion.querySelector(".fila-compacta-programacion");
           const bloqueFechas = document.getElementById("bloqueFechas");
-          const selectUsaFranjas = document.getElementById("usa_franjas");
-
-          if (filaNombre && filaTitulo && filaDescripcion && filaEnlace && filaControles && filaProgramacion && bloqueFechas && selectUsaFranjas) {
+          if (filaNombre && filaTitulo && filaDescripcion && filaEnlace && filaControles && filaProgramacion && bloqueFechas) {
           const crearFilaControlSelect = (bloque) => {
             const label = bloque.querySelector("label");
             const select = bloque.querySelector("select");
@@ -4285,44 +4275,6 @@
               return fila;
             };
 
-            const crearFilaControlToggleDirecto = (select, labelText) => {
-              if (!select) return null;
-
-              const fila = document.createElement("div");
-              fila.className = "control-row toggle-pending";
-
-              const texto = document.createElement("span");
-              texto.className = "control-row-label";
-              texto.textContent = labelText;
-
-              const toggle = document.createElement("label");
-              toggle.className = "toggle-switch";
-
-              const checkbox = document.createElement("input");
-              checkbox.type = "checkbox";
-              checkbox.checked = String(select.value) === "1";
-              checkbox.setAttribute("aria-label", labelText);
-
-              const slider = document.createElement("span");
-              slider.className = "toggle-slider";
-
-              checkbox.addEventListener("change", () => {
-                guardarValorPrevioCampoCritico(select.id);
-                select.value = checkbox.checked ? "1" : "0";
-                select.dispatchEvent(new Event("change", { bubbles: true }));
-              });
-
-              select.addEventListener("change", () => {
-                checkbox.checked = String(select.value) === "1";
-                fila.classList.remove("toggle-pending");
-              });
-
-              select.classList.add("oculto");
-              toggle.append(checkbox, slider);
-              fila.append(texto, toggle, select);
-              return fila;
-            };
-
           const [campoNombre, campoOrganiza] = Array.from(filaNombre.children);
           const [campoTitulo, campoPrograma] = Array.from(filaTitulo.children);
           const [campoDescripcion] = Array.from(filaDescripcion.children);
@@ -4359,7 +4311,6 @@
             crearFilaControlSelect(bloqueTipo),
             crearFilaControlToggle(bloqueReserva),
             crearFilaControlAforo(bloqueAforo, bloqueAforoMaximo),
-            crearFilaControlToggleDirecto(selectUsaFranjas, "Con franjas horarias"),
             crearFilaControlToggle(bloqueEnlace),
             crearFilaControlToggle(bloqueVisible)
           ].filter(Boolean).forEach((fila) => panelGrid.appendChild(fila));
@@ -4506,7 +4457,7 @@
 
     function sincronizarPatronRecurrenciaOculto() {
       const oculto = document.getElementById("patron_recurrencia");
-      if (!oculto || document.getElementById("usa_franjas")?.value !== "1") return;
+      if (!oculto) return;
       oculto.value = document.getElementById("es_recurrente")?.value === "1" ? obtenerTextoPatronRecurrencia() : "";
     }
 
@@ -4950,7 +4901,7 @@ async function validarCambioCriticoActividad() {
     tipo: document.getElementById("tipo").value,
     fecha_inicio: document.getElementById("fecha_inicio").value,
     fecha_fin: document.getElementById("fecha_fin").value,
-    usa_franjas: document.getElementById("usa_franjas").value,
+    usa_franjas: "1",
     requiere_reserva: document.getElementById("requiere_reserva").value,
     aforo_limitado: document.getElementById("aforo_limitado").value,
     aforo_maximo: document.getElementById("aforo_maximo").value
@@ -4991,12 +4942,7 @@ function debeAplazarValidacionCambioCritico(id) {
 }
 
 function debeConfirmarDesactivacionFranjas() {
-  const selectUsaFranjas = document.getElementById("usa_franjas");
-  if (!selectUsaFranjas || selectUsaFranjas.value !== "0") return false;
-  if (String(valoresPreviosCamposCriticos.usa_franjas ?? "0") !== "1") return false;
-  if (desactivacionFranjasConfirmada) return false;
-  return (Array.isArray(franjasCache) && franjasCache.length > 0)
-    || (Array.isArray(patronesRecurrentesCache) && patronesRecurrentesCache.length > 0);
+  return false;
 }
 
 async function manejarCambioCriticoCampo(id) {
@@ -5015,20 +4961,6 @@ async function manejarCambioCriticoCampo(id) {
   }
 
   limpiarMensaje();
-
-  if (id === "usa_franjas") {
-    if (document.getElementById("usa_franjas")?.value === "1") {
-      desactivacionFranjasConfirmada = false;
-    } else if (debeConfirmarDesactivacionFranjas()) {
-      restaurarValorPrevioCampoCritico(id);
-      sincronizarTogglesPanelConfiguracion();
-      actualizarVisibilidadFormulario();
-      actualizarPreview();
-      renderPreviewFranjas();
-      await abrirModalDesactivarFranjasActividad();
-      return false;
-    }
-  }
 
   if (debeAplazarValidacionCambioCritico(id)) {
     guardarValorPrevioCampoCritico(id);
@@ -5550,7 +5482,7 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
     setValor("imagen_id", actividad.imagen_id || "");
     setValor("visible_portal", String(actividad.visible_portal ?? 1));
     setValor("orden_portal", String(actividad.orden_portal ?? 0));
-    setValor("usa_franjas", String(actividad.usa_franjas ?? 1));
+    setValor("usa_franjas", "1");
     setValor("requiere_reserva", String(actividad.requiere_reserva ?? 1));
     setValor("aforo_limitado", String(actividad.aforo_limitado ?? 1));
     actualizarAccesoPlantillasActividad();
@@ -5628,9 +5560,9 @@ function cargarConfiguracionDocumentacionActividad(actividad) {
       limpiarCambiosPendientesActividad();
     }
 
-    function getPasoFlowActividad() {
+function getPasoFlowActividad() {
   if (modoSecretariaDocumental) return [3];
-  return document.getElementById("usa_franjas").value === "1" ? [0, 1, 2, 3] : [0, 2, 3];
+  return [0, 1, 2, 3];
 }
 
 function reubicarCabeceraActividadSegunViewport() {
@@ -5660,7 +5592,7 @@ function normalizarPasoSegunFlujo(pasoDeseado) {
 function actualizarVisibilidadFormulario() {
   const tipo = document.getElementById("tipo").value;
   const esPendiente = tipo === "PENDIENTE";
-  const usaFranjas = document.getElementById("usa_franjas").value === "1";
+  const usaFranjas = true;
   const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
   const usaEnlaceExterno = document.getElementById("usa_enlace_externo").value === "1";
   const frEsRecurrente = document.getElementById("es_recurrente").value === "1";
@@ -5672,7 +5604,7 @@ function actualizarVisibilidadFormulario() {
 
   if (esPendiente) {
     document.getElementById("requiere_reserva").value = "0";
-    document.getElementById("usa_franjas").value = "0";
+    document.getElementById("usa_franjas").value = "1";
     document.getElementById("aforo_limitado").value = "0";
   }
   sincronizarTogglesPanelConfiguracion();
@@ -5725,7 +5657,7 @@ function actualizarVisibilidadFormulario() {
 
 function actualizarVisibilidadAforoMaximoUI() {
   const aforoLimitado = document.getElementById("aforo_limitado")?.value === "1";
-  const usaFranjas = document.getElementById("usa_franjas")?.value === "1";
+  const usaFranjas = true;
   const inputAforo = document.getElementById("aforo_maximo");
   const filaAforo = document.querySelector('.control-row-aforo[data-control="aforo-maximo"] .control-row-input-aforo')?.closest(".control-row-aforo");
   const mostrar = aforoLimitado && !usaFranjas;
@@ -6226,19 +6158,21 @@ async function actualizarDireccionYLocalidadDesdeCoordenadas(lat, lon) {
 
 
     function actualizarEstadoFranjasUI() {
-      const usaFranjas = document.getElementById("usa_franjas").value === "1";
+      const usaFranjas = true;
+      const inputUsaFranjas = document.getElementById("usa_franjas");
+      if (inputUsaFranjas) inputUsaFranjas.value = "1";
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
       const esRecurrente = document.getElementById("es_recurrente").value === "1";
       const accionesFranjasBotones = document.getElementById("accionesFranjasBotones");
 
-      document.getElementById("bloqueFranjasEditor").classList.toggle("oculto", !usaFranjas);
+      document.getElementById("bloqueFranjasEditor").classList.remove("oculto");
       document.getElementById("fr_bloque_fecha").classList.toggle("oculto", esRecurrente);
       document.getElementById("fr_bloque_patron").classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_periodo")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_recurrencia_inicio")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_termina")?.classList.toggle("oculto", !esRecurrente);
       document.getElementById("fr_bloque_capacidad").classList.toggle("oculto", !aforoLimitado);
-      accionesFranjasBotones?.classList.toggle("oculto", !usaFranjas);
+      accionesFranjasBotones?.classList.remove("oculto");
       if (usaFranjas && esRecurrente) {
         volcarPatronVigenteEnFormulario();
       }
@@ -6456,7 +6390,7 @@ function actualizarAccionesFranjaUI() {
   const btnBorrar = document.getElementById("btnBorrarFranjaSeleccionada");
   const btnReset = document.getElementById("btnResetProgramacion");
   const haySeleccion = Number.isInteger(Number(franjaSeleccionadaId)) && Number(franjaSeleccionadaId) > 0;
-  const puedeResetear = document.getElementById("usa_franjas")?.value === "1" && hayProgramacionFuturaReseteable();
+  const puedeResetear = hayProgramacionFuturaReseteable();
 
   if (btnBorrar) btnBorrar.disabled = !haySeleccion;
   if (btnReset) {
@@ -6522,7 +6456,7 @@ function actividadEsPermanenteSinFin() {
 }
 
 function obtenerPatronVigentePermanente() {
-  if (!actividadEsPermanenteSinFin() || document.getElementById("usa_franjas")?.value !== "1") return null;
+  if (!actividadEsPermanenteSinFin()) return null;
   const origen = Array.isArray(patronesRecurrentesCache) && patronesRecurrentesCache.length
     ? patronesRecurrentesCache
     : franjasCache;
@@ -7367,7 +7301,7 @@ function renderPreviewFranjas() {
       const tabla = wrap?.querySelector("table");
       const aforoLimitado = document.getElementById("aforo_limitado").value === "1";
 
-      if (!franjasCache.length || document.getElementById("usa_franjas").value !== "1") {
+      if (!franjasCache.length) {
         wrap.style.display = "none";
         body.innerHTML = "";
         firmaPreviewFranjasActividad = "";
@@ -7472,7 +7406,7 @@ function aplicarFranjasRespuesta(respuesta) {
 
     async function cargarFranjas() {
       const actividadId = document.getElementById("actividadId").value;
-      if (!actividadId || document.getElementById("usa_franjas").value !== "1") {
+      if (!actividadId) {
         franjasCache = [];
         patronesRecurrentesCache = [];
         renderListaFranjas();
@@ -7763,7 +7697,9 @@ async function borrarFranja(id) {
 
     function construirPayloadActividad(borradorTecnico = 0) {
       agregarDocumentoSeleccionadoDocumentacionActividad();
-      const usaFranjas = document.getElementById("usa_franjas").value;
+      const inputUsaFranjas = document.getElementById("usa_franjas");
+      if (inputUsaFranjas) inputUsaFranjas.value = "1";
+      const usaFranjas = "1";
       const patronFranjasGuardadas = obtenerPatronRecurrenciaDesdeFranjasGuardadas();
       const patronFranjaEnEdicion = obtenerTextoPatronRecurrencia();
       const esRecurrenteFranja = document.getElementById("es_recurrente").value === "1";
@@ -7863,7 +7799,7 @@ async function borrarFranja(id) {
       if (!modoSecretariaDocumental) {
         if (payload.tipo === "PENDIENTE") {
           payload.requiere_reserva = "0";
-          payload.usa_franjas = "0";
+          payload.usa_franjas = "1";
           payload.aforo_limitado = "0";
         }
 
@@ -7905,14 +7841,6 @@ async function borrarFranja(id) {
           return false;
         }
 
-        if (!actividadQuedaDesactivada && payload.aforo_limitado === "1" && payload.usa_franjas !== "1") {
-          const aforoMaximo = parseInt(payload.aforo_maximo || "", 10);
-          if (!Number.isInteger(aforoMaximo) || aforoMaximo <= 0) {
-            mostrarMensaje("error", "Debes indicar un aforo máximo válido cuando la actividad tenga aforo limitado y no utilice franjas horarias.");
-            return false;
-          }
-        }
-
         if (!actividadQuedaDesactivada && payload.usa_franjas === "1") {
           let franjasDisponibles = Array.isArray(franjasCache) ? franjasCache : [];
 
@@ -7927,7 +7855,7 @@ async function borrarFranja(id) {
           }
 
           if (!franjasDisponibles.length) {
-            mostrarMensaje("error", "Debes definir al menos una franja horaria antes de guardar una actividad configurada con franjas.");
+            mostrarMensaje("error", "Debes definir al menos una franja horaria antes de guardar la actividad.");
             return false;
           }
 
@@ -8720,17 +8648,6 @@ function retrocederPaso() {
           actualizarVisibilidadFormulario();
           actualizarPreview();
 
-          if (id === "usa_franjas") {
-            if (document.getElementById("usa_franjas").value === "1" && document.getElementById("actividadId").value) {
-              await cargarFranjas();
-            } else {
-              franjasCache = [];
-              patronesRecurrentesCache = [];
-              renderListaFranjas();
-              renderPreviewFranjas();
-              actualizarEstadoFranjasUI();
-            }
-          }
         });
       });
 
