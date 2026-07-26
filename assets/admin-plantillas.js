@@ -1,12 +1,10 @@
 const LEGACY_STORAGE_KEY = "difas_plantillas_documentales_borradores_v1";
 let usuarioSesion = null;
-let actividadesCache = [];
 let plantillasCache = [];
 let plantillaActual = null;
 let archivoPdfSesion = null;
 let temporizadorMensaje = null;
 let hayCambiosSinGuardar = false;
-let actividadInicialURL = null;
 
 function aplicarLogoAdminArfer(img, usuario = {}) { if (!img) return; img.style.width = ""; const logo = String(usuario?.logo_url || "").trim(); img.classList.remove("logo-admin-personal"); img.src = logo || "logo.png"; if (logo) img.classList.add("logo-admin-personal"); img.classList.remove("logo-pendiente"); }
 function escapeHtml(v) { return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
@@ -14,14 +12,11 @@ function limpiarTexto(v) { return String(v ?? "").trim(); }
 function normalizarComparacion(texto) { return limpiarTexto(texto).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function mostrarMensaje(tipo, texto) { const el = document.getElementById("mensaje"), manual = tipo === "error"; el.className = `mensaje ${tipo}`; el.style.display = "block"; el.innerHTML = `<div class="mensaje-inner"><div>${escapeHtml(texto)}</div>${manual ? `<button type="button" class="mensaje-cerrar" aria-label="Cerrar aviso">×</button>` : ""}</div>`; if (temporizadorMensaje) { clearTimeout(temporizadorMensaje); temporizadorMensaje = null; } if (!manual) { temporizadorMensaje = setTimeout(limpiarMensaje, 4000); } else { el.querySelector(".mensaje-cerrar")?.addEventListener("click", limpiarMensaje); } }
 function limpiarMensaje() { const el = document.getElementById("mensaje"); el.className = "mensaje"; el.style.display = "none"; el.innerHTML = ""; if (temporizadorMensaje) { clearTimeout(temporizadorMensaje); temporizadorMensaje = null; } }
-function obtenerActividadPorId(id) { return actividadesCache.find((a) => Number(a.id) === Number(id)) || null; }
-function plantillaVacia() { return { id: null, nombre: "", descripcion: "", actividad_id: "", actividad_titulo: "", tipo_generacion: "ASISTENTE", estado: "ACTIVA", archivo_nombre: "", archivo_url: "", archivo_key: "", campos_detectados: [], created_at: "", updated_at: "" }; }
+function plantillaVacia() { return { id: null, nombre: "", descripcion: "", tipo_generacion: "ASISTENTE", estado: "ACTIVA", archivo_nombre: "", archivo_url: "", archivo_key: "", campos_detectados: [], created_at: "", updated_at: "" }; }
 function actualizarEstadoSesion(texto) { const el = document.getElementById("textoEstadoSesion"); if (el) el.textContent = texto; }
 function marcarCambiosPendientes() { hayCambiosSinGuardar = true; actualizarEstadoSesion("Hay cambios sin guardar en esta plantilla."); }
 function reiniciarEstadoCambios() { hayCambiosSinGuardar = false; actualizarEstadoSesion(""); }
-function obtenerActividadInicialURL() { const params = new URLSearchParams(window.location.search); const raw = params.get("actividad_id") || ""; const id = Number.parseInt(raw, 10); return Number.isInteger(id) && id > 0 ? id : null; }
-function poblarSelectActividades() { const select = document.getElementById("actividadPlantilla"), valor = select.value; select.innerHTML = `<option value="">Selecciona una actividad</option>`; actividadesCache.forEach((a) => { const option = document.createElement("option"); option.value = String(a.id); option.textContent = a.titulo_publico || a.nombre || `Actividad ${a.id}`; select.appendChild(option); }); if (valor && actividadesCache.some((a) => String(a.id) === String(valor))) select.value = valor; }
-function renderSelectorPlantillas() { const select = document.getElementById("selectorPlantillaRepositorio"); if (!select) return; const valorActual = plantillaActual?.id ? String(plantillaActual.id) : ""; select.innerHTML = ""; const vacio = document.createElement("option"); vacio.value = ""; vacio.textContent = plantillasCache.length ? "" : "No hay plantillas guardadas"; select.appendChild(vacio); plantillasCache.forEach((plantilla) => { const option = document.createElement("option"); option.value = String(plantilla.id); const actividad = plantilla.actividad_titulo || "Sin actividad asociada"; option.textContent = `${plantilla.nombre || "Plantilla sin nombre"} · ${actividad}`; select.appendChild(option); }); if (!plantillasCache.length) { select.value = ""; select.disabled = true; return; } select.disabled = false; select.value = plantillasCache.some((item) => String(item.id) === valorActual) ? valorActual : ""; }
+function renderSelectorPlantillas() { const select = document.getElementById("selectorPlantillaRepositorio"); if (!select) return; const valorActual = plantillaActual?.id ? String(plantillaActual.id) : ""; select.innerHTML = ""; const vacio = document.createElement("option"); vacio.value = ""; vacio.textContent = plantillasCache.length ? "" : "No hay plantillas guardadas"; select.appendChild(vacio); plantillasCache.forEach((plantilla) => { const option = document.createElement("option"); option.value = String(plantilla.id); option.textContent = plantilla.nombre || "Plantilla sin nombre"; select.appendChild(option); }); if (!plantillasCache.length) { select.value = ""; select.disabled = true; return; } select.disabled = false; select.value = plantillasCache.some((item) => String(item.id) === valorActual) ? valorActual : ""; }
 function actualizarEstadoParserPdf() {}
 function obtenerTipoCampoPdf(field) { const nombreClase = String(field?.constructor?.name || "").toLowerCase(); if (nombreClase.includes("textfield")) return "Texto"; if (nombreClase.includes("checkbox")) return "Casilla"; if (nombreClase.includes("radiogroup")) return "Opcion"; if (nombreClase.includes("dropdown")) return "Desplegable"; if (nombreClase.includes("optionlist")) return "Lista"; if (nombreClase.includes("button")) return "Boton"; if (nombreClase.includes("signature")) return "Firma"; return "Campo"; }
 async function extraerCamposPdf(file) { if (!window.PDFLib?.PDFDocument) throw new Error("El lector PDF del constructor no esta disponible en este momento."); const bytes = await file.arrayBuffer(); const pdfDoc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false }); return pdfDoc.getForm().getFields().map((field) => ({ nombre: field.getName(), tipo: obtenerTipoCampoPdf(field), modo: "VINCULADO", obligatorio: true })); }
@@ -49,7 +44,6 @@ function renderCamposDetectados() {
     });
   });
 }
-function actualizarSubtituloSegunActividad() {}
 function actualizarResumenArchivo() {
   const btnVer = document.getElementById("btnVerPdfPlantilla");
   const textoVisor = document.getElementById("textoVisorPlantilla");
@@ -77,11 +71,9 @@ function volcarPlantillaEnFormulario(plantilla) {
   archivoPdfSesion = null;
   document.getElementById("nombrePlantilla").value = plantillaActual.nombre || "";
   document.getElementById("descripcionPlantilla").value = plantillaActual.descripcion || "";
-  document.getElementById("actividadPlantilla").value = plantillaActual.actividad_id ? String(plantillaActual.actividad_id) : "";
   document.getElementById("tipoGeneracionPlantilla").value = plantillaActual.tipo_generacion || "ASISTENTE";
   document.getElementById("estadoPlantilla").value = plantillaActual.estado || "ACTIVA";
   document.getElementById("tituloEditor").textContent = plantillaActual.nombre?.trim() || "Nueva plantilla documental";
-  actualizarSubtituloSegunActividad(plantillaActual.actividad_id);
   actualizarEstadoAcciones();
   document.getElementById("inputPdfPlantilla").value = "";
   actualizarResumenArchivo();
@@ -96,34 +88,14 @@ function seleccionarPlantilla(id) {
 }
 function crearNuevoBorrador() {
   limpiarMensaje();
-  const base = plantillaVacia();
-  if (actividadInicialURL && obtenerActividadPorId(actividadInicialURL)) {
-    const actividad = obtenerActividadPorId(actividadInicialURL);
-    base.actividad_id = Number(actividad.id);
-    base.actividad_titulo = actividad.titulo_publico || actividad.nombre || "";
-  }
-  volcarPlantillaEnFormulario(base);
-}
-function crearBorradorContextualActividad(actividadId) {
-  const borrador = plantillaVacia();
-  const actividad = obtenerActividadPorId(actividadId);
-  if (actividad) {
-    borrador.actividad_id = Number(actividad.id);
-    borrador.actividad_titulo = actividad.titulo_publico || actividad.nombre || "";
-    borrador.nombre = `Plantilla ${borrador.actividad_titulo}`.trim();
-  }
-  volcarPlantillaEnFormulario(borrador);
+  volcarPlantillaEnFormulario(plantillaVacia());
 }
 function volcarFormularioEnPlantilla(base = plantillaActual) {
   if (!base) return null;
-  const actividadId = document.getElementById("actividadPlantilla").value;
-  const actividad = obtenerActividadPorId(actividadId);
   return {
     ...base,
     nombre: limpiarTexto(document.getElementById("nombrePlantilla").value),
     descripcion: limpiarTexto(document.getElementById("descripcionPlantilla").value),
-    actividad_id: actividadId ? Number(actividadId) : "",
-    actividad_titulo: actividad?.titulo_publico || actividad?.nombre || "",
     tipo_generacion: document.getElementById("tipoGeneracionPlantilla").value || "ASISTENTE",
     estado: document.getElementById("estadoPlantilla").value || "ACTIVA",
     archivo_nombre: archivoPdfSesion?.name || base.archivo_nombre || "",
@@ -142,13 +114,11 @@ async function guardarBorradorActual() {
   limpiarMensaje();
   const plantilla = volcarFormularioEnPlantilla();
   if (!plantilla?.nombre) { mostrarMensaje("error", "Antes de guardar la plantilla debes indicar al menos un nombre interno."); return; }
-  if (!plantilla?.actividad_id) { mostrarMensaje("error", "Antes de guardar la plantilla debes asociarla a una actividad concreta."); return; }
   if (!plantilla.archivo_url && !archivoPdfSesion?.file) { mostrarMensaje("error", "Debes importar una plantilla PDF antes de guardarla en el repositorio."); return; }
   const formData = new FormData();
   if (Number(plantilla.id || 0) > 0) formData.append("id", String(plantilla.id));
   formData.append("nombre", plantilla.nombre);
   formData.append("descripcion", plantilla.descripcion || "");
-  formData.append("actividad_id", String(plantilla.actividad_id));
   formData.append("tipo_generacion", plantilla.tipo_generacion || "ASISTENTE");
   formData.append("estado", plantilla.estado || "ACTIVA");
   formData.append("campos_detectados_json", JSON.stringify(plantilla.campos_detectados || []));
@@ -211,14 +181,13 @@ function prepararDropzone() {
   dropzone.addEventListener("drop", (e) => procesarArchivoPdf(e.dataTransfer?.files?.[0] || null));
 }
 function registrarEventosFormulario() {
-  ["nombrePlantilla", "descripcionPlantilla", "actividadPlantilla", "tipoGeneracionPlantilla", "estadoPlantilla"].forEach((id) => {
+  ["nombrePlantilla", "descripcionPlantilla", "tipoGeneracionPlantilla", "estadoPlantilla"].forEach((id) => {
     const el = document.getElementById(id);
     el.addEventListener("input", () => {
       if (id === "nombrePlantilla") document.getElementById("tituloEditor").textContent = el.value.trim() || "Nueva plantilla documental";
       marcarCambiosPendientes();
     });
     el.addEventListener("change", () => {
-      if (id === "actividadPlantilla") actualizarSubtituloSegunActividad(el.value);
       if (id === "nombrePlantilla") document.getElementById("tituloEditor").textContent = el.value.trim() || "Nueva plantilla documental";
       marcarCambiosPendientes();
     });
@@ -241,25 +210,18 @@ async function cargarSesion() {
   aplicarLogoAdminArfer(document.getElementById("logoCabecera"), usuarioSesion);
   return true;
 }
-async function cargarActividades() {
-  const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }), data = await res.json().catch(() => null);
-  if (!res.ok || !data?.ok) throw new Error(data?.error || "No se pudieron cargar las actividades del administrador.");
-  actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
-  poblarSelectActividades();
-}
 function cargarPlantillasLocalesLegado() { try { const raw = localStorage.getItem(LEGACY_STORAGE_KEY); const parsed = JSON.parse(raw || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
 async function dataUrlAFile(dataUrl, nombreArchivo) { const response = await fetch(String(dataUrl || "")); const blob = await response.blob(); return new File([blob], nombreArchivo || "plantilla.pdf", { type: "application/pdf" }); }
-function existeEquivalenteServidor(localDraft) { return plantillasCache.some((item) => Number(item.actividad_id || 0) === Number(localDraft?.actividad_id || 0) && normalizarComparacion(item.nombre) === normalizarComparacion(localDraft?.nombre) && normalizarComparacion(item.archivo_nombre) === normalizarComparacion(localDraft?.archivo_nombre)); }
+function existeEquivalenteServidor(localDraft) { return plantillasCache.some((item) => normalizarComparacion(item.nombre) === normalizarComparacion(localDraft?.nombre) && normalizarComparacion(item.archivo_nombre) === normalizarComparacion(localDraft?.archivo_nombre)); }
 async function migrarPlantillasLocalesLegadas() {
   const legacy = cargarPlantillasLocalesLegado();
   if (!legacy.length) return;
   let migradas = 0, pendientes = 0;
   for (const draft of legacy) {
-    if (!draft?.nombre || !draft?.actividad_id || existeEquivalenteServidor(draft)) continue;
+    if (!draft?.nombre || existeEquivalenteServidor(draft)) continue;
     const formData = new FormData();
     formData.append("nombre", limpiarTexto(draft.nombre));
     formData.append("descripcion", limpiarTexto(draft.descripcion));
-    formData.append("actividad_id", String(Number(draft.actividad_id)));
     formData.append("tipo_generacion", limpiarTexto(draft.tipo_generacion || "ASISTENTE") || "ASISTENTE");
     formData.append("estado", limpiarTexto(draft.estado || "ACTIVA") || "ACTIVA");
     formData.append("campos_detectados_json", JSON.stringify(Array.isArray(draft.campos_detectados) ? draft.campos_detectados : []));
@@ -280,22 +242,15 @@ async function migrarPlantillasLocalesLegadas() {
   }
 }
 function seleccionarPlantillaInicial() {
-  if (actividadInicialURL) {
-    const deActividad = plantillasCache.find((item) => Number(item.actividad_id) === Number(actividadInicialURL));
-    if (deActividad) { volcarPlantillaEnFormulario(deActividad); return; }
-    if (obtenerActividadPorId(actividadInicialURL)) { crearBorradorContextualActividad(actividadInicialURL); return; }
-  }
   if (plantillasCache.length) volcarPlantillaEnFormulario(plantillasCache[0]);
   else crearNuevoBorrador();
 }
 (async function init() {
-  actividadInicialURL = obtenerActividadInicialURL();
   const ok = await cargarSesion();
   if (!ok) return;
   prepararDropzone();
   registrarEventosFormulario();
   try {
-    await cargarActividades();
     await cargarPlantillasServidor();
     await migrarPlantillasLocalesLegadas();
   } catch (error) {

@@ -8184,18 +8184,14 @@ async function borrarFranja(id) {
     }
 
     function construirUrlPlantillasActividad() {
-      const id = document.getElementById("actividadId")?.value;
-      if (!id) return "admin-plantillas.html";
-      return `admin-plantillas.html?actividad_id=${encodeURIComponent(id)}`;
+      return "admin-plantillas.html";
     }
 
     function actualizarAccesoPlantillasActividad() {
       const boton = document.getElementById("btnIrPlantillasActividad");
       if (!boton) return;
-      const id = document.getElementById("actividadId")?.value;
-      const tieneActividad = Number.parseInt(id || "", 10) > 0;
-      boton.disabled = !tieneActividad;
-      boton.title = tieneActividad ? "Plantillas documentales" : "Guarda primero la actividad para configurar sus plantillas";
+      boton.disabled = false;
+      boton.title = "Plantillas documentales";
       boton.setAttribute("aria-label", boton.title);
     }
 

@@ -61,7 +61,7 @@ async function asegurarTablaPlantillas(env) {
     CREATE TABLE IF NOT EXISTS admin_plantillas_documentales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       admin_id INTEGER NOT NULL,
-      actividad_id INTEGER NOT NULL,
+      actividad_id INTEGER DEFAULT 0,
       nombre TEXT NOT NULL,
       descripcion TEXT DEFAULT '',
       tipo_generacion TEXT NOT NULL DEFAULT 'ASISTENTE',
@@ -80,27 +80,6 @@ async function asegurarTablaPlantillas(env) {
   if (!nombres.has("archivo_key")) {
     await env.DB.prepare(`ALTER TABLE admin_plantillas_documentales ADD COLUMN archivo_key TEXT DEFAULT ''`).run();
   }
-}
-
-async function obtenerActividadPermitida(env, session, actividadId) {
-  if (!actividadId) return null;
-
-  if (String(session.rol || "").toUpperCase() === "SUPERADMIN") {
-    return await dbPrimaria(env).prepare(`
-      SELECT id, admin_id, titulo_publico, nombre
-      FROM actividades
-      WHERE id = ?
-      LIMIT 1
-    `).bind(actividadId).first();
-  }
-
-  return await dbPrimaria(env).prepare(`
-    SELECT id, admin_id, titulo_publico, nombre
-    FROM actividades
-    WHERE id = ?
-      AND admin_id = ?
-    LIMIT 1
-  `).bind(actividadId, session.usuario_id).first();
 }
 
 async function obtenerPlantillaPorId(env, session, plantillaId) {
@@ -166,7 +145,7 @@ async function contarReferenciasArchivo(env, archivoKey, plantillaIdIgnorada = n
   return Number(row?.total || 0);
 }
 
-async function subirPdfPlantilla({ env, session, actividadId, nombrePlantilla, file }) {
+async function subirPdfPlantilla({ env, session, nombrePlantilla, file }) {
   if (!env.DOCS_BUCKET) {
     throw new Error("Falta configurar el repositorio de documentos del sistema.");
   }
@@ -179,7 +158,7 @@ async function subirPdfPlantilla({ env, session, actividadId, nombrePlantilla, f
 
   const nombreSeguro = sanitizarSegmento(nombrePlantilla) || "plantilla";
   const timestamp = Date.now();
-  const key = `plantillas/admin-${session.usuario_id}/actividad-${actividadId}/${timestamp}-${nombreSeguro}.pdf`;
+  const key = `plantillas/admin-${session.usuario_id}/${timestamp}-${nombreSeguro}.pdf`;
   const buffer = await file.arrayBuffer();
 
   await env.DOCS_BUCKET.put(key, buffer, {
@@ -189,7 +168,6 @@ async function subirPdfPlantilla({ env, session, actividadId, nombrePlantilla, f
     },
     customMetadata: {
       admin_id: String(session.usuario_id),
-      actividad_id: String(actividadId),
       nombre_plantilla: nombrePlantilla,
       original_filename: String(file.name || "")
     }
@@ -257,7 +235,6 @@ async function guardarPlantilla(context, session) {
   const plantillaId = parsearIdPositivo(formData.get("id"));
   const nombre = limpiarTexto(formData.get("nombre"));
   const descripcion = limpiarTexto(formData.get("descripcion"));
-  const actividadId = parsearIdPositivo(formData.get("actividad_id"));
   const tipoGeneracion = limpiarTexto(formData.get("tipo_generacion") || "ASISTENTE").toUpperCase();
   const estado = limpiarTexto(formData.get("estado") || "ACTIVA").toUpperCase();
   const camposDetectados = parsearCamposDetectados(formData.get("campos_detectados_json") || "[]");
@@ -265,15 +242,6 @@ async function guardarPlantilla(context, session) {
 
   if (!nombre) {
     return json({ ok: false, error: "Debes indicar un nombre para la plantilla." }, 400);
-  }
-
-  if (!actividadId) {
-    return json({ ok: false, error: "Debes asociar la plantilla a una actividad válida." }, 400);
-  }
-
-  const actividad = await obtenerActividadPermitida(env, session, actividadId);
-  if (!actividad) {
-    return json({ ok: false, error: "La actividad seleccionada no está disponible para este administrador." }, 403);
   }
 
   const plantillaAnterior = plantillaId ? await obtenerPlantillaPorId(env, session, plantillaId) : null;
@@ -290,7 +258,6 @@ async function guardarPlantilla(context, session) {
     const upload = await subirPdfPlantilla({
       env,
       session,
-      actividadId,
       nombrePlantilla: nombre,
       file
     });
@@ -305,7 +272,6 @@ async function guardarPlantilla(context, session) {
   }
 
   const valores = [
-    actividadId,
     nombre,
     descripcion,
     ["ASISTENTE", "SOLICITUD", "GRUPO"].includes(tipoGeneracion) ? tipoGeneracion : "ASISTENTE",
@@ -323,8 +289,7 @@ async function guardarPlantilla(context, session) {
   if (plantillaAnterior) {
     await env.DB.prepare(`
       UPDATE admin_plantillas_documentales
-      SET actividad_id = ?,
-          nombre = ?,
+      SET nombre = ?,
           descripcion = ?,
           tipo_generacion = ?,
           estado = ?,
@@ -364,7 +329,7 @@ async function guardarPlantilla(context, session) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       session.usuario_id,
-      actividadId,
+      0,
       nombre,
       descripcion,
       ["ASISTENTE", "SOLICITUD", "GRUPO"].includes(tipoGeneracion) ? tipoGeneracion : "ASISTENTE",
@@ -386,11 +351,7 @@ async function guardarPlantilla(context, session) {
     mensaje: plantillaAnterior
       ? "Plantilla documental actualizada correctamente."
       : "Plantilla documental guardada correctamente.",
-    plantilla: normalizarFilaPlantilla({
-      ...plantillaGuardada,
-      actividad_titulo: actividad.titulo_publico || actividad.nombre || "",
-      actividad_nombre: actividad.nombre || actividad.titulo_publico || ""
-    })
+    plantilla: normalizarFilaPlantilla(plantillaGuardada)
   });
 }
 
@@ -427,7 +388,7 @@ async function duplicarPlantilla(context, session, payload) {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     origen.admin_id,
-    origen.actividad_id,
+    0,
     `${limpiarTexto(origen.nombre) || "Plantilla"} (copia)`,
     limpiarTexto(origen.descripcion),
     limpiarTexto(origen.tipo_generacion || "ASISTENTE") || "ASISTENTE",
@@ -441,16 +402,11 @@ async function duplicarPlantilla(context, session, payload) {
   ).run();
 
   const nueva = await obtenerPlantillaPorId(env, session, Number(insert?.meta?.last_row_id || 0));
-  const actividad = await obtenerActividadPermitida(env, session, Number(nueva?.actividad_id || 0));
 
   return json({
     ok: true,
     mensaje: "Se ha creado una copia de la plantilla documental.",
-    plantilla: normalizarFilaPlantilla({
-      ...nueva,
-      actividad_titulo: actividad?.titulo_publico || actividad?.nombre || "",
-      actividad_nombre: actividad?.nombre || actividad?.titulo_publico || ""
-    })
+    plantilla: normalizarFilaPlantilla(nueva)
   });
 }
 
