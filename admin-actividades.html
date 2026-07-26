@@ -5563,7 +5563,10 @@ function normalizarIdsPlantillasActividad(lista) {
 
 function obtenerPlantillasDisponiblesActividad() {
   const seleccionadas = new Set(normalizarIdsPlantillasActividad(plantillasDocumentalesActividad));
-  return catalogoPlantillasDocumentales.filter((plantilla) => !seleccionadas.has(Number(plantilla.id || 0)));
+  return catalogoPlantillasDocumentales.filter((plantilla) =>
+    String(plantilla.estado || "ACTIVA").trim().toUpperCase() === "ACTIVA" &&
+    !seleccionadas.has(Number(plantilla.id || 0))
+  );
 }
 
 function obtenerPlantillaCatalogoActividad(id) {
@@ -5611,8 +5614,7 @@ function renderSelectPlantillasActividad() {
   select.innerHTML = [
     `<option value="">Selecciona las plantillas documentales asociadas a esta actividad</option>`,
     ...disponibles.map((plantilla) => {
-      const estado = plantilla.estado ? ` · ${plantilla.estado}` : "";
-      return `<option value="${plantilla.id}">${escaparHtmlDocumentacionActividad(`${plantilla.nombre}${estado}`)}</option>`;
+      return `<option value="${plantilla.id}">${escaparHtmlDocumentacionActividad(plantilla.nombre)}</option>`;
     })
   ].join("");
   select.value = "";
