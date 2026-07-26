@@ -5626,6 +5626,7 @@ function actualizarVisibilidadFormulario() {
   if (fechaFinInput) {
     fechaFinInput.min = fechaInicioInput?.value || "";
   }
+  sincronizarMinimosFechasProgramacion();
   document.getElementById("bloquePatronRecurrencia").classList.add("oculto");
   document.getElementById("bloqueSelectorFrecuencia").classList.remove("oculto");
   stepProgramacion?.classList.toggle("oculto", !usaFranjas);
@@ -6426,6 +6427,23 @@ function fechaInicioPatronFrecuenciaPorDefecto() {
   return fechaInicioActividadGeneral() || fechaHoyIsoLocalActividad();
 }
 
+function sincronizarMinimosFechasProgramacion() {
+  const fechaInicioGeneral = fechaInicioActividadGeneral();
+  [
+    "fr_fecha",
+    "fr_recurrencia_inicio",
+    "recPersonalizadaFinFecha"
+  ].forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    if (fechaInicioGeneral) {
+      input.min = fechaInicioGeneral;
+    } else {
+      input.removeAttribute("min");
+    }
+  });
+}
+
 function convertirPermanenteATemporalPorFinalizacion(marcarCambio = true) {
   const tipoInput = document.getElementById("tipo");
   const fechaInicioInput = document.getElementById("fecha_inicio");
@@ -6581,6 +6599,7 @@ function asegurarFechaInicioRecurrenciaPorDefecto() {
 function sincronizarInicioPatronConActividad() {
   const input = document.getElementById("fr_recurrencia_inicio");
   if (!input) return;
+  sincronizarMinimosFechasProgramacion();
   const fechaInicioGeneral = fechaInicioActividadGeneral();
   if (!fechaInicioGeneral) {
     if (!input.value) asegurarFechaInicioRecurrenciaPorDefecto();
@@ -6914,6 +6933,7 @@ function aceptarModalDiasSemanaFranja() {
 }
 
 function abrirModalPeriodicidadFranja() {
+  sincronizarMinimosFechasProgramacion();
   const finTipo = document.getElementById("fr_recurrencia_fin_tipo")?.value || "NUNCA";
   const fechaFinGeneral = fechaFinActividadGeneral();
   if (finTipo === "NUNCA" && fechaFinGeneral) {
