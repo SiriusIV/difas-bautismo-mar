@@ -5561,6 +5561,13 @@ function normalizarIdsPlantillasActividad(lista) {
     });
 }
 
+function limpiarNombrePlantillaActividad(nombre) {
+  return String(nombre || "")
+    .trim()
+    .replace(/\s*[·-]\s*(ACTIVA|PAUSA|EN PREPARACI[ÓO]N)\s*$/i, "")
+    .trim();
+}
+
 function obtenerPlantillasDisponiblesActividad() {
   const seleccionadas = new Set(normalizarIdsPlantillasActividad(plantillasDocumentalesActividad));
   return catalogoPlantillasDocumentales.filter((plantilla) =>
@@ -5614,7 +5621,7 @@ function renderSelectPlantillasActividad() {
   select.innerHTML = [
     `<option value="">Selecciona las plantillas documentales asociadas a esta actividad</option>`,
     ...disponibles.map((plantilla) => {
-      return `<option value="${plantilla.id}">${escaparHtmlDocumentacionActividad(plantilla.nombre)}</option>`;
+      return `<option value="${plantilla.id}">${escaparHtmlDocumentacionActividad(limpiarNombrePlantillaActividad(plantilla.nombre))}</option>`;
     })
   ].join("");
   select.value = "";
@@ -5654,7 +5661,7 @@ function renderPlantillasActividad() {
     const contenedor = document.createElement("div");
     contenedor.className = "plantillas-actividad-nombre";
     const nombre = document.createElement("span");
-    nombre.textContent = plantilla.nombre;
+    nombre.textContent = limpiarNombrePlantillaActividad(plantilla.nombre);
     const meta = document.createElement("span");
     meta.className = "plantillas-actividad-meta";
     meta.textContent = `Modo: ${plantilla.tipo_generacion || "ASISTENTE"} · Estado: ${plantilla.estado || "ACTIVA"}`;
