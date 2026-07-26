@@ -341,7 +341,10 @@
       display: none;
     }
     .estado-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
       padding: 4px 10px;
       min-height: 24px;
       box-sizing: border-box;
@@ -351,6 +354,12 @@
       font-weight: bold;
       color: #fff;
       white-space: nowrap;
+    }
+    .estado-badge-observacion {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 auto;
+      display: inline-block;
     }
     .estado-badge.pendiente { background: #d39e00; }
     .estado-badge.revision-documental { background: #0d6efd; }
@@ -1196,6 +1205,25 @@
       return textoEstadoVisible(estado);
     }
 
+    function tieneObservacionesAdministrador(reserva) {
+      return !!String(reserva?.observaciones_admin || "").trim();
+    }
+
+    function iconoObservacionesAdministradorEstado() {
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="estado-badge-observacion">
+          <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"></path>
+          <rect x="11" y="9" width="2" height="6" fill="#222"></rect>
+          <rect x="11" y="16.5" width="2" height="2" fill="#222"></rect>
+        </svg>
+      `;
+    }
+
+    function contenidoEstadoReserva(reserva) {
+      const avisoAdmin = tieneObservacionesAdministrador(reserva) ? iconoObservacionesAdministradorEstado() : "";
+      return `${avisoAdmin}<span>${textoEstadoVisible(reserva?.estado)}</span>`;
+    }
+
     function formatearFechaHoraAviso(valor) {
       const texto = String(valor || "").trim();
       if (!texto) return "";
@@ -2005,7 +2033,7 @@
             <td class="estado-col">
               <span class="mobile-dato-etiqueta">Estado</span>
               <button type="button" class="estado-trigger" onclick="abrirModalEstado(${r.id})" title="Ver estado y acciones disponibles">
-                <span class="estado-badge ${claseEstado(r.estado)}">${textoEstadoVisible(r.estado)}</span>
+                <span class="estado-badge ${claseEstado(r.estado)}">${contenidoEstadoReserva(r)}</span>
               </button>
             </td>
             <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
