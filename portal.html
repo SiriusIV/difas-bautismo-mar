@@ -2348,7 +2348,7 @@
 
   <div id="modalRequisitosActividad" class="modal-fondo" aria-hidden="true">
     <div class="modal-login" style="max-width: 680px;">
-      <h3>Más información de la actividad</h3>
+      <h3 id="tituloModalRequisitosActividad">Actividad</h3>
       <p id="subtituloModalRequisitosActividad" style="margin: 0 0 14px; color: #4a5a6a; line-height: 1.55;"></p>
       <div class="modal-info-tabs" role="tablist" aria-label="Más información de la actividad">
         <button type="button" class="modal-info-tab activa" id="tabInfoRequisitosActividad" data-tab-info-actividad="requisitos" role="tab" aria-selected="true">Requisitos</button>
@@ -2357,7 +2357,7 @@
       <div id="panelInfoRequisitosActividad" class="modal-info-panel activo" role="tabpanel" aria-labelledby="tabInfoRequisitosActividad"></div>
       <div id="panelInfoDocumentacionActividad" class="modal-info-panel" role="tabpanel" aria-labelledby="tabInfoDocumentacionActividad"></div>
       <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:18px;">
-        <button class="btn" id="btnEditarRequisitosActividad" type="button" style="display:none;">Editar requisitos</button>
+        <button class="btn" id="btnEditarRequisitosActividad" type="button" style="display:none;">Editar</button>
         <button class="btn btn-admin" id="btnCerrarModalRequisitosActividad">Cerrar</button>
       </div>
     </div>
@@ -4291,7 +4291,12 @@ function abrirModalRequisitosActividad() {
   const documentos = obtenerDocumentosExigiblesActividad(actividad);
   if (!actividad || (!requisitos.length && !documentos.length)) return;
 
-  document.getElementById("subtituloModalRequisitosActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
+  document.getElementById("tituloModalRequisitosActividad").textContent = actividad.titulo_publico || actividad.nombre || "Actividad";
+  const subtituloModal = document.getElementById("subtituloModalRequisitosActividad");
+  if (subtituloModal) {
+    subtituloModal.textContent = "";
+    subtituloModal.style.display = "none";
+  }
   document.getElementById("panelInfoRequisitosActividad").innerHTML = requisitos.length
     ? `<ol style="margin:0; padding-left: 20px;">${requisitos.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("")}</ol>`
     : `<p class="modal-info-vacio">Esta actividad no tiene requisitos particulares activos.</p>`;
@@ -4348,14 +4353,14 @@ function actualizarAccionModalInfoActividad(tabActiva = "requisitos") {
 
   if (tabActiva === "documentacion") {
     const visible = puedeEditarDocumentacionActividadSeleccionada();
-    btn.textContent = "Editar documentación requerida";
+    btn.textContent = "Editar";
     btn.dataset.accionInfoActividad = "documentacion";
     btn.style.display = visible ? "inline-block" : "none";
     return;
   }
 
   const visible = puedeEditarRequisitosActividadSeleccionada();
-  btn.textContent = "Editar requisitos";
+  btn.textContent = "Editar";
   btn.dataset.accionInfoActividad = "requisitos";
   btn.style.display = visible ? "inline-block" : "none";
 }
