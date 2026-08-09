@@ -252,6 +252,56 @@ async function obtenerBloqueoPorFranja(env, franjaIds) {
   return map;
 }
 
+async function obtenerContadoresReservasCalendario(env, session) {
+  const where = [];
+  const binds = [];
+
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'CANCELADA'");
+  where.push("UPPER(TRIM(COALESCE(r.estado, ''))) <> 'BORRADOR'");
+  where.push("COALESCE(a.activa, 0) = 1");
+  where.push("COALESCE(a.visible_portal, 0) = 1");
+  where.push("(date(f.fecha) >= date('now') OR UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA')");
+
+  if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
+    where.push("r.usuario_id = ?");
+    binds.push(Number(session?.usuario_id || 0));
+  }
+
+  const estados = ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA", "RECHAZADA"];
+  where.push(`UPPER(TRIM(COALESCE(r.estado, ''))) IN (${estados.map(() => "?").join(", ")})`);
+  binds.push(...estados);
+
+  const sql = `
+    SELECT
+      UPPER(TRIM(COALESCE(r.estado, ''))) AS estado,
+      COUNT(*) AS total
+    FROM reservas r
+    INNER JOIN franjas f
+      ON f.id = r.franja_id
+    INNER JOIN actividades a
+      ON a.id = f.actividad_id
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    GROUP BY UPPER(TRIM(COALESCE(r.estado, '')))
+  `;
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
+  const contadores = {
+    PENDIENTE: 0,
+    CONFIRMADA: 0,
+    SUSPENDIDA: 0,
+    RECHAZADA: 0
+  };
+
+  for (const row of result.results || []) {
+    const estado = String(row.estado || "").toUpperCase();
+    if (Object.prototype.hasOwnProperty.call(contadores, estado)) {
+      contadores[estado] = Number(row.total || 0);
+    }
+  }
+
+  return contadores;
+}
+
 function construirIsoLocal(fecha, hora) {
   if (!fecha || !hora) return null;
   return `${fecha}T${hora}`;
@@ -280,8 +330,18 @@ export async function onRequestGet(context) {
         const v = limpiarTexto(url.searchParams.get("estado") || "").toUpperCase();
         return v || null;
       })(),
-      incluirRechazadas: url.searchParams.get("incluir_rechazadas") === "1"
+      incluirRechazadas: url.searchParams.get("incluir_rechazadas") === "1",
+      resumen: limpiarTexto(url.searchParams.get("resumen") || "").toLowerCase()
     };
+
+    if (filtros.vista === "reservas" && filtros.resumen === "contadores") {
+      const contadores = await obtenerContadoresReservasCalendario(env, session);
+      return json({
+        ok: true,
+        vista: filtros.vista,
+        contadores
+      });
+    }
 
     let eventos = [];
 

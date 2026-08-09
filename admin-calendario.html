@@ -570,10 +570,28 @@
     }
 
     #calendar {
+      position: relative;
       background: white;
       border-radius: 10px;
       padding: 8px;
       min-height: 0;
+    }
+
+    #calendar.calendario-cargando-eventos::after {
+      content: "Cargando eventos...";
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 5;
+      padding: 8px 12px;
+      border: 1px solid #c9dcff;
+      border-radius: 999px;
+      background: rgba(247, 250, 255, 0.96);
+      color: #123a63;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(18, 58, 99, 0.12);
+      pointer-events: none;
     }
 
     #calendar.vista-con-scroll {
@@ -1670,11 +1688,11 @@
     let calendar;
     let eventoSeleccionado = null;
     let accionEnCurso = false;
-    let fechaInicialCalendario = null;
     let vistaCalendarioActual = "reservas";
     let usuarioCalendario = null;
     let fechaObjetivoLista = null;
     let tooltipCalendarioEl = null;
+    let temporizadorCargaEventos = null;
 
     function esAdminCalendario() {
       const rol = String(usuarioCalendario?.rol || "").toUpperCase();
@@ -1858,111 +1876,18 @@
 
       if (recargar && calendar) {
         limpiarMensaje();
-        const fechaObjetivo = await obtenerFechaProximoEvento();
-        if (fechaObjetivo) {
-          fechaObjetivoLista = fechaObjetivo;
-          calendar.gotoDate(fechaObjetivo);
-        }
         calendar.refetchEvents();
         void actualizarContadores();
       }
     }
 
-    async function obtenerFechaInicialConEventos() {
-      try {
-        const params = new URLSearchParams();
-        params.set("start", "2000-01-01");
-        params.set("end", "2100-12-31");
-        params.set("vista", vistaCalendarioActual);
-
-        if (vistaCalendarioActual === "reservas") {
-          const estado = document.getElementById("filtroEstado").value;
-          if (estado) {
-            params.set("estado", estado);
-          }
-        }
-
-        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
-          credentials: "same-origin"
-        });
-
-        if (response.status === 401) {
-          redirigirLogin();
-          return null;
-        }
-
-        const data = await response.json();
-
-        if (!response.ok || !data.ok) {
-          return null;
-        }
-
-        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
-        if (!eventos.length) return null;
-
-        eventos.sort((a, b) => new Date(a.start) - new Date(b.start));
-        return eventos[0].start.slice(0, 10);
-      } catch {
-        return null;
-      }
-    }
-
-    async function obtenerFechaProximoEvento() {
-      try {
-        const params = new URLSearchParams();
-        params.set("start", "2000-01-01");
-        params.set("end", "2100-12-31");
-        params.set("vista", vistaCalendarioActual);
-
-        if (vistaCalendarioActual === "reservas") {
-          const estado = document.getElementById("filtroEstado").value;
-          if (estado) {
-            params.set("estado", estado);
-          }
-        }
-
-        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
-          credentials: "same-origin"
-        });
-
-        if (response.status === 401) {
-          redirigirLogin();
-          return null;
-        }
-
-        const data = await response.json();
-        if (!response.ok || !data.ok) return null;
-
-        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
-        if (!eventos.length) return null;
-
-        const ahora = Date.now();
-        const normalizados = eventos
-          .map((evento) => ({
-            start: String(evento?.start || ""),
-            ts: new Date(evento?.start || "").getTime()
-          }))
-          .filter((evento) => evento.start && !Number.isNaN(evento.ts))
-          .sort((a, b) => a.ts - b.ts);
-
-        const proximo = normalizados.find((evento) => evento.ts >= ahora) || normalizados[0];
-        return proximo?.start ? proximo.start.slice(0, 10) : null;
-      } catch {
-        return null;
-      }
-    }
-
     async function irAVistaConProximoEvento(tipoVista) {
       if (!calendar) return;
-      const fechaObjetivo = await obtenerFechaProximoEvento();
-      if (fechaObjetivo) {
-        if (tipoVista === "listContinuo") {
-          fechaObjetivoLista = fechaObjetivo;
-        }
-        calendar.changeView(tipoVista, fechaObjetivo);
-        return;
+      const fechaActual = calendar.getDate ? calendar.getDate() : new Date();
+      if (tipoVista === "listContinuo") {
+        fechaObjetivoLista = formatearFechaIsoLocal(fechaActual);
       }
-      calendar.changeView(tipoVista);
+      calendar.changeView(tipoVista, fechaActual);
     }
 
     async function actualizarContadores() {
@@ -1976,9 +1901,7 @@
 
       try {
         const params = new URLSearchParams();
-        params.set("start", "2000-01-01");
-        params.set("end", "2100-12-31");
-        params.set("incluir_rechazadas", "1");
+        params.set("resumen", "contadores");
         params.set("vista", "reservas");
 
         const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
@@ -1988,12 +1911,12 @@
         if (!response.ok) return;
 
         const data = await response.json();
-        const eventos = Array.isArray(data.eventos) ? data.eventos : [];
+        const contadores = data?.contadores || {};
 
-        const pendientes = eventos.filter(e => e.extendedProps?.estado === "PENDIENTE").length;
-        const confirmadas = eventos.filter(e => e.extendedProps?.estado === "CONFIRMADA").length;
-        const suspendidas = eventos.filter(e => e.extendedProps?.estado === "SUSPENDIDA").length;
-        const rechazadas = eventos.filter(e => e.extendedProps?.estado === "RECHAZADA").length;
+        const pendientes = Number(contadores.PENDIENTE || 0);
+        const confirmadas = Number(contadores.CONFIRMADA || 0);
+        const suspendidas = Number(contadores.SUSPENDIDA || 0);
+        const rechazadas = Number(contadores.RECHAZADA || 0);
 
         document.getElementById("contadorPendientes").textContent = pendientes;
         document.getElementById("contadorConfirmadas").textContent = confirmadas;
@@ -2001,6 +1924,25 @@
         document.getElementById("contadorRechazadas").textContent = rechazadas;
       } catch {
       }
+    }
+
+    function actualizarIndicadorCargaEventos(isLoading) {
+      const calendarEl = document.getElementById("calendar");
+      if (!calendarEl) return;
+
+      if (temporizadorCargaEventos) {
+        clearTimeout(temporizadorCargaEventos);
+        temporizadorCargaEventos = null;
+      }
+
+      if (isLoading) {
+        temporizadorCargaEventos = setTimeout(() => {
+          calendarEl.classList.add("calendario-cargando-eventos");
+        }, 300);
+        return;
+      }
+
+      calendarEl.classList.remove("calendario-cargando-eventos");
     }
 
     function opcionesEstadoPara(estadoActual) {
@@ -2738,7 +2680,6 @@ function abrirModalEvento(info) {
 
       calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "timeGridWeek",
-        initialDate: fechaInicialCalendario || undefined,
         locale: "es",
         firstDay: 1,
         height: "auto",
@@ -2808,6 +2749,7 @@ function abrirModalEvento(info) {
           }
         },
         loading: function(isLoading) {
+          actualizarIndicadorCargaEventos(isLoading);
           if (isLoading) {
             limpiarMarcadoresMensuales();
           }
@@ -3027,15 +2969,11 @@ function abrirModalEvento(info) {
       try {
         await cargarConfigEvento();
         await aplicarVistaCalendario(obtenerVistaInicialCalendario(), { recargar: false });
-        fechaInicialCalendario = await obtenerFechaProximoEvento();
         requestAnimationFrame(() => {
           try {
             crearCalendario();
             if (calendar) {
               calendar.updateSize();
-              if (fechaInicialCalendario) {
-                calendar.gotoDate(fechaInicialCalendario);
-              }
             }
           } catch (error) {
             console.error(error);
