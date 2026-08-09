@@ -84,3 +84,11 @@
     initMensajesFlotantes();
   }
 })();
+
+(function () {
+  if (document.querySelector("script[src='assets/navegacion-loader.js']")) return;
+  const script = document.createElement("script");
+  script.src = "assets/navegacion-loader.js";
+  script.defer = true;
+  document.head.appendChild(script);
+})();
