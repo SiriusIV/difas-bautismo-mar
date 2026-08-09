@@ -1,6 +1,8 @@
 ﻿(function () {
   const RETARDO_MS = 300;
+  const LIMITE_SEGURIDAD_MS = 8000;
   let temporizador = null;
+  let temporizadorSeguridad = null;
   let overlay = null;
 
   function inyectarEstilos() {
@@ -71,12 +73,21 @@
 
   function mostrarLoader() {
     obtenerOverlay().classList.add("activo");
+    if (temporizadorSeguridad) clearTimeout(temporizadorSeguridad);
+    temporizadorSeguridad = setTimeout(() => {
+      temporizadorSeguridad = null;
+      if (!document.hidden) ocultarLoader();
+    }, LIMITE_SEGURIDAD_MS);
   }
 
   function ocultarLoader() {
     if (temporizador) {
       clearTimeout(temporizador);
       temporizador = null;
+    }
+    if (temporizadorSeguridad) {
+      clearTimeout(temporizadorSeguridad);
+      temporizadorSeguridad = null;
     }
     if (overlay) overlay.classList.remove("activo");
   }
