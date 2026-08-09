@@ -1714,6 +1714,14 @@
       window.location.href = "portal.html";
     }
 
+    function obtenerVistaInicialCalendario() {
+      const params = new URLSearchParams(window.location.search || "");
+      const vista = String(params.get("vista") || "").trim().toLowerCase();
+      if (vista === "actividades") return "actividades";
+      if (vista === "reservas" || vista === "solicitudes") return "reservas";
+      return params.has("actividad_id") ? "actividades" : "reservas";
+    }
+
     async function comprobarSesionCalendario() {
       const response = await fetch("/api/usuario/session", {
         method: "GET",
@@ -3018,7 +3026,7 @@ function abrirModalEvento(info) {
 
       try {
         await cargarConfigEvento();
-        await aplicarVistaCalendario("reservas", { recargar: false });
+        await aplicarVistaCalendario(obtenerVistaInicialCalendario(), { recargar: false });
         fechaInicialCalendario = await obtenerFechaProximoEvento();
         requestAnimationFrame(() => {
           try {
