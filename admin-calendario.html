@@ -1688,6 +1688,7 @@
     let calendar;
     let eventoSeleccionado = null;
     let accionEnCurso = false;
+    let fechaInicialCalendario = null;
     let vistaCalendarioActual = "reservas";
     let usuarioCalendario = null;
     let fechaObjetivoLista = null;
@@ -1738,6 +1739,39 @@
       if (vista === "actividades") return "actividades";
       if (vista === "reservas" || vista === "solicitudes") return "reservas";
       return params.has("actividad_id") ? "actividades" : "reservas";
+    }
+
+    function obtenerActividadInicialCalendarioId() {
+      const params = new URLSearchParams(window.location.search || "");
+      const actividadId = Number(params.get("actividad_id") || 0);
+      return Number.isFinite(actividadId) && actividadId > 0 ? actividadId : 0;
+    }
+
+    async function obtenerFechaInicialActividadSeleccionada() {
+      const actividadId = obtenerActividadInicialCalendarioId();
+      if (!actividadId) return null;
+
+      try {
+        const params = new URLSearchParams();
+        params.set("vista", "actividades");
+        params.set("resumen", "fecha_inicial");
+        params.set("actividad_id", String(actividadId));
+
+        const response = await fetch(`/api/admin/calendario?${params.toString()}`, {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          redirigirLogin();
+          return null;
+        }
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) return null;
+        return String(data.fecha || "").trim() || null;
+      } catch {
+        return null;
+      }
     }
 
     async function comprobarSesionCalendario() {
@@ -2680,6 +2714,7 @@ function abrirModalEvento(info) {
 
       calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "timeGridWeek",
+        initialDate: fechaInicialCalendario || undefined,
         locale: "es",
         firstDay: 1,
         height: "auto",
@@ -2723,6 +2758,7 @@ function abrirModalEvento(info) {
             });
 
             if (response.status === 401) {
+              actualizarIndicadorCargaEventos(false);
               redirigirLogin();
               return;
             }
@@ -2738,14 +2774,17 @@ function abrirModalEvento(info) {
             if (tipoVistaActual === "listContinuo") {
               const placeholders = crearMarcadoresListaContinua(eventosBase, fetchInfo);
               successCallback([...eventosBase, ...placeholders]);
+              actualizarIndicadorCargaEventos(false);
               return;
             }
 
             successCallback(eventosBase);
+            actualizarIndicadorCargaEventos(false);
           } catch (error) {
             console.error(error);
             mostrarMensaje("error", error.message || "No se pudo cargar el calendario.");
             failureCallback(error);
+            actualizarIndicadorCargaEventos(false);
           }
         },
         loading: function(isLoading) {
@@ -2965,6 +3004,7 @@ function abrirModalEvento(info) {
       try {
         await cargarConfigEvento();
         await aplicarVistaCalendario(obtenerVistaInicialCalendario(), { recargar: false });
+        fechaInicialCalendario = await obtenerFechaInicialActividadSeleccionada();
         requestAnimationFrame(() => {
           try {
             crearCalendario();

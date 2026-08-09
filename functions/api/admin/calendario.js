@@ -302,6 +302,38 @@ async function obtenerContadoresReservasCalendario(env, session) {
   return contadores;
 }
 
+async function obtenerFechaInicialActividadCalendario(env, actividadId, session) {
+  const id = Number(actividadId || 0);
+  if (!Number.isFinite(id) || id <= 0) return null;
+
+  const where = [
+    "f.actividad_id = ?",
+    "f.fecha IS NOT NULL",
+    "f.hora_inicio IS NOT NULL",
+    "COALESCE(f.activa, 1) = 1",
+    "COALESCE(a.activa, 0) = 1",
+    "COALESCE(a.visible_portal, 0) = 1"
+  ];
+  const binds = [id];
+
+  if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
+    where.push("(date(f.fecha) > date('now') OR (date(f.fecha) = date('now') AND time(f.hora_inicio) > time('now')))");
+  }
+
+  const sql = `
+    SELECT f.fecha
+    FROM franjas f
+    INNER JOIN actividades a
+      ON a.id = f.actividad_id
+    WHERE ${where.join(" AND ")}
+    ORDER BY f.fecha ASC, f.hora_inicio ASC, f.id ASC
+    LIMIT 1
+  `;
+
+  const row = await env.DB.prepare(sql).bind(...binds).first();
+  return row?.fecha || null;
+}
+
 function construirIsoLocal(fecha, hora) {
   if (!fecha || !hora) return null;
   return `${fecha}T${hora}`;
@@ -331,7 +363,8 @@ export async function onRequestGet(context) {
         return v || null;
       })(),
       incluirRechazadas: url.searchParams.get("incluir_rechazadas") === "1",
-      resumen: limpiarTexto(url.searchParams.get("resumen") || "").toLowerCase()
+      resumen: limpiarTexto(url.searchParams.get("resumen") || "").toLowerCase(),
+      actividadId: Number(url.searchParams.get("actividad_id") || 0)
     };
 
     if (filtros.vista === "reservas" && filtros.resumen === "contadores") {
@@ -340,6 +373,15 @@ export async function onRequestGet(context) {
         ok: true,
         vista: filtros.vista,
         contadores
+      });
+    }
+
+    if (filtros.vista === "actividades" && filtros.resumen === "fecha_inicial") {
+      const fecha = await obtenerFechaInicialActividadCalendario(env, filtros.actividadId, session);
+      return json({
+        ok: true,
+        vista: filtros.vista,
+        fecha
       });
     }
 
