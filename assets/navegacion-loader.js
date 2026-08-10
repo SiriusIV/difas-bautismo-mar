@@ -62,11 +62,11 @@
     overlay = document.createElement("div");
     overlay.className = "navegacion-loader";
     overlay.setAttribute("aria-live", "polite");
-    overlay.setAttribute("aria-label", "Cargando p·gina");
+    overlay.setAttribute("aria-label", "Cargando p√°gina");
     overlay.innerHTML = `
       <div class="navegacion-loader-card" role="status">
         <div class="navegacion-loader-spinner" aria-hidden="true"></div>
-        <div class="navegacion-loader-texto">Cargando p·gina...</div>
+        <div class="navegacion-loader-texto">Cargando p√°gina...</div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -130,6 +130,7 @@
     if (control.closest("[data-no-page-loader], .sin-page-loader")) return false;
     if (control instanceof HTMLButtonElement && control.disabled) return false;
     const onclick = String(control.getAttribute("onclick") || "");
+    if (/(abrirModalLogin|cerrarModalLogin|recuperarPassword|volverAModalLogin)/i.test(onclick)) return false;
     if (/(location|\.href|assign\s*\(|replace\s*\()/i.test(onclick)) return true;
     if (control.matches("input[type='submit'], button[type='submit']")) return true;
     if (control.hasAttribute("data-page-loader")) return true;
@@ -146,7 +147,7 @@
       control.getAttribute("title"),
       control.textContent
     ].join(" ");
-    return /\b(volver|portal|panel|calendario|actividad|actividades|reserva|reservas|solicitud|solicitudes|perfil|editar|plantillas|informes|usuarios|login|entrar|salir)\b/i.test(textoNavegacion);
+    return /\b(volver|portal|panel|calendario|actividad|actividades|reserva|reservas|solicitud|solicitudes|perfil|editar|plantillas|informes|usuarios|salir)\b/i.test(textoNavegacion);
   }
 
   function comprobarNavegacionDiferida(urlInicial, control) {
@@ -204,6 +205,11 @@
   }
 
   function initNavegacionLoader() {
+    window.NavegacionLoader = {
+      programar: programarLoader,
+      ocultar: ocultarLoader,
+      cancelar: cancelarLoaderProgramado
+    };
     envolverNavegacionProgramatica();
     document.addEventListener("click", manejarClick, true);
     window.addEventListener("pageshow", ocultarLoader);

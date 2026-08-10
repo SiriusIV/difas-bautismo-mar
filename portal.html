@@ -2192,7 +2192,7 @@
             <div id="franjaAvisoPortal" class="aviso-login">
               Iniciar sesión para solicitar una actividad.
             </div>
-            <button class="nav-btn activo" onclick="abrirModalLogin()">Login</button>
+            <button class="nav-btn activo" data-no-page-loader onclick="abrirModalLogin()">Login</button>
           </div>
           <div id="accionesAdminPortal" class="accionesPublicas" style="display:none;"></div>
         </div>
@@ -4714,35 +4714,47 @@ function continuarSolicitudActividad() {
 
     async function loginUsuario() {
       limpiarMensaje("mensajeLogin");
+      window.NavegacionLoader?.programar?.();
+      let navegacionPendienteLogin = false;
 
       const email = document.getElementById("emailLogin").value.trim();
       const password = document.getElementById("passwordLogin").value.trim();
 
-      const res = await fetch("/api/usuario/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password })
-      });
+      try {
+        const res = await fetch("/api/usuario/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password })
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.ok) {
-        cerrarModalLogin();
-        if (Number(data?.user?.forzar_cambio_password || 0) === 1) {
-          location.href = data?.redirect_to || "usuario-perfil.html?forzar_password=1";
-          return;
+        if (data.ok) {
+          cerrarModalLogin();
+          if (Number(data?.user?.forzar_cambio_password || 0) === 1) {
+            navegacionPendienteLogin = true;
+            location.href = data?.redirect_to || "usuario-perfil.html?forzar_password=1";
+            return;
+          }
+          await comprobarSesionUsuario();
+          if (intentarRedireccionPendientePortal()) {
+            navegacionPendienteLogin = true;
+            return;
+          }
+          if (obtenerDestinoPendientePortal()) {
+            abrirModalLogin();
+            mensaje("mensajeLogin", "error", "La cuenta iniciada no corresponde al administrador responsable de esta actividad.");
+            return;
+          }
+          await cargarActividades();
+        } else {
+          mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
         }
-        await comprobarSesionUsuario();
-        if (intentarRedireccionPendientePortal()) return;
-        if (obtenerDestinoPendientePortal()) {
-          abrirModalLogin();
-          mensaje("mensajeLogin", "error", "La cuenta iniciada no corresponde al administrador responsable de esta actividad.");
-          return;
+      } finally {
+        if (!navegacionPendienteLogin) {
+          window.NavegacionLoader?.ocultar?.();
         }
-        await cargarActividades();
-      } else {
-        mensaje("mensajeLogin", "error", data.error || "No se pudo iniciar sesión.");
       }
     }
 
