@@ -889,7 +889,8 @@ if (Number(actividad.activa || 0) !== 1) {
       );
     }
 
-    const reservaCreada = await env.DB.prepare(`
+    const dbPrimaria = env.DB.withSession("first-primary");
+    const reservaCreada = await dbPrimaria.prepare(`
       SELECT
         id,
         codigo_reserva,
@@ -1010,14 +1011,23 @@ if (Number(actividad.activa || 0) !== 1) {
       }
     }
 
+    const reservaRespuesta = reservaCreada || {
+      id: Number(result?.meta?.last_row_id || 0),
+      codigo_reserva: codigoReserva,
+      token_edicion: tokenEdicion,
+      estado: estadoInicialReserva,
+      prereserva_expira_en: prereservaExpiraEn,
+      usuario_id: usuarioId
+    };
+
     return json({
       ok: true,
       mensaje: guardarComoBorrador ? "Borrador guardado correctamente." : "Solicitud creada correctamente.",
-      id: reservaCreada.id,
-      reserva_id: reservaCreada.id,
-      codigo_reserva: reservaCreada.codigo_reserva,
-      token_edicion: reservaCreada.token_edicion,
-      estado: reservaCreada.estado,
+      id: reservaRespuesta.id,
+      reserva_id: reservaRespuesta.id,
+      codigo_reserva: reservaRespuesta.codigo_reserva,
+      token_edicion: reservaRespuesta.token_edicion,
+      estado: reservaRespuesta.estado,
       estado_documental: validacionDocumental?.estado_documental || "",
       documentos_pendientes: validacionDocumental?.documentos_pendientes || [],
       requiere_documentacion: !!validacionDocumental && validacionDocumental.ok === false,
@@ -1034,8 +1044,8 @@ if (Number(actividad.activa || 0) !== 1) {
       plazas_reservadas: plazasReservadas,
       plazas_disponibles_restantes: disponibles === null ? null : Math.max(disponibles - plazasReservadas, 0),
       minutos_consolidacion: guardarComoBorrador ? 0 : minutosConsolidacion,
-      prereserva_expira_en: reservaCreada.prereserva_expira_en,
-      usuario_id: reservaCreada.usuario_id,
+      prereserva_expira_en: reservaRespuesta.prereserva_expira_en,
+      usuario_id: reservaRespuesta.usuario_id,
       notificacion_admin: {
         creada: !!notificacionAdmin.ok,
         error: notificacionAdmin.ok ? "" : (notificacionAdmin.error || "")

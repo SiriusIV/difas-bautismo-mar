@@ -490,7 +490,8 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
     LIMIT 1
   `;
 
-  return await env.DB.prepare(sql).bind(tokenEdicion).first();
+  const db = env.DB.withSession("first-primary");
+  return await db.prepare(sql).bind(tokenEdicion).first();
 }
 
 async function contarAsistentes(env, reservaId) {
