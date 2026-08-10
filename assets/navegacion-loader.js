@@ -1,9 +1,11 @@
-Ôªø(function () {
-  const RETARDO_MS = 300;
+(function () {
+  const RETARDO_MS = 450;
   const LIMITE_SEGURIDAD_MS = 8000;
+  const COMPROBACIONES_NAVEGACION_MS = [0, 120, 350, 700, 1200, 2000];
   let temporizador = null;
   let temporizadorSeguridad = null;
   let overlay = null;
+  let tokenProgramacion = 0;
 
   function inyectarEstilos() {
     if (document.getElementById("estilosNavegacionLoader")) return;
@@ -60,11 +62,11 @@
     overlay = document.createElement("div");
     overlay.className = "navegacion-loader";
     overlay.setAttribute("aria-live", "polite");
-    overlay.setAttribute("aria-label", "Cargando p√°gina");
+    overlay.setAttribute("aria-label", "Cargando p·gina");
     overlay.innerHTML = `
       <div class="navegacion-loader-card" role="status">
         <div class="navegacion-loader-spinner" aria-hidden="true"></div>
-        <div class="navegacion-loader-texto">Cargando p√°gina...</div>
+        <div class="navegacion-loader-texto">Cargando p·gina...</div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -93,11 +95,19 @@
   }
 
   function programarLoader() {
+    tokenProgramacion += 1;
     ocultarLoader();
+    const tokenActual = tokenProgramacion;
     temporizador = setTimeout(() => {
+      if (tokenActual !== tokenProgramacion) return;
       temporizador = null;
       mostrarLoader();
     }, RETARDO_MS);
+  }
+
+  function cancelarLoaderProgramado() {
+    tokenProgramacion += 1;
+    ocultarLoader();
   }
 
   function esEnlaceNavegable(enlace) {
@@ -121,6 +131,15 @@
     if (control instanceof HTMLButtonElement && control.disabled) return false;
     const onclick = String(control.getAttribute("onclick") || "");
     if (/(location|\.href|assign\s*\(|replace\s*\()/i.test(onclick)) return true;
+    if (control.matches("input[type='submit'], button[type='submit']")) return true;
+    if (control.hasAttribute("data-page-loader")) return true;
+    return false;
+  }
+
+  function esControlConNavegacionProbable(control) {
+    if (!(control instanceof HTMLElement)) return false;
+    if (control.closest("[data-no-page-loader], .sin-page-loader")) return false;
+    if (control instanceof HTMLButtonElement && control.disabled) return false;
     const textoNavegacion = [
       control.id,
       control.getAttribute("aria-label"),
@@ -128,6 +147,22 @@
       control.textContent
     ].join(" ");
     return /\b(volver|portal|panel|calendario|actividad|actividades|reserva|reservas|solicitud|solicitudes|perfil|editar|plantillas|informes|usuarios|login|entrar|salir)\b/i.test(textoNavegacion);
+  }
+
+  function comprobarNavegacionDiferida(urlInicial, control) {
+    let activado = false;
+    COMPROBACIONES_NAVEGACION_MS.forEach((retardo) => {
+      setTimeout(() => {
+        if (activado) return;
+        if (!document.body.contains(control)) return;
+        const urlActual = window.location.href;
+        const navega = document.hidden || urlActual !== urlInicial;
+        if (navega) {
+          activado = true;
+          programarLoader();
+        }
+      }, retardo);
+    });
   }
 
   function manejarClick(event) {
@@ -144,6 +179,10 @@
     const control = target.closest("button, [role='button'], input[type='submit']");
     if (esControlNavegable(control)) {
       programarLoader();
+      return;
+    }
+    if (esControlConNavegacionProbable(control)) {
+      comprobarNavegacionDiferida(window.location.href, control);
     }
   }
 
@@ -169,6 +208,8 @@
     document.addEventListener("click", manejarClick, true);
     window.addEventListener("pageshow", ocultarLoader);
     window.addEventListener("pagehide", ocultarLoader);
+    window.addEventListener("popstate", cancelarLoaderProgramado);
+    window.addEventListener("hashchange", cancelarLoaderProgramado);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) ocultarLoader();
     });
