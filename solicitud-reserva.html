@@ -2003,6 +2003,16 @@
       return String(params.get("token") || "").trim();
     }
 
+    function getTokenReservaCreada() {
+      return String(
+        reservaCreada?.token_edicion ||
+        reservaCreada?.token ||
+        tokenBorrador ||
+        getTokenEdicion() ||
+        ""
+      ).trim();
+    }
+
     function actividadUsaFranjas() {
       return true;
     }
@@ -3005,6 +3015,10 @@ function obtenerDisponiblesFormulario(franja) {
         }
 
         reservaCreada = data;
+        tokenBorrador = String(data.token_edicion || data.token || getTokenEdicion() || "").trim();
+        if (tokenBorrador) {
+          actualizarUrlBorrador(tokenBorrador);
+        }
         mostrarMensajeModalConfirmacion("ok", "Solicitud creada correctamente. Remitiendo documentación obligatoria...");
         try {
           await remitirDocumentosPendientesSolicitud("remitir");
@@ -3017,7 +3031,6 @@ function obtenerDisponiblesFormulario(franja) {
           return;
         }
         limpiarSolicitudPendiente();
-        tokenBorrador = "";
         await cargarDocumentacionSolicitud();
         const avisoDocumentacion = documentacionIncompletaAlEnviar
           ? " La solicitud queda suspendida por documentación pendiente; dispone de 24 horas para completarla o actualizarla."
@@ -3046,12 +3059,13 @@ function obtenerDisponiblesFormulario(franja) {
     }
 
     function abrirGestionAsistentes() {
-      if (!reservaCreada?.token_edicion) return;
-      window.location.href = `asistentes.html?token=${encodeURIComponent(reservaCreada.token_edicion)}`;
+      const token = getTokenReservaCreada();
+      if (!token) return;
+      window.location.href = `asistentes.html?token=${encodeURIComponent(token)}`;
     }
 
     function importarListaAsistentes() {
-      if (!reservaCreada?.token_edicion) return;
+      if (!getTokenReservaCreada()) return;
       alert("La descarga de plantilla e importación Excel se implementará en el siguiente bloque funcional.");
     }
 
@@ -3223,5 +3237,4 @@ function obtenerDisponiblesFormulario(franja) {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
 
