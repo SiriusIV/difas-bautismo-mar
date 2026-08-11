@@ -951,19 +951,6 @@ export async function recalcularImpactoDocumentalReservas(env, {
           });
           resumen.reservas_reactivadas += 1;
         }
-      } else if (reservaEnPlazoCriticoDocumental(reserva)) {
-        const eliminada = await eliminarReservaPorDocumentacionCritica(env, Number(reserva.id || 0));
-        if (eliminada) {
-          await registrarEventoReserva(env, {
-            reservaId: Number(reserva.id || 0),
-            accion: "ELIMINACION_DOCUMENTAL_CRITICA",
-            estadoOrigen: estadoReserva,
-            estadoDestino: "ELIMINADA",
-            observaciones: "La solicitud no conserva la documentación obligatoria requerida dentro de las 24 horas previas al inicio."
-          });
-          reservasEliminadas.push(reserva);
-          resumen.reservas_eliminadas_plazo_critico += 1;
-        }
       } else {
         const estadoDestinoDocumental = estadoDocumentalReserva === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
         if (estadoReserva === estadoDestinoDocumental) continue;

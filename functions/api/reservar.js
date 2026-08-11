@@ -1,6 +1,5 @@
 import { getUserSession } from "./usuario/_auth.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
-import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail } from "./_email.js";
 import { registrarEventoReserva } from "./_reservas_historial.js";
@@ -646,7 +645,6 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
-    await ejecutarMantenimientoReservas(env);
     const baseUrl = new URL(request.url).origin;
     const sessionUser = await getUserSession(request, env.SECRET_KEY);
     const usuarioId = sessionUser?.id || null;
