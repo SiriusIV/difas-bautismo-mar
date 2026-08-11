@@ -132,7 +132,6 @@
     const onclick = String(control.getAttribute("onclick") || "");
     if (/(abrirModalLogin|cerrarModalLogin|recuperarPassword|volverAModalLogin)/i.test(onclick)) return false;
     if (/(location|\.href|assign\s*\(|replace\s*\()/i.test(onclick)) return true;
-    if (control.matches("input[type='submit'], button[type='submit']")) return true;
     if (control.hasAttribute("data-page-loader")) return true;
     return false;
   }
