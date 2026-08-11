@@ -1,4 +1,3 @@
-import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 
 function json(data, init = {}) {
@@ -139,7 +138,6 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
-    await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
 

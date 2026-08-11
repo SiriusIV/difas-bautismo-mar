@@ -864,7 +864,11 @@ if (Number(actividad.activa || 0) !== 1) {
       )
     `;
 
-    const result = await env.DB.prepare(sqlInsert)
+    const dbPrimaria = typeof env?.DB?.withSession === "function"
+      ? env.DB.withSession("first-primary")
+      : env.DB;
+
+    const result = await dbPrimaria.prepare(sqlInsert)
       .bind(
         franjaId,
         actividadId,
@@ -889,7 +893,6 @@ if (Number(actividad.activa || 0) !== 1) {
       );
     }
 
-    const dbPrimaria = env.DB.withSession("first-primary");
     const reservaCreada = await dbPrimaria.prepare(`
       SELECT
         id,
