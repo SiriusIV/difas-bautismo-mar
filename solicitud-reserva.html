@@ -2988,7 +2988,10 @@ function obtenerDisponiblesFormulario(franja) {
         document.getElementById("btnGuardarBorrador").disabled = true;
 
         const documentacionIncompletaAlEnviar = hayDocumentacionObligatoriaIncompleta();
-        const payload = { ...datosPendientesEnvio };
+        const payload = {
+          ...datosPendientesEnvio,
+          documentacion_completa_formulario: !documentacionIncompletaAlEnviar
+        };
         const token = getTokenEdicion();
         let endpoint = "/api/reservar";
         if (token) {

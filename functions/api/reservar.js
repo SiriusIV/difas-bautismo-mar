@@ -73,8 +73,9 @@ function calcularMinutosConsolidacion(plazasReservadas) {
   return 20 + (plazas * 3);
 }
 
-function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE") {
+function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE", documentacionCompletaFormulario = false) {
   if (!validacionDocumental || validacionDocumental.ok !== false) return estadoPorDefecto;
+  if (documentacionCompletaFormulario) return "EN_REVISION";
   const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
   return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
 }
@@ -658,6 +659,7 @@ export async function onRequestPost(context) {
     const email = limpiarTexto(data.email);
     const observaciones = limpiarTexto(data.observaciones);
     const guardarComoBorrador = accionEsGuardarBorrador(data.accion);
+    const documentacionCompletaFormulario = data.documentacion_completa_formulario === true;
     const franjaRaw = data.franja;
     const franjaId = franjaRaw == null || String(franjaRaw).trim() === ""
       ? null
@@ -825,7 +827,7 @@ if (Number(actividad.activa || 0) !== 1) {
       : await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
     const estadoInicialReserva = guardarComoBorrador
       ? "BORRADOR"
-      : obtenerEstadoReservaPorDocumentacion(validacionDocumental);
+      : obtenerEstadoReservaPorDocumentacion(validacionDocumental, "PENDIENTE", documentacionCompletaFormulario);
 
     if (!guardarComoBorrador && !prereservaExpiraEn) {
       return json(

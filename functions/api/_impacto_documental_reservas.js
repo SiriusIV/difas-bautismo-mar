@@ -85,6 +85,16 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+function esMejorEntregaDocumento(candidata, actual) {
+  if (!actual) return true;
+  const prioridadCandidata = Number(candidata?.prioridad_contexto || 0);
+  const prioridadActual = Number(actual?.prioridad_contexto || 0);
+  if (prioridadCandidata !== prioridadActual) {
+    return prioridadCandidata > prioridadActual;
+  }
+  return Number(candidata?.id || 0) > Number(actual?.id || 0);
+}
+
 function calcularEstadoDocumento(doc, entrega) {
   if (!entrega) return "NO_ENVIADO";
   if (Number(entrega.version_documental || 0) !== Number(doc.version_documental || 0)) {
@@ -113,10 +123,14 @@ function indexarArchivosActivos(archivosActivos) {
       0
     );
     if (propietario > 0) {
-      porPropietarioYNombre.set(claveDocumentoEntregable(nombre, propietario), archivo);
+      const keyPropietario = claveDocumentoEntregable(nombre, propietario);
+      if (esMejorEntregaDocumento(archivo, porPropietarioYNombre.get(keyPropietario))) {
+        porPropietarioYNombre.set(keyPropietario, archivo);
+      }
     }
-    if (!porNombre.has(normalizarClaveTexto(nombre))) {
-      porNombre.set(normalizarClaveTexto(nombre), archivo);
+    const keyNombre = normalizarClaveTexto(nombre);
+    if (esMejorEntregaDocumento(archivo, porNombre.get(keyNombre))) {
+      porNombre.set(keyNombre, archivo);
     }
   }
 
@@ -468,8 +482,75 @@ async function obtenerArchivosActivosExpedientes(env, expedientesPorPropietario 
 
   return (rows?.results || []).map((row) => ({
     ...row,
-    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0
+    propietario_documental_id: propietarioPorExpediente.get(Number(row.documentacion_id || 0)) || 0,
+    prioridad_contexto: 1
   }));
+}
+
+async function obtenerArchivosActivosContextoReserva(env, {
+  usuarioId,
+  actividadId,
+  reservaId,
+  propietarios
+} = {}) {
+  const usuario = Number(usuarioId || 0);
+  const actividad = Number(actividadId || 0);
+  const reserva = Number(reservaId || 0);
+  const ids = Array.from(new Set(
+    (Array.isArray(propietarios) ? propietarios : [])
+      .map((id) => Number(id || 0))
+      .filter((id) => id > 0)
+  ));
+
+  if (!(usuario > 0) || !(actividad > 0) || !ids.length) return [];
+
+  const placeholders = ids.map(() => '?').join(', ');
+  const condicionesReserva = reserva > 0
+    ? '(cad.reserva_id = ? OR a.reserva_id = ? OR cad.reserva_id IS NULL OR a.reserva_id IS NULL)'
+    : '(cad.reserva_id IS NULL OR a.reserva_id IS NULL)';
+  const binds = [
+    usuario,
+    ...ids,
+    actividad,
+    actividad,
+    ...(reserva > 0 ? [reserva, reserva] : [])
+  ];
+
+  const rows = await env.DB.prepare(`
+    SELECT
+      a.id,
+      a.documentacion_id,
+      a.nombre_documento,
+      a.version_documental,
+      a.estado,
+      a.archivo_url,
+      a.fecha_subida,
+      cad.admin_id AS propietario_documental_id,
+      CASE
+        WHEN ? > 0 AND (cad.reserva_id = ? OR a.reserva_id = ?) THEN 4
+        WHEN cad.actividad_id = ? OR a.actividad_id = ? THEN 3
+        WHEN cad.reserva_id IS NULL OR a.reserva_id IS NULL THEN 2
+        ELSE 1
+      END AS prioridad_contexto
+    FROM centro_admin_documentacion cad
+    INNER JOIN centro_admin_documentacion_archivos a
+      ON a.documentacion_id = cad.id
+     AND COALESCE(a.activo, 1) = 1
+    WHERE cad.centro_usuario_id = ?
+      AND cad.admin_id IN (${placeholders})
+      AND (cad.actividad_id = ? OR a.actividad_id = ?)
+      AND ${condicionesReserva}
+    ORDER BY prioridad_contexto DESC, a.id ASC
+  `).bind(
+    reserva,
+    reserva,
+    reserva,
+    actividad,
+    actividad,
+    ...binds
+  ).all();
+
+  return rows?.results || [];
 }
 
 function reservaEnPlazoCriticoDocumental(reserva = {}) {
@@ -874,11 +955,20 @@ export async function recalcularImpactoDocumentalReservas(env, {
           reservaId: Number(reserva.id || 0)
         }
       );
-      const archivosActivosReserva = await obtenerArchivosActivosExpedientes(env, expedientesPorPropietarioReserva);
+      const propietariosReserva = obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico);
+      const archivosActivosReserva = [
+        ...await obtenerArchivosActivosExpedientes(env, expedientesPorPropietarioReserva),
+        ...await obtenerArchivosActivosContextoReserva(env, {
+          usuarioId: Number(solicitante.id || 0),
+          actividadId: Number(reserva.actividad_id || 0),
+          reservaId: Number(reserva.id || 0),
+          propietarios: propietariosReserva
+        })
+      ];
       const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivosReserva);
       estadosDocumentalesReserva.push(estadoDocumentalReserva);
 
-      for (const propietarioId of obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico)) {
+      for (const propietarioId of propietariosReserva) {
         const expedientePropietario = expedientesPorPropietarioReserva.get(Number(propietarioId || 0));
         if (!expedientePropietario?.id) continue;
         const documentosPropietario = (documentosExigiblesReserva || []).filter((doc) =>
