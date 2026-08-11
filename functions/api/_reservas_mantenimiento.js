@@ -931,7 +931,8 @@ async function obtenerReservasFinalizadas(env) {
       ON a.id = r.actividad_id
     LEFT JOIN usuarios u
       ON u.id = a.admin_id
-    WHERE datetime(
+    WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'CONFIRMADA'
+      AND datetime(
       COALESCE(
         CASE
           WHEN f.fecha IS NOT NULL AND f.hora_fin IS NOT NULL
