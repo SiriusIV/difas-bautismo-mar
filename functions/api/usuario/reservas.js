@@ -61,17 +61,6 @@ function calcularPlazasReservadasPendientes(row) {
   return Math.max(pre - asignadas, 0);
 }
 
-function tieneProgramacionValida(row) {
-  const estado = normalizarEstadoReserva(row?.estado);
-  const usaFranjas = Number(row?.usa_franjas || 0) === 1;
-  if (estado === "BORRADOR") return true;
-  if (!usaFranjas) return true;
-  return !!(
-    String(row?.fecha || "").trim() &&
-    String(row?.hora_inicio || "").trim() &&
-    String(row?.hora_fin || "").trim()
-  );
-}
 
 function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   const estado = normalizarEstadoReserva(estadoActual);
@@ -184,7 +173,7 @@ export async function onRequestGet(context) {
         r.id DESC
     `).bind(user.id).all();
 
-    const rows = (result.results || []).filter(tieneProgramacionValida);
+    const rows = result.results || [];
 
     const data = await Promise.all(rows.map(async (row) => {
       const validacionDocumental = await validarDocumentacionReserva(env, {

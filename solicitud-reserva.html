@@ -1567,8 +1567,12 @@
       return documentosPendientesSolicitud.get(Number(documentoId || 0)) || null;
     }
 
+    function obtenerDocumentoIdSolicitud(doc) {
+      return Number(doc?.id || doc?.documento_id || doc?.documento_base_id || doc?.documentoId || 0) || 0;
+    }
+
     function documentoSolicitudEstaRegularizado(doc) {
-      const documentoId = Number(doc?.id || 0);
+      const documentoId = obtenerDocumentoIdSolicitud(doc);
       const pendiente = obtenerDocumentoPendienteSolicitud(documentoId);
       if (pendiente?.file || pendiente?.objectUrl) return true;
 
@@ -1598,7 +1602,7 @@
     }
 
     function registrarDocumentoPendienteSolicitud(doc, file) {
-      const id = Number(doc?.id || 0);
+      const id = obtenerDocumentoIdSolicitud(doc);
       if (!(id > 0) || !file) return;
       liberarDocumentoPendienteSolicitud(id);
       documentosPendientesSolicitud.set(id, {
@@ -1641,7 +1645,8 @@
       }
 
       lista.innerHTML = documentos.map((doc) => {
-        const pendiente = obtenerDocumentoPendienteSolicitud(doc.id);
+        const documentoId = obtenerDocumentoIdSolicitud(doc);
+        const pendiente = obtenerDocumentoPendienteSolicitud(documentoId);
         const estado = pendiente
           ? "CARGADO"
           : normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.estado_efectivo);
@@ -1658,20 +1663,20 @@
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
         const estadoHtml = esRechazado
-          ? `<button type="button" class="documento-solicitud-estado ${escapeHtml(claseEstado)}" data-accion-documento="observaciones" data-documento-id="${Number(doc.id || 0)}" title="Ver observaciones del rechazo">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</button>`
+          ? `<button type="button" class="documento-solicitud-estado ${escapeHtml(claseEstado)}" data-accion-documento="observaciones" data-documento-id="${documentoId}" title="Ver observaciones del rechazo">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</button>`
           : `<span class="documento-solicitud-estado ${escapeHtml(claseEstado)}">${escapeHtml(textoEstadoDocumentoSolicitud(estado))}</span>`;
         return `
-          <div class="documento-solicitud-item" data-documento-id="${Number(doc.id || 0)}">
+          <div class="documento-solicitud-item" data-documento-id="${documentoId}">
             <div class="documento-solicitud-info">
               ${tituloHtml}
               <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
             </div>
             ${estadoHtml}
             <div class="documento-solicitud-acciones">
-              <button type="button" class="documento-solicitud-accion" data-accion-documento="ver-remitido" data-documento-id="${Number(doc.id || 0)}" ${archivoRemitido ? "" : "disabled"} title="Visualizar documento presentado" aria-label="Visualizar documento presentado"><img src="assets/icono-ver-documento.svg" alt=""></button>
-              <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><img src="assets/icono-documento-subir.svg" alt=""></button>
-              <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${Number(doc.id || 0)}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><img src="assets/icono-documento-eliminar.svg" alt=""></button>
-              <input type="file" class="documento-solicitud-input" data-input-documento="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
+              <button type="button" class="documento-solicitud-accion" data-accion-documento="ver-remitido" data-documento-id="${documentoId}" ${archivoRemitido ? "" : "disabled"} title="Visualizar documento presentado" aria-label="Visualizar documento presentado"><img src="assets/icono-ver-documento.svg" alt=""></button>
+              <button type="button" class="documento-solicitud-accion" data-accion-documento="subir" data-documento-id="${documentoId}" ${puedeEditar ? "" : "disabled"} title="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}" aria-label="${entregado ? "Sustituir documento presentado" : "Subir documento cumplimentado"}"><img src="assets/icono-documento-subir.svg" alt=""></button>
+              <button type="button" class="documento-solicitud-accion peligro" data-accion-documento="eliminar" data-documento-id="${documentoId}" ${entregado && puedeEditar ? "" : "disabled"} title="Eliminar documento presentado" aria-label="Eliminar documento presentado"><img src="assets/icono-documento-eliminar.svg" alt=""></button>
+              <input type="file" class="documento-solicitud-input" data-input-documento="${documentoId}" accept="application/pdf,.pdf">
             </div>
           </div>
         `;
@@ -1683,7 +1688,7 @@
       const id = Number(documentoId || 0);
       if (!(id > 0)) return null;
       return (Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [])
-        .find((doc) => Number(doc.id || 0) === id) || null;
+        .find((doc) => obtenerDocumentoIdSolicitud(doc) === id) || null;
     }
 
     function abrirObservacionesDocumentoSolicitud(documentoId) {
@@ -1769,7 +1774,7 @@
       const documentos = Array.isArray(documentacionSolicitudActual?.documentos) ? documentacionSolicitudActual.documentos : [];
       const operaciones = [];
       const subidas = documentos.map(async (doc) => {
-        const id = Number(doc.id || 0);
+        const id = obtenerDocumentoIdSolicitud(doc);
         const pendiente = obtenerDocumentoPendienteSolicitud(id);
         if (pendiente?.file) {
           const archivoUrl = await subirPdfDocumentacionSolicitud(doc, pendiente.file);
@@ -1851,7 +1856,7 @@
         const estado = normalizarEstadoDocumentoSolicitud(doc.estado_documento || doc.estado || doc.entrega_estado);
         await remitirOperacionDocumentalSolicitud({
           accion: "eliminar",
-          documento_id: Number(doc.id || 0),
+          documento_id: obtenerDocumentoIdSolicitud(doc),
           modo: estado === "CARGADO" ? "borrador" : "remitir"
         });
         mostrarMensaje("ok", "Documento remitido eliminado correctamente para esta solicitud.");
