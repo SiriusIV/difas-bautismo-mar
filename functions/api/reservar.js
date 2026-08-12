@@ -648,7 +648,21 @@ export async function onRequestPost(context) {
     await asegurarColumnaAforoMaximo(env);
     const baseUrl = new URL(request.url).origin;
     const sessionUser = await getUserSession(request, env.SECRET_KEY);
-    const usuarioId = sessionUser?.id || null;
+    const usuarioId = Number(sessionUser?.id || 0);
+
+    if (!(usuarioId > 0)) {
+      return json(
+        { ok: false, authenticated: false, error: "Debes iniciar sesión para crear una solicitud." },
+        { status: 401 }
+      );
+    }
+
+    if (String(sessionUser?.rol || "").toUpperCase() !== "SOLICITANTE") {
+      return json(
+        { ok: false, error: "Solo los usuarios solicitantes pueden crear solicitudes de actividad." },
+        { status: 403 }
+      );
+    }
 
     const data = await request.json();
 
