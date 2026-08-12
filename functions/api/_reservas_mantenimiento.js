@@ -1431,18 +1431,26 @@ async function obtenerReservasResidualesLegacy(env) {
       ON f.id = r.franja_id
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
-    WHERE r.actividad_id IS NULL
-       OR a.id IS NULL
-       OR (
-         COALESCE(a.usa_franjas, 0) = 1
-         AND (
-           r.franja_id IS NULL
-           OR f.id IS NULL
-           OR TRIM(COALESCE(f.fecha, '')) = ''
-           OR TRIM(COALESCE(f.hora_inicio, '')) = ''
-           OR TRIM(COALESCE(f.hora_fin, '')) = ''
-         )
-       )
+    WHERE (
+      r.usuario_id IS NULL
+      OR r.usuario_id = 0
+      OR TRIM(COALESCE(r.codigo_reserva, '')) = ''
+      OR TRIM(COALESCE(r.token_edicion, '')) = ''
+    )
+      AND (
+        r.actividad_id IS NULL
+        OR a.id IS NULL
+        OR (
+          COALESCE(a.usa_franjas, 0) = 1
+          AND (
+            r.franja_id IS NULL
+            OR f.id IS NULL
+            OR TRIM(COALESCE(f.fecha, '')) = ''
+            OR TRIM(COALESCE(f.hora_inicio, '')) = ''
+            OR TRIM(COALESCE(f.hora_fin, '')) = ''
+          )
+        )
+      )
   `).all();
 
   return rows?.results || [];
