@@ -723,7 +723,7 @@ async function obtenerReservasPrereservaExpirada(env) {
       ON f.id = r.franja_id
     WHERE r.prereserva_expira_en IS NOT NULL
       AND datetime(r.prereserva_expira_en) < datetime('now')
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA')
       AND COALESCE((
         SELECT COUNT(*)
         FROM visitantes v
@@ -805,7 +805,14 @@ async function crearAvisosCaducidadParcialSolicitante(env, reserva = {}) {
   const tareas = [];
 
   if (usuarioId > 0) {
-    const estadoActual = String(reserva?.estado || "").toUpperCase() === "CONFIRMADA" ? "confirmada" : "pendiente";
+    const estadoReserva = String(reserva?.estado || "").toUpperCase();
+    const estadoActual = estadoReserva === "CONFIRMADA"
+      ? "confirmada"
+      : estadoReserva === "EN_REVISION"
+        ? "en revisión"
+        : estadoReserva === "SUSPENDIDA"
+          ? "suspendida"
+          : "pendiente";
     tareas.push(
       crearNotificacion(env, {
         usuarioId,
