@@ -834,6 +834,22 @@ async function crearAvisosCaducidadParcialSolicitante(env, reserva = {}) {
   await Promise.all(tareas);
 }
 
+async function tieneAvisoCaducidadParcial(env, reservaId) {
+  const id = Number(reservaId || 0);
+  if (!(id > 0)) return false;
+
+  await asegurarTablaHistorialReservas(env);
+  const row = await env.DB.prepare(`
+    SELECT id
+    FROM reservas_historial_estados
+    WHERE reserva_id = ?
+      AND UPPER(TRIM(COALESCE(accion, ''))) = 'CADUCIDAD_PRERESERVA_PARCIAL'
+    LIMIT 1
+  `).bind(id).first();
+
+  return !!row?.id;
+}
+
 async function normalizarPrereservasExpiradas(env) {
   const db = env.DB.withSession("first-primary");
   const reservas = await obtenerReservasPrereservaExpirada(env);
@@ -851,6 +867,8 @@ async function normalizarPrereservasExpiradas(env) {
     const asistentesTotal = Number(reserva.asistentes_total || 0);
 
     if (asistentesTotal > 0) {
+      const reservaId = Number(reserva.id || 0);
+      const avisoYaEmitido = await tieneAvisoCaducidadParcial(env, reservaId);
       const updateResult = await db.prepare(`
         UPDATE reservas
         SET
@@ -861,13 +879,16 @@ async function normalizarPrereservasExpiradas(env) {
       `).bind(
         asistentesTotal,
         asistentesTotal,
-        Number(reserva.id || 0)
+        reservaId
       ).run();
 
       if (Number(updateResult?.meta?.changes || 0) > 0) {
         consolidadas += 1;
+      }
+
+      if (!avisoYaEmitido) {
         await registrarEventoReserva(env, {
-          reservaId: Number(reserva.id || 0),
+          reservaId,
           accion: "CADUCIDAD_PRERESERVA_PARCIAL",
           estadoOrigen: reserva.estado,
           estadoDestino: reserva.estado,
