@@ -587,6 +587,7 @@
     function limpiarMensaje() { const m = document.getElementById("mensaje"); m.className = "mensaje"; m.style.display = "none"; m.textContent = ""; }
     function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
     function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "EN_REVISION") return "EN REVISIÓN"; if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
+    function formatearHorarioReserva(reserva) { const inicio = String(reserva?.hora_inicio || "").trim(); const fin = String(reserva?.hora_fin || "").trim(); if (inicio && fin) return `${inicio} - ${fin}`; return inicio || fin || "-"; }
     function escapeHtml(texto) { return String(texto || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
     function slugTexto(texto) { return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
     function plantillaTienePdfPersistido(plantilla) { return !!String(plantilla?.archivo_url || "").trim(); }
@@ -934,7 +935,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       return `<div class="estado-modal-seccion"><h4>Requisitos particulares</h4><ol class="estado-modal-lista-nombres">${requisitos.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol></div>`;
     }
     function renderResumenSolicitudAdmin(reserva) {
-      const horario = `${reserva?.hora_inicio || "-"} - ${reserva?.hora_fin || "-"}`;
+      const horario = formatearHorarioReserva(reserva);
       return `<div class="estado-modal-seccion"><h4>Resumen de solicitud</h4><div class="estado-modal-grid"><div><span>Fecha</span><strong>${escapeHtml(formatearFechaCorta(reserva?.fecha || "") || "-")}</strong></div><div><span>Horario</span><strong>${escapeHtml(horario)}</strong></div><div><span>Plazas reservadas</span><strong>${Number(reserva?.plazas_reservadas || 0)}</strong></div><div><span>Plazas asignadas</span><strong>${Number(reserva?.plazas_asignadas || 0)}</strong></div></div></div>`;
     }
     async function abrirModalEstado(id, accionPreferida = "") {
@@ -1012,7 +1013,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         const estadoHtml = estadoInteractivo
           ? `<button type="button" class="estado-trigger-admin" onclick="event.stopPropagation(); abrirModalEstado(${r.id})" title="Gestionar estado y observaciones"><span class="estado-badge ${claseEstadoReserva(r)}">${estadoVisibleReserva(r)}</span></button>`
           : `<span class="estado-badge ${claseEstadoReserva(r)}" title="${escapeHtml(tituloEstadoReserva(r))}">${estadoVisibleReserva(r)}</span>`;
-        const horario = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`;
+        const horario = formatearHorarioReserva(r);
         return `<tr class="${reservaSeleccionada && Number(reservaSeleccionada.id) === Number(r.id) ? "fila-seleccionada" : ""}" onclick="manejarSeleccionReservaFila(event, ${r.id})"><td class="obs-col">${tieneObservaciones ? `<button type="button" class="icono-observacion" title="Esta reserva tiene observaciones" onclick="event.stopPropagation(); abrirModalObservaciones(${r.id})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1" stroke-linejoin="round"/><rect x="11" y="9" width="2" height="6" fill="#222"></rect><rect x="11" y="16.5" width="2" height="2" fill="#222"></rect></svg></button>` : ``}</td><td class="solicitante-col" data-label="Solicitante">${r.centro || "<span class='muted'>Sin solicitante</span>"}</td><td class="actividad-col"><div class="actividad-nombre">${r.actividad_nombre || "Actividad"}</div></td><td class="estado-col" data-label="Estado">${estadoHtml}</td><td class="fecha-col" data-label="Fecha"><div class="fecha-principal">${formatearFechaCorta(r.fecha)}</div></td><td class="horario-col" data-label="Horario"><div class="horario-principal">${horario}</div></td><td class="res-col" data-label="Plazas reservadas">${r.plazas_reservadas}</td><td class="asig-col" data-label="Plazas asignadas">${r.plazas_asignadas}</td></tr>`;
       }).join("");
       actualizarBotonesAccion();

@@ -1990,6 +1990,13 @@
       establecerVisibilidadModalObservaciones(true);
     }
 
+    function formatearHorarioReserva(reserva) {
+      const inicio = String(reserva?.hora_inicio || "").trim();
+      const fin = String(reserva?.hora_fin || "").trim();
+      if (inicio && fin) return `${inicio} - ${fin}`;
+      return inicio || fin || "-";
+    }
+
     function pintarReservas(lista) {
       const tbody = document.getElementById("tbodyReservas");
 
@@ -2008,7 +2015,7 @@
         const tieneObservaciones = !!(r.observaciones && String(r.observaciones).trim());
         const tiempoRestante = formatearTiempoRestante(r);
         const fechaTexto = formatearFechaCorta(r.fecha);
-        const horarioTexto = `${r.hora_inicio || "-"} - ${r.hora_fin || "-"}`;
+        const horarioTexto = formatearHorarioReserva(r);
         const plazasPreReservadas = Number(r.plazas_reservadas_historicas || 0);
         const plazasAsignadas = Number(r.plazas_asignadas || 0);
         return `
