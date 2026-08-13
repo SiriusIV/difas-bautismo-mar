@@ -3001,10 +3001,11 @@ function obtenerDisponiblesFormulario(franja) {
 
     async function confirmarEnvioSolicitud() {
       if (!datosPendientesEnvio || envioEnCurso) return;
+      const accionesConfirmacion = document.querySelector("#modalConfirmacionEnvio .acciones");
 
       try {
         envioEnCurso = true;
-        document.getElementById("btnConfirmarEnvio").disabled = true;
+        if (accionesConfirmacion) accionesConfirmacion.innerHTML = "";
         document.getElementById("btnPrepararEnvio").disabled = true;
         document.getElementById("btnGuardarBorrador").disabled = true;
 
@@ -3061,7 +3062,6 @@ function obtenerDisponiblesFormulario(franja) {
           : "";
         mostrarMensajeModalConfirmacion(data?.correo_admin?.enviado === false ? "error" : "ok", `Solicitud creada correctamente. Código de reserva: ${data.codigo_reserva}.${avisoDocumentacion}${construirAvisoCorreoAdmin(data)}`);
         aplicarAccionDocumentacionModal(extraerAccesoDocumentacion(data));
-        const accionesConfirmacion = document.querySelector("#modalConfirmacionEnvio .acciones");
         if (accionesConfirmacion) {
           accionesConfirmacion.innerHTML = `
             <button type="button" id="btnIrAsistentesConfirmacion">Agregar asistentes</button>
@@ -3073,10 +3073,14 @@ function obtenerDisponiblesFormulario(franja) {
       } catch (error) {
         mostrarMensajeModalConfirmacion("error", error.message || "No se pudo crear la solicitud.");
         aplicarAccionDocumentacionModal(error?.documentacion || null);
+        if (accionesConfirmacion) {
+          accionesConfirmacion.innerHTML = `
+            <button type="button" id="btnConfirmarEnvio" data-no-page-loader>Enviar solicitud</button>
+          `;
+          document.getElementById("btnConfirmarEnvio")?.addEventListener("click", confirmarEnvioSolicitud);
+        }
       } finally {
         envioEnCurso = false;
-        const btnConfirmar = document.getElementById("btnConfirmarEnvio");
-        if (btnConfirmar) btnConfirmar.disabled = false;
         document.getElementById("btnPrepararEnvio").disabled = false;
         document.getElementById("btnGuardarBorrador").disabled = false;
       }
