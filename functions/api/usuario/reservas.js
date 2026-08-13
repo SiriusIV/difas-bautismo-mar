@@ -12,7 +12,7 @@ function json(data, status = 200) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA", "PROVISIONAL"].includes(String(estado || "").toUpperCase());
 }
 
 function esErrorColumnaDuplicada(error) {
@@ -35,7 +35,7 @@ async function asegurarColumnaObservacionesAdmin(env) {
 
 function normalizarEstadoReserva(estado) {
   const valor = String(estado || "").trim().toUpperCase();
-  if (valor === "CONDICIONADA_DOCUMENTACION") return "SUSPENDIDA";
+  if (valor === "CONDICIONADA_DOCUMENTACION") return "PROVISIONAL";
   return valor;
 }
 
@@ -67,11 +67,11 @@ function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) return estado;
   if (!validacionDocumental?.requiere_documentacion) return estado;
   if (validacionDocumental.ok) {
-    return estado === "EN_REVISION" ? "PENDIENTE" : estado;
+    return estado === "EN_REVISION" || estado === "PROVISIONAL" ? "PENDIENTE" : estado;
   }
 
   const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
-  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "PROVISIONAL";
 }
 
 export async function onRequestGet(context) {

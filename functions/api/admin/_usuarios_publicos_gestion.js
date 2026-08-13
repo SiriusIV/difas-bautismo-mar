@@ -170,7 +170,7 @@ async function obtenerReservasAfectablesUsuario(env, usuarioId) {
     LEFT JOIN franjas f
       ON f.id = r.franja_id
     WHERE r.usuario_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
     ORDER BY
       COALESCE(f.fecha, '') ASC,
       COALESCE(f.hora_inicio, '') ASC,
@@ -411,7 +411,7 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
         const borrado = await db.prepare(`
           DELETE FROM reservas
           WHERE id = ?
-            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
         `).bind(Number(reserva.id || 0)).run();
 
         if (Number(borrado?.meta?.changes || 0) > 0) {
@@ -428,7 +428,7 @@ async function procesarReservasUsuario(env, usuario, accion, motivo, actor = {})
             observaciones_admin = ?,
             fecha_modificacion = datetime('now')
         WHERE id = ?
-          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
       `).bind(motivo, Number(reserva.id || 0)).run();
 
       if (Number(update?.meta?.changes || 0) > 0) {

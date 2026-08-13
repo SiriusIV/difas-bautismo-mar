@@ -1449,7 +1449,7 @@
       <div class="bloque">
         <div class="confirmacion-envio-texto">
           <p>No se ha incluido toda la documentación obligatoria que debe acompañar a la solicitud.</p>
-          <p>Si continúa, la solicitud quedará en estado <span class="resaltado">Suspendida</span> y dispondrá de <span class="resaltado">24 horas</span> para completar o actualizar la documentación requerida.</p>
+          <p>Si continúa, la solicitud quedará en estado <span class="resaltado">Provisional</span> y dispondrá de <span class="resaltado">24 horas</span> para completar o actualizar la documentación requerida.</p>
           <p class="linea-clave-consolidacion">Transcurrido ese plazo sin regularizar la documentación, la solicitud será rechazada automáticamente por el sistema.</p>
           <div id="detalleAvisoDocumentacionIncompleta"></div>
         </div>
@@ -1580,7 +1580,7 @@
       const archivoRemitido = String(doc?.entrega_archivo_url || "").trim();
       const entregado = !!archivoRemitido || !!doc?.entregado;
       if (!entregado) return false;
-      return !["NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADO", "RECHAZADA", "SUSPENDIDA"].includes(estado);
+      return !["NO_ENVIADO", "NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADO", "RECHAZADA", "SUSPENDIDA", "PROVISIONAL"].includes(estado);
     }
 
     function obtenerDocumentosSolicitudIncompletos() {
@@ -2073,6 +2073,7 @@
       if (e === "pendiente") return "pendiente";
       if (e === "en_revision") return "revision-documental";
       if (e === "confirmada") return "confirmada";
+      if (e === "provisional") return "suspendida";
       if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
       if (e === "cancelada") return "cancelada";
@@ -2084,7 +2085,8 @@
       if (estado === "EN_REVISION") return "EN REVISIÓN";
       if (estado === "PENDIENTE") return "PENDIENTE DE AUTORIZACIÓN";
       if (estado === "CONFIRMADA") return "CONFIRMADA";
-      if (estado === "SUSPENDIDA") return "SUSPENDIDA POR DOCUMENTACION";
+      if (estado === "PROVISIONAL") return "PROVISIONAL";
+      if (estado === "SUSPENDIDA") return "SUSPENDIDA";
       if (estado === "RECHAZADA") return "RECHAZADA";
       if (estado === "CANCELADA") return "CANCELADA";
       return estado || "";

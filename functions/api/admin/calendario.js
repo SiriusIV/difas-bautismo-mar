@@ -34,6 +34,7 @@ function colorEstado(estado) {
   const e = String(estado || "").toUpperCase();
   if (e === "PENDIENTE") return "#d39e00";
   if (e === "CONFIRMADA") return "#198754";
+  if (e === "PROVISIONAL") return "#f4c430";
   if (e === "SUSPENDIDA") return "#f4c430";
   if (e === "RECHAZADA") return "#dc3545";
   return "#0b5ed7";
@@ -58,7 +59,7 @@ function colorActividadProgramada(row, disponibles) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(expira) {
@@ -124,7 +125,7 @@ async function obtenerReservasCalendario(env, filtros, session) {
     where.push("r.estado = ?");
     binds.push(filtros.estado);
   } else {
-    const estados = ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA"];
+    const estados = ["PENDIENTE", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA"];
     if (filtros.incluirRechazadas) estados.push("RECHAZADA");
 
     where.push(`r.estado IN (${estados.map(() => "?").join(", ")})`);
@@ -267,7 +268,7 @@ async function obtenerContadoresReservasCalendario(env, session) {
     binds.push(Number(session?.usuario_id || 0));
   }
 
-  const estados = ["PENDIENTE", "CONFIRMADA", "SUSPENDIDA", "RECHAZADA"];
+  const estados = ["PENDIENTE", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA", "RECHAZADA"];
   where.push(`UPPER(TRIM(COALESCE(r.estado, ''))) IN (${estados.map(() => "?").join(", ")})`);
   binds.push(...estados);
 
@@ -288,6 +289,7 @@ async function obtenerContadoresReservasCalendario(env, session) {
   const contadores = {
     PENDIENTE: 0,
     CONFIRMADA: 0,
+    PROVISIONAL: 0,
     SUSPENDIDA: 0,
     RECHAZADA: 0
   };

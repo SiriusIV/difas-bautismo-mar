@@ -234,7 +234,7 @@ export async function onRequestGet(context) {
               FROM reservas r
               WHERE r.actividad_id = a.id
                 AND r.franja_id IS NULL
-                AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+                AND r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
             )
           ELSE (
             SELECT COALESCE(SUM(
@@ -251,7 +251,7 @@ export async function onRequestGet(context) {
             ), 0)
             FROM reservas r
             WHERE r.actividad_id = a.id
-              AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+              AND r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
           )
         END AS plazas_ocupadas,
 
@@ -275,7 +275,7 @@ export async function onRequestGet(context) {
                 FROM reservas r
                 WHERE r.actividad_id = a.id
                   AND r.franja_id IS NULL
-                  AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+                  AND r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
               ),
               0
             )
@@ -300,7 +300,7 @@ export async function onRequestGet(context) {
               ), 0)
               FROM reservas r
               WHERE r.actividad_id = a.id
-                AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+                AND r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
             )
           )
         END AS plazas_disponibles,
@@ -321,7 +321,7 @@ export async function onRequestGet(context) {
           SELECT COUNT(*)
           FROM reservas r
           WHERE r.actividad_id = a.id
-            AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('BORRADOR', 'PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
         ) AS solicitudes_activas
 
       FROM actividades a

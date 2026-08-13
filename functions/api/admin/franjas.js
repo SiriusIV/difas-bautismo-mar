@@ -399,7 +399,7 @@ async function obtenerReservasAfectadasFranja(env, franjaId) {
     LEFT JOIN usuarios us
       ON us.id = r.usuario_id
     WHERE r.franja_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
     ORDER BY r.id ASC
   `).bind(franjaId).all();
 
@@ -1240,7 +1240,7 @@ function validarFechaDentroDeActividad(actividad, fecha, es_recurrente) {
   if (Number(actividad.borrador_tecnico) === 1) {
     return null;
   }
-  
+
   if (actividad.tipo === "PERMANENTE") {
     return null;
   }
@@ -1293,7 +1293,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -1538,10 +1538,10 @@ async function obtenerResumenFranjas(env, actividad_id) {
       f.recurrencia_fin,
       f.recurrencia_fin_tipo,
       f.recurrencia_repeticiones,
-      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id END) AS numero_reservas,
+      COUNT(CASE WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN r.id END) AS numero_reservas,
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -1777,7 +1777,7 @@ export async function onRequestPost(context) {
     if (!actividadBase) {
       return json({ ok: false, error: "Actividad no válida." }, { status: 400 });
     }
-    
+
     const actividad = resolverActividadActual(data, actividadBase);
     const aforo_limitado = resolverAforoLimitadoActual(data, actividad);
 

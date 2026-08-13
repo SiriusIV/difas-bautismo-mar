@@ -290,14 +290,14 @@ export async function onRequestPost(context) {
             f.capacidad,
             COALESCE(SUM(
               CASE
-                WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
+                WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
                 ELSE 0
               END
             ), 0) AS ocupadas,
             (
               f.capacidad - COALESCE(SUM(
                 CASE
-                  WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
+                  WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN r.personas
                   ELSE 0
                 END
               ), 0)

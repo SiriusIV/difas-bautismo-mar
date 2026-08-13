@@ -93,7 +93,7 @@
     .fecha-principal, .horario-principal { white-space: nowrap; }
     .fecha-secundaria { display: none; }
     .estado-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; color: #fff; white-space: nowrap; }
-    .estado-badge.pendiente { background: #d39e00; } .estado-badge.confirmada { background: #198754; } .estado-badge.suspendida { background: #f4c430; color: #1e2a36; } .estado-badge.rechazada { background: #dc3545; } .estado-badge.revision-documental { background: #0d6efd; }
+    .estado-badge.pendiente { background: #d39e00; } .estado-badge.confirmada { background: #198754; } .estado-badge.suspendida, .estado-badge.provisional { background: #f4c430; color: #1e2a36; } .estado-badge.rechazada { background: #dc3545; } .estado-badge.revision-documental { background: #0d6efd; }
     .estado-trigger-admin { border: none; background: transparent; padding: 0; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
     .estado-trigger-admin:hover .estado-badge, .estado-trigger-admin:focus-visible .estado-badge { box-shadow: 0 0 0 2px rgba(11,94,215,0.16); transform: translateY(-1px); }
     .fila-seleccionada { background: #f2f7ff; }
@@ -486,6 +486,7 @@
             <select id="filtroEstadoCabecera">
               <option value="">Todas</option>
               <option value="EN_REVISION">En revisión</option>
+              <option value="PROVISIONAL">Provisional</option>
               <option value="PENDIENTE">Pendiente</option>
               <option value="CONFIRMADA">Confirmada</option>
               <option value="SUSPENDIDA">Suspendida</option>
@@ -585,8 +586,8 @@
     }
     function mostrarMensaje(tipo, texto) { const m = document.getElementById("mensaje"); m.className = "mensaje " + tipo; m.style.display = "block"; m.textContent = texto; }
     function limpiarMensaje() { const m = document.getElementById("mensaje"); m.className = "mensaje"; m.style.display = "none"; m.textContent = ""; }
-    function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
-    function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "EN_REVISION") return "EN REVISIÓN"; if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
+    function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "provisional") return "provisional"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
+    function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "EN_REVISION") return "EN REVISIÓN"; if (e === "PROVISIONAL") return "PROVISIONAL"; if (e === "PENDIENTE") return "PENDIENTE"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
     function formatearHorarioReserva(reserva) { const inicio = String(reserva?.hora_inicio || "").trim(); const fin = String(reserva?.hora_fin || "").trim(); if (inicio && fin) return `${inicio} - ${fin}`; return inicio || fin || "-"; }
     function escapeHtml(texto) { return String(texto || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
     function slugTexto(texto) { return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
@@ -772,7 +773,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function puedeAbrirModalEstadoReserva(reserva) {
       if (!reserva) return false;
       if (documentacionBloqueanteReserva(reserva)) return true;
-      return ["PENDIENTE", "SUSPENDIDA", "CONFIRMADA", "RECHAZADA"].includes(String(reserva.estado || "").toUpperCase());
+      return ["PENDIENTE", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA", "RECHAZADA"].includes(String(reserva.estado || "").toUpperCase());
     }
     function puedeGestionarEstadoReserva(reserva) {
       return puedeConfirmarseReserva(reserva) || puedeRechazarseReserva(reserva);
@@ -783,7 +784,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     function puedeRechazarseReserva(reserva) {
       if (!reserva || reservaYaPasada(reserva) || documentacionBloqueanteReserva(reserva)) return false;
-      return ["PENDIENTE", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase());
+      return ["PENDIENTE", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase());
     }
     async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijoCalendario = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijoCalendario}`; document.getElementById("navActividadesAdmin").href = "mis-actividades.html"; }
@@ -842,6 +843,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
           total_solicitudes: 0,
           pendientes: 0,
           confirmadas: 0,
+          provisionales: 0,
           suspendidas: 0,
           rechazadas: 0
         });
@@ -852,6 +854,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
           total_solicitudes: 0,
           pendientes: 0,
           confirmadas: 0,
+          provisionales: 0,
           suspendidas: 0,
           rechazadas: 0
         });
@@ -860,7 +863,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         mostrarMensaje("error", error?.message || "No se pudo cargar el panel de reservas.");
       }
     }
-    function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>En revisión: ${Number(resumen.en_revision || 0)}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
+    function pintarResumen(resumen) { document.getElementById("resumenPanel").innerHTML = `<span>Total solicitudes: ${resumen.total_solicitudes}</span><span>|</span><span>En revisión: ${Number(resumen.en_revision || 0)}</span><span>|</span><span>Provisionales: ${Number(resumen.provisionales || 0)}</span><span>|</span><span>Pendientes: ${resumen.pendientes}</span><span>|</span><span>Confirmadas: ${resumen.confirmadas}</span><span>|</span><span>Suspendidas: ${Number(resumen.suspendidas || 0)}</span><span>|</span><span>Rechazadas: ${resumen.rechazadas}</span>`; }
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function establecerVisibilidadModalObservaciones(activo) { const modal = document.getElementById("modalObservaciones"); if (!modal) return; modal.classList.toggle("activo", !!activo); modal.setAttribute("aria-hidden", activo ? "false" : "true"); }
     function recargarPanelDesdeFiltros({ actualizarTitulo = false } = {}) { if (actualizarTitulo) actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); }
@@ -965,7 +968,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (accionesDisponibles.includes("confirmar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono confirmar" data-accion-estado="confirmar" title="Confirmar solicitud" aria-label="Confirmar solicitud"><img src="assets/icono-confirmar-estado.svg" alt="Confirmar"></button>`);
       if (accionesDisponibles.includes("rechazar")) botonesTop.push(`<button type="button" class="btn-accion-estado-icono rechazar" data-accion-estado="rechazar" title="Rechazar solicitud" aria-label="Rechazar solicitud"><img src="assets/icono-rechazar-estado.svg" alt="Rechazar"></button>`);
       const avisoBloqueoDocumental = documentacionSuspendidaReserva(reserva)
-        ? "La solicitud est\u00e1 suspendida por documentaci\u00f3n obligatoria pendiente de completar, actualizar o subsanar. No puede aceptarse ni rechazarse hasta que toda la documentaci\u00f3n est\u00e9 aportada y validada."
+        ? "La solicitud est\u00e1 provisional por documentaci\u00f3n obligatoria pendiente de completar, actualizar o subsanar. No puede aceptarse ni rechazarse hasta que toda la documentaci\u00f3n est\u00e9 aportada y validada."
         : "La revisi\u00f3n documental sigue en curso. La solicitud no puede aceptarse ni rechazarse hasta que todos los documentos obligatorios est\u00e9n validados.";
       const bloqueDecision = accionesDisponibles.length
         ? `<div class="campo-modal"><label for="txtObservacionesAdminEstado">Observaciones del administrador</label><textarea id="txtObservacionesAdminEstado" placeholder="Escribe aqu\u00ed las observaciones administrativas asociadas a esta decisi\u00f3n.">${escapeHtml(observacionesIniciales)}</textarea></div><div id="mensajeModalEstado" class="mensaje-modal-admin" aria-live="polite"></div><div class="nota-modal-admin aviso">Las observaciones son obligatorias en cualquier rechazo manual y al volver a confirmar una solicitud previamente rechazada.</div>`
@@ -979,17 +982,17 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     async function guardarCambioEstadoDesdeModal(accion) { if (!reservaModalEstado) return; const accionFinal = String(accion || accionPreferidaModal || "").toLowerCase(); if (!accionFinal) return; const observacionesAdmin = (document.getElementById("txtObservacionesAdminEstado")?.value || "").trim(); if (requiereObservacionesCambio(reservaModalEstado, accionFinal) && !observacionesAdmin) { mostrarMensajeModalEstado("Debes indicar observaciones administrativas para este cambio de estado."); return; } limpiarMensajeModalEstado(); limpiarMensaje(); try { const res = await fetch("/api/admin/reservas", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ id: reservaModalEstado.id, accion: accionFinal, observaciones_admin: observacionesAdmin }) }); const data = await res.json().catch(() => null); if (!res.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo cambiar el estado."); cerrarModalObservaciones(); const correoSolicitante = data?.correo_solicitante || null; if (correoSolicitante && correoSolicitante.enviado !== true) { const detalleCorreo = String(correoSolicitante.error || "").trim(); mostrarMensaje("aviso", `${data.mensaje || "Estado actualizado correctamente."} Aviso: no se pudo enviar el correo automático al solicitante${detalleCorreo ? ` (${detalleCorreo})` : ""}.`); } else { mostrarMensaje("ok", data.mensaje || "Estado actualizado correctamente."); } reservaSeleccionada = null; await cargarPanel(); } catch (error) { mostrarMensajeModalEstado(error.message || "No se pudo cambiar el estado."); } }
     function estadoVisibleReserva(reserva) {
-      if (documentacionSuspendidaReserva(reserva)) return "SUSPENDIDA";
+      if (documentacionSuspendidaReserva(reserva)) return "PROVISIONAL";
       if (documentacionEnRevisionReserva(reserva)) return "EN REVISI\u00d3N";
       return textoEstadoVisible(reserva?.estado);
     }
     function claseEstadoReserva(reserva) {
-      if (documentacionSuspendidaReserva(reserva)) return claseEstado("SUSPENDIDA");
+      if (documentacionSuspendidaReserva(reserva)) return claseEstado("PROVISIONAL");
       if (documentacionEnRevisionReserva(reserva)) return "revision-documental";
       return claseEstado(reserva?.estado);
     }
     function tituloEstadoReserva(reserva) {
-      if (documentacionSuspendidaReserva(reserva)) return "Solicitud suspendida por documentaci\u00f3n obligatoria pendiente";
+      if (documentacionSuspendidaReserva(reserva)) return "Solicitud provisional por documentaci\u00f3n obligatoria pendiente";
       if (documentacionEnRevisionReserva(reserva)) return "Solicitud pendiente de validaci\u00f3n documental";
       if (solicitanteSuspendido(reserva)) return "Solicitud bloqueada por suspensi\u00f3n del solicitante";
       return textoEstadoVisible(reserva?.estado);

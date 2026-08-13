@@ -77,7 +77,7 @@ function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDef
   if (!validacionDocumental || validacionDocumental.ok !== false) return estadoPorDefecto;
   if (documentacionCompletaFormulario) return "EN_REVISION";
   const estadoDocumental = String(validacionDocumental.estado_documental || "").trim().toUpperCase();
-  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+  return estadoDocumental === "EN_REVISION" ? "EN_REVISION" : "PROVISIONAL";
 }
 
 function accionEsGuardarBorrador(valor) {
@@ -201,15 +201,15 @@ async function avisarSuspensionDocumentalInicial(env, {
       WHERE id = ?
       LIMIT 1
     `).bind(idReserva).first();
-    if (String(reserva?.estado || "").trim().toUpperCase() !== "SUSPENDIDA") {
-      return { ok: false, skipped: true, motivo: "La reserva no esta suspendida." };
+    if (String(reserva?.estado || "").trim().toUpperCase() !== "PROVISIONAL") {
+      return { ok: false, skipped: true, motivo: "La reserva no esta provisional." };
     }
   }
 
   const idUsuario = Number(usuarioId || 0);
   const actividad = limpiarTexto(actividadNombre || "la actividad");
   const codigo = limpiarTexto(codigoReserva || "");
-  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda suspendida por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda provisional por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
   const tareas = [];
 
   if (idUsuario > 0) {
@@ -217,7 +217,7 @@ async function avisarSuspensionDocumentalInicial(env, {
       usuarioId: idUsuario,
       rolDestino: "SOLICITANTE",
       tipo: "RESERVA",
-      titulo: "Solicitud suspendida por documentacion",
+      titulo: "Solicitud provisional por documentacion",
       mensaje,
       urlDestino: "/usuario-panel.html"
     }).catch(() => ({ ok: false })));
@@ -226,7 +226,7 @@ async function avisarSuspensionDocumentalInicial(env, {
   if (limpiarTexto(email)) {
     tareas.push(enviarEmail(env, {
       to: limpiarTexto(email),
-      subject: "[Reservas] Solicitud suspendida por documentacion",
+      subject: "[Reservas] Solicitud provisional por documentacion",
       text: mensaje,
       html: `<p>${escaparHtml(mensaje)}</p>`
     }).catch(() => ({ ok: false })));
@@ -542,7 +542,7 @@ async function obtenerBloqueoActualFranja(env, franjaId) {
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
             CASE
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -973,13 +973,13 @@ if (Number(actividad.activa || 0) !== 1) {
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"
         });
-        if (estadoInicialReserva === "SUSPENDIDA") {
+        if (estadoInicialReserva === "PROVISIONAL") {
           await registrarEventoReserva(env, {
             reservaId: reservaCreada?.id,
             accion: "SUSPENSION_DOCUMENTAL",
             estadoOrigen: "PENDIENTE",
-            estadoDestino: "SUSPENDIDA",
-            observaciones: "La solicitud se envió con documentación obligatoria pendiente de completar o actualizar. Dispone de 24 horas para regularizarla.",
+            estadoDestino: "PROVISIONAL",
+            observaciones: "La solicitud se envió con documentación obligatoria pendiente de completar o actualizar. Queda provisional y dispone de 24 horas para regularizarla.",
             actorUsuarioId: usuarioId,
             actorRol: "SOLICITANTE",
             actorNombre: contacto || centro || "Solicitante"

@@ -312,7 +312,7 @@ async function obtenerReservasAfectadasActividad(env, actividadId) {
     LEFT JOIN usuarios us
       ON us.id = r.usuario_id
     WHERE r.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
     ORDER BY r.id ASC
   `).bind(actividadId).all();
 
@@ -388,7 +388,7 @@ async function obtenerReservasCriticasPorCambioDocumentalActividad(env, activida
     INNER JOIN actividades a ON a.id = r.actividad_id
     LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE r.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
   `).bind(actividadId).all();
 
   const reservas = (result?.results || []).filter(reservaEnPlazoCriticoDocumental);
@@ -928,7 +928,7 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
       CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+              WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
           CASE
             WHEN r.prereserva_expira_en IS NOT NULL
                  AND datetime('now') <= datetime(r.prereserva_expira_en)

@@ -59,7 +59,7 @@ async function obtenerReservasAfectadasAmbito(env, adminId, usuarioId) {
       ON a.id = r.actividad_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
     ORDER BY r.id ASC
   `).bind(Number(adminId || 0), Number(usuarioId || 0)).all();
   return rows?.results || [];
@@ -166,7 +166,7 @@ export async function onRequestPost(context) {
               observaciones_admin = ?,
               fecha_modificacion = datetime('now')
           WHERE id = ?
-            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+            AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
         `).bind(motivo, Number(reserva.id || 0)).run();
         if (Number(update?.meta?.changes || 0) > 0) {
           resumen.reservas_rechazadas += 1;

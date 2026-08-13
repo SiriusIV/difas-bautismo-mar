@@ -54,7 +54,7 @@ async function obtenerPlazasComprometidasActividad(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
       CASE
-              WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+              WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
           CASE
             WHEN r.prereserva_expira_en IS NOT NULL
                  AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -86,7 +86,7 @@ async function obtenerPlazasComprometidasSinFranja(env, actividad_id) {
   const row = await env.DB.prepare(`
     SELECT COALESCE(SUM(
       CASE
-        WHEN r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA') THEN
+        WHEN r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
           CASE
             WHEN r.prereserva_expira_en IS NOT NULL
                  AND datetime('now') <= datetime(r.prereserva_expira_en)
@@ -122,7 +122,7 @@ async function obtenerSolicitudesVivasActividad(env, actividad_id) {
     INNER JOIN franjas f
       ON f.id = r.franja_id
     WHERE f.actividad_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
   `).bind(actividad_id).first();
 
   return Number(row?.total || 0);

@@ -242,7 +242,7 @@ export async function onRequestGet(context) {
         LEFT JOIN franjas f
           ON f.id = r.franja_id
         WHERE r.usuario_id = ?
-          AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
+          AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA', 'RECHAZADA')
           AND (
             (
               r.franja_id IS NOT NULL

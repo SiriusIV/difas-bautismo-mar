@@ -232,7 +232,7 @@ function construirCorreoAdminCaducidadSuspension(contexto = {}) {
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad documental";
-  const mensaje = `${centro} no regularizó la documentación pendiente durante las 24 horas posteriores a la suspensión documental de ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud suspendida ha pasado automáticamente a rechazada.`;
+  const mensaje = `${centro} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar provisional en ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud provisional ha pasado automáticamente a rechazada.`;
 
   const texto = [
     `Hola ${adminNombre},`,
@@ -274,7 +274,7 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
   });
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a su suspensión documental.`;
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a quedar provisional.`;
 
   const texto = [
     saludo,
@@ -317,7 +317,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "ADMIN",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente durante las 24 horas posteriores a la suspensión documental de ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
+        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar provisional en ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
         urlDestino: actividadId > 0
           ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
           : "/admin-reservas.html"
@@ -332,7 +332,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a la suspensión documental.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a quedar provisional.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -420,11 +420,11 @@ async function rechazarReservasSuspendidasVencidas(env) {
       SELECT reserva_id, MAX(fecha_evento) AS fecha_evento
       FROM reservas_historial_estados
       WHERE accion = 'SUSPENSION_DOCUMENTAL'
-        AND estado_destino = 'SUSPENDIDA'
+        AND estado_destino IN ('PROVISIONAL', 'SUSPENDIDA')
       GROUP BY reserva_id
     ) suspension
       ON suspension.reserva_id = r.id
-    WHERE UPPER(TRIM(COALESCE(r.estado, ''))) = 'SUSPENDIDA'
+    WHERE UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PROVISIONAL', 'SUSPENDIDA')
       AND datetime(suspension.fecha_evento, '+24 hours') <= datetime('now')
   `).all();
 
@@ -449,9 +449,9 @@ async function rechazarReservasSuspendidasVencidas(env) {
       await registrarEventoReserva(env, {
         reservaId: id,
         accion: "CADUCIDAD_SUSPENSION",
-        estadoOrigen: "SUSPENDIDA",
+        estadoOrigen: String(reserva.estado || "PROVISIONAL").trim().toUpperCase() || "PROVISIONAL",
         estadoDestino: "RECHAZADA",
-          observaciones: "La solicitud suspendida no regularizó la documentación obligatoria durante las 24 horas posteriores a la suspensión documental.",
+          observaciones: "La solicitud provisional no regularizó la documentación obligatoria durante las 24 horas posteriores a quedar provisional.",
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });
@@ -723,7 +723,7 @@ async function obtenerReservasPrereservaExpirada(env) {
       ON f.id = r.franja_id
     WHERE r.prereserva_expira_en IS NOT NULL
       AND datetime(r.prereserva_expira_en) < datetime('now')
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
       AND COALESCE((
         SELECT COUNT(*)
         FROM visitantes v
@@ -1217,7 +1217,7 @@ async function obtenerRecordatoriosDocumentalesCandidatos(env) {
       ON prop.id = cad.admin_id
     WHERE COALESCE(cad.reserva_id, av.reserva_id) IS NOT NULL
       AND UPPER(TRIM(COALESCE(av.estado, ''))) IN ('EN_REVISION', 'EN REVISIÓN', 'EN REVISION')
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
   `).all();
 
   const grupos = new Map();

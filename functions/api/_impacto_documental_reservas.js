@@ -623,7 +623,7 @@ async function eliminarReservaPorDocumentacionCritica(env, reservaId) {
 async function notificarReservaCondicionada(env, payload) {
   return await enviarEmail(env, {
     to: payload?.centro?.email || "",
-    subject: `[Reservas] Solicitud suspendida por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
+    subject: `[Reservas] Solicitud provisional por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
     text: construirEmailTextoReservaCondicionadaDocumentacion(payload),
     html: construirEmailHtmlReservaCondicionadaDocumentacion(payload)
   });
@@ -665,7 +665,7 @@ async function obtenerEstadoPrevioSuspensionDocumental(env, reservaId) {
       FROM reservas_historial_estados
       WHERE reserva_id = ?
         AND accion = 'SUSPENSION_DOCUMENTAL'
-        AND estado_destino = 'SUSPENDIDA'
+        AND estado_destino IN ('PROVISIONAL', 'SUSPENDIDA')
       ORDER BY fecha_evento DESC, id DESC
       LIMIT 1
     `).bind(id).first();
@@ -696,7 +696,7 @@ async function crearNotificacionReservaCondicionada(env, payload) {
     rolDestino: "SOLICITANTE",
     tipo: "DOCUMENTACION",
     titulo: "Documentación pendiente para tus reservas",
-    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} necesita revisión o actualización. Algunas reservas han quedado suspendidas hasta que la regularices.`,
+    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} necesita revisión o actualización. Algunas reservas han quedado provisionales hasta que la regularices.`,
     urlDestino: payload?.enlace_perfil || ""
   });
 }
@@ -904,7 +904,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
     motivo,
     total_solicitantes_revisados: 0,
     reservas_eliminadas_plazo_critico: 0,
-    reservas_suspendidas: 0,
+    reservas_provisionales: 0,
     reservas_reactivadas: 0,
     notificaciones_condicionadas: 0,
     notificaciones_reactivadas: 0,
@@ -1025,13 +1025,13 @@ export async function recalcularImpactoDocumentalReservas(env, {
             estado_reactivado: estadoDestino
           });
           resumen.reservas_reactivadas += 1;
-        } else if (estadoReserva === "SUSPENDIDA") {
+        } else if (estadoReserva === "PROVISIONAL") {
           const estadoDestino = await obtenerEstadoPrevioSuspensionDocumental(env, Number(reserva.id || 0));
           await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
           await registrarEventoReserva(env, {
             reservaId: Number(reserva.id || 0),
             accion: "REACTIVACION_DOCUMENTAL",
-            estadoOrigen: "SUSPENDIDA",
+            estadoOrigen: "PROVISIONAL",
             estadoDestino,
             observaciones: "La documentación exigible de la actividad vuelve a estar completa."
           });
@@ -1042,7 +1042,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
           resumen.reservas_reactivadas += 1;
         }
       } else {
-        const estadoDestinoDocumental = estadoDocumentalReserva === "EN_REVISION" ? "EN_REVISION" : "SUSPENDIDA";
+        const estadoDestinoDocumental = estadoDocumentalReserva === "EN_REVISION" ? "EN_REVISION" : "PROVISIONAL";
         if (estadoReserva === estadoDestinoDocumental) continue;
         await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestinoDocumental);
         await registrarEventoReserva(env, {
@@ -1054,9 +1054,9 @@ export async function recalcularImpactoDocumentalReservas(env, {
             ? "La actividad tiene documentación remitida pendiente de revisión por sus propietarios documentales."
             : "La actividad exige documentación pendiente, rechazada o desactualizada."
         });
-        if (estadoDestinoDocumental === "SUSPENDIDA") {
+        if (estadoDestinoDocumental === "PROVISIONAL") {
           reservasSuspendidas.push(reserva);
-          resumen.reservas_suspendidas += 1;
+          resumen.reservas_provisionales += 1;
         }
       }
     }

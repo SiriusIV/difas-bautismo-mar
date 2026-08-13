@@ -64,11 +64,11 @@ function estadoDocumentalEfectivo(validacionDocumental = {}) {
     : [];
 
   if (estadosDocumentos.some((estado) => estadoDocumentalSuspende(estado))) {
-    return "SUSPENDIDA";
+    return "PROVISIONAL";
   }
 
   const estadoGlobal = normalizarEstadoDocumental(validacionDocumental?.estado_documental);
-  if (estadoDocumentalSuspende(estadoGlobal)) return "SUSPENDIDA";
+  if (estadoDocumentalSuspende(estadoGlobal)) return "PROVISIONAL";
   return "EN_REVISION";
 }
 
@@ -77,7 +77,7 @@ function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   if (["BORRADOR", "CANCELADA"].includes(estado)) return estado;
   if (!validacionDocumental?.requiere_documentacion) return estado;
   if (validacionDocumental.ok) {
-    return estado === "EN_REVISION" || estado === "SUSPENDIDA" ? "PENDIENTE" : estado;
+    return estado === "EN_REVISION" || estado === "PROVISIONAL" ? "PENDIENTE" : estado;
   }
   return estadoDocumentalEfectivo(validacionDocumental);
 }
@@ -186,7 +186,7 @@ function fechaComparableISO(fechaDdMmAaaa) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "EN_REVISION", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function calcularPlazasReservadasPendientes(row) {
@@ -344,6 +344,7 @@ function resumirReservas(rows) {
     en_revision: 0,
     pendientes: 0,
     confirmadas: 0,
+    provisionales: 0,
     suspendidas: 0,
     rechazadas: 0
   };
@@ -354,6 +355,7 @@ function resumirReservas(rows) {
     if (estado === "EN_REVISION") resumen.en_revision += 1;
     if (estado === "PENDIENTE") resumen.pendientes += 1;
     if (estado === "CONFIRMADA") resumen.confirmadas += 1;
+    if (estado === "PROVISIONAL") resumen.provisionales += 1;
     if (estado === "SUSPENDIDA") resumen.suspendidas += 1;
     if (estado === "RECHAZADA") resumen.rechazadas += 1;
   }

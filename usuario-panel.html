@@ -1004,7 +1004,7 @@
     <div id="mensaje" class="mensaje">
       <span id="mensajeTexto" class="mensaje-texto-linea"></span>
       <div id="mensajeAccionWrap" class="mensaje-accion-wrap">
-        <button type="button" id="btnIrDocumentacionMensaje" class="btn-accion-documentacion">Ir a documentación</button>
+        <button type="button" id="btnIrDocumentacionMensaje" class="btn-accion-documentacion">Ir a documentaciÃ³n</button>
       </div>
     </div>
 
@@ -1021,9 +1021,10 @@
           <select id="filtroEstado">
             <option value="">Todos</option>
             <option value="BORRADOR">Borrador</option>
-            <option value="EN_REVISION">En revisión</option>
+            <option value="EN_REVISION">En revisiÃ³n</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="CONFIRMADA">Confirmada</option>
+            <option value="PROVISIONAL">Provisional</option>
             <option value="SUSPENDIDA">Suspendida</option>
             <option value="RECHAZADA">Rechazada</option>
           </select>
@@ -1137,7 +1138,7 @@
 
     function normalizarEstadoReserva(estado) {
       const valor = String(estado || "").trim().toUpperCase();
-      if (valor === "CONDICIONADA_DOCUMENTACION") return "SUSPENDIDA";
+      if (valor === "CONDICIONADA_DOCUMENTACION") return "PROVISIONAL";
       return valor;
     }
 
@@ -1147,38 +1148,7 @@
       if (e === "pendiente") return "pendiente";
       if (e === "en_revision") return "revision-documental";
       if (e === "confirmada") return "confirmada";
-      if (e === "suspendida") return "suspendida";
-      if (e === "rechazada") return "rechazada";
-      if (e === "cancelada") return "cancelada";
-      return "";
-    }
-
-    function textoEstadoVisible(estado) {
-      const e = normalizarEstadoReserva(estado);
-      if (e === "BORRADOR") return "Borrador";
-      if (e === "EN_REVISION") return "En revisión";
-      if (e === "PENDIENTE") return "Pendiente";
-      if (e === "CONFIRMADA") return "Confirmada";
-      if (e === "SUSPENDIDA") return "Suspendida";
-      if (e === "RECHAZADA") return "Rechazada";
-      if (e === "CANCELADA") return "Cancelada";
-      return e || "-";
-    }
-
-    function textoEstadoReservaVisible(reserva) {
-      const estado = normalizarEstadoReserva(reserva?.estado);
-      if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
-        return "Suspendida · documentación pendiente";
-      }
-      return textoEstadoVisible(estado);
-    }
-
-    function claseEstado(estado) {
-      const e = normalizarEstadoReserva(estado).toLowerCase();
-      if (e === "borrador") return "borrador";
-      if (e === "pendiente") return "pendiente";
-      if (e === "en_revision") return "revision-documental";
-      if (e === "confirmada") return "confirmada";
+      if (e === "provisional") return "suspendida";
       if (e === "suspendida") return "suspendida";
       if (e === "rechazada") return "rechazada";
       if (e === "cancelada") return "cancelada";
@@ -1188,7 +1158,8 @@
     function textoEstadoVisible(estado) {
       const e = normalizarEstadoReserva(estado);
       if (e === "BORRADOR") return "BORRADOR";
-      if (e === "EN_REVISION") return "EN REVISIÓN";
+      if (e === "EN_REVISION") return "EN REVISI?N";
+      if (e === "PROVISIONAL") return "PROVISIONAL";
       if (e === "PENDIENTE") return "PENDIENTE";
       if (e === "CONFIRMADA") return "CONFIRMADA";
       if (e === "SUSPENDIDA") return "SUSPENDIDA";
@@ -1200,7 +1171,7 @@
     function textoEstadoReservaVisible(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
-        return "SUSPENDIDA · DOCUMENTACIÓN PENDIENTE";
+        return "PROVISIONAL";
       }
       return textoEstadoVisible(estado);
     }
@@ -1283,7 +1254,7 @@
           btn.type = "button";
           btn.id = "btnIrDocumentacionModal";
           btn.className = "btn-modal";
-          btn.textContent = "Ir a documentación";
+          btn.textContent = "Ir a documentaciÃ³n";
           btn.addEventListener("click", function () {
             irADocumentacionPendiente(this.dataset.url || "");
           });
@@ -1302,7 +1273,7 @@
         return;
       }
       const destino = String(url || accesoDocumentacionPendiente?.url || "").trim();
-      if (destino) mostrarMensaje("error", "La documentación de esta solicitud debe consultarse desde el panel de solicitudes.");
+      if (destino) mostrarMensaje("error", "La documentaciÃ³n de esta solicitud debe consultarse desde el panel de solicitudes.");
     }
 
     function mostrarMensaje(tipo, texto) {
@@ -1410,7 +1381,11 @@
       const enRevision = lista.filter((r) => normalizarEstadoReserva(r.estado) === "EN_REVISION").length;
       const pendientes = lista.filter((r) => normalizarEstadoReserva(r.estado) === "PENDIENTE").length;
       const confirmadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "CONFIRMADA").length;
-      const suspendidas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "SUSPENDIDA").length;
+      const provisionales = lista.filter((r) => {
+        const estado = normalizarEstadoReserva(r.estado);
+        return estado === "PROVISIONAL" || (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(r));
+      }).length;
+      const suspendidas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "SUSPENDIDA" && esSuspensionPorCambioFranja(r)).length;
       const rechazadas = lista.filter((r) => normalizarEstadoReserva(r.estado) === "RECHAZADA").length;
 
       document.getElementById("resumenPanel").innerHTML = `
@@ -1418,7 +1393,7 @@
         <span>|</span>
         <span>Borradores: ${borradores}</span>
         <span>|</span>
-        <span>En revisión: ${enRevision}</span>
+        <span>En revisiÃ³n: ${enRevision}</span>
         <span>|</span>
         <span>Pendientes: ${pendientes}</span>
         <span>|</span>
@@ -1490,7 +1465,7 @@
     function textoEstadoDocumentoPanel(estado) {
       const e = normalizarEstadoDocumentoPanel(estado);
       if (e === "NO_PRESENTADO") return "No presentado";
-      if (e === "EN_REVISION") return "En revisión";
+      if (e === "EN_REVISION") return "En revisiÃ³n";
       if (e === "VALIDADA") return "Validado";
       if (e === "RECHAZADO") return "Rechazado";
       if (e === "NO_ACTUALIZADO") return "No actualizado";
@@ -1514,7 +1489,7 @@
 
     async function cargarDocumentacionReserva(reserva) {
       if (!reserva || !(Number(reserva.admin_id || 0) > 0) || !(Number(reserva.actividad_id || 0) > 0) || !(Number(reserva.id || 0) > 0)) {
-        throw new Error("No se pudo identificar la documentación de esta solicitud.");
+        throw new Error("No se pudo identificar la documentaciÃ³n de esta solicitud.");
       }
       const query = new URLSearchParams({
         admin_id: String(Number(reserva.admin_id || 0)),
@@ -1527,7 +1502,7 @@
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) {
-        throw new Error(data?.detalle || data?.error || "No se pudo consultar la documentación de esta solicitud.");
+        throw new Error(data?.detalle || data?.error || "No se pudo consultar la documentaciÃ³n de esta solicitud.");
       }
       return data;
     }
@@ -1537,9 +1512,9 @@
       if (!reserva) return;
       reservaDocumentacionActual = reserva;
       configurarModalObservacionesPanel({
-        titulo: "Documentación de la solicitud",
+        titulo: "DocumentaciÃ³n de la solicitud",
         subtitulo: reserva.actividad || "",
-        contenido: '<div class="estado-modal-bloque">Cargando documentación...</div>',
+        contenido: '<div class="estado-modal-bloque">Cargando documentaciÃ³n...</div>',
         accionesHtml: '<button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button>'
       });
       establecerVisibilidadModalObservaciones(true);
@@ -1547,7 +1522,7 @@
         .then((data) => renderizarDocumentacionModal(data))
         .catch((error) => {
           document.getElementById("modalObservacionesContenido").innerHTML =
-            `<div class="mensaje-modal-panel error">${escapeHtml(error.message || "No se pudo abrir la documentación de esta solicitud.")}</div>`;
+            `<div class="mensaje-modal-panel error">${escapeHtml(error.message || "No se pudo abrir la documentaciÃ³n de esta solicitud.")}</div>`;
         });
     }
 
@@ -1565,7 +1540,7 @@
       if (!contenido) return;
 
       if (!documentos.length) {
-        contenido.innerHTML = '<div class="estado-modal-bloque">Esta solicitud no tiene documentación obligatoria asociada.</div>';
+        contenido.innerHTML = '<div class="estado-modal-bloque">Esta solicitud no tiene documentaciÃ³n obligatoria asociada.</div>';
         return;
       }
 
@@ -1588,7 +1563,7 @@
               <div class="documentacion-modal-item" data-documento-id="${Number(doc.id || 0)}">
                 <div>
                   ${tituloHtml}
-                  <span class="documentacion-modal-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
+                  <span class="documentacion-modal-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` Â· VersiÃ³n ${version}` : ""}</span>
                 </div>
                 <span class="estado-badge ${claseEstado}">${escapeHtml(textoEstadoDocumentoPanel(estado))}</span>
                 <div class="documentacion-modal-acciones">
@@ -1645,7 +1620,7 @@
         })
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo remitir la documentación.");
+      if (!response.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo remitir la documentaciÃ³n.");
       return data;
     }
 
@@ -1681,7 +1656,7 @@
             const archivoUrl = await subirPdfDocumentacionReserva(doc, file);
             await remitirDocumentoReserva(doc, archivoUrl);
             await refrescarDocumentacionModal();
-            mostrarMensaje("ok", "Documento remitido correctamente. Queda pendiente de revisión.");
+            mostrarMensaje("ok", "Documento remitido correctamente. Queda pendiente de revisiÃ³n.");
           } catch (error) {
             mostrarMensaje("error", error.message || "No se pudo remitir el documento.");
           }
@@ -1752,15 +1727,15 @@
       );
       const minutosConsolidacion = calcularMinutosConsolidacion(plazasReenvio);
       configurarModalObservacionesPanel({
-        titulo: "Confirmación de envío",
+        titulo: "ConfirmaciÃ³n de envÃ­o",
         subtitulo: reserva.actividad || "Solicitud",
         claseContenido: "modal-contenido confirmacion-envio-contenido",
         contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${plazasReenvio}</strong> plazas reservadas.</p>
-          <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${minutosConsolidacion} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
-          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
-          <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
+          <p class="estado-modal-linea">El tiempo de consolidaciÃ³n calculado para esta solicitud serÃ¡ de <strong>${minutosConsolidacion} minutos</strong> y comenzarÃ¡ a contar a partir del momento en que confirme el envÃ­o.</p>
+          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverÃ¡n a quedar disponibles.</p>
+          <p class="estado-modal-linea">AdemÃ¡s, se permitirÃ¡ ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
         <div id="mensajeConfirmacionEnvio" class="mensaje-modal-panel" hidden></div>
       `,
@@ -1799,7 +1774,7 @@
         </div>
         <div class="estado-modal-observaciones">
           <strong>Importante</strong>
-          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podrás seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirá garantía de reserva previa sobre las plazas añadidas tras haber finalizado el tiempo disponible para la asignación.</div>
+          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podrÃ¡s seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirÃ¡ garantÃ­a de reserva previa sobre las plazas aÃ±adidas tras haber finalizado el tiempo disponible para la asignaciÃ³n.</div>
         </div>
       `,
         accionesHtml: ``
@@ -1823,7 +1798,7 @@
 
     function detalleCambioFranja(reserva) {
       const observacion = String(reserva?.ultima_observacion_historial || "").trim();
-      const match = observacion.match(/Programaci[oó]n modificada:\s*(.+?)\s*->\s*(.+)$/i);
+      const match = observacion.match(/Programaci[oÃ³]n modificada:\s*(.+?)\s*->\s*(.+)$/i);
       if (match) {
         return {
           anterior: match[1].trim(),
@@ -1840,33 +1815,35 @@
       const estado = normalizarEstadoReserva(reserva?.estado);
       const observacionesAdmin = String(reserva?.observaciones_admin || "").trim();
       if (estado === "BORRADOR") {
-        return "Esta solicitud está guardada como borrador. Todavía no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
+        return "Esta solicitud est? guardada como borrador. Todav?a no ha sido enviada, no bloquea plazas ni ha iniciado el tiempo de prereserva. Puedes editarla, guardarla de nuevo o enviarla cuando la tengas lista.";
       }
       if (estado === "CONFIRMADA") {
         if (observacionesAdmin) {
           return "Tu solicitud ha sido readmitida y aceptada nuevamente por el administrador.";
         }
-        return "La solicitud ha sido aceptada. Puedes consultar la documentación remitida o acceder al panel de asistentes mientras la solicitud siga activa.";
+        return "La solicitud ha sido aceptada. Puedes consultar la documentaci?n remitida o acceder al panel de asistentes mientras la solicitud siga activa.";
       }
       if (estado === "PENDIENTE") {
-        return "Su solicitud está en proceso de revisión. Si lo desea, puede actualizar/revisar la documentación obligatoria para la realización de la actividad o acceder al panel de asistentes.";
+        return "Su solicitud est? en proceso de revisi?n. Si lo desea, puede actualizar/revisar la documentaci?n obligatoria para la realizaci?n de la actividad o acceder al panel de asistentes.";
+      }
+      if (estado === "PROVISIONAL" || (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva))) {
+        return "La solicitud queda provisional en espera de que complete o actualice la documentaci?n obligatoria asociada a la actividad. Mantendr? este estado durante 24 horas; pasado este plazo, ser? rechazada autom?ticamente por el sistema.";
       }
       if (estado === "SUSPENDIDA") {
         if (esSuspensionPorCambioFranja(reserva)) {
-          return "La solicitud está suspendida porque la franja horaria asociada ha cambiado. Revisa la nueva programación y decide si deseas mantener la solicitud o anularla.";
+          return "La solicitud est? suspendida porque la franja horaria asociada ha cambiado. Revisa la nueva programaci?n y decide si deseas mantener la solicitud o anularla.";
         }
-        return "La solicitud queda suspendida en espera de que complete o actualice la documentación obligatoria asociada a la actividad. Mantendrá este estado durante 24 horas; pasado este plazo, será rechazada automáticamente por el sistema.";
       }
       if (estado === "RECHAZADA") {
         if (observacionesAdmin) {
           return "Tu solicitud ha sido rechazada por el administrador.";
         }
-        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la información necesaria para volver a dejarla en proceso.";
+        return "La solicitud ha sido rechazada. Revisa el motivo indicado y corrige la informaci?n necesaria para volver a dejarla en proceso.";
       }
       if (estado === "CANCELADA") {
-        return "La solicitud está anulada y ya no admite cambios.";
+        return "La solicitud est? anulada y ya no admite cambios.";
       }
-      return "Consulta el estado actual de tu solicitud y corrige la información necesaria si procede.";
+      return "Consulta el estado actual de tu solicitud y corrige la informaci?n necesaria si procede.";
     }
 
     function construirAccionesEstado(reserva) {
@@ -1878,6 +1855,16 @@
             label: "Editar borrador",
             principal: true,
             onClick: () => editarReserva(reserva.token_edicion, estado)
+          });
+        }
+        return acciones;
+      }
+      if (estado === "PROVISIONAL" || (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva))) {
+        if (Number(reserva?.admin_id || 0) > 0) {
+          acciones.push({
+            label: "Ver documentaci?n",
+            principal: true,
+            onClick: () => abrirDocumentacionReserva(reserva.id)
           });
         }
         return acciones;
@@ -1894,13 +1881,6 @@
             onClick: () => anularSolicitud(reserva)
           });
           return acciones;
-        }
-        if (Number(reserva?.admin_id || 0) > 0) {
-          acciones.push({
-            label: "Ver documentación",
-            principal: true,
-            onClick: () => abrirDocumentacionReserva(reserva.id)
-          });
         }
         return acciones;
       }
@@ -1924,7 +1904,7 @@
       }
       if (Number(reserva?.admin_id || 0) > 0 && estado !== "CANCELADA") {
         acciones.push({
-          label: "Ver documentación",
+          label: "Ver documentaci?n",
           onClick: () => abrirDocumentacionReserva(reserva.id)
         });
       }
@@ -1951,7 +1931,7 @@
       const esRechazada = normalizarEstadoReserva(reserva.estado) === "RECHAZADA";
       const fechaEliminacionRechazo = esRechazada ? formatearFechaHoraAviso(reserva.rechazo_elimina_en || "") : "";
       const estadoModalHtml = esRechazada && fechaEliminacionRechazo
-        ? `<div class="modal-estado-rechazo-linea"><span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span><span class="modal-rechazo-eliminacion">Esta solicitud será eliminada automáticamente del sistema el ${escapeHtml(fechaEliminacionRechazo)}.</span></div>`
+        ? `<div class="modal-estado-rechazo-linea"><span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span><span class="modal-rechazo-eliminacion">Esta solicitud serÃ¡ eliminada automÃ¡ticamente del sistema el ${escapeHtml(fechaEliminacionRechazo)}.</span></div>`
         : `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`;
 
       configurarModalObservacionesPanel({
@@ -2134,7 +2114,7 @@
       const estado = normalizarEstadoReserva(reservaSeleccionada.estado);
       if (!["BORRADOR", "RECHAZADA"].includes(estado)) return;
       if (!reservaSeleccionada.token_edicion) {
-        mostrarMensaje("error", "El borrador seleccionado no incluye un token de edición válido.");
+        mostrarMensaje("error", "El borrador seleccionado no incluye un token de ediciÃ³n vÃ¡lido.");
         return;
       }
 
@@ -2184,7 +2164,7 @@
 
             const correoAdmin = data?.correo_admin || null;
             const detalleCorreo = correoAdmin && correoAdmin.enviado !== true ? String(correoAdmin.error || "").trim() : "";
-            mostrarMensajeConfirmacionEnvio(correoAdmin && correoAdmin.enviado !== true ? "error" : "ok", `${data.mensaje || "Solicitud enviada correctamente."}${correoAdmin && correoAdmin.enviado !== true ? ` Aviso: no se pudo enviar el correo automático al administrador${detalleCorreo ? ` (${detalleCorreo})` : ""}.` : ""}`);
+            mostrarMensajeConfirmacionEnvio(correoAdmin && correoAdmin.enviado !== true ? "error" : "ok", `${data.mensaje || "Solicitud enviada correctamente."}${correoAdmin && correoAdmin.enviado !== true ? ` Aviso: no se pudo enviar el correo automÃ¡tico al administrador${detalleCorreo ? ` (${detalleCorreo})` : ""}.` : ""}`);
             document.getElementById("modalObservacionesAcciones").innerHTML = "";
             reservaSeleccionada = null;
             await cargarPanel();
@@ -2238,7 +2218,7 @@ async function anularSolicitud(reserva) {
 async function anularSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
-      if (!window.confirm(`¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
+      if (!window.confirm(`Â¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
 
       limpiarMensaje();
       try {

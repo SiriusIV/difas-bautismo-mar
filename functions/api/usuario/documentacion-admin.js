@@ -750,7 +750,7 @@ async function obtenerReservasCriticasAfectadasPorEntregas(env, adminId, usuario
     LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
-      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+      AND UPPER(TRIM(COALESCE(r.estado, ''))) IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
   `).bind(adminId, usuarioId).all();
 
   const reservas = rows?.results || [];

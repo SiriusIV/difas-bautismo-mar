@@ -12,7 +12,7 @@ function limpiarTexto(valor) {
 }
 
 function estadoBloqueaPlazas(estado) {
-  return ["PENDIENTE", "EN_REVISION", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
+  return ["PENDIENTE", "EN_REVISION", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA"].includes(String(estado || "").toUpperCase());
 }
 
 function esPrereservaVigente(expira) {

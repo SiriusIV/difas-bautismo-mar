@@ -298,7 +298,7 @@ async function notificarAfectadosCambioMarco(env, admin, secretaria, afectados, 
       INNER JOIN actividades a ON a.id = r.actividad_id
       WHERE a.admin_id = ?
         AND r.usuario_id = ?
-        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'SUSPENDIDA')
+        AND r.estado IN ('PENDIENTE', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
       LIMIT 1
     `).bind(admin?.id || 0, Number(afectado.centro_usuario_id || 0)).first();
 
