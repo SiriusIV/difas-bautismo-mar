@@ -1462,6 +1462,28 @@
     </div>
   </div>
 
+  <div id="modalAvisoBorradorSinReserva" class="modal-fondo" aria-hidden="true">
+    <div class="modal" style="max-width: 720px;">
+      <div class="modal-encabezado">
+        <h3>Guardar como borrador</h3>
+        <button type="button" id="btnCerrarModalAvisoBorradorSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="bloque">
+        <div class="confirmacion-envio-texto">
+          <p>Guardar esta solicitud como borrador no reserva ni bloquea las plazas indicadas.</p>
+          <p>La reserva de plazas solo será efectiva cuando envíes la solicitud.</p>
+          <p class="linea-clave-consolidacion">Si mientras tanto otra persona solicita las plazas disponibles, es posible que este borrador no pueda enviarse más adelante por falta de disponibilidad.</p>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button type="button" class="btn-secundario" id="btnEnviarDesdeAvisoBorrador">Realizar solicitud</button>
+        <button type="button" id="btnConfirmarGuardarBorrador">Guardar como borrador</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalObservacionesDocumento" class="modal-fondo" aria-hidden="true">
     <div class="modal" style="max-width: 640px;">
       <div class="modal-encabezado">
@@ -2941,6 +2963,27 @@ function obtenerDisponiblesFormulario(franja) {
       if (datos) abrirModalConfirmacion(datos);
     }
 
+    function abrirModalAvisoBorradorSinReserva() {
+      establecerVisibilidadModal("modalAvisoBorradorSinReserva", true);
+    }
+
+    function cerrarModalAvisoBorradorSinReserva() {
+      establecerVisibilidadModal("modalAvisoBorradorSinReserva", false);
+    }
+
+    function confirmarGuardarBorradorDesdeAviso() {
+      cerrarModalAvisoBorradorSinReserva();
+      guardarBorrador();
+    }
+
+    function prepararEnvioDesdeAvisoBorrador() {
+      cerrarModalAvisoBorradorSinReserva();
+      const form = document.getElementById("formularioSolicitud");
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+
     function mostrarMensajeModalConfirmacion(tipo, texto) {
       const mensaje = document.getElementById("mensajeConfirmacionEnvio");
       if (!mensaje) return;
@@ -3201,7 +3244,7 @@ function obtenerDisponiblesFormulario(franja) {
         abrirModalConfirmacion(validacion.datos);
       });
 
-      btnGuardarBorrador.addEventListener("click", guardarBorrador);
+      btnGuardarBorrador.addEventListener("click", abrirModalAvisoBorradorSinReserva);
 
         if (enlacePortal) {
           enlacePortal.addEventListener("click", function (e) {
@@ -3238,6 +3281,12 @@ function obtenerDisponiblesFormulario(franja) {
       document.getElementById("btnContinuarAvisoDocumentacionIncompleta").addEventListener("click", continuarEnvioConDocumentacionIncompleta);
       document.getElementById("modalAvisoDocumentacionIncompleta").addEventListener("click", function (e) {
         if (e.target.id === "modalAvisoDocumentacionIncompleta") cerrarModalAvisoDocumentacionIncompleta();
+      });
+      document.getElementById("btnCerrarModalAvisoBorradorSuperior").addEventListener("click", cerrarModalAvisoBorradorSinReserva);
+      document.getElementById("btnConfirmarGuardarBorrador").addEventListener("click", confirmarGuardarBorradorDesdeAviso);
+      document.getElementById("btnEnviarDesdeAvisoBorrador").addEventListener("click", prepararEnvioDesdeAvisoBorrador);
+      document.getElementById("modalAvisoBorradorSinReserva").addEventListener("click", function (e) {
+        if (e.target.id === "modalAvisoBorradorSinReserva") cerrarModalAvisoBorradorSinReserva();
       });
       
       document.getElementById("btnImportarLista").addEventListener("click", importarListaAsistentes);
