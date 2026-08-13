@@ -2297,6 +2297,20 @@
   return horaFin ? `${horaInicio} a ${horaFin}` : `Desde las ${horaInicio}`;
 }
 
+function formatearFechaResumenSolicitud(fecha) {
+  const texto = String(fecha || "").trim();
+  const partes = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!partes) return texto || "-";
+  return `${partes[3]}/${partes[2]}/${partes[1]}`;
+}
+
+function formatearHorarioResumenSolicitud(franja) {
+  const inicio = String(franja?.hora_inicio || "").trim();
+  const fin = String(franja?.hora_fin || "").trim();
+  if (inicio && fin) return `${inicio} - ${fin}`;
+  return inicio || fin || "-";
+}
+
 function obtenerDisponiblesFormulario(franja) {
       if (franja?.disponibles == null) {
         return null;
@@ -2588,6 +2602,8 @@ function obtenerDisponiblesFormulario(franja) {
       const disponibles = obtenerDisponiblesFormulario(franja);
       const capacidad = franja.capacidad == null ? null : Number(franja.capacidad || 0);
       const etiquetaFecha = (franja.fecha || franja.patron_recurrencia || "").trim();
+      const etiquetaFechaResumen = formatearFechaResumenSolicitud(etiquetaFecha);
+      const horarioResumen = formatearHorarioResumenSolicitud(franja);
       const plazasTotalesSolicitadas = esEdicion
         ? Number(reservaExistente?.plazas_asignadas || 0) + plazasPendientes
         : plazasPendientes;
@@ -2603,7 +2619,7 @@ function obtenerDisponiblesFormulario(franja) {
 
       resumenReserva.innerHTML = `
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
-        <strong>Franja seleccionada:</strong> ${etiquetaFecha} · ${franja.hora_inicio} - ${franja.hora_fin}<br>
+        <strong>Franja seleccionada:</strong> ${etiquetaFechaResumen}${horarioResumen && horarioResumen !== "-" ? ` · ${horarioResumen}` : ""}<br>
         ${lineaCapacidad}<strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
         <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
       `;
@@ -3245,4 +3261,3 @@ function obtenerDisponiblesFormulario(franja) {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
