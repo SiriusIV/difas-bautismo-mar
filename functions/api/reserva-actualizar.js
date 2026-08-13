@@ -157,11 +157,25 @@ async function crearNotificacionNuevaSolicitudAdmin(env, {
 }
 
 async function avisarSuspensionDocumentalInicial(env, {
+  reservaId,
   usuarioId,
   email,
   actividadNombre,
   codigoReserva
 } = {}) {
+  const idReserva = Number(reservaId || 0);
+  if (idReserva > 0) {
+    const reserva = await env.DB.prepare(`
+      SELECT estado
+      FROM reservas
+      WHERE id = ?
+      LIMIT 1
+    `).bind(idReserva).first();
+    if (String(reserva?.estado || "").trim().toUpperCase() !== "SUSPENDIDA") {
+      return { ok: false, skipped: true, motivo: "La reserva no esta suspendida." };
+    }
+  }
+
   const idUsuario = Number(usuarioId || 0);
   const actividad = limpiarTexto(actividadNombre || "la actividad");
   const codigo = limpiarTexto(codigoReserva || "");
@@ -1027,6 +1041,7 @@ export async function onRequestPost(context) {
           actorNombre: contacto || centro || "Solicitante"
         });
         await avisarSuspensionDocumentalInicial(env, {
+          reservaId: reservaActual.id,
           usuarioId: reservaActual.usuario_id,
           email,
           actividadNombre: actividad.actividad_nombre || "Actividad",
@@ -1178,6 +1193,7 @@ export async function onRequestPost(context) {
           actorNombre: contacto || centro || "Solicitante"
         });
         await avisarSuspensionDocumentalInicial(env, {
+          reservaId: reservaActual.id,
           usuarioId: reservaActual.usuario_id,
           email,
           actividadNombre: actividad.actividad_nombre || "Actividad",
