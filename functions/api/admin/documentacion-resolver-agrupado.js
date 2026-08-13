@@ -190,6 +190,45 @@ async function registrarHistorialRevisionDocumental(env, {
     }
   }
 }
+
+async function completarExpedienteParaAvisos(env, expediente = {}, cambios = []) {
+  const reservaId = parsearIdPositivo(expediente?.reserva_id) ||
+    (Array.isArray(cambios)
+      ? cambios.map((cambio) => parsearIdPositivo(cambio?.reserva_id)).find(Boolean)
+      : null);
+  if (!reservaId) return expediente || {};
+  const contexto = await env.DB.prepare(`
+    SELECT r.id AS reserva_id, r.usuario_id AS centro_usuario_id, r.actividad_id, r.codigo_reserva,
+      COALESCE(NULLIF(TRIM(u.centro), ''), NULLIF(TRIM(u.nombre_publico), ''), NULLIF(TRIM(u.nombre), ''), NULLIF(TRIM(r.centro), ''), NULLIF(TRIM(r.contacto), ''), NULLIF(TRIM(u.email), ''), NULLIF(TRIM(r.email), '')) AS centro,
+      u.nombre AS usuario_nombre, u.nombre_publico AS usuario_nombre_publico,
+      COALESCE(NULLIF(TRIM(u.email), ''), NULLIF(TRIM(r.email), '')) AS email,
+      COALESCE(a.titulo_publico, a.nombre, '') AS actividad_nombre,
+      f.fecha, f.hora_inicio, f.hora_fin
+    FROM reservas r
+    LEFT JOIN usuarios u ON u.id = r.usuario_id
+    LEFT JOIN actividades a ON a.id = r.actividad_id
+    LEFT JOIN franjas f ON f.id = r.franja_id
+    WHERE r.id = ?
+    LIMIT 1
+  `).bind(reservaId).first();
+  if (!contexto) return expediente || {};
+  return {
+    ...(expediente || {}),
+    reserva_id: Number(contexto.reserva_id || expediente?.reserva_id || 0) || expediente?.reserva_id,
+    centro_usuario_id: Number(contexto.centro_usuario_id || expediente?.centro_usuario_id || 0) || expediente?.centro_usuario_id,
+    actividad_id: Number(contexto.actividad_id || expediente?.actividad_id || 0) || expediente?.actividad_id,
+    codigo_reserva: limpiarTexto(contexto.codigo_reserva) || expediente?.codigo_reserva || "",
+    centro: limpiarTexto(contexto.centro) || expediente?.centro || "",
+    usuario_nombre: limpiarTexto(contexto.usuario_nombre) || expediente?.usuario_nombre || "",
+    usuario_nombre_publico: limpiarTexto(contexto.usuario_nombre_publico) || expediente?.usuario_nombre_publico || "",
+    email: limpiarTexto(contexto.email) || expediente?.email || "",
+    actividad_nombre: limpiarTexto(contexto.actividad_nombre) || expediente?.actividad_nombre || "",
+    fecha: limpiarTexto(contexto.fecha) || expediente?.fecha || "",
+    hora_inicio: limpiarTexto(contexto.hora_inicio) || expediente?.hora_inicio || "",
+    hora_fin: limpiarTexto(contexto.hora_fin) || expediente?.hora_fin || ""
+  };
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -360,21 +399,23 @@ export async function onRequestPost(context) {
       LIMIT 1
     `).bind(adminId).first();
 
+    const expedienteAvisos = await completarExpedienteParaAvisos(env, expediente, cambiosAplicados);
+
     let notificacionCentro = { ok: false, skipped: true, error: "" };
     try {
       notificacionCentro = await enviarEmail(env, {
-        to: expediente.email || "",
+        to: expedienteAvisos.email || "",
         subject: `[Documentación] Revisión actualizada por ${nombreVisibleAdmin(admin || {})}`,
         text: construirEmailTextoResolucionExpedienteDocumental({
           admin: admin || {},
-          centro: expediente || {},
+          centro: expedienteAvisos || {},
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
           resumen_documental: resumenDocumentalCorreo
         }),
         html: construirEmailHtmlResolucionExpedienteDocumental({
           admin: admin || {},
-          centro: expediente || {},
+          centro: expedienteAvisos || {},
           estado_expediente: estadoExpediente,
           cambios: cambiosAplicados,
           resumen_documental: resumenDocumentalCorreo
@@ -388,14 +429,14 @@ export async function onRequestPost(context) {
       };
       console.error("No se pudo enviar correo de revision documental agrupada (admin).", {
         expediente_id: Number(documentacionId || 0),
-        centro_usuario_id: Number(expediente.centro_usuario_id || 0),
+        centro_usuario_id: Number(expedienteAvisos.centro_usuario_id || 0),
         admin_id: Number(expediente.admin_id || 0),
         revisor_id: Number(session.usuario_id || 0),
         error: notificacionCentro.error
       });
     }
     await registrarHistorialRevisionDocumental(env, {
-      expediente,
+      expediente: expedienteAvisos,
       cambios: cambiosAplicados,
       actorUsuarioId: session.usuario_id,
       actorRol: "ADMIN",
@@ -406,7 +447,7 @@ export async function onRequestPost(context) {
     let notificacionInternaCentro = { ok: false, skipped: true, error: "" };
     try {
       notificacionInternaCentro = await crearNotificacion(env, {
-        usuarioId: Number(expediente.centro_usuario_id || 0),
+        usuarioId: Number(expedienteAvisos.centro_usuario_id || 0),
         rolDestino: "SOLICITANTE",
         tipo: "DOCUMENTACION",
         titulo: hayRechazos ? "Documentación revisada con incidencias" : "Documentación revisada",
@@ -423,7 +464,7 @@ export async function onRequestPost(context) {
       };
       console.error("No se pudo crear la notificación interna de resolución documental del administrador.", {
         expediente_id: Number(documentacionId || 0),
-        centro_usuario_id: Number(expediente.centro_usuario_id || 0),
+        centro_usuario_id: Number(expedienteAvisos.centro_usuario_id || 0),
         admin_id: Number(expediente.admin_id || 0),
         revisor_id: Number(session.usuario_id || 0),
         error: notificacionInternaCentro.error
