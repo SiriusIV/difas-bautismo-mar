@@ -141,6 +141,8 @@ function construirDocumentosPendientes(documentosActivos, archivosActivos) {
       const estado = calcularEstadoDocumento(doc, entrega);
       return {
         id: Number(doc.id || 0),
+        documentacion_id: Number(entrega?.documentacion_id || 0),
+        archivo_id: Number(entrega?.id || 0),
         nombre: limpiarTexto(doc.nombre),
         propietario_documental_id: obtenerPropietarioDocumentalDocumento(doc),
         propietario_documental_nombre: limpiarTexto(doc.propietario_nombre),
@@ -159,6 +161,8 @@ function construirDocumentosEstado(documentosActivos, archivosActivos) {
       const estado = calcularEstadoDocumento(doc, entrega);
       return {
         id: Number(doc.id || 0),
+        documentacion_id: Number(entrega?.documentacion_id || 0),
+        archivo_id: Number(entrega?.id || 0),
         nombre: limpiarTexto(doc.nombre),
         propietario_documental_id: obtenerPropietarioDocumentalDocumento(doc),
         propietario_documental_nombre: limpiarTexto(doc.propietario_nombre),
@@ -257,8 +261,10 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
       id,
       documentacion_id,
       nombre_documento,
+      archivo_url,
       version_documental,
       estado,
+      observaciones_admin,
       fecha_subida
     FROM centro_admin_documentacion_archivos
     WHERE documentacion_id IN (${placeholders})
@@ -307,8 +313,10 @@ async function obtenerArchivosActivosContextoReserva(env, {
       a.id,
       a.documentacion_id,
       a.nombre_documento,
+      a.archivo_url,
       a.version_documental,
       a.estado,
+      a.observaciones_admin,
       a.fecha_subida,
       cad.admin_id AS propietario_documental_id,
       cad.reserva_id,

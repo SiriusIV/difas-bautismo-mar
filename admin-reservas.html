@@ -152,7 +152,24 @@
     .estado-modal-seccion p { margin: 0; }
     .estado-modal-lista { display: grid; gap: 4px; }
     .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #edf2f7; }
+    .estado-modal-item > div:first-child { min-width: 0; }
     .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
+    .documento-revision-link { color: #073b70; font-weight: 700; text-decoration: none; }
+    .documento-revision-link:hover, .documento-revision-link:focus-visible { text-decoration: underline; }
+    .select-estado-documental-modal {
+      border: 1px solid #c9dcff;
+      border-radius: 9px;
+      padding: 5px 28px 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 126px;
+      cursor: pointer;
+      background: #eef4ff;
+      color: #1d4f91;
+    }
+    .select-estado-documental-modal.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .select-estado-documental-modal.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .select-estado-documental-modal.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
     .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 10.5px; margin-bottom: 2px; }
@@ -534,6 +551,22 @@
       <div class="modal-acciones" id="modalObservacionesAcciones"><button type="button" class="btn-modal" id="btnCerrarModalObservaciones">Cerrar</button></div>
     </div>
   </div>
+  <div id="modalRechazoDocumentoAdmin" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" class="modal-cerrar-superior" id="btnCerrarRechazoDocumentoAdmin" aria-label="Cerrar">×</button>
+      <h3>Observaciones del rechazo</h3>
+      <div id="subtituloRechazoDocumentoAdmin" class="modal-subtitulo"></div>
+      <div class="campo-modal">
+        <label for="txtObservacionesRechazoDocumentoAdmin">Observaciones</label>
+        <textarea id="txtObservacionesRechazoDocumentoAdmin" placeholder="Indica el motivo del rechazo para que el solicitante pueda corregir la documentación."></textarea>
+      </div>
+      <div id="mensajeRechazoDocumentoAdmin" class="mensaje-modal-admin" aria-live="polite"></div>
+      <div class="modal-acciones">
+        <button type="button" class="btn-modal" id="btnCancelarRechazoDocumentoAdmin">Cancelar</button>
+        <button type="button" class="btn-modal btn-modal-principal" id="btnGuardarRechazoDocumentoAdmin">Guardar observaciones</button>
+      </div>
+    </div>
+  </div>
   <div id="modalGeneracionDocs" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-generacion-docs">
       <button type="button" class="modal-cerrar-superior" id="btnCerrarModalGeneracionDocs" aria-label="Cerrar">×</button>
@@ -571,6 +604,8 @@
     let nombreAdminPanel = "Administrador";
     let reservaModalEstado = null;
     let accionPreferidaModal = "";
+    let adminUsuarioIdActual = 0;
+    let revisionDocumentoModalPendiente = null;
     let plantillasDisponiblesReserva = [];
     let contextoGeneracionDocs = null;
     let pdfPreviewUrlActual = "";
@@ -786,7 +821,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (!reserva || reservaYaPasada(reserva) || documentacionBloqueanteReserva(reserva)) return false;
       return ["PENDIENTE", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase());
     }
-    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
+    async function cargarSesionCabecera() { try { const res = await fetch("/api/usuario/session", { credentials: "same-origin" }); const data = await res.json().catch(() => null); const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (!res.ok || !data?.ok || !data?.authenticated || !data?.user) { adminUsuarioIdActual = 0; if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } return; } adminUsuarioIdActual = Number(data.user.id || data.user.usuario_id || 0); const nombre = data.user.nombre || data.user.email || "Administrador"; nombreAdminPanel = String(nombre).toUpperCase(); document.getElementById("subtituloCabecera").textContent = nombreAdminPanel; document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; aplicarLogoCabeceraAdmin(logoEl, data.user); } catch (_) { adminUsuarioIdActual = 0; const logoEl = document.getElementById("logoCabeceraAdminReservas"); if (logoEl) { logoEl.src = "logo.png"; logoEl.classList.remove("logo-pendiente"); } } }
     function actualizarNavegacionActividad() { const actividadId = (() => { const v = parseInt(document.getElementById("filtroActividad").value || "", 10); return Number.isInteger(v) && v > 0 ? v : ""; })(); const sufijoCalendario = actividadId ? `?actividad_id=${encodeURIComponent(actividadId)}` : ""; document.getElementById("navCalendario").href = `admin-calendario.html${sufijoCalendario}`; document.getElementById("navActividadesAdmin").href = "mis-actividades.html"; }
     function actualizarSubactividad() { document.getElementById("subactividadActual").textContent = `Panel de reservas de ${nombreAdminPanel}`; actualizarNavegacionActividad(); }
     async function cargarActividadesFiltro() { try { const res = await fetch("/api/admin/mis-actividades", { credentials: "same-origin" }); const data = await res.json(); if (!res.ok || !data.ok) return; const sel = document.getElementById("filtroActividad"); const valorActual = actividadIdDesdeURL() || sel.value || ""; sel.innerHTML = `<option value="">Todas</option>`; (data.actividades || []).forEach((a) => { const opt = document.createElement("option"); opt.value = a.id; opt.textContent = a.titulo_publico || a.nombre; if (String(valorActual) === String(a.id)) opt.selected = true; sel.appendChild(opt); }); refrescarTituloSelect(sel); actualizarSubactividad(); } catch (_) {} }
@@ -894,14 +929,47 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       if (["RECHAZADO", "RECHAZADA", "NO_ACTUALIZADO"].includes(valor)) return "rechazada";
       return "revision-documental";
     }
+    function estadoRevisionSelectClaseAdmin(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "estado-validado";
+      if (["RECHAZADO", "RECHAZADA"].includes(valor)) return "estado-rechazado";
+      return "estado-revision";
+    }
+    function normalizarEstadoRevisionDocumentoAdmin(estado) {
+      const valor = String(estado || "").trim().toUpperCase();
+      if (["VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "VALIDADO";
+      if (valor === "EN REVISION") return "EN_REVISION";
+      if (["VALIDADO", "RECHAZADO", "EN_REVISION"].includes(valor)) return valor;
+      return "EN_REVISION";
+    }
+    function puedeRevisarDocumentoModalAdmin(doc) {
+      return Number(adminUsuarioIdActual || 0) > 0
+        && Number(doc?.propietario_documental_id || 0) === Number(adminUsuarioIdActual || 0)
+        && Number(doc?.archivo_id || 0) > 0
+        && Number(doc?.documentacion_id || 0) > 0;
+    }
+    function renderControlEstadoDocumentoAdmin(doc) {
+      const estado = normalizarEstadoRevisionDocumentoAdmin(doc?.estado);
+      if (!puedeRevisarDocumentoModalAdmin(doc)) {
+        return `<span class="estado-badge ${claseEstadoDocumentalAdmin(doc?.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc?.estado))}</span>`;
+      }
+      return `<select class="select-estado-documental-modal ${estadoRevisionSelectClaseAdmin(estado)}" data-documentacion-id="${Number(doc.documentacion_id || 0)}" data-archivo-id="${Number(doc.archivo_id || 0)}" data-documento-nombre="${escapeHtml(doc.nombre || "Documento")}" data-estado-original="${escapeHtml(estado)}" aria-label="Estado documental de ${escapeHtml(doc.nombre || "Documento")}"><option value="EN_REVISION"${estado === "EN_REVISION" ? " selected" : ""}>En revisión</option><option value="VALIDADO"${estado === "VALIDADO" ? " selected" : ""}>Validado</option><option value="RECHAZADO"${estado === "RECHAZADO" ? " selected" : ""}>Rechazado</option></select>`;
+    }
     function renderDocumentacionSolicitudAdmin(reserva) {
       const requiere = Number(reserva?.requiere_documentacion || 0) === 1 || Array.isArray(reserva?.documentos_estado);
-      if (!requiere) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Esta solicitud no tiene documentación obligatoria asociada.</p></div>`;
+      if (!requiere) return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><p class="muted">Esta solicitud no tiene documentaciÃ³n obligatoria asociada.</p></div>`;
       const documentos = Array.isArray(reserva?.documentos_estado) && reserva.documentos_estado.length
         ? reserva.documentos_estado
         : (Array.isArray(reserva?.documentos_pendientes) ? reserva.documentos_pendientes : []);
-      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Documentación obligatoria validada o sin incidencias pendientes.</p></div>`;
-      return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => `<div class="estado-modal-item"><div><strong>${escapeHtml(doc.nombre || "Documento")}</strong><div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` · Versión ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div><span class="estado-badge ${claseEstadoDocumentalAdmin(doc.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc.estado))}</span></div>`).join("")}</div></div>`;
+      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><p class="muted">DocumentaciÃ³n obligatoria validada o sin incidencias pendientes.</p></div>`;
+      return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => {
+        const nombreDocumento = escapeHtml(doc.nombre || "Documento");
+        const archivoUrl = String(doc.archivo_url || "").trim();
+        const tituloDocumento = archivoUrl
+          ? `<a class="documento-revision-link" href="${escapeHtml(archivoUrl)}" target="_blank" rel="noopener">${nombreDocumento}</a>`
+          : `<strong>${nombreDocumento}</strong>`;
+        return `<div class="estado-modal-item"><div>${tituloDocumento}<div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` · Versión ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div>${renderControlEstadoDocumentoAdmin(doc)}</div>`;
+      }).join("")}</div></div>`;
     }
     async function cargarAsistentesReservaModal(reserva) {
       const token = String(reserva?.token_edicion || "").trim();
@@ -941,6 +1009,84 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       const horario = formatearHorarioReserva(reserva);
       return `<div class="estado-modal-seccion"><h4>Resumen de solicitud</h4><div class="estado-modal-grid"><div><span>Fecha</span><strong>${escapeHtml(formatearFechaCorta(reserva?.fecha || "") || "-")}</strong></div><div><span>Horario</span><strong>${escapeHtml(horario)}</strong></div><div><span>Plazas reservadas</span><strong>${Number(reserva?.plazas_reservadas || 0)}</strong></div><div><span>Plazas asignadas</span><strong>${Number(reserva?.plazas_asignadas || 0)}</strong></div></div></div>`;
     }
+    function refrescarClaseSelectDocumentoModal(select) {
+      if (!select) return;
+      select.classList.remove("estado-validado", "estado-rechazado", "estado-revision");
+      select.classList.add(estadoRevisionSelectClaseAdmin(select.value));
+    }
+    function cerrarModalRechazoDocumentoAdmin() {
+      const modal = document.getElementById("modalRechazoDocumentoAdmin");
+      if (!modal) return;
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+      document.getElementById("mensajeRechazoDocumentoAdmin").className = "mensaje-modal-admin";
+      document.getElementById("mensajeRechazoDocumentoAdmin").textContent = "";
+      revisionDocumentoModalPendiente = null;
+    }
+    function abrirModalRechazoDocumentoAdmin({ select, estadoAnterior }) {
+      revisionDocumentoModalPendiente = { select, estadoAnterior };
+      document.getElementById("subtituloRechazoDocumentoAdmin").textContent = select?.dataset?.documentoNombre || "Documento";
+      document.getElementById("txtObservacionesRechazoDocumentoAdmin").value = "";
+      document.getElementById("mensajeRechazoDocumentoAdmin").className = "mensaje-modal-admin";
+      document.getElementById("mensajeRechazoDocumentoAdmin").textContent = "";
+      const modal = document.getElementById("modalRechazoDocumentoAdmin");
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => document.getElementById("txtObservacionesRechazoDocumentoAdmin")?.focus(), 0);
+    }
+    async function aplicarRevisionDocumentoModal(select, estado, observaciones = "") {
+      const documentacionId = Number(select?.dataset?.documentacionId || 0);
+      const archivoId = Number(select?.dataset?.archivoId || 0);
+      if (!documentacionId || !archivoId) throw new Error("No se pudo identificar el documento remitido.");
+      const res = await fetch("/api/admin/documentacion-resolver-agrupado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          documentacion_id: documentacionId,
+          cambios: [{
+            archivo_id: archivoId,
+            estado,
+            observaciones_admin: observaciones
+          }]
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || data?.detalle || "No se pudo aplicar la revisión documental.");
+      }
+      return data;
+    }
+    async function refrescarModalEstadoReservaActual() {
+      const reservaId = Number(reservaModalEstado?.id || 0);
+      await cargarPanel();
+      if (reservaId) await abrirModalEstado(reservaId);
+    }
+    function enlazarSelectoresRevisionDocumentalModal() {
+      document.querySelectorAll(".select-estado-documental-modal").forEach((select) => {
+        select.addEventListener("change", async () => {
+          const estadoAnterior = String(select.dataset.estadoOriginal || "EN_REVISION").toUpperCase();
+          const estadoNuevo = normalizarEstadoRevisionDocumentoAdmin(select.value);
+          refrescarClaseSelectDocumentoModal(select);
+          if (estadoNuevo === estadoAnterior) return;
+          if (estadoNuevo === "RECHAZADO") {
+            abrirModalRechazoDocumentoAdmin({ select, estadoAnterior });
+            return;
+          }
+          select.disabled = true;
+          try {
+            await aplicarRevisionDocumentoModal(select, estadoNuevo);
+            await refrescarModalEstadoReservaActual();
+          } catch (error) {
+            select.value = estadoAnterior;
+            refrescarClaseSelectDocumentoModal(select);
+            mostrarMensajeModalEstado(error?.message || "No se pudo aplicar la revisión documental.");
+          } finally {
+            select.disabled = false;
+          }
+        });
+      });
+    }
     async function abrirModalEstado(id, accionPreferida = "") {
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva) return;
@@ -976,6 +1122,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-superior"><div class="estado-modal-lineas"><div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div><div>Estado actual: <span class="estado-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span></div></div><div class="estado-modal-botones">${botonesTop.join("")}</div></div>${renderDocumentacionSolicitudAdmin(reserva)}${renderResumenSolicitudAdmin(reserva)}${renderAsistentesSolicitudAdmin(asistentesData)}${renderObservacionesSolicitudAdmin(reserva)}${renderRequisitosSolicitudAdmin(reserva)}${bloqueDecision}`;
       document.getElementById("modalObservacionesAcciones").innerHTML = "";
       document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); });
+      enlazarSelectoresRevisionDocumentalModal();
       asegurarBotonCerrarModalSuperior();
       limpiarMensajeModalEstado();
       establecerVisibilidadModalObservaciones(true);
@@ -1035,6 +1182,54 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
     document.getElementById("btnGenerarZipDocs").addEventListener("click", async function () { try { await generarZipDocumentos(); } catch (error) { mostrarAvisoGeneracion("error", error?.message || "No se pudo generar el ZIP documental."); } });
     document.getElementById("btnCerrarModalObservaciones")?.addEventListener("click", cerrarModalObservaciones); document.getElementById("btnCerrarModalObservacionesSuperior")?.addEventListener("click", cerrarModalObservaciones); asegurarBotonCerrarModalSuperior();
     document.getElementById("modalObservaciones").addEventListener("click", function (e) { if (e.target.id === "modalObservaciones") cerrarModalObservaciones(); });
+    document.getElementById("btnCerrarRechazoDocumentoAdmin")?.addEventListener("click", function () {
+      const pendiente = revisionDocumentoModalPendiente;
+      if (pendiente?.select) {
+        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
+        refrescarClaseSelectDocumentoModal(pendiente.select);
+      }
+      cerrarModalRechazoDocumentoAdmin();
+    });
+    document.getElementById("btnCancelarRechazoDocumentoAdmin")?.addEventListener("click", function () {
+      const pendiente = revisionDocumentoModalPendiente;
+      if (pendiente?.select) {
+        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
+        refrescarClaseSelectDocumentoModal(pendiente.select);
+      }
+      cerrarModalRechazoDocumentoAdmin();
+    });
+    document.getElementById("modalRechazoDocumentoAdmin")?.addEventListener("click", function (e) {
+      if (e.target.id !== "modalRechazoDocumentoAdmin") return;
+      const pendiente = revisionDocumentoModalPendiente;
+      if (pendiente?.select) {
+        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
+        refrescarClaseSelectDocumentoModal(pendiente.select);
+      }
+      cerrarModalRechazoDocumentoAdmin();
+    });
+    document.getElementById("btnGuardarRechazoDocumentoAdmin")?.addEventListener("click", async function () {
+      const pendiente = revisionDocumentoModalPendiente;
+      const select = pendiente?.select;
+      const observaciones = String(document.getElementById("txtObservacionesRechazoDocumentoAdmin")?.value || "").trim();
+      const mensaje = document.getElementById("mensajeRechazoDocumentoAdmin");
+      if (!select) return;
+      if (!observaciones) {
+        mensaje.className = "mensaje-modal-admin error";
+        mensaje.textContent = "Debes indicar el motivo del rechazo.";
+        return;
+      }
+      this.disabled = true;
+      try {
+        await aplicarRevisionDocumentoModal(select, "RECHAZADO", observaciones);
+        cerrarModalRechazoDocumentoAdmin();
+        await refrescarModalEstadoReservaActual();
+      } catch (error) {
+        mensaje.className = "mensaje-modal-admin error";
+        mensaje.textContent = error?.message || "No se pudo aplicar el rechazo documental.";
+      } finally {
+        this.disabled = false;
+      }
+    });
     (async function init() { inicializarTitulosSelect(); await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]); await cargarPanel(); })();
     window.seleccionarReserva = seleccionarReserva;
     window.manejarSeleccionReservaFila = manejarSeleccionReservaFila;
