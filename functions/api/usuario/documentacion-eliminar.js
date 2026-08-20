@@ -60,7 +60,9 @@ async function obtenerUsuarioSolicitante(env, userId) {
   `).bind(userId).first();
 }
 
-async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId) {
+async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId, reservaId = null) {
+  const filtroReserva = reservaId ? "AND d.reserva_id = ?" : "";
+  const params = reservaId ? [documentoId, centroUsuarioId, reservaId] : [documentoId, centroUsuarioId];
   return await env.DB.prepare(`
     SELECT
       a.id,
@@ -77,8 +79,9 @@ async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId) {
      AND c.id = ?
     WHERE d.centro_usuario_id = ?
       AND a.activo = 1
+      ${filtroReserva}
     LIMIT 1
-  `).bind(documentoId, centroUsuarioId).first();
+  `).bind(...params).first();
 }
 
 async function obtenerArchivoPorId(env, centroUsuarioId, archivoId) {
@@ -309,6 +312,7 @@ export async function onRequestPost(context) {
     const body = await request.json().catch(() => null);
     const documentoId = parsearIdPositivo(body?.documento_id);
     const archivoId = parsearIdPositivo(body?.archivo_id);
+    const reservaId = parsearIdPositivo(body?.reserva_id);
 
     if (!documentoId && !archivoId) {
       return json({ ok: false, error: "Debes indicar un documento válido." }, 400);
@@ -316,7 +320,7 @@ export async function onRequestPost(context) {
 
     const archivo = archivoId
       ? await obtenerArchivoPorId(env, usuario.id, archivoId)
-      : await obtenerArchivoPorDocumento(env, usuario.id, documentoId);
+      : await obtenerArchivoPorDocumento(env, usuario.id, documentoId, reservaId);
     if (!archivo) {
       return json({ ok: false, error: "No se encontró un documento remitido para eliminar." }, 404);
     }

@@ -1039,7 +1039,7 @@
             <option value="EN_REVISION">En revisión</option>
             <option value="PENDIENTE">En proceso</option>
             <option value="CONFIRMADA">Confirmada</option>
-            <option value="PROVISIONAL">Provisional</option>
+            <option value="PROVISIONAL">Incompleta</option>
             <option value="SUSPENDIDA">Suspendida</option>
             <option value="RECHAZADA">Rechazada</option>
           </select>
@@ -1175,7 +1175,7 @@
       const e = normalizarEstadoReserva(estado);
       if (e === "BORRADOR") return "BORRADOR";
       if (e === "EN_REVISION") return "EN REVISIÓN";
-      if (e === "PROVISIONAL") return "PROVISIONAL";
+      if (e === "PROVISIONAL") return "INCOMPLETA";
       if (e === "PENDIENTE") return "EN PROCESO";
       if (e === "CONFIRMADA") return "CONFIRMADA";
       if (e === "SUSPENDIDA") return "SUSPENDIDA";
@@ -1187,7 +1187,7 @@
     function textoEstadoReservaVisible(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva)) {
-        return "PROVISIONAL";
+        return "INCOMPLETA";
       }
       return textoEstadoVisible(estado);
     }
@@ -1411,6 +1411,8 @@
         <span>|</span>
         <span>En revisión: ${enRevision}</span>
         <span>|</span>
+        <span>Incompletas: ${provisionales}</span>
+        <span>|</span>
         <span>En proceso: ${pendientes}</span>
         <span>|</span>
         <span>Confirmadas: ${confirmadas}</span>
@@ -1569,7 +1571,8 @@
             const archivoBase = String(doc.archivo_url || "").trim();
             const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
             const observaciones = String(doc.entrega_observaciones_admin || doc.observaciones_admin || "").trim();
-            const puedeSustituir = estado !== "VALIDADA";
+            const puedeSustituir = !["VALIDADA", "EN_REVISION"].includes(estado);
+            const puedeEliminar = Boolean(archivoRemitido) && estado !== "VALIDADA";
             const tituloHtml = archivoBase
               ? `<a class="documentacion-modal-titulo" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base">${escapeHtml(titulo)}</a>`
               : `<span class="documentacion-modal-titulo">${escapeHtml(titulo)}</span>`;
@@ -1583,6 +1586,7 @@
                 <div class="documentacion-modal-acciones">
                   <button type="button" class="documentacion-modal-accion" data-doc-accion="ver" data-documento-id="${Number(doc.id || 0)}" ${archivoRemitido ? "" : "disabled"} title="Ver documento remitido" aria-label="Ver documento remitido"><img src="assets/icono-ver-documento.svg" alt=""></button>
                   <button type="button" class="documentacion-modal-accion" data-doc-accion="subir" data-documento-id="${Number(doc.id || 0)}" ${puedeSustituir ? "" : "disabled"} title="Subir o sustituir documento" aria-label="Subir o sustituir documento"><img src="assets/icono-subir-documento.svg" alt=""></button>
+                  <button type="button" class="documentacion-modal-accion" data-doc-accion="eliminar" data-documento-id="${Number(doc.id || 0)}" ${puedeEliminar ? "" : "disabled"} title="Eliminar documento remitido" aria-label="Eliminar documento remitido"><img src="assets/icono-documento-eliminar.svg" alt=""></button>
                   <input type="file" class="documentacion-modal-input" data-doc-input="${Number(doc.id || 0)}" accept="application/pdf,.pdf">
                 </div>
                 ${observaciones && estado === "RECHAZADO" ? `<div class="documentacion-modal-observaciones"><strong>Observaciones del rechazo:</strong> ${escapeHtml(observaciones)}</div>` : ""}
@@ -1657,6 +1661,23 @@
       return data;
     }
 
+    async function eliminarDocumentoReserva(doc) {
+      if (!reservaDocumentacionActual) throw new Error("No se pudo identificar la solicitud.");
+      const response = await fetch("/api/usuario/documentacion-eliminar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          documento_id: Number(doc.id || 0),
+          archivo_id: Number(doc.entrega_archivo_id || 0) || null,
+          reserva_id: Number(reservaDocumentacionActual.id || 0)
+        })
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.ok) throw new Error(data?.detalle || data?.error || "No se pudo eliminar el documento.");
+      return data;
+    }
+
     async function refrescarDocumentacionModal() {
       if (!reservaDocumentacionActual) return;
       const data = await cargarDocumentacionReserva(reservaDocumentacionActual);
@@ -1678,6 +1699,21 @@
         btn.addEventListener("click", () => {
           const input = document.querySelector(`[data-doc-input="${btn.dataset.documentoId}"]`);
           if (input) input.click();
+        });
+      });
+      document.querySelectorAll("[data-doc-accion='eliminar']").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const doc = obtenerDocumentoModalPorId(btn.dataset.documentoId);
+          if (!doc) return;
+          const confirmado = window.confirm("¿Desea eliminar el documento remitido? La solicitud quedará incompleta hasta que vuelva a presentarlo.");
+          if (!confirmado) return;
+          try {
+            await eliminarDocumentoReserva(doc);
+            await refrescarDocumentacionModal();
+            mostrarMensaje("ok", "Documento eliminado correctamente. La solicitud queda incompleta hasta que vuelva a presentarlo.");
+          } catch (error) {
+            mostrarMensaje("error", error.message || "No se pudo eliminar el documento.");
+          }
         });
       });
       document.querySelectorAll("[data-doc-input]").forEach((input) => {
@@ -1865,7 +1901,7 @@
         return "La documentación que acompaña la solicitud está siendo comprobada por el organizador de la actividad.";
       }
       if (estado === "PROVISIONAL" || (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva))) {
-        return "La solicitud queda provisional en espera de que complete o actualice la documentación obligatoria asociada a la actividad. Mantendrá este estado durante 24 horas; pasado este plazo, será rechazada automáticamente por el sistema.";
+        return "La solicitud queda incompleta en espera de que complete o actualice la documentación obligatoria asociada a la actividad. Mantendrá este estado durante 24 horas; pasado este plazo, será rechazada automáticamente por el sistema.";
       }
       if (estado === "SUSPENDIDA") {
         if (esSuspensionPorCambioFranja(reserva)) {
@@ -2279,7 +2315,7 @@ async function anularSolicitud(reserva) {
 async function anularSolicitudSeleccionada() {
       if (!reservaSeleccionada) return;
       const nombreActividad = reservaSeleccionada.actividad || "esta actividad";
-      if (!window.confirm(`Â¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
+      if (!window.confirm(`¿Deseas anular tu solicitud para ${nombreActividad}?`)) return;
 
       limpiarMensaje();
       try {

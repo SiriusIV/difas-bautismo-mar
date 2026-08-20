@@ -232,7 +232,7 @@ function construirCorreoAdminCaducidadSuspension(contexto = {}) {
   const codigo = limpiarTexto(contexto?.codigo_reserva || "");
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad documental";
-  const mensaje = `${centro} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar provisional en ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud provisional ha pasado automáticamente a rechazada.`;
+  const mensaje = `${centro} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar incompleta en ${actividad}${codigo ? ` (${codigo})` : ""}. La solicitud incompleta ha pasado automáticamente a rechazada.`;
 
   const texto = [
     `Hola ${adminNombre},`,
@@ -274,7 +274,7 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
   });
   const programacion = formatearProgramacionReserva(contexto);
   const asunto = "[Reservas] Solicitud rechazada por caducidad";
-  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a quedar provisional.`;
+  const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a quedar incompleta.`;
 
   const texto = [
     saludo,
@@ -317,7 +317,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "ADMIN",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar provisional en ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
+        mensaje: `${limpiarTexto(reserva.centro || "Un centro")} no regularizó la documentación pendiente durante las 24 horas posteriores a quedar incompleta en ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""}. La solicitud ha pasado a rechazada automáticamente.`,
         urlDestino: actividadId > 0
           ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
           : "/admin-reservas.html"
@@ -332,7 +332,7 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a quedar provisional.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a quedar incompleta.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -451,7 +451,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
         accion: "CADUCIDAD_SUSPENSION",
         estadoOrigen: String(reserva.estado || "PROVISIONAL").trim().toUpperCase() || "PROVISIONAL",
         estadoDestino: "RECHAZADA",
-          observaciones: "La solicitud provisional no regularizó la documentación obligatoria durante las 24 horas posteriores a quedar provisional.",
+        observaciones: "La solicitud incompleta no regularizó la documentación obligatoria durante las 24 horas posteriores a quedar incompleta.",
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });
@@ -1539,4 +1539,3 @@ export async function ejecutarMantenimientoReservas(env) {
     franjas_eliminadas_por_fin_actividad: franjasEliminadas
   };
 }
-

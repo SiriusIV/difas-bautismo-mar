@@ -172,14 +172,14 @@ async function avisarSuspensionDocumentalInicial(env, {
       LIMIT 1
     `).bind(idReserva).first();
     if (String(reserva?.estado || "").trim().toUpperCase() !== "PROVISIONAL") {
-      return { ok: false, skipped: true, motivo: "La reserva no esta provisional." };
+      return { ok: false, skipped: true, motivo: "La reserva no esta incompleta." };
     }
   }
 
   const idUsuario = Number(usuarioId || 0);
   const actividad = limpiarTexto(actividadNombre || "la actividad");
   const codigo = limpiarTexto(codigoReserva || "");
-  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda provisional por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda incompleta por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
   const tareas = [];
 
   if (idUsuario > 0) {
@@ -187,7 +187,7 @@ async function avisarSuspensionDocumentalInicial(env, {
       usuarioId: idUsuario,
       rolDestino: "SOLICITANTE",
       tipo: "RESERVA",
-      titulo: "Solicitud provisional por documentacion",
+      titulo: "Solicitud incompleta por documentacion",
       mensaje,
       urlDestino: "/usuario-panel.html"
     }).catch(() => ({ ok: false })));
@@ -196,7 +196,7 @@ async function avisarSuspensionDocumentalInicial(env, {
   if (limpiarTexto(email)) {
     tareas.push(enviarEmail(env, {
       to: limpiarTexto(email),
-      subject: "[Reservas] Solicitud provisional por documentacion",
+      subject: "[Reservas] Solicitud incompleta por documentacion",
       text: mensaje,
       html: `<p>${escaparHtml(mensaje)}</p>`
     }).catch(() => ({ ok: false })));
@@ -1035,7 +1035,7 @@ export async function onRequestPost(context) {
           accion: "SUSPENSION_DOCUMENTAL",
           estadoOrigen: "PENDIENTE",
           estadoDestino: "PROVISIONAL",
-          observaciones: "La solicitud se envio con documentacion obligatoria pendiente de completar o actualizar. Queda provisional y dispone de 24 horas para regularizarla.",
+          observaciones: "La solicitud se envio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y dispone de 24 horas para regularizarla.",
           actorUsuarioId: reservaActual.usuario_id,
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"
@@ -1187,7 +1187,7 @@ export async function onRequestPost(context) {
           accion: "SUSPENSION_DOCUMENTAL",
           estadoOrigen: "PENDIENTE",
           estadoDestino: "PROVISIONAL",
-          observaciones: "La solicitud se reenvio con documentacion obligatoria pendiente de completar o actualizar. Queda provisional y dispone de 24 horas para regularizarla.",
+          observaciones: "La solicitud se reenvio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y dispone de 24 horas para regularizarla.",
           actorUsuarioId: reservaActual.usuario_id,
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"

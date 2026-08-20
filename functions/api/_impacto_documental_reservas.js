@@ -623,7 +623,7 @@ async function eliminarReservaPorDocumentacionCritica(env, reservaId) {
 async function notificarReservaCondicionada(env, payload) {
   return await enviarEmail(env, {
     to: payload?.centro?.email || "",
-    subject: `[Reservas] Solicitud provisional por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
+    subject: `[Reservas] Solicitud incompleta por documentacion en ${nombreVisibleAdmin(payload?.admin)}`,
     text: construirEmailTextoReservaCondicionadaDocumentacion(payload),
     html: construirEmailHtmlReservaCondicionadaDocumentacion(payload)
   });
@@ -696,7 +696,7 @@ async function crearNotificacionReservaCondicionada(env, payload) {
     rolDestino: "SOLICITANTE",
     tipo: "DOCUMENTACION",
     titulo: "Documentación pendiente para tus reservas",
-    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} necesita revisión o actualización. Algunas reservas han quedado provisionales hasta que la regularices.`,
+    mensaje: `Tu documentación para ${nombreVisibleAdmin(payload?.admin)} necesita revisión o actualización. Algunas reservas han quedado incompletas hasta que la regularices.`,
     urlDestino: payload?.enlace_perfil || ""
   });
 }
