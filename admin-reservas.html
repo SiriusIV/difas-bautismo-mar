@@ -152,7 +152,7 @@
     .estado-modal-seccion p { margin: 0; }
     .estado-modal-lista { display: grid; gap: 4px; }
     .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #edf2f7; }
-    .estado-modal-item > div:first-child { min-width: 0; }
+    .estado-modal-item > div:first-child { min-width: 0; flex: 1 1 auto; }
     .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
     .documento-revision-link { color: #073b70; font-weight: 700; text-decoration: none; }
     .documento-revision-link:hover, .documento-revision-link:focus-visible { text-decoration: underline; }
@@ -162,7 +162,10 @@
       padding: 5px 28px 5px 10px;
       font-size: 12px;
       font-weight: 700;
-      min-width: 126px;
+      width: 118px;
+      min-width: 118px;
+      max-width: 118px;
+      flex: 0 0 118px;
       cursor: pointer;
       background: #eef4ff;
       color: #1d4f91;
@@ -957,12 +960,12 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     function renderDocumentacionSolicitudAdmin(reserva) {
       const requiere = Number(reserva?.requiere_documentacion || 0) === 1 || Array.isArray(reserva?.documentos_estado);
-      if (!requiere) return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><p class="muted">Esta solicitud no tiene documentaciÃ³n obligatoria asociada.</p></div>`;
+      if (!requiere) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Esta solicitud no tiene documentación obligatoria asociada.</p></div>`;
       const documentos = Array.isArray(reserva?.documentos_estado) && reserva.documentos_estado.length
         ? reserva.documentos_estado
         : (Array.isArray(reserva?.documentos_pendientes) ? reserva.documentos_pendientes : []);
-      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><p class="muted">DocumentaciÃ³n obligatoria validada o sin incidencias pendientes.</p></div>`;
-      return `<div class="estado-modal-seccion"><h4>DocumentaciÃ³n obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => {
+      if (!documentos.length) return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><p class="muted">Documentación obligatoria validada o sin incidencias pendientes.</p></div>`;
+      return `<div class="estado-modal-seccion"><h4>Documentación obligatoria</h4><div class="estado-modal-lista">${documentos.map((doc) => {
         const nombreDocumento = escapeHtml(doc.nombre || "Documento");
         const archivoUrl = String(doc.archivo_url || "").trim();
         const tituloDocumento = archivoUrl
