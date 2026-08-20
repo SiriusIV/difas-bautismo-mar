@@ -7,6 +7,7 @@ import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb } from "../_reservas_rechazo_plazo.js";
 import { validarDocumentacionReserva } from "../_reservas_documentacion.js";
+import { asegurarTablasDocumentacionActividad } from "../_actividad_documentacion.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -152,6 +153,21 @@ function obtenerDbLectura(env) {
 
 function aplicarFiltroAdmins(where, binds, filtros = {}) {
   if (filtros.esSuperadmin) return;
+
+  const propietarioDocumentalId = Number(filtros.propietarioDocumentalId || 0);
+  if (propietarioDocumentalId > 0) {
+    where.push(`
+      EXISTS (
+        SELECT 1
+        FROM actividad_documentos_obligatorios ado
+        WHERE ado.actividad_id = a.id
+          AND ado.propietario_id = ?
+          AND COALESCE(ado.activo, 1) = 1
+      )
+    `);
+    binds.push(propietarioDocumentalId);
+    return;
+  }
 
   const ids = Array.isArray(filtros.adminIds)
     ? filtros.adminIds.map((id) => Number(id || 0)).filter((id) => id > 0)
@@ -478,11 +494,14 @@ async function checkAccesoActividadReservas(env, session, actividadId) {
     const row = await env.DB.prepare(`
       SELECT 1
       FROM actividades a
-      INNER JOIN usuarios admin ON admin.id = a.admin_id
       WHERE a.id = ?
-        AND admin.secretaria_usuario_id = ?
-        AND COALESCE(admin.modulo_secretaria, 0) = 0
-        AND admin.rol = 'ADMIN'
+        AND EXISTS (
+          SELECT 1
+          FROM actividad_documentos_obligatorios ado
+          WHERE ado.actividad_id = a.id
+            AND ado.propietario_id = ?
+            AND COALESCE(ado.activo, 1) = 1
+        )
       LIMIT 1
     `).bind(id, Number(session.usuario_id || 0)).first();
     if (!row) throw new Error("No autorizado para esta actividad");
@@ -936,6 +955,7 @@ export async function onRequestGet(context) {
     await asegurarColumnaObservacionesAdmin(env);
     await asegurarColumnaRechazoEliminaEn(env);
     await asegurarTablaHistorialReservas(env);
+    await asegurarTablasDocumentacionActividad(env);
     await ejecutarMantenimientoReservas(env);
     const session = await obtenerSesionLecturaReservas(request, env);
     if (!session) {
@@ -966,7 +986,8 @@ export async function onRequestGet(context) {
     filtros.esSuperadmin = rol === "SUPERADMIN";
     filtros.rol = rol;
     filtros.adminId = Number(session.usuario_id || 0);
-    filtros.adminIds = rol === "SECRETARIA" ? (session.adminIds || []) : [];
+    filtros.adminIds = [];
+    filtros.propietarioDocumentalId = rol === "SECRETARIA" ? Number(session.usuario_id || 0) : 0;
 
     if (filtros.actividadId) {
       await checkAccesoActividadReservas(env, session, filtros.actividadId);
@@ -1292,4 +1313,3 @@ export async function onRequestGet(context) {
     );
   }
 }
-

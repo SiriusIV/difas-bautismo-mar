@@ -2083,7 +2083,12 @@
         <div id="barraUsuario" class="barra-usuario franja-sesion-nav">
           <button class="nav-btn activo" onclick="irPanelUsuario()">Mis reservas</button>
         </div>
-        <div id="barraSecretaria" class="barra-secretaria franja-sesion-nav"></div>
+        <div id="barraSecretaria" class="barra-secretaria franja-sesion-nav">
+          <button id="btnNavSecretariaReservas" class="nav-btn nav-btn-con-icono activo" onclick="irPanelReservasSecretaria()">
+            <img src="assets/icono-reservas-panel.svg" alt="">
+            <span>Panel de reservas</span>
+          </button>
+        </div>
         <div id="barraAdmin" class="barra-admin franja-sesion-nav">
           <button id="btnNavAdminActividades" class="nav-btn nav-btn-con-icono activo" onclick="irPanelActividades()">
             <img src="assets/icono-actividades.svg" alt="">
@@ -4779,6 +4784,10 @@ function continuarSolicitudActividad() {
     }
 
     function irPanelReservas() {
+      location.href = "admin-reservas.html";
+    }
+
+    function irPanelReservasSecretaria() {
       location.href = "admin-reservas.html";
     }
 
