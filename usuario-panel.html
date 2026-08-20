@@ -1037,7 +1037,7 @@
             <option value="">Todos</option>
             <option value="BORRADOR">Borrador</option>
             <option value="EN_REVISION">En revisión</option>
-            <option value="PENDIENTE">Pendiente</option>
+            <option value="PENDIENTE">En proceso</option>
             <option value="CONFIRMADA">Confirmada</option>
             <option value="PROVISIONAL">Provisional</option>
             <option value="SUSPENDIDA">Suspendida</option>
@@ -1176,7 +1176,7 @@
       if (e === "BORRADOR") return "BORRADOR";
       if (e === "EN_REVISION") return "EN REVISIÓN";
       if (e === "PROVISIONAL") return "PROVISIONAL";
-      if (e === "PENDIENTE") return "PENDIENTE";
+      if (e === "PENDIENTE") return "EN PROCESO";
       if (e === "CONFIRMADA") return "CONFIRMADA";
       if (e === "SUSPENDIDA") return "SUSPENDIDA";
       if (e === "RECHAZADA") return "RECHAZADA";
@@ -1411,7 +1411,7 @@
         <span>|</span>
         <span>En revisión: ${enRevision}</span>
         <span>|</span>
-        <span>Pendientes: ${pendientes}</span>
+        <span>En proceso: ${pendientes}</span>
         <span>|</span>
         <span>Confirmadas: ${confirmadas}</span>
         <span>|</span>
@@ -1859,7 +1859,7 @@
         return "La solicitud ha sido aceptada. Puedes consultar la documentación remitida o acceder al panel de asistentes mientras la solicitud siga activa.";
       }
       if (estado === "PENDIENTE") {
-        return "Su solicitud está en proceso de revisión. Si lo desea, puede actualizar/revisar la documentación obligatoria para la realización de la actividad o acceder al panel de asistentes.";
+        return "Su solicitud est\u00e1 en proceso de comprobaci\u00f3n por la organizaci\u00f3n para proceder a su aprobaci\u00f3n o rechazo seg\u00fan proceda.";
       }
       if (estado === "EN_REVISION") {
         return "La documentación que acompaña la solicitud está siendo comprobada por el organizador de la actividad.";

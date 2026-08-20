@@ -1556,8 +1556,8 @@
             <div id="bloqueFiltroEstado" class="bloque-filtro-estado">
               <label for="filtroEstado">Estado</label>
               <select id="filtroEstado">
-                <option value="">PENDIENTE + CONFIRMADA</option>
-                <option value="PENDIENTE">Solo PENDIENTE</option>
+                <option value="">EN PROCESO + CONFIRMADA</option>
+                <option value="PENDIENTE">Solo EN PROCESO</option>
                 <option value="CONFIRMADA">Solo CONFIRMADA</option>
                 <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
                 <option value="RECHAZADA">Solo RECHAZADA</option>
@@ -1566,7 +1566,7 @@
           </div>
           <div class="resumen-estados" id="bloqueResumenEstados">
             <div class="tarjeta-estado">
-              <div class="etiqueta">Pendientes:</div>
+              <div class="etiqueta">En proceso:</div>
               <div class="valor" id="contadorPendientes">0</div>
             </div>
             <div class="tarjeta-estado">
@@ -1586,7 +1586,7 @@
 
         <div id="leyendaSuperiorHost">
           <div class="leyenda" id="bloqueLeyendaReservas">
-            <span class="leyenda-item" id="leyendaReservaPendiente"><span class="leyenda-color" style="background:#d39e00;"></span>PENDIENTE</span>
+            <span class="leyenda-item" id="leyendaReservaPendiente"><span class="leyenda-color" style="background:#d39e00;"></span>EN PROCESO</span>
             <span class="leyenda-item" id="leyendaReservaConfirmada"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
             <span class="leyenda-item" id="leyendaReservaSuspendida"><span class="leyenda-color" style="background:#f4c430;"></span>SUSPENDIDA</span>
             <span class="leyenda-item" id="leyendaReservaRechazada"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
@@ -2007,11 +2007,11 @@
         opciones.push({ value: "confirmar", label: "Pasar a CONFIRMADA" });
         opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
       } else if (estadoActual === "CONFIRMADA") {
-        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
+        opciones.push({ value: "reabrir", label: "Pasar a EN PROCESO" });
       } else if (estadoActual === "SUSPENDIDA") {
         opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
       } else if (estadoActual === "RECHAZADA") {
-        opciones.push({ value: "reabrir", label: "Pasar a PENDIENTE" });
+        opciones.push({ value: "reabrir", label: "Pasar a EN PROCESO" });
       }
 
       return opciones;
@@ -2061,7 +2061,7 @@ function construirResumenHoverEvento(evento) {
   const franja = `${p.fecha || "-"} · ${formatearHorarioFranja(p.hora_inicio, p.hora_fin)}`;
   return `
     <div class="tt-titulo">${titulo}</div>
-    <div class="tt-linea"><strong>Estado:</strong> ${p.estado || "-"}</div>
+    <div class="tt-linea"><strong>Estado:</strong> ${textoEstadoSolicitudActividad(p.estado)}</div>
     <div class="tt-linea"><strong>Actividad:</strong> ${p.actividad_nombre || "-"}</div>
     <div class="tt-linea"><strong>Centro:</strong> ${p.centro || "-"}</div>
     <div class="tt-linea"><strong>Franja:</strong> ${franja}</div>
@@ -2128,6 +2128,12 @@ function claseEstadoSolicitudActividad(estado) {
   return String(estado || "").trim().toLowerCase();
 }
 
+function textoEstadoSolicitudActividad(estado) {
+  const valor = String(estado || "").trim().toUpperCase();
+  if (valor === "PENDIENTE") return "EN PROCESO";
+  return valor || "-";
+}
+
 function escaparHtmlCalendario(valor) {
   return String(valor || "")
     .replace(/&/g, "&amp;")
@@ -2159,7 +2165,7 @@ function renderizarSolicitudesActividad(lista = []) {
         <div><strong>Solicitud:</strong> ${escaparHtmlCalendario(p.codigo_reserva || "Sin código")}</div>
         <div><strong>Fecha:</strong> ${escaparHtmlCalendario(p.fecha || "-")}</div>
         <div><strong>Franja horaria:</strong> ${escaparHtmlCalendario(formatearHorarioFranja(p.hora_inicio, p.hora_fin))}</div>
-        <div><strong>Estado:</strong> <span class="solicitud-actividad-estado ${escaparHtmlCalendario(claseEstadoSolicitudActividad(estado))}">${escaparHtmlCalendario(estado)}</span></div>
+        <div><strong>Estado:</strong> <span class="solicitud-actividad-estado ${escaparHtmlCalendario(claseEstadoSolicitudActividad(estado))}">${escaparHtmlCalendario(textoEstadoSolicitudActividad(estado))}</span></div>
       </div>
     `;
   }).join("");
@@ -2262,7 +2268,7 @@ function abrirModalEvento(info) {
       document.getElementById("modalTitulo").textContent = p.codigo_reserva || p.actividad_nombre || "Detalle de solicitud";
       document.getElementById("modalDetalle").innerHTML = `
         <div class="detalle-bloque">
-          <strong>Estado:</strong> <span class="estado ${estadoClass}">${p.estado}</span><br>
+          <strong>Estado:</strong> <span class="estado ${estadoClass}">${textoEstadoSolicitudActividad(p.estado)}</span><br>
           <strong>Actividad:</strong> ${p.actividad_nombre || "Actividad"}<br>
           <strong>Centro:</strong> ${p.centro || ""}<br>
           <strong>Contacto:</strong> ${p.contacto || ""}<br>
@@ -2327,7 +2333,7 @@ function abrirModalEvento(info) {
       let textoConfirmacion = "¿Desea ejecutar esta acción?";
       if (accion === "confirmar") textoConfirmacion = "¿Desea confirmar esta solicitud?";
       if (accion === "rechazar") textoConfirmacion = "¿Desea rechazar esta solicitud?";
-      if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla pendiente?";
+      if (accion === "reabrir") textoConfirmacion = "¿Desea reabrir esta solicitud y dejarla en proceso?";
 
       const confirmar = window.confirm(textoConfirmacion);
       if (!confirmar) return;
