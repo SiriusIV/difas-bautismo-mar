@@ -1861,6 +1861,9 @@
       if (estado === "PENDIENTE") {
         return "Su solicitud está en proceso de revisión. Si lo desea, puede actualizar/revisar la documentación obligatoria para la realización de la actividad o acceder al panel de asistentes.";
       }
+      if (estado === "EN_REVISION") {
+        return "La documentación que acompaña la solicitud está siendo comprobada por el organizador de la actividad.";
+      }
       if (estado === "PROVISIONAL" || (estado === "SUSPENDIDA" && !esSuspensionPorCambioFranja(reserva))) {
         return "La solicitud queda provisional en espera de que complete o actualice la documentación obligatoria asociada a la actividad. Mantendrá este estado durante 24 horas; pasado este plazo, será rechazada automáticamente por el sistema.";
       }
