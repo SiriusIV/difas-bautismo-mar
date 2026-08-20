@@ -1704,14 +1704,22 @@
       return String(usuarioCalendario?.rol || "").toUpperCase() === "SOLICITANTE";
     }
 
+    function esSecretariaCalendario() {
+      return String(usuarioCalendario?.rol || "").toUpperCase() === "SECRETARIA";
+    }
+
     function obtenerNombreSesionCalendario() {
-      const nombre = String(usuarioCalendario?.nombre || usuarioCalendario?.email || "").trim();
+      const nombre = String(usuarioCalendario?.nombre_publico || usuarioCalendario?.nombre || usuarioCalendario?.unidad || usuarioCalendario?.email || "").trim();
       return nombre || (esSolicitanteCalendario() ? "solicitante" : "administrador");
     }
 
     function actualizarTituloPanelCalendario() {
       const host = document.getElementById("tituloPanelCalendario");
       if (!host) return;
+      if (esSecretariaCalendario()) {
+        host.textContent = `Calendario de reservas de ${obtenerNombreSesionCalendario()}`;
+        return;
+      }
       host.textContent = `Calendario de actividades y reservas de ${obtenerNombreSesionCalendario()}`;
     }
 
@@ -1734,6 +1742,7 @@
     }
 
     function obtenerVistaInicialCalendario() {
+      if (esSecretariaCalendario()) return "reservas";
       const params = new URLSearchParams(window.location.search || "");
       const vista = String(params.get("vista") || "").trim().toLowerCase();
       if (vista === "actividades") return "actividades";
@@ -1788,7 +1797,7 @@
       const data = await response.json().catch(() => null);
       const user = data?.user || null;
       const rol = String(user?.rol || "").toUpperCase();
-      if (!user || !["ADMIN", "SUPERADMIN", "SOLICITANTE"].includes(rol)) {
+      if (!user || !["ADMIN", "SUPERADMIN", "SOLICITANTE", "SECRETARIA"].includes(rol)) {
         redirigirLogin();
         return false;
       }
@@ -1811,6 +1820,14 @@
         if (btnActividades) btnActividades.classList.add("oculto");
         if (btnPortal) btnPortal.href = "portal.html";
         if (subtitulo) subtitulo.textContent = "Calendario de actividades y solicitudes";
+      } else if (esSecretariaCalendario()) {
+        if (btnReservas) {
+          btnReservas.href = "admin-reservas.html";
+          btnReservas.textContent = "Reservas";
+        }
+        if (btnActividades) btnActividades.classList.add("oculto");
+        if (btnPortal) btnPortal.href = "portal.html";
+        if (subtitulo) subtitulo.textContent = obtenerNombreSesionCalendario();
       } else {
         if (btnReservas) {
           btnReservas.href = "admin-reservas.html";
@@ -1884,6 +1901,7 @@
     }
 
     async function aplicarVistaCalendario(vista, { recargar = true } = {}) {
+      if (esSecretariaCalendario()) vista = "reservas";
       vistaCalendarioActual = vista === "actividades" ? "actividades" : "reservas";
       const panelCalendario = document.getElementById("panelResumenReservas");
 
@@ -1895,7 +1913,10 @@
       const btnVistaSolicitudesSec = document.getElementById("btnVistaSolicitudesSecundario");
       const btnVistaActividadesSec = document.getElementById("btnVistaActividadesSecundario");
       if (btnVistaSolicitudesSec) btnVistaSolicitudesSec.classList.toggle("activo", !esVistaActividades);
-      if (btnVistaActividadesSec) btnVistaActividadesSec.classList.toggle("activo", esVistaActividades);
+      if (btnVistaActividadesSec) {
+        btnVistaActividadesSec.classList.toggle("activo", esVistaActividades);
+        btnVistaActividadesSec.classList.toggle("oculto", esSecretariaCalendario());
+      }
       document.getElementById("bloqueFiltroEstado").classList.toggle("oculto", esVistaActividades);
       document.getElementById("bloqueResumenEstados").classList.toggle("oculto", esVistaActividades);
       document.getElementById("leyendaReservaPendiente").classList.toggle("oculto", esVistaActividades);

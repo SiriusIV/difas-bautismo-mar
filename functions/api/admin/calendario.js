@@ -1,6 +1,7 @@
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { obtenerInicioReserva } from "../_reservas_rechazo_plazo.js";
 import { materializarPatronesGlobales } from "../_franjas_recurrencia.js";
+import { asegurarTablasDocumentacionActividad } from "../_actividad_documentacion.js";
 import { getUserSession } from "../usuario/_auth.js";
 
 function json(data, init = {}) {
@@ -19,7 +20,7 @@ async function getCalendarSession(request, env) {
   if (!session) return null;
 
   const rol = String(session.rol || "").toUpperCase();
-  if (!["ADMIN", "SUPERADMIN", "SOLICITANTE"].includes(rol)) {
+  if (!["ADMIN", "SUPERADMIN", "SOLICITANTE", "SECRETARIA"].includes(rol)) {
     return null;
   }
 
@@ -108,6 +109,17 @@ async function obtenerReservasCalendario(env, filtros, session) {
 
   if (String(session?.rol || "").toUpperCase() === "SOLICITANTE") {
     where.push("r.usuario_id = ?");
+    binds.push(Number(session?.usuario_id || 0));
+  }
+
+  if (String(session?.rol || "").toUpperCase() === "SECRETARIA") {
+    where.push(`EXISTS (
+      SELECT 1
+      FROM actividad_documentos_obligatorios ado
+      WHERE ado.actividad_id = a.id
+        AND ado.propietario_id = ?
+        AND COALESCE(ado.activo, 1) = 1
+    )`);
     binds.push(Number(session?.usuario_id || 0));
   }
 
@@ -268,6 +280,17 @@ async function obtenerContadoresReservasCalendario(env, session) {
     binds.push(Number(session?.usuario_id || 0));
   }
 
+  if (String(session?.rol || "").toUpperCase() === "SECRETARIA") {
+    where.push(`EXISTS (
+      SELECT 1
+      FROM actividad_documentos_obligatorios ado
+      WHERE ado.actividad_id = a.id
+        AND ado.propietario_id = ?
+        AND COALESCE(ado.activo, 1) = 1
+    )`);
+    binds.push(Number(session?.usuario_id || 0));
+  }
+
   const estados = ["PENDIENTE", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA", "RECHAZADA"];
   where.push(`UPPER(TRIM(COALESCE(r.estado, ''))) IN (${estados.map(() => "?").join(", ")})`);
   binds.push(...estados);
@@ -351,6 +374,7 @@ export async function onRequestGet(context) {
     }
 
     await ejecutarMantenimientoReservas(env);
+    await asegurarTablasDocumentacionActividad(env);
     const url = new URL(request.url);
 
     const filtros = {
@@ -358,6 +382,7 @@ export async function onRequestGet(context) {
       end: limpiarTexto(url.searchParams.get("end") || ""),
       vista: (() => {
         const v = limpiarTexto(url.searchParams.get("vista") || "").toLowerCase();
+        if (session.rol === "SECRETARIA") return "reservas";
         return v === "actividades" ? "actividades" : "reservas";
       })(),
       estado: (() => {
