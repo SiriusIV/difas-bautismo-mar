@@ -718,6 +718,9 @@
       border-color: #efc2c2;
       color: #9b1c1c;
     }
+    .mensaje-modal-panel[hidden] {
+      display: none;
+    }
     .btn-modal-icono {
       display: inline-flex;
       align-items: center;
@@ -1600,7 +1603,10 @@
     function renderizarDocumentacionModal(data) {
       const contenido = document.getElementById("modalObservacionesContenido");
       if (!contenido) return;
-      contenido.innerHTML = construirHtmlDocumentacionSolicitud(data);
+      contenido.innerHTML = `
+        <div id="mensajeDocumentacionModal" class="mensaje-modal-panel" hidden></div>
+        ${construirHtmlDocumentacionSolicitud(data)}
+      `;
       enlazarAccionesDocumentacionModal();
     }
 
@@ -1608,6 +1614,7 @@
       const bloque = document.getElementById("estadoModalDocumentacionContenido");
       if (!bloque) return false;
       bloque.innerHTML = `
+        <div id="mensajeDocumentacionModal" class="mensaje-modal-panel" hidden></div>
         <div class="estado-modal-bloque documentacion-modal-integrada">
           <div class="estado-modal-seccion-titulo">Documentación obligatoria</div>
           ${construirHtmlDocumentacionSolicitud(data)}
@@ -1615,6 +1622,25 @@
       `;
       enlazarAccionesDocumentacionModal();
       return true;
+    }
+
+    function mostrarMensajeDocumentacionModal(tipo, texto) {
+      const el = document.getElementById("mensajeDocumentacionModal");
+      if (!el) {
+        mostrarMensaje(tipo, texto);
+        return;
+      }
+      el.hidden = false;
+      el.className = `mensaje-modal-panel ${tipo}`;
+      el.textContent = texto;
+    }
+
+    function limpiarMensajeDocumentacionModal() {
+      const el = document.getElementById("mensajeDocumentacionModal");
+      if (!el) return;
+      el.hidden = true;
+      el.className = "mensaje-modal-panel";
+      el.textContent = "";
     }
 
     async function subirPdfDocumentacionReserva(doc, file) {
@@ -1685,6 +1711,14 @@
         renderizarDocumentacionModal(data);
       }
       await cargarPanel({ silencioso: true });
+      const reservaActualizada = reservasActuales.find((r) => Number(r.id) === Number(reservaDocumentacionActual?.id)) || null;
+      if (reservaActualizada) {
+        reservaDocumentacionActual = reservaActualizada;
+        if (modalEstadoReservaActual && Number(modalEstadoReservaActual.id) === Number(reservaActualizada.id)) {
+          modalEstadoReservaActual = reservaActualizada;
+          actualizarCabeceraEstadoModal(reservaActualizada);
+        }
+      }
     }
 
     function enlazarAccionesDocumentacionModal() {
@@ -1708,11 +1742,12 @@
           const confirmado = window.confirm("¿Desea eliminar el documento remitido? La solicitud quedará incompleta hasta que vuelva a presentarlo.");
           if (!confirmado) return;
           try {
+            limpiarMensajeDocumentacionModal();
             await eliminarDocumentoReserva(doc);
             await refrescarDocumentacionModal();
-            mostrarMensaje("ok", "Documento eliminado correctamente. La solicitud queda incompleta hasta que vuelva a presentarlo.");
+            mostrarMensajeDocumentacionModal("ok", "Documento eliminado correctamente. La solicitud queda incompleta hasta que vuelva a presentarlo.");
           } catch (error) {
-            mostrarMensaje("error", error.message || "No se pudo eliminar el documento.");
+            mostrarMensajeDocumentacionModal("error", error.message || "No se pudo eliminar el documento.");
           }
         });
       });
@@ -1724,12 +1759,13 @@
           const doc = obtenerDocumentoModalPorId(input.dataset.docInput);
           if (!doc) return;
           try {
+            limpiarMensajeDocumentacionModal();
             const archivoUrl = await subirPdfDocumentacionReserva(doc, file);
             await remitirDocumentoReserva(doc, archivoUrl);
             await refrescarDocumentacionModal();
-            mostrarMensaje("ok", "Documento remitido correctamente. Queda pendiente de revisión.");
+            mostrarMensajeDocumentacionModal("ok", "Documento remitido correctamente. Queda pendiente de revisión.");
           } catch (error) {
-            mostrarMensaje("error", error.message || "No se pudo remitir el documento.");
+            mostrarMensajeDocumentacionModal("error", error.message || "No se pudo remitir el documento.");
           }
         });
       });
@@ -1991,8 +2027,6 @@
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva) return;
 
-      const estadoTexto = textoEstadoReservaVisible(reserva);
-      const estadoClase = claseEstado(reserva.estado);
       const descripcion = descripcionEstadoReserva(reserva);
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
@@ -2006,11 +2040,7 @@
                 ${cambioFranja.actual ? `<div class="estado-modal-observaciones-texto"><strong>Franja actual:</strong> ${escapeHtml(cambioFranja.actual)}</div>` : ""}
               </div>`
         : "";
-      const esRechazada = normalizarEstadoReserva(reserva.estado) === "RECHAZADA";
-      const fechaEliminacionRechazo = esRechazada ? formatearFechaHoraAviso(reserva.rechazo_elimina_en || "") : "";
-      const estadoModalHtml = esRechazada && fechaEliminacionRechazo
-        ? `<div class="modal-estado-rechazo-linea"><span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span><span class="modal-rechazo-eliminacion">Esta solicitud será eliminada automáticamente del sistema el ${escapeHtml(fechaEliminacionRechazo)}.</span></div>`
-        : `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`;
+      const estadoModalHtml = construirEstadoModalHtml(reserva);
 
       configurarModalObservacionesPanel({
         titulo: "Estado de la solicitud",
@@ -2019,7 +2049,7 @@
         estadoHtml: estadoModalHtml,
         contenido: `
         <div class="estado-modal-bloque">
-          <p class="estado-modal-linea">${escapeHtml(descripcion)}</p>
+          <p class="estado-modal-linea" id="estadoModalDescripcion">${escapeHtml(descripcion)}</p>
         </div>
         ${detalleCambioFranjaHtml}
         ${
@@ -2072,6 +2102,28 @@
       const fin = String(reserva?.hora_fin || "").trim();
       if (inicio && fin) return `${inicio} - ${fin}`;
       return inicio || fin || "-";
+    }
+
+    function construirEstadoModalHtml(reserva) {
+      const estadoTexto = textoEstadoReservaVisible(reserva);
+      const estadoClase = claseEstado(reserva?.estado);
+      const esRechazada = normalizarEstadoReserva(reserva?.estado) === "RECHAZADA";
+      const fechaEliminacionRechazo = esRechazada ? formatearFechaHoraAviso(reserva?.rechazo_elimina_en || "") : "";
+      if (esRechazada && fechaEliminacionRechazo) {
+        return `<div class="modal-estado-rechazo-linea"><span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span><span class="modal-rechazo-eliminacion">Esta solicitud será eliminada automáticamente del sistema el ${escapeHtml(fechaEliminacionRechazo)}.</span></div>`;
+      }
+      return `<span class="estado-badge estado-modal-badge ${estadoClase}">${escapeHtml(estadoTexto)}</span>`;
+    }
+
+    function actualizarCabeceraEstadoModal(reserva) {
+      const estadoInline = document.getElementById("modalEstadoInline");
+      if (estadoInline) {
+        estadoInline.innerHTML = construirEstadoModalHtml(reserva);
+        estadoInline.classList.add("activo");
+        estadoInline.setAttribute("aria-hidden", "false");
+      }
+      const descripcionEl = document.getElementById("estadoModalDescripcion");
+      if (descripcionEl) descripcionEl.textContent = descripcionEstadoReserva(reserva);
     }
 
     function pintarReservas(lista) {
