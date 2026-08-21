@@ -449,7 +449,7 @@ async function obtenerReservasActivasPorUsuario(env, adminId, usuarioId) {
     LEFT JOIN franjas f ON f.id = r.franja_id
     WHERE a.admin_id = ?
       AND r.usuario_id = ?
-      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_REVISION', 'SUSPENDIDA')
+      AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_REVISION', 'PROVISIONAL', 'SUSPENDIDA', 'RECHAZADA')
     ORDER BY r.fecha_solicitud ASC, r.id ASC
   `).bind(adminId, usuarioId).all();
 
@@ -647,46 +647,23 @@ async function notificarReservaEliminadaDocumentacionCritica(env, payload) {
   });
 }
 
-async function obtenerEstadoPrevioSuspensionDocumental(env, reservaId) {
+async function rechazoDocumentalAutomaticoRecuperable(env, reservaId) {
   const id = Number(reservaId || 0);
-  if (!(id > 0)) return "PENDIENTE";
-
-  const resolverEstadoDocumentalReactivado = (estadoEntrada) => {
-    const estado = limpiarTexto(estadoEntrada).toUpperCase();
-    if (estado === "CONFIRMADA") return "CONFIRMADA";
-    if (estado === "PENDIENTE") return "PENDIENTE";
-    if (estado === "RECHAZADA") return "PENDIENTE";
-    return "";
-  };
+  if (!(id > 0)) return false;
 
   try {
     const row = await env.DB.prepare(`
-      SELECT estado_origen
+      SELECT accion
       FROM reservas_historial_estados
       WHERE reserva_id = ?
-        AND accion = 'SUSPENSION_DOCUMENTAL'
-        AND estado_destino IN ('PROVISIONAL', 'SUSPENDIDA')
+        AND estado_destino = 'RECHAZADA'
       ORDER BY fecha_evento DESC, id DESC
       LIMIT 1
     `).bind(id).first();
 
-    const estado = limpiarTexto(row?.estado_origen).toUpperCase();
-    const estadoReactivado = resolverEstadoDocumentalReactivado(estado);
-    if (estadoReactivado) return estadoReactivado;
-
-    const rowPrevio = await env.DB.prepare(`
-      SELECT estado_destino
-      FROM reservas_historial_estados
-      WHERE reserva_id = ?
-        AND estado_destino IN ('PENDIENTE', 'CONFIRMADA', 'RECHAZADA')
-      ORDER BY fecha_evento DESC, id DESC
-      LIMIT 1
-    `).bind(id).first();
-
-    const estadoPrevio = limpiarTexto(rowPrevio?.estado_destino).toUpperCase();
-    return resolverEstadoDocumentalReactivado(estadoPrevio) || "PENDIENTE";
+    return limpiarTexto(row?.accion).toUpperCase() === "CADUCIDAD_SUSPENSION";
   } catch (_) {
-    return "PENDIENTE";
+    return false;
   }
 }
 
@@ -1010,13 +987,16 @@ export async function recalcularImpactoDocumentalReservas(env, {
       );
 
       if (estadoDocumentalCompleto(estadoDocumentalReserva)) {
-        if (estadoReserva === "EN_REVISION") {
+        const rechazoRecuperable = estadoReserva === "RECHAZADA"
+          ? await rechazoDocumentalAutomaticoRecuperable(env, Number(reserva.id || 0))
+          : false;
+        if (["EN_REVISION", "PROVISIONAL", "SUSPENDIDA"].includes(estadoReserva) || rechazoRecuperable) {
           const estadoDestino = "PENDIENTE";
           await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
           await registrarEventoReserva(env, {
             reservaId: Number(reserva.id || 0),
             accion: "REACTIVACION_DOCUMENTAL",
-            estadoOrigen: "EN_REVISION",
+            estadoOrigen: estadoReserva,
             estadoDestino,
             observaciones: "La documentación exigible de la actividad vuelve a estar completa y queda pendiente de autorización."
           });
@@ -1025,23 +1005,9 @@ export async function recalcularImpactoDocumentalReservas(env, {
             estado_reactivado: estadoDestino
           });
           resumen.reservas_reactivadas += 1;
-        } else if (estadoReserva === "PROVISIONAL") {
-          const estadoDestino = await obtenerEstadoPrevioSuspensionDocumental(env, Number(reserva.id || 0));
-          await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestino);
-          await registrarEventoReserva(env, {
-            reservaId: Number(reserva.id || 0),
-            accion: "REACTIVACION_DOCUMENTAL",
-            estadoOrigen: "PROVISIONAL",
-            estadoDestino,
-            observaciones: "La documentación exigible de la actividad vuelve a estar completa."
-          });
-          reservasReactivadas.push({
-            ...reserva,
-            estado_reactivado: estadoDestino
-          });
-          resumen.reservas_reactivadas += 1;
         }
       } else {
+        if (estadoReserva === "RECHAZADA") continue;
         const estadoDestinoDocumental = estadoDocumentalReserva === "EN_REVISION" ? "EN_REVISION" : "PROVISIONAL";
         if (estadoReserva === estadoDestinoDocumental) continue;
         await actualizarEstadoReserva(env, Number(reserva.id || 0), estadoDestinoDocumental);

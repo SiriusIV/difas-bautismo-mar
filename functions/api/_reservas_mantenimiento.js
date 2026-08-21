@@ -3,6 +3,7 @@ import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
 import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 import { eliminarDocumentacionDeReserva } from "./_documentacion_contextual.js";
+import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -434,6 +435,33 @@ async function rechazarReservasSuspendidasVencidas(env) {
   for (const reserva of reservas) {
     const id = Number(reserva.id || 0);
     if (!(id > 0)) continue;
+    const validacionDocumental = await validarDocumentacionReserva(env, {
+      usuarioId: Number(reserva.usuario_id || 0),
+      adminId: Number(reserva.admin_id || 0),
+      actividadId: Number(reserva.actividad_id || 0),
+      reservaId: id
+    }).catch(() => null);
+
+    if (validacionDocumental?.ok) {
+      await db.prepare(`
+        UPDATE reservas
+        SET estado = 'PENDIENTE',
+            fecha_modificacion = datetime('now')
+        WHERE id = ?
+          AND UPPER(TRIM(COALESCE(estado, ''))) IN ('PROVISIONAL', 'SUSPENDIDA')
+      `).bind(id).run();
+      await registrarEventoReserva(env, {
+        reservaId: id,
+        accion: "REACTIVACION_DOCUMENTAL",
+        estadoOrigen: String(reserva.estado || "PROVISIONAL").trim().toUpperCase() || "PROVISIONAL",
+        estadoDestino: "PENDIENTE",
+        observaciones: "La documentación obligatoria ya está validada; la solicitud queda pendiente de comprobación por la organización.",
+        actorRol: "SISTEMA",
+        actorNombre: "Sistema"
+      });
+      continue;
+    }
+
     const update = await db.prepare(`
       UPDATE reservas
       SET estado = 'RECHAZADA',
