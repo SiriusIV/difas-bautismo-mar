@@ -72,17 +72,71 @@ export function obtenerInicioReserva(contexto = {}) {
     || fechaMadridDesdePartes(contexto?.fecha_inicio, "00:00:00");
 }
 
-export function calcularFechaEliminacionRechazo(contexto = {}, ahora = new Date()) {
-  const inicio = obtenerInicioReserva(contexto);
-  if (!inicio) return null;
+function obtenerPartesFechaMadrid(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
 
-  const ahoraMs = ahora.getTime();
+  return {
+    anio: Number(partes.year),
+    mes: Number(partes.month),
+    dia: Number(partes.day)
+  };
+}
+
+function esFinDeSemanaMadrid(date) {
+  const partes = obtenerPartesFechaMadrid(date);
+  if (!partes) return false;
+  const diaSemana = new Date(Date.UTC(partes.anio, partes.mes - 1, partes.dia)).getUTCDay();
+  return diaSemana === 0 || diaSemana === 6;
+}
+
+function sumarHorasLaborablesMadrid(inicio, horas) {
+  const inicioValido = inicio instanceof Date && !Number.isNaN(inicio.getTime())
+    ? inicio
+    : new Date();
+  let cursor = new Date(inicioValido.getTime());
+  let minutosPendientes = Math.max(Number(horas || 0), 0) * 60;
+  let proteccion = 0;
+
+  while (minutosPendientes > 0 && proteccion < 200000) {
+    cursor = new Date(cursor.getTime() + 60000);
+    if (!esFinDeSemanaMadrid(cursor)) {
+      minutosPendientes -= 1;
+    }
+    proteccion += 1;
+  }
+
+  return cursor;
+}
+
+export function calcularFechaEliminacionRechazo(contexto = {}, ahora = new Date()) {
+  const ahoraValido = ahora instanceof Date && !Number.isNaN(ahora.getTime())
+    ? ahora
+    : new Date();
+  const plazoSubsanacionMs = sumarHorasLaborablesMadrid(ahoraValido, 24).getTime();
+  const inicio = obtenerInicioReserva(contexto);
+  if (!inicio) return new Date(plazoSubsanacionMs);
+
+  const ahoraMs = ahoraValido.getTime();
   const inicioMs = inicio.getTime();
-  if (!Number.isFinite(inicioMs)) return null;
+  if (!Number.isFinite(inicioMs)) return new Date(plazoSubsanacionMs);
 
   const mitadMs = ahoraMs + Math.max(inicioMs - ahoraMs, 0) / 2;
   const veinticuatroHorasAntesMs = inicioMs - (24 * 60 * 60 * 1000);
-  const eliminaMs = Math.min(mitadMs, veinticuatroHorasAntesMs);
+  const limiteCriticoMs = Math.min(mitadMs, veinticuatroHorasAntesMs);
+  const eliminaMs = Math.min(plazoSubsanacionMs, limiteCriticoMs);
   return new Date(eliminaMs);
 }
 
@@ -92,11 +146,18 @@ export function formatearFechaDb(date) {
 }
 
 export function formatearFechaAvisoRechazo(valor) {
+  if (valor instanceof Date) {
+    if (Number.isNaN(valor.getTime())) return "";
+    return new Intl.DateTimeFormat("es-ES", {
+      timeZone: "Europe/Madrid",
+      dateStyle: "full",
+      timeStyle: "short"
+    }).format(valor);
+  }
+
   const texto = limpiarTexto(valor);
   if (!texto) return "";
-  const date = texto instanceof Date
-    ? texto
-    : new Date(`${texto.replace(" ", "T")}Z`);
+  const date = new Date(`${texto.replace(" ", "T")}Z`);
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return texto;
 
   return new Intl.DateTimeFormat("es-ES", {

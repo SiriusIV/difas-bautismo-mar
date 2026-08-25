@@ -656,9 +656,9 @@ function obtenerConfiguracionCorreoEstadoReservaSolicitante(contexto = {}, nuevo
         "Revisa las observaciones administrativas incluidas en este correo.",
         "Subsana lo solicitado en las observaciones y reenvía la solicitud desde tu panel de usuario.",
         fechaEliminacionTexto
-          ? `Si no se subsana y reenvía antes del plazo indicado, la solicitud quedará definitivamente eliminada del sistema el ${fechaEliminacionTexto}.`
-          : "Si no se subsana y reenvía dentro del plazo disponible, la solicitud quedará definitivamente eliminada del sistema.",
-        "La actividad no se anula; únicamente se liberan las plazas de esta solicitud para otros solicitantes."
+          ? `Las plazas asociadas a esta solicitud se mantendrán reservadas hasta el ${fechaEliminacionTexto}. Si no se subsana y reenvía antes de ese momento, la solicitud se eliminará y esas plazas volverán al cupo disponible.`
+          : "Las plazas asociadas a esta solicitud se mantendrán reservadas durante el plazo disponible. Si no se subsana y reenvía dentro de ese plazo, la solicitud se eliminará y esas plazas volverán al cupo disponible.",
+        "La actividad no se anula; únicamente queda pendiente de subsanación esta solicitud."
       ]
     };
   }
@@ -821,8 +821,8 @@ function construirCorreoEstadoReserva(contexto = {}, nuevoEstado = "") {
       ` : ""}
       ${String(nuevoEstado || "").toUpperCase() === "RECHAZADA" && contexto?.rechazo_elimina_en ? `
         <div style="border:1px solid #f1d58b;border-radius:12px;padding:14px 16px;margin-bottom:14px;background:#fff8e6;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Plazo de subsanación</div>
-          <div style="font-size:14px;color:#5a4630;">Si no subsanas lo solicitado en las observaciones y reenvías la solicitud, esta solicitud quedará definitivamente eliminada del sistema el <strong>${escaparHtmlCorreo(formatearFechaAvisoRechazo(contexto.rechazo_elimina_en))}</strong>.</div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#8a5b00;margin-bottom:8px;">Plazo de subsanación y conservación de plazas</div>
+          <div style="font-size:14px;color:#5a4630;">Las plazas asociadas a esta solicitud permanecerán reservadas hasta el <strong>${escaparHtmlCorreo(formatearFechaAvisoRechazo(contexto.rechazo_elimina_en))}</strong>. Si no subsanas lo indicado en las observaciones y reenvías la solicitud antes de ese momento, la solicitud se eliminará y esas plazas volverán al cupo disponible para otros solicitantes.</div>
         </div>
       ` : ""}
       ${observacionesSolicitud ? `
@@ -915,7 +915,7 @@ async function crearNotificacionSolicitanteReservaRechazada(env, contexto = {}) 
     rolDestino: "SOLICITANTE",
     tipo: "RESERVA",
     titulo: "Solicitud rechazada",
-    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Subsana lo indicado en las observaciones y reenvíala${contexto?.rechazo_elimina_en ? ` antes del ${formatearFechaAvisoRechazo(contexto.rechazo_elimina_en)}` : ""} para evitar su eliminación definitiva.`,
+    mensaje: `Tu solicitud para ${contexto?.actividad_nombre || "la actividad"}${contexto?.codigo_reserva ? ` (${contexto.codigo_reserva})` : ""} ha sido rechazada. Las plazas asociadas se mantienen reservadas${contexto?.rechazo_elimina_en ? ` hasta el ${formatearFechaAvisoRechazo(contexto.rechazo_elimina_en)}` : " durante el plazo de subsanación"}; si no la reenvías corregida antes de ese momento, la solicitud se eliminará y las plazas volverán al cupo disponible.`,
     urlDestino: "/usuario-panel.html"
   });
 }

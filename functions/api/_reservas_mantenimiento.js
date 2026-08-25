@@ -1,7 +1,7 @@
 ﻿import { crearNotificacion } from "./_notificaciones.js";
 import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "./_reservas_historial.js";
-import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaDb, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 import { eliminarDocumentacionDeReserva } from "./_documentacion_contextual.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 
@@ -274,8 +274,12 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
     localidad: contexto?.admin_localidad
   });
   const programacion = formatearProgramacionReserva(contexto);
+  const fechaEliminacionTexto = formatearFechaAvisoRechazo(contexto?.rechazo_elimina_en || "");
   const asunto = "[Reservas] Solicitud rechazada por caducidad";
   const mensaje = `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha pasado automáticamente a rechazada porque la documentación pendiente no se regularizó durante las 24 horas posteriores a quedar incompleta.`;
+  const avisoPlazas = fechaEliminacionTexto
+    ? `Las plazas asociadas a esta solicitud permanecerán reservadas hasta el ${fechaEliminacionTexto}. Si no reenvías la solicitud corregida antes de ese momento, la solicitud se eliminará y esas plazas volverán al cupo disponible.`
+    : "Las plazas asociadas a esta solicitud permanecerán reservadas durante el plazo de subsanación. Si no reenvías la solicitud corregida dentro de ese plazo, la solicitud se eliminará y esas plazas volverán al cupo disponible.";
 
   const texto = [
     saludo,
@@ -287,6 +291,8 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
     `Organiza: ${organizador}`,
     `Programación: ${programacion}`,
     "",
+    avisoPlazas,
+    "",
     "Puedes revisar el detalle desde tu panel de usuario."
   ].filter(Boolean).join("\n");
 
@@ -297,6 +303,7 @@ function construirCorreoSolicitanteCaducidadSuspension(contexto = {}) {
     ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
     <p><strong>Organiza:</strong> ${escaparHtml(organizador)}</p>
     <p><strong>Programación:</strong> ${escaparHtml(programacion)}</p>
+    <p>${escaparHtml(avisoPlazas)}</p>
     <p>Puedes revisar el detalle desde tu panel de usuario.</p>
   `;
 
@@ -327,13 +334,14 @@ async function crearAvisosCaducidadSuspension(env, reserva = {}) {
   }
 
   if (usuarioId > 0) {
+    const fechaEliminacionTexto = formatearFechaAvisoRechazo(reserva?.rechazo_elimina_en || "");
     tareas.push(
       crearNotificacion(env, {
         usuarioId,
         rolDestino: "SOLICITANTE",
         tipo: "RESERVA",
         titulo: "Solicitud rechazada por caducidad",
-        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a quedar incompleta.`,
+        mensaje: `Tu solicitud para ${limpiarTexto(reserva.actividad_nombre || "la actividad")}${limpiarTexto(reserva.codigo_reserva) ? ` (${limpiarTexto(reserva.codigo_reserva)})` : ""} ha pasado automáticamente a rechazada al no regularizarse la documentación pendiente durante las 24 horas posteriores a quedar incompleta. Las plazas asociadas se mantienen reservadas${fechaEliminacionTexto ? ` hasta el ${fechaEliminacionTexto}` : " durante el plazo de subsanación"}; si no la reenvías corregida antes de ese momento, la solicitud se eliminará y las plazas volverán al cupo disponible.`,
         urlDestino: "/usuario-panel.html"
       }).catch(() => ({ ok: false }))
     );
@@ -462,6 +470,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
       continue;
     }
 
+    const rechazoEliminaEn = formatearFechaDb(calcularFechaEliminacionRechazo(reserva)) || null;
     const update = await db.prepare(`
       UPDATE reservas
       SET estado = 'RECHAZADA',
@@ -469,7 +478,7 @@ async function rechazarReservasSuspendidasVencidas(env) {
           fecha_modificacion = datetime('now')
       WHERE id = ?
     `).bind(
-      formatearFechaDb(calcularFechaEliminacionRechazo(reserva)) || null,
+      rechazoEliminaEn,
       id
     ).run();
 
@@ -483,7 +492,10 @@ async function rechazarReservasSuspendidasVencidas(env) {
         actorRol: "SISTEMA",
         actorNombre: "Sistema"
       });
-      await crearAvisosCaducidadSuspension(env, reserva);
+      await crearAvisosCaducidadSuspension(env, {
+        ...reserva,
+        rechazo_elimina_en: rechazoEliminaEn || ""
+      });
     }
   }
   return reservas.length;
