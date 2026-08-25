@@ -2540,7 +2540,10 @@ function obtenerDisponiblesFormulario(franja) {
       select.innerHTML = '<option value="">Seleccione una opción</option>';
 
       franjasCache.forEach(f => {
-        const etiquetaFecha = (f.fecha || f.patron_recurrencia || "").trim();
+        const fechaFranja = String(f.fecha || "").trim();
+        const etiquetaFecha = fechaFranja
+          ? formatearFechaResumenSolicitud(fechaFranja)
+          : String(f.patron_recurrencia || "").trim();
         const option = document.createElement("option");
         option.value = f.id;
         option.textContent = `${etiquetaFecha} - ${formatearHorarioFranja(f.hora_inicio, f.hora_fin)}`;
