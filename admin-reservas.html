@@ -177,6 +177,11 @@
     .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
     .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 10.5px; margin-bottom: 2px; }
     .estado-modal-lista-nombres { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+    .estado-modal-asistentes-compacto { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .estado-modal-asistentes-compacto p { margin: 0; }
+    .btn-listado-asistentes { border: 1px solid #bfc9d4; background: #fff; color: #123a63; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .btn-listado-asistentes:hover:not(:disabled) { background: #eef4ff; border-color: #8fb2d8; }
+    .btn-listado-asistentes:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn-accion-estado-icono {
       width: 42px;
       height: 42px;
@@ -612,6 +617,7 @@
     let revisionDocumentoModalPendiente = null;
     let plantillasDisponiblesReserva = [];
     let contextoGeneracionDocs = null;
+    let asistentesModalEstadoActual = null;
     let pdfPreviewUrlActual = "";
     const cachePdfPlantillas = new Map();
     function aplicarLogoCabeceraAdmin(img, userLike = {}) {
@@ -911,7 +917,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function seleccionarReserva(id) { reservaSeleccionada = reservasActuales.find((r) => Number(r.id) === Number(id)) || null; pintarReservas(reservasActuales); actualizarBotonesAccion(); }
     function establecerVisibilidadModalObservaciones(activo) { const modal = document.getElementById("modalObservaciones"); if (!modal) return; modal.classList.toggle("activo", !!activo); modal.setAttribute("aria-hidden", activo ? "false" : "true"); }
     function recargarPanelDesdeFiltros({ actualizarTitulo = false } = {}) { if (actualizarTitulo) actualizarSubactividad(); reservaSeleccionada = null; cargarPanel(); }
-    function cerrarModalObservaciones() { reservaModalEstado = null; accionPreferidaModal = ""; document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); establecerVisibilidadModalObservaciones(false); }
+    function cerrarModalObservaciones() { reservaModalEstado = null; accionPreferidaModal = ""; asistentesModalEstadoActual = null; document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); establecerVisibilidadModalObservaciones(false); }
     function asegurarBotonCerrarModalSuperior() { const modal = document.querySelector("#modalObservaciones .modal"); if (!modal || document.getElementById("btnCerrarModalObservacionesSuperior")) return; const btn = document.createElement("button"); btn.type = "button"; btn.id = "btnCerrarModalObservacionesSuperior"; btn.className = "modal-cerrar-superior"; btn.setAttribute("aria-label", "Cerrar"); btn.textContent = "×"; btn.addEventListener("click", cerrarModalObservaciones); modal.insertBefore(btn, modal.firstChild); }
     function abrirModalObservaciones(id) { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva || !reserva.observaciones || !String(reserva.observaciones).trim()) return; reservaModalEstado = null; accionPreferidaModal = ""; document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto"); document.getElementById("modalObservacionesTitulo").textContent = "Observaciones"; document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad_nombre || "Reserva"; document.getElementById("modalObservacionesContenido").className = "modal-contenido"; document.getElementById("modalObservacionesContenido").innerHTML = `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(reserva.observaciones)}</div></div>`; document.getElementById("modalObservacionesAcciones").innerHTML = ``; document.getElementById("btnCerrarModalObservacionesSuperior")?.addEventListener("click", cerrarModalObservaciones); asegurarBotonCerrarModalSuperior(); establecerVisibilidadModalObservaciones(true); }
     function abrirModalHistorial(id) { const reserva = reservasActuales.find((r) => Number(r.id) === Number(id)); if (!reserva) return; reservaModalEstado = null; accionPreferidaModal = ""; document.querySelector("#modalObservaciones .modal")?.classList.add("modal-historial-compacto"); document.getElementById("modalObservacionesTitulo").textContent = "Historial de la solicitud"; document.getElementById("modalObservacionesSubtitulo").textContent = reserva.actividad_nombre || "Reserva"; document.getElementById("modalObservacionesContenido").className = "modal-contenido estado-modal-admin"; document.getElementById("modalObservacionesContenido").innerHTML = `<div>Solicitud: <strong>${escapeHtml(reserva.codigo_reserva || "-")}</strong></div><div>Solicitante: <strong>${escapeHtml(reserva.centro || "-")}</strong></div>${renderHistorialReserva(reserva.historial_estados || [])}`; document.getElementById("modalObservacionesAcciones").innerHTML = ``; document.getElementById("btnCerrarModalObservacionesSuperior")?.addEventListener("click", cerrarModalObservaciones); asegurarBotonCerrarModalSuperior(); establecerVisibilidadModalObservaciones(true); }
@@ -1000,11 +1006,156 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function renderAsistentesSolicitudAdmin(asistentesData) {
       const visitantes = Array.isArray(asistentesData?.visitantes) ? asistentesData.visitantes : [];
       const total = Number(asistentesData?.resumen?.total || visitantes.length || 0);
-      const lista = visitantes.length
-        ? `<ol class="estado-modal-lista-nombres">${visitantes.map((v) => `<li>${escapeHtml(v.nombre_completo || "Asistente")}${v.perfil_asistente ? ` <span class="muted">(${escapeHtml(v.perfil_asistente)})</span>` : ""}</li>`).join("")}</ol>`
-        : `<p class="muted">No constan asistentes cargados todavía.</p>`;
-      return `<div class="estado-modal-seccion"><h4>Asistentes <span class="muted">(total: ${total})</span></h4>${lista}</div>`;
+      const detalle = visitantes.length
+        ? `<p class="muted">El listado nominal se genera en PDF con los datos actuales de la solicitud.</p>`
+        : `<p class="muted">No constan asistentes cargados todav\u00eda.</p>`;
+      const boton = `<button type="button" class="btn-listado-asistentes" data-accion-asistentes-pdf ${visitantes.length ? "" : "disabled"}>Generar listado de asistentes</button>`;
+      return `<div class="estado-modal-seccion"><h4>Asistentes <span class="muted">(total: ${total})</span></h4><div class="estado-modal-asistentes-compacto">${detalle}${boton}</div></div>`;
     }
+
+    function textoSeguroPdf(valor) {
+      return String(valor || "")
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/[–—]/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function formatearFechaGeneracionPdf(date = new Date()) {
+      return new Intl.DateTimeFormat("es-ES", {
+        dateStyle: "long",
+        timeStyle: "short"
+      }).format(date);
+    }
+
+    function dividirTextoPdf(texto, font, size, maxWidth) {
+      const palabras = textoSeguroPdf(texto).split(/\s+/).filter(Boolean);
+      const lineas = [];
+      let linea = "";
+      palabras.forEach((palabra) => {
+        const candidata = linea ? `${linea} ${palabra}` : palabra;
+        if (font.widthOfTextAtSize(candidata, size) <= maxWidth) {
+          linea = candidata;
+        } else {
+          if (linea) lineas.push(linea);
+          linea = palabra;
+        }
+      });
+      if (linea) lineas.push(linea);
+      return lineas.length ? lineas : [""];
+    }
+
+    async function generarPdfListadoAsistentes(reserva, asistentesData, ventanaDestino = null) {
+      if (!window.PDFLib?.PDFDocument) throw new Error("No se pudo cargar el generador PDF.");
+      const visitantes = Array.isArray(asistentesData?.visitantes) ? asistentesData.visitantes : [];
+      if (!visitantes.length) throw new Error("No constan asistentes cargados para esta solicitud.");
+
+      const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+      const pdfDoc = await PDFDocument.create();
+      const fontNormal = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const colorTexto = rgb(0.12, 0.18, 0.25);
+      const colorMuted = rgb(0.35, 0.42, 0.49);
+      const colorTitulo = rgb(0.07, 0.23, 0.39);
+      const margen = 52;
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const anchoTexto = pageWidth - (margen * 2);
+      let page = null;
+      let y = 0;
+
+      function nuevaPagina() {
+        page = pdfDoc.addPage([pageWidth, pageHeight]);
+        y = pageHeight - margen;
+      }
+
+      function asegurarEspacio(alto) {
+        if (!page || y - alto < margen) nuevaPagina();
+      }
+
+      function escribirLinea(texto, { size = 11, bold = false, color = colorTexto, espacio = 14 } = {}) {
+        asegurarEspacio(espacio);
+        page.drawText(textoSeguroPdf(texto), {
+          x: margen,
+          y,
+          size,
+          font: bold ? fontBold : fontNormal,
+          color
+        });
+        y -= espacio;
+      }
+
+      function escribirParrafo(texto, opciones = {}) {
+        const size = opciones.size || 11;
+        const lineHeight = opciones.lineHeight || 14;
+        const font = opciones.bold ? fontBold : fontNormal;
+        const lineas = dividirTextoPdf(texto, font, size, anchoTexto);
+        lineas.forEach((linea) => {
+          asegurarEspacio(lineHeight);
+          page.drawText(linea, {
+            x: margen,
+            y,
+            size,
+            font,
+            color: opciones.color || colorTexto
+          });
+          y -= lineHeight;
+        });
+      }
+
+      nuevaPagina();
+      escribirLinea("Listado de asistentes", { size: 20, bold: true, color: colorTitulo, espacio: 26 });
+      escribirParrafo(reserva?.actividad_nombre || "Actividad", { size: 15, bold: true, color: colorTitulo, lineHeight: 18 });
+      y -= 10;
+      escribirLinea(`Solicitud: ${reserva?.codigo_reserva || "-"}`, { bold: true });
+      escribirLinea(`Solicitante: ${reserva?.centro || "-"}`);
+      escribirLinea(`Fecha: ${formatearFechaCorta(reserva?.fecha || "") || "-"}`);
+      escribirLinea(`Horario: ${formatearHorarioReserva(reserva)}`);
+      escribirLinea(`Total de asistentes: ${visitantes.length}`, { bold: true });
+      y -= 12;
+      escribirLinea("Relaci\u00f3n nominal", { size: 14, bold: true, color: colorTitulo, espacio: 20 });
+
+      visitantes.forEach((visitante, index) => {
+        const nombre = textoSeguroPdf(visitante?.nombre_completo || "Asistente");
+        const perfil = textoSeguroPdf(visitante?.perfil_asistente || "");
+        const linea = `${index + 1}. ${nombre}${perfil ? ` (${perfil})` : ""}`;
+        escribirParrafo(linea, { size: 11.5, lineHeight: 15 });
+      });
+
+      y -= 16;
+      escribirParrafo(`Documento generado el ${formatearFechaGeneracionPdf(new Date())}.`, {
+        size: 10,
+        color: colorMuted,
+        lineHeight: 13
+      });
+
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      if (ventanaDestino && !ventanaDestino.closed) {
+        ventanaDestino.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+
+    async function generarListadoAsistentesModal() {
+      const ventanaPdf = window.open("about:blank", "_blank");
+      try {
+        const contexto = asistentesModalEstadoActual || {};
+        await generarPdfListadoAsistentes(contexto.reserva || reservaModalEstado || {}, contexto.asistentesData || {}, ventanaPdf);
+      } catch (error) {
+        if (ventanaPdf && !ventanaPdf.closed) ventanaPdf.close();
+        mostrarMensajeModalEstado(error?.message || "No se pudo generar el listado de asistentes.");
+      }
+    }
+
+    function enlazarListadoAsistentesModal() {
+      document.querySelector("[data-accion-asistentes-pdf]")?.addEventListener("click", generarListadoAsistentesModal);
+    }
+
     function renderObservacionesSolicitudAdmin(reserva) {
       const observaciones = String(reserva?.observaciones || "").trim();
       return `<div class="estado-modal-seccion"><h4>Observaciones del solicitante</h4>${observaciones ? `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div></div>` : `<p class="muted">El solicitante no incluyó observaciones.</p>`}</div>`;
@@ -1107,6 +1258,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       accionPreferidaModal = String(accionPreferida || "").toLowerCase();
       document.querySelector("#modalObservaciones .modal")?.classList.remove("modal-historial-compacto");
       const asistentesData = await cargarAsistentesReservaModal(reserva);
+      asistentesModalEstadoActual = { reserva, asistentesData };
       const accionesDisponibles = [];
       if (!documentacionBloqueanteReserva(reserva)) {
         if (accionPreferidaModal === "confirmar" && puedeConfirmarseReserva(reserva)) accionesDisponibles.push("confirmar");
@@ -1135,6 +1287,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       document.getElementById("modalObservacionesAcciones").innerHTML = "";
       document.querySelectorAll("[data-accion-estado]").forEach((btn) => { btn.addEventListener("click", async () => { await guardarCambioEstadoDesdeModal(btn.getAttribute("data-accion-estado") || ""); }); });
       enlazarSelectoresRevisionDocumentalModal();
+      enlazarListadoAsistentesModal();
       asegurarBotonCerrarModalSuperior();
       limpiarMensajeModalEstado();
       establecerVisibilidadModalObservaciones(true);
