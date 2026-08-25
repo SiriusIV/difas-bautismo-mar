@@ -724,8 +724,16 @@
       min-width: 0;
     }
 
+    .documento-solicitud-titulo-linea {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 0;
+    }
+
     .documento-solicitud-titulo {
-      display: block;
+      display: inline;
       color: var(--color-primario);
       font-weight: 700;
       font-size: 13px;
@@ -738,6 +746,13 @@
 
     a.documento-solicitud-titulo:hover {
       text-decoration: underline;
+    }
+
+    .documento-solicitud-version {
+      color: #586a7c;
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: nowrap;
     }
 
     .documento-solicitud-meta {
@@ -1681,6 +1696,9 @@
         const tituloHtml = archivoBase
           ? `<a class="documento-solicitud-titulo" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base">${escapeHtml(tituloDocumento)}</a>`
           : `<span class="documento-solicitud-titulo">${escapeHtml(tituloDocumento)}</span>`;
+        const versionHtml = version > 0
+          ? `<span class="documento-solicitud-version">(versión ${version})</span>`
+          : "";
         const entregado = !!archivoRemitido || !!doc.entregado;
         const puedeEditar = !["VALIDADA", "VALIDADO", "ACEPTADO", "EN_REVISION"].includes(estado);
         const esRechazado = ["RECHAZADO", "RECHAZADA"].includes(estado);
@@ -1690,8 +1708,8 @@
         return `
           <div class="documento-solicitud-item" data-documento-id="${documentoId}">
             <div class="documento-solicitud-info">
-              ${tituloHtml}
-              <span class="documento-solicitud-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
+              <div class="documento-solicitud-titulo-linea">${tituloHtml}${versionHtml}</div>
+              <span class="documento-solicitud-meta">${propietario ? escapeHtml(propietario) : "Propietario documental"}</span>
             </div>
             ${estadoHtml}
             <div class="documento-solicitud-acciones">
