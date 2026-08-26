@@ -20,6 +20,19 @@ export async function asegurarColumnaRechazoEliminaEn(env) {
   }
 }
 
+export async function asegurarColumnaRechazoBloqueado(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE reservas
+      ADD COLUMN rechazo_bloqueado INTEGER NOT NULL DEFAULT 0
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) {
+      throw error;
+    }
+  }
+}
+
 function obtenerOffsetZonaMs(date, timeZone) {
   const partes = new Intl.DateTimeFormat("en-US", {
     timeZone,

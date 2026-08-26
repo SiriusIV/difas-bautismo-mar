@@ -5,7 +5,7 @@ import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import { crearNotificacion } from "../_notificaciones.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, obtenerHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
-import { asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb } from "../_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, calcularFechaEliminacionRechazo, formatearFechaAvisoRechazo, formatearFechaDb } from "../_reservas_rechazo_plazo.js";
 import { validarDocumentacionReserva } from "../_reservas_documentacion.js";
 import { asegurarTablasDocumentacionActividad } from "../_actividad_documentacion.js";
 
@@ -954,6 +954,7 @@ export async function onRequestGet(context) {
   try {
     await asegurarColumnaObservacionesAdmin(env);
     await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     await asegurarTablaHistorialReservas(env);
     await asegurarTablasDocumentacionActividad(env);
     await ejecutarMantenimientoReservas(env);
@@ -1099,6 +1100,7 @@ export async function onRequestGet(context) {
   try {
     await asegurarColumnaObservacionesAdmin(env);
     await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     await asegurarTablaHistorialReservas(env);
     const session = await getAdminSession(request, env);
     if (!session) {
@@ -1213,6 +1215,11 @@ export async function onRequestGet(context) {
             WHEN ? = 1 THEN NULL
             ELSE rechazo_elimina_en
           END,
+          rechazo_bloqueado = CASE
+            WHEN ? = 'RECHAZADA' THEN 0
+            WHEN ? = 1 THEN 0
+            ELSE rechazo_bloqueado
+          END,
           fecha_modificacion = datetime('now')
       WHERE id = ?
     `).bind(
@@ -1222,6 +1229,8 @@ export async function onRequestGet(context) {
       observacionesAdmin,
       nuevoEstado,
       rechazoEliminaEn,
+      limpiarObservacionesRechazo ? 1 : 0,
+      nuevoEstado,
       limpiarObservacionesRechazo ? 1 : 0,
       id
     ).run();

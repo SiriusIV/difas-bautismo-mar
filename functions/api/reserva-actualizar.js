@@ -6,7 +6,7 @@ import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { vincularDocumentacionPendienteAReserva } from "./_documentacion_contextual.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
-import { asegurarColumnaRechazoEliminaEn, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -492,6 +492,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.prereserva_expira_en,
       r.observaciones,
       r.estado,
+      COALESCE(r.rechazo_bloqueado, 0) AS rechazo_bloqueado,
       r.codigo_reserva,
       r.usuario_id,
       f.fecha,
@@ -683,6 +684,7 @@ export async function onRequestPost(context) {
   try {
     await asegurarColumnaAforoMaximo(env);
     await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     const baseUrl = new URL(request.url).origin;
     const user = await getUserSession(request, env.SECRET_KEY);
     if (!user?.id) {
@@ -745,10 +747,15 @@ export async function onRequestPost(context) {
     const estadoActual = String(reservaActual.estado || "").toUpperCase();
     const esBorrador = estadoActual === "BORRADOR";
     const esRechazada = estadoActual === "RECHAZADA";
+    const rechazoBloqueado = Number(reservaActual.rechazo_bloqueado || 0) === 1;
     const reenviarRechazada = esRechazada && accion !== "guardar_borrador";
     const guardarBorrador = (esBorrador || esRechazada) && (accion === "" || accion === "guardar_borrador");
     const enviarBorrador = esBorrador && accion === "enviar_borrador";
     const enviaSolicitud = enviarBorrador || reenviarRechazada;
+
+    if (esRechazada && rechazoBloqueado) {
+      return json({ ok: false, error: "Esta solicitud fue rechazada porque la actividad ya no está ofertada y no puede reenviarse." }, { status: 400 });
+    }
 
     if (Number(actividad.activa || 0) !== 1 && !guardarBorrador) {
       return json({ ok: false, error: "La actividad asociada está desactivada y no admite el envío de la solicitud." }, { status: 400 });
@@ -927,6 +934,7 @@ export async function onRequestPost(context) {
           observaciones = ?,
           observaciones_admin = NULL,
           rechazo_elimina_en = NULL,
+          rechazo_bloqueado = 0,
           estado = 'BORRADOR',
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -996,6 +1004,7 @@ export async function onRequestPost(context) {
           observaciones = ?,
           observaciones_admin = NULL,
           rechazo_elimina_en = NULL,
+          rechazo_bloqueado = 0,
           estado = ?,
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')
@@ -1149,6 +1158,7 @@ export async function onRequestPost(context) {
           observaciones = ?,
           observaciones_admin = NULL,
           rechazo_elimina_en = NULL,
+          rechazo_bloqueado = 0,
           estado = ?,
           fecha_solicitud = datetime('now'),
           fecha_modificacion = datetime('now')

@@ -1468,8 +1468,9 @@
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
-      document.getElementById("btnEnviarSolicitud").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
-      document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado);
+      const rechazoBloqueado = Number(reservaSeleccionada?.rechazo_bloqueado || 0) === 1;
+      document.getElementById("btnEnviarSolicitud").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado) || (estado === "RECHAZADA" && rechazoBloqueado);
+      document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado) || (estado === "RECHAZADA" && rechazoBloqueado);
       document.getElementById("btnAsistentes").disabled = !hay || estado === "CANCELADA" || estado === "RECHAZADA";
       document.getElementById("btnAnularSolicitud").disabled = !hay;
     }
@@ -1945,6 +1946,9 @@
         }
       }
       if (estado === "RECHAZADA") {
+        if (Number(reserva?.rechazo_bloqueado || 0) === 1) {
+          return "Tu solicitud ha sido rechazada porque la actividad ya no está ofertada. No puede reenviarse; puedes consultar el motivo indicado por la organización.";
+        }
         if (observacionesAdmin) {
           return "Tu solicitud ha sido rechazada por el administrador.";
         }
@@ -1997,6 +2001,9 @@
       }
 
       if (estado === "RECHAZADA") {
+        if (Number(reserva?.rechazo_bloqueado || 0) === 1) {
+          return acciones;
+        }
         if (reserva?.token_edicion) {
           acciones.push({
             label: "Editar solicitud",

@@ -1,4 +1,5 @@
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
+import { asegurarColumnaRechazoBloqueado } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -63,6 +64,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.token_edicion,
       r.usuario_id,
       r.estado,
+      COALESCE(r.rechazo_bloqueado, 0) AS rechazo_bloqueado,
       r.centro,
       r.contacto,
       r.telefono,
@@ -138,6 +140,7 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await asegurarColumnaRechazoBloqueado(env);
     const url = new URL(request.url);
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
 
@@ -190,6 +193,7 @@ export async function onRequestGet(context) {
         codigo_reserva: reserva.codigo_reserva,
         token_edicion: reserva.token_edicion,
         estado: reserva.estado,
+        rechazo_bloqueado: Number(reserva.rechazo_bloqueado || 0),
         centro: reserva.centro || "",
         contacto: reserva.contacto || "",
         telefono: reserva.telefono || "",

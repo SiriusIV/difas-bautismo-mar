@@ -1535,14 +1535,14 @@ export async function onRequestPut(context) {
           requiere_confirmacion: true,
           requiere_observaciones: true,
           resumen: situacion,
-          mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) futura(s) afectada(s). Si la desactivas, todas las solicitudes vinculadas a esas franjas futuras se eliminarán automáticamente del sistema. Se enviará un correo individual a cada solicitante afectado.`
+          mensaje: "Si desactivas la actividad, los borradores afectados se eliminarán y el resto de solicitudes vinculadas a franjas futuras pasarán a estar rechazadas sin posibilidad de reenvío. Se enviará un correo individual a cada solicitante afectado."
         }, 200);
       }
 
       if (solicitudesVivas > 0 && !observacionesAdmin) {
         return json({
           ok: false,
-          error: "Debes indicar el motivo de la desactivación para eliminar automáticamente las solicitudes futuras afectadas."
+          error: "Debes indicar el motivo de la desactivación para rechazar las solicitudes futuras afectadas."
         }, 400);
       }
     }

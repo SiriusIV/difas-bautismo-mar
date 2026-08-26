@@ -4,6 +4,7 @@ import { crearAvisoUsuario } from "../_avisos_usuario.js";
 import { enviarEmail } from "../_email.js";
 import { asegurarTablaHistorialReservas, borrarHistorialReservas, registrarEventoReserva } from "../_reservas_historial.js";
 import { eliminarDocumentacionDeReserva } from "../_documentacion_contextual.js";
+import { asegurarColumnaRechazoBloqueado } from "../_reservas_rechazo_plazo.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -160,10 +161,10 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
   const saludo = contacto ? `Hola ${contacto},` : "Hola,";
   const asunto = esBorrador
     ? "[Reservas] Actividad anulada y borrador eliminado"
-    : "[Reservas] Actividad anulada y solicitud eliminada";
+    : "[Reservas] Actividad desactivada y solicitud rechazada";
   const mensaje = esBorrador
     ? `Tu borrador para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminado porque la actividad ha sido anulada por ${organizador}.`
-    : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido eliminada porque la actividad ha sido cancelada por ${organizador}.`;
+    : `Tu solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} ha sido rechazada porque la actividad ha sido desactivada por ${organizador}.`;
 
   const texto = [
     saludo,
@@ -177,7 +178,7 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     "",
     esBorrador
       ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
-      : "Todas las solicitudes relacionadas con esta actividad han sido eliminadas por cancelación de la actividad."
+      : "Esta solicitud no puede reenviarse porque la actividad ya no está ofertada."
   ].filter(Boolean).join("\n");
 
   const html = `
@@ -189,7 +190,7 @@ function construirCorreoActividadAnulada(contexto = {}, observacionesAdmin = "")
     ${motivo ? `<p><strong>Motivo de la anulación:</strong> ${escaparHtml(motivo)}</p>` : ""}
     <p>${escaparHtml(esBorrador
       ? "Ya no es necesario realizar ninguna otra accin sobre este borrador."
-      : "Todas las solicitudes relacionadas con esta actividad han sido eliminadas por cancelación de la actividad.")}</p>
+      : "Esta solicitud no puede reenviarse porque la actividad ya no está ofertada.")}</p>
   `;
 
   return { asunto, texto, html };
@@ -208,14 +209,14 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
   const esBorrador = estado === "BORRADOR";
   const mensajeBase = esBorrador
     ? `La actividad ${actividad}${codigo ? ` asociada a tu borrador (${codigo})` : ""} ha sido anulada por el organizador y tu borrador ha sido eliminado.`
-    : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido cancelada por el organizador y tu solicitud ha sido eliminada.`;
+    : `La actividad ${actividad}${codigo ? ` asociada a tu solicitud (${codigo})` : ""} ha sido desactivada por el organizador y tu solicitud ha quedado rechazada. No puede reenviarse porque la actividad ya no está ofertada.`;
   const mensaje = motivo ? `${mensajeBase} Motivo: ${motivo}` : mensajeBase;
 
   const payload = {
     usuarioId,
     rolDestino: "SOLICITANTE",
     tipo: "RESERVA",
-    titulo: "Actividad anulada",
+    titulo: esBorrador ? "Actividad anulada" : "Solicitud rechazada por desactivación de actividad",
     mensaje,
     urlDestino: "/usuario-panel.html"
   };
@@ -258,7 +259,7 @@ async function crearNotificacionActividadAnulada(env, reserva, observacionesAdmi
       usuarioId,
       "SOLICITANTE",
       "RESERVA",
-      "Actividad anulada",
+      esBorrador ? "Actividad anulada" : "Solicitud rechazada por desactivación de actividad",
       mensaje,
       "/usuario-panel.html"
     ).run();
@@ -317,6 +318,7 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
   const db = typeof env?.DB?.withSession === "function"
     ? env.DB.withSession("first-primary")
     : env.DB;
+  await asegurarColumnaRechazoBloqueado(env);
   const reservas = await obtenerReservasAfectablesActividad(env, actividadId);
   const resultado = {
     total: reservas.length,
@@ -337,29 +339,64 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
       const estadoOrigen = limpiarTexto(reserva?.estado).toUpperCase();
       const esBorrador = estadoOrigen === "BORRADOR";
 
-      await borrarHistorialReservas(env, [reserva.id]);
-      await eliminarDocumentacionDeReserva(env, reserva.id);
-      await db.prepare(`
-        DELETE FROM visitantes
-        WHERE reserva_id = ?
-      `).bind(reserva.id).run();
+      if (esBorrador) {
+        await borrarHistorialReservas(env, [reserva.id]);
+        await eliminarDocumentacionDeReserva(env, reserva.id);
+        await db.prepare(`
+          DELETE FROM visitantes
+          WHERE reserva_id = ?
+        `).bind(reserva.id).run();
 
-      const borrado = await db.prepare(`
-        DELETE FROM reservas
-        WHERE id = ?
-      `).bind(reserva.id).run();
+        const borrado = await db.prepare(`
+          DELETE FROM reservas
+          WHERE id = ?
+        `).bind(reserva.id).run();
 
-      if ((borrado?.meta?.changes || 0) > 0) {
-        resultado.actualizadas += 1;
-        if (esBorrador) {
+        if ((borrado?.meta?.changes || 0) > 0) {
+          resultado.actualizadas += 1;
           resultado.borradores_eliminados += 1;
         } else {
-          resultado.reservas_eliminadas += 1;
+          resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo eliminar el borrador tras la anulación de la actividad.`);
+          continue;
         }
       } else {
-        resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo eliminar tras la anulación de la actividad.`);
-        continue;
+        const actualizado = await db.prepare(`
+          UPDATE reservas
+          SET estado = 'RECHAZADA',
+              observaciones_admin = ?,
+              rechazo_elimina_en = NULL,
+              rechazo_bloqueado = 1,
+              fecha_modificacion = datetime('now')
+          WHERE id = ?
+        `).bind(observacionesAdmin, reserva.id).run();
+
+        if ((actualizado?.meta?.changes || 0) > 0) {
+          resultado.actualizadas += 1;
+        } else {
+          resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo marcar como rechazada tras la desactivación de la actividad.`);
+          continue;
+        }
+
+        await registrarEventoReserva(env, {
+          reservaId: reserva.id,
+          accion: "ANULACION_ACTIVIDAD",
+          estadoOrigen,
+          estadoDestino: "RECHAZADA",
+          observaciones: observacionesAdmin,
+          actorUsuarioId: actor?.actorUsuarioId || null,
+          actorRol: actor?.actorRol || "ADMIN",
+          actorNombre: reserva?.organizador_nombre || "Organizador"
+        });
+
+        try {
+          const notificacion = await crearNotificacionActividadAnulada(env, { ...reserva, estado: "RECHAZADA" }, observacionesAdmin);
+          if (notificacion?.ok) resultado.notificaciones_creadas += 1;
+          else if (!notificacion?.skipped) resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${notificacion?.error || "error desconocido"}`);
+        } catch (errorNotificacion) {
+          resultado.incidencias.push(`Notificación reserva ${reserva.id}: ${errorNotificacion?.message || String(errorNotificacion || "")}`);
+        }
       }
+
       try {
         const correo = await enviarCorreoActividadAnulada(env, reserva, observacionesAdmin);
         if (correo?.ok) {
@@ -490,14 +527,14 @@ export async function onRequestPost(context) {
         requiere_confirmacion: true,
         requiere_observaciones: true,
         resumen: situacion,
-        mensaje: `La actividad tiene ${situacion.totalAfectables} solicitud(es) futura(s) afectada(s). Si continúas, todas las solicitudes futuras vinculadas a esta actividad se eliminarán automáticamente del sistema. Se enviará un correo individual a cada solicitante afectado.`
+        mensaje: "Si continúas, los borradores futuros vinculados a esta actividad se eliminarán y el resto de solicitudes futuras pasarán a estar rechazadas sin posibilidad de reenvío. Se enviará un correo individual a cada solicitante afectado."
       }, 200);
     }
 
     if (hayReservasAfectables && !observacionesAdmin) {
       return json({
         ok: false,
-        error: "Debes indicar el motivo de la anulación para eliminar automáticamente las solicitudes futuras afectadas."
+        error: "Debes indicar el motivo de la anulación para rechazar las solicitudes futuras afectadas."
       }, 400);
     }
 
@@ -506,20 +543,23 @@ export async function onRequestPost(context) {
         actorUsuarioId: session.usuario_id,
         actorRol: rol
       });
-      const result = await borrarActividadFisicamente(env, id);
+      const result = await dbPrimaria(env).prepare(`
+        UPDATE actividades
+        SET activa = 0,
+            visible_portal = 0
+        WHERE id = ?
+      `).bind(id).run();
 
       if ((result?.meta?.changes || 0) === 0) {
-        return json({ ok: false, error: "No se pudo eliminar la actividad." }, 500);
+        return json({ ok: false, error: "No se pudo desactivar la actividad." }, 500);
       }
 
       return json({
         ok: true,
         actividad_anulada: true,
-        actividad_eliminada: !result?.preservada_por_historico,
-        actividad_preservada_historico: !!result?.preservada_por_historico,
-        mensaje: result?.preservada_por_historico
-          ? "Actividad desactivada y ocultada para preservar el histórico. Las solicitudes futuras afectadas han sido eliminadas y se han enviado los correos correspondientes."
-          : "Actividad eliminada correctamente. Las solicitudes futuras afectadas han sido eliminadas y se han enviado los correos correspondientes.",
+        actividad_eliminada: false,
+        actividad_preservada_historico: true,
+        mensaje: "Actividad desactivada y ocultada para preservar el histórico. Las solicitudes futuras afectadas han sido rechazadas y se han enviado los correos correspondientes.",
         resumen_reservas: rechazoMasivo
       });
     }

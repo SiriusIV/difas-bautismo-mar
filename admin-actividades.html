@@ -3631,7 +3631,7 @@
             </button>
 
             <h4 id="tituloModalAvisoDesactivacionActividad">Desactivar actividad</h4>
-            <p>Si esta actividad tiene solicitudes vinculadas y continúas con la desactivación, los borradores se eliminarán y el resto de solicitudes pasarán a estar rechazadas cuando guardes el cambio.</p>
+            <p>Si esta actividad tiene solicitudes vinculadas y continúas con la desactivación, los borradores se eliminarán y el resto de solicitudes pasarán a estar rechazadas sin posibilidad de reenvío cuando guardes el cambio.</p>
 
             <div class="modal-acciones">
               <button type="button" class="btn btn-secundario" id="btnCancelarModalAvisoDesactivacionActividad">Cancelar</button>
@@ -4055,8 +4055,8 @@
       if (texto) {
         const total = Number(totalSolicitudesActivas || 0);
         texto.textContent = total === 1
-          ? "Existe 1 solicitud vinculada a esta actividad y, si continúas con la desactivación, el borrador se eliminará o la solicitud pasará a estar rechazada cuando guardes el cambio."
-          : `Existen ${total} solicitudes vinculadas a esta actividad y, si continúas con la desactivación, los borradores se eliminarán y el resto de solicitudes pasarán a estar rechazadas cuando guardes el cambio.`;
+          ? "Existe 1 solicitud vinculada a esta actividad y, si continúas con la desactivación, el borrador se eliminará o la solicitud pasará a estar rechazada sin posibilidad de reenvío cuando guardes el cambio."
+          : `Existen ${total} solicitudes vinculadas a esta actividad y, si continúas con la desactivación, los borradores se eliminarán y el resto de solicitudes pasarán a estar rechazadas sin posibilidad de reenvío cuando guardes el cambio.`;
       }
       establecerVisibilidadModalActividad("modalAvisoDesactivacionActividad", true);
     }
@@ -4465,7 +4465,7 @@
       labelEl.textContent = esDesactivacion ? "Motivo de la desactivación" : "Motivo de la anulación";
 
       textoEl.textContent = textoBase || (esDesactivacion
-        ? "Debes indicar el motivo de la desactivación. Los borradores afectados se eliminarán y el resto de solicitudes pasarán automáticamente a rechazadas. Se notificará a cada solicitante."
+        ? "Debes indicar el motivo de la desactivación. Los borradores afectados se eliminarán y el resto de solicitudes pasarán automáticamente a rechazadas sin posibilidad de reenvío. Se notificará a cada solicitante."
         : "Debes indicar el motivo de la anulación. Los borradores afectados se eliminarán y el resto de solicitudes pasarán automáticamente a rechazadas. Se notificará a cada solicitante.");
       const partesResumen = [];
       if (resumen && typeof resumen === "object") {
