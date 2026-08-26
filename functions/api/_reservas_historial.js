@@ -16,23 +16,38 @@ function nombreActorPorDefecto(rol = "") {
   return "Sistema";
 }
 
+function formatearActorSolicitante(entidad, contacto) {
+  const entidadLimpia = limpiarTexto(entidad);
+  const contactoLimpio = limpiarTexto(contacto);
+  if (!entidadLimpia) return contactoLimpio || "Solicitante";
+  if (!contactoLimpio || contactoLimpio.toUpperCase() === entidadLimpia.toUpperCase() || contactoLimpio.toUpperCase() === "SOLICITANTE") {
+    return entidadLimpia;
+  }
+  return `${entidadLimpia} (${contactoLimpio})`;
+}
+
 async function resolverActor(env, actor = {}) {
   const actorUsuarioId = parsearIdPositivo(actor.actorUsuarioId);
   let actorRol = limpiarTexto(actor.actorRol).toUpperCase();
   let actorNombre = limpiarTexto(actor.actorNombre);
 
-  if (actorUsuarioId && (!actorRol || !actorNombre)) {
+  if (actorUsuarioId && (!actorRol || !actorNombre || actorRol === "SOLICITANTE")) {
     const row = await env.DB.prepare(`
       SELECT
         COALESCE(NULLIF(TRIM(nombre_publico), ''), NULLIF(TRIM(nombre), ''), NULLIF(TRIM(email), ''), '') AS nombre_actor,
+        COALESCE(NULLIF(TRIM(centro), ''), NULLIF(TRIM(nombre_publico), ''), NULLIF(TRIM(nombre), ''), NULLIF(TRIM(email), ''), '') AS entidad_actor,
         COALESCE(NULLIF(TRIM(rol), ''), '') AS rol_actor
       FROM usuarios
       WHERE id = ?
       LIMIT 1
     `).bind(actorUsuarioId).first();
 
-    if (!actorNombre) actorNombre = limpiarTexto(row?.nombre_actor);
     if (!actorRol) actorRol = limpiarTexto(row?.rol_actor).toUpperCase();
+    if (actorRol === "SOLICITANTE") {
+      actorNombre = formatearActorSolicitante(row?.entidad_actor, actorNombre || row?.nombre_actor);
+    } else if (!actorNombre) {
+      actorNombre = limpiarTexto(row?.nombre_actor);
+    }
   }
 
   if (!actorRol) actorRol = "SISTEMA";
