@@ -2038,7 +2038,8 @@
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
       const accionesModal = acciones.filter((accion) => accion.tipo !== "documentacion");
-      const incluirDocumentacion = Number(reserva.admin_id || 0) > 0 && Number(reserva.actividad_id || 0) > 0 && Number(reserva.id || 0) > 0;
+      const rechazoNoSubsanable = estado === "RECHAZADA" && Number(reserva.rechazo_bloqueado || 0) === 1;
+      const incluirDocumentacion = !rechazoNoSubsanable && Number(reserva.admin_id || 0) > 0 && Number(reserva.actividad_id || 0) > 0 && Number(reserva.id || 0) > 0;
       const cambioFranja = esSuspensionPorCambioFranja(reserva) ? detalleCambioFranja(reserva) : null;
       const detalleCambioFranjaHtml = cambioFranja
         ? `<div class="estado-modal-observaciones">

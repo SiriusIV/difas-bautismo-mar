@@ -372,6 +372,11 @@ export async function rechazarReservasPorAnulacionActividad(env, actividadId, ob
 
         if ((actualizado?.meta?.changes || 0) > 0) {
           resultado.actualizadas += 1;
+          try {
+            await eliminarDocumentacionDeReserva(env, reserva.id);
+          } catch (errorDocumentacion) {
+            resultado.incidencias.push(`Documentación reserva ${reserva.id}: ${errorDocumentacion?.message || String(errorDocumentacion || "")}`);
+          }
         } else {
           resultado.incidencias.push(`Reserva ${reserva.id}: no se pudo marcar como rechazada tras la desactivación de la actividad.`);
           continue;
