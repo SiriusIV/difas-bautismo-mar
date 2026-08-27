@@ -2034,6 +2034,7 @@
       const reserva = reservasActuales.find((r) => Number(r.id) === Number(id));
       if (!reserva) return;
 
+      const estado = normalizarEstadoReserva(reserva.estado);
       const descripcion = descripcionEstadoReserva(reserva);
       const observaciones = String(reserva.observaciones_admin || "").trim();
       const acciones = construirAccionesEstado(reserva);
