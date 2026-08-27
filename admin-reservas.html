@@ -33,6 +33,8 @@
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
     .app-scroll { width: 100%; min-height: 0; overflow: visible; }
+    body.app-inicializando .cabecera-global,
+    body.app-inicializando .app-scroll { visibility: hidden; }
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion { position: relative; padding: 10px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; min-height: 58px; }
@@ -455,7 +457,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera-global">
     <div class="cabecera-global-inner">
       <div class="bloque-marca">
@@ -631,6 +633,7 @@
     }
     function mostrarMensaje(tipo, texto) { const m = document.getElementById("mensaje"); m.className = "mensaje " + tipo; m.style.display = "block"; m.textContent = texto; }
     function limpiarMensaje() { const m = document.getElementById("mensaje"); m.className = "mensaje"; m.style.display = "none"; m.textContent = ""; }
+    function finalizarCargaInicial() { document.body.classList.remove("app-inicializando"); }
     function claseEstado(estado) { const e = String(estado || "").toLowerCase(); if (e === "pendiente") return "pendiente"; if (e === "confirmada") return "confirmada"; if (e === "provisional") return "provisional"; if (e === "suspendida") return "suspendida"; if (e === "rechazada") return "rechazada"; return ""; }
     function textoEstadoVisible(estado) { const e = String(estado || "").toUpperCase(); if (e === "EN_REVISION") return "EN REVISIÓN"; if (e === "PROVISIONAL") return "INCOMPLETA"; if (e === "PENDIENTE") return "EN PROCESO"; if (e === "CONFIRMADA") return "CONFIRMADA"; if (e === "SUSPENDIDA") return "SUSPENDIDA"; if (e === "RECHAZADA") return "RECHAZADA"; return e || ""; }
     function formatearHorarioReserva(reserva) { const inicio = String(reserva?.hora_inicio || "").trim(); const fin = String(reserva?.hora_fin || "").trim(); if (inicio && fin) return `${inicio} - ${fin}`; return inicio || fin || "-"; }
@@ -1396,7 +1399,15 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
         this.disabled = false;
       }
     });
-    (async function init() { inicializarTitulosSelect(); await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]); await cargarPanel(); })();
+    (async function init() {
+      try {
+        inicializarTitulosSelect();
+        await Promise.all([cargarSesionCabecera(), cargarActividadesFiltro()]);
+        await cargarPanel();
+      } finally {
+        finalizarCargaInicial();
+      }
+    })();
     window.seleccionarReserva = seleccionarReserva;
     window.manejarSeleccionReservaFila = manejarSeleccionReservaFila;
     window.abrirModalObservaciones = abrirModalObservaciones;
