@@ -105,6 +105,11 @@
       overflow: visible;
     }
 
+    body.app-inicializando .cabecera,
+    body.app-inicializando .app-scroll {
+      visibility: hidden;
+    }
+
     .contenedor {
       max-width: 1120px;
       margin: 14px auto 22px;
@@ -772,7 +777,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
@@ -919,6 +924,10 @@
       el.className = "mensaje";
       el.style.display = "none";
       el.textContent = "";
+    }
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
     }
 
     function formatearFechaES(fecha) {
@@ -1395,12 +1404,13 @@
         await cargarActividades();
       } catch (error) {
         mostrarMensaje("error", error.message || "Error al cargar las actividades.");
+      } finally {
+        finalizarCargaInicial();
       }
     })();
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
 
 
