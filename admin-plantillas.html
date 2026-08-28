@@ -11,6 +11,7 @@
     *{box-sizing:border-box} html,body{min-height:100%}
     body{font-family:Arial,sans-serif;background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.78) 12%,rgba(255,255,255,.42) 26%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.10) 100%),linear-gradient(180deg,rgba(244,246,248,.18) 0%,rgba(244,246,248,.24) 100%),url("assets/fondo_cabecera.png") top center/100% auto no-repeat,var(--bg);background-blend-mode:normal,screen,normal;margin:0;color:var(--text)}
     .cabecera{padding:18px 20px 14px;position:relative;z-index:50}.cabecera-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:center}.bloque-marca{display:flex;align-items:center;justify-content:center;gap:50px;flex-wrap:wrap;text-align:left}.logo-cabecera{width:101px;height:auto;display:block;transition:opacity .12s ease}.logo-cabecera.logo-admin-personal{width:101px}.logo-cabecera.logo-pendiente{opacity:0}.titulos-cabecera h1{margin:0;font-size:24px;color:var(--brand);line-height:1.15;font-weight:600}.titulos-cabecera h2{margin:4px 0 0;font-size:14px;font-weight:400;color:#4a5a6a}
+    body.app-inicializando .cabecera,body.app-inicializando .contenedor{visibility:hidden}
     .contenedor{max-width:1180px;margin:14px auto 28px;padding:0 16px 20px}.panel-principal{display:flex;flex-direction:column;gap:16px}
     .panel-bloque{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:12px 14px}
     .barra-superior{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;min-height:52px}.barra-superior-der{grid-column:3;justify-self:end;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.barra-superior-centro{grid-column:2;display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:700;color:#163c67;line-height:1.2}
@@ -50,7 +51,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <header class="cabecera"><div class="cabecera-inner"><div class="bloque-marca"><img src="logo.png" alt="Logo" class="logo-cabecera logo-pendiente" id="logoCabecera"><div class="titulos-cabecera"><h1>Plantillas documentales</h1><h2 id="subtituloCabecera">Administrador</h2></div></div></div></header>
   <div class="contenedor"><div class="panel-principal">
     <section class="panel-bloque">

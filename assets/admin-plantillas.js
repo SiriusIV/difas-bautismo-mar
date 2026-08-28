@@ -6,6 +6,9 @@ let archivoPdfSesion = null;
 let temporizadorMensaje = null;
 let hayCambiosSinGuardar = false;
 
+function finalizarCargaInicial() {
+  document.body.classList.remove("app-inicializando");
+}
 function aplicarLogoAdminArfer(img, usuario = {}) { if (!img) return; img.style.width = ""; const logo = String(usuario?.logo_url || "").trim(); img.classList.remove("logo-admin-personal"); img.src = logo || "logo.png"; if (logo) img.classList.add("logo-admin-personal"); img.classList.remove("logo-pendiente"); }
 function escapeHtml(v) { return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function limpiarTexto(v) { return String(v ?? "").trim(); }
@@ -246,15 +249,17 @@ function seleccionarPlantillaInicial() {
   else crearNuevoBorrador();
 }
 (async function init() {
-  const ok = await cargarSesion();
-  if (!ok) return;
-  prepararDropzone();
-  registrarEventosFormulario();
   try {
+    const ok = await cargarSesion();
+    if (!ok) return;
+    prepararDropzone();
+    registrarEventosFormulario();
     await cargarPlantillasServidor();
     await migrarPlantillasLocalesLegadas();
+    seleccionarPlantillaInicial();
   } catch (error) {
     mostrarMensaje("error", error?.message || "Error al cargar las plantillas documentales.");
+  } finally {
+    finalizarCargaInicial();
   }
-  seleccionarPlantillaInicial();
 })();
