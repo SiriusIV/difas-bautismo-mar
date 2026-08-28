@@ -55,6 +55,10 @@
       padding: 0 16px 32px;
     }
 
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
+
     .cabecera {
       position: relative;
       background: transparent;
@@ -925,7 +929,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="contenedor">
     <div class="cabecera">
       <div class="cabecera-inner">
@@ -1297,6 +1301,10 @@
       mensaje.style.display = "none";
       mensajeTexto.textContent = "";
       btnCerrar.style.display = "none";
+    }
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
     }
 
     function marcarCambiosPendientes() {
@@ -2291,11 +2299,16 @@
       try {
         await Promise.all([cargarConfigEvento(), cargarSesionCabecera()]);
         const ok = await cargarReserva();
-        if (!ok) return;
+        if (!ok) {
+          finalizarCargaInicial();
+          return;
+        }
         await cargarVisitantes();
       } catch (error) {
         console.error(error);
         mostrarMensaje("error", "Error al cargar la página de asistentes.");
+      } finally {
+        finalizarCargaInicial();
       }
     });
   </script>
