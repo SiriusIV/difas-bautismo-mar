@@ -44,6 +44,7 @@
       overflow-y: auto;
     }
     .contenedor { max-width: 1108px; margin: 18px auto 22px; padding: 0 16px; }
+    body.app-inicializando .contenedor { visibility: hidden; }
     .cabecera {
       background: transparent;
       border-radius: 0;
@@ -1422,7 +1423,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="contenedor">
     <div class="cabecera">
       <div class="cabecera-inner">
@@ -1986,6 +1987,10 @@
     </div>
   </div>
 <script>
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
+
     let perfilOriginal = null;
     let rolActual = "";
     let navegacionPendiente = null;
@@ -4155,35 +4160,40 @@
       limpiarMensaje("mensajePassword");
       const appPerfil = document.getElementById("appPerfil");
       appPerfil.classList.add("app-perfil-cargando");
-      const sesion = await cargarSesionUsuario();
-      if (!sesion) {
-        location.href = "portal.html";
-        return;
-      }
-
-      let perfil = null;
       try {
-        const resPerfil = await fetch("/api/usuario/perfil", { credentials: "include" });
-        const data = await resPerfil.json().catch(() => null);
-        if (resPerfil.ok && data?.ok && data?.perfil) {
-          perfil = normalizarPerfil(data.perfil, sesion);
+        const sesion = await cargarSesionUsuario();
+        if (!sesion) {
+          finalizarCargaInicial();
+          location.href = "portal.html";
+          return;
         }
-      } catch (_) {}
 
-      if (!perfil) perfil = normalizarPerfil({}, sesion);
-      forzarCambioPasswordObligatorio =
-        Number(perfil.forzar_cambio_password || 0) === 1 ||
-        new URLSearchParams(window.location.search).get("forzar_password") === "1";
-      rellenarFormulario(perfil);
-      aplicarEstadoForzadoPassword();
-      await cargarResumenDocumentacion();
-      await cargarDocumentacionAdmin();
-      appPerfil.classList.remove("app-perfil-cargando");
+        let perfil = null;
+        try {
+          const resPerfil = await fetch("/api/usuario/perfil", { credentials: "include" });
+          const data = await resPerfil.json().catch(() => null);
+          if (resPerfil.ok && data?.ok && data?.perfil) {
+            perfil = normalizarPerfil(data.perfil, sesion);
+          }
+        } catch (_) {}
 
-      if (forzarCambioPasswordObligatorio) {
-        setTimeout(() => {
-          abrirModalCambioPasswordObligatorio();
-        }, 120);
+        if (!perfil) perfil = normalizarPerfil({}, sesion);
+        forzarCambioPasswordObligatorio =
+          Number(perfil.forzar_cambio_password || 0) === 1 ||
+          new URLSearchParams(window.location.search).get("forzar_password") === "1";
+        rellenarFormulario(perfil);
+        aplicarEstadoForzadoPassword();
+        await cargarResumenDocumentacion();
+        await cargarDocumentacionAdmin();
+        appPerfil.classList.remove("app-perfil-cargando");
+
+        if (forzarCambioPasswordObligatorio) {
+          setTimeout(() => {
+            abrirModalCambioPasswordObligatorio();
+          }, 120);
+        }
+      } finally {
+        finalizarCargaInicial();
       }
     }
 
