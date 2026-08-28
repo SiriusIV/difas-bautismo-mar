@@ -36,6 +36,10 @@
       box-shadow: none;
     }
 
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
+
     h1 {
       margin: 0;
       font-size: 24px;
@@ -1515,7 +1519,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="contenedor" id="app">
     <div class="cabecera">
       <div class="bloque-marca">
@@ -1860,6 +1864,10 @@
       mensaje.className = "mensaje " + tipo;
       mensaje.style.display = "block";
       mensaje.textContent = texto;
+    }
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
     }
 
     function limpiarMensaje() {
@@ -2947,74 +2955,77 @@ function abrirModalEvento(info) {
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ok = await comprobarSesionCalendario();
-      if (!ok) return;
-      await aplicarLogoCabeceraAdmin();
-      aplicarRolPantallaCalendario();
-
-      document.getElementById("btnCerrarModalEventoSuperior").addEventListener("click", cerrarModalEvento);
-      document.getElementById("btnCerrarModalEventosDia").addEventListener("click", cerrarModalEventosDia);
-      document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", async function() {
-        await aplicarVistaCalendario("reservas");
-      });
-      document.getElementById("btnVistaActividadesSecundario").addEventListener("click", async function() {
-        await aplicarVistaCalendario("actividades");
-      });
-      document.getElementById("btnPrevCalendario").addEventListener("click", function() {
-        if (!calendar) return;
-        if (String(calendar.view?.type || "") === "listContinuo") {
-          calendar.incrementDate({ months: -1 });
-          return;
-        }
-        calendar.prev();
-      });
-      document.getElementById("btnNextCalendario").addEventListener("click", function() {
-        if (!calendar) return;
-        if (String(calendar.view?.type || "") === "listContinuo") {
-          calendar.incrementDate({ months: 1 });
-          return;
-        }
-        calendar.next();
-      });
-      document.getElementById("btnHoyCalendario").addEventListener("click", function() {
-        if (calendar) calendar.changeView("timeGridDay", new Date());
-      });
-      document.getElementById("btnMesCalendario").addEventListener("click", async function() {
-        await irAVistaConProximoEvento("dayGridMonth");
-      });
-      document.getElementById("btnSemanaCalendario").addEventListener("click", async function() {
-        await irAVistaConProximoEvento("timeGridWeek");
-      });
-      document.getElementById("btnDiaCalendario").addEventListener("click", async function() {
-        await irAVistaConProximoEvento("timeGridDay");
-      });
-      document.getElementById("btnListaCalendario").addEventListener("click", async function() {
-        await irAVistaConProximoEvento("listContinuo");
-      });
-      document.getElementById("modalEvento").addEventListener("click", function(e) {
-        if (e.target.id === "modalEvento") {
-          cerrarModalEvento();
-        }
-      });
-      document.getElementById("btnAbrirAsistentes").addEventListener("click", function(e) {
-        if (this.dataset.accionModal !== "solicitudes-actividad") return;
-        e.preventDefault();
-        void abrirSolicitudesActividadSeleccionada();
-      });
-      document.getElementById("modalEventosDia").addEventListener("click", function(e) {
-        if (e.target.id === "modalEventosDia") {
-          cerrarModalEventosDia();
-        }
-      });
-      document.getElementById("btnCerrarModalSolicitudesActividad").addEventListener("click", cerrarModalSolicitudesActividad);
-      document.getElementById("btnCerrarModalSolicitudesActividadSuperior").addEventListener("click", cerrarModalSolicitudesActividad);
-      document.getElementById("modalSolicitudesActividad").addEventListener("click", function(e) {
-        if (e.target.id === "modalSolicitudesActividad") {
-          cerrarModalSolicitudesActividad();
-        }
-      });
-
       try {
+        const ok = await comprobarSesionCalendario();
+        if (!ok) {
+          finalizarCargaInicial();
+          return;
+        }
+        await aplicarLogoCabeceraAdmin();
+        aplicarRolPantallaCalendario();
+
+        document.getElementById("btnCerrarModalEventoSuperior").addEventListener("click", cerrarModalEvento);
+        document.getElementById("btnCerrarModalEventosDia").addEventListener("click", cerrarModalEventosDia);
+        document.getElementById("btnVistaSolicitudesSecundario").addEventListener("click", async function() {
+          await aplicarVistaCalendario("reservas");
+        });
+        document.getElementById("btnVistaActividadesSecundario").addEventListener("click", async function() {
+          await aplicarVistaCalendario("actividades");
+        });
+        document.getElementById("btnPrevCalendario").addEventListener("click", function() {
+          if (!calendar) return;
+          if (String(calendar.view?.type || "") === "listContinuo") {
+            calendar.incrementDate({ months: -1 });
+            return;
+          }
+          calendar.prev();
+        });
+        document.getElementById("btnNextCalendario").addEventListener("click", function() {
+          if (!calendar) return;
+          if (String(calendar.view?.type || "") === "listContinuo") {
+            calendar.incrementDate({ months: 1 });
+            return;
+          }
+          calendar.next();
+        });
+        document.getElementById("btnHoyCalendario").addEventListener("click", function() {
+          if (calendar) calendar.changeView("timeGridDay", new Date());
+        });
+        document.getElementById("btnMesCalendario").addEventListener("click", async function() {
+          await irAVistaConProximoEvento("dayGridMonth");
+        });
+        document.getElementById("btnSemanaCalendario").addEventListener("click", async function() {
+          await irAVistaConProximoEvento("timeGridWeek");
+        });
+        document.getElementById("btnDiaCalendario").addEventListener("click", async function() {
+          await irAVistaConProximoEvento("timeGridDay");
+        });
+        document.getElementById("btnListaCalendario").addEventListener("click", async function() {
+          await irAVistaConProximoEvento("listContinuo");
+        });
+        document.getElementById("modalEvento").addEventListener("click", function(e) {
+          if (e.target.id === "modalEvento") {
+            cerrarModalEvento();
+          }
+        });
+        document.getElementById("btnAbrirAsistentes").addEventListener("click", function(e) {
+          if (this.dataset.accionModal !== "solicitudes-actividad") return;
+          e.preventDefault();
+          void abrirSolicitudesActividadSeleccionada();
+        });
+        document.getElementById("modalEventosDia").addEventListener("click", function(e) {
+          if (e.target.id === "modalEventosDia") {
+            cerrarModalEventosDia();
+          }
+        });
+        document.getElementById("btnCerrarModalSolicitudesActividad").addEventListener("click", cerrarModalSolicitudesActividad);
+        document.getElementById("btnCerrarModalSolicitudesActividadSuperior").addEventListener("click", cerrarModalSolicitudesActividad);
+        document.getElementById("modalSolicitudesActividad").addEventListener("click", function(e) {
+          if (e.target.id === "modalSolicitudesActividad") {
+            cerrarModalSolicitudesActividad();
+          }
+        });
+
         await cargarConfigEvento();
         await aplicarVistaCalendario(obtenerVistaInicialCalendario(), { recargar: false });
         fechaInicialCalendario = await obtenerFechaInicialActividadSeleccionada();
@@ -3027,7 +3038,9 @@ function abrirModalEvento(info) {
           } catch (error) {
             console.error(error);
             mostrarMensaje("error", error.message || "No se pudo mostrar el calendario.");
-          } finally {}
+          } finally {
+            finalizarCargaInicial();
+          }
         });
         activarRecargaAutomaticaFiltros();
         await actualizarContadores();
@@ -3040,6 +3053,7 @@ function abrirModalEvento(info) {
         }, 80);
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo inicializar el calendario.");
+        finalizarCargaInicial();
       }
     });
   </script>
