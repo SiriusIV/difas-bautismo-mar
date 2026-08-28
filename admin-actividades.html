@@ -186,6 +186,11 @@
       overflow: visible;
     }
 
+    body.app-inicializando .cabecera,
+    body.app-inicializando .app-scroll {
+      visibility: hidden;
+    }
+
     .contenedor {
       max-width: 1120px;
       margin: 14px auto 24px;
@@ -3108,7 +3113,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
@@ -4722,6 +4727,10 @@ function limpiarMensaje() {
   callbackAceptarMensajeActividad = null;
   callbackCancelarMensajeActividad = null;
   desbloquearPantallaPorErrorActividad();
+}
+
+function finalizarCargaInicial() {
+  document.body.classList.remove("app-inicializando");
 }
 
 function aceptarMensajeErrorActividad() {
@@ -8703,7 +8712,10 @@ function retrocederPaso() {
           href: window.location.href
         });
         const ok = await comprobarSesionAdmin();
-        if (!ok) return;
+        if (!ok) {
+          finalizarCargaInicial();
+          return;
+        }
 
         const app = document.getElementById("app");
         reorganizarLayoutEditorActividad();
@@ -9035,6 +9047,7 @@ function retrocederPaso() {
         reubicarCabeceraActividadSegunViewport();
         reubicarBotonGuardarFranjaSegunViewport();
         app.style.display = "block";
+        finalizarCargaInicial();
       }
 
         actualizarVisibilidadFormulario();
