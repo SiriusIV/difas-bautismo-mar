@@ -110,6 +110,10 @@
       width: 100%;
       overflow: visible;
     }
+    body.app-inicializando .cabecera,
+    body.app-inicializando .app-scroll {
+      visibility: hidden;
+    }
     .app-scroll.portal-cargando {
       visibility: hidden;
     }
@@ -2052,7 +2056,7 @@
     }
   </style>
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera portal-cargando" id="cabeceraPortal">
     <div class="cabecera-inner">
       <div class="bloque-marca">
@@ -2428,6 +2432,10 @@
     const STORAGE_NOTIFICACIONES_OPERATIVAS_VISTAS = "portal_notificaciones_operativas_vistas";
     let carruselResetTimeout = null;
     const IMAGEN_PLACEHOLDER_TRANSPARENTE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
     const IMAGEN_SIN_ACTIVIDADES = new Image();
     IMAGEN_SIN_ACTIVIDADES.src = "sin-actividades.png";
 
@@ -5027,6 +5035,7 @@ if (filtroProvincia) {
       } finally {
         appScrollPortal.classList.remove("portal-cargando");
         if (cabeceraPortal) cabeceraPortal.classList.remove("portal-cargando");
+        finalizarCargaInicial();
       }
 
 const filtroPrograma = document.getElementById("filtroPrograma");
