@@ -22,6 +22,10 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
+
     h1 {
       margin-top: 0;
       font-size: 28px;
@@ -293,7 +297,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body>
+<body class="app-inicializando">
   <div class="contenedor" id="app" style="display:none;">
     <div class="cabecera">
       <img src="logo.png" alt="Logo" class="logo logo-pendiente">
@@ -412,6 +416,11 @@
     let franjasCache = [];
     let actividadesDisponibles = [];
     let envioFranjasEnCurso = false;
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
+
     async function aplicarLogoCabeceraAdmin() {
       const logo = document.querySelector(".logo");
       if (!logo) return;
@@ -836,35 +845,44 @@
     }
 
     document.addEventListener("DOMContentLoaded", async function () {
-      const ok = await comprobarSesionAdmin();
-      if (!ok) return;
-      await aplicarLogoCabeceraAdmin();
-
-      document.getElementById("app").style.display = "block";
-
-      document.getElementById("formFranja").addEventListener("submit", guardarFranja);
-      document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
-      document.getElementById("esRecurrente").addEventListener("change", actualizarModoFormulario);
-
-      document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
-        limpiarFormulario();
-        limpiarMensaje("mensajeFranjas");
-      });
-
-      document.getElementById("actividadSelect").addEventListener("change", async function () {
-        actualizarCabeceraYLinks();
-        limpiarFormulario();
-        limpiarMensaje("mensajeFranjas");
-        actualizarModoFormulario();
-        await cargarFranjas();
-      });
+      const app = document.getElementById("app");
+      let mostrarApp = true;
 
       try {
-        await cargarActividades();
-        await cargarFranjas();
-        limpiarFormulario();
-      } catch (error) {
-        mostrarMensaje("mensajeFranjas", "error", error.message || "No se pudo inicializar el panel.");
+        const ok = await comprobarSesionAdmin();
+        if (!ok) {
+          mostrarApp = false;
+          return;
+        }
+        await aplicarLogoCabeceraAdmin();
+
+        document.getElementById("formFranja").addEventListener("submit", guardarFranja);
+        document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+        document.getElementById("esRecurrente").addEventListener("change", actualizarModoFormulario);
+
+        document.getElementById("btnCancelarEdicion").addEventListener("click", function () {
+          limpiarFormulario();
+          limpiarMensaje("mensajeFranjas");
+        });
+
+        document.getElementById("actividadSelect").addEventListener("change", async function () {
+          actualizarCabeceraYLinks();
+          limpiarFormulario();
+          limpiarMensaje("mensajeFranjas");
+          actualizarModoFormulario();
+          await cargarFranjas();
+        });
+
+        try {
+          await cargarActividades();
+          await cargarFranjas();
+          limpiarFormulario();
+        } catch (error) {
+          mostrarMensaje("mensajeFranjas", "error", error.message || "No se pudo inicializar el panel.");
+        }
+      } finally {
+        if (mostrarApp && app) app.style.display = "block";
+        finalizarCargaInicial();
       }
     });
   </script>
