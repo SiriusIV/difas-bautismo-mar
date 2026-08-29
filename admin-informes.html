@@ -29,6 +29,10 @@
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; }
     .contenedor { max-width: 1120px; margin: 10px auto 26px; padding: 0 16px 24px; }
+    body.app-inicializando .cabecera-global,
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
     .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); padding: 14px; margin-bottom: 10px; }
     .barra-nav { position: relative; min-height: 54px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
     .barra-nav-der { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: flex; gap: 8px; align-items: center; }
@@ -350,7 +354,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera-global">
     <div class="cabecera-global-inner">
       <div class="bloque-marca">
@@ -515,6 +519,10 @@
     let catalogoActividadesInforme = [];
     let catalogoProgramasInforme = [];
     let temporizadorMensaje = null;
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
 
     function mostrarMensaje(tipo, texto) {
       const el = document.getElementById("mensaje");
@@ -1775,16 +1783,19 @@
     document.getElementById("selectActividadGrafica").addEventListener("change", renderGraficaActividad);
 
     (async function init() {
-      document.getElementById("fechaInicioInforme").value = fechaInicioAnioIso();
-      document.getElementById("fechaFinInforme").value = fechaHoyIso();
-      await cargarSesion();
-      await cargarInforme(false);
+      try {
+        document.getElementById("fechaInicioInforme").value = fechaInicioAnioIso();
+        document.getElementById("fechaFinInforme").value = fechaHoyIso();
+        await cargarSesion();
+        await cargarInforme(false);
+      } finally {
+        finalizarCargaInicial();
+      }
     })();
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
-
 
 
 
