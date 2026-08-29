@@ -37,6 +37,7 @@
       margin: 18px auto 24px;
       padding: 0 16px;
     }
+    body.app-inicializando .contenedor { visibility: hidden; }
 
     .cabecera {
       background: #fff;
@@ -471,7 +472,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body>
+<body class="app-inicializando">
   <div class="contenedor">
     <div class="cabecera">
       <div class="cabecera-inner">
@@ -617,6 +618,10 @@
     let filtroActual = "pendientes";
     let expedientesActuales = [];
     let expedienteSeleccionado = null;
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
     let detalleActual = null;
     function aplicarLogoAdminArfer(img, usuario = {}) {
       if (!img) return;
@@ -931,7 +936,13 @@
     document.getElementById("btnVolverPerfil").addEventListener("click", volverPerfil);
     document.getElementById("btnRecargar").addEventListener("click", cargarExpedientes);
 
-    init();
+    (async function iniciarPantalla() {
+      try {
+        await init();
+      } finally {
+        finalizarCargaInicial();
+      }
+    })();
   </script>
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
