@@ -28,6 +28,10 @@
     .titulos-cabecera h1 { margin: 0; font-size: 24px; color: #123a63; line-height: 1.15; font-weight: 600; }
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: normal; color: #4a5a6a; text-align: left; }
     .contenedor { max-width: 1108px; margin: 14px auto 22px; padding: 0 16px 20px; }
+    body.app-inicializando .cabecera-global,
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
     .barra-navegacion, .bloque { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
     .barra-navegacion {
       position: relative;
@@ -257,7 +261,7 @@
   </style>
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css" />
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera-global">
     <div class="cabecera-global-inner">
       <div class="bloque-marca">
@@ -371,6 +375,10 @@
   </div>
 
   <script>
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
+
     function limpiarTexto(valor) {
       return String(valor || "").trim();
     }
@@ -569,11 +577,15 @@
     document.getElementById("btnInspeccionarDestinos").addEventListener("click", inspeccionarDestinos);
 
     (async function init() {
-      await cargarSesionCabecera();
       try {
-        await refrescarDiagnostico();
-      } catch (error) {
-        mostrarMensaje("error", error.message || "No se pudo cargar el diagnóstico de correo.");
+        await cargarSesionCabecera();
+        try {
+          await refrescarDiagnostico();
+        } catch (error) {
+          mostrarMensaje("error", error.message || "No se pudo cargar el diagnóstico de correo.");
+        }
+      } finally {
+        finalizarCargaInicial();
       }
     })();
   </script>
