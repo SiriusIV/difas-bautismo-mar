@@ -64,6 +64,10 @@
     .titulos-cabecera h2 { margin: 4px 0 0; font-size: 14px; font-weight: 400; color: #4a5a6a; }
 
     .contenedor { max-width: 1108px; margin: 12px auto 22px; padding: 0 16px 18px; }
+    body.app-inicializando .cabecera,
+    body.app-inicializando .contenedor {
+      visibility: hidden;
+    }
     .mensaje { display: none; margin-bottom: 10px; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
     .mensaje.ok { display: block; background: #eaf7ea; color: #146c2e; }
     .mensaje.error { display: block; background: #fdeaea; color: #9b1c1c; }
@@ -627,7 +631,7 @@
     }
   </style>
 </head>
-<body class="fondo-cabecera-unificada">
+<body class="fondo-cabecera-unificada app-inicializando">
   <div class="cabecera">
     <div class="cabecera-inner">
       <div class="bloque-marca">
@@ -769,6 +773,10 @@
     let documentoModalActivo = null;
     let puedeEditarDocsModal = true;
     let usuarioFichaActivoId = null;
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
 
     function escapeHtml(valor) {
       return String(valor || "")
@@ -1271,11 +1279,14 @@
     document.getElementById("btnConfirmarBloqueo").addEventListener("click", confirmarBloqueoPendiente);
 
     (async function init() {
-      await Promise.all([cargarSesionCabecera(), cargarUsuarios()]);
+      try {
+        await Promise.all([cargarSesionCabecera(), cargarUsuarios()]);
+      } finally {
+        finalizarCargaInicial();
+      }
     })();
   </script>
   <script src="assets/navegacion-loader.js"></script>
 </body>
 </html>
-
 
