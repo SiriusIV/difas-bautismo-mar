@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="assets/fondo-cabecera-movil-unificado.css">
   <link rel="stylesheet" href="assets/mobile-mensaje-flotante.css">
   <style>
+    body.app-inicializando .super-cabecera,
+    body.app-inicializando .super-shell {
+      visibility: hidden;
+    }
+
     .cabecera-bloque {
       display: flex;
       justify-content: space-between;
@@ -378,7 +383,7 @@
     }
   </style>
 </head>
-<body class="superadmin-body fondo-cabecera-unificada">
+<body class="superadmin-body fondo-cabecera-unificada app-inicializando">
   <header class="super-cabecera">
     <div class="super-cabecera-inner">
       <div class="super-bloque-marca">
@@ -459,6 +464,10 @@
     let solicitudSeleccionada = null;
     let solicitudTactilSeleccionada = null;
     let mensajeTimer = null;
+
+    function finalizarCargaInicial() {
+      document.body.classList.remove("app-inicializando");
+    }
 
     function mostrarMensaje(tipo, texto) {
       limpiarMensaje();
@@ -638,6 +647,8 @@
         await cargarSolicitudes();
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo cargar la consola de solicitudes.");
+      } finally {
+        finalizarCargaInicial();
       }
     })();
 
