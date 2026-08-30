@@ -33,6 +33,19 @@ export async function asegurarColumnaRechazoBloqueado(env) {
   }
 }
 
+export function condicionSqlReservaOcupa(alias = "r") {
+  const prefijo = alias ? `${alias}.` : "";
+  return `(
+    ${prefijo}estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA')
+    OR (
+      ${prefijo}estado = 'RECHAZADA'
+      AND COALESCE(${prefijo}rechazo_bloqueado, 0) = 0
+      AND ${prefijo}rechazo_elimina_en IS NOT NULL
+      AND datetime('now') <= datetime(${prefijo}rechazo_elimina_en)
+    )
+  )`;
+}
+
 function obtenerOffsetZonaMs(date, timeZone) {
   const partes = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -138,19 +151,7 @@ export function calcularFechaEliminacionRechazo(contexto = {}, ahora = new Date(
   const ahoraValido = ahora instanceof Date && !Number.isNaN(ahora.getTime())
     ? ahora
     : new Date();
-  const plazoSubsanacionMs = sumarHorasLaborablesMadrid(ahoraValido, 24).getTime();
-  const inicio = obtenerInicioReserva(contexto);
-  if (!inicio) return new Date(plazoSubsanacionMs);
-
-  const ahoraMs = ahoraValido.getTime();
-  const inicioMs = inicio.getTime();
-  if (!Number.isFinite(inicioMs)) return new Date(plazoSubsanacionMs);
-
-  const mitadMs = ahoraMs + Math.max(inicioMs - ahoraMs, 0) / 2;
-  const veinticuatroHorasAntesMs = inicioMs - (24 * 60 * 60 * 1000);
-  const limiteCriticoMs = Math.min(mitadMs, veinticuatroHorasAntesMs);
-  const eliminaMs = Math.min(plazoSubsanacionMs, limiteCriticoMs);
-  return new Date(eliminaMs);
+  return sumarHorasLaborablesMadrid(ahoraValido, 24);
 }
 
 export function formatearFechaDb(date) {

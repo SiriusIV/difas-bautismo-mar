@@ -5,6 +5,7 @@ import {
   obtenerConfiguracionDocumentalPorActividades
 } from "./_actividad_documentacion.js";
 import { materializarPatronesGlobales } from "./_franjas_recurrencia.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, condicionSqlReservaOcupa } from "./_reservas_rechazo_plazo.js";
 
 const MARCADOR_TIPO_PENDIENTE = "__TIPO_PENDIENTE__";
 
@@ -104,8 +105,11 @@ export async function onRequestGet(context) {
   try {
     await asegurarColumnaAforoMaximo(env);
     await asegurarColumnaFranjaActiva(env);
+    await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     await materializarPatronesGlobales(env);
     await desactivarActividadesFinalizadasPorPeriodo(env);
+    const condicionReservaOcupa = condicionSqlReservaOcupa("r");
     let result = null;
     try {
       result = await env.DB.prepare(`
@@ -116,8 +120,16 @@ export async function onRequestGet(context) {
             f.capacidad,
             COALESCE(SUM(
               CASE
-                WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                WHEN ${condicionReservaOcupa} THEN
                   CASE
+                    WHEN r.estado = 'RECHAZADA' THEN MAX(
+                      COALESCE(r.plazas_prereservadas, 0),
+                      COALESCE((
+                        SELECT COUNT(*)
+                        FROM visitantes v
+                        WHERE v.reserva_id = r.id
+                      ), 0)
+                    )
                     WHEN r.prereserva_expira_en IS NOT NULL
                          AND datetime('now') <= datetime(r.prereserva_expira_en)
                       THEN max(
@@ -209,8 +221,16 @@ export async function onRequestGet(context) {
               THEN COALESCE((
                 SELECT COALESCE(SUM(
                   CASE
-                    WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                    WHEN ${condicionReservaOcupa} THEN
                       CASE
+                        WHEN r.estado = 'RECHAZADA' THEN MAX(
+                          COALESCE(r.plazas_prereservadas, 0),
+                          COALESCE((
+                            SELECT COUNT(*)
+                            FROM visitantes v
+                            WHERE v.reserva_id = r.id
+                          ), 0)
+                        )
                         WHEN r.prereserva_expira_en IS NOT NULL
                              AND datetime('now') <= datetime(r.prereserva_expira_en)
                           THEN MAX(
@@ -241,8 +261,16 @@ export async function onRequestGet(context) {
               THEN MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                 SELECT COALESCE(SUM(
                   CASE
-                    WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                    WHEN ${condicionReservaOcupa} THEN
                       CASE
+                        WHEN r.estado = 'RECHAZADA' THEN MAX(
+                          COALESCE(r.plazas_prereservadas, 0),
+                          COALESCE((
+                            SELECT COUNT(*)
+                            FROM visitantes v
+                            WHERE v.reserva_id = r.id
+                          ), 0)
+                        )
                         WHEN r.prereserva_expira_en IS NOT NULL
                              AND datetime('now') <= datetime(r.prereserva_expira_en)
                           THEN MAX(
@@ -280,8 +308,16 @@ export async function onRequestGet(context) {
                     AND MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                       SELECT COALESCE(SUM(
                         CASE
-                          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                          WHEN ${condicionReservaOcupa} THEN
                             CASE
+                              WHEN r.estado = 'RECHAZADA' THEN MAX(
+                                COALESCE(r.plazas_prereservadas, 0),
+                                COALESCE((
+                                  SELECT COUNT(*)
+                                  FROM visitantes v
+                                  WHERE v.reserva_id = r.id
+                                ), 0)
+                              )
                               WHEN r.prereserva_expira_en IS NOT NULL
                                    AND datetime('now') <= datetime(r.prereserva_expira_en)
                                 THEN MAX(
@@ -346,8 +382,16 @@ export async function onRequestGet(context) {
           f.capacidad,
           COALESCE(SUM(
             CASE
-              WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+              WHEN ${condicionReservaOcupa} THEN
                 CASE
+                  WHEN r.estado = 'RECHAZADA' THEN MAX(
+                    COALESCE(r.plazas_prereservadas, 0),
+                    COALESCE((
+                      SELECT COUNT(*)
+                      FROM visitantes v
+                      WHERE v.reserva_id = r.id
+                    ), 0)
+                  )
                   WHEN r.prereserva_expira_en IS NOT NULL
                        AND datetime('now') <= datetime(r.prereserva_expira_en)
                     THEN max(
@@ -442,8 +486,16 @@ export async function onRequestGet(context) {
             THEN COALESCE((
               SELECT COALESCE(SUM(
                 CASE
-                  WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                  WHEN ${condicionReservaOcupa} THEN
                     CASE
+                      WHEN r.estado = 'RECHAZADA' THEN MAX(
+                        COALESCE(r.plazas_prereservadas, 0),
+                        COALESCE((
+                          SELECT COUNT(*)
+                          FROM visitantes v
+                          WHERE v.reserva_id = r.id
+                        ), 0)
+                      )
                       WHEN r.prereserva_expira_en IS NOT NULL
                            AND datetime('now') <= datetime(r.prereserva_expira_en)
                         THEN MAX(
@@ -474,8 +526,16 @@ export async function onRequestGet(context) {
             THEN MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
               SELECT COALESCE(SUM(
                 CASE
-                  WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                  WHEN ${condicionReservaOcupa} THEN
                     CASE
+                      WHEN r.estado = 'RECHAZADA' THEN MAX(
+                        COALESCE(r.plazas_prereservadas, 0),
+                        COALESCE((
+                          SELECT COUNT(*)
+                          FROM visitantes v
+                          WHERE v.reserva_id = r.id
+                        ), 0)
+                      )
                       WHEN r.prereserva_expira_en IS NOT NULL
                            AND datetime('now') <= datetime(r.prereserva_expira_en)
                         THEN MAX(
@@ -515,8 +575,16 @@ export async function onRequestGet(context) {
                   AND MAX(COALESCE(a.aforo_maximo, 0) - COALESCE((
                     SELECT COALESCE(SUM(
                       CASE
-                        WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                        WHEN ${condicionReservaOcupa} THEN
                           CASE
+                            WHEN r.estado = 'RECHAZADA' THEN MAX(
+                              COALESCE(r.plazas_prereservadas, 0),
+                              COALESCE((
+                                SELECT COUNT(*)
+                                FROM visitantes v
+                                WHERE v.reserva_id = r.id
+                              ), 0)
+                            )
                             WHEN r.prereserva_expira_en IS NOT NULL
                                  AND datetime('now') <= datetime(r.prereserva_expira_en)
                               THEN MAX(

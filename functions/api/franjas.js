@@ -1,5 +1,5 @@
 import { ejecutarMantenimientoReservas } from "./_reservas_mantenimiento.js";
-import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, condicionSqlReservaOcupa, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 import { materializarPatronesActividad } from "./_franjas_recurrencia.js";
 
 function json(data, init = {}) {
@@ -33,6 +33,7 @@ async function asegurarColumnaFranjaActiva(env) {
 }
 
 async function obtenerFranjasConDisponibilidad(env, actividad_id) {
+  const condicionReservaOcupa = condicionSqlReservaOcupa("r");
   const sql = `
     SELECT
       f.id,
@@ -45,8 +46,16 @@ async function obtenerFranjasConDisponibilidad(env, actividad_id) {
 
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN ${condicionReservaOcupa} THEN
             CASE
+              WHEN r.estado = 'RECHAZADA' THEN MAX(
+                COALESCE(r.plazas_prereservadas, 0),
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                ), 0)
+              )
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
                 THEN MAX(
@@ -117,6 +126,8 @@ export async function onRequestGet(context) {
 
   try {
     await asegurarColumnaFranjaActiva(env);
+    await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     await ejecutarMantenimientoReservas(env);
     const url = new URL(request.url);
     const actividad_id = Number(url.searchParams.get("actividad_id"));

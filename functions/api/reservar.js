@@ -6,7 +6,7 @@ import { registrarEventoReserva } from "./_reservas_historial.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { vincularDocumentacionPendienteAReserva } from "./_documentacion_contextual.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
-import { obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, condicionSqlReservaOcupa, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -538,12 +538,21 @@ async function obtenerFranja(env, franjaId) {
 }
 
 async function obtenerBloqueoActualFranja(env, franjaId) {
+  const condicionReservaOcupa = condicionSqlReservaOcupa("r");
   const sql = `
     SELECT
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN ${condicionReservaOcupa} THEN
             CASE
+              WHEN r.estado = 'RECHAZADA' THEN MAX(
+                COALESCE(r.plazas_prereservadas, 0),
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                ), 0)
+              )
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
                 THEN MAX(
@@ -660,6 +669,8 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     const baseUrl = new URL(request.url).origin;
     const sessionUser = await getUserSession(request, env.SECRET_KEY);
     const usuarioId = Number(sessionUser?.id || 0);

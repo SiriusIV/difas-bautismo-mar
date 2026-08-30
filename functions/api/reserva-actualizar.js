@@ -6,7 +6,7 @@ import { enviarEmail } from "./_email.js";
 import { validarDocumentacionReserva } from "./_reservas_documentacion.js";
 import { vincularDocumentacionPendienteAReserva } from "./_documentacion_contextual.js";
 import { estaUsuarioPublicoBloqueadoParaAdmin } from "./admin/_usuarios_publicos_bloqueo_admin.js";
-import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn, condicionSqlReservaOcupa, obtenerInicioReserva } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -535,6 +535,7 @@ async function obtenerFranja(env, franjaId) {
 }
 
 async function obtenerDisponibilidadFranja(env, franjaId) {
+  const condicionReservaOcupa = condicionSqlReservaOcupa("r");
   const sql = `
     SELECT
       f.id,
@@ -544,8 +545,16 @@ async function obtenerDisponibilidadFranja(env, franjaId) {
       f.capacidad,
       COALESCE(SUM(
         CASE
-          WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+          WHEN ${condicionReservaOcupa} THEN
             CASE
+              WHEN r.estado = 'RECHAZADA' THEN MAX(
+                COALESCE(r.plazas_prereservadas, 0),
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM visitantes v
+                  WHERE v.reserva_id = r.id
+                ), 0)
+              )
               WHEN r.prereserva_expira_en IS NOT NULL
                    AND datetime('now') <= datetime(r.prereserva_expira_en)
                 THEN COALESCE(r.plazas_prereservadas, 0)
@@ -561,8 +570,16 @@ async function obtenerDisponibilidadFranja(env, franjaId) {
       (
         f.capacidad - COALESCE(SUM(
           CASE
-            WHEN r.estado IN ('PENDIENTE', 'EN_REVISION', 'PROVISIONAL', 'CONFIRMADA', 'SUSPENDIDA') THEN
+                WHEN ${condicionReservaOcupa} THEN
               CASE
+                WHEN r.estado = 'RECHAZADA' THEN MAX(
+                  COALESCE(r.plazas_prereservadas, 0),
+                  COALESCE((
+                    SELECT COUNT(*)
+                    FROM visitantes v
+                    WHERE v.reserva_id = r.id
+                  ), 0)
+                )
                 WHEN r.prereserva_expira_en IS NOT NULL
                      AND datetime('now') <= datetime(r.prereserva_expira_en)
                   THEN COALESCE(r.plazas_prereservadas, 0)
