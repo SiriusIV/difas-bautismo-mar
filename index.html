@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Redirigiendo...</title>
   <meta http-equiv="refresh" content="0; url=portal.html" />
+  <style>
+    body.app-inicializando { visibility: hidden; }
+  </style>
   <script>
     (function () {
       const params = new URLSearchParams(window.location.search);
@@ -15,7 +18,10 @@
     })();
   </script>
 </head>
-<body>
+<body class="app-inicializando">
+  <script>
+    document.body.classList.remove("app-inicializando");
+  </script>
   <script src="assets/navegacion-loader.js"></script>
 </body>
 </html>

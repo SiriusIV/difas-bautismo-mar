@@ -27,6 +27,10 @@
       text-align: center;
     }
 
+    body.app-inicializando .panel {
+      visibility: hidden;
+    }
+
     h1 {
       margin: 0 0 10px;
       font-size: 1.5rem;
@@ -61,7 +65,7 @@
     }
   </style>
 </head>
-<body>
+<body class="app-inicializando">
   <main class="panel">
     <h1>Abriendo edicion de la solicitud</h1>
     <p id="mensajeRedireccion">Estamos redirigiendo a la nueva pantalla de edicion.</p>
@@ -69,18 +73,24 @@
 
   <script>
     (function () {
+      function finalizarCargaInicial() {
+        document.body.classList.remove("app-inicializando");
+      }
+
       const params = new URLSearchParams(window.location.search);
       const token = String(params.get("token") || "").trim();
       const mensaje = document.getElementById("mensajeRedireccion");
 
       if (!token) {
         mensaje.textContent = "No se ha indicado ningun token de edicion.";
+        finalizarCargaInicial();
         return;
       }
 
       const destino = `solicitud-reserva.html?token=${encodeURIComponent(token)}`;
       mensaje.innerHTML = `Si la redirección no se completa automáticamente, puede continuar desde <a href="${destino}">este enlace</a>.`;
       window.location.replace(destino);
+      window.setTimeout(finalizarCargaInicial, 800);
     })();
   </script>
   <script src="assets/navegacion-loader.js"></script>
