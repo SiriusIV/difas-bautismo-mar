@@ -158,7 +158,8 @@
     .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
     .documento-revision-link { color: #073b70; font-weight: 700; text-decoration: none; }
     .documento-revision-link:hover, .documento-revision-link:focus-visible { text-decoration: underline; }
-    .select-estado-documental-modal {
+    .select-estado-documental-modal,
+    .estado-documental-modal-fijo {
       border: 1px solid #c9dcff;
       border-radius: 9px;
       padding: 5px 28px 5px 10px;
@@ -168,13 +169,26 @@
       min-width: 142px;
       max-width: 142px;
       flex: 0 0 142px;
-      cursor: pointer;
       background: #eef4ff;
       color: #1d4f91;
+    }
+    .select-estado-documental-modal { cursor: pointer; }
+    .estado-documental-modal-fijo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding-right: 10px;
+      cursor: default;
+      box-sizing: border-box;
+      text-align: center;
+      white-space: nowrap;
     }
     .select-estado-documental-modal.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .select-estado-documental-modal.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .select-estado-documental-modal.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
+    .estado-documental-modal-fijo.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
+    .estado-documental-modal-fijo.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .estado-documental-modal-fijo.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
     .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 10.5px; margin-bottom: 2px; }
@@ -970,7 +984,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function renderControlEstadoDocumentoAdmin(doc) {
       const estado = normalizarEstadoRevisionDocumentoAdmin(doc?.estado);
       if (!puedeRevisarDocumentoModalAdmin(doc)) {
-        return `<span class="estado-badge ${claseEstadoDocumentalAdmin(doc?.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc?.estado))}</span>`;
+        return `<span class="estado-documental-modal-fijo ${claseEstadoDocumentalAdmin(doc?.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc?.estado))}</span>`;
       }
       return `<select class="select-estado-documental-modal ${estadoRevisionSelectClaseAdmin(estado)}" data-documentacion-id="${Number(doc.documentacion_id || 0)}" data-archivo-id="${Number(doc.archivo_id || 0)}" data-documento-nombre="${escapeHtml(doc.nombre || "Documento")}" data-estado-original="${escapeHtml(estado)}" aria-label="Estado documental de ${escapeHtml(doc.nombre || "Documento")}"><option value="EN_REVISION"${estado === "EN_REVISION" ? " selected" : ""}>En revisión</option><option value="VALIDADO"${estado === "VALIDADO" ? " selected" : ""}>Validado</option><option value="RECHAZADO"${estado === "RECHAZADO" ? " selected" : ""}>Rechazado</option></select>`;
     }
