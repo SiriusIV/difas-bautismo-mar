@@ -1,4 +1,4 @@
-import { getSecretariaSession, recalcularImpactoSecretaria } from "./_documental.js";
+import { getSecretariaSession } from "./_documental.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -30,7 +30,6 @@ export async function onRequestPost(context) {
     if (!session) return json({ ok: false, error: "No autorizado." }, 401);
 
     const body = await request.json().catch(() => null);
-    const baseUrl = new URL(request.url).origin;
     const documentoId = parsearIdPositivo(body?.documento_id);
     const activar = body?.activar === true;
     if (!documentoId) return json({ ok: false, error: "Debes indicar un documento válido." }, 400);
@@ -44,7 +43,12 @@ export async function onRequestPost(context) {
       WHERE id = ?
     `).bind(activar ? 1 : 0, documentoId).run();
 
-    const impacto = await recalcularImpactoSecretaria(env, session.usuario_id, baseUrl, activar ? "documento_activado" : "documentos_actualizados");
+    const impacto = {
+      ok: true,
+      omitido: true,
+      motivo: activar ? "documento_activado" : "documento_desactivado",
+      detalle: "La activación del documento base solo afecta a nuevas solicitudes."
+    };
     return json({
       ok: true,
       mensaje: activar ? "Documento activado correctamente." : "Documento desactivado correctamente.",
