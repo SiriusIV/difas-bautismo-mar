@@ -984,7 +984,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function renderControlEstadoDocumentoAdmin(doc) {
       const estado = normalizarEstadoRevisionDocumentoAdmin(doc?.estado);
       if (!puedeRevisarDocumentoModalAdmin(doc)) {
-        return `<span class="estado-documental-modal-fijo ${claseEstadoDocumentalAdmin(doc?.estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(doc?.estado))}</span>`;
+        return `<span class="estado-documental-modal-fijo ${estadoRevisionSelectClaseAdmin(estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(estado))}</span>`;
       }
       return `<select class="select-estado-documental-modal ${estadoRevisionSelectClaseAdmin(estado)}" data-documentacion-id="${Number(doc.documentacion_id || 0)}" data-archivo-id="${Number(doc.archivo_id || 0)}" data-documento-nombre="${escapeHtml(doc.nombre || "Documento")}" data-estado-original="${escapeHtml(estado)}" aria-label="Estado documental de ${escapeHtml(doc.nombre || "Documento")}"><option value="EN_REVISION"${estado === "EN_REVISION" ? " selected" : ""}>En revisión</option><option value="VALIDADO"${estado === "VALIDADO" ? " selected" : ""}>Validado</option><option value="RECHAZADO"${estado === "RECHAZADO" ? " selected" : ""}>Rechazado</option></select>`;
     }
