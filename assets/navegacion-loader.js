@@ -16,14 +16,22 @@
         position: fixed;
         inset: 0;
         z-index: 99999;
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: center;
         background: rgba(9, 26, 48, 0.28);
         backdrop-filter: blur(2px);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.12s ease, visibility 0s linear 0.12s;
+        transform: translateZ(0);
       }
       .navegacion-loader.activo {
-        display: flex;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 0.12s ease;
       }
       .navegacion-loader-card {
         min-width: 190px;
