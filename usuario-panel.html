@@ -1584,7 +1584,7 @@
             const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
             const observaciones = String(doc.entrega_observaciones_admin || doc.observaciones_admin || "").trim();
             const puedeSustituir = !["VALIDADA", "EN_REVISION"].includes(estado);
-            const puedeEliminar = Boolean(archivoRemitido) && estado !== "VALIDADA";
+            const puedeEliminar = Boolean(archivoRemitido);
             const tituloHtml = archivoBase
               ? `<a class="documentacion-modal-titulo" href="${escapeHtml(archivoBase)}" target="_blank" rel="noopener noreferrer" title="Descargar documento base">${escapeHtml(titulo)}</a>`
               : `<span class="documentacion-modal-titulo">${escapeHtml(titulo)}</span>`;
