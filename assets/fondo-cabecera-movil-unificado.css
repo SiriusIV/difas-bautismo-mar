@@ -1,5 +1,7 @@
 html {
   background: #f4f6f8;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 body.fondo-cabecera-unificada {
@@ -12,7 +14,10 @@ body.fondo-cabecera-unificada {
 body.fondo-cabecera-unificada::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.78) 12%, rgba(255,255,255,0.42) 26%, rgba(255,255,255,0.18) 42%, rgba(255,255,255,0.10) 100%),
     linear-gradient(180deg, rgba(244,246,248,0.18) 0%, rgba(244,246,248,0.24) 100%),
