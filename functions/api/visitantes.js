@@ -76,6 +76,12 @@ async function asegurarColumnasDatosAmpliatorios(env) {
   if (!columnas.includes("email")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN email TEXT`);
   }
+  if (!columnas.includes("doble_nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN doble_nacionalidad INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!columnas.includes("segunda_nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN segunda_nacionalidad TEXT`);
+  }
   if (!columnas.includes("nacionalidad_no_consta")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0`);
   }
@@ -94,10 +100,12 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
   const tieneNacionalidad = columnasVisitantes.includes("nacionalidad");
   const tieneDni = columnasVisitantes.includes("dni");
   const tieneEmail = columnasVisitantes.includes("email");
+  const tieneDobleNacionalidad = columnasVisitantes.includes("doble_nacionalidad");
+  const tieneSegundaNacionalidad = columnasVisitantes.includes("segunda_nacionalidad");
   const tieneNacionalidadNoConsta = columnasVisitantes.includes("nacionalidad_no_consta");
   const tieneObservaciones = columnasVisitantes.includes("observaciones");
 
-  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza || tieneNacionalidad || tieneDni || tieneEmail || tieneNacionalidadNoConsta || tieneObservaciones
+  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza || tieneNacionalidad || tieneDni || tieneEmail || tieneDobleNacionalidad || tieneSegundaNacionalidad || tieneNacionalidadNoConsta || tieneObservaciones
     ? `
       SELECT
         id,
@@ -109,6 +117,8 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         ${tieneNacionalidad ? "COALESCE(nacionalidad, '')" : "''"} AS nacionalidad,
         ${tieneDni ? "COALESCE(dni, '')" : "''"} AS dni,
         ${tieneEmail ? "COALESCE(email, '')" : "''"} AS email,
+        ${tieneDobleNacionalidad ? "COALESCE(doble_nacionalidad, 0)" : "0"} AS doble_nacionalidad,
+        ${tieneSegundaNacionalidad ? "COALESCE(segunda_nacionalidad, '')" : "''"} AS segunda_nacionalidad,
         ${tieneNacionalidadNoConsta ? "COALESCE(nacionalidad_no_consta, 0)" : "0"} AS nacionalidad_no_consta,
         ${tieneObservaciones ? "COALESCE(observaciones, '')" : "''"} AS observaciones,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
@@ -127,6 +137,8 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         '' AS nacionalidad,
         '' AS dni,
         '' AS email,
+        0 AS doble_nacionalidad,
+        '' AS segunda_nacionalidad,
         0 AS nacionalidad_no_consta,
         '' AS observaciones,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
@@ -223,7 +235,9 @@ export async function onRequestGet(context) {
         nacionalidad: v.nacionalidad || "",
         dni: v.dni || "",
         email: v.email || "",
-        nacionalidad_no_consta: Number(v.nacionalidad_no_consta || 0),
+        doble_nacionalidad: Number(v.doble_nacionalidad || 0),
+        segunda_nacionalidad: v.segunda_nacionalidad || "",
+        nacionalidad_no_consta: 0,
         observaciones: v.observaciones || ""
       }))
     });

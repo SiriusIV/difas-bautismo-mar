@@ -569,11 +569,8 @@
     }
 
     .btn-opciones-asistente {
-      width: 26px;
-      height: 26px;
-      border: 1px solid #b9c8d8;
-      border-radius: 999px;
-      background: #fff;
+      border: 0;
+      background: transparent;
       color: #123a63;
       display: inline-flex;
       align-items: center;
@@ -581,13 +578,13 @@
       font-size: 18px;
       line-height: 1;
       cursor: pointer;
-      padding: 0 0 4px;
+      padding: 0 4px 4px;
       flex: 0 0 auto;
     }
 
     .btn-opciones-asistente:disabled {
       color: #8a98a8;
-      background: #f3f6fa;
+      background: transparent;
       cursor: not-allowed;
       opacity: 0.65;
     }
@@ -604,7 +601,7 @@
       width: 18%;
     }
 
-    input[type="text"], select {
+    input[type="text"], input[type="email"], select {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--color-borde-input);
@@ -1173,11 +1170,15 @@
         </label>
         <label class="campo-form campo-completo">
           Correo electrónico
-          <input type="text" id="inputEmailAsistente" maxlength="180" autocomplete="off">
+          <input type="email" id="inputEmailAsistente" maxlength="180" autocomplete="off">
         </label>
         <label class="check-form">
-          <input type="checkbox" id="checkNoNacionalidadAsistente">
-          <span>No consta nacionalidad o no procede indicar nacionalidad.</span>
+          <input type="checkbox" id="checkDobleNacionalidadAsistente">
+          <span>Tiene doble nacionalidad.</span>
+        </label>
+        <label class="campo-form campo-completo">
+          Segunda nacionalidad
+          <input type="text" id="inputSegundaNacionalidadAsistente" maxlength="120" autocomplete="off" disabled>
         </label>
         <label class="campo-form campo-completo">
           Observaciones
@@ -1560,7 +1561,8 @@
         nacionalidad: tr.dataset.nacionalidad || "",
         dni: tr.dataset.dni || "",
         email: tr.dataset.email || "",
-        nacionalidad_no_consta: tr.dataset.nacionalidadNoConsta === "1" ? 1 : 0,
+        doble_nacionalidad: tr.dataset.dobleNacionalidad === "1" ? 1 : 0,
+        segunda_nacionalidad: tr.dataset.segundaNacionalidad || "",
         observaciones: tr.dataset.observaciones || ""
       }));
     }
@@ -1588,7 +1590,13 @@
           nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
           perfil_asistente: tr.querySelector(".perfil-asistente")?.value || "",
           nivel_ensenanza: tr.querySelector(".ensenanza-asistente")?.value || "",
-          categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
+          categoria_edad: tr.querySelector(".categoria-asistente")?.value || "",
+          nacionalidad: tr.dataset.nacionalidad || "",
+          dni: tr.dataset.dni || "",
+          email: tr.dataset.email || "",
+          doble_nacionalidad: tr.dataset.dobleNacionalidad === "1" ? 1 : 0,
+          segunda_nacionalidad: tr.dataset.segundaNacionalidad || "",
+          observaciones: tr.dataset.observaciones || ""
         };
 
         const activa = !!(visitante.nombre_completo || visitante.perfil_asistente || visitante.nivel_ensenanza || visitante.categoria_edad);
@@ -1646,18 +1654,31 @@
       document.getElementById("inputNacionalidadAsistente").value = fila.dataset.nacionalidad || "";
       document.getElementById("inputDniAsistente").value = fila.dataset.dni || "";
       document.getElementById("inputEmailAsistente").value = fila.dataset.email || "";
-      document.getElementById("checkNoNacionalidadAsistente").checked = fila.dataset.nacionalidadNoConsta === "1";
+      document.getElementById("checkDobleNacionalidadAsistente").checked = fila.dataset.dobleNacionalidad === "1";
+      document.getElementById("inputSegundaNacionalidadAsistente").value = fila.dataset.segundaNacionalidad || "";
       document.getElementById("inputObservacionesAsistente").value = fila.dataset.observaciones || "";
-      actualizarEstadoCampoNacionalidad();
+      actualizarEstadoCampoSegundaNacionalidad();
       establecerVisibilidadModal("modalDatosAsistente", true);
     }
 
-    function actualizarEstadoCampoNacionalidad() {
-      const check = document.getElementById("checkNoNacionalidadAsistente");
-      const input = document.getElementById("inputNacionalidadAsistente");
+    function actualizarEstadoCampoSegundaNacionalidad() {
+      const check = document.getElementById("checkDobleNacionalidadAsistente");
+      const input = document.getElementById("inputSegundaNacionalidadAsistente");
       if (!check || !input) return;
-      input.disabled = check.checked;
-      if (check.checked) input.value = "";
+      input.disabled = !check.checked;
+      if (!check.checked) input.value = "";
+    }
+
+    function validarDocumentoIdentidad(valor) {
+      const normalizado = String(valor || "").trim().toUpperCase().replace(/[\s-]/g, "");
+      if (!normalizado) return true;
+      return /^[0-9]{8}[A-Z]$/.test(normalizado) || /^[XYZ][0-9]{7}[A-Z]$/.test(normalizado);
+    }
+
+    function validarEmail(valor) {
+      const normalizado = String(valor || "").trim();
+      if (!normalizado) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
     }
 
     function cerrarModalDatosAsistente() {
@@ -1670,10 +1691,29 @@
         cerrarModalDatosAsistente();
         return;
       }
+      const dni = document.getElementById("inputDniAsistente").value.trim().toUpperCase().replace(/[\s-]/g, "");
+      const email = document.getElementById("inputEmailAsistente").value.trim();
+      const dobleNacionalidad = document.getElementById("checkDobleNacionalidadAsistente").checked;
+      const segundaNacionalidad = document.getElementById("inputSegundaNacionalidadAsistente").value.trim();
+
+      if (!validarDocumentoIdentidad(dni)) {
+        mostrarMensaje("error", "El documento de identidad debe tener formato DNI o NIE válido.");
+        return;
+      }
+      if (!validarEmail(email)) {
+        mostrarMensaje("error", "El correo electrónico del asistente no tiene un formato válido.");
+        return;
+      }
+      if (dobleNacionalidad && !segundaNacionalidad) {
+        mostrarMensaje("error", "Indica la segunda nacionalidad o desmarca la opción de doble nacionalidad.");
+        return;
+      }
+
       fila.dataset.nacionalidad = document.getElementById("inputNacionalidadAsistente").value.trim();
-      fila.dataset.dni = document.getElementById("inputDniAsistente").value.trim();
-      fila.dataset.email = document.getElementById("inputEmailAsistente").value.trim();
-      fila.dataset.nacionalidadNoConsta = document.getElementById("checkNoNacionalidadAsistente").checked ? "1" : "0";
+      fila.dataset.dni = dni;
+      fila.dataset.email = email;
+      fila.dataset.dobleNacionalidad = dobleNacionalidad ? "1" : "0";
+      fila.dataset.segundaNacionalidad = dobleNacionalidad ? segundaNacionalidad : "";
       fila.dataset.observaciones = document.getElementById("inputObservacionesAsistente").value.trim();
       marcarCambiosPendientes();
       cerrarModalDatosAsistente();
@@ -1716,7 +1756,8 @@
       tr.dataset.nacionalidad = asistente.nacionalidad || "";
       tr.dataset.dni = asistente.dni || "";
       tr.dataset.email = asistente.email || "";
-      tr.dataset.nacionalidadNoConsta = Number(asistente.nacionalidad_no_consta || 0) === 1 ? "1" : "0";
+      tr.dataset.dobleNacionalidad = Number(asistente.doble_nacionalidad || 0) === 1 ? "1" : "0";
+      tr.dataset.segundaNacionalidad = asistente.segunda_nacionalidad || "";
       tr.dataset.observaciones = asistente.observaciones || "";
 
       tr.innerHTML = `
@@ -1779,7 +1820,7 @@
       document.getElementById("btnCerrarModalDatosAsistenteSuperior")?.addEventListener("click", cerrarModalDatosAsistente);
       document.getElementById("btnCancelarDatosAsistente")?.addEventListener("click", cerrarModalDatosAsistente);
       document.getElementById("btnGuardarDatosAsistente")?.addEventListener("click", guardarDatosAsistenteSeleccionado);
-      document.getElementById("checkNoNacionalidadAsistente")?.addEventListener("change", actualizarEstadoCampoNacionalidad);
+      document.getElementById("checkDobleNacionalidadAsistente")?.addEventListener("change", actualizarEstadoCampoSegundaNacionalidad);
       document.getElementById("modalDatosAsistente")?.addEventListener("click", function (e) {
         if (e.target.id === "modalDatosAsistente") cerrarModalDatosAsistente();
       });

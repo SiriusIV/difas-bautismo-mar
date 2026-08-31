@@ -13,6 +13,22 @@ function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
 }
 
+function normalizarDocumentoIdentidad(valor) {
+  return String(valor || "").trim().toUpperCase().replace(/[\s-]/g, "");
+}
+
+function documentoIdentidadValido(valor) {
+  const normalizado = normalizarDocumentoIdentidad(valor);
+  if (!normalizado) return true;
+  return /^[0-9]{8}[A-Z]$/.test(normalizado) || /^[XYZ][0-9]{7}[A-Z]$/.test(normalizado);
+}
+
+function emailValido(valor) {
+  const normalizado = limpiarTexto(valor);
+  if (!normalizado) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
+}
+
 function normalizarPerfilAsistente(valor) {
   const v = String(valor || "").trim().toUpperCase();
   if (!v) return "";
@@ -60,6 +76,8 @@ async function asegurarEsquemaVisitantes(env) {
       nacionalidad TEXT,
       dni TEXT,
       email TEXT,
+      doble_nacionalidad INTEGER NOT NULL DEFAULT 0,
+      segunda_nacionalidad TEXT,
       nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0,
       observaciones TEXT
     )
@@ -81,6 +99,12 @@ async function asegurarEsquemaVisitantes(env) {
   }
   if (!columnas.includes("email")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN email TEXT`);
+  }
+  if (!columnas.includes("doble_nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN doble_nacionalidad INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!columnas.includes("segunda_nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN segunda_nacionalidad TEXT`);
   }
   if (!columnas.includes("nacionalidad_no_consta")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0`);
@@ -173,9 +197,17 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
     columnas.push("email");
     bind.push(visitante.email);
   }
+  if (columnasVisitantes.includes("doble_nacionalidad")) {
+    columnas.push("doble_nacionalidad");
+    bind.push(visitante.doble_nacionalidad ? 1 : 0);
+  }
+  if (columnasVisitantes.includes("segunda_nacionalidad")) {
+    columnas.push("segunda_nacionalidad");
+    bind.push(visitante.segunda_nacionalidad);
+  }
   if (columnasVisitantes.includes("nacionalidad_no_consta")) {
     columnas.push("nacionalidad_no_consta");
-    bind.push(visitante.nacionalidad_no_consta ? 1 : 0);
+    bind.push(0);
   }
   if (columnasVisitantes.includes("observaciones")) {
     columnas.push("observaciones");
@@ -299,9 +331,11 @@ export async function onRequestPost(context) {
         nivel_ensenanza: normalizarNivelEnsenanza(v.nivel_ensenanza),
         categoria_edad: normalizarCategoriaEdad(v.categoria_edad),
         nacionalidad: limpiarTexto(v.nacionalidad),
-        dni: limpiarTexto(v.dni),
+        dni: normalizarDocumentoIdentidad(v.dni),
         email: limpiarTexto(v.email),
-        nacionalidad_no_consta: v.nacionalidad_no_consta === true || v.nacionalidad_no_consta === 1 || v.nacionalidad_no_consta === "1" ? 1 : 0,
+        doble_nacionalidad: v.doble_nacionalidad === true || v.doble_nacionalidad === 1 || v.doble_nacionalidad === "1" ? 1 : 0,
+        segunda_nacionalidad: v.doble_nacionalidad === true || v.doble_nacionalidad === 1 || v.doble_nacionalidad === "1" ? limpiarTexto(v.segunda_nacionalidad) : "",
+        nacionalidad_no_consta: 0,
         observaciones: limpiarTexto(v.observaciones)
       }))
       .filter((v) => v.nombre_completo !== "");
@@ -310,6 +344,24 @@ export async function onRequestPost(context) {
       if (!visitante.nombre_completo || !visitante.perfil_asistente || !visitante.nivel_ensenanza || !visitante.categoria_edad) {
         return json(
           { ok: false, error: `La fila ${visitante.fila} de asistentes no está completa.` },
+          { status: 400 }
+        );
+      }
+      if (!documentoIdentidadValido(visitante.dni)) {
+        return json(
+          { ok: false, error: `La fila ${visitante.fila} contiene un DNI/NIE con formato no válido.` },
+          { status: 400 }
+        );
+      }
+      if (!emailValido(visitante.email)) {
+        return json(
+          { ok: false, error: `La fila ${visitante.fila} contiene un correo electrónico con formato no válido.` },
+          { status: 400 }
+        );
+      }
+      if (visitante.doble_nacionalidad && !visitante.segunda_nacionalidad) {
+        return json(
+          { ok: false, error: `La fila ${visitante.fila} indica doble nacionalidad pero no incluye la segunda nacionalidad.` },
           { status: 400 }
         );
       }
