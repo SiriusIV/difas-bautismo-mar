@@ -273,6 +273,10 @@
     }
 
     .estado-badge.pendiente { background: #d39e00; }
+    .estado-badge.incompleta {
+      background: #ffc107;
+      color: #243447;
+    }
     .estado-badge.confirmada { background: #198754; }
     .estado-badge.rechazada { background: #dc3545; }
     .estado-badge.cancelada { background: #6c757d; }
@@ -558,19 +562,15 @@
     }
 
     th.nombre-col, td.nombre-col {
-      width: 36%;
-    }
-
-    .cabecera-nombre-asistente {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      width: 34%;
     }
 
     .btn-opciones-asistente {
-      border: 0;
-      background: transparent;
+      width: 28px;
+      height: 28px;
+      border: 1px solid #b9c8d8;
+      border-radius: 999px;
+      background: #fff;
       color: #123a63;
       display: inline-flex;
       align-items: center;
@@ -578,27 +578,32 @@
       font-size: 18px;
       line-height: 1;
       cursor: pointer;
-      padding: 0 4px 4px;
+      padding: 0 0 4px;
       flex: 0 0 auto;
     }
 
     .btn-opciones-asistente:disabled {
       color: #8a98a8;
-      background: transparent;
+      background: #f3f6fa;
       cursor: not-allowed;
       opacity: 0.65;
     }
 
     th.tipo-col, td.tipo-col {
-      width: 19%;
+      width: 18%;
     }
 
     th.ens-col, td.ens-col {
-      width: 23%;
+      width: 22%;
     }
 
     th.edad-col, td.edad-col {
       width: 18%;
+    }
+
+    th.acciones-col, td.acciones-col {
+      width: 8%;
+      text-align: center;
     }
 
     input[type="text"], input[type="email"], select {
@@ -966,7 +971,8 @@
       .tabla-wrap td.nombre-col,
       .tabla-wrap td.tipo-col,
       .tabla-wrap td.ens-col,
-      .tabla-wrap td.edad-col {
+      .tabla-wrap td.edad-col,
+      .tabla-wrap td.acciones-col {
         width: auto !important;
         min-width: 0 !important;
         max-width: none !important;
@@ -993,12 +999,19 @@
         white-space: nowrap;
       }
       .tabla-wrap td > input[type="text"],
+      .tabla-wrap td > input[type="email"],
       .tabla-wrap td > select {
         width: 100%;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+      .tabla-wrap td.acciones-col {
+        grid-template-columns: 116px minmax(0, 1fr);
+      }
+      .tabla-wrap td.acciones-col .btn-opciones-asistente {
+        justify-self: end;
       }
     }
   </style>
@@ -1090,15 +1103,11 @@
         <table>
           <thead>
             <tr>
-              <th class="nombre-col">
-                <div class="cabecera-nombre-asistente">
-                  <span>Nombre completo</span>
-                  <button type="button" id="btnDatosAsistente" class="btn-opciones-asistente" title="Datos ampliatorios del asistente seleccionado" aria-label="Datos ampliatorios del asistente seleccionado" disabled>...</button>
-                </div>
-              </th>
+              <th class="nombre-col">Nombre completo</th>
               <th class="tipo-col">Perfil</th>
               <th class="ens-col">Enseñanza</th>
               <th class="edad-col">Edad</th>
+              <th class="acciones-col">Datos</th>
             </tr>
           </thead>
           <tbody id="cuerpoAsistentes"></tbody>
@@ -1229,10 +1238,17 @@
       if (e === "pendiente") return "pendiente";
       if (e === "confirmada") return "confirmada";
       if (e === "rechazada") return "rechazada";
-      if (e === "provisional") return "suspendida";
+      if (e === "provisional") return "incompleta";
       if (e === "suspendida") return "suspendida";
       if (e === "cancelada") return "cancelada";
       return "";
+    }
+
+    function textoEstadoVisible(estado) {
+      const e = String(estado || "").trim().toUpperCase();
+      if (e === "PROVISIONAL") return "INCOMPLETA";
+      if (e === "PENDIENTE") return "EN PROCESO";
+      return e || "";
     }
 
     function solicitudEditable() {
@@ -1582,9 +1598,11 @@
     }
 
     function actualizarBotonDatosAsistente() {
-      const btn = document.getElementById("btnDatosAsistente");
-      if (!btn) return;
-      btn.disabled = !solicitudEditable() || !obtenerFilaSeleccionada();
+      const editable = solicitudEditable();
+      obtenerFilasTabla().forEach((tr) => {
+        const btn = tr.querySelector(".btn-datos-asistente-fila");
+        if (btn) btn.disabled = !editable;
+      });
     }
 
     function validarVisitantesDeTabla() {
@@ -1792,6 +1810,9 @@
             ${crearOpcionesSelect(OPCIONES_EDAD, asistente.categoria_edad, "Seleccione edad")}
           </select>
         </td>
+        <td class="acciones-col" data-label="Datos ampliatorios">
+          <button type="button" class="btn-opciones-asistente btn-datos-asistente-fila" title="Datos ampliatorios" aria-label="Datos ampliatorios del asistente" ${editable ? "" : "disabled"}>...</button>
+        </td>
       `;
 
       tr.addEventListener("click", function () {
@@ -1821,6 +1842,12 @@
         recalcularResumenEnPantalla();
       });
 
+      tr.querySelector(".btn-datos-asistente-fila").addEventListener("click", function (e) {
+        e.stopPropagation();
+        seleccionarFila(filaId);
+        abrirModalDatosAsistente();
+      });
+
       actualizarEstiloPlaceholderSelect(tr.querySelector(".perfil-asistente"));
       actualizarEstiloPlaceholderSelect(tr.querySelector(".ensenanza-asistente"));
       actualizarEstiloPlaceholderSelect(tr.querySelector(".categoria-asistente"));
@@ -1829,7 +1856,6 @@
     }
 
     function configurarModalDatosAsistente() {
-      document.getElementById("btnDatosAsistente")?.addEventListener("click", abrirModalDatosAsistente);
       document.getElementById("btnCerrarModalDatosAsistenteSuperior")?.addEventListener("click", cerrarModalDatosAsistente);
       document.getElementById("btnCancelarDatosAsistente")?.addEventListener("click", cerrarModalDatosAsistente);
       document.getElementById("btnGuardarDatosAsistente")?.addEventListener("click", guardarDatosAsistenteSeleccionado);
@@ -1931,7 +1957,7 @@
 
       document.getElementById("bloqueReserva").innerHTML = `
         <strong>Código de solicitud:</strong> ${reservaActual.codigo_reserva}<br>
-        <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${reservaActual.estado}</span><br>
+        <strong>Estado actual:</strong> <span class="estado-badge ${claseEstado}">${textoEstadoVisible(reservaActual.estado)}</span><br>
         ${lineaFranja}
         ${limiteDestacado}
       `;
