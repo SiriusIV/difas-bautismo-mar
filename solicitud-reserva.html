@@ -1325,6 +1325,14 @@
                 <path d="M22 2 15 22 11 13 2 9 22 2z"></path>
               </svg>
             </button>
+            <button type="button" id="btnGestionarAsistentesEdicion" class="btn-icono-redondo btn-secundario" title="Gestionar asistentes" aria-label="Gestionar asistentes" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </button>
             <a href="portal.html" class="btn-enlace-icono" title="Volver al portal" aria-label="Volver al portal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 10.5L12 3l9 7.5"></path>
@@ -2082,6 +2090,10 @@
       return normalizarEstadoReserva(reservaExistente?.estado) === "RECHAZADA";
     }
 
+    function puedeGestionarAsistentesEnEdicion(reserva = reservaExistente) {
+      return normalizarEstadoReserva(reserva?.estado) === "RECHAZADA" && Number(reserva?.rechazo_bloqueado || 0) !== 1;
+    }
+
     function permiteEdicionDesdePantalla(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       return estado === "BORRADOR" || estado === "RECHAZADA";
@@ -2396,9 +2408,14 @@ function obtenerDisponiblesFormulario(franja) {
     function configurarPantallaSegunModo(reserva) {
       const btnGuardarBorrador = document.getElementById("btnGuardarBorrador");
       const btnPrepararEnvio = document.getElementById("btnPrepararEnvio");
+      const btnGestionarAsistentes = document.getElementById("btnGestionarAsistentesEdicion");
       const tituloEvento = document.getElementById("tituloEvento");
       if (!btnGuardarBorrador || !btnPrepararEnvio || !tituloEvento) return;
 
+      if (btnGestionarAsistentes) {
+        btnGestionarAsistentes.style.display = "none";
+        btnGestionarAsistentes.disabled = true;
+      }
       btnGuardarBorrador.style.display = "";
       btnGuardarBorrador.disabled = false;
       btnPrepararEnvio.title = "Enviar solicitud";
@@ -2420,6 +2437,10 @@ function obtenerDisponiblesFormulario(franja) {
       if (esModoReenvioRechazada()) {
         btnGuardarBorrador.style.display = "";
         btnGuardarBorrador.disabled = false;
+        if (btnGestionarAsistentes && puedeGestionarAsistentesEnEdicion(reserva)) {
+          btnGestionarAsistentes.style.display = "";
+          btnGestionarAsistentes.disabled = false;
+        }
         btnPrepararEnvio.title = "Reenviar solicitud";
         btnPrepararEnvio.setAttribute("aria-label", "Reenviar solicitud");
         return;
@@ -3277,6 +3298,7 @@ function obtenerDisponiblesFormulario(franja) {
       });
 
       btnGuardarBorrador.addEventListener("click", abrirModalAvisoBorradorSinReserva);
+      document.getElementById("btnGestionarAsistentesEdicion")?.addEventListener("click", abrirGestionAsistentes);
 
         if (enlacePortal) {
           enlacePortal.addEventListener("click", function (e) {

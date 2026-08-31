@@ -1124,7 +1124,10 @@
     }
 
     function solicitudEditable() {
-      return reservaActual && ["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "CONFIRMADA", "ACEPTADA", "SUSPENDIDA"].includes(String(reservaActual.estado || "").toUpperCase());
+      if (!reservaActual) return false;
+      const estado = String(reservaActual.estado || "").toUpperCase();
+      const rechazoSubsanable = estado === "RECHAZADA" && Number(reservaActual.rechazo_bloqueado || 0) !== 1;
+      return rechazoSubsanable || ["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "CONFIRMADA", "ACEPTADA", "SUSPENDIDA"].includes(estado);
     }
 
     function obtenerMaximoPermitidoActual() {
@@ -1404,7 +1407,7 @@
       if (!response.ok || !data.ok) {
         if (reservaActual && reservaActual.estado === "CANCELADA") {
           mostrarMensaje("aviso", "La solicitud está cancelada. No se permite gestionar asistentes.");
-        } else if (reservaActual && reservaActual.estado === "RECHAZADA") {
+        } else if (reservaActual && reservaActual.estado === "RECHAZADA" && Number(reservaActual.rechazo_bloqueado || 0) === 1) {
           mostrarMensaje("error", "La solicitud está rechazada. No se permite gestionar asistentes.");
         } else {
           mostrarMensaje("error", data.error || "No se pudieron cargar los asistentes.");
@@ -1806,7 +1809,7 @@
       if (!reservaActual) return false;
       if (Array.isArray(visitantes) && visitantes.length > 0) return false;
       const estado = String(reservaActual.estado || "").trim().toUpperCase();
-      const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA"].includes(estado);
+      const estadoConControl = ["CONFIRMADA", "ACEPTADA", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA", "RECHAZADA"].includes(estado);
       if (!estadoConControl) return false;
       return true;
     }

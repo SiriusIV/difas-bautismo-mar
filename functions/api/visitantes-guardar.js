@@ -1,5 +1,6 @@
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn } from "./_reservas_rechazo_plazo.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -78,6 +79,8 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.id,
       r.codigo_reserva,
       r.estado,
+      COALESCE(r.rechazo_bloqueado, 0) AS rechazo_bloqueado,
+      COALESCE(r.rechazo_elimina_en, '') AS rechazo_elimina_en,
       r.franja_id,
       r.actividad_id,
       r.plazas_prereservadas,
@@ -180,6 +183,15 @@ function calcularBloqueoReserva(row) {
   const asistentes = Number(row.asistentes_cargados || 0);
   const prereservadas = Number(row.plazas_prereservadas || 0);
   const estado = String(row.estado || "").toUpperCase();
+  const rechazoSubsanableVigente =
+    estado === "RECHAZADA" &&
+    Number(row.rechazo_bloqueado || 0) !== 1 &&
+    !!row.rechazo_elimina_en &&
+    new Date(String(row.rechazo_elimina_en).replace(" ", "T")) >= new Date();
+
+  if (rechazoSubsanableVigente) {
+    return Math.max(prereservadas, asistentes);
+  }
 
   if (!["PENDIENTE", "EN_REVISION", "PROVISIONAL", "CONFIRMADA", "SUSPENDIDA"].includes(estado)) {
     return 0;
@@ -200,6 +212,8 @@ async function obtenerBloqueoDeOtrasReservas(env, franjaId, reservaIdActual) {
     SELECT
       r.id,
       r.estado,
+      COALESCE(r.rechazo_bloqueado, 0) AS rechazo_bloqueado,
+      COALESCE(r.rechazo_elimina_en, '') AS rechazo_elimina_en,
       r.plazas_prereservadas,
       r.prereserva_expira_en,
       COALESCE((
@@ -226,6 +240,8 @@ export async function onRequestPost(context) {
 
   try {
     await asegurarColumnaAforoMaximo(env);
+    await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
     const data = await request.json();
 
     const tokenEdicion = limpiarTexto(data.token_edicion);
@@ -247,7 +263,9 @@ export async function onRequestPost(context) {
       );
     }
 
-    if (!["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase())) {
+    const estadoReserva = String(reserva.estado || "").toUpperCase();
+    const rechazoSubsanable = estadoReserva === "RECHAZADA" && Number(reserva.rechazo_bloqueado || 0) !== 1;
+    if (!rechazoSubsanable && !["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(estadoReserva)) {
       return json(
         { ok: false, error: "La solicitud no permite gestionar asistentes en su estado actual." },
         { status: 400 }

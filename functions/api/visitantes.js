@@ -1,3 +1,5 @@
+import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn } from "./_reservas_rechazo_plazo.js";
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -45,6 +47,7 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.id,
       r.codigo_reserva,
       r.estado,
+      COALESCE(r.rechazo_bloqueado, 0) AS rechazo_bloqueado,
       r.plazas_prereservadas,
       r.prereserva_expira_en
     FROM reservas r
@@ -104,6 +107,8 @@ export async function onRequestGet(context) {
   try {
     const url = new URL(request.url);
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
+    await asegurarColumnaRechazoEliminaEn(env);
+    await asegurarColumnaRechazoBloqueado(env);
 
     if (!tokenEdicion) {
       return json(
@@ -121,7 +126,9 @@ export async function onRequestGet(context) {
       );
     }
 
-    if (!["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(String(reserva.estado || "").toUpperCase())) {
+    const estadoReserva = String(reserva.estado || "").toUpperCase();
+    const rechazoSubsanable = estadoReserva === "RECHAZADA" && Number(reserva.rechazo_bloqueado || 0) !== 1;
+    if (!rechazoSubsanable && !["BORRADOR", "PENDIENTE", "EN_REVISION", "PROVISIONAL", "SUSPENDIDA", "CONFIRMADA"].includes(estadoReserva)) {
       return json(
         { ok: false, error: "La solicitud no permite gestionar asistentes en su estado actual." },
         { status: 400 }
@@ -151,6 +158,7 @@ export async function onRequestGet(context) {
       ok: true,
       codigo_reserva: reserva.codigo_reserva,
       estado: reserva.estado,
+      rechazo_bloqueado: Number(reserva.rechazo_bloqueado || 0),
       plazas_reservadas: Number(reserva.plazas_prereservadas || 0),
       prereserva_expira_en: reserva.prereserva_expira_en,
       plazas_asignadas: visitantesNormalizados.length,
