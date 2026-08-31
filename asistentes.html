@@ -1050,14 +1050,6 @@
       <div class="panel-cabecera">
         <h3 class="panel-cabecera-titulo">Listado de asistentes</h3>
         <div class="barra-acciones">
-          <button type="button" id="btnGuardarAsistentes" class="btn-icono guardar" title="Guardar asistentes" aria-label="Guardar asistentes">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-              <polyline points="17 21 17 13 7 13 7 21"></polyline>
-              <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-          </button>
-
           <button type="button" id="btnAnadirFila" class="btn-icono anadir" title="Añadir asistente" aria-label="Añadir asistente">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -1204,6 +1196,8 @@
     let temporizadorMensaje = null;
     let tipoMensajeActivo = "";
     let accionPendienteModalSinAsistentes = null;
+    let temporizadorGuardadoAutomatico = null;
+    let guardadoAutomaticoEnCola = false;
 
     const OPCIONES_PERFIL = [
       { value: "ALUMNO", label: "Alumno" },
@@ -1431,10 +1425,25 @@
     function marcarCambiosPendientes() {
       if (!solicitudEditable()) return;
       hayCambiosSinGuardar = true;
+      programarGuardadoAutomatico();
     }
 
     function limpiarCambiosPendientes() {
       hayCambiosSinGuardar = false;
+    }
+
+    function cancelarGuardadoAutomatico() {
+      if (temporizadorGuardadoAutomatico) {
+        clearTimeout(temporizadorGuardadoAutomatico);
+        temporizadorGuardadoAutomatico = null;
+      }
+    }
+
+    function programarGuardadoAutomatico(retardoMs = 700) {
+      cancelarGuardadoAutomatico();
+      temporizadorGuardadoAutomatico = window.setTimeout(() => {
+        guardarAsistentes({ automatico: true });
+      }, retardoMs);
     }
 
     function establecerVisibilidadModalSalida(activo) {
@@ -1717,7 +1726,10 @@
       fila.dataset.observaciones = document.getElementById("inputObservacionesAsistente").value.trim();
       marcarCambiosPendientes();
       cerrarModalDatosAsistente();
-      mostrarMensaje("ok", "Datos ampliatorios del asistente preparados para guardar.");
+      guardarAsistentes({
+        mensajeExito: "Datos ampliatorios del asistente guardados.",
+        autocierreMs: 5000
+      });
     }
 
     function ejecutarEliminacionFilaSeleccionada() {
@@ -1740,6 +1752,7 @@
       if (esUltimaFila && debeMostrarAvisoSinAsistentes([])) {
         abrirModalAvisoSinAsistentes(() => {
           ejecutarEliminacionFilaSeleccionada();
+          guardarAsistentes({ automatico: true, confirmarSinAsistentes: true });
         });
         return;
       }
@@ -1948,20 +1961,17 @@
       `;
       igualarAlturaBloquesInferiores();
 
-      const btnGuardar = document.getElementById("btnGuardarAsistentes");
       const btnAnadir = document.getElementById("btnAnadirFila");
 
       const maximoPermitido = obtenerMaximoPermitidoActual();
 
       if (!solicitudEditable()) {
-        btnGuardar.disabled = true;
         btnAnadir.disabled = true;
         actualizarBotonEliminar();
         return;
       }
 
       if (validacion.errores.length) {
-        btnGuardar.disabled = envioEnCurso;
         btnAnadir.disabled = false;
         actualizarBotonEliminar();
         return;
@@ -1974,13 +1984,11 @@
             ? `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta reserva (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la misma franja.`
             : `No puede asignar más asistentes (${totalAsignadas}) que el máximo actualmente permitido para esta solicitud (${maximoPermitido}), porque existen plazas bloqueadas por otras solicitudes activas en la actividad.`
         );
-        btnGuardar.disabled = true;
         btnAnadir.disabled = true;
       } else {
         if (tipoMensajeActivo === "error") {
           limpiarMensaje();
         }
-        btnGuardar.disabled = envioEnCurso;
         btnAnadir.disabled = Number.isFinite(maximoPermitido) ? totalAsignadas >= maximoPermitido : false;
       }
 
@@ -1990,7 +1998,6 @@
     function actualizarModoPantalla() {
       const editable = solicitudEditable();
 
-      document.getElementById("btnGuardarAsistentes").disabled = !editable || envioEnCurso;
       document.getElementById("btnAnadirFila").disabled = !editable;
 
       obtenerFilasTabla().forEach(tr => {
@@ -2012,10 +2019,30 @@
       recalcularResumenEnPantalla();
     }
 
-    async function guardarAsistentes() {
-      if (!solicitudEditable() || envioEnCurso) return;
+    function construirPayloadVisitantes(visitantes) {
+      return visitantes.map(v => ({
+        nombre_completo: v.nombre_completo,
+        perfil_asistente: v.perfil_asistente,
+        nivel_ensenanza: v.nivel_ensenanza,
+        categoria_edad: v.categoria_edad,
+        nacionalidad: v.nacionalidad || "",
+        dni: v.dni || "",
+        email: v.email || "",
+        doble_nacionalidad: v.doble_nacionalidad ? 1 : 0,
+        segunda_nacionalidad: v.segunda_nacionalidad || "",
+        observaciones: v.observaciones || ""
+      }));
+    }
 
-      limpiarMensaje();
+    async function guardarAsistentes(opciones = {}) {
+      if (!solicitudEditable()) return;
+      if (envioEnCurso) {
+        if (opciones.automatico) guardadoAutomaticoEnCola = true;
+        return;
+      }
+
+      cancelarGuardadoAutomatico();
+      if (!opciones.automatico) limpiarMensaje();
 
       const validacion = validarVisitantesDeTabla();
       const filasVaciasSinDatos = validacion.completos.length === 0 &&
@@ -2023,23 +2050,24 @@
         validacion.errores.every((err) => /^Fila \d+: falta /.test(String(err || "")));
 
       if (validacion.errores.length && !filasVaciasSinDatos) {
-        mostrarMensaje("error", validacion.errores.join(" "));
+        if (!opciones.automatico) mostrarMensaje("error", validacion.errores.join(" "));
         return;
       }
 
-      const visitantes = validacion.completos.map(v => ({
-        nombre_completo: v.nombre_completo,
-        perfil_asistente: v.perfil_asistente,
-        nivel_ensenanza: v.nivel_ensenanza,
-        categoria_edad: v.categoria_edad
-      }));
+      const visitantes = construirPayloadVisitantes(validacion.completos);
 
       if (debeMostrarAvisoSinAsistentes(visitantes)) {
-        abrirModalAvisoSinAsistentes(() => guardarVisitantesEnServidor(visitantes, { confirmarSinAsistentes: true }));
+        if (opciones.confirmarSinAsistentes) {
+          await guardarVisitantesEnServidor(visitantes, { confirmarSinAsistentes: true, silencioso: opciones.automatico === true, mensajeExito: opciones.mensajeExito, autocierreMs: opciones.autocierreMs });
+          return;
+        }
+        if (!opciones.automatico) {
+          abrirModalAvisoSinAsistentes(() => guardarVisitantesEnServidor(visitantes, { confirmarSinAsistentes: true, mensajeExito: opciones.mensajeExito, autocierreMs: opciones.autocierreMs }));
+        }
         return;
       }
 
-      await guardarVisitantesEnServidor(visitantes);
+      await guardarVisitantesEnServidor(visitantes, { silencioso: opciones.automatico === true, mensajeExito: opciones.mensajeExito, autocierreMs: opciones.autocierreMs });
     }
 
     function debeMostrarAvisoSinAsistentes(visitantes = []) {
@@ -2079,8 +2107,7 @@
     async function guardarVisitantesEnServidor(visitantes, opciones = {}) {
       try {
         envioEnCurso = true;
-        const btnGuardar = document.getElementById("btnGuardarAsistentes");
-        btnGuardar.disabled = true;
+        guardadoAutomaticoEnCola = false;
 
         const response = await fetch("/api/visitantes-guardar", {
           method: "POST",
@@ -2101,9 +2128,12 @@
           return;
         }
 
-        mostrarMensaje("ok", data.mensaje || "Asistentes guardados correctamente.", { autocierreMs: 4000 });
+        if (!opciones.silencioso) {
+          mostrarMensaje("ok", opciones.mensajeExito || data.mensaje || "Asistentes guardados correctamente.", { autocierreMs: opciones.autocierreMs || 4000 });
+        }
         await cargarReserva();
-        await cargarVisitantes();
+        visitantesActuales = visitantes;
+        recalcularResumenEnPantalla();
         limpiarCambiosPendientes();
 
       } catch (error) {
@@ -2111,8 +2141,10 @@
         mostrarMensaje("error", "Error de conexión con el servidor.");
       } finally {
         envioEnCurso = false;
-        document.getElementById("btnGuardarAsistentes").disabled = !solicitudEditable();
         actualizarModoPantalla();
+        if (guardadoAutomaticoEnCola) {
+          programarGuardadoAutomatico(250);
+        }
       }
     }
 
@@ -2429,9 +2461,9 @@
         renderizarVisitantes();
         marcarCambiosPendientes();
         if (repetidos.length) {
-          mostrarMensaje("aviso", `Se han añadido ${nuevos.length} asistentes nuevos desde la plantilla y se han omitido ${repetidos.length} repetidos que ya estaban cargados en la solicitud. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+          mostrarMensaje("aviso", `Se han añadido ${nuevos.length} asistentes nuevos desde la plantilla y se han omitido ${repetidos.length} repetidos que ya estaban cargados en la solicitud. El volcado se guardará automáticamente.`);
         } else {
-          mostrarMensaje("ok", `Se han añadido ${nuevos.length} asistentes desde la plantilla. Revisa la tabla y pulsa Guardar asistentes para confirmar el volcado al sistema.`);
+          mostrarMensaje("ok", `Se han añadido ${nuevos.length} asistentes desde la plantilla. El volcado se guardará automáticamente.`, { autocierreMs: 5000 });
         }
       } catch (error) {
         mostrarMensaje("error", error.message || "No se pudo importar la plantilla de asistentes.");
@@ -2500,12 +2532,10 @@
       document.getElementById("btnAnadirFila").addEventListener("click", function () {
         if (!solicitudEditable()) return;
         crearFila();
-        marcarCambiosPendientes();
         recalcularResumenEnPantalla();
       });
 
       document.getElementById("btnEliminarSeleccionado").addEventListener("click", eliminarFilaSeleccionada);
-      document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
       document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
       configurarImportacionAsistentes();
       configurarModalDatosAsistente();
