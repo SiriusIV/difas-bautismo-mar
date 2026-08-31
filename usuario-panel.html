@@ -1476,11 +1476,21 @@
     function actualizarBotones() {
       const hay = !!reservaSeleccionada;
       const estado = normalizarEstadoReserva(reservaSeleccionada?.estado);
-      const rechazoBloqueado = Number(reservaSeleccionada?.rechazo_bloqueado || 0) === 1;
+      const rechazoBloqueado = esRechazoBloqueado(reservaSeleccionada);
       document.getElementById("btnEnviarSolicitud").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado) || (estado === "RECHAZADA" && rechazoBloqueado);
       document.getElementById("btnEditar").disabled = !hay || !["BORRADOR", "RECHAZADA"].includes(estado) || (estado === "RECHAZADA" && rechazoBloqueado);
-      document.getElementById("btnAsistentes").disabled = !hay || estado === "CANCELADA" || (estado === "RECHAZADA" && rechazoBloqueado);
+      document.getElementById("btnAsistentes").disabled = !hay || !reservaSeleccionada?.token_edicion || estado === "CANCELADA" || (estado === "RECHAZADA" && rechazoBloqueado);
       document.getElementById("btnAnularSolicitud").disabled = !hay;
+    }
+
+    function esRechazoBloqueado(reserva) {
+      return Number(reserva?.rechazo_bloqueado || 0) === 1;
+    }
+
+    function puedeGestionarAsistentesReserva(reserva) {
+      const estado = normalizarEstadoReserva(reserva?.estado);
+      if (!reserva?.token_edicion || estado === "CANCELADA") return false;
+      return estado !== "RECHAZADA" || !esRechazoBloqueado(reserva);
     }
 
     function normalizarEstadoDocumentoPanel(estado) {
@@ -2009,7 +2019,7 @@
       }
 
       if (estado === "RECHAZADA") {
-        if (Number(reserva?.rechazo_bloqueado || 0) === 1) {
+        if (esRechazoBloqueado(reserva)) {
           return acciones;
         }
         if (reserva?.token_edicion) {
@@ -2018,11 +2028,15 @@
             principal: true,
             onClick: () => editarReserva(reserva.token_edicion, estado)
           });
+          acciones.push({
+            label: "Gestionar asistentes",
+            onClick: () => abrirAsistentes(reserva.token_edicion)
+          });
         }
         return acciones;
       }
 
-      if (reserva?.token_edicion && estado !== "CANCELADA") {
+      if (puedeGestionarAsistentesReserva(reserva)) {
         acciones.push({
           label: "Gestionar asistentes",
           onClick: () => abrirAsistentes(reserva.token_edicion)
