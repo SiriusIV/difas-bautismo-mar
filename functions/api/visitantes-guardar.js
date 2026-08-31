@@ -56,7 +56,12 @@ async function asegurarEsquemaVisitantes(env) {
       tipo_asistente TEXT,
       perfil_asistente TEXT,
       nivel_ensenanza TEXT,
-      categoria_edad TEXT
+      categoria_edad TEXT,
+      nacionalidad TEXT,
+      dni TEXT,
+      email TEXT,
+      nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0,
+      observaciones TEXT
     )
   `).run();
 
@@ -67,6 +72,21 @@ async function asegurarEsquemaVisitantes(env) {
   }
   if (!columnas.includes("nivel_ensenanza")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nivel_ensenanza TEXT`);
+  }
+  if (!columnas.includes("nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad TEXT`);
+  }
+  if (!columnas.includes("dni")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN dni TEXT`);
+  }
+  if (!columnas.includes("email")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN email TEXT`);
+  }
+  if (!columnas.includes("nacionalidad_no_consta")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!columnas.includes("observaciones")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones TEXT`);
   }
   for (const sentencia of alterPendientes) {
     await env.DB.prepare(sentencia).run();
@@ -126,49 +146,48 @@ async function borrarVisitantesDeReserva(env, reservaId) {
 }
 
 async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) {
-  const tieneTipoAsistente = columnasVisitantes.includes("tipo_asistente");
-  const tienePerfilAsistente = columnasVisitantes.includes("perfil_asistente");
-  const tieneNivelEnsenanza = columnasVisitantes.includes("nivel_ensenanza");
+  const columnas = ["reserva_id", "nombre_completo"];
+  const bind = [reservaId, visitante.nombre_completo];
 
-  if (tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza) {
-    const sql = `
-      INSERT INTO visitantes (
-        reserva_id,
-        nombre_completo,
-        ${tieneTipoAsistente ? "tipo_asistente," : ""}
-        ${tienePerfilAsistente ? "perfil_asistente," : ""}
-        ${tieneNivelEnsenanza ? "nivel_ensenanza," : ""}
-        categoria_edad
-      ) VALUES (?, ?, ${tieneTipoAsistente ? "?," : ""} ${tienePerfilAsistente ? "?," : ""} ${tieneNivelEnsenanza ? "?," : ""} ?)
-    `;
-
-    const bind = [reservaId, visitante.nombre_completo];
-    if (tieneTipoAsistente) {
-      bind.push(visitante.perfil_asistente === "ALUMNO" ? "ALUMNO" : "PROFESOR");
-    }
-    if (tienePerfilAsistente) {
-      bind.push(visitante.perfil_asistente);
-    }
-    if (tieneNivelEnsenanza) {
-      bind.push(visitante.nivel_ensenanza);
-    }
-    bind.push(visitante.categoria_edad);
-
-    return await env.DB.prepare(sql).bind(...bind).run();
+  if (columnasVisitantes.includes("tipo_asistente")) {
+    columnas.push("tipo_asistente");
+    bind.push(visitante.perfil_asistente === "ALUMNO" ? "ALUMNO" : "PROFESOR");
+  }
+  if (columnasVisitantes.includes("perfil_asistente")) {
+    columnas.push("perfil_asistente");
+    bind.push(visitante.perfil_asistente);
+  }
+  if (columnasVisitantes.includes("nivel_ensenanza")) {
+    columnas.push("nivel_ensenanza");
+    bind.push(visitante.nivel_ensenanza);
+  }
+  if (columnasVisitantes.includes("nacionalidad")) {
+    columnas.push("nacionalidad");
+    bind.push(visitante.nacionalidad);
+  }
+  if (columnasVisitantes.includes("dni")) {
+    columnas.push("dni");
+    bind.push(visitante.dni);
+  }
+  if (columnasVisitantes.includes("email")) {
+    columnas.push("email");
+    bind.push(visitante.email);
+  }
+  if (columnasVisitantes.includes("nacionalidad_no_consta")) {
+    columnas.push("nacionalidad_no_consta");
+    bind.push(visitante.nacionalidad_no_consta ? 1 : 0);
+  }
+  if (columnasVisitantes.includes("observaciones")) {
+    columnas.push("observaciones");
+    bind.push(visitante.observaciones);
   }
 
-  const sql = `
-    INSERT INTO visitantes (
-      reserva_id,
-      nombre_completo,
-      categoria_edad
-    )
-    VALUES (?, ?, ?)
-  `;
+  columnas.push("categoria_edad");
+  bind.push(visitante.categoria_edad);
 
-  return await env.DB.prepare(sql)
-    .bind(reservaId, visitante.nombre_completo, visitante.categoria_edad)
-    .run();
+  const placeholders = columnas.map(() => "?").join(", ");
+  const sql = `INSERT INTO visitantes (${columnas.join(", ")}) VALUES (${placeholders})`;
+  return await env.DB.prepare(sql).bind(...bind).run();
 }
 
 async function actualizarReservaTrasGuardar(env, reservaId) {
@@ -278,7 +297,12 @@ export async function onRequestPost(context) {
         nombre_completo: limpiarTexto(v.nombre_completo),
         perfil_asistente: normalizarPerfilAsistente(v.perfil_asistente ?? v.tipo_asistente),
         nivel_ensenanza: normalizarNivelEnsenanza(v.nivel_ensenanza),
-        categoria_edad: normalizarCategoriaEdad(v.categoria_edad)
+        categoria_edad: normalizarCategoriaEdad(v.categoria_edad),
+        nacionalidad: limpiarTexto(v.nacionalidad),
+        dni: limpiarTexto(v.dni),
+        email: limpiarTexto(v.email),
+        nacionalidad_no_consta: v.nacionalidad_no_consta === true || v.nacionalidad_no_consta === 1 || v.nacionalidad_no_consta === "1" ? 1 : 0,
+        observaciones: limpiarTexto(v.observaciones)
       }))
       .filter((v) => v.nombre_completo !== "");
 

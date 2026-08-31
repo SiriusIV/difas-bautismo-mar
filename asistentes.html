@@ -561,6 +561,37 @@
       width: 36%;
     }
 
+    .cabecera-nombre-asistente {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .btn-opciones-asistente {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #b9c8d8;
+      border-radius: 999px;
+      background: #fff;
+      color: #123a63;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 0 4px;
+      flex: 0 0 auto;
+    }
+
+    .btn-opciones-asistente:disabled {
+      color: #8a98a8;
+      background: #f3f6fa;
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
     th.tipo-col, td.tipo-col {
       width: 19%;
     }
@@ -587,6 +618,53 @@
     }
     select option {
       color: #22313f;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: 8px 10px;
+      border: 1px solid var(--color-borde-input);
+      border-radius: var(--radio-campo);
+      font-size: 12px;
+      box-sizing: border-box;
+      background: #fff;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .form-grid-asistente {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .campo-form {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      color: #31445a;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .campo-form.campo-completo {
+      grid-column: 1 / -1;
+    }
+
+    .check-form {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: #31445a;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .check-form input {
+      margin-top: 2px;
     }
 
     .fila-seleccionada {
@@ -1023,7 +1101,12 @@
         <table>
           <thead>
             <tr>
-              <th class="nombre-col">Nombre completo</th>
+              <th class="nombre-col">
+                <div class="cabecera-nombre-asistente">
+                  <span>Nombre completo</span>
+                  <button type="button" id="btnDatosAsistente" class="btn-opciones-asistente" title="Datos ampliatorios del asistente seleccionado" aria-label="Datos ampliatorios del asistente seleccionado" disabled>...</button>
+                </div>
+              </th>
               <th class="tipo-col">Perfil</th>
               <th class="ens-col">Enseñanza</th>
               <th class="edad-col">Edad</th>
@@ -1070,6 +1153,40 @@
       <div class="acciones acciones-izquierda">
         <button type="button" id="btnContinuarSinAsistentes" class="btn-modal">Continuar</button>
         <button type="button" id="btnCancelarSinAsistentes" class="btn-modal secundario">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalDatosAsistente" class="modal-fondo" aria-hidden="true">
+    <div class="modal">
+      <button type="button" id="btnCerrarModalDatosAsistenteSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
+      <h3>Datos ampliatorios del asistente</h3>
+      <p id="nombreModalDatosAsistente">Selecciona un asistente de la tabla.</p>
+      <div class="form-grid-asistente">
+        <label class="campo-form">
+          Nacionalidad
+          <input type="text" id="inputNacionalidadAsistente" maxlength="120" autocomplete="off">
+        </label>
+        <label class="campo-form">
+          DNI
+          <input type="text" id="inputDniAsistente" maxlength="40" autocomplete="off">
+        </label>
+        <label class="campo-form campo-completo">
+          Correo electrónico
+          <input type="text" id="inputEmailAsistente" maxlength="180" autocomplete="off">
+        </label>
+        <label class="check-form">
+          <input type="checkbox" id="checkNoNacionalidadAsistente">
+          <span>No consta nacionalidad o no procede indicar nacionalidad.</span>
+        </label>
+        <label class="campo-form campo-completo">
+          Observaciones
+          <textarea id="inputObservacionesAsistente" maxlength="1000"></textarea>
+        </label>
+      </div>
+      <div class="acciones">
+        <button type="button" class="btn-modal secundario" id="btnCancelarDatosAsistente">Cancelar</button>
+        <button type="button" class="btn-modal" id="btnGuardarDatosAsistente">Guardar datos</button>
       </div>
     </div>
   </div>
@@ -1439,8 +1556,24 @@
         nombre_completo: tr.querySelector(".nombre-asistente")?.value.trim() || "",
         perfil_asistente: tr.querySelector(".perfil-asistente")?.value || "",
         nivel_ensenanza: tr.querySelector(".ensenanza-asistente")?.value || "",
-        categoria_edad: tr.querySelector(".categoria-asistente")?.value || ""
+        categoria_edad: tr.querySelector(".categoria-asistente")?.value || "",
+        nacionalidad: tr.dataset.nacionalidad || "",
+        dni: tr.dataset.dni || "",
+        email: tr.dataset.email || "",
+        nacionalidad_no_consta: tr.dataset.nacionalidadNoConsta === "1" ? 1 : 0,
+        observaciones: tr.dataset.observaciones || ""
       }));
+    }
+
+    function obtenerFilaSeleccionada() {
+      if (!filaSeleccionadaId) return null;
+      return document.querySelector(`#cuerpoAsistentes tr[data-fila-id="${filaSeleccionadaId}"]`);
+    }
+
+    function actualizarBotonDatosAsistente() {
+      const btn = document.getElementById("btnDatosAsistente");
+      if (!btn) return;
+      btn.disabled = !solicitudEditable() || !obtenerFilaSeleccionada();
     }
 
     function validarVisitantesDeTabla() {
@@ -1491,6 +1624,7 @@
     function actualizarBotonEliminar() {
       const btn = document.getElementById("btnEliminarSeleccionado");
       btn.disabled = !solicitudEditable() || !filaSeleccionadaId;
+      actualizarBotonDatosAsistente();
     }
 
     function seleccionarFila(filaId) {
@@ -1499,6 +1633,51 @@
         tr.classList.toggle("fila-seleccionada", tr.dataset.filaId === filaId);
       });
       actualizarBotonEliminar();
+    }
+
+    function abrirModalDatosAsistente() {
+      const fila = obtenerFilaSeleccionada();
+      if (!solicitudEditable() || !fila) {
+        mostrarMensaje("aviso", "Selecciona primero un asistente de la tabla.");
+        return;
+      }
+      const nombre = fila.querySelector(".nombre-asistente")?.value.trim() || "Asistente seleccionado";
+      document.getElementById("nombreModalDatosAsistente").textContent = nombre;
+      document.getElementById("inputNacionalidadAsistente").value = fila.dataset.nacionalidad || "";
+      document.getElementById("inputDniAsistente").value = fila.dataset.dni || "";
+      document.getElementById("inputEmailAsistente").value = fila.dataset.email || "";
+      document.getElementById("checkNoNacionalidadAsistente").checked = fila.dataset.nacionalidadNoConsta === "1";
+      document.getElementById("inputObservacionesAsistente").value = fila.dataset.observaciones || "";
+      actualizarEstadoCampoNacionalidad();
+      establecerVisibilidadModal("modalDatosAsistente", true);
+    }
+
+    function actualizarEstadoCampoNacionalidad() {
+      const check = document.getElementById("checkNoNacionalidadAsistente");
+      const input = document.getElementById("inputNacionalidadAsistente");
+      if (!check || !input) return;
+      input.disabled = check.checked;
+      if (check.checked) input.value = "";
+    }
+
+    function cerrarModalDatosAsistente() {
+      establecerVisibilidadModal("modalDatosAsistente", false);
+    }
+
+    function guardarDatosAsistenteSeleccionado() {
+      const fila = obtenerFilaSeleccionada();
+      if (!solicitudEditable() || !fila) {
+        cerrarModalDatosAsistente();
+        return;
+      }
+      fila.dataset.nacionalidad = document.getElementById("inputNacionalidadAsistente").value.trim();
+      fila.dataset.dni = document.getElementById("inputDniAsistente").value.trim();
+      fila.dataset.email = document.getElementById("inputEmailAsistente").value.trim();
+      fila.dataset.nacionalidadNoConsta = document.getElementById("checkNoNacionalidadAsistente").checked ? "1" : "0";
+      fila.dataset.observaciones = document.getElementById("inputObservacionesAsistente").value.trim();
+      marcarCambiosPendientes();
+      cerrarModalDatosAsistente();
+      mostrarMensaje("ok", "Datos ampliatorios del asistente preparados para guardar.");
     }
 
     function ejecutarEliminacionFilaSeleccionada() {
@@ -1534,6 +1713,11 @@
       const editable = solicitudEditable();
 
       tr.dataset.filaId = filaId;
+      tr.dataset.nacionalidad = asistente.nacionalidad || "";
+      tr.dataset.dni = asistente.dni || "";
+      tr.dataset.email = asistente.email || "";
+      tr.dataset.nacionalidadNoConsta = Number(asistente.nacionalidad_no_consta || 0) === 1 ? "1" : "0";
+      tr.dataset.observaciones = asistente.observaciones || "";
 
       tr.innerHTML = `
         <td class="nombre-col" data-label="Nombre completo">
@@ -1590,6 +1774,17 @@
       tbody.appendChild(tr);
     }
 
+    function configurarModalDatosAsistente() {
+      document.getElementById("btnDatosAsistente")?.addEventListener("click", abrirModalDatosAsistente);
+      document.getElementById("btnCerrarModalDatosAsistenteSuperior")?.addEventListener("click", cerrarModalDatosAsistente);
+      document.getElementById("btnCancelarDatosAsistente")?.addEventListener("click", cerrarModalDatosAsistente);
+      document.getElementById("btnGuardarDatosAsistente")?.addEventListener("click", guardarDatosAsistenteSeleccionado);
+      document.getElementById("checkNoNacionalidadAsistente")?.addEventListener("change", actualizarEstadoCampoNacionalidad);
+      document.getElementById("modalDatosAsistente")?.addEventListener("click", function (e) {
+        if (e.target.id === "modalDatosAsistente") cerrarModalDatosAsistente();
+      });
+    }
+
     function renderizarVisitantes() {
       const tbody = document.getElementById("cuerpoAsistentes");
       tbody.innerHTML = "";
@@ -1603,6 +1798,7 @@
 
       recalcularResumenEnPantalla();
       actualizarBotonEliminar();
+      actualizarBotonDatosAsistente();
       enfocarPrimerNombreAsistente();
     }
 
@@ -2271,6 +2467,7 @@
       document.getElementById("btnGuardarAsistentes").addEventListener("click", guardarAsistentes);
       document.getElementById("btnCerrarMensaje").addEventListener("click", limpiarMensaje);
       configurarImportacionAsistentes();
+      configurarModalDatosAsistente();
 
       document.getElementById("btnConfirmarSalida").addEventListener("click", continuarNavegacion);
       document.getElementById("btnCancelarSalida").addEventListener("click", cerrarModalSalida);

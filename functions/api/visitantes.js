@@ -64,12 +64,40 @@ async function listarColumnasVisitantes(env) {
   return (result.results || []).map(c => String(c.name || ""));
 }
 
+async function asegurarColumnasDatosAmpliatorios(env) {
+  const columnas = await listarColumnasVisitantes(env);
+  const alterPendientes = [];
+  if (!columnas.includes("nacionalidad")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad TEXT`);
+  }
+  if (!columnas.includes("dni")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN dni TEXT`);
+  }
+  if (!columnas.includes("email")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN email TEXT`);
+  }
+  if (!columnas.includes("nacionalidad_no_consta")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!columnas.includes("observaciones")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones TEXT`);
+  }
+  for (const sentencia of alterPendientes) {
+    await env.DB.prepare(sentencia).run();
+  }
+}
+
 async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
   const tieneTipoAsistente = columnasVisitantes.includes("tipo_asistente");
   const tienePerfilAsistente = columnasVisitantes.includes("perfil_asistente");
   const tieneNivelEnsenanza = columnasVisitantes.includes("nivel_ensenanza");
+  const tieneNacionalidad = columnasVisitantes.includes("nacionalidad");
+  const tieneDni = columnasVisitantes.includes("dni");
+  const tieneEmail = columnasVisitantes.includes("email");
+  const tieneNacionalidadNoConsta = columnasVisitantes.includes("nacionalidad_no_consta");
+  const tieneObservaciones = columnasVisitantes.includes("observaciones");
 
-  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza
+  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza || tieneNacionalidad || tieneDni || tieneEmail || tieneNacionalidadNoConsta || tieneObservaciones
     ? `
       SELECT
         id,
@@ -78,6 +106,11 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         ${tieneTipoAsistente ? "COALESCE(tipo_asistente, 'ALUMNO')" : "'ALUMNO'"} AS tipo_asistente,
         ${tienePerfilAsistente ? "COALESCE(perfil_asistente, 'ALUMNO')" : "'ALUMNO'"} AS perfil_asistente,
         ${tieneNivelEnsenanza ? "COALESCE(nivel_ensenanza, 'NO_CORRESPONDE')" : "'NO_CORRESPONDE'"} AS nivel_ensenanza,
+        ${tieneNacionalidad ? "COALESCE(nacionalidad, '')" : "''"} AS nacionalidad,
+        ${tieneDni ? "COALESCE(dni, '')" : "''"} AS dni,
+        ${tieneEmail ? "COALESCE(email, '')" : "''"} AS email,
+        ${tieneNacionalidadNoConsta ? "COALESCE(nacionalidad_no_consta, 0)" : "0"} AS nacionalidad_no_consta,
+        ${tieneObservaciones ? "COALESCE(observaciones, '')" : "''"} AS observaciones,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
       FROM visitantes
       WHERE reserva_id = ?
@@ -91,6 +124,11 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         'ALUMNO' AS tipo_asistente,
         'ALUMNO' AS perfil_asistente,
         'NO_CORRESPONDE' AS nivel_ensenanza,
+        '' AS nacionalidad,
+        '' AS dni,
+        '' AS email,
+        0 AS nacionalidad_no_consta,
+        '' AS observaciones,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
       FROM visitantes
       WHERE reserva_id = ?
@@ -109,6 +147,7 @@ export async function onRequestGet(context) {
     const tokenEdicion = limpiarTexto(url.searchParams.get("token"));
     await asegurarColumnaRechazoEliminaEn(env);
     await asegurarColumnaRechazoBloqueado(env);
+    await asegurarColumnasDatosAmpliatorios(env);
 
     if (!tokenEdicion) {
       return json(
@@ -180,7 +219,12 @@ export async function onRequestGet(context) {
         nombre_completo: v.nombre_completo || "",
         perfil_asistente: v.perfil_asistente || "ALUMNO",
         nivel_ensenanza: v.nivel_ensenanza || "NO_CORRESPONDE",
-        categoria_edad: v.categoria_edad || "DE_15_A_18"
+        categoria_edad: v.categoria_edad || "DE_15_A_18",
+        nacionalidad: v.nacionalidad || "",
+        dni: v.dni || "",
+        email: v.email || "",
+        nacionalidad_no_consta: Number(v.nacionalidad_no_consta || 0),
+        observaciones: v.observaciones || ""
       }))
     });
   } catch (error) {
