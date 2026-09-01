@@ -101,6 +101,40 @@ async function asegurarColumnaObservacionesAdmin(env) {
   }
 }
 
+async function asegurarColumnaRevisionObservacionesVisitante(env) {
+  try {
+    await env.DB.prepare(`
+      ALTER TABLE visitantes
+      ADD COLUMN observaciones_revision_estado TEXT
+    `).run();
+  } catch (error) {
+    if (!esErrorColumnaDuplicada(error)) {
+      throw error;
+    }
+  }
+}
+
+async function asegurarColumnasDatosVisitante(env) {
+  const columnas = [
+    ["nacionalidad", "TEXT"],
+    ["dni", "TEXT"],
+    ["email", "TEXT"],
+    ["doble_nacionalidad", "INTEGER NOT NULL DEFAULT 0"],
+    ["segunda_nacionalidad", "TEXT"],
+    ["observaciones", "TEXT"],
+    ["observaciones_revision_estado", "TEXT"]
+  ];
+  for (const [nombre, definicion] of columnas) {
+    try {
+      await env.DB.prepare(`ALTER TABLE visitantes ADD COLUMN ${nombre} ${definicion}`).run();
+    } catch (error) {
+      if (!esErrorColumnaDuplicada(error)) {
+        throw error;
+      }
+    }
+  }
+}
+
 async function asegurarTablaRequisitos(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS actividad_requisitos (
@@ -956,6 +990,7 @@ export async function onRequestGet(context) {
     await asegurarColumnaRechazoEliminaEn(env);
     await asegurarColumnaRechazoBloqueado(env);
     await asegurarTablaHistorialReservas(env);
+    await asegurarColumnasDatosVisitante(env);
     await asegurarTablasDocumentacionActividad(env);
     await ejecutarMantenimientoReservas(env);
     const session = await obtenerSesionLecturaReservas(request, env);
@@ -1136,6 +1171,29 @@ export async function onRequestGet(context) {
     await checkAdminActividad(env, session.usuario_id, actividadId);
     const estadoActual = limpiarTexto(contextoReserva?.estado || "").toUpperCase();
 
+    if (accion === "ignorar_observacion_asistente" || accion === "marcar_observacion_asistente") {
+      const visitanteId = Number(body.visitante_id || 0);
+      if (!visitanteId) {
+        return json({ ok: false, error: "Falta identificar el asistente." }, { status: 400 });
+      }
+      const revisionEstado = accion === "ignorar_observacion_asistente" ? "IGNORADA" : "RELEVANTE";
+      const result = await env.DB.prepare(`
+        UPDATE visitantes
+        SET observaciones_revision_estado = ?
+        WHERE id = ?
+          AND reserva_id = ?
+      `).bind(revisionEstado, visitanteId, id).run();
+      if (!result?.success) {
+        return json({ ok: false, error: "No se pudo actualizar la observación del asistente." }, { status: 500 });
+      }
+      return json({
+        ok: true,
+        mensaje: revisionEstado === "IGNORADA"
+          ? "Observación del asistente ignorada."
+          : "Observación del asistente marcada como relevante."
+      });
+    }
+
     let nuevoEstado = null;
     if (accion === "confirmar") nuevoEstado = "CONFIRMADA";
     if (accion === "rechazar") nuevoEstado = "RECHAZADA";
@@ -1240,6 +1298,23 @@ export async function onRequestGet(context) {
         { ok: false, error: "No se pudo actualizar el estado de la reserva." },
         { status: 404 }
       );
+    }
+
+    if (nuevoEstado === "CONFIRMADA") {
+      await env.DB.prepare(`
+        UPDATE visitantes
+        SET observaciones_revision_estado = 'IGNORADA'
+        WHERE reserva_id = ?
+          AND (
+            COALESCE(nacionalidad, '') <> ''
+            OR COALESCE(dni, '') <> ''
+            OR COALESCE(email, '') <> ''
+            OR COALESCE(doble_nacionalidad, 0) = 1
+            OR COALESCE(segunda_nacionalidad, '') <> ''
+            OR COALESCE(observaciones, '') <> ''
+          )
+          AND COALESCE(observaciones_revision_estado, '') = ''
+      `).bind(id).run();
     }
 
     await registrarEventoReserva(env, {

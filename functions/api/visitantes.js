@@ -88,6 +88,9 @@ async function asegurarColumnasDatosAmpliatorios(env) {
   if (!columnas.includes("observaciones")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones TEXT`);
   }
+  if (!columnas.includes("observaciones_revision_estado")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones_revision_estado TEXT`);
+  }
   for (const sentencia of alterPendientes) {
     await env.DB.prepare(sentencia).run();
   }
@@ -104,8 +107,9 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
   const tieneSegundaNacionalidad = columnasVisitantes.includes("segunda_nacionalidad");
   const tieneNacionalidadNoConsta = columnasVisitantes.includes("nacionalidad_no_consta");
   const tieneObservaciones = columnasVisitantes.includes("observaciones");
+  const tieneObservacionesRevisionEstado = columnasVisitantes.includes("observaciones_revision_estado");
 
-  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza || tieneNacionalidad || tieneDni || tieneEmail || tieneDobleNacionalidad || tieneSegundaNacionalidad || tieneNacionalidadNoConsta || tieneObservaciones
+  const sql = tieneTipoAsistente || tienePerfilAsistente || tieneNivelEnsenanza || tieneNacionalidad || tieneDni || tieneEmail || tieneDobleNacionalidad || tieneSegundaNacionalidad || tieneNacionalidadNoConsta || tieneObservaciones || tieneObservacionesRevisionEstado
     ? `
       SELECT
         id,
@@ -121,6 +125,7 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         ${tieneSegundaNacionalidad ? "COALESCE(segunda_nacionalidad, '')" : "''"} AS segunda_nacionalidad,
         ${tieneNacionalidadNoConsta ? "COALESCE(nacionalidad_no_consta, 0)" : "0"} AS nacionalidad_no_consta,
         ${tieneObservaciones ? "COALESCE(observaciones, '')" : "''"} AS observaciones,
+        ${tieneObservacionesRevisionEstado ? "COALESCE(observaciones_revision_estado, '')" : "''"} AS observaciones_revision_estado,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
       FROM visitantes
       WHERE reserva_id = ?
@@ -141,6 +146,7 @@ async function obtenerVisitantes(env, reservaId, columnasVisitantes) {
         '' AS segunda_nacionalidad,
         0 AS nacionalidad_no_consta,
         '' AS observaciones,
+        '' AS observaciones_revision_estado,
         COALESCE(categoria_edad, 'DE_15_A_18') AS categoria_edad
       FROM visitantes
       WHERE reserva_id = ?
@@ -238,7 +244,8 @@ export async function onRequestGet(context) {
         doble_nacionalidad: Number(v.doble_nacionalidad || 0),
         segunda_nacionalidad: v.segunda_nacionalidad || "",
         nacionalidad_no_consta: 0,
-        observaciones: v.observaciones || ""
+        observaciones: v.observaciones || "",
+        observaciones_revision_estado: v.observaciones_revision_estado || ""
       }))
     });
   } catch (error) {

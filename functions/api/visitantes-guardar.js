@@ -29,6 +29,32 @@ function emailValido(valor) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
 }
 
+function normalizarClaveNombre(valor) {
+  return limpiarTexto(valor).toLowerCase();
+}
+
+function tieneDatosAmpliatorios(visitante) {
+  return !!(
+    limpiarTexto(visitante?.nacionalidad) ||
+    limpiarTexto(visitante?.dni) ||
+    limpiarTexto(visitante?.email) ||
+    Number(visitante?.doble_nacionalidad || 0) === 1 ||
+    limpiarTexto(visitante?.segunda_nacionalidad) ||
+    limpiarTexto(visitante?.observaciones)
+  );
+}
+
+function firmaDatosAmpliatorios(visitante) {
+  return JSON.stringify({
+    nacionalidad: limpiarTexto(visitante?.nacionalidad),
+    dni: normalizarDocumentoIdentidad(visitante?.dni),
+    email: limpiarTexto(visitante?.email).toLowerCase(),
+    doble_nacionalidad: Number(visitante?.doble_nacionalidad || 0) === 1 ? 1 : 0,
+    segunda_nacionalidad: limpiarTexto(visitante?.segunda_nacionalidad),
+    observaciones: limpiarTexto(visitante?.observaciones)
+  });
+}
+
 function normalizarPerfilAsistente(valor) {
   const v = String(valor || "").trim().toUpperCase();
   if (!v) return "";
@@ -79,7 +105,8 @@ async function asegurarEsquemaVisitantes(env) {
       doble_nacionalidad INTEGER NOT NULL DEFAULT 0,
       segunda_nacionalidad TEXT,
       nacionalidad_no_consta INTEGER NOT NULL DEFAULT 0,
-      observaciones TEXT
+      observaciones TEXT,
+      observaciones_revision_estado TEXT
     )
   `).run();
 
@@ -111,6 +138,9 @@ async function asegurarEsquemaVisitantes(env) {
   }
   if (!columnas.includes("observaciones")) {
     alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones TEXT`);
+  }
+  if (!columnas.includes("observaciones_revision_estado")) {
+    alterPendientes.push(`ALTER TABLE visitantes ADD COLUMN observaciones_revision_estado TEXT`);
   }
   for (const sentencia of alterPendientes) {
     await env.DB.prepare(sentencia).run();
@@ -169,6 +199,25 @@ async function borrarVisitantesDeReserva(env, reservaId) {
   `).bind(reservaId).run();
 }
 
+async function obtenerVisitantesPrevios(env, reservaId, columnasVisitantes) {
+  const seleccionar = [
+    "nombre_completo",
+    columnasVisitantes.includes("nacionalidad") ? "COALESCE(nacionalidad, '') AS nacionalidad" : "'' AS nacionalidad",
+    columnasVisitantes.includes("dni") ? "COALESCE(dni, '') AS dni" : "'' AS dni",
+    columnasVisitantes.includes("email") ? "COALESCE(email, '') AS email" : "'' AS email",
+    columnasVisitantes.includes("doble_nacionalidad") ? "COALESCE(doble_nacionalidad, 0) AS doble_nacionalidad" : "0 AS doble_nacionalidad",
+    columnasVisitantes.includes("segunda_nacionalidad") ? "COALESCE(segunda_nacionalidad, '') AS segunda_nacionalidad" : "'' AS segunda_nacionalidad",
+    columnasVisitantes.includes("observaciones") ? "COALESCE(observaciones, '') AS observaciones" : "'' AS observaciones",
+    columnasVisitantes.includes("observaciones_revision_estado") ? "COALESCE(observaciones_revision_estado, '') AS observaciones_revision_estado" : "'' AS observaciones_revision_estado"
+  ];
+  const result = await env.DB.prepare(`
+    SELECT ${seleccionar.join(", ")}
+    FROM visitantes
+    WHERE reserva_id = ?
+  `).bind(reservaId).all();
+  return result.results || [];
+}
+
 async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) {
   const columnas = ["reserva_id", "nombre_completo"];
   const bind = [reservaId, visitante.nombre_completo];
@@ -212,6 +261,10 @@ async function insertarVisitante(env, reservaId, visitante, columnasVisitantes) 
   if (columnasVisitantes.includes("observaciones")) {
     columnas.push("observaciones");
     bind.push(visitante.observaciones);
+  }
+  if (columnasVisitantes.includes("observaciones_revision_estado")) {
+    columnas.push("observaciones_revision_estado");
+    bind.push(visitante.observaciones_revision_estado || "");
   }
 
   columnas.push("categoria_edad");
@@ -413,10 +466,44 @@ export async function onRequestPost(context) {
 
     await asegurarEsquemaVisitantes(env);
     const columnasVisitantes = await listarColumnasVisitantes(env);
+    const visitantesPrevios = await obtenerVisitantesPrevios(env, reserva.id, columnasVisitantes);
+    const revisionesPrevias = new Map();
+    visitantesPrevios.forEach((visitante) => {
+      revisionesPrevias.set(normalizarClaveNombre(visitante.nombre_completo), {
+        firma: firmaDatosAmpliatorios(visitante),
+        estado: limpiarTexto(visitante.observaciones_revision_estado).toUpperCase()
+      });
+    });
+    let requiereRevisionOrganizador = false;
+    visitantesNormalizados.forEach((visitante) => {
+      if (!tieneDatosAmpliatorios(visitante)) {
+        visitante.observaciones_revision_estado = "";
+        return;
+      }
+      const previa = revisionesPrevias.get(normalizarClaveNombre(visitante.nombre_completo));
+      const firmaActual = firmaDatosAmpliatorios(visitante);
+      if (previa && previa.firma === firmaActual && ["IGNORADA", "RELEVANTE"].includes(previa.estado)) {
+        visitante.observaciones_revision_estado = previa.estado;
+      } else {
+        visitante.observaciones_revision_estado = "";
+        requiereRevisionOrganizador = true;
+      }
+    });
     await borrarVisitantesDeReserva(env, reserva.id);
 
     for (const visitante of visitantesNormalizados) {
       await insertarVisitante(env, reserva.id, visitante, columnasVisitantes);
+    }
+
+    let estadoDestino = reserva.estado;
+    if (normalizarEstadoReserva(reserva.estado) === "CONFIRMADA" && requiereRevisionOrganizador) {
+      await env.DB.prepare(`
+        UPDATE reservas
+        SET estado = 'PENDIENTE',
+            fecha_modificacion = datetime('now')
+        WHERE id = ?
+      `).bind(reserva.id).run();
+      estadoDestino = "PENDIENTE";
     }
 
     await actualizarReservaTrasGuardar(env, reserva.id);
@@ -424,7 +511,7 @@ export async function onRequestPost(context) {
       reservaId: reserva.id,
       accion: "ASISTENTES_ACTUALIZADOS",
       estadoOrigen: reserva.estado,
-      estadoDestino: reserva.estado,
+      estadoDestino,
       observaciones: `Total asistentes: ${totalDeseado}`,
       actorUsuarioId: reserva.usuario_id,
       actorRol: "SOLICITANTE",
