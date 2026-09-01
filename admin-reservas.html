@@ -208,8 +208,9 @@
     .observacion-asistente-item.activo .observacion-asistente-detalle { display: block; }
     .observacion-asistente-datos { display: grid; gap: 3px; }
     .observacion-asistente-acciones { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
-    .btn-observacion-asistente { border: 0; border-radius: 0; padding: 1px 2px; background: transparent; color: #12805c; font-size: 20px; line-height: 1; font-weight: 700; cursor: pointer; }
-    .btn-observacion-asistente.denegar { color: #b42318; }
+    .btn-observacion-asistente { border: 0; border-radius: 0; padding: 1px 2px; background: transparent; color: #1f2937; line-height: 1; cursor: pointer; }
+    .btn-observacion-asistente.denegar { color: #1f2937; }
+    .btn-observacion-asistente svg { width: 24px; height: 24px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .btn-observacion-asistente:hover:not(:disabled) { transform: scale(1.08); }
     .btn-accion-estado-icono {
       width: 42px;
@@ -1236,6 +1237,12 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     function asistenteTieneDatosAmpliatorios(visitante) {
       return !!String(visitante?.observaciones || "").trim();
     }
+    function iconoPulgarArriba() {
+      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9"></path><path d="M7 19H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h2"></path><path d="M7 11l4-7a2 2 0 0 1 3 2v4h4.5a2 2 0 0 1 2 2.3l-1 5a3 3 0 0 1-3 2.7H7"></path></svg>`;
+    }
+    function iconoPulgarAbajo() {
+      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 13V4"></path><path d="M17 5h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path><path d="M17 13l-4 7a2 2 0 0 1-3-2v-4H5.5a2 2 0 0 1-2-2.3l1-5a3 3 0 0 1 3-2.7H17"></path></svg>`;
+    }
     function renderObservacionesAsistentesAdmin(asistentesData) {
       const visitantes = (Array.isArray(asistentesData?.visitantes) ? asistentesData.visitantes : [])
         .filter((visitante) => asistenteTieneDatosAmpliatorios(visitante))
@@ -1246,7 +1253,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         const clases = estadoRevision === "RELEVANTE" ? "observacion-asistente-item relevante" : "observacion-asistente-item";
         const visitanteId = Number(visitante.id || 0);
         const observaciones = escapeHtml(visitante.observaciones || "");
-        return `<div class="${clases}" data-observacion-asistente="${visitanteId}"><div class="observacion-asistente-cabecera"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${visitanteId}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${visitanteId}" title="Validar observación" aria-label="Validar observación">👍</button><button type="button" class="btn-observacion-asistente denegar" data-accion-observacion-asistente="denegar" data-visitante-id="${visitanteId}" title="Denegar observación" aria-label="Denegar observación">👎</button></div></div><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos"><div><strong>Observaciones:</strong> ${observaciones}</div></div></div></div>`;
+        return `<div class="${clases}" data-observacion-asistente="${visitanteId}"><div class="observacion-asistente-cabecera"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${visitanteId}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${visitanteId}" title="Validar observación" aria-label="Validar observación">${iconoPulgarArriba()}</button><button type="button" class="btn-observacion-asistente denegar" data-accion-observacion-asistente="denegar" data-visitante-id="${visitanteId}" title="Denegar observación" aria-label="Denegar observación">${iconoPulgarAbajo()}</button></div></div><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos"><div><strong>Observaciones:</strong> ${observaciones}</div></div></div></div>`;
       }).join("")}</div></div>`;
     }
     function renderRequisitosSolicitudAdmin(reserva) {
