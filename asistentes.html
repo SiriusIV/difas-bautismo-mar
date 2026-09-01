@@ -1495,12 +1495,11 @@
       }
     }
 
-    function navegarConProteccion(destino) {
+    async function navegarConProteccion(destino) {
       if (hayCambiosSinGuardar) {
-        abrirModalSalida(destino);
-      } else {
-        window.location.href = destino;
+        await guardarAsistentes({ automatico: true });
       }
+      window.location.href = destino;
     }
 
     async function cargarConfigEvento() {
@@ -2586,9 +2585,7 @@
       });
 
       window.addEventListener("beforeunload", function (e) {
-        if (!hayCambiosSinGuardar) return;
-        e.preventDefault();
-        e.returnValue = "";
+        cancelarGuardadoAutomatico();
       });
       window.addEventListener("resize", igualarAlturaBloquesInferiores);
       setInterval(actualizarLimiteDestacadoVisual, 60000);
