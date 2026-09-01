@@ -200,14 +200,17 @@
     .btn-listado-asistentes:disabled { opacity: 0.55; cursor: not-allowed; }
     .observaciones-asistentes-lista { display: grid; gap: 6px; }
     .observacion-asistente-item { border: 1px solid #dbe4ee; border-radius: 8px; background: #f8fbff; overflow: hidden; }
-    .observacion-asistente-nombre { width: 100%; border: 0; background: transparent; color: #123a63; padding: 8px 10px; text-align: left; font-weight: 700; cursor: pointer; }
-    .observacion-asistente-item.relevante .observacion-asistente-nombre { color: #b42318; background: #fff1f1; }
+    .observacion-asistente-cabecera { display: flex; align-items: center; gap: 8px; padding: 6px 10px; }
+    .observacion-asistente-nombre { flex: 1; min-width: 0; border: 0; background: transparent; color: #123a63; padding: 2px 0; text-align: left; font-weight: 700; cursor: pointer; }
+    .observacion-asistente-item.relevante .observacion-asistente-cabecera { background: #fff1f1; }
+    .observacion-asistente-item.relevante .observacion-asistente-nombre { color: #b42318; }
     .observacion-asistente-detalle { display: none; border-top: 1px solid #dbe4ee; padding: 8px 10px; font-size: 12px; line-height: 1.45; color: #22313f; }
     .observacion-asistente-item.activo .observacion-asistente-detalle { display: block; }
-    .observacion-asistente-datos { display: grid; gap: 3px; margin-bottom: 8px; }
-    .observacion-asistente-acciones { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-    .btn-observacion-asistente { border: 1px solid #bfc9d4; border-radius: 999px; padding: 6px 10px; background: #fff; color: #123a63; font-size: 12px; font-weight: 700; cursor: pointer; }
-    .btn-observacion-asistente.denegar { color: #b42318; border-color: #f1b4b4; }
+    .observacion-asistente-datos { display: grid; gap: 3px; }
+    .observacion-asistente-acciones { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
+    .btn-observacion-asistente { border: 0; border-radius: 0; padding: 1px 2px; background: transparent; color: #12805c; font-size: 20px; line-height: 1; font-weight: 700; cursor: pointer; }
+    .btn-observacion-asistente.denegar { color: #b42318; }
+    .btn-observacion-asistente:hover:not(:disabled) { transform: scale(1.08); }
     .btn-accion-estado-icono {
       width: 42px;
       height: 42px;
@@ -1231,14 +1234,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       return `<div class="estado-modal-seccion"><h4>Observaciones del solicitante</h4>${observaciones ? `<div class="estado-modal-observaciones"><div class="estado-modal-observaciones-texto">${escapeHtml(observaciones)}</div></div>` : `<p class="muted">El solicitante no incluyó observaciones.</p>`}</div>`;
     }
     function asistenteTieneDatosAmpliatorios(visitante) {
-      return !!(
-        String(visitante?.nacionalidad || "").trim() ||
-        String(visitante?.dni || "").trim() ||
-        String(visitante?.email || "").trim() ||
-        Number(visitante?.doble_nacionalidad || 0) === 1 ||
-        String(visitante?.segunda_nacionalidad || "").trim() ||
-        String(visitante?.observaciones || "").trim()
-      );
+      return !!String(visitante?.observaciones || "").trim();
     }
     function renderObservacionesAsistentesAdmin(asistentesData) {
       const visitantes = (Array.isArray(asistentesData?.visitantes) ? asistentesData.visitantes : [])
@@ -1248,14 +1244,9 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       return `<div class="estado-modal-seccion"><h4>Observaciones de los asistentes</h4><div class="observaciones-asistentes-lista">${visitantes.map((visitante) => {
         const estadoRevision = String(visitante?.observaciones_revision_estado || "").toUpperCase();
         const clases = estadoRevision === "RELEVANTE" ? "observacion-asistente-item relevante" : "observacion-asistente-item";
-        const datos = [
-          visitante.nacionalidad ? `<div><strong>Nacionalidad:</strong> ${escapeHtml(visitante.nacionalidad)}</div>` : "",
-          visitante.dni ? `<div><strong>DNI/NIE:</strong> ${escapeHtml(visitante.dni)}</div>` : "",
-          visitante.email ? `<div><strong>Correo electrónico:</strong> ${escapeHtml(visitante.email)}</div>` : "",
-          Number(visitante.doble_nacionalidad || 0) === 1 ? `<div><strong>Doble nacionalidad:</strong> ${escapeHtml(visitante.segunda_nacionalidad || "Sí")}</div>` : "",
-          visitante.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(visitante.observaciones)}</div>` : ""
-        ].filter(Boolean).join("");
-        return `<div class="${clases}" data-observacion-asistente="${Number(visitante.id || 0)}"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${Number(visitante.id || 0)}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos">${datos}</div><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${Number(visitante.id || 0)}">Validar</button><button type="button" class="btn-observacion-asistente denegar" data-accion-observacion-asistente="denegar" data-visitante-id="${Number(visitante.id || 0)}">Denegar</button></div></div></div>`;
+        const visitanteId = Number(visitante.id || 0);
+        const observaciones = escapeHtml(visitante.observaciones || "");
+        return `<div class="${clases}" data-observacion-asistente="${visitanteId}"><div class="observacion-asistente-cabecera"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${visitanteId}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${visitanteId}" title="Validar observación" aria-label="Validar observación">👍</button><button type="button" class="btn-observacion-asistente denegar" data-accion-observacion-asistente="denegar" data-visitante-id="${visitanteId}" title="Denegar observación" aria-label="Denegar observación">👎</button></div></div><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos"><div><strong>Observaciones:</strong> ${observaciones}</div></div></div></div>`;
       }).join("")}</div></div>`;
     }
     function renderRequisitosSolicitudAdmin(reserva) {
