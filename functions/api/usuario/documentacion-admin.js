@@ -718,6 +718,71 @@ function documentacionCompletaParaReserva(documentosActividad, archivosSimulados
   return calcularEstadoEfectivo(documentosActividad, archivosSimulados) === "VALIDADA";
 }
 
+function obtenerEstadoReservaDesdeDocumentacion(estadoDocumental) {
+  const estado = normalizarEstadoDocumento(estadoDocumental);
+  if (estado === "VALIDADA" || estado === "VALIDADO" || estado === "NO_REQUERIDA") return "PENDIENTE";
+  if (estado === "EN_REVISION") return "EN_REVISION";
+  return "PROVISIONAL";
+}
+
+async function actualizarReservaPorDocumentacionRemitida(env, {
+  reservaId,
+  usuarioId,
+  estadoDocumental,
+  usuario
+} = {}) {
+  const idReserva = parsearIdPositivo(reservaId);
+  const idUsuario = parsearIdPositivo(usuarioId);
+  if (!idReserva || !idUsuario) {
+    return { ok: true, skipped: true, motivo: "Sin reserva contextual." };
+  }
+
+  const row = await env.DB.prepare(`
+    SELECT id, estado
+    FROM reservas
+    WHERE id = ?
+      AND usuario_id = ?
+    LIMIT 1
+  `).bind(idReserva, idUsuario).first();
+
+  if (!row?.id) {
+    return { ok: true, skipped: true, motivo: "Reserva no encontrada para el solicitante." };
+  }
+
+  const estadoOrigen = limpiarTexto(row.estado).toUpperCase();
+  if (estadoOrigen === "RECHAZADA") {
+    return { ok: true, skipped: true, motivo: "La reserva rechazada no se reactiva desde la remisión documental directa." };
+  }
+
+  const estadoDestino = obtenerEstadoReservaDesdeDocumentacion(estadoDocumental);
+  if (estadoOrigen === estadoDestino) {
+    return { ok: true, skipped: true, estado: estadoDestino };
+  }
+
+  await env.DB.prepare(`
+    UPDATE reservas
+    SET estado = ?,
+        fecha_modificacion = CURRENT_TIMESTAMP
+    WHERE id = ?
+      AND usuario_id = ?
+  `).bind(estadoDestino, idReserva, idUsuario).run();
+
+  await registrarEventoReserva(env, {
+    reservaId: idReserva,
+    accion: estadoDestino === "EN_REVISION" ? "REVISION_DOCUMENTAL" : "SUSPENSION_DOCUMENTAL",
+    estadoOrigen,
+    estadoDestino,
+    observaciones: estadoDestino === "EN_REVISION"
+      ? "La solicitud tiene toda la documentación obligatoria remitida y pendiente de revisión."
+      : "La solicitud no tiene toda la documentación obligatoria remitida.",
+    actorUsuarioId: usuario?.id,
+    actorRol: "SOLICITANTE",
+    actorNombre: usuario?.centro || usuario?.nombre_publico || usuario?.nombre || "Solicitante"
+  });
+
+  return { ok: true, skipped: false, estado: estadoDestino };
+}
+
 function estaEnPlazoCriticoDocumental(reserva = {}) {
   const fecha = parsearFechaComparable(reserva?.inicio_reserva);
   if (!fecha) return false;
@@ -1247,6 +1312,14 @@ export async function onRequestPost(context) {
     }
     const estadoExpediente = calcularEstadoEfectivo(documentos, archivosFinales);
     const versionAportada = archivosFinales.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
+    const impactoReservaContextual = remisionDefinitiva && cambiosRealesIds.size > 0
+      ? await actualizarReservaPorDocumentacionRemitida(env, {
+          reservaId: contextoEntrega.reservaId,
+          usuarioId: usuario.id,
+          estadoDocumental: estadoExpediente,
+          usuario
+        })
+      : { ok: true, skipped: true, motivo: "Sin remisión documental definitiva." };
 
     for (const propietarioId of propietariosDocumentales) {
       const expedientePropietario = expedientesPorPropietario.get(propietarioId) || null;
@@ -1438,7 +1511,8 @@ export async function onRequestPost(context) {
         creada: !!notificacionInternaResponsable.ok,
         error: notificacionInternaResponsable.ok ? "" : (notificacionInternaResponsable.error || "")
       },
-      impacto_reservas: impactoReservas
+      impacto_reservas: impactoReservas,
+      impacto_reserva_contextual: impactoReservaContextual
     });
   } catch (error) {
     return json(
