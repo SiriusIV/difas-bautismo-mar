@@ -207,7 +207,7 @@
     .observacion-asistente-datos { display: grid; gap: 3px; margin-bottom: 8px; }
     .observacion-asistente-acciones { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
     .btn-observacion-asistente { border: 1px solid #bfc9d4; border-radius: 999px; padding: 6px 10px; background: #fff; color: #123a63; font-size: 12px; font-weight: 700; cursor: pointer; }
-    .btn-observacion-asistente.rechazar { color: #b42318; border-color: #f1b4b4; }
+    .btn-observacion-asistente.denegar { color: #b42318; border-color: #f1b4b4; }
     .btn-accion-estado-icono {
       width: 42px;
       height: 42px;
@@ -1219,7 +1219,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
           event.preventDefault();
           if (accion === "ignorar") {
             await actualizarRevisionObservacionAsistente(visitanteId, "ignorar_observacion_asistente");
-          } else if (accion === "rechazar") {
+          } else if (accion === "denegar") {
             await actualizarRevisionObservacionAsistente(visitanteId, "marcar_observacion_asistente");
           }
         });
@@ -1255,7 +1255,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
           Number(visitante.doble_nacionalidad || 0) === 1 ? `<div><strong>Doble nacionalidad:</strong> ${escapeHtml(visitante.segunda_nacionalidad || "Sí")}</div>` : "",
           visitante.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(visitante.observaciones)}</div>` : ""
         ].filter(Boolean).join("");
-        return `<div class="${clases}" data-observacion-asistente="${Number(visitante.id || 0)}"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${Number(visitante.id || 0)}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos">${datos}</div><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${Number(visitante.id || 0)}">Validar</button><button type="button" class="btn-observacion-asistente rechazar" data-accion-observacion-asistente="rechazar" data-visitante-id="${Number(visitante.id || 0)}">Denegar</button></div></div></div>`;
+        return `<div class="${clases}" data-observacion-asistente="${Number(visitante.id || 0)}"><button type="button" class="observacion-asistente-nombre" data-accion-observacion-asistente="toggle" data-visitante-id="${Number(visitante.id || 0)}">${escapeHtml(visitante.nombre_completo || "Asistente")}</button><div class="observacion-asistente-detalle"><div class="observacion-asistente-datos">${datos}</div><div class="observacion-asistente-acciones"><button type="button" class="btn-observacion-asistente" data-accion-observacion-asistente="ignorar" data-visitante-id="${Number(visitante.id || 0)}">Validar</button><button type="button" class="btn-observacion-asistente denegar" data-accion-observacion-asistente="denegar" data-visitante-id="${Number(visitante.id || 0)}">Denegar</button></div></div></div>`;
       }).join("")}</div></div>`;
     }
     function renderRequisitosSolicitudAdmin(reserva) {
