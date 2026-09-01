@@ -1,6 +1,8 @@
 import { registrarEventoReserva } from "./_reservas_historial.js";
 import { asegurarColumnaAforoMaximo, obtenerBloqueoActividadSinFranja } from "./_actividades_aforo.js";
 import { asegurarColumnaRechazoBloqueado, asegurarColumnaRechazoEliminaEn } from "./_reservas_rechazo_plazo.js";
+import { crearNotificacion } from "./_notificaciones.js";
+import { enviarEmail, nombreVisibleAdmin } from "./_email.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -11,6 +13,15 @@ function json(data, init = {}) {
 
 function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function normalizarDocumentoIdentidad(valor) {
@@ -34,23 +45,11 @@ function normalizarClaveNombre(valor) {
 }
 
 function tieneDatosAmpliatorios(visitante) {
-  return !!(
-    limpiarTexto(visitante?.nacionalidad) ||
-    limpiarTexto(visitante?.dni) ||
-    limpiarTexto(visitante?.email) ||
-    Number(visitante?.doble_nacionalidad || 0) === 1 ||
-    limpiarTexto(visitante?.segunda_nacionalidad) ||
-    limpiarTexto(visitante?.observaciones)
-  );
+  return !!limpiarTexto(visitante?.observaciones);
 }
 
 function firmaDatosAmpliatorios(visitante) {
   return JSON.stringify({
-    nacionalidad: limpiarTexto(visitante?.nacionalidad),
-    dni: normalizarDocumentoIdentidad(visitante?.dni),
-    email: limpiarTexto(visitante?.email).toLowerCase(),
-    doble_nacionalidad: Number(visitante?.doble_nacionalidad || 0) === 1 ? 1 : 0,
-    segunda_nacionalidad: limpiarTexto(visitante?.segunda_nacionalidad),
     observaciones: limpiarTexto(visitante?.observaciones)
   });
 }
@@ -162,12 +161,20 @@ async function obtenerReservaPorToken(env, tokenEdicion) {
       r.usuario_id,
       r.centro,
       r.contacto,
+      COALESCE(a.titulo_publico, a.nombre, 'Actividad') AS actividad_nombre,
+      a.admin_id,
+      u.email AS admin_email,
+      u.nombre AS admin_nombre,
+      u.nombre_publico AS admin_nombre_publico,
+      u.localidad AS admin_localidad,
       COALESCE(a.usa_franjas, 1) AS usa_franjas,
       COALESCE(a.aforo_limitado, 0) AS aforo_limitado,
       COALESCE(a.aforo_maximo, 0) AS aforo_maximo
     FROM reservas r
     LEFT JOIN actividades a
       ON a.id = r.actividad_id
+    LEFT JOIN usuarios u
+      ON u.id = a.admin_id
     WHERE r.token_edicion = ?
     LIMIT 1
   `;
@@ -281,6 +288,96 @@ async function actualizarReservaTrasGuardar(env, reservaId) {
     SET fecha_modificacion = datetime('now')
     WHERE id = ?
   `).bind(reservaId).run();
+}
+
+function construirCorreoRevisionAsistentesAdmin(reserva = {}, totalObservaciones = 0, baseUrl = "") {
+  const adminNombre = nombreVisibleAdmin({
+    nombre_publico: reserva.admin_nombre_publico,
+    nombre: reserva.admin_nombre,
+    localidad: reserva.admin_localidad
+  });
+  const actividad = limpiarTexto(reserva.actividad_nombre || "la actividad");
+  const centro = limpiarTexto(reserva.centro || "un solicitante");
+  const contacto = limpiarTexto(reserva.contacto || "");
+  const codigo = limpiarTexto(reserva.codigo_reserva || "");
+  const total = Number(totalObservaciones || 0);
+  const urlPanel = limpiarTexto(baseUrl)
+    ? `${baseUrl.replace(/\/+$/, "")}/portal.html?next=${encodeURIComponent(`/admin-reservas.html?actividad_id=${encodeURIComponent(String(reserva.actividad_id || ""))}`)}`
+    : "";
+  const asunto = `[Reservas] Solicitud en proceso por observaciones de asistentes`;
+  const mensaje = `Una solicitud previamente confirmada vuelve a estar en proceso porque se han incorporado o modificado observaciones de asistentes.`;
+
+  const texto = [
+    `Hola ${adminNombre},`,
+    "",
+    mensaje,
+    "",
+    `Actividad: ${actividad}`,
+    codigo ? `Código de solicitud: ${codigo}` : "",
+    `Solicitante: ${centro}`,
+    contacto ? `Contacto: ${contacto}` : "",
+    total > 0 ? `Asistentes con observaciones pendientes de revisión: ${total}` : "",
+    "",
+    "Revisa la solicitud desde el panel de reservas para confirmar si procede aceptarla de nuevo o rechazarla.",
+    urlPanel ? `Panel de reservas: ${urlPanel}` : ""
+  ].filter(Boolean).join("\n");
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#22313f;line-height:1.45;">
+      <p>Hola ${escaparHtml(adminNombre)},</p>
+      <p>${escaparHtml(mensaje)}</p>
+      <p><strong>Actividad:</strong> ${escaparHtml(actividad)}</p>
+      ${codigo ? `<p><strong>Código de solicitud:</strong> ${escaparHtml(codigo)}</p>` : ""}
+      <p><strong>Solicitante:</strong> ${escaparHtml(centro)}</p>
+      ${contacto ? `<p><strong>Contacto:</strong> ${escaparHtml(contacto)}</p>` : ""}
+      ${total > 0 ? `<p><strong>Asistentes con observaciones pendientes:</strong> ${total}</p>` : ""}
+      <p>Revisa la solicitud desde el panel de reservas para confirmar si procede aceptarla de nuevo o rechazarla.</p>
+      ${urlPanel ? `<p><a href="${escaparHtml(urlPanel)}" style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0b5ed7;color:#fff;text-decoration:none;font-weight:700;">Abrir panel de reservas</a></p>` : ""}
+    </div>
+  `;
+
+  return { asunto, texto, html };
+}
+
+async function notificarRevisionAsistentesAdmin(env, reserva = {}, totalObservaciones = 0, baseUrl = "") {
+  const adminId = Number(reserva.admin_id || 0);
+  const actividadId = Number(reserva.actividad_id || 0);
+  const actividad = limpiarTexto(reserva.actividad_nombre || "una actividad");
+  const centro = limpiarTexto(reserva.centro || "Un solicitante");
+  const codigo = limpiarTexto(reserva.codigo_reserva || "");
+  const resultado = {
+    notificacion: { ok: false, skipped: true, error: "" },
+    correo: { ok: false, skipped: true, error: "" }
+  };
+
+  if (adminId > 0) {
+    resultado.notificacion = await crearNotificacion(env, {
+      usuarioId: adminId,
+      rolDestino: "ADMIN",
+      tipo: "RESERVA",
+      titulo: "Solicitud en proceso por observaciones",
+      mensaje: `${centro} ha actualizado asistentes con observaciones en ${actividad}${codigo ? ` (${codigo})` : ""}.`,
+      urlDestino: actividadId > 0
+        ? `/admin-reservas.html?actividad_id=${encodeURIComponent(String(actividadId))}`
+        : "/admin-reservas.html",
+      dedupeSegundos: 300
+    }).catch((error) => ({ ok: false, skipped: true, error: error?.message || String(error || "") }));
+  }
+
+  const adminEmail = limpiarTexto(reserva.admin_email || "");
+  if (adminEmail) {
+    const correo = construirCorreoRevisionAsistentesAdmin(reserva, totalObservaciones, baseUrl);
+    resultado.correo = await enviarEmail(env, {
+      to: adminEmail,
+      subject: correo.asunto,
+      text: correo.texto,
+      html: correo.html,
+      dedupe: true,
+      dedupeSegundos: 300
+    }).catch((error) => ({ ok: false, skipped: true, error: error?.message || String(error || "") }));
+  }
+
+  return resultado;
 }
 
 function calcularBloqueoReserva(row) {
@@ -496,6 +593,7 @@ export async function onRequestPost(context) {
     }
 
     let estadoDestino = reserva.estado;
+    let avisoRevisionAsistentesAdmin = { notificacion: { ok: false, skipped: true }, correo: { ok: false, skipped: true } };
     if (normalizarEstadoReserva(reserva.estado) === "CONFIRMADA" && requiereRevisionOrganizador) {
       await env.DB.prepare(`
         UPDATE reservas
@@ -504,6 +602,12 @@ export async function onRequestPost(context) {
         WHERE id = ?
       `).bind(reserva.id).run();
       estadoDestino = "PENDIENTE";
+      avisoRevisionAsistentesAdmin = await notificarRevisionAsistentesAdmin(
+        env,
+        reserva,
+        visitantesNormalizados.filter((visitante) => limpiarTexto(visitante.observaciones)).length,
+        new URL(request.url).origin
+      );
     }
 
     await actualizarReservaTrasGuardar(env, reserva.id);
@@ -512,7 +616,9 @@ export async function onRequestPost(context) {
       accion: "ASISTENTES_ACTUALIZADOS",
       estadoOrigen: reserva.estado,
       estadoDestino,
-      observaciones: `Total asistentes: ${totalDeseado}`,
+      observaciones: estadoDestino === "PENDIENTE" && normalizarEstadoReserva(reserva.estado) === "CONFIRMADA"
+        ? `Total asistentes: ${totalDeseado}. La solicitud vuelve a estar en proceso por observaciones de asistentes pendientes de revisión.`
+        : `Total asistentes: ${totalDeseado}`,
       actorUsuarioId: reserva.usuario_id,
       actorRol: "SOLICITANTE",
       actorNombre: reserva.contacto || reserva.centro || "Solicitante"
@@ -546,7 +652,8 @@ export async function onRequestPost(context) {
       de_6_a_9: de6a9,
       de_10_a_14: de10a14,
       de_15_a_18: de15a18,
-      mayor_de_18: mayores18
+      mayor_de_18: mayores18,
+      aviso_revision_asistentes_admin: avisoRevisionAsistentesAdmin
     });
   } catch (error) {
     return json(
