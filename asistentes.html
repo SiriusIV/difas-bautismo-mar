@@ -1158,7 +1158,7 @@
   <div id="modalAvisoRevisionObservaciones" class="modal-fondo" aria-hidden="true">
     <div class="modal modal-con-deco">
       <h3><span class="modal-advertencia" aria-hidden="true">!</span>Revisión de observaciones</h3>
-      <p>La solicitud ya está confirmada. Si guardas estas observaciones, la solicitud pasará a estar en proceso para que el organizador de la actividad pueda revisarlas.</p>
+      <p>La solicitud ya está confirmada. Si guardas estas observaciones, la solicitud pasará a estar <span class="estado-badge pendiente">EN PROCESO</span> para que el organizador de la actividad pueda revisarlas.</p>
       <div class="acciones acciones-izquierda">
         <button type="button" id="btnContinuarRevisionObservaciones" class="btn-modal">Continuar</button>
         <button type="button" id="btnCancelarRevisionObservaciones" class="btn-modal secundario">Cancelar</button>
@@ -1745,6 +1745,7 @@
       if (!solicitudEstaConfirmada() || !observacionesAsistenteCambiadas(fila, nuevasObservaciones)) {
         return Promise.resolve(true);
       }
+      cerrarModalDatosAsistente();
       establecerVisibilidadModal("modalAvisoRevisionObservaciones", true);
       return new Promise((resolve) => {
         resolverAvisoRevisionObservaciones = resolve;
