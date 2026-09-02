@@ -595,33 +595,16 @@
       display: block;
     }
 
-    .icono-observaciones-asistente:hover::after {
-      content: "⚠  " attr(data-tooltip);
-      position: absolute;
-      z-index: 50;
-      right: -8px;
-      bottom: calc(100% + 10px);
-      width: min(280px, 70vw);
-      padding: 10px 12px 10px 34px;
-      border: 1px solid #f0c36d;
-      border-radius: 10px;
-      background: #fff8e6;
-      color: #4d3a00;
-      box-shadow: 0 10px 24px rgba(18, 58, 99, 0.18);
-      font-size: 12px;
-      line-height: 1.35;
-      font-family: inherit;
-      font-weight: 600;
-      white-space: normal;
-      text-align: left;
-    }
-
     .btn-opciones-asistente {
-      width: 28px;
-      height: 28px;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      width: auto;
+      min-width: 0;
+      height: auto;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
       color: #123a63;
       display: inline-flex;
       align-items: center;
@@ -629,8 +612,17 @@
       font-size: 18px;
       line-height: 1;
       cursor: pointer;
-      padding: 0 0 4px;
+      padding: 0 6px 4px;
       flex: 0 0 auto;
+    }
+
+    .btn-opciones-asistente:hover,
+    .btn-opciones-asistente:focus,
+    .btn-opciones-asistente:active {
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none;
     }
 
     .btn-opciones-asistente:disabled {
@@ -638,6 +630,33 @@
       background: transparent;
       cursor: not-allowed;
       opacity: 0.65;
+    }
+
+    .tooltip-observaciones-asistente {
+      position: fixed;
+      z-index: 9999;
+      max-width: min(320px, calc(100vw - 28px));
+      padding: 10px 12px;
+      border: 1px solid #f0c36d;
+      border-radius: 10px;
+      background: #fff8e6;
+      color: #4d3a00;
+      box-shadow: 0 10px 24px rgba(18, 58, 99, 0.18);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 600;
+      white-space: pre-wrap;
+      pointer-events: none;
+    }
+
+    .tooltip-observaciones-asistente[hidden] {
+      display: none;
+    }
+
+    .tooltip-observaciones-asistente .tooltip-observaciones-icono {
+      display: inline-block;
+      margin-right: 6px;
+      color: #222;
     }
 
     th.tipo-col, td.tipo-col {
@@ -1255,6 +1274,8 @@
     </div>
   </div>
 
+  <div id="tooltipObservacionesAsistente" class="tooltip-observaciones-asistente" hidden></div>
+
   <script>
     let tokenEdicion = "";
     let reservaActual = null;
@@ -1676,6 +1697,30 @@
       if (icono) icono.dataset.tooltip = observaciones;
     }
 
+    function mostrarTooltipObservacionesAsistente(icono) {
+      const tooltip = document.getElementById("tooltipObservacionesAsistente");
+      const texto = normalizarObservacionesAsistente(icono?.dataset?.tooltip || "");
+      if (!tooltip || !texto) return;
+      tooltip.innerHTML = `<span class="tooltip-observaciones-icono">⚠</span>${texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+      tooltip.hidden = false;
+      const rect = icono.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const margen = 12;
+      let left = rect.right - tooltipRect.width;
+      let top = rect.top - tooltipRect.height - 10;
+      left = Math.max(margen, Math.min(left, window.innerWidth - tooltipRect.width - margen));
+      if (top < margen) top = rect.bottom + 10;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+
+    function ocultarTooltipObservacionesAsistente() {
+      const tooltip = document.getElementById("tooltipObservacionesAsistente");
+      if (!tooltip) return;
+      tooltip.hidden = true;
+      tooltip.textContent = "";
+    }
+
     function validarVisitantesDeTabla() {
       const errores = [];
       const completos = [];
@@ -1907,7 +1952,7 @@
         <td class="nombre-col" data-label="Nombre completo">
           <div class="nombre-asistente-wrap">
             <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
-            <span class="icono-observaciones-asistente" aria-label="Este asistente tiene observaciones" role="img">
+            <span class="icono-observaciones-asistente" aria-label="Este asistente tiene observaciones" role="img" tabindex="0">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1.2" stroke-linejoin="round"></path>
                 <rect x="11" y="8" width="2" height="7" rx="1" fill="#222"></rect>
@@ -1968,6 +2013,12 @@
         seleccionarFila(filaId);
         abrirModalDatosAsistente();
       });
+
+      const iconoObservaciones = tr.querySelector(".icono-observaciones-asistente");
+      iconoObservaciones?.addEventListener("mouseenter", () => mostrarTooltipObservacionesAsistente(iconoObservaciones));
+      iconoObservaciones?.addEventListener("mouseleave", ocultarTooltipObservacionesAsistente);
+      iconoObservaciones?.addEventListener("focus", () => mostrarTooltipObservacionesAsistente(iconoObservaciones));
+      iconoObservaciones?.addEventListener("blur", ocultarTooltipObservacionesAsistente);
 
       actualizarEstiloPlaceholderSelect(tr.querySelector(".perfil-asistente"));
       actualizarEstiloPlaceholderSelect(tr.querySelector(".ensenanza-asistente"));
