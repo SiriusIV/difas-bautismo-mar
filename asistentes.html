@@ -566,21 +566,22 @@
     }
 
     .nombre-asistente-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      position: relative;
     }
 
     .nombre-asistente-wrap .nombre-asistente {
-      flex: 1 1 auto;
-      min-width: 0;
+      padding-right: 42px;
     }
 
     .icono-observaciones-asistente {
       width: 18px;
       height: 18px;
-      flex: 0 0 auto;
       display: none;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
     }
 
     tr.tiene-observaciones .icono-observaciones-asistente {
