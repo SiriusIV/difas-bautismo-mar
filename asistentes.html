@@ -581,19 +581,47 @@
       right: 14px;
       top: 50%;
       transform: translateY(-50%);
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: help;
+    }
+
+    .icono-observaciones-asistente svg {
+      width: 18px;
+      height: 18px;
+      display: block;
     }
 
     tr.tiene-observaciones .icono-observaciones-asistente {
       display: block;
     }
 
+    .icono-observaciones-asistente:hover::after {
+      content: "⚠  " attr(data-tooltip);
+      position: absolute;
+      z-index: 50;
+      right: -8px;
+      bottom: calc(100% + 10px);
+      width: min(280px, 70vw);
+      padding: 10px 12px 10px 34px;
+      border: 1px solid #f0c36d;
+      border-radius: 10px;
+      background: #fff8e6;
+      color: #4d3a00;
+      box-shadow: 0 10px 24px rgba(18, 58, 99, 0.18);
+      font-size: 12px;
+      line-height: 1.35;
+      font-family: inherit;
+      font-weight: 600;
+      white-space: normal;
+      text-align: left;
+    }
+
     .btn-opciones-asistente {
       width: 28px;
       height: 28px;
-      border: 1px solid #b9c8d8;
-      border-radius: 999px;
-      background: #fff;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       color: #123a63;
       display: inline-flex;
       align-items: center;
@@ -607,7 +635,7 @@
 
     .btn-opciones-asistente:disabled {
       color: #8a98a8;
-      background: #f3f6fa;
+      background: transparent;
       cursor: not-allowed;
       opacity: 0.65;
     }
@@ -1641,8 +1669,11 @@
 
     function actualizarIndicadorObservacionesAsistente(fila) {
       if (!fila) return;
-      const tieneObservaciones = normalizarObservacionesAsistente(fila.dataset.observaciones || "") !== "";
+      const observaciones = normalizarObservacionesAsistente(fila.dataset.observaciones || "");
+      const tieneObservaciones = observaciones !== "";
       fila.classList.toggle("tiene-observaciones", tieneObservaciones);
+      const icono = fila.querySelector(".icono-observaciones-asistente");
+      if (icono) icono.dataset.tooltip = observaciones;
     }
 
     function validarVisitantesDeTabla() {
@@ -1876,11 +1907,13 @@
         <td class="nombre-col" data-label="Nombre completo">
           <div class="nombre-asistente-wrap">
             <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
-            <svg class="icono-observaciones-asistente" viewBox="0 0 24 24" aria-label="Este asistente tiene observaciones" role="img">
-              <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1.2" stroke-linejoin="round"></path>
-              <rect x="11" y="8" width="2" height="7" rx="1" fill="#222"></rect>
-              <rect x="11" y="16.5" width="2" height="2" rx="1" fill="#222"></rect>
-            </svg>
+            <span class="icono-observaciones-asistente" aria-label="Este asistente tiene observaciones" role="img">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1.2" stroke-linejoin="round"></path>
+                <rect x="11" y="8" width="2" height="7" rx="1" fill="#222"></rect>
+                <rect x="11" y="16.5" width="2" height="2" rx="1" fill="#222"></rect>
+              </svg>
+            </span>
           </div>
         </td>
         <td class="tipo-col" data-label="Perfil">
