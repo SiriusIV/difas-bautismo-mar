@@ -15,6 +15,13 @@ function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
 }
 
+function normalizarEstadoReserva(estado) {
+  const valor = limpiarTexto(estado).toUpperCase();
+  if (valor === "ACEPTADA") return "CONFIRMADA";
+  if (valor === "EN REVISION") return "EN_REVISION";
+  return valor;
+}
+
 function escaparHtml(valor) {
   return String(valor || "")
     .replace(/&/g, "&amp;")
@@ -44,11 +51,11 @@ function normalizarClaveNombre(valor) {
   return limpiarTexto(valor).toLowerCase();
 }
 
-function tieneDatosAmpliatorios(visitante) {
+function tieneObservacionesRevision(visitante) {
   return !!limpiarTexto(visitante?.observaciones);
 }
 
-function firmaDatosAmpliatorios(visitante) {
+function firmaObservacionesRevision(visitante) {
   return JSON.stringify({
     observaciones: limpiarTexto(visitante?.observaciones)
   });
@@ -567,18 +574,18 @@ export async function onRequestPost(context) {
     const revisionesPrevias = new Map();
     visitantesPrevios.forEach((visitante) => {
       revisionesPrevias.set(normalizarClaveNombre(visitante.nombre_completo), {
-        firma: firmaDatosAmpliatorios(visitante),
+        firma: firmaObservacionesRevision(visitante),
         estado: limpiarTexto(visitante.observaciones_revision_estado).toUpperCase()
       });
     });
     let requiereRevisionOrganizador = false;
     visitantesNormalizados.forEach((visitante) => {
-      if (!tieneDatosAmpliatorios(visitante)) {
+      if (!tieneObservacionesRevision(visitante)) {
         visitante.observaciones_revision_estado = "";
         return;
       }
       const previa = revisionesPrevias.get(normalizarClaveNombre(visitante.nombre_completo));
-      const firmaActual = firmaDatosAmpliatorios(visitante);
+      const firmaActual = firmaObservacionesRevision(visitante);
       if (previa && previa.firma === firmaActual && ["IGNORADA", "RELEVANTE"].includes(previa.estado)) {
         visitante.observaciones_revision_estado = previa.estado;
       } else {

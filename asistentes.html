@@ -1155,6 +1155,17 @@
     </div>
   </div>
 
+  <div id="modalAvisoRevisionObservaciones" class="modal-fondo" aria-hidden="true">
+    <div class="modal modal-con-deco">
+      <h3><span class="modal-advertencia" aria-hidden="true">!</span>Revisión de observaciones</h3>
+      <p>La solicitud ya está confirmada. Si guardas estas observaciones, la solicitud pasará a estar en proceso para que el organizador de la actividad pueda revisarlas.</p>
+      <div class="acciones acciones-izquierda">
+        <button type="button" id="btnContinuarRevisionObservaciones" class="btn-modal">Continuar</button>
+        <button type="button" id="btnCancelarRevisionObservaciones" class="btn-modal secundario">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalDatosAsistente" class="modal-fondo" aria-hidden="true">
     <div class="modal">
       <button type="button" id="btnCerrarModalDatosAsistenteSuperior" class="modal-cerrar-superior" aria-label="Cerrar">×</button>
@@ -1205,6 +1216,7 @@
     let temporizadorMensaje = null;
     let tipoMensajeActivo = "";
     let accionPendienteModalSinAsistentes = null;
+    let resolverAvisoRevisionObservaciones = null;
     let temporizadorGuardadoAutomatico = null;
     let guardadoAutomaticoEnCola = false;
 
@@ -1707,11 +1719,43 @@
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
     }
 
+    function normalizarObservacionesAsistente(valor) {
+      return String(valor || "").trim().replace(/\s+/g, " ");
+    }
+
+    function solicitudEstaConfirmada() {
+      const estado = String(reservaActual?.estado || "").trim().toUpperCase();
+      return estado === "CONFIRMADA" || estado === "ACEPTADA";
+    }
+
+    function observacionesAsistenteCambiadas(fila, nuevasObservaciones) {
+      const anteriores = normalizarObservacionesAsistente(fila?.dataset?.observaciones || "");
+      const actuales = normalizarObservacionesAsistente(nuevasObservaciones);
+      return anteriores !== actuales && actuales !== "";
+    }
+
+    function resolverAvisoRevisionObservacionesPendiente(continuar) {
+      const resolver = resolverAvisoRevisionObservaciones;
+      resolverAvisoRevisionObservaciones = null;
+      establecerVisibilidadModal("modalAvisoRevisionObservaciones", false);
+      if (typeof resolver === "function") resolver(!!continuar);
+    }
+
+    function confirmarRevisionObservacionesSiProcede(fila, nuevasObservaciones) {
+      if (!solicitudEstaConfirmada() || !observacionesAsistenteCambiadas(fila, nuevasObservaciones)) {
+        return Promise.resolve(true);
+      }
+      establecerVisibilidadModal("modalAvisoRevisionObservaciones", true);
+      return new Promise((resolve) => {
+        resolverAvisoRevisionObservaciones = resolve;
+      });
+    }
+
     function cerrarModalDatosAsistente() {
       establecerVisibilidadModal("modalDatosAsistente", false);
     }
 
-    function guardarDatosAsistenteSeleccionado() {
+    async function guardarDatosAsistenteSeleccionado() {
       const fila = obtenerFilaSeleccionada();
       if (!solicitudEditable() || !fila) {
         cerrarModalDatosAsistente();
@@ -1735,12 +1779,19 @@
         return;
       }
 
+      const nuevasObservaciones = document.getElementById("inputObservacionesAsistente").value.trim();
+      const confirmado = await confirmarRevisionObservacionesSiProcede(fila, nuevasObservaciones);
+      if (!confirmado) {
+        document.getElementById("inputObservacionesAsistente").value = fila.dataset.observaciones || "";
+        return;
+      }
+
       fila.dataset.nacionalidad = document.getElementById("inputNacionalidadAsistente").value.trim();
       fila.dataset.dni = dni;
       fila.dataset.email = email;
       fila.dataset.dobleNacionalidad = dobleNacionalidad ? "1" : "0";
       fila.dataset.segundaNacionalidad = dobleNacionalidad ? segundaNacionalidad : "";
-      fila.dataset.observaciones = document.getElementById("inputObservacionesAsistente").value.trim();
+      fila.dataset.observaciones = nuevasObservaciones;
       marcarCambiosPendientes();
       cerrarModalDatosAsistente();
       guardarAsistentes({
@@ -2570,10 +2621,17 @@
       document.getElementById("btnCerrarModalSalidaSuperior").addEventListener("click", cerrarModalSalida);
       document.getElementById("btnContinuarSinAsistentes").addEventListener("click", confirmarAccionSinAsistentes);
       document.getElementById("btnCancelarSinAsistentes").addEventListener("click", cerrarModalAvisoSinAsistentes);
+      document.getElementById("btnContinuarRevisionObservaciones")?.addEventListener("click", () => resolverAvisoRevisionObservacionesPendiente(true));
+      document.getElementById("btnCancelarRevisionObservaciones")?.addEventListener("click", () => resolverAvisoRevisionObservacionesPendiente(false));
 
       document.getElementById("modalConfirmarSalida").addEventListener("click", function (e) {
         if (e.target.id === "modalConfirmarSalida") {
           cerrarModalSalida();
+        }
+      });
+      document.getElementById("modalAvisoRevisionObservaciones")?.addEventListener("click", function (e) {
+        if (e.target.id === "modalAvisoRevisionObservaciones") {
+          resolverAvisoRevisionObservacionesPendiente(false);
         }
       });
 
