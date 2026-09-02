@@ -565,6 +565,28 @@
       width: 34%;
     }
 
+    .nombre-asistente-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nombre-asistente-wrap .nombre-asistente {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .icono-observaciones-asistente {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      display: none;
+    }
+
+    tr.tiene-observaciones .icono-observaciones-asistente {
+      display: block;
+    }
+
     .btn-opciones-asistente {
       width: 28px;
       height: 28px;
@@ -1616,6 +1638,12 @@
       });
     }
 
+    function actualizarIndicadorObservacionesAsistente(fila) {
+      if (!fila) return;
+      const tieneObservaciones = normalizarObservacionesAsistente(fila.dataset.observaciones || "") !== "";
+      fila.classList.toggle("tiene-observaciones", tieneObservaciones);
+    }
+
     function validarVisitantesDeTabla() {
       const errores = [];
       const completos = [];
@@ -1793,6 +1821,7 @@
       fila.dataset.dobleNacionalidad = dobleNacionalidad ? "1" : "0";
       fila.dataset.segundaNacionalidad = dobleNacionalidad ? segundaNacionalidad : "";
       fila.dataset.observaciones = nuevasObservaciones;
+      actualizarIndicadorObservacionesAsistente(fila);
       marcarCambiosPendientes();
       cerrarModalDatosAsistente();
       guardarAsistentes({
@@ -1844,7 +1873,14 @@
 
       tr.innerHTML = `
         <td class="nombre-col" data-label="Nombre completo">
-          <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
+          <div class="nombre-asistente-wrap">
+            <input type="text" class="nombre-asistente" value="${(asistente.nombre_completo || "").replace(/"/g, "&quot;")}" ${editable ? "" : "disabled"}>
+            <svg class="icono-observaciones-asistente" viewBox="0 0 24 24" aria-label="Este asistente tiene observaciones" role="img">
+              <path d="M12 3L22 20H2L12 3Z" fill="#FFC107" stroke="#CC9A06" stroke-width="1.2" stroke-linejoin="round"></path>
+              <rect x="11" y="8" width="2" height="7" rx="1" fill="#222"></rect>
+              <rect x="11" y="16.5" width="2" height="2" rx="1" fill="#222"></rect>
+            </svg>
+          </div>
         </td>
         <td class="tipo-col" data-label="Perfil">
           <select class="perfil-asistente" ${editable ? "" : "disabled"}>
@@ -1902,6 +1938,7 @@
       actualizarEstiloPlaceholderSelect(tr.querySelector(".perfil-asistente"));
       actualizarEstiloPlaceholderSelect(tr.querySelector(".ensenanza-asistente"));
       actualizarEstiloPlaceholderSelect(tr.querySelector(".categoria-asistente"));
+      actualizarIndicadorObservacionesAsistente(tr);
 
       tbody.appendChild(tr);
     }
