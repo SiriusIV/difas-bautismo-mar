@@ -99,7 +99,7 @@ function indexarArchivosActivosPorDocumento(archivos = []) {
       duplicados.push(existente);
       porNombre.set(key, archivo);
       porNombre.set(nombre, archivo);
-    } else {
+    } else if (Number(archivo?.id || 0) !== Number(existente?.id || 0)) {
       duplicados.push(archivo);
     }
   }
