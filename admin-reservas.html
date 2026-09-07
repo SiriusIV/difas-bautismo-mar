@@ -188,6 +188,7 @@
     .select-estado-documental-modal.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .estado-documental-modal-fijo.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .estado-documental-modal-fijo.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
+    .estado-documental-modal-fijo.estado-no-presentado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .estado-documental-modal-fijo.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
     .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
@@ -974,18 +975,22 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       const valor = String(estado || "").trim().toUpperCase();
       if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "confirmada";
       if (["RECHAZADO", "RECHAZADA", "NO_ACTUALIZADO"].includes(valor)) return "rechazada";
+      if (["NO_ENVIADO", "NO_PRESENTADO", "NO_INICIADO", "NO_COMPLETADO"].includes(valor)) return "rechazada";
       return "revision-documental";
     }
     function estadoRevisionSelectClaseAdmin(estado) {
       const valor = String(estado || "").trim().toUpperCase();
       if (["VALIDADO", "VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "estado-validado";
       if (["RECHAZADO", "RECHAZADA"].includes(valor)) return "estado-rechazado";
+      if (["NO_ENVIADO", "NO_PRESENTADO", "NO_INICIADO", "NO_COMPLETADO"].includes(valor)) return "estado-no-presentado";
       return "estado-revision";
     }
     function normalizarEstadoRevisionDocumentoAdmin(estado) {
       const valor = String(estado || "").trim().toUpperCase();
       if (["VALIDADA", "APROBADO", "APROBADA"].includes(valor)) return "VALIDADO";
       if (valor === "EN REVISION") return "EN_REVISION";
+      if (["NO_ENVIADO", "NO_PRESENTADO", "NO_INICIADO", "NO_COMPLETADO"].includes(valor)) return "NO_PRESENTADO";
+      if (valor === "NO_ACTUALIZADO") return "NO_ACTUALIZADO";
       if (["VALIDADO", "RECHAZADO", "EN_REVISION"].includes(valor)) return valor;
       return "EN_REVISION";
     }
