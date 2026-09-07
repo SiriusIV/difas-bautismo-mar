@@ -195,11 +195,19 @@ export async function obtenerCatalogoDocumentosPropietarios(env, propietarios = 
 }
 
 export async function obtenerCatalogoDocumentalVinculadoAdmin(env, adminId, catalogoFallback = []) {
+  const admin = Number(adminId || 0);
+  if (!(admin > 0)) return Array.isArray(catalogoFallback) ? catalogoFallback : [];
+
   const vinculados = await listarPropietariosDocumentalesVinculados(env, adminId);
-  if (vinculados.length) {
-    return obtenerCatalogoDocumentosPropietarios(env, vinculados);
+  const propietarios = [admin, ...vinculados.map((item) => Number(item?.id || 0))]
+    .filter((id, index, lista) => id > 0 && lista.indexOf(id) === index);
+
+  const catalogoPropietarios = await obtenerCatalogoDocumentosPropietarios(env, propietarios);
+  if (catalogoPropietarios.length) {
+    return catalogoPropietarios;
   }
-  const catalogoPropio = await obtenerCatalogoDocumentosPropietarios(env, [adminId]);
+
+  const catalogoPropio = await obtenerCatalogoDocumentosPropietarios(env, [admin]);
   if (catalogoPropio.length) {
     return catalogoPropio;
   }
