@@ -23,6 +23,7 @@ import {
   resolverDocumentosExigiblesActividad
 } from "./_actividad_documentacion.js";
 import { asegurarColumnasContextoDocumental } from "./_documentacion_contextual.js";
+import { resolverDocumentosSolicitudConEntregas } from "./_documentacion_solicitudes.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -502,9 +503,11 @@ async function obtenerArchivosActivosContextoReserva(env, {
       .filter((id) => id > 0)
   ));
 
-  if (!(usuario > 0) || !(actividad > 0) || !ids.length) return [];
+  if (!(usuario > 0) || !(actividad > 0)) return [];
 
-  const placeholders = ids.map(() => '?').join(', ');
+  const filtroPropietarios = ids.length
+    ? `AND cad.admin_id IN (${ids.map(() => '?').join(', ')})`
+    : '';
   const condicionesReserva = reserva > 0
     ? '(cad.reserva_id = ? OR a.reserva_id = ? OR cad.reserva_id IS NULL OR a.reserva_id IS NULL)'
     : '(cad.reserva_id IS NULL OR a.reserva_id IS NULL)';
@@ -537,7 +540,7 @@ async function obtenerArchivosActivosContextoReserva(env, {
       ON a.documentacion_id = cad.id
      AND COALESCE(a.activo, 1) = 1
     WHERE cad.centro_usuario_id = ?
-      AND cad.admin_id IN (${placeholders})
+      ${filtroPropietarios}
       AND (cad.actividad_id = ? OR a.actividad_id = ?)
       AND ${condicionesReserva}
     ORDER BY prioridad_contexto DESC, a.id ASC
@@ -920,19 +923,19 @@ export async function recalcularImpactoDocumentalReservas(env, {
     for (const reserva of reservas) {
       const estadoReserva = limpiarTexto(reserva.estado).toUpperCase();
       const configuracionActividad = configuracionDocumentalPorActividad.get(Number(reserva.actividad_id || 0)) || null;
-      const documentosExigiblesReserva = resolverDocumentosExigiblesActividad(documentos, configuracionActividad);
+      const documentosVigentesReserva = resolverDocumentosExigiblesActividad(documentos, configuracionActividad);
       const expedientesPorPropietarioReserva = await asegurarExpedientesPropietarios(
         env,
         Number(solicitante.id || 0),
-        obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico),
-        documentosExigiblesReserva,
+        obtenerPropietariosDocumentos(documentosVigentesReserva, adminIdNumerico),
+        documentosVigentesReserva,
         estadoInicial,
         {
           actividadId: Number(reserva.actividad_id || 0),
           reservaId: Number(reserva.id || 0)
         }
       );
-      const propietariosReserva = obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico);
+      let propietariosReserva = obtenerPropietariosDocumentos(documentosVigentesReserva, adminIdNumerico);
       const archivosActivosReserva = [
         ...await obtenerArchivosActivosExpedientes(env, expedientesPorPropietarioReserva),
         ...await obtenerArchivosActivosContextoReserva(env, {
@@ -942,6 +945,11 @@ export async function recalcularImpactoDocumentalReservas(env, {
           propietarios: propietariosReserva
         })
       ];
+      const documentosExigiblesReserva = resolverDocumentosSolicitudConEntregas(
+        documentosVigentesReserva,
+        archivosActivosReserva
+      );
+      propietariosReserva = obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico);
       const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivosReserva);
       estadosDocumentalesReserva.push(estadoDocumentalReserva);
 

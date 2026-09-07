@@ -9,6 +9,7 @@ import {
   construirCondicionContextoDocumental,
   normalizarContextoDocumental
 } from "./_documentacion_contextual.js";
+import { resolverDocumentosSolicitudConEntregas } from "./_documentacion_solicitudes.js";
 
 function limpiarTexto(valor) {
   return String(valor || "").trim();
@@ -294,9 +295,11 @@ async function obtenerArchivosActivosContextoReserva(env, {
       .filter((id) => id > 0)
   ));
 
-  if (!(usuario > 0) || !(actividad > 0) || !ids.length) return [];
+  if (!(usuario > 0) || !(actividad > 0)) return [];
 
-  const placeholders = ids.map(() => "?").join(", ");
+  const filtroPropietarios = ids.length
+    ? `AND cad.admin_id IN (${ids.map(() => "?").join(", ")})`
+    : "";
   const condicionesReserva = reserva > 0
     ? "(cad.reserva_id = ? OR a.reserva_id = ? OR cad.reserva_id IS NULL OR a.reserva_id IS NULL)"
     : "(cad.reserva_id IS NULL OR a.reserva_id IS NULL)";
@@ -334,7 +337,7 @@ async function obtenerArchivosActivosContextoReserva(env, {
       ON a.documentacion_id = cad.id
      AND COALESCE(a.activo, 1) = 1
     WHERE cad.centro_usuario_id = ?
-      AND cad.admin_id IN (${placeholders})
+      ${filtroPropietarios}
       AND (cad.actividad_id = ? OR a.actividad_id = ?)
       AND ${condicionesReserva}
     ORDER BY prioridad_contexto DESC, a.id ASC
@@ -378,18 +381,9 @@ export async function validarDocumentacionReserva(env, {
     await obtenerCatalogoDocumentosActivosAdmin(env, admin)
   );
   const configuracion = await leerConfiguracionDocumentalActividad(env, actividad);
-  const documentosExigibles = resolverDocumentosExigiblesActividad(catalogo, configuracion);
+  const documentosVigentes = resolverDocumentosExigiblesActividad(catalogo, configuracion);
 
-  if (!documentosExigibles.length) {
-    return {
-      ok: true,
-      requiere_documentacion: false,
-      estado_documental: "NO_REQUERIDA",
-      documentos_pendientes: []
-    };
-  }
-
-  const propietarios = obtenerPropietariosDocumentales(documentosExigibles);
+  const propietarios = obtenerPropietariosDocumentales(documentosVigentes);
   const expedientesPorPropietario = await obtenerExpedientesPorPropietario(env, usuario, propietarios, contextoEntrega);
   if (contextoEntrega.reservaId) {
     const pendientesActividad = await obtenerExpedientesPorPropietario(env, usuario, propietarios, {
@@ -413,6 +407,17 @@ export async function validarDocumentacionReserva(env, {
     ...archivosActivos,
     ...archivosContextoReserva
   ];
+  const documentosExigibles = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo);
+
+  if (!documentosExigibles.length) {
+    return {
+      ok: true,
+      requiere_documentacion: false,
+      estado_documental: "NO_REQUERIDA",
+      documentos_pendientes: []
+    };
+  }
+
   const estadoDocumental = calcularEstadoGlobal(documentosExigibles, archivosParaCalculo);
   const documentosPendientes = construirDocumentosPendientes(documentosExigibles, archivosParaCalculo);
   const documentosEstado = construirDocumentosEstado(documentosExigibles, archivosParaCalculo);

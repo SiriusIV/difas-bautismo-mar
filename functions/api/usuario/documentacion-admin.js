@@ -19,6 +19,7 @@ import {
   construirCondicionContextoDocumental,
   normalizarContextoDocumental
 } from "../_documentacion_contextual.js";
+import { resolverDocumentosSolicitudConEntregas } from "../_documentacion_solicitudes.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -447,6 +448,53 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
     });
   }
   return salida;
+}
+
+async function obtenerArchivosActivosContextoSolicitud(env, centroUsuarioId, contexto = {}) {
+  const usuario = parsearIdPositivo(centroUsuarioId);
+  const contextoNormalizado = normalizarContextoDocumental(contexto);
+  if (!usuario || !contextoNormalizado.actividadId) return [];
+
+  const condicionReserva = contextoNormalizado.reservaId
+    ? "(cad.reserva_id = ? OR a.reserva_id = ?)"
+    : "(cad.reserva_id IS NULL OR a.reserva_id IS NULL)";
+  const valoresReserva = contextoNormalizado.reservaId
+    ? [contextoNormalizado.reservaId, contextoNormalizado.reservaId]
+    : [];
+
+  const rows = await env.DB.prepare(`
+    SELECT
+      a.id,
+      a.documentacion_id,
+      a.actividad_id,
+      a.reserva_id,
+      a.nombre_documento,
+      a.archivo_url,
+      a.version_documental,
+      a.estado,
+      a.fecha_validacion,
+      a.validado_por_admin_id,
+      a.observaciones_admin,
+      a.fecha_subida,
+      a.activo,
+      cad.admin_id AS propietario_documental_id,
+      5 AS prioridad_contexto
+    FROM centro_admin_documentacion cad
+    INNER JOIN centro_admin_documentacion_archivos a
+      ON a.documentacion_id = cad.id
+     AND COALESCE(a.activo, 1) = 1
+    WHERE cad.centro_usuario_id = ?
+      AND (cad.actividad_id = ? OR a.actividad_id = ?)
+      AND ${condicionReserva}
+    ORDER BY a.id ASC
+  `).bind(
+    usuario,
+    contextoNormalizado.actividadId,
+    contextoNormalizado.actividadId,
+    ...valoresReserva
+  ).all();
+
+  return rows?.results || [];
 }
 
 async function asegurarExpedienteDocumental(env, centroUsuarioId, propietarioId, versionRequerida, contexto = {}) {
@@ -924,7 +972,7 @@ export async function onRequestGet(context) {
     const actividad = contextoDocumental.actividad;
     const configuracionActividad = contextoDocumental.configuracionActividad;
     const documentosBase = contextoDocumental.documentosBase;
-    const documentos = contextoDocumental.documentos;
+    const documentosVigentes = contextoDocumental.documentos;
     const actividadesAdmin = await obtenerActividadesAdmin(env, adminId);
     const configuracionesActividades = actividadesAdmin.length
       ? await Promise.all(
@@ -939,11 +987,7 @@ export async function onRequestGet(context) {
       actividadesAdmin,
       configuracionesActividades
     );
-    const versionRequerida = documentos.reduce(
-      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
-      0
-    );
-    const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
+    const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentosVigentes);
     const expedientesPorPropietario = await obtenerExpedientesPorPropietario(
       env,
       usuario.id,
@@ -958,9 +1002,21 @@ export async function onRequestGet(context) {
       expedientesPorPropietario,
       actividadId ? contextoEntrega : {}
     );
-    const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosActivos);
+    const archivosContextoSolicitud = actividadId
+      ? await obtenerArchivosActivosContextoSolicitud(env, usuario.id, contextoEntrega)
+      : [];
+    const archivosParaCalculo = [
+      ...archivosActivos,
+      ...archivosContextoSolicitud
+    ];
+    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo);
+    const versionRequerida = documentos.reduce(
+      (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
+      0
+    );
+    const estadoEfectivo = calcularEstadoEfectivo(documentos, archivosParaCalculo);
     const requiereDocumentacion = documentos.length > 0;
-    const documentosPendientes = construirDocumentosPendientes(documentos, archivosActivos);
+    const documentosPendientes = construirDocumentosPendientes(documentos, archivosParaCalculo);
 
     return json({
       ok: true,
@@ -999,7 +1055,7 @@ export async function onRequestGet(context) {
         observaciones_admin: expediente.observaciones_admin || ""
       } : null,
       documentos: enriquecerResumenDocumentosConActividades(
-        construirResumenDocumentos(documentos, archivosActivos),
+        construirResumenDocumentos(documentos, archivosParaCalculo),
         actividadesPorDocumento
       )
     });
@@ -1055,7 +1111,27 @@ export async function onRequestPost(context) {
     if (contextoDocumental.error) {
       return json({ ok: false, error: contextoDocumental.error }, contextoDocumental.error.includes("no corresponde") ? 400 : 404);
     }
-    const documentos = contextoDocumental.documentos;
+    const documentosVigentes = contextoDocumental.documentos;
+    let propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentosVigentes);
+    let expedientesPorPropietario = await obtenerExpedientesPorPropietario(
+      env,
+      usuario.id,
+      propietariosDocumentales,
+      actividadId ? contextoEntrega : {}
+    );
+    const archivosExistentes = await obtenerArchivosActivosPorExpedientes(
+      env,
+      expedientesPorPropietario,
+      actividadId ? contextoEntrega : {}
+    );
+    const archivosContextoSolicitud = actividadId
+      ? await obtenerArchivosActivosContextoSolicitud(env, usuario.id, contextoEntrega)
+      : [];
+    const archivosParaCalculoInicial = [
+      ...archivosExistentes,
+      ...archivosContextoSolicitud
+    ];
+    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculoInicial);
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
       0
@@ -1068,19 +1144,8 @@ export async function onRequestPost(context) {
       );
     }
 
-    const propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
-    let expedientesPorPropietario = await obtenerExpedientesPorPropietario(
-      env,
-      usuario.id,
-      propietariosDocumentales,
-      actividadId ? contextoEntrega : {}
-    );
-    const archivosExistentes = await obtenerArchivosActivosPorExpedientes(
-      env,
-      expedientesPorPropietario,
-      actividadId ? contextoEntrega : {}
-    );
-    const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosExistentes);
+    propietariosDocumentales = obtenerPropietariosDocumentalesDocumentos(documentos);
+    const indiceArchivosExistentes = indexarArchivosActivosPorDocumento(archivosParaCalculoInicial);
     const docsPorId = new Map(documentos.map((doc) => [Number(doc.id), doc]));
 
     let entregas = [];
@@ -1300,8 +1365,15 @@ export async function onRequestPost(context) {
       expedientesPorPropietario,
       actividadId ? contextoEntrega : {}
     );
+    const archivosContextoFinales = actividadId
+      ? await obtenerArchivosActivosContextoSolicitud(env, usuario.id, contextoEntrega)
+      : [];
+    const archivosFinalesCalculo = [
+      ...archivosFinales,
+      ...archivosContextoFinales
+    ];
     const urlsActivasFinales = new Set(
-      archivosFinales
+      archivosFinalesCalculo
         .map((archivo) => limpiarTexto(archivo.archivo_url))
         .filter(Boolean)
     );
@@ -1310,8 +1382,9 @@ export async function onRequestPost(context) {
       if (!archivoUrl || urlsActivasFinales.has(archivoUrl)) continue;
       await borrarArchivoBucketSiExiste(env, archivoUrl);
     }
-    const estadoExpediente = calcularEstadoEfectivo(documentos, archivosFinales);
-    const versionAportada = archivosFinales.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
+    const documentosFinales = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosFinalesCalculo);
+    const estadoExpediente = calcularEstadoEfectivo(documentosFinales, archivosFinalesCalculo);
+    const versionAportada = archivosFinalesCalculo.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
     const impactoReservaContextual = remisionDefinitiva && cambiosRealesIds.size > 0
       ? await actualizarReservaPorDocumentacionRemitida(env, {
           reservaId: contextoEntrega.reservaId,
@@ -1324,8 +1397,8 @@ export async function onRequestPost(context) {
     for (const propietarioId of propietariosDocumentales) {
       const expedientePropietario = expedientesPorPropietario.get(propietarioId) || null;
       if (!expedientePropietario) continue;
-      const documentosPropietario = documentos.filter((doc) => obtenerPropietarioDocumentalDocumento(doc) === propietarioId);
-      const archivosPropietario = archivosFinales.filter((archivo) =>
+      const documentosPropietario = documentosFinales.filter((doc) => obtenerPropietarioDocumentalDocumento(doc) === propietarioId);
+      const archivosPropietario = archivosFinalesCalculo.filter((archivo) =>
         Number(archivo?.propietario_documental_id || 0) === propietarioId
       );
       const estadoPropietario = calcularEstadoEfectivo(documentosPropietario, archivosPropietario);
@@ -1374,12 +1447,12 @@ export async function onRequestPost(context) {
       null;
 
     const cambiosIdsFinales = Array.from(cambiosRealesIds);
-    const cambiosCorreo = resumirCambiosParaCorreo(documentos, archivosFinales, cambiosIdsFinales);
+    const cambiosCorreo = resumirCambiosParaCorreo(documentosFinales, archivosFinalesCalculo, cambiosIdsFinales);
     if (remisionDefinitiva && cambiosIdsFinales.length > 0) {
       await registrarHistorialDocumentacionRemitida(env, {
         reservaId: contextoEntrega.reservaId,
         usuario,
-        documentos,
+        documentos: documentosFinales,
         cambiosIds: cambiosIdsFinales
       });
     }
@@ -1387,14 +1460,14 @@ export async function onRequestPost(context) {
     let notificacionInternaResponsable = { ok: false, skipped: true, error: "" };
 
     if (remisionDefinitiva && cambiosCorreo.length > 0) {
-      const documentosCambiados = documentos.filter((doc) => cambiosRealesIds.has(Number(doc.id || 0)));
+      const documentosCambiados = documentosFinales.filter((doc) => cambiosRealesIds.has(Number(doc.id || 0)));
       const documentosPorPropietario = agruparDocumentosPorPropietario(documentosCambiados);
 
       for (const [propietarioId, documentosPropietario] of documentosPorPropietario.entries()) {
         const propietario = await obtenerUsuarioPorId(env, propietarioId);
         const cambiosPropietario = resumirCambiosParaCorreo(
           documentosPropietario,
-          archivosFinales,
+          archivosFinalesCalculo,
           documentosPropietario.map((doc) => Number(doc.id || 0))
         );
         if (!propietario?.email || !cambiosPropietario.length) continue;
@@ -1498,7 +1571,7 @@ export async function onRequestPost(context) {
         version_aportada: versionAportada,
         estado: estadoExpediente,
         fecha_ultima_entrega: expediente?.fecha_ultima_entrega || "",
-        archivos: archivosFinales
+        archivos: archivosFinalesCalculo
       },
       cambios_documentales: cambiosCorreo,
       notificacion_admin: {
