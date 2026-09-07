@@ -120,12 +120,25 @@ export async function onRequestPost(context) {
         documentoId
       ).run();
 
-      const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
-        propietarioDocumentalId: Number(actual.admin_id || 0),
-        baseUrl,
-        motivo: "documentos_actualizados",
-        avisarCambioMarcoSinCambios: true
-      });
+      let impactoReservas = { ok: true, omitido: true };
+      try {
+        impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+          propietarioDocumentalId: Number(actual.admin_id || 0),
+          baseUrl,
+          motivo: "documentos_actualizados",
+          avisarCambioMarcoSinCambios: true
+        });
+      } catch (errorImpacto) {
+        impactoReservas = {
+          ok: false,
+          error: errorImpacto?.message || String(errorImpacto || "")
+        };
+        console.error("No se pudo recalcular el impacto documental tras actualizar el documento base.", {
+          documento_id: documentoId,
+          propietario_documental_id: Number(actual.admin_id || 0),
+          error: impactoReservas.error
+        });
+      }
 
       return json({
         ok: true,
@@ -161,12 +174,24 @@ export async function onRequestPost(context) {
       version
     ).run();
 
-    const impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
-      propietarioDocumentalId: Number(session.usuario_id || 0),
-      baseUrl,
-      motivo: "documento_creado",
-      avisarCambioMarcoSinCambios: true
-    });
+    let impactoReservas = { ok: true, omitido: true };
+    try {
+      impactoReservas = await recalcularImpactoDocumentalReservasPorPropietario(env, {
+        propietarioDocumentalId: Number(session.usuario_id || 0),
+        baseUrl,
+        motivo: "documento_creado",
+        avisarCambioMarcoSinCambios: true
+      });
+    } catch (errorImpacto) {
+      impactoReservas = {
+        ok: false,
+        error: errorImpacto?.message || String(errorImpacto || "")
+      };
+      console.error("No se pudo recalcular el impacto documental tras crear el documento base.", {
+        propietario_documental_id: Number(session.usuario_id || 0),
+        error: impactoReservas.error
+      });
+    }
 
     return json({
       ok: true,
