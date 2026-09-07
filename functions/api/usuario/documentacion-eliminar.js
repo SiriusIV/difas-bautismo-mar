@@ -310,9 +310,13 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json().catch(() => null);
-    const documentoId = parsearIdPositivo(body?.documento_id);
-    const archivoId = parsearIdPositivo(body?.archivo_id);
+    let documentoId = parsearIdPositivo(body?.documento_id);
+    let archivoId = parsearIdPositivo(body?.archivo_id);
     const reservaId = parsearIdPositivo(body?.reserva_id);
+    if (!archivoId && documentoId && documentoId > 1000000000) {
+      archivoId = documentoId - 1000000000;
+      documentoId = null;
+    }
 
     if (!documentoId && !archivoId) {
       return json({ ok: false, error: "Debes indicar un documento válido." }, 400);
