@@ -1150,13 +1150,16 @@ export async function onRequestPost(context) {
 
     let entregas = [];
     let cambiosIds = [];
+    const operacionesParciales = Array.isArray(body?.operaciones);
+    const documentosOperacionIds = new Set();
 
-    if (Array.isArray(body?.operaciones)) {
+    if (operacionesParciales) {
       const operaciones = body.operaciones || [];
       entregas = construirEntregasDesdeOperaciones(documentos, archivosParaCalculoInicial, operaciones);
       cambiosIds = operaciones
         .map((item) => parsearIdPositivo(item?.documento_id))
         .filter((id) => Number.isInteger(id) && id > 0);
+      cambiosIds.forEach((id) => documentosOperacionIds.add(Number(id)));
     } else {
       const errorEntregas = validarEntregas(body?.entregas);
       if (errorEntregas) {
@@ -1220,6 +1223,9 @@ export async function onRequestPost(context) {
       }
 
       if (existente && !deseada) {
+        if (operacionesParciales && !documentosOperacionIds.has(Number(doc.id))) {
+          continue;
+        }
         const existenteId = Number(existente.id || 0);
         if (existenteId > 0 && !idsADesactivar.has(existenteId)) {
           aDesactivar.push(existente);
