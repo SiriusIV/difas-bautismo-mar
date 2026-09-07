@@ -1153,7 +1153,7 @@ export async function onRequestPost(context) {
 
     if (Array.isArray(body?.operaciones)) {
       const operaciones = body.operaciones || [];
-      entregas = construirEntregasDesdeOperaciones(documentos, archivosExistentes, operaciones);
+      entregas = construirEntregasDesdeOperaciones(documentos, archivosParaCalculoInicial, operaciones);
       cambiosIds = operaciones
         .map((item) => parsearIdPositivo(item?.documento_id))
         .filter((id) => Number.isInteger(id) && id > 0);
