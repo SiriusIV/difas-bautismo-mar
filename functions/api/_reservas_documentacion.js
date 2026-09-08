@@ -402,8 +402,7 @@ export async function validarDocumentacionReserva(env, {
   const archivosContextoReserva = await obtenerArchivosActivosContextoReserva(env, {
     usuarioId: usuario,
     actividadId: actividad,
-    reservaId: contextoEntrega.reservaId,
-    propietarios
+    reservaId: contextoEntrega.reservaId
   });
   const archivosParaCalculo = [
     ...archivosActivos,

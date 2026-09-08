@@ -943,8 +943,7 @@ export async function recalcularImpactoDocumentalReservas(env, {
         ...await obtenerArchivosActivosContextoReserva(env, {
           usuarioId: Number(solicitante.id || 0),
           actividadId: Number(reserva.actividad_id || 0),
-          reservaId: Number(reserva.id || 0),
-          propietarios: propietariosReserva
+          reservaId: Number(reserva.id || 0)
         })
       ];
       const documentosExigiblesReserva = resolverDocumentosSolicitudConEntregas(
