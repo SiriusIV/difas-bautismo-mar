@@ -30,7 +30,9 @@ export async function onRequestGet(context) {
     const headers = new Headers();
     objeto.writeHttpMetadata(headers);
     headers.set("etag", objeto.httpEtag);
-    headers.set("Cache-Control", "public, max-age=3600");
+    headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    headers.set("Pragma", "no-cache");
+    headers.set("Expires", "0");
 
     if (!headers.get("Content-Type")) {
       headers.set("Content-Type", "application/pdf");

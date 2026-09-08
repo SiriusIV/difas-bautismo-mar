@@ -4,7 +4,10 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=utf-8"
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      "Pragma": "no-cache",
+      "Expires": "0"
     }
   });
 }
@@ -66,7 +69,8 @@ export async function onRequestPost(context) {
     }
 
     const nombreSeguro = sanitizarSegmento(nombreDocumento) || "documento";
-    const key = `documentos/admin-${session.usuario_id}/${nombreSeguro}.pdf`;
+    const sufijoUnico = `${Date.now()}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+    const key = `documentos/admin-${session.usuario_id}/${nombreSeguro}-${sufijoUnico}.pdf`;
     const buffer = await file.arrayBuffer();
 
     await env.DOCS_BUCKET.put(key, buffer, {
