@@ -261,6 +261,7 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
     SELECT
       id,
       documentacion_id,
+      documento_id,
       nombre_documento,
       archivo_url,
       version_documental,
@@ -315,6 +316,7 @@ async function obtenerArchivosActivosContextoReserva(env, {
     SELECT
       a.id,
       a.documentacion_id,
+      a.documento_id,
       a.nombre_documento,
       a.archivo_url,
       a.version_documental,

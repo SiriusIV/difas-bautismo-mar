@@ -19,6 +19,7 @@ export async function asegurarColumnasContextoDocumental(env) {
   await agregarColumnaSiFalta(env, "centro_admin_documentacion", "reserva_id", "INTEGER");
   await agregarColumnaSiFalta(env, "centro_admin_documentacion_archivos", "actividad_id", "INTEGER");
   await agregarColumnaSiFalta(env, "centro_admin_documentacion_archivos", "reserva_id", "INTEGER");
+  await agregarColumnaSiFalta(env, "centro_admin_documentacion_archivos", "documento_id", "INTEGER");
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_cad_contexto_actividad
@@ -28,6 +29,11 @@ export async function asegurarColumnasContextoDocumental(env) {
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_cada_contexto_reserva
     ON centro_admin_documentacion_archivos (reserva_id, actividad_id, activo)
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_cada_documento_base
+    ON centro_admin_documentacion_archivos (documento_id, activo)
   `).run();
 }
 

@@ -21,6 +21,11 @@ function claveDocumento(nombre, propietarioId = 0) {
     : nombreNormalizado;
 }
 
+function claveDocumentoId(documentoId) {
+  const id = Number(documentoId || 0);
+  return id > 0 ? `ID:${id}` : "";
+}
+
 function normalizarEstadoDocumento(estado) {
   const valor = normalizarClaveTexto(estado);
   if (valor === "VALIDADA" || valor === "APROBADO" || valor === "APROBADA") return "VALIDADO";
@@ -46,11 +51,17 @@ function esMejorEntrega(candidata, actual) {
 
 function indexarEntregas(archivos = []) {
   const mapa = new Map();
+  const legacyPorPropietario = new Map();
   for (const archivo of Array.isArray(archivos) ? archivos : []) {
     if (!esEntregaMaterializada(archivo)) continue;
     const nombre = limpiarTexto(archivo.nombre_documento);
     const propietarioId = obtenerPropietarioDocumento(archivo);
+    if (propietarioId > 0 && !(Number(archivo?.documento_id || 0) > 0)) {
+      if (!legacyPorPropietario.has(propietarioId)) legacyPorPropietario.set(propietarioId, []);
+      legacyPorPropietario.get(propietarioId).push(archivo);
+    }
     const claves = [
+      claveDocumentoId(archivo.documento_id),
       claveDocumento(nombre, propietarioId),
       claveDocumento(nombre)
     ];
@@ -61,28 +72,46 @@ function indexarEntregas(archivos = []) {
       }
     }
   }
+  mapa.legacyPorPropietario = legacyPorPropietario;
   return mapa;
 }
 
 function entregaParaDocumento(doc, entregas) {
   const nombre = limpiarTexto(doc?.nombre);
-  if (!nombre) return null;
+  const documentoId = Number(doc?.id || doc?.documento_id || 0);
+  if (!nombre && !(documentoId > 0)) return null;
   const propietarioId = obtenerPropietarioDocumento(doc);
-  return entregas.get(claveDocumento(nombre, propietarioId)) ||
+  return entregas.get(claveDocumentoId(documentoId)) ||
+    entregas.get(claveDocumento(nombre, propietarioId)) ||
     entregas.get(claveDocumento(nombre)) ||
     null;
+}
+
+function idEntrega(archivo = {}) {
+  return Number(archivo?.id || 0) || limpiarTexto(archivo?.archivo_url) || limpiarTexto(archivo?.nombre_documento);
+}
+
+function entregaLegacyDisponibleParaDocumento(doc, entregas, usadas, nombresVigentesPorPropietario) {
+  const propietarioId = obtenerPropietarioDocumento(doc);
+  if (!(propietarioId > 0)) return null;
+  const candidatas = entregas?.legacyPorPropietario?.get(propietarioId) || [];
+  const nombresVigentes = nombresVigentesPorPropietario.get(propietarioId) || new Set();
+  return candidatas.find((archivo) =>
+    !usadas.has(idEntrega(archivo)) &&
+    !nombresVigentes.has(normalizarClaveTexto(archivo?.nombre_documento))
+  ) || null;
 }
 
 function construirDocumentoCongeladoDesdeEntrega(archivo = {}, docBase = null) {
   const archivoId = Number(archivo?.id || 0);
   const propietarioId = obtenerPropietarioDocumento(archivo) || obtenerPropietarioDocumento(docBase);
   return {
-    id: Number(docBase?.id || 0) > 0 ? Number(docBase.id) : 1000000000 + archivoId,
+    id: Number(docBase?.id || archivo?.documento_id || 0) > 0 ? Number(docBase?.id || archivo.documento_id) : 1000000000 + archivoId,
     admin_id: propietarioId,
     propietario_id: propietarioId,
     propietario_rol: limpiarTexto(docBase?.propietario_rol),
     propietario_nombre: limpiarTexto(docBase?.propietario_nombre),
-    nombre: limpiarTexto(docBase?.nombre || archivo?.nombre_documento),
+    nombre: limpiarTexto(archivo?.nombre_documento || docBase?.nombre),
     descripcion: limpiarTexto(docBase?.descripcion),
     archivo_url: docBase?.archivo_url || "",
     orden: Number(docBase?.orden || 0),
@@ -96,24 +125,42 @@ export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], 
   const entregas = indexarEntregas(archivosActivos);
   const salida = [];
   const vistos = new Set();
+  const entregasUsadas = new Set();
+  const nombresVigentesPorPropietario = new Map();
+
+  for (const doc of Array.isArray(documentosVigentes) ? documentosVigentes : []) {
+    const propietarioId = obtenerPropietarioDocumento(doc);
+    const nombreNormalizado = normalizarClaveTexto(doc?.nombre);
+    if (!(propietarioId > 0) || !nombreNormalizado) continue;
+    if (!nombresVigentesPorPropietario.has(propietarioId)) {
+      nombresVigentesPorPropietario.set(propietarioId, new Set());
+    }
+    nombresVigentesPorPropietario.get(propietarioId).add(nombreNormalizado);
+  }
 
   for (const doc of Array.isArray(documentosVigentes) ? documentosVigentes : []) {
     const nombre = limpiarTexto(doc?.nombre);
     if (!nombre) continue;
     const propietarioId = obtenerPropietarioDocumento(doc);
-    const entrega = entregaParaDocumento(doc, entregas);
+    const entregaDirecta = entregaParaDocumento(doc, entregas);
+    const entrega = entregaDirecta && !entregasUsadas.has(idEntrega(entregaDirecta))
+      ? entregaDirecta
+      : entregaLegacyDisponibleParaDocumento(doc, entregas, entregasUsadas, nombresVigentesPorPropietario);
     const documento = entrega
       ? construirDocumentoCongeladoDesdeEntrega(entrega, doc)
       : doc;
-    const clave = claveDocumento(documento.nombre, propietarioId || obtenerPropietarioDocumento(documento));
+    const clave = claveDocumentoId(doc?.id) || claveDocumento(documento.nombre, propietarioId || obtenerPropietarioDocumento(documento));
     if (vistos.has(clave)) continue;
     vistos.add(clave);
+    if (entrega) entregasUsadas.add(idEntrega(entrega));
     salida.push(documento);
   }
 
   for (const archivo of Array.isArray(archivosActivos) ? archivosActivos : []) {
     if (!esEntregaMaterializada(archivo)) continue;
-    const clave = claveDocumento(archivo.nombre_documento, obtenerPropietarioDocumento(archivo));
+    if (entregasUsadas.has(idEntrega(archivo))) continue;
+    const clave = claveDocumentoId(archivo.documento_id) ||
+      claveDocumento(archivo.nombre_documento, obtenerPropietarioDocumento(archivo));
     if (!clave || vistos.has(clave)) continue;
     vistos.add(clave);
     salida.push(construirDocumentoCongeladoDesdeEntrega(archivo));

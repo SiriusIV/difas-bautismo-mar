@@ -70,19 +70,30 @@ function claveEntregaDocumento(nombre, propietarioId = 0) {
 
 function obtenerEntregaDocumento(doc, indiceArchivos) {
   const nombre = limpiarTexto(doc?.nombre);
-  if (!nombre || !indiceArchivos?.porNombre) return null;
+  const documentoId = Number(doc?.id || doc?.documento_id || 0);
+  if (!(documentoId > 0) && !nombre) return null;
   const propietarioId = obtenerPropietarioDocumentalDocumento(doc);
-  return indiceArchivos.porNombre.get(claveEntregaDocumento(nombre, propietarioId)) ||
-    indiceArchivos.porNombre.get(nombre) ||
+  return indiceArchivos?.porId?.get(documentoId) ||
+    indiceArchivos?.porNombre?.get(claveEntregaDocumento(nombre, propietarioId)) ||
+    indiceArchivos?.porNombre?.get(nombre) ||
     null;
 }
 
 function indexarArchivosActivosPorDocumento(archivos = []) {
+  const porId = new Map();
   const porNombre = new Map();
   const duplicados = [];
 
   for (const archivo of Array.isArray(archivos) ? archivos : []) {
     const nombre = limpiarTexto(archivo?.nombre_documento);
+    const documentoId = Number(archivo?.documento_id || 0);
+    if (!nombre && !(documentoId > 0)) continue;
+    if (documentoId > 0) {
+      const existentePorId = porId.get(documentoId);
+      if (!existentePorId || Number(archivo?.id || 0) > Number(existentePorId?.id || 0)) {
+        porId.set(documentoId, archivo);
+      }
+    }
     if (!nombre) continue;
     const key = claveEntregaDocumento(nombre, archivo?.propietario_documental_id || archivo?.admin_id || 0);
 
@@ -105,6 +116,7 @@ function indexarArchivosActivosPorDocumento(archivos = []) {
   }
 
   return {
+    porId,
     porNombre,
     vigentes: Array.from(porNombre.values()),
     duplicados
@@ -301,6 +313,7 @@ async function obtenerArchivosActivos(env, documentacionId) {
       documentacion_id,
       actividad_id,
       reserva_id,
+      documento_id,
       nombre_documento,
       archivo_url,
       version_documental,
@@ -425,6 +438,7 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
       documentacion_id,
       actividad_id,
       reserva_id,
+      documento_id,
       nombre_documento,
       archivo_url,
       version_documental,
@@ -468,6 +482,7 @@ async function obtenerArchivosActivosContextoSolicitud(env, centroUsuarioId, con
       a.documentacion_id,
       a.actividad_id,
       a.reserva_id,
+      a.documento_id,
       a.nombre_documento,
       a.archivo_url,
       a.version_documental,
@@ -1326,6 +1341,7 @@ export async function onRequestPost(context) {
           documentacion_id,
           actividad_id,
           reserva_id,
+          documento_id,
           nombre_documento,
           archivo_url,
           version_documental,
@@ -1336,11 +1352,12 @@ export async function onRequestPost(context) {
           fecha_subida,
           activo
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, CURRENT_TIMESTAMP, 1)
       `).bind(
         expedientePropietario.id,
         contextoEntrega.actividadId,
         contextoEntrega.reservaId,
+        Number(item.documento.id || 0),
         item.documento.nombre,
         item.archivo_url,
         Number(item.documento.version_documental || 0),
