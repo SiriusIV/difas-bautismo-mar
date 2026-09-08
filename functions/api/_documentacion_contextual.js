@@ -35,6 +35,40 @@ export async function asegurarColumnasContextoDocumental(env) {
     CREATE INDEX IF NOT EXISTS idx_cada_documento_base
     ON centro_admin_documentacion_archivos (documento_id, activo)
   `).run();
+
+  await regularizarDocumentoIdArchivosDocumentales(env);
+}
+
+async function regularizarDocumentoIdArchivosDocumentales(env) {
+  try {
+    await env.DB.prepare(`
+      UPDATE centro_admin_documentacion_archivos
+      SET documento_id = (
+        SELECT d.id
+        FROM centro_admin_documentacion cad
+        INNER JOIN admin_documentos_comunes d
+          ON d.admin_id = cad.admin_id
+         AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(centro_admin_documentacion_archivos.nombre_documento, '')))
+        WHERE cad.id = centro_admin_documentacion_archivos.documentacion_id
+        ORDER BY COALESCE(d.activo, 1) DESC, d.id DESC
+        LIMIT 1
+      )
+      WHERE (documento_id IS NULL OR documento_id <= 0)
+        AND TRIM(COALESCE(nombre_documento, '')) <> ''
+        AND EXISTS (
+          SELECT 1
+          FROM centro_admin_documentacion cad
+          INNER JOIN admin_documentos_comunes d
+            ON d.admin_id = cad.admin_id
+           AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(COALESCE(centro_admin_documentacion_archivos.nombre_documento, '')))
+          WHERE cad.id = centro_admin_documentacion_archivos.documentacion_id
+        )
+    `).run();
+  } catch (error) {
+    console.error("No se pudo regularizar el identificador documental de entregas antiguas.", {
+      error: error?.message || String(error || "")
+    });
+  }
 }
 
 export function normalizarContextoDocumental({ actividadId = null, reservaId = null } = {}) {
