@@ -432,8 +432,7 @@ export async function onRequestPost(context) {
       UPDATE centro_admin_documentacion_archivos
       SET activo = 0,
           archivo_url = '',
-          estado = 'NO_ENVIADO',
-          updated_at = CURRENT_TIMESTAMP
+          estado = 'NO_ENVIADO'
       WHERE id = ?
     `).bind(archivo.id).run();
 
