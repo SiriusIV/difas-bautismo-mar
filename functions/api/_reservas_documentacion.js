@@ -127,6 +127,25 @@ function estadoDocumentalCompleto(estado) {
   return ["VALIDADA", "VALIDADO", "NO_REQUERIDA"].includes(valor);
 }
 
+
+function esArchivoDocumentalMaterializado(archivo = {}) {
+  if (!limpiarTexto(archivo?.nombre_documento)) return false;
+  if (!limpiarTexto(archivo?.archivo_url)) return false;
+  return normalizarEstadoDocumento(archivo?.estado) !== "NO_ENVIADO";
+}
+
+function debeBlindarDocumentacionSolicitud(estadoReserva, archivosActivos = []) {
+  const estado = limpiarTexto(estadoReserva).toUpperCase();
+  if (!["EN_REVISION", "PENDIENTE", "CONFIRMADA"].includes(estado)) return false;
+  return (Array.isArray(archivosActivos) ? archivosActivos : []).some(esArchivoDocumentalMaterializado);
+}
+
+async function obtenerEstadoReservaActual(env, reservaId) {
+  const id = Number(reservaId || 0);
+  if (!(id > 0)) return "";
+  const row = await env.DB.prepare("SELECT estado FROM reservas WHERE id = ? LIMIT 1").bind(id).first();
+  return limpiarTexto(row?.estado);
+}
 function normalizarEstadoExpediente(estado) {
   const valor = normalizarEstadoDocumento(estado);
   if (valor === "VALIDADO") return "VALIDADA";
@@ -408,7 +427,11 @@ export async function validarDocumentacionReserva(env, {
     ...archivosActivos,
     ...archivosContextoReserva
   ];
-  const documentosExigibles = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo);
+  const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
+  const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculo);
+  const documentosExigibles = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo, {
+    soloEntregasMaterializadas: blindarDocumentacionSolicitud
+  });
 
   if (!documentosExigibles.length) {
     return {
@@ -441,4 +464,3 @@ export async function validarDocumentacionReserva(env, {
       : "Para poder solicitar esta actividad debes remitir la documentación obligatoria vinculada a ella."
   };
 }
-

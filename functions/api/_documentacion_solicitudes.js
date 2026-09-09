@@ -121,12 +121,14 @@ function construirDocumentoCongeladoDesdeEntrega(archivo = {}, docBase = null) {
   };
 }
 
-export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], archivosActivos = []) {
+export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], archivosActivos = [], opciones = {}) {
   const entregas = indexarEntregas(archivosActivos);
   const salida = [];
   const vistos = new Set();
   const entregasUsadas = new Set();
   const nombresVigentesPorPropietario = new Map();
+  const soloEntregasMaterializadas = opciones?.soloEntregasMaterializadas === true ||
+    opciones?.solo_entregas_materializadas === true;
 
   for (const doc of Array.isArray(documentosVigentes) ? documentosVigentes : []) {
     const propietarioId = obtenerPropietarioDocumento(doc);
@@ -146,6 +148,7 @@ export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], 
     const entrega = entregaDirecta && !entregasUsadas.has(idEntrega(entregaDirecta))
       ? entregaDirecta
       : entregaLegacyDisponibleParaDocumento(doc, entregas, entregasUsadas, nombresVigentesPorPropietario);
+    if (soloEntregasMaterializadas && !entrega) continue;
     const documento = entrega
       ? construirDocumentoCongeladoDesdeEntrega(entrega, doc)
       : doc;

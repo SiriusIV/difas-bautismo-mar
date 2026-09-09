@@ -51,6 +51,25 @@ function normalizarEstadoDocumento(estado) {
   return valor || "EN_REVISION";
 }
 
+
+function esArchivoDocumentalMaterializado(archivo = {}) {
+  if (!limpiarTexto(archivo?.nombre_documento)) return false;
+  if (!limpiarTexto(archivo?.archivo_url)) return false;
+  return normalizarEstadoDocumento(archivo?.estado) !== "NO_ENVIADO";
+}
+
+function debeBlindarDocumentacionSolicitud(estadoReserva, archivosActivos = []) {
+  const estado = limpiarTexto(estadoReserva).toUpperCase();
+  if (!["EN_REVISION", "PENDIENTE", "CONFIRMADA"].includes(estado)) return false;
+  return (Array.isArray(archivosActivos) ? archivosActivos : []).some(esArchivoDocumentalMaterializado);
+}
+
+async function obtenerEstadoReservaActual(env, reservaId) {
+  const id = Number(reservaId || 0);
+  if (!(id > 0)) return "";
+  const row = await env.DB.prepare("SELECT estado FROM reservas WHERE id = ? LIMIT 1").bind(id).first();
+  return limpiarTexto(row?.estado);
+}
 function esEstadoDocumentoCargado(estado) {
   const valor = normalizarEstadoDocumento(estado);
   return valor === "CARGADO" || valor === "BORRADOR" || valor === "PENDIENTE_ENVIO";
@@ -1024,7 +1043,11 @@ export async function onRequestGet(context) {
       ...archivosActivos,
       ...archivosContextoSolicitud
     ];
-    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo);
+    const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
+    const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculo);
+    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo, {
+      soloEntregasMaterializadas: blindarDocumentacionSolicitud
+    });
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
       0
@@ -1146,7 +1169,11 @@ export async function onRequestPost(context) {
       ...archivosExistentes,
       ...archivosContextoSolicitud
     ];
-    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculoInicial);
+    const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
+    const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculoInicial);
+    const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculoInicial, {
+      soloEntregasMaterializadas: blindarDocumentacionSolicitud
+    });
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
       0
@@ -1405,7 +1432,10 @@ export async function onRequestPost(context) {
       if (!archivoUrl || urlsActivasFinales.has(archivoUrl)) continue;
       await borrarArchivoBucketSiExiste(env, archivoUrl);
     }
-    const documentosFinales = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosFinalesCalculo);
+    const blindarDocumentacionFinal = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosFinalesCalculo);
+    const documentosFinales = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosFinalesCalculo, {
+      soloEntregasMaterializadas: blindarDocumentacionFinal
+    });
     const estadoExpediente = calcularEstadoEfectivo(documentosFinales, archivosFinalesCalculo);
     const versionAportada = archivosFinalesCalculo.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
     const impactoReservaContextual = remisionDefinitiva && cambiosRealesIds.size > 0

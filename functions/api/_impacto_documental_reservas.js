@@ -177,6 +177,18 @@ function estadoDocumentalCompleto(estado) {
   return ["VALIDADA", "NO_REQUERIDA"].includes(String(estado || "").toUpperCase());
 }
 
+
+function esArchivoDocumentalMaterializado(archivo = {}) {
+  if (!limpiarTexto(archivo?.nombre_documento)) return false;
+  if (!limpiarTexto(archivo?.archivo_url)) return false;
+  return normalizarEstadoDocumento(archivo?.estado) !== "NO_ENVIADO";
+}
+
+function debeBlindarDocumentacionSolicitud(estadoReserva, archivosActivos = []) {
+  const estado = limpiarTexto(estadoReserva).toUpperCase();
+  if (!["EN_REVISION", "PENDIENTE", "CONFIRMADA"].includes(estado)) return false;
+  return (Array.isArray(archivosActivos) ? archivosActivos : []).some(esArchivoDocumentalMaterializado);
+}
 function resumirEstadosDocumentales(estados = []) {
   const normalizados = (Array.isArray(estados) ? estados : [])
     .map((estado) => limpiarTexto(estado).toUpperCase())
@@ -946,9 +958,11 @@ export async function recalcularImpactoDocumentalReservas(env, {
           reservaId: Number(reserva.id || 0)
         })
       ];
+      const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReserva, archivosActivosReserva);
       const documentosExigiblesReserva = resolverDocumentosSolicitudConEntregas(
         documentosVigentesReserva,
-        archivosActivosReserva
+        archivosActivosReserva,
+        { soloEntregasMaterializadas: blindarDocumentacionSolicitud }
       );
       propietariosReserva = obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico);
       const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivosReserva);
