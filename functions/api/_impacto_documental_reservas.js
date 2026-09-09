@@ -505,7 +505,8 @@ async function obtenerArchivosActivosContextoReserva(env, {
   usuarioId,
   actividadId,
   reservaId,
-  propietarios
+  propietarios,
+  soloActivos = true
 } = {}) {
   const usuario = Number(usuarioId || 0);
   const actividad = Number(actividadId || 0);
@@ -552,7 +553,7 @@ async function obtenerArchivosActivosContextoReserva(env, {
     FROM centro_admin_documentacion cad
     INNER JOIN centro_admin_documentacion_archivos a
       ON a.documentacion_id = cad.id
-     AND COALESCE(a.activo, 1) = 1
+     ${soloActivos ? "AND COALESCE(a.activo, 1) = 1" : ""}
     WHERE cad.centro_usuario_id = ?
       ${filtroPropietarios}
       AND (cad.actividad_id = ? OR a.actividad_id = ?)
@@ -958,11 +959,17 @@ export async function recalcularImpactoDocumentalReservas(env, {
           reservaId: Number(reserva.id || 0)
         })
       ];
+      const archivosReferenciaReserva = await obtenerArchivosActivosContextoReserva(env, {
+        usuarioId: Number(solicitante.id || 0),
+        actividadId: Number(reserva.actividad_id || 0),
+        reservaId: Number(reserva.id || 0),
+        soloActivos: false
+      });
       const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReserva, archivosActivosReserva);
       const documentosExigiblesReserva = resolverDocumentosSolicitudConEntregas(
         documentosVigentesReserva,
         archivosActivosReserva,
-        { soloEntregasMaterializadas: blindarDocumentacionSolicitud }
+        { soloEntregasMaterializadas: blindarDocumentacionSolicitud, archivosReferencia: archivosReferenciaReserva }
       );
       propietariosReserva = obtenerPropietariosDocumentos(documentosExigiblesReserva, adminIdNumerico);
       const estadoDocumentalReserva = calcularEstadoGlobal(documentosExigiblesReserva, archivosActivosReserva);

@@ -304,7 +304,8 @@ async function obtenerArchivosActivosContextoReserva(env, {
   usuarioId,
   actividadId,
   reservaId,
-  propietarios
+  propietarios,
+  soloActivos = true
 } = {}) {
   const usuario = Number(usuarioId || 0);
   const actividad = Number(actividadId || 0);
@@ -356,7 +357,7 @@ async function obtenerArchivosActivosContextoReserva(env, {
     FROM centro_admin_documentacion cad
     INNER JOIN centro_admin_documentacion_archivos a
       ON a.documentacion_id = cad.id
-     AND COALESCE(a.activo, 1) = 1
+     ${soloActivos ? "AND COALESCE(a.activo, 1) = 1" : ""}
     WHERE cad.centro_usuario_id = ?
       ${filtroPropietarios}
       AND (cad.actividad_id = ? OR a.actividad_id = ?)
@@ -427,10 +428,19 @@ export async function validarDocumentacionReserva(env, {
     ...archivosActivos,
     ...archivosContextoReserva
   ];
+  const archivosReferenciaContextoReserva = contextoEntrega.reservaId
+    ? await obtenerArchivosActivosContextoReserva(env, {
+        usuarioId: usuario,
+        actividadId: actividad,
+        reservaId: contextoEntrega.reservaId,
+        soloActivos: false
+      })
+    : [];
   const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
   const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculo);
   const documentosExigibles = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo, {
-    soloEntregasMaterializadas: blindarDocumentacionSolicitud
+    soloEntregasMaterializadas: blindarDocumentacionSolicitud,
+    archivosReferencia: archivosReferenciaContextoReserva
   });
 
   if (!documentosExigibles.length) {

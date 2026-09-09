@@ -49,6 +49,38 @@ function esMejorEntrega(candidata, actual) {
   return Number(candidata?.id || 0) > Number(actual?.id || 0);
 }
 
+function indexarReferenciasDocumentales(archivos = []) {
+  const mapa = new Map();
+  for (const archivo of Array.isArray(archivos) ? archivos : []) {
+    const nombre = limpiarTexto(archivo?.nombre_documento);
+    const documentoId = Number(archivo?.documento_id || 0);
+    if (!nombre && !(documentoId > 0)) continue;
+    const propietarioId = obtenerPropietarioDocumento(archivo);
+    const claves = [
+      claveDocumentoId(documentoId),
+      claveDocumento(nombre, propietarioId),
+      claveDocumento(nombre)
+    ];
+    for (const clave of claves) {
+      if (!clave) continue;
+      if (esMejorEntrega(archivo, mapa.get(clave))) {
+        mapa.set(clave, archivo);
+      }
+    }
+  }
+  return mapa;
+}
+
+function referenciaParaDocumento(doc, referencias) {
+  const nombre = limpiarTexto(doc?.nombre);
+  const documentoId = Number(doc?.id || doc?.documento_id || 0);
+  if (!nombre && !(documentoId > 0)) return null;
+  const propietarioId = obtenerPropietarioDocumento(doc);
+  return referencias.get(claveDocumentoId(documentoId)) ||
+    referencias.get(claveDocumento(nombre, propietarioId)) ||
+    referencias.get(claveDocumento(nombre)) ||
+    null;
+}
 function indexarEntregas(archivos = []) {
   const mapa = new Map();
   const legacyPorPropietario = new Map();
@@ -122,7 +154,14 @@ function construirDocumentoCongeladoDesdeEntrega(archivo = {}, docBase = null) {
 }
 
 export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], archivosActivos = [], opciones = {}) {
+  const archivosReferencia = Array.isArray(opciones?.archivosReferencia)
+    ? opciones.archivosReferencia
+    : (Array.isArray(opciones?.archivos_historicos) ? opciones.archivos_historicos : []);
   const entregas = indexarEntregas(archivosActivos);
+  const referencias = indexarReferenciasDocumentales([
+    ...(Array.isArray(archivosActivos) ? archivosActivos : []),
+    ...archivosReferencia
+  ]);
   const salida = [];
   const vistos = new Set();
   const entregasUsadas = new Set();
@@ -148,7 +187,8 @@ export function resolverDocumentosSolicitudConEntregas(documentosVigentes = [], 
     const entrega = entregaDirecta && !entregasUsadas.has(idEntrega(entregaDirecta))
       ? entregaDirecta
       : entregaLegacyDisponibleParaDocumento(doc, entregas, entregasUsadas, nombresVigentesPorPropietario);
-    if (soloEntregasMaterializadas && !entrega) continue;
+    const referenciaHistorica = entrega || referenciaParaDocumento(doc, referencias);
+    if (soloEntregasMaterializadas && !referenciaHistorica) continue;
     const documento = entrega
       ? construirDocumentoCongeladoDesdeEntrega(entrega, doc)
       : doc;

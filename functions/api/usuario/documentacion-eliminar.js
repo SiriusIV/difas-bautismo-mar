@@ -335,7 +335,11 @@ export async function onRequestPost(context) {
     }
 
     await env.DB.prepare(`
-      DELETE FROM centro_admin_documentacion_archivos
+      UPDATE centro_admin_documentacion_archivos
+      SET activo = 0,
+          archivo_url = '',
+          estado = 'NO_ENVIADO',
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(archivo.id).run();
 

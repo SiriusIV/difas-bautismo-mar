@@ -483,9 +483,10 @@ async function obtenerArchivosActivosPorExpedientes(env, expedientesPorPropietar
   return salida;
 }
 
-async function obtenerArchivosActivosContextoSolicitud(env, centroUsuarioId, contexto = {}) {
+async function obtenerArchivosActivosContextoSolicitud(env, centroUsuarioId, contexto = {}, opciones = {}) {
   const usuario = parsearIdPositivo(centroUsuarioId);
   const contextoNormalizado = normalizarContextoDocumental(contexto);
+  const soloActivos = opciones?.soloActivos !== false;
   if (!usuario || !contextoNormalizado.actividadId) return [];
 
   const condicionReserva = contextoNormalizado.reservaId
@@ -516,7 +517,7 @@ async function obtenerArchivosActivosContextoSolicitud(env, centroUsuarioId, con
     FROM centro_admin_documentacion cad
     INNER JOIN centro_admin_documentacion_archivos a
       ON a.documentacion_id = cad.id
-     AND COALESCE(a.activo, 1) = 1
+     ${soloActivos ? "AND COALESCE(a.activo, 1) = 1" : ""}
     WHERE cad.centro_usuario_id = ?
       AND (cad.actividad_id = ? OR a.actividad_id = ?)
       AND ${condicionReserva}
@@ -1043,10 +1044,14 @@ export async function onRequestGet(context) {
       ...archivosActivos,
       ...archivosContextoSolicitud
     ];
+    const archivosReferenciaContextoSolicitud = actividadId && contextoEntrega.reservaId
+      ? await obtenerArchivosActivosContextoSolicitud(env, usuario.id, contextoEntrega, { soloActivos: false })
+      : [];
     const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
     const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculo);
     const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculo, {
-      soloEntregasMaterializadas: blindarDocumentacionSolicitud
+      soloEntregasMaterializadas: blindarDocumentacionSolicitud,
+      archivosReferencia: archivosReferenciaContextoSolicitud
     });
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
@@ -1169,10 +1174,14 @@ export async function onRequestPost(context) {
       ...archivosExistentes,
       ...archivosContextoSolicitud
     ];
+    const archivosReferenciaContextoSolicitud = actividadId && contextoEntrega.reservaId
+      ? await obtenerArchivosActivosContextoSolicitud(env, usuario.id, contextoEntrega, { soloActivos: false })
+      : [];
     const estadoReservaActual = await obtenerEstadoReservaActual(env, contextoEntrega.reservaId);
     const blindarDocumentacionSolicitud = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosParaCalculoInicial);
     const documentos = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosParaCalculoInicial, {
-      soloEntregasMaterializadas: blindarDocumentacionSolicitud
+      soloEntregasMaterializadas: blindarDocumentacionSolicitud,
+      archivosReferencia: archivosReferenciaContextoSolicitud
     });
     const versionRequerida = documentos.reduce(
       (max, doc) => Math.max(max, Number(doc.version_documental || 0)),
@@ -1434,7 +1443,8 @@ export async function onRequestPost(context) {
     }
     const blindarDocumentacionFinal = debeBlindarDocumentacionSolicitud(estadoReservaActual, archivosFinalesCalculo);
     const documentosFinales = resolverDocumentosSolicitudConEntregas(documentosVigentes, archivosFinalesCalculo, {
-      soloEntregasMaterializadas: blindarDocumentacionFinal
+      soloEntregasMaterializadas: blindarDocumentacionFinal,
+      archivosReferencia: archivosReferenciaContextoSolicitud
     });
     const estadoExpediente = calcularEstadoEfectivo(documentosFinales, archivosFinalesCalculo);
     const versionAportada = archivosFinalesCalculo.reduce((max, archivo) => Math.max(max, Number(archivo.version_documental || 0)), 0);
