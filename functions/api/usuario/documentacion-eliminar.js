@@ -67,9 +67,14 @@ async function obtenerArchivoPorDocumento(env, centroUsuarioId, documentoId, res
     SELECT
       a.id,
       a.documentacion_id,
+      a.documento_id,
+      a.actividad_id AS archivo_actividad_id,
+      a.reserva_id AS archivo_reserva_id,
       a.nombre_documento,
       a.archivo_url,
       d.admin_id,
+      d.actividad_id AS expediente_actividad_id,
+      d.reserva_id AS expediente_reserva_id,
       c.id AS documento_base_id
     FROM centro_admin_documentacion_archivos a
     INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
@@ -89,9 +94,14 @@ async function obtenerArchivoPorId(env, centroUsuarioId, archivoId) {
     SELECT
       a.id,
       a.documentacion_id,
+      a.documento_id,
+      a.actividad_id AS archivo_actividad_id,
+      a.reserva_id AS archivo_reserva_id,
       a.nombre_documento,
       a.archivo_url,
       d.admin_id,
+      d.actividad_id AS expediente_actividad_id,
+      d.reserva_id AS expediente_reserva_id,
       c.id AS documento_base_id
     FROM centro_admin_documentacion_archivos a
     INNER JOIN centro_admin_documentacion d ON d.id = a.documentacion_id
@@ -104,6 +114,90 @@ async function obtenerArchivoPorId(env, centroUsuarioId, archivoId) {
   `).bind(archivoId, centroUsuarioId).first();
 }
 
+async function obtenerReservaContextualArchivo(env, usuarioId, archivo = {}, reservaIdExplicita = 0) {
+  const usuario = Number(usuarioId || 0);
+  const reservaExplicita = Number(reservaIdExplicita || 0);
+  const actividadArchivo = Number(archivo?.archivo_actividad_id || archivo?.expediente_actividad_id || 0);
+  const documentoId = Number(archivo?.documento_id || archivo?.documento_base_id || 0);
+  const propietarioId = Number(archivo?.admin_id || 0);
+  const nombreDocumento = limpiarTexto(archivo?.nombre_documento);
+
+  if (!(usuario > 0)) return null;
+
+  if (reservaExplicita > 0) {
+    return await env.DB.prepare(`
+      SELECT r.id, r.actividad_id, a.admin_id
+      FROM reservas r
+      INNER JOIN actividades a ON a.id = r.actividad_id
+      WHERE r.id = ?
+        AND r.usuario_id = ?
+      LIMIT 1
+    `).bind(reservaExplicita, usuario).first();
+  }
+
+  if (actividadArchivo > 0) {
+    const directa = await env.DB.prepare(`
+      SELECT r.id, r.actividad_id, a.admin_id
+      FROM reservas r
+      INNER JOIN actividades a ON a.id = r.actividad_id
+      WHERE r.actividad_id = ?
+        AND r.usuario_id = ?
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_REVISION', 'PROVISIONAL', 'SUSPENDIDA', 'RECHAZADA')
+      ORDER BY r.fecha_solicitud DESC, r.id DESC
+      LIMIT 1
+    `).bind(actividadArchivo, usuario).first();
+    if (directa?.id) return directa;
+  }
+
+  if (documentoId > 0 || (propietarioId > 0 && nombreDocumento)) {
+    return await env.DB.prepare(`
+      SELECT r.id, r.actividad_id, a.admin_id
+      FROM reservas r
+      INNER JOIN actividades a ON a.id = r.actividad_id
+      INNER JOIN actividad_documentos_obligatorios ado
+        ON ado.actividad_id = a.id
+       AND COALESCE(ado.activo, 1) = 1
+      LEFT JOIN admin_documentos_comunes d ON d.id = ado.documento_id
+      WHERE r.usuario_id = ?
+        AND r.estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_REVISION', 'PROVISIONAL', 'SUSPENDIDA', 'RECHAZADA')
+        AND (
+          (? > 0 AND ado.documento_id = ?)
+          OR (
+            ? > 0
+            AND ado.propietario_id = ?
+            AND UPPER(TRIM(COALESCE(d.nombre, ''))) = UPPER(TRIM(?))
+          )
+        )
+      ORDER BY r.fecha_solicitud DESC, r.id DESC
+      LIMIT 1
+    `).bind(
+      usuario,
+      documentoId,
+      documentoId,
+      propietarioId,
+      propietarioId,
+      nombreDocumento
+    ).first();
+  }
+
+  return null;
+}
+async function obtenerAdminOrganizadorReserva(env, reservaId, usuarioId) {
+  const reserva = Number(reservaId || 0);
+  const usuario = Number(usuarioId || 0);
+  if (!(reserva > 0) || !(usuario > 0)) return 0;
+
+  const row = await env.DB.prepare(`
+    SELECT a.admin_id
+    FROM reservas r
+    INNER JOIN actividades a ON a.id = r.actividad_id
+    WHERE r.id = ?
+      AND r.usuario_id = ?
+    LIMIT 1
+  `).bind(reserva, usuario).first();
+
+  return Number(row?.admin_id || 0);
+}
 async function obtenerPropietarioDocumental(env, propietarioId) {
   const id = Number(propietarioId || 0);
   if (!(id > 0)) return null;
@@ -360,10 +454,20 @@ export async function onRequestPost(context) {
       skipped: true,
       motivo: "Documento eliminado sin administrador asociado."
     };
-    if (adminId > 0) {
+    const reservaContextual = await obtenerReservaContextualArchivo(
+      env,
+      usuario.id,
+      archivo,
+      reservaId || Number(archivo.archivo_reserva_id || archivo.expediente_reserva_id || 0)
+    );
+    const reservaContextoId = Number(reservaContextual?.id || reservaId || archivo.archivo_reserva_id || archivo.expediente_reserva_id || 0);
+    const organizadorActividadId = Number(reservaContextual?.admin_id || 0) ||
+      await obtenerAdminOrganizadorReserva(env, reservaContextoId, usuario.id);
+    const adminImpactoId = organizadorActividadId || adminId;
+    if (adminImpactoId > 0) {
       try {
         impactoReservas = await recalcularImpactoDocumentalReservas(env, {
-          adminId,
+          adminId: adminImpactoId,
           baseUrl: new URL(request.url).origin,
           motivo: "documentacion_solicitante_eliminada"
         });
@@ -373,10 +477,12 @@ export async function onRequestPost(context) {
           error: errorImpacto?.message || String(errorImpacto || "")
         };
         console.error("No se pudo recalcular impacto documental de reservas tras eliminar documento del solicitante.", {
-          admin_id: adminId,
+          admin_id: adminImpactoId,
           centro_usuario_id: Number(usuario.id || 0),
           documentacion_id: Number(archivo.documentacion_id || 0),
           archivo_id: Number(archivo.id || 0),
+          propietario_documental_id: adminId,
+          organizador_actividad_id: organizadorActividadId,
           error: impactoReservas.error
         });
       }
