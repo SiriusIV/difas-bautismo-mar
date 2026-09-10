@@ -1625,8 +1625,6 @@
             const estado = normalizarEstadoDocumentoPanel(doc.estado_documento || doc.estado || doc.estado_efectivo);
             const claseEstado = claseEstadoDocumentoPanel(estado);
             const titulo = doc.nombre || doc.titulo || "Documento";
-            const propietario = String(doc.propietario_nombre || doc.propietario_documental || doc.admin_nombre || doc.admin_nombre_publico || "").trim();
-            const version = Number(doc.version_documental || doc.version || 0);
             const archivoBase = String(doc.archivo_url || "").trim();
             const archivoRemitido = String(doc.entrega_archivo_url || "").trim();
             const observaciones = String(doc.entrega_observaciones_admin || doc.observaciones_admin || "").trim();
@@ -1639,7 +1637,6 @@
               <div class="documentacion-modal-item" data-documento-id="${Number(doc.id || 0)}">
                 <div>
                   ${tituloHtml}
-                  <span class="documentacion-modal-meta">${propietario ? `Propietario: ${escapeHtml(propietario)}` : "Propietario documental"}${version > 0 ? ` · Versión ${version}` : ""}</span>
                 </div>
                 <span class="estado-badge ${claseEstado}">${escapeHtml(textoEstadoDocumentoPanel(estado))}</span>
                 <div class="documentacion-modal-acciones">

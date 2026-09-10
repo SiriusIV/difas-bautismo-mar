@@ -183,6 +183,29 @@
       text-align: center;
       white-space: nowrap;
     }
+    button.estado-documental-modal-fijo {
+      appearance: none;
+      font-family: inherit;
+    }
+    .estado-documental-modal-fijo.estado-documental-modal-editable {
+      position: relative;
+      cursor: pointer;
+      padding-right: 24px;
+    }
+    .estado-documental-modal-fijo.estado-documental-modal-editable::after {
+      content: "⌄";
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-54%);
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.75;
+    }
+    .estado-documental-modal-fijo.estado-documental-modal-editable:hover,
+    .estado-documental-modal-fijo.estado-documental-modal-editable:focus-visible {
+      box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.12);
+    }
     .select-estado-documental-modal.estado-validado { color: #146c2e; background: #eefaf0; border-color: #b9e0c0; }
     .select-estado-documental-modal.estado-rechazado { color: #9b1c1c; background: #fdeaea; border-color: #f5c2c2; }
     .select-estado-documental-modal.estado-revision { color: #1d4f91; background: #eef4ff; border-color: #c9dcff; }
@@ -193,6 +216,7 @@
     .estado-modal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .estado-modal-grid div { padding: 6px 8px; border-radius: 7px; background: #f7f9fb; border: 1px solid #e5ebf2; }
     .estado-modal-grid span { display: block; color: #5b6b7c; font-size: 10.5px; margin-bottom: 2px; }
+    .estado-modal-grid .estado-modal-numero { text-align: right; padding-right: 8px; }
     .estado-modal-lista-nombres { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
     .estado-modal-asistentes-compacto { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .estado-modal-asistentes-compacto p { margin: 0; }
@@ -1000,12 +1024,27 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         && Number(doc?.archivo_id || 0) > 0
         && Number(doc?.documentacion_id || 0) > 0;
     }
+    function construirOpcionesEstadoDocumentoAdmin(estado) {
+      return `<option value="EN_REVISION"${estado === "EN_REVISION" ? " selected" : ""}>En revisión</option><option value="VALIDADO"${estado === "VALIDADO" ? " selected" : ""}>Validado</option><option value="RECHAZADO"${estado === "RECHAZADO" ? " selected" : ""}>Rechazado</option>`;
+    }
+    function construirDatosControlEstadoDocumentoAdmin(doc, estado) {
+      return `data-documentacion-id="${Number(doc?.documentacion_id || 0)}" data-archivo-id="${Number(doc?.archivo_id || 0)}" data-documento-nombre="${escapeHtml(doc?.nombre || "Documento")}" data-estado-original="${escapeHtml(estado)}"`;
+    }
+    function renderEtiquetaEstadoDocumentoAdmin(doc, estado, editable = false) {
+      const clases = `estado-documental-modal-fijo ${estadoRevisionSelectClaseAdmin(estado)}${editable ? " estado-documental-modal-editable" : ""}`;
+      const texto = escapeHtml(etiquetaEstadoDocumentalAdmin(estado));
+      if (!editable) return `<span class="${clases}">${texto}</span>`;
+      return `<button type="button" class="${clases}" ${construirDatosControlEstadoDocumentoAdmin(doc, estado)} data-doc-estado-control="1" aria-label="Cambiar estado documental de ${escapeHtml(doc?.nombre || "Documento")}">${texto}</button>`;
+    }
+    function renderSelectEstadoDocumentoAdmin(doc, estado) {
+      return `<select class="select-estado-documental-modal ${estadoRevisionSelectClaseAdmin(estado)}" ${construirDatosControlEstadoDocumentoAdmin(doc, estado)} aria-label="Estado documental de ${escapeHtml(doc?.nombre || "Documento")}">${construirOpcionesEstadoDocumentoAdmin(estado)}</select>`;
+    }
     function renderControlEstadoDocumentoAdmin(doc) {
       const estado = normalizarEstadoRevisionDocumentoAdmin(doc?.estado);
       if (!puedeRevisarDocumentoModalAdmin(doc)) {
-        return `<span class="estado-documental-modal-fijo ${estadoRevisionSelectClaseAdmin(estado)}">${escapeHtml(etiquetaEstadoDocumentalAdmin(estado))}</span>`;
+        return renderEtiquetaEstadoDocumentoAdmin(doc, estado, false);
       }
-      return `<select class="select-estado-documental-modal ${estadoRevisionSelectClaseAdmin(estado)}" data-documentacion-id="${Number(doc.documentacion_id || 0)}" data-archivo-id="${Number(doc.archivo_id || 0)}" data-documento-nombre="${escapeHtml(doc.nombre || "Documento")}" data-estado-original="${escapeHtml(estado)}" aria-label="Estado documental de ${escapeHtml(doc.nombre || "Documento")}"><option value="EN_REVISION"${estado === "EN_REVISION" ? " selected" : ""}>En revisión</option><option value="VALIDADO"${estado === "VALIDADO" ? " selected" : ""}>Validado</option><option value="RECHAZADO"${estado === "RECHAZADO" ? " selected" : ""}>Rechazado</option></select>`;
+      return renderEtiquetaEstadoDocumentoAdmin(doc, estado, true);
     }
     function renderDocumentacionSolicitudAdmin(reserva) {
       const requiere = Number(reserva?.requiere_documentacion || 0) === 1 || Array.isArray(reserva?.documentos_estado);
@@ -1268,7 +1307,7 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
     }
     function renderResumenSolicitudAdmin(reserva) {
       const horario = formatearHorarioReserva(reserva);
-      return `<div class="estado-modal-seccion"><h4>Resumen de solicitud</h4><div class="estado-modal-grid"><div><span>Fecha</span><strong>${escapeHtml(formatearFechaCorta(reserva?.fecha || "") || "-")}</strong></div><div><span>Horario</span><strong>${escapeHtml(horario)}</strong></div><div><span>Plazas reservadas</span><strong>${Number(reserva?.plazas_reservadas || 0)}</strong></div><div><span>Plazas asignadas</span><strong>${Number(reserva?.plazas_asignadas || 0)}</strong></div></div></div>`;
+      return `<div class="estado-modal-seccion"><h4>Resumen de solicitud</h4><div class="estado-modal-grid"><div><span>Fecha</span><strong>${escapeHtml(formatearFechaCorta(reserva?.fecha || "") || "-")}</strong></div><div><span>Horario</span><strong>${escapeHtml(horario)}</strong></div><div><span>Plazas reservadas</span><strong class="estado-modal-numero">${Number(reserva?.plazas_reservadas || 0)}</strong></div><div><span>Plazas asignadas</span><strong class="estado-modal-numero">${Number(reserva?.plazas_asignadas || 0)}</strong></div></div></div>`;
     }
     function refrescarClaseSelectDocumentoModal(select) {
       if (!select) return;
@@ -1283,6 +1322,17 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       document.getElementById("mensajeRechazoDocumentoAdmin").className = "mensaje-modal-admin";
       document.getElementById("mensajeRechazoDocumentoAdmin").textContent = "";
       revisionDocumentoModalPendiente = null;
+    }
+    function restaurarEtiquetaRevisionDocumentalModal(select, estado = "") {
+      if (!select) return;
+      const estadoEtiqueta = normalizarEstadoRevisionDocumentoAdmin(estado || select.dataset.estadoOriginal || select.value);
+      const doc = {
+        documentacion_id: Number(select.dataset.documentacionId || 0),
+        archivo_id: Number(select.dataset.archivoId || 0),
+        nombre: select.dataset.documentoNombre || "Documento"
+      };
+      select.outerHTML = renderEtiquetaEstadoDocumentoAdmin(doc, estadoEtiqueta, true);
+      enlazarEtiquetasRevisionDocumentalModal();
     }
     function abrirModalRechazoDocumentoAdmin({ select, estadoAnterior }) {
       revisionDocumentoModalPendiente = { select, estadoAnterior };
@@ -1326,13 +1376,17 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
       await cargarPanel();
       if (reservaId) await abrirModalEstado(reservaId);
     }
-    function enlazarSelectoresRevisionDocumentalModal() {
-      document.querySelectorAll(".select-estado-documental-modal").forEach((select) => {
+    function enlazarSelectorRevisionDocumentalModal(select) {
+      if (!select || select.dataset.revisionEnlazada === "1") return;
+      select.dataset.revisionEnlazada = "1";
         select.addEventListener("change", async () => {
           const estadoAnterior = String(select.dataset.estadoOriginal || "EN_REVISION").toUpperCase();
           const estadoNuevo = normalizarEstadoRevisionDocumentoAdmin(select.value);
           refrescarClaseSelectDocumentoModal(select);
-          if (estadoNuevo === estadoAnterior) return;
+          if (estadoNuevo === estadoAnterior) {
+            restaurarEtiquetaRevisionDocumentalModal(select, estadoAnterior);
+            return;
+          }
           if (estadoNuevo === "RECHAZADO") {
             abrirModalRechazoDocumentoAdmin({ select, estadoAnterior });
             return;
@@ -1349,6 +1403,31 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
             select.disabled = false;
           }
         });
+    }
+    function activarSelectorRevisionDocumentalModal(boton) {
+      if (!boton) return;
+      const estado = normalizarEstadoRevisionDocumentoAdmin(boton.dataset.estadoOriginal || "EN_REVISION");
+      const doc = {
+        documentacion_id: Number(boton.dataset.documentacionId || 0),
+        archivo_id: Number(boton.dataset.archivoId || 0),
+        nombre: boton.dataset.documentoNombre || "Documento"
+      };
+      boton.outerHTML = renderSelectEstadoDocumentoAdmin(doc, estado);
+      const select = document.querySelector(`.select-estado-documental-modal[data-documentacion-id="${doc.documentacion_id}"][data-archivo-id="${doc.archivo_id}"]`);
+      enlazarSelectorRevisionDocumentalModal(select);
+      setTimeout(() => select?.focus(), 0);
+    }
+    function enlazarEtiquetasRevisionDocumentalModal() {
+      document.querySelectorAll("[data-doc-estado-control='1']").forEach((boton) => {
+        if (boton.dataset.estadoControlEnlazado === "1") return;
+        boton.dataset.estadoControlEnlazado = "1";
+        boton.addEventListener("click", () => activarSelectorRevisionDocumentalModal(boton));
+      });
+    }
+    function enlazarSelectoresRevisionDocumentalModal() {
+      enlazarEtiquetasRevisionDocumentalModal();
+      document.querySelectorAll(".select-estado-documental-modal").forEach((select) => {
+        enlazarSelectorRevisionDocumentalModal(select);
       });
     }
     async function abrirModalEstado(id, accionPreferida = "") {
@@ -1452,16 +1531,14 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
     document.getElementById("btnCerrarRechazoDocumentoAdmin")?.addEventListener("click", function () {
       const pendiente = revisionDocumentoModalPendiente;
       if (pendiente?.select) {
-        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
-        refrescarClaseSelectDocumentoModal(pendiente.select);
+        restaurarEtiquetaRevisionDocumentalModal(pendiente.select, pendiente.estadoAnterior || "EN_REVISION");
       }
       cerrarModalRechazoDocumentoAdmin();
     });
     document.getElementById("btnCancelarRechazoDocumentoAdmin")?.addEventListener("click", function () {
       const pendiente = revisionDocumentoModalPendiente;
       if (pendiente?.select) {
-        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
-        refrescarClaseSelectDocumentoModal(pendiente.select);
+        restaurarEtiquetaRevisionDocumentalModal(pendiente.select, pendiente.estadoAnterior || "EN_REVISION");
       }
       cerrarModalRechazoDocumentoAdmin();
     });
@@ -1469,8 +1546,7 @@ document.getElementById("btnPrevisualizarGeneracionDocs").addEventListener("clic
       if (e.target.id !== "modalRechazoDocumentoAdmin") return;
       const pendiente = revisionDocumentoModalPendiente;
       if (pendiente?.select) {
-        pendiente.select.value = pendiente.estadoAnterior || "EN_REVISION";
-        refrescarClaseSelectDocumentoModal(pendiente.select);
+        restaurarEtiquetaRevisionDocumentalModal(pendiente.select, pendiente.estadoAnterior || "EN_REVISION");
       }
       cerrarModalRechazoDocumentoAdmin();
     });
