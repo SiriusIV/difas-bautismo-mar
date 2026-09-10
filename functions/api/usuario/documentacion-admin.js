@@ -14,6 +14,7 @@ import {
 import { obtenerCatalogoDocumentalVinculadoAdmin } from "../_documentacion_propietarios.js";
 import { recalcularImpactoDocumentalReservas } from "../_impacto_documental_reservas.js";
 import { registrarEventoReserva } from "../_reservas_historial.js";
+import { asegurarColumnaRechazoBloqueado } from "../_reservas_rechazo_plazo.js";
 import {
   asegurarColumnasContextoDocumental,
   construirCondicionContextoDocumental,
@@ -820,8 +821,10 @@ async function actualizarReservaPorDocumentacionRemitida(env, {
     return { ok: true, skipped: true, motivo: "Sin reserva contextual." };
   }
 
+  await asegurarColumnaRechazoBloqueado(env);
+
   const row = await env.DB.prepare(`
-    SELECT id, estado
+    SELECT id, estado, COALESCE(rechazo_bloqueado, 0) AS rechazo_bloqueado
     FROM reservas
     WHERE id = ?
       AND usuario_id = ?
@@ -833,8 +836,9 @@ async function actualizarReservaPorDocumentacionRemitida(env, {
   }
 
   const estadoOrigen = limpiarTexto(row.estado).toUpperCase();
-  if (estadoOrigen === "RECHAZADA") {
-    return { ok: true, skipped: true, motivo: "La reserva rechazada no se reactiva desde la remisión documental directa." };
+  const rechazoBloqueado = Number(row.rechazo_bloqueado || 0) === 1;
+  if (estadoOrigen === "RECHAZADA" && rechazoBloqueado) {
+    return { ok: true, skipped: true, motivo: "La reserva rechazada definitivamente no se reactiva desde la remisión documental directa." };
   }
 
   const estadoDestino = obtenerEstadoReservaDesdeDocumentacion(estadoDocumental);

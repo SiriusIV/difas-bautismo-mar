@@ -1199,6 +1199,43 @@
       return textoEstadoVisible(estado);
     }
 
+    function estadoReservaDesdeDocumentosPanel(documentos = []) {
+      const estados = (Array.isArray(documentos) ? documentos : [])
+        .map((doc) => normalizarEstadoDocumentoPanel(doc?.estado_documento || doc?.estado || doc?.estado_efectivo))
+        .filter(Boolean);
+      if (!estados.length) return "";
+      if (estados.some((estado) => ["NO_PRESENTADO", "NO_ACTUALIZADO", "RECHAZADO"].includes(estado))) return "PROVISIONAL";
+      if (estados.some((estado) => estado === "EN_REVISION")) return "EN_REVISION";
+      return "";
+    }
+
+    function aplicarEstadoReservaLocal(reservaId, estado) {
+      const id = Number(reservaId || 0);
+      const estadoNormalizado = normalizarEstadoReserva(estado);
+      if (!(id > 0) || !["EN_REVISION", "PROVISIONAL"].includes(estadoNormalizado)) return;
+      const actualizarReserva = (reserva) => {
+        if (!reserva || Number(reserva.id || 0) !== id) return reserva;
+        return { ...reserva, estado: estadoNormalizado, estado_real: estadoNormalizado, rechazo_elimina_en: "", rechazo_bloqueado: 0 };
+      };
+      reservasActuales = reservasActuales.map(actualizarReserva);
+      reservaSeleccionada = actualizarReserva(reservaSeleccionada);
+      reservaDocumentacionActual = actualizarReserva(reservaDocumentacionActual);
+      modalEstadoReservaActual = actualizarReserva(modalEstadoReservaActual);
+      if (modalEstadoReservaActual && Number(modalEstadoReservaActual.id || 0) === id) {
+        actualizarCabeceraEstadoModal(modalEstadoReservaActual);
+      }
+      const filtradas = filtrarReservas(reservasActuales);
+      pintarResumen(filtradas);
+      pintarReservas(filtradas);
+      actualizarBotones();
+    }
+
+    function aplicarEstadoReservaDesdeDocumentacion(data) {
+      const estadoImpacto = data?.impacto_reserva_contextual?.estado || "";
+      const estadoDocumentos = estadoReservaDesdeDocumentosPanel(data?.documentos);
+      aplicarEstadoReservaLocal(reservaDocumentacionActual?.id, estadoImpacto || estadoDocumentos);
+    }
+
     function tieneObservacionesAdministrador(reserva) {
       return !!String(reserva?.observaciones_admin || "").trim();
     }
@@ -1726,6 +1763,7 @@
     async function refrescarDocumentacionModal() {
       if (!reservaDocumentacionActual) return;
       const data = await cargarDocumentacionReserva(reservaDocumentacionActual);
+      aplicarEstadoReservaDesdeDocumentacion(data);
       if (!actualizarDocumentacionIntegrada(data)) {
         renderizarDocumentacionModal(data);
       }
@@ -1780,7 +1818,8 @@
           try {
             limpiarMensajeDocumentacionModal();
             const archivoUrl = await subirPdfDocumentacionReserva(doc, file);
-            await remitirDocumentoReserva(doc, archivoUrl);
+            const resultadoRemision = await remitirDocumentoReserva(doc, archivoUrl);
+            aplicarEstadoReservaDesdeDocumentacion(resultadoRemision);
             await refrescarDocumentacionModal();
             mostrarMensajeDocumentacionModal("ok", "Documento remitido correctamente. Queda pendiente de revisión.");
           } catch (error) {

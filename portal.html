@@ -2421,6 +2421,7 @@
     let fechaHastaSeleccionada = "";
     let adminSecretariaSeleccionado = "";
     let adminsSecretariaAsociados = 0;
+    let errorCargaActividadesPortal = "";
     let notificacionesPortal = [];
     let notificacionesOperativasPortal = [];
     let notificacionesModalPortal = [];
@@ -2460,6 +2461,20 @@
       el.className = "mensaje";
       el.textContent = "";
       el.style.display = "none";
+    }
+    async function leerRespuestaJsonSegura(response) {
+      const texto = await response.text().catch(() => "");
+      if (!texto) return null;
+      try {
+        return JSON.parse(texto);
+      } catch {
+        return {
+          ok: false,
+          error: /^\s*</.test(texto)
+            ? "El servidor devolvió una respuesta inesperada al cargar actividades."
+            : texto.slice(0, 240)
+        };
+      }
     }
 
     function esAdmin() {
@@ -3606,9 +3621,10 @@ function actualizarBotonSolicitarSegunFranja() {
 
     async function cargarActividadesPublicas() {
       const res = await fetch(`/api/actividades?_ts=${Date.now()}`, { credentials: "include", cache: "no-store" });
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
+      if (!res.ok || !data?.ok) {
+        errorCargaActividadesPortal = data?.error || "No se pudieron cargar las actividades públicas.";
         actividadesCache = [];
         renderizarFiltroProvincias();
         renderizarFiltroAdminsSecretaria();
@@ -3616,6 +3632,7 @@ function actualizarBotonSolicitarSegunFranja() {
         return;
       }
 
+      errorCargaActividadesPortal = "";
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       renderizarFiltroProvincias();
       renderizarFiltroAdminsSecretaria();
@@ -3624,9 +3641,10 @@ function actualizarBotonSolicitarSegunFranja() {
 
     async function cargarActividadesAdmin() {
       const res = await fetch("/api/admin/mis-actividades", { credentials: "include" });
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
+      if (!res.ok || !data?.ok) {
+        errorCargaActividadesPortal = data?.error || "No se pudieron cargar las actividades del administrador.";
         actividadesCache = [];
         renderizarFiltroProvincias();
         renderizarFiltroAdminsSecretaria();
@@ -3634,6 +3652,7 @@ function actualizarBotonSolicitarSegunFranja() {
         return;
       }
 
+      errorCargaActividadesPortal = "";
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       renderizarFiltroProvincias();
       renderizarFiltroAdminsSecretaria();
@@ -3642,9 +3661,10 @@ function actualizarBotonSolicitarSegunFranja() {
 
     async function cargarActividadesSecretaria() {
       const res = await fetch("/api/secretaria/actividades", { credentials: "include" });
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
+      if (!res.ok || !data?.ok) {
+        errorCargaActividadesPortal = data?.error || "No se pudieron cargar las actividades de secretaría.";
         actividadesCache = [];
         adminsSecretariaAsociados = 0;
         renderizarFiltroProvincias();
@@ -3654,6 +3674,7 @@ function actualizarBotonSolicitarSegunFranja() {
       }
 
       adminsSecretariaAsociados = Number(data.admins_asociados || 0);
+      errorCargaActividadesPortal = "";
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
       renderizarFiltroProvincias();
       renderizarFiltroAdminsSecretaria();
@@ -3932,6 +3953,10 @@ function obtenerActividadesFiltradas() {
 
     function obtenerMensajeEstadoVacioPortal() {
       const hayActividades = Array.isArray(actividadesCache) && actividadesCache.length > 0;
+
+      if (errorCargaActividadesPortal) {
+        return errorCargaActividadesPortal;
+      }
 
       if (esSecretaria()) {
         if (!adminsSecretariaAsociados) {

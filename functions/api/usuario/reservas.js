@@ -64,7 +64,7 @@ function calcularPlazasReservadasPendientes(row) {
 
 function estadoReservaSegunDocumentacion(estadoActual, validacionDocumental) {
   const estado = normalizarEstadoReserva(estadoActual);
-  if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) return estado;
+  if (["BORRADOR", "CANCELADA"].includes(estado)) return estado;
   if (!validacionDocumental?.requiere_documentacion) return estado;
   if (validacionDocumental.ok) {
     return estado === "EN_REVISION" || estado === "PROVISIONAL" ? "PENDIENTE" : estado;

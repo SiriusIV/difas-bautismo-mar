@@ -4880,16 +4880,31 @@ function establecerVisibilidadModalActividad(id, activo) {
       redirigirLogin();
     }
 
+    async function leerRespuestaJsonSegura(response) {
+      const texto = await response.text().catch(() => "");
+      if (!texto) return null;
+      try {
+        return JSON.parse(texto);
+      } catch {
+        return {
+          ok: false,
+          error: /^\s*</.test(texto)
+            ? "El servidor devolvió una respuesta inesperada. Recarga la página y vuelve a intentarlo."
+            : texto.slice(0, 240)
+        };
+      }
+    }
+
     async function cargarActividades() {
       const endpoint = modoSecretariaDocumental ? "/api/secretaria/actividades" : "/api/admin/mis-actividades";
       const res = await fetch(endpoint, {
         credentials: "same-origin"
       });
 
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "No se pudieron cargar las actividades.");
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudieron cargar las actividades.");
       }
 
       actividadesCache = Array.isArray(data.actividades) ? data.actividades : [];
@@ -7770,7 +7785,7 @@ function aplicarFranjasRespuesta(respuesta) {
                 body: JSON.stringify(payloadConfirmado)
               });
 
-              const dataFinal = await resFinal.json().catch(() => null);
+              const dataFinal = await leerRespuestaJsonSegura(resFinal);
               if (!resFinal.ok || !dataFinal?.ok) {
                 mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la franja.");
                 return;
@@ -7804,7 +7819,7 @@ function aplicarFranjasRespuesta(respuesta) {
                 body: JSON.stringify(payloadConfirmado)
               });
 
-              const dataFinal = await resFinal.json().catch(() => null);
+              const dataFinal = await leerRespuestaJsonSegura(resFinal);
               if (!resFinal.ok || !dataFinal?.ok) {
                 mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la franja.");
                 return;
@@ -8168,7 +8183,7 @@ async function borrarFranja(id) {
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
       if (data?.requiere_confirmacion && data?.requiere_observaciones) {
         abrirModalAnulacionActividad({
@@ -8200,7 +8215,7 @@ async function borrarFranja(id) {
                 body: JSON.stringify(payloadConfirmado)
               });
 
-              const dataFinal = await resFinal.json().catch(() => null);
+              const dataFinal = await leerRespuestaJsonSegura(resFinal);
               if (!resFinal.ok || !dataFinal?.ok) {
                 mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la actividad.");
                 return;
@@ -8245,7 +8260,7 @@ async function borrarFranja(id) {
                 body: JSON.stringify(payloadConfirmado)
               });
 
-              const dataFinal = await resFinal.json().catch(() => null);
+              const dataFinal = await leerRespuestaJsonSegura(resFinal);
               if (!resFinal.ok || !dataFinal?.ok) {
                 mostrarMensaje("error", dataFinal?.error || "No se pudo guardar la actividad.");
                 return;
@@ -8282,7 +8297,7 @@ async function borrarFranja(id) {
                 body: JSON.stringify(payloadConfirmado)
               });
 
-              const dataFinal = await resFinal.json().catch(() => null);
+              const dataFinal = await leerRespuestaJsonSegura(resFinal);
               if (!resFinal.ok || !dataFinal?.ok) {
                 mostrarMensaje("error", dataFinal?.error || dataFinal?.mensaje || "No se pudo guardar la actividad.");
                 return;
@@ -8310,7 +8325,7 @@ async function borrarFranja(id) {
         return false;
       }
 
-      if (res.ok && data.ok) {
+      if (res.ok && data?.ok) {
         if (!esEdicion && data.id) {
           document.getElementById("actividadId").value = data.id;
           history.replaceState(null, "", `admin-actividades.html?id=${encodeURIComponent(data.id)}`);
@@ -8339,7 +8354,7 @@ async function borrarFranja(id) {
         );
         return true;
       } else {
-        mostrarMensaje("error", data.error || "No se pudo guardar la actividad.");
+        mostrarMensaje("error", data?.error || "No se pudo guardar la actividad.");
         return false;
       }
     }
@@ -8367,10 +8382,10 @@ async function borrarFranja(id) {
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
-        mostrarMensaje("error", data.error || "No se pudo preparar la actividad para gestionar franjas.");
+      if (!res.ok || !data?.ok) {
+        mostrarMensaje("error", data?.error || "No se pudo preparar la actividad para gestionar franjas.");
         return null;
       }
 
@@ -8409,10 +8424,10 @@ async function borrarFranja(id) {
           body: JSON.stringify({ id })
         });
 
-        const data = await res.json();
+        const data = await leerRespuestaJsonSegura(res);
 
-        if (!res.ok || !data.ok) {
-          mostrarMensaje("error", data.error || "No se pudo cancelar el borrador técnico.");
+        if (!res.ok || !data?.ok) {
+          mostrarMensaje("error", data?.error || "No se pudo cancelar el borrador técnico.");
           return;
         }
 
@@ -8499,7 +8514,7 @@ async function confirmarAnulacionActividadDesdeModal() {
       body: JSON.stringify(payload)
     });
 
-    const dataFinal = await resFinal.json().catch(() => null);
+    const dataFinal = await leerRespuestaJsonSegura(resFinal);
 
     if (!resFinal.ok || !dataFinal?.ok) {
       mostrarMensaje("error", dataFinal?.error || "No se pudo desactivar la actividad.");
@@ -8601,10 +8616,10 @@ function retrocederPaso() {
         })
       });
 
-      const data = await res.json();
+      const data = await leerRespuestaJsonSegura(res);
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "No se pudo preparar la subida.");
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo preparar la subida.");
       }
 
       return data;
