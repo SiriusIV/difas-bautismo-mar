@@ -562,8 +562,14 @@
       white-space: nowrap;
     }
     .tiempo-restante.finalizada {
-      background: #f3e8e8;
-      color: #9b1c1c;
+      display: inline;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      font-weight: 400;
     }
     .modal-fondo {
       position: fixed;
@@ -1420,7 +1426,7 @@
 
       const diferenciaMs = expiraEn.getTime() - Date.now();
       if (diferenciaMs <= 0 || !reserva?.prereserva_vigente) {
-        return { texto: "Agotado", finalizada: true };
+        return { texto: "Finalizado", finalizada: true };
       }
 
       const totalMinutos = Math.max(1, Math.ceil(diferenciaMs / 60000));
