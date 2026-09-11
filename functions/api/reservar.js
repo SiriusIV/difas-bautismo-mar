@@ -70,7 +70,7 @@ function generarToken() {
 
 function calcularMinutosConsolidacion(plazasReservadas) {
   const plazas = Number(plazasReservadas || 0);
-  return 20 + (plazas * 3);
+  return (48 * 60) + (plazas * 3);
 }
 
 function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE", documentacionCompletaFormulario = false) {
@@ -209,7 +209,7 @@ async function avisarSuspensionDocumentalInicial(env, {
   const idUsuario = Number(usuarioId || 0);
   const actividad = limpiarTexto(actividadNombre || "la actividad");
   const codigo = limpiarTexto(codigoReserva || "");
-  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda provisional por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda provisional por documentacion obligatoria pendiente. Debe completarse antes de que falten 24 horas para el inicio de la actividad; llegada esa fecha limite, si sigue incompleta, sera rechazada automaticamente.`;
   const tareas = [];
 
   if (idUsuario > 0) {
@@ -990,7 +990,7 @@ if (Number(actividad.activa || 0) !== 1) {
             accion: "SUSPENSION_DOCUMENTAL",
             estadoOrigen: "PENDIENTE",
             estadoDestino: "PROVISIONAL",
-            observaciones: "La solicitud se envió con documentación obligatoria pendiente de completar o actualizar. Queda provisional y dispone de 24 horas para regularizarla.",
+            observaciones: "La solicitud se envió con documentación obligatoria pendiente de completar o actualizar. Queda provisional y debe regularizarse antes de que falten 24 horas para el inicio de la actividad.",
             actorUsuarioId: usuarioId,
             actorRol: "SOLICITANTE",
             actorNombre: contacto || centro || "Solicitante"
@@ -1112,3 +1112,4 @@ if (Number(actividad.activa || 0) !== 1) {
     );
   }
 }
+

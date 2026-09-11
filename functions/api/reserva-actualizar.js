@@ -42,7 +42,7 @@ function escaparHtml(valor) {
 
 function calcularMinutosConsolidacion(plazasReservadas) {
   const plazas = Number(plazasReservadas || 0);
-  return 20 + (plazas * 3);
+  return (48 * 60) + (plazas * 3);
 }
 
 function obtenerEstadoReservaPorDocumentacion(validacionDocumental, estadoPorDefecto = "PENDIENTE") {
@@ -179,7 +179,7 @@ async function avisarSuspensionDocumentalInicial(env, {
   const idUsuario = Number(usuarioId || 0);
   const actividad = limpiarTexto(actividadNombre || "la actividad");
   const codigo = limpiarTexto(codigoReserva || "");
-  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda incompleta por documentacion obligatoria pendiente. Dispone de 24 horas para completarla o actualizarla; pasado ese plazo sera rechazada automaticamente.`;
+  const mensaje = `La solicitud para ${actividad}${codigo ? ` (${codigo})` : ""} queda incompleta por documentacion obligatoria pendiente. Debe completarse antes de que falten 24 horas para el inicio de la actividad; llegada esa fecha limite, si sigue incompleta, sera rechazada automaticamente.`;
   const tareas = [];
 
   if (idUsuario > 0) {
@@ -1061,7 +1061,7 @@ export async function onRequestPost(context) {
           accion: "SUSPENSION_DOCUMENTAL",
           estadoOrigen: "PENDIENTE",
           estadoDestino: "PROVISIONAL",
-          observaciones: "La solicitud se envio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y dispone de 24 horas para regularizarla.",
+          observaciones: "La solicitud se envio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y debe regularizarse antes de que falten 24 horas para el inicio de la actividad.",
           actorUsuarioId: reservaActual.usuario_id,
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"
@@ -1214,7 +1214,7 @@ export async function onRequestPost(context) {
           accion: "SUSPENSION_DOCUMENTAL",
           estadoOrigen: "PENDIENTE",
           estadoDestino: "PROVISIONAL",
-          observaciones: "La solicitud se reenvio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y dispone de 24 horas para regularizarla.",
+          observaciones: "La solicitud se reenvio con documentacion obligatoria pendiente de completar o actualizar. Queda incompleta y debe regularizarse antes de que falten 24 horas para el inicio de la actividad.",
           actorUsuarioId: reservaActual.usuario_id,
           actorRol: "SOLICITANTE",
           actorNombre: contacto || centro || "Solicitante"
@@ -1316,6 +1316,11 @@ export async function onRequestPost(context) {
     let bindValues;
 
     if (plazasSolicitadas > 0) {
+      const minutosConsolidacionActualizacion = calcularMinutosConsolidacion(totalBloqueadoNuevo);
+      const prereservaExpiraEnActualizacion = await obtenerFechaExpiracionSQLite(env, minutosConsolidacionActualizacion);
+      if (!prereservaExpiraEnActualizacion) {
+        return json({ ok: false, error: "No se pudo calcular la expiracion de la prereserva." }, { status: 500 });
+      }
       sqlUpdate = `
         UPDATE reservas
         SET
@@ -1326,7 +1331,7 @@ export async function onRequestPost(context) {
           email = ?,
           personas = ?,
           plazas_prereservadas = ?,
-          prereserva_expira_en = datetime('now', '+2 hours'),
+          prereserva_expira_en = ?,
           observaciones = ?,
           fecha_modificacion = datetime('now')
         WHERE id = ?
@@ -1340,6 +1345,7 @@ export async function onRequestPost(context) {
         email,
         totalBloqueadoNuevo,
         totalBloqueadoNuevo,
+        prereservaExpiraEnActualizacion,
         observaciones,
         reservaActual.id
       ];
@@ -1414,3 +1420,4 @@ export async function onRequestPost(context) {
     );
   }
 }
+

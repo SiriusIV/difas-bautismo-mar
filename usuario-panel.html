@@ -1403,8 +1403,8 @@
 
     function calcularMinutosConsolidacion(plazasReservadas) {
       const plazas = Number(plazasReservadas || 0);
-      if (!Number.isFinite(plazas) || plazas <= 0) return 20;
-      return 20 + (plazas * 3);
+      if (!Number.isFinite(plazas) || plazas <= 0) return 48 * 60;
+      return (48 * 60) + (plazas * 3);
     }
 
     function formatearTiempoRestante(reserva) {
@@ -2527,3 +2527,4 @@ async function anularSolicitudSeleccionada() {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
