@@ -156,6 +156,9 @@
     .estado-modal-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #edf2f7; }
     .estado-modal-item > div:first-child { min-width: 0; flex: 1 1 auto; }
     .estado-modal-item:first-child { border-top: 0; padding-top: 0; }
+    .estado-modal-item.documental { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 10px; }
+    .observacion-documental-modal { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px; align-items: start; margin-top: 2px; padding: 7px 9px; border-radius: 7px; background: #fff8e6; border: 1px solid #e4b438; color: #5a4630; line-height: 1.4; font-size: 12.5px; }
+    .observacion-documental-modal svg { width: 15px; height: 15px; margin-top: 1px; flex: 0 0 auto; }
     .documento-revision-link { color: #073b70; font-weight: 700; text-decoration: none; }
     .documento-revision-link:hover, .documento-revision-link:focus-visible { text-decoration: underline; }
     .select-estado-documental-modal,
@@ -1047,7 +1050,11 @@ async function abrirModalGeneracionDocs() { if (!reservaSeleccionada) return; li
         const tituloDocumento = archivoUrl
           ? `<a class="documento-revision-link" href="${escapeHtml(archivoUrl)}" target="_blank" rel="noopener">${nombreDocumento}</a>`
           : `<strong>${nombreDocumento}</strong>`;
-        return `<div class="estado-modal-item"><div>${tituloDocumento}<div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` · Versión ${Number(doc.version_documental || 0)}` : ""}</div>${doc.observaciones_admin ? `<div class="historial-observaciones">${escapeHtml(doc.observaciones_admin)}</div>` : ""}</div>${renderControlEstadoDocumentoAdmin(doc)}</div>`;
+        const observacionesDocumento = String(doc.observaciones_admin || "").trim();
+        const observacionesHtml = observacionesDocumento
+          ? `<div class="observacion-documental-modal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L22 20H2L12 3Z" fill="#ffd45a" stroke="#d79a00" stroke-width="1.6" stroke-linejoin="round"></path><path d="M12 8.2v6.2" stroke="#1f2937" stroke-width="2" stroke-linecap="round"></path><circle cx="12" cy="17" r="1.1" fill="#1f2937"></circle></svg><span>${escapeHtml(observacionesDocumento)}</span></div>`
+          : "";
+        return `<div class="estado-modal-item documental"><div>${tituloDocumento}<div class="muted">Propietario: ${escapeHtml(doc.propietario_documental_nombre || "No indicado")}${doc.version_documental ? ` · Versión ${Number(doc.version_documental || 0)}` : ""}</div></div>${renderControlEstadoDocumentoAdmin(doc)}${observacionesHtml}</div>`;
       }).join("")}</div></div>`;
     }
     async function cargarAsistentesReservaModal(reserva) {
