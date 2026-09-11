@@ -312,7 +312,7 @@ function construirCorreoRevisionAsistentesAdmin(reserva = {}, totalObservaciones
     ? `${baseUrl.replace(/\/+$/, "")}/portal.html?next=${encodeURIComponent(`/admin-reservas.html?actividad_id=${encodeURIComponent(String(reserva.actividad_id || ""))}`)}`
     : "";
   const asunto = `[Reservas] Solicitud en proceso por observaciones de asistentes`;
-  const mensaje = `Una solicitud previamente confirmada vuelve a estar en proceso porque se han incorporado o modificado observaciones de asistentes.`;
+  const mensaje = `Una solicitud previamente aceptada vuelve a estar en proceso porque se han incorporado o modificado observaciones de asistentes.`;
 
   const texto = [
     `Hola ${adminNombre},`,

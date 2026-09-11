@@ -40,12 +40,12 @@ function resolverTextoEstadoReactivado(reservas = [], estadoDestinoEntrada = "CO
     if (unicos.length > 1) return { estado: "su estado anterior", etiqueta: "Reservas reactivadas" };
     return unicos[0] === "PENDIENTE"
       ? { estado: "pendiente", etiqueta: "Reservas reactivadas como pendientes" }
-      : { estado: "confirmada", etiqueta: "Reservas reactivadas" };
+      : { estado: "aceptada", etiqueta: "Reservas reactivadas" };
   }
 
   return limpiarTexto(estadoDestinoEntrada).toUpperCase() === "PENDIENTE"
     ? { estado: "pendiente", etiqueta: "Reservas reactivadas como pendientes" }
-    : { estado: "confirmada", etiqueta: "Reservas reactivadas" };
+    : { estado: "aceptada", etiqueta: "Reservas reactivadas" };
 }
 
 export function construirEmailTextoReservaCondicionadaDocumentacion({
@@ -228,3 +228,4 @@ export function construirEmailHtmlReservaReactivadaDocumentacion({
     `}
   `;
 }
+

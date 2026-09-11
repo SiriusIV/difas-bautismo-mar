@@ -847,7 +847,7 @@ async function crearAvisosCaducidadParcialSolicitante(env, reserva = {}) {
   if (usuarioId > 0) {
     const estadoReserva = String(reserva?.estado || "").toUpperCase();
     const estadoActual = estadoReserva === "CONFIRMADA"
-      ? "confirmada"
+      ? "aceptada"
       : estadoReserva === "EN_REVISION"
         ? "en revisión"
         : estadoReserva === "SUSPENDIDA"

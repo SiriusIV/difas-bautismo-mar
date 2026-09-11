@@ -1,4 +1,4 @@
-﻿import { getAdminSession } from "./_auth.js";
+import { getAdminSession } from "./_auth.js";
 import { getUserSession } from "../usuario/_auth.js";
 import { ejecutarMantenimientoReservas } from "../_reservas_mantenimiento.js";
 import {
@@ -1464,7 +1464,7 @@ export async function onRequestPut(context) {
     if (activaNueva === 1 && hayConfirmadas && p.tipo === "PERMANENTE" && actual.tipo === "TEMPORAL") {
       return json({
         ok: false,
-        error: "No puedes cambiar a actividad permanente porque existen reservas confirmadas futuras."
+        error: "No puedes cambiar a actividad permanente porque existen reservas aceptadas futuras."
       }, 400);
     }
 
@@ -1557,8 +1557,8 @@ export async function onRequestPut(context) {
         requiere_confirmacion_requisitos: true,
         total_afectadas: reservasAfectadasRequisitos.length,
         mensaje: reservasAfectadasRequisitos.length === 1
-          ? "Existe 1 solicitud vinculada a esta actividad. Si continÃºas, se notificarÃ¡ al solicitante y, si estaba pendiente o confirmada, pasarÃ¡ a suspendida."
-          : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continÃºas, se notificarÃ¡ a los solicitantes y las que estuvieran pendientes o confirmadas pasarÃ¡n a suspendida.`
+          ? "Existe 1 solicitud vinculada a esta actividad. Si continÃºas, se notificarÃ¡ al solicitante y, si estaba pendiente o aceptada, pasarÃ¡ a suspendida."
+          : `Existen ${reservasAfectadasRequisitos.length} solicitudes vinculadas a esta actividad. Si continÃºas, se notificarÃ¡ a los solicitantes y las que estuvieran pendientes o aceptadas pasarÃ¡n a suspendida.`
       }, 409);
     }
 
@@ -1856,3 +1856,4 @@ export async function onRequestDelete(context) {
     );
   }
 }
+

@@ -1045,7 +1045,7 @@
             <option value="BORRADOR">Borrador</option>
             <option value="EN_REVISION">En revisión</option>
             <option value="PENDIENTE">En proceso</option>
-            <option value="CONFIRMADA">Confirmada</option>
+            <option value="CONFIRMADA">Aceptada</option>
             <option value="PROVISIONAL">Incompleta</option>
             <option value="SUSPENDIDA">Suspendida</option>
             <option value="RECHAZADA">Rechazada</option>
@@ -1184,7 +1184,7 @@
       if (e === "EN_REVISION") return "EN REVISIÓN";
       if (e === "PROVISIONAL") return "INCOMPLETA";
       if (e === "PENDIENTE") return "EN PROCESO";
-      if (e === "CONFIRMADA") return "CONFIRMADA";
+      if (e === "CONFIRMADA") return "ACEPTADA";
       if (e === "SUSPENDIDA") return "SUSPENDIDA";
       if (e === "RECHAZADA") return "RECHAZADA";
       if (e === "CANCELADA") return "CANCELADA";
@@ -1463,7 +1463,7 @@
         <span>|</span>
         <span>En proceso: ${pendientes}</span>
         <span>|</span>
-        <span>Confirmadas: ${confirmadas}</span>
+        <span>Aceptadas: ${confirmadas}</span>
         <span>|</span>
         <span>Suspendidas: ${suspendidas}</span>
         <span>|</span>
@@ -2417,7 +2417,7 @@ async function confirmarCambioFranjaReserva(reserva) {
         if (!res.ok || !data?.ok) {
           throw new Error(data?.error || "No se pudo confirmar el cambio de franja.");
         }
-        mostrarMensaje("ok", data.mensaje || "Solicitud confirmada correctamente.");
+        mostrarMensaje("ok", data.mensaje || "Solicitud aceptada correctamente.");
         reservaSeleccionada = null;
         await cargarPanel();
       } catch (error) {

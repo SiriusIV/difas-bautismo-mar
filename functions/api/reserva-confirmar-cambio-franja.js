@@ -134,7 +134,7 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       mensaje: estadoOrigen === "CONFIRMADA"
-        ? "Solicitud confirmada de nuevo correctamente."
+        ? "Solicitud aceptada de nuevo correctamente."
         : "Solicitud devuelta a pendiente correctamente.",
       estado: estadoOrigen
     });

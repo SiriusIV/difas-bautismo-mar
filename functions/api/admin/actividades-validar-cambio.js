@@ -245,7 +245,7 @@ export async function onRequestPost(context) {
     if (hayConfirmadas && p.tipo === "PERMANENTE" && String(actual.tipo || "").toUpperCase() === "TEMPORAL") {
       return json({
         ok: false,
-        error: "No puedes cambiar a actividad permanente porque existen reservas confirmadas futuras."
+        error: "No puedes cambiar a actividad permanente porque existen reservas aceptadas futuras."
       }, 200);
     }
 
@@ -317,3 +317,4 @@ export async function onRequestPost(context) {
     );
   }
 }
+

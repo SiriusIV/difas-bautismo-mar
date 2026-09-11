@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -1560,9 +1560,9 @@
             <div id="bloqueFiltroEstado" class="bloque-filtro-estado">
               <label for="filtroEstado">Estado</label>
               <select id="filtroEstado">
-                <option value="">EN PROCESO + CONFIRMADA</option>
+                <option value="">EN PROCESO + ACEPTADA</option>
                 <option value="PENDIENTE">Solo EN PROCESO</option>
-                <option value="CONFIRMADA">Solo CONFIRMADA</option>
+                <option value="CONFIRMADA">Solo ACEPTADA</option>
                 <option value="SUSPENDIDA">Solo SUSPENDIDA</option>
                 <option value="RECHAZADA">Solo RECHAZADA</option>
               </select>
@@ -1574,7 +1574,7 @@
               <div class="valor" id="contadorPendientes">0</div>
             </div>
             <div class="tarjeta-estado">
-              <div class="etiqueta">Confirmadas:</div>
+              <div class="etiqueta">Aceptadas:</div>
               <div class="valor" id="contadorConfirmadas">0</div>
             </div>
             <div class="tarjeta-estado">
@@ -1591,7 +1591,7 @@
         <div id="leyendaSuperiorHost">
           <div class="leyenda" id="bloqueLeyendaReservas">
             <span class="leyenda-item" id="leyendaReservaPendiente"><span class="leyenda-color" style="background:#d39e00;"></span>EN PROCESO</span>
-            <span class="leyenda-item" id="leyendaReservaConfirmada"><span class="leyenda-color" style="background:#198754;"></span>CONFIRMADA</span>
+            <span class="leyenda-item" id="leyendaReservaConfirmada"><span class="leyenda-color" style="background:#198754;"></span>ACEPTADA</span>
             <span class="leyenda-item" id="leyendaReservaSuspendida"><span class="leyenda-color" style="background:#f4c430;"></span>SUSPENDIDA</span>
             <span class="leyenda-item" id="leyendaReservaRechazada"><span class="leyenda-color" style="background:#dc3545;"></span>RECHAZADA</span>
             <span class="leyenda-item oculto" id="leyendaActividadDisponible"><span class="leyenda-color" style="background:#0b5ed7;"></span>DISPONIBLE</span>
@@ -2012,7 +2012,7 @@
       const opciones = [{ value: "", label: "Sin cambio" }];
 
       if (estadoActual === "PENDIENTE") {
-        opciones.push({ value: "confirmar", label: "Pasar a CONFIRMADA" });
+        opciones.push({ value: "confirmar", label: "Pasar a ACEPTADA" });
         opciones.push({ value: "rechazar", label: "Pasar a RECHAZADA" });
       } else if (estadoActual === "CONFIRMADA") {
         opciones.push({ value: "reabrir", label: "Pasar a EN PROCESO" });
@@ -3060,6 +3060,7 @@ function abrirModalEvento(info) {
   <script src="assets/mobile-mensaje-flotante.js"></script>
 </body>
 </html>
+
 
 
 
