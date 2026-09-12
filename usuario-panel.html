@@ -1117,8 +1117,8 @@
               <th class="actividad-col">Actividad</th>
               <th class="tiempo-col">
                 <span class="encabezado-columna">
-                  <span>Tiempo restante</span>
-                  <button type="button" class="icono-info-tabla" id="btnInfoTiempoRestante" aria-label="Informacion sobre tiempo restante" title="Informacion sobre tiempo restante">i</button>
+                  <span>Fecha/hora de finalización de reserva</span>
+                  <button type="button" class="icono-info-tabla" id="btnInfoTiempoRestante" aria-label="Informacion sobre fecha y hora de finalizacion de reserva" title="Informacion sobre fecha y hora de finalizacion de reserva">i</button>
                 </span>
               </th>
               <th class="estado-col">
@@ -1429,19 +1429,8 @@
         return { texto: "Finalizado", finalizada: true };
       }
 
-      const totalMinutos = Math.max(1, Math.ceil(diferenciaMs / 60000));
-      const horas = Math.floor(totalMinutos / 60);
-      const minutos = totalMinutos % 60;
-
-      if (horas > 0) {
-        return {
-          texto: `${horas} h ${String(minutos).padStart(2, "0")} min`,
-          finalizada: false
-        };
-      }
-
       return {
-        texto: `${totalMinutos} min`,
+        texto: formatearFechaHoraAviso(reserva?.prereserva_expira_en),
         finalizada: false
       };
     }
@@ -1893,7 +1882,9 @@
         Number(reserva?.asistentes_cargados || 0),
         Number(reserva?.plazas_prereservadas || 0)
       );
-      const minutosConsolidacion = calcularMinutosConsolidacion(plazasReenvio);
+      const fechaLimiteFormalizacion = formatearFechaHoraAviso(
+        new Date(Date.now() + (calcularMinutosConsolidacion(plazasReenvio) * 60000)).toISOString().slice(0, 19).replace("T", " ")
+      );
       configurarModalObservacionesPanel({
         titulo: "Confirmación de envío",
         subtitulo: reserva.actividad || "Solicitud",
@@ -1901,8 +1892,8 @@
         contenido: `
         <div class="estado-modal-bloque">
           <p class="estado-modal-linea">Va a enviar una solicitud para <strong>${escapeHtml(reserva.actividad || "esta actividad")}</strong> con <strong>${plazasReenvio}</strong> plazas reservadas.</p>
-          <p class="estado-modal-linea">El tiempo de consolidación calculado para esta solicitud será de <strong>${minutosConsolidacion} minutos</strong> y comenzará a contar a partir del momento en que confirme el envío.</p>
-          <p class="estado-modal-linea">Transcurrido ese plazo, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
+          <p class="estado-modal-linea">El plazo de consolidación para formalizar la reserva comenzará a contar a partir del momento en que confirme el envío y finalizará el <strong>${fechaLimiteFormalizacion}</strong>.</p>
+          <p class="estado-modal-linea">Al llegar esa fecha y hora, las plazas reservadas no asignadas volverán a quedar disponibles.</p>
           <p class="estado-modal-linea">Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria.</p>
         </div>
         <div id="mensajeConfirmacionEnvio" class="mensaje-modal-panel" hidden></div>
@@ -1933,16 +1924,16 @@
 
     function abrirModalTiempoRestante() {
       configurarModalObservacionesPanel({
-        titulo: "Tiempo restante",
-        subtitulo: "Informacion sobre la asignacion de plazas",
+        titulo: "Fecha/hora de finalización de reserva",
+        subtitulo: "Informacion sobre la formalizacion de la reserva",
         claseContenido: "modal-contenido",
         contenido: `
         <div class="estado-modal-bloque">
-          <p class="estado-modal-linea">Este tiempo restante indica el plazo disponible para realizar las asignaciones nominales de las plazas reservadas.</p>
+          <p class="estado-modal-linea">Esta fecha y hora indican el límite para formalizar la reserva mediante la asignación nominal de las plazas reservadas.</p>
         </div>
         <div class="estado-modal-observaciones">
           <strong>Importante</strong>
-          <div class="estado-modal-observaciones-texto">Una vez finalizado este tiempo, solo podrás seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirá garantía de reserva previa sobre las plazas añadidas tras haber finalizado el tiempo disponible para la asignación.</div>
+          <div class="estado-modal-observaciones-texto">Una vez superada esa fecha y hora, solo podrás seguir asignando plazas mientras queden disponibles en la franja horaria seleccionada para la actividad, sin necesidad de crear una nueva reserva complementaria. A partir de ese momento, ya no existirá garantía de reserva previa sobre las plazas añadidas tras haber finalizado el plazo de formalización.</div>
         </div>
       `,
         accionesHtml: ``

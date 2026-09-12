@@ -2123,8 +2123,24 @@
 
     function calcularMinutosConsolidacion(plazas) {
       const n = Number(plazas || 0);
-      if (!Number.isFinite(n) || n <= 0) return 20;
-      return 20 + (n * 3);
+      if (!Number.isFinite(n) || n <= 0) return 48 * 60;
+      return (48 * 60) + (n * 3);
+    }
+
+    function calcularFechaLimiteFormalizacion(plazas) {
+      return new Date(Date.now() + (calcularMinutosConsolidacion(plazas) * 60000));
+    }
+
+    function formatearFechaHoraLimite(date) {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("es-ES", {
+        timeZone: "Europe/Madrid",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(date);
     }
 
     function claseEstadoBadge(estado) {
@@ -2636,7 +2652,7 @@ function obtenerDisponiblesFormulario(franja) {
       const infoFranja = document.getElementById("infoFranja");
       const resumenReserva = document.getElementById("resumenReserva");
       const plazasDisponibles = document.getElementById("plazasDisponibles");
-      const minutos = calcularMinutosConsolidacion(plazasPendientes);
+      const fechaLimiteFormalizacion = formatearFechaHoraLimite(calcularFechaLimiteFormalizacion(plazasPendientes));
       const nombreActividad = actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-";
       const etiquetaPlazas = esEdicion ? "Plazas pendientes por reservar" : "Plazas pre-reservadas";
       const detalleAsignadas = esEdicion
@@ -2660,7 +2676,7 @@ function obtenerDisponiblesFormulario(franja) {
           <strong>Modalidad de reserva:</strong> Sin franja horaria<br>
           ${usaAforoGeneral ? `<strong>Plazas disponibles:</strong> ${disponiblesGenerales} &nbsp;&nbsp; <strong>Aforo máximo:</strong> ${aforoGeneral}<br>` : ``}
           <strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
-          <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+          <strong>Fin del plazo de formalización:</strong> ${fechaLimiteFormalizacion}
         `;
         return;
       }
@@ -2695,7 +2711,7 @@ function obtenerDisponiblesFormulario(franja) {
         <strong>Actividad:</strong> ${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "-"}<br>
         <strong>Franja seleccionada:</strong> ${etiquetaFechaResumen}${horarioResumen && horarioResumen !== "-" ? ` · ${horarioResumen}` : ""}<br>
         ${lineaCapacidad}<strong>${etiquetaPlazas}:</strong> ${plazasPendientes}${detalleAsignadas}<br>
-        <strong>Tiempo de consolidación previsto:</strong> ${minutos} minutos
+        <strong>Fin del plazo de formalización:</strong> ${fechaLimiteFormalizacion}
       `;
     }
 
@@ -2948,7 +2964,7 @@ function obtenerDisponiblesFormulario(franja) {
     }
 
     function abrirModalConfirmacion(datos) {
-      const minutos = calcularMinutosConsolidacion(datos.plazas_solicitadas);
+      const fechaLimiteFormalizacion = formatearFechaHoraLimite(calcularFechaLimiteFormalizacion(datos.plazas_solicitadas));
       const textoCierre = actividadUsaFranjas()
         ? "Además, se permitirá ampliar la lista de asistentes mientras sigan existiendo plazas disponibles reales en la franja horaria."
         : "Además, se permitirá ampliar la lista de asistentes conforme a las reglas de disponibilidad de esta actividad.";
@@ -2958,10 +2974,10 @@ function obtenerDisponiblesFormulario(franja) {
 
       document.getElementById("textoConfirmacionEnvio").innerHTML = `
         <p>Va a enviar una solicitud para <span class="resaltado">${actividadActual ? (actividadActual.titulo_publico || actividadActual.nombre) : "la actividad seleccionada"}</span> con una pre-reserva de <span class="resaltado">${datos.plazas_solicitadas}</span> plazas.</p>
-        <p>El tiempo de consolidación calculado para esta solicitud será de <span class="resaltado">${minutos} minutos</span> y comenzará a contar a partir del momento en que confirme el envío.</p>
-        <p class="linea-clave-consolidacion">Transcurrido ese plazo, las plazas pre-reservadas no asignadas volverán a quedar disponibles.</p>
+        <p>El plazo de consolidación para formalizar la reserva comenzará a contar a partir del momento en que confirme el envío y finalizará el <span class="resaltado">${fechaLimiteFormalizacion}</span>.</p>
+        <p class="linea-clave-consolidacion">Al finalizar ese plazo, las plazas pre-reservadas no asignadas volverán a quedar disponibles.</p>
         ${avisoTelefonico}
-        <p>Si, pasado el tiempo de consolidación, no se ha asignado al menos un asistente, la solicitud quedará anulada automáticamente por el sistema.</p>
+        <p>Si, llegada la fecha y hora de finalización, no se ha asignado al menos un asistente, la solicitud quedará anulada automáticamente por el sistema.</p>
         <p>${textoCierre}</p>
       `;
       const mensaje = document.getElementById("mensajeConfirmacionEnvio");
