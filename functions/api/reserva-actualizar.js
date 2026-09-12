@@ -63,6 +63,27 @@ function accionNormalizada(valor) {
   return limpiarTexto(valor).toLowerCase();
 }
 
+function obtenerInicioReserva(contexto = {}) {
+  const fecha = String(contexto?.fecha || contexto?.fecha_inicio || "").trim().slice(0, 10);
+  const hora = String(contexto?.hora_inicio || "00:00").trim().slice(0, 5) || "00:00";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return "";
+  return `${fecha} ${hora}:00`;
+}
+
+async function calcularExpiracionPrereserva(env, minutos, contextoInicio = null) {
+  const expiraPorRegla = await obtenerFechaExpiracionSQLite(env, minutos);
+  const inicio = obtenerInicioReserva(contextoInicio || {});
+  if (!expiraPorRegla || !inicio) return expiraPorRegla;
+
+  const row = await env.DB.prepare(`
+    SELECT CASE
+      WHEN datetime(?) < datetime(?) THEN datetime(?)
+      ELSE datetime(?)
+    END AS expira
+  `).bind(expiraPorRegla, inicio, expiraPorRegla, inicio).first();
+
+  return row?.expira || expiraPorRegla;
+}
 async function asegurarTablaRequisitos(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS actividad_requisitos (
@@ -1000,7 +1021,7 @@ export async function onRequestPost(context) {
 
     if (enviarBorrador) {
       const minutosConsolidacion = calcularMinutosConsolidacion(plazasSolicitadas);
-      const prereservaExpiraEn = await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
+      const prereservaExpiraEn = await calcularExpiracionPrereserva(env, minutosConsolidacion, usaFranjas ? franjaNueva : actividad);
       if (!prereservaExpiraEn) {
         return json({ ok: false, error: "No se pudo calcular la expiración de la prereserva." }, { status: 500 });
       }
@@ -1152,7 +1173,7 @@ export async function onRequestPost(context) {
     if (reenviarRechazada) {
       const minutosConsolidacion = calcularMinutosConsolidacion(totalBloqueadoNuevo);
       const prereservaExpiraEn = totalBloqueadoNuevo > 0
-        ? await obtenerFechaExpiracionSQLite(env, minutosConsolidacion)
+        ? await calcularExpiracionPrereserva(env, minutosConsolidacion, usaFranjas ? franjaNueva : actividad)
         : null;
 
       if (totalBloqueadoNuevo > 0 && !prereservaExpiraEn) {
@@ -1317,7 +1338,7 @@ export async function onRequestPost(context) {
 
     if (plazasSolicitadas > 0) {
       const minutosConsolidacionActualizacion = calcularMinutosConsolidacion(totalBloqueadoNuevo);
-      const prereservaExpiraEnActualizacion = await obtenerFechaExpiracionSQLite(env, minutosConsolidacionActualizacion);
+      const prereservaExpiraEnActualizacion = await calcularExpiracionPrereserva(env, minutosConsolidacionActualizacion, usaFranjas ? franjaNueva : actividad);
       if (!prereservaExpiraEnActualizacion) {
         return json({ ok: false, error: "No se pudo calcular la expiracion de la prereserva." }, { status: 500 });
       }
@@ -1420,4 +1441,5 @@ export async function onRequestPost(context) {
     );
   }
 }
+
 

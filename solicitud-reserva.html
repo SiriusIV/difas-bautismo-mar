@@ -2127,8 +2127,25 @@
       return (48 * 60) + (n * 3);
     }
 
+    function obtenerInicioActividadSeleccionada() {
+      const franja = actividadUsaFranjas() ? obtenerFranjaSeleccionada() : null;
+      if (franja) {
+        return obtenerInicioFranjaSeleccionada(franja);
+      }
+
+      const fecha = String(actividadActual?.fecha_inicio || "").trim().slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+      const inicio = new Date(`${fecha}T00:00`);
+      return Number.isNaN(inicio.getTime()) ? null : inicio;
+    }
+
     function calcularFechaLimiteFormalizacion(plazas) {
-      return new Date(Date.now() + (calcularMinutosConsolidacion(plazas) * 60000));
+      const limitePorRegla = new Date(Date.now() + (calcularMinutosConsolidacion(plazas) * 60000));
+      const inicioActividad = obtenerInicioActividadSeleccionada();
+      if (inicioActividad && inicioActividad.getTime() < limitePorRegla.getTime()) {
+        return inicioActividad;
+      }
+      return limitePorRegla;
     }
 
     function formatearFechaHoraLimite(date) {

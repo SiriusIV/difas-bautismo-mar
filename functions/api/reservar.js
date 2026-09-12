@@ -92,6 +92,27 @@ async function obtenerFechaExpiracionSQLite(env, minutos) {
   return row?.expira || null;
 }
 
+function obtenerInicioReserva(contexto = {}) {
+  const fecha = String(contexto?.fecha || contexto?.fecha_inicio || "").trim().slice(0, 10);
+  const hora = String(contexto?.hora_inicio || "00:00").trim().slice(0, 5) || "00:00";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return "";
+  return `${fecha} ${hora}:00`;
+}
+
+async function calcularExpiracionPrereserva(env, minutos, contextoInicio = null) {
+  const expiraPorRegla = await obtenerFechaExpiracionSQLite(env, minutos);
+  const inicio = obtenerInicioReserva(contextoInicio || {});
+  if (!expiraPorRegla || !inicio) return expiraPorRegla;
+
+  const row = await env.DB.prepare(`
+    SELECT CASE
+      WHEN datetime(?) < datetime(?) THEN datetime(?)
+      ELSE datetime(?)
+    END AS expira
+  `).bind(expiraPorRegla, inicio, expiraPorRegla, inicio).first();
+
+  return row?.expira || expiraPorRegla;
+}
 async function asegurarTablaRequisitos(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS actividad_requisitos (
@@ -863,7 +884,7 @@ if (Number(actividad.activa || 0) !== 1) {
     const minutosConsolidacion = calcularMinutosConsolidacion(plazasReservadas);
     const prereservaExpiraEn = guardarComoBorrador
       ? null
-      : await obtenerFechaExpiracionSQLite(env, minutosConsolidacion);
+      : await calcularExpiracionPrereserva(env, minutosConsolidacion, usaFranjas ? franja : actividad);
     const estadoInicialReserva = guardarComoBorrador
       ? "BORRADOR"
       : obtenerEstadoReservaPorDocumentacion(validacionDocumental, "PENDIENTE", documentacionCompletaFormulario);
@@ -1112,4 +1133,5 @@ if (Number(actividad.activa || 0) !== 1) {
     );
   }
 }
+
 

@@ -1443,6 +1443,23 @@
       return (48 * 60) + (plazas * 3);
     }
 
+    function obtenerInicioReservaPanel(reserva = {}) {
+      const fecha = String(reserva?.fecha || reserva?.fecha_inicio || "").trim().slice(0, 10);
+      const hora = String(reserva?.hora_inicio || "00:00").trim().slice(0, 5) || "00:00";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+      const inicio = new Date(`${fecha}T${hora}`);
+      return Number.isNaN(inicio.getTime()) ? null : inicio;
+    }
+
+    function calcularFechaLimiteFormalizacionReserva(reserva = {}, plazasReservadas = 0) {
+      const limitePorRegla = new Date(Date.now() + (calcularMinutosConsolidacion(plazasReservadas) * 60000));
+      const inicioReserva = obtenerInicioReservaPanel(reserva);
+      if (inicioReserva && inicioReserva.getTime() < limitePorRegla.getTime()) {
+        return inicioReserva;
+      }
+      return limitePorRegla;
+    }
+
     function formatearTiempoRestante(reserva) {
       const estado = normalizarEstadoReserva(reserva?.estado);
       if (["BORRADOR", "RECHAZADA", "CANCELADA"].includes(estado)) {
@@ -1913,7 +1930,7 @@
         Number(reserva?.plazas_prereservadas || 0)
       );
       const fechaLimiteFormalizacion = formatearFechaHoraAviso(
-        new Date(Date.now() + (calcularMinutosConsolidacion(plazasReenvio) * 60000)).toISOString().slice(0, 19).replace("T", " ")
+        calcularFechaLimiteFormalizacionReserva(reserva, plazasReenvio).toISOString().slice(0, 19).replace("T", " ")
       );
       configurarModalObservacionesPanel({
         titulo: "Confirmación de envío",
