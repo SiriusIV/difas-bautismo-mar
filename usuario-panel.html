@@ -315,6 +315,28 @@
       justify-content: center;
       gap: 6px;
     }
+    .encabezado-plazas {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.1;
+    }
+    .encabezado-plazas-detalle {
+      font-size: 10px;
+      font-weight: 600;
+      color: #637086;
+      white-space: nowrap;
+    }
+    .plazas-reservadas {
+      color: #b42318;
+    }
+    .plazas-asignadas {
+      color: #1e2a36;
+    }
+    .plazas-separador {
+      color: #637086;
+    }
     .icono-info-tabla {
       display: inline-flex;
       align-items: center;
@@ -542,7 +564,10 @@
     }
     .icono-observacion:hover { transform: scale(1.08); }
     .plazas-linea {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
       white-space: nowrap;
     }
     .tiempo-restante {
@@ -1129,7 +1154,12 @@
               </th>
               <th class="fecha-col">Fecha</th>
               <th class="horario-col">Horario</th>
-              <th class="plazas-col">Plazas</th>
+              <th class="plazas-col">
+                <span class="encabezado-plazas">
+                  <span>Plazas</span>
+                  <span class="encabezado-plazas-detalle">(<span class="plazas-reservadas">Reservadas</span> <span class="plazas-separador">/</span> <span class="plazas-asignadas">Asignadas</span>)</span>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody id="tbodyReservas"></tbody>
@@ -2239,16 +2269,9 @@
             <td class="fecha-col"><span class="mobile-dato-etiqueta">Fecha</span><span class="mobile-dato-valor">${fechaTexto}</span></td>
             <td class="horario-col"><span class="mobile-dato-etiqueta">Horario</span><span class="mobile-dato-valor">${horarioTexto}</span></td>
             <td class="plazas-col">
-              ${tiempoRestante.finalizada
-                ? ``
-                : `<span class="plazas-linea">Reservadas: ${plazasPreReservadas}</span>`}
-              <span class="plazas-linea">Asignadas: ${plazasAsignadas}</span>
+              <span class="plazas-linea"><span class="plazas-reservadas">${plazasPreReservadas}</span><span class="plazas-separador">/</span><span class="plazas-asignadas">${plazasAsignadas}</span></span>
               <span class="mobile-dato-etiqueta">Plazas</span>
-              <span class="plazas-mobile-resumen">${
-                tiempoRestante.finalizada
-                  ? `<span class="linea-plaza">Asignadas: ${plazasAsignadas}</span>`
-                  : `<span class="linea-plaza">Reservadas: ${plazasPreReservadas}</span><span class="linea-plaza">Asignadas: ${plazasAsignadas}</span>`
-              }</span>
+              <span class="plazas-mobile-resumen"><span class="linea-plaza"><span class="plazas-reservadas">${plazasPreReservadas}</span><span class="plazas-separador"> / </span><span class="plazas-asignadas">${plazasAsignadas}</span></span></span>
             </td>
           </tr>
         `;
